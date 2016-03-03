@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -38,6 +39,10 @@ import org.jetbrains.annotations.Nullable;
  * Unmodifiable file information.
  */
 public final class IgfsFileInfo implements Externalizable {
+
+    public static final AtomicLong writes = new AtomicLong();
+    public static final AtomicLong reads = new AtomicLong();
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -122,6 +127,20 @@ public final class IgfsFileInfo implements Externalizable {
     }
 
     /**
+     * With id.
+     *
+     * @param isDir
+     * @param id
+     * @param props
+     * @param accessTime
+     * @param modificationTime
+     */
+    public IgfsFileInfo(boolean isDir, IgniteUuid id, @Nullable Map<String, String> props, long accessTime, long modificationTime) {
+        this(isDir, id, isDir ? 0 : FileSystemConfiguration.DFLT_BLOCK_SIZE, 0, null, null, props, null, false,
+            accessTime, modificationTime, false);
+    }
+
+    /**
      * Consturcts directory with random ID and provided listing.
      *
      * @param listing Listing.
@@ -142,6 +161,18 @@ public final class IgfsFileInfo implements Externalizable {
     }
 
     /**
+     * With id.
+     *
+     * @param id
+     * @param listing
+     * @param props
+     */
+    IgfsFileInfo(IgniteUuid id, @Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String,String> props) {
+        this(true/*dir*/, id, 0, 0, null, listing, props, null, false, ACCESS_TIME_TAKE_MODIFICATION_TIME,
+            System.currentTimeMillis(), false);
+    }
+
+    /**
      * Constructs file info.
      *
      * @param blockSize Block size.
@@ -156,6 +187,12 @@ public final class IgfsFileInfo implements Externalizable {
     public IgfsFileInfo(int blockSize, long len, @Nullable IgniteUuid affKey, @Nullable IgniteUuid lockId,
         boolean evictExclude, @Nullable Map<String, String> props, long accessTime, long modificationTime) {
         this(false, null, blockSize, len, affKey, null, props, lockId, true, accessTime, modificationTime,
+            evictExclude);
+    }
+
+    public IgfsFileInfo(IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey, @Nullable IgniteUuid lockId,
+                        boolean evictExclude, @Nullable Map<String, String> props, long accessTime, long modificationTime) {
+        this(false, id, blockSize, len, affKey, null, props, lockId, true, accessTime, modificationTime,
             evictExclude);
     }
 
@@ -504,6 +541,8 @@ public final class IgfsFileInfo implements Externalizable {
         out.writeLong(modificationTime);
         out.writeBoolean(evictExclude);
         out.writeObject(path);
+
+        writes.incrementAndGet();
     }
 
     /** {@inheritDoc} */
@@ -521,6 +560,8 @@ public final class IgfsFileInfo implements Externalizable {
         modificationTime = in.readLong();
         evictExclude = in.readBoolean();
         path = (IgfsPath)in.readObject();
+
+        reads.incrementAndGet();
     }
 
     /** {@inheritDoc} */

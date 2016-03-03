@@ -654,6 +654,8 @@ public class IgfsMetaManager extends IgfsManager {
         return true;
     }
 
+   // private static final CachePeekMode[] modes_all = new CachePeekMode[] { CachePeekMode.ALL };
+
     /**
      * Lock file IDs.
      *
@@ -668,8 +670,38 @@ public class IgfsMetaManager extends IgfsManager {
         if (log.isDebugEnabled())
             log.debug("Locking file ids: " + fileIds);
 
-        // Lock files and get their infos.
         Map<IgniteUuid, IgfsFileInfo> map = id2InfoPrj.getAll(fileIds);
+
+//        // ------------------------------------
+//        GridCacheContext<IgniteUuid, IgfsFileInfo> ctx = id2InfoPrj.context();
+//        Collection<KeyCacheObject> keyObjects = ctx.cacheKeysView(fileIds);
+//        IgniteTxLocalEx tx = ctx.tm().threadLocalTx(ctx);
+//
+//        boolean locked = (Boolean)((GridCacheAdapter) id2InfoPrj).txLockAsync(
+//            keyObjects,
+//            0,
+//            tx,
+//            true,
+//            false/* retval */,
+//            TransactionIsolation.REPEATABLE_READ, false, -1).get();
+//
+//        //Map<IgniteUuid, IgfsFileInfo> map = id2InfoPrj.getAll(fileIds);
+//
+//        //boolean locked = id2InfoPrj.lockAll(fileIds, 0L);
+//        assert locked;
+//
+//        // Lock files and get their infos.
+//
+//        //final Map<IgniteUuid, IgfsFileInfo> map = new HashMap<>();
+//
+//        IgfsFileInfo i;
+//        for (IgniteUuid id : fileIds) {
+//            i = id2InfoPrj.localPeek(id, modes_all, null);
+//
+//            if (i != null)
+//                map.put(id, i);
+//        }
+//        // -----------------------------------------------------
 
         if (log.isDebugEnabled())
             log.debug("Locked file ids: " + fileIds);
@@ -3392,22 +3424,26 @@ public class IgfsMetaManager extends IgfsManager {
                 try {
                     b = new DirectoryChainBuilder(path, dirProps, fileProps) {
                         /** {@inheritDoc} */
-                        @Override protected IgfsFileInfo buildLeaf() {
+                        @Override protected IgfsFileInfo buildLeaf(IgniteUuid id) {
                             long t = System.currentTimeMillis();
 
-                            return new IgfsFileInfo(blockSize, 0L, affKey, composeLockId(false),
+                            return new IgfsFileInfo(id, blockSize, 0L, affKey, composeLockId(false),
                                  evictExclude, leafProps, t, t);
                         }
                     };
+
+                    final IgniteUuid overwriteId = IgniteUuid.randomUuid();
 
                     // Start Tx:
                     IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                     try {
-                        if (overwrite)
+                        if (overwrite) {
                             // Lock also the TRASH directory because in case of overwrite we
                             // may need to delete the old file:
                             b.idSet.add(TRASH_ID);
+                            b.idSet.add(overwriteId);
+                        }
 
                         final Map<IgniteUuid, IgfsFileInfo> lockedInfos = lockIds(b.idSet);
 
@@ -3424,7 +3460,8 @@ public class IgfsMetaManager extends IgfsManager {
 
                                 assert b.existingPath.equals(path);
                                 assert lockedInfos.size() ==
-                                        (overwrite ? b.existingIdCnt + 1/*TRASH*/ : b.existingIdCnt);
+                                        (overwrite ? b.existingIdCnt + 1/*TRASH, overwriteId does not exist*/
+                                            : b.existingIdCnt);
 
                                 if (lowermostExistingInfo.isDirectory()) {
                                     throw new IgfsPathAlreadyExistsException("Failed to "
@@ -3492,8 +3529,9 @@ public class IgfsMetaManager extends IgfsManager {
                                         // Make a new locked info:
                                         long t = System.currentTimeMillis();
 
-                                        final IgfsFileInfo newFileInfo = new IgfsFileInfo(cfg.getBlockSize(), 0L,
-                                            affKey, composeLockId(false), evictExclude, fileProps, t, t);
+                                        final IgfsFileInfo newFileInfo = new IgfsFileInfo(overwriteId,
+                                            cfg.getBlockSize(), 0L, affKey, composeLockId(false), evictExclude,
+                                            fileProps, t, t);
 
                                         assert newFileInfo.lockId() != null; // locked info should be created.
 
@@ -3577,6 +3615,8 @@ public class IgfsMetaManager extends IgfsManager {
         /** The list of ids. */
         protected final List<IgniteUuid> idList;
 
+        protected final List<IgniteUuid> reservedIds;
+
         /** The set of ids. */
         protected final SortedSet<IgniteUuid> idSet;
 
@@ -3612,6 +3652,8 @@ public class IgfsMetaManager extends IgfsManager {
 
             this.idList = fileIds(path);
 
+            this.reservedIds = new ArrayList<>(idList.size());
+
             this.idSet = new TreeSet<IgniteUuid>(PATH_ID_SORTING_COMPARATOR);
 
             this.middleProps = middleProps;
@@ -3629,20 +3671,22 @@ public class IgfsMetaManager extends IgfsManager {
 
             for (IgniteUuid id: idList) {
                 if (id == null)
-                    break;
+                    reservedIds.add(IgniteUuid.randomUuid()); // New random Id to lock all the path at once.
+                else {
+                    lowermostExistingId = id;
 
-                lowermostExistingId = id;
+                    boolean added = idSet.add(id);
 
-                boolean added = idSet.add(id);
+                    assert added : "Not added id = " + id;
 
-                assert added : "Not added id = " + id;
+                    if (idIdx >= 1) // skip root.
+                        existingPath = new IgfsPath(existingPath, components.get(idIdx - 1));
 
-                if (idIdx >= 1) // skip root.
-                    existingPath = new IgfsPath(existingPath, components.get(idIdx - 1));
-
-                idIdx++;
+                    idIdx++;
+                }
             }
 
+            assert reservedIds.size() + idSet.size() == idList.size();
             assert idSet.contains(ROOT_ID);
 
             this.lowermostExistingId = lowermostExistingId;
@@ -3650,23 +3694,25 @@ public class IgfsMetaManager extends IgfsManager {
             this.existingPath = existingPath;
 
             this.existingIdCnt = idSet.size();
+
+            this.idSet.addAll(reservedIds);
         }
 
         /**
          * Builds middle nodes.
          */
-        protected IgfsFileInfo buildMiddleNode(String childName, IgfsFileInfo childInfo) {
-            return new IgfsFileInfo(Collections.singletonMap(childName,
+        protected IgfsFileInfo buildMiddleNode(IgniteUuid id, String childName, IgfsFileInfo childInfo) {
+            return new IgfsFileInfo(id, Collections.singletonMap(childName,
                     new IgfsListingEntry(childInfo)), middleProps);
         }
 
         /**
          * Builds leaf.
          */
-        protected IgfsFileInfo buildLeaf()  {
+        protected IgfsFileInfo buildLeaf(IgniteUuid id)  {
             long t = System.currentTimeMillis();
 
-            return new IgfsFileInfo(true, leafProps, t, t);
+            return new IgfsFileInfo(true, id, leafProps, t, t);
         }
 
         /**
@@ -3698,7 +3744,7 @@ public class IgfsMetaManager extends IgfsManager {
                 if (childName == null) {
                     assert childInfo == null;
 
-                    newLeafInfo = buildLeaf();
+                    newLeafInfo = buildLeaf(reservedIds.get(i - existingIdCnt + 1));
 
                     assert newLeafInfo != null;
 
@@ -3707,7 +3753,7 @@ public class IgfsMetaManager extends IgfsManager {
                 else {
                     assert childInfo != null;
 
-                    newLeafInfo = buildMiddleNode(childName, childInfo);
+                    newLeafInfo = buildMiddleNode(reservedIds.get(i - existingIdCnt + 1), childName, childInfo);
 
                     assert newLeafInfo != null;
 

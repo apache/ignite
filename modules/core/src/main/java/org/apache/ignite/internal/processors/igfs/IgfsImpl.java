@@ -569,16 +569,23 @@ public final class IgfsImpl implements IgfsEx {
     @Override @Nullable public IgfsFile info(final IgfsPath path) {
         A.notNull(path, "path");
 
-        return safeOp(new Callable<IgfsFile>() {
-            @Override public IgfsFile call() throws Exception {
-                if (log.isDebugEnabled())
-                    log.debug("Get file info: " + path);
+        long t = System.currentTimeMillis();
 
-                IgfsMode mode = resolveMode(path);
+        try {
+            return safeOp(new Callable<IgfsFile>() {
+                @Override public IgfsFile call() throws Exception {
+                    if (log.isDebugEnabled())
+                        log.debug("Get file info: " + path);
 
-                return resolveFileInfo(path, mode);
-            }
-        });
+                    IgfsMode mode = resolveMode(path);
+
+                    return resolveFileInfo(path, mode);
+                }
+            });
+        }
+        finally {
+            System.out.println((System.currentTimeMillis() - t) + " info " + path);
+        }
     }
 
     /** {@inheritDoc} */
@@ -658,56 +665,67 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(src, "src");
         A.notNull(dest, "dest");
 
-        safeOp(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                if (log.isDebugEnabled())
-                    log.debug("Rename file [src=" + src + ", dest=" + dest + ']');
+        long t = System.currentTimeMillis();
 
-                IgfsMode mode = resolveMode(src);
+        try {
 
-                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
+            safeOp(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    if (log.isDebugEnabled())
+                        log.debug("Rename file [src=" + src + ", dest=" + dest + ']');
 
-                if (src.equals(dest))
-                    return null; // Rename to itself is a no-op.
+                    IgfsMode mode = resolveMode(src);
 
-                // Cannot rename root directory.
-                if (src.parent() == null)
-                    throw new IgfsInvalidPathException("Root directory cannot be renamed.");
+                    Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
 
-                // Cannot move directory of upper level to self sub-dir.
-                if (dest.isSubDirectoryOf(src))
-                    throw new IgfsInvalidPathException("Failed to rename directory (cannot move directory of " +
-                        "upper level to self sub-dir) [src=" + src + ", dest=" + dest + ']');
+                    if (src.equals(dest))
+                        return null; // Rename to itself is a no-op.
 
-                if (evictExclude(src, mode == PRIMARY) != evictExclude(dest, modeRslvr.resolveMode(dest) == PRIMARY))
-                    throw new IgfsInvalidPathException("Cannot move file to a path with different eviction " +
-                        "exclude setting (need to copy and remove)");
+                    // Cannot rename root directory.
+                    if (src.parent() == null)
+                        throw new IgfsInvalidPathException("Root directory cannot be renamed.");
 
-                if (!childrenModes.equals(Collections.singleton(PRIMARY))) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    // Cannot move directory of upper level to self sub-dir.
+                    if (dest.isSubDirectoryOf(src))
+                        throw new IgfsInvalidPathException("Failed to rename directory (cannot move directory of " +
+                            "upper level to self sub-dir) [src=" + src + ", dest=" + dest + ']');
 
-                    await(src, dest);
+                    if (evictExclude(src, mode == PRIMARY) != evictExclude(dest, modeRslvr.resolveMode(dest) == PRIMARY))
 
-                    meta.renameDual(secondaryFs, src, dest);
+                        throw new IgfsInvalidPathException("Cannot move file to a path with different eviction " +
+                            "exclude setting (need to copy and remove)");
+
+                    if (!childrenModes.equals(Collections.singleton(PRIMARY))) {
+                        assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+
+                        await(src, dest);
+
+                        meta.renameDual(secondaryFs, src, dest);
+
+                        return null;
+                    }
+
+                    IgfsFileInfo info = meta.move(src, dest);
+
+                    int evtTyp = info.isFile() ? EVT_IGFS_FILE_RENAMED : EVT_IGFS_DIR_RENAMED;
+
+                    if (evts.isRecordable(evtTyp))
+                        evts.record(new IgfsEvent(src, info.path(), localNode(), evtTyp));
 
                     return null;
                 }
-
-                IgfsFileInfo info = meta.move(src, dest);
-
-                int evtTyp = info.isFile() ? EVT_IGFS_FILE_RENAMED : EVT_IGFS_DIR_RENAMED;
-
-                if (evts.isRecordable(evtTyp))
-                    evts.record(new IgfsEvent(src, info.path(), localNode(), evtTyp));
-
-                return null;
-            }
-        });
+            });
+        } finally {
+            System.out.println((System.currentTimeMillis() - t) + " rename " + src + " -> " + dest);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean delete(final IgfsPath path, final boolean recursive) {
         A.notNull(path, "path");
+
+        long t = System.currentTimeMillis();
+        try {
 
         return safeOp(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
@@ -746,11 +764,14 @@ public final class IgfsImpl implements IgfsEx {
                 // Record event if needed.
                 if (res && desc != null)
                     IgfsUtils.sendEvents(igfsCtx.kernalContext(), path,
-                            desc.isFile ? EVT_IGFS_FILE_DELETED : EVT_IGFS_DIR_DELETED);
+                        desc.isFile ? EVT_IGFS_FILE_DELETED : EVT_IGFS_DIR_DELETED);
 
                 return res;
             }
         });
+        } finally {
+            System.out.println((System.currentTimeMillis() - t) + " delete " + path);
+        }
     }
 
     /** {@inheritDoc} */
@@ -758,32 +779,40 @@ public final class IgfsImpl implements IgfsEx {
         mkdirs(path, null);
     }
 
+
+
     /** {@inheritDoc} */
     @Override public void mkdirs(final IgfsPath path, @Nullable final Map<String, String> props)  {
         A.notNull(path, "path");
 
-        safeOp(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                if (log.isDebugEnabled())
-                    log.debug("Make directories: " + path);
+        long t = System.currentTimeMillis();
 
-                final Map<String, String> props0 = props == null ? DFLT_DIR_META : new HashMap<>(props);
+        try {
+            safeOp(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    if (log.isDebugEnabled())
+                        log.debug("Make directories: " + path);
 
-                IgfsMode mode = resolveMode(path);
+                    final Map<String, String> props0 = props == null ? DFLT_DIR_META : new HashMap<>(props);
 
-                if (mode == PRIMARY)
-                    meta.mkdirs(path, props0);
-                else {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    IgfsMode mode = resolveMode(path);
 
-                    await(path);
+                    if (mode == PRIMARY)
+                        meta.mkdirs(path, props0);
+                    else {
+                        assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
-                    meta.mkdirsDual(secondaryFs, path, props0);
+                        await(path);
+
+                        meta.mkdirsDual(secondaryFs, path, props0);
+                    }
+
+                    return null;
                 }
-
-                return null;
-            }
-        });
+            });
+        } finally {
+            System.out.println((System.currentTimeMillis() - t) + " mkdirs " + path);
+        }
     }
 
     /** {@inheritDoc} */
@@ -791,100 +820,114 @@ public final class IgfsImpl implements IgfsEx {
     @Override public Collection<IgfsPath> listPaths(final IgfsPath path) {
         A.notNull(path, "path");
 
-        return safeOp(new Callable<Collection<IgfsPath>>() {
-            @Override public Collection<IgfsPath> call() throws Exception {
-                if (log.isDebugEnabled())
-                    log.debug("List directory: " + path);
+        long t = System.currentTimeMillis();
 
-                IgfsMode mode = resolveMode(path);
+        try {
+            return safeOp(new Callable<Collection<IgfsPath>>() {
+                @Override public Collection<IgfsPath> call() throws Exception {
+                    if (log.isDebugEnabled())
+                        log.debug("List directory: " + path);
 
-                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+                    IgfsMode mode = resolveMode(path);
 
-                Collection<String> files = new HashSet<>();
+                    Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
-                if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
-                    assert secondaryFs != null;
+                    Collection<String> files = new HashSet<>();
 
-                    Collection<IgfsPath> children = secondaryFs.listPaths(path);
+                    if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
+                        assert secondaryFs != null;
 
-                    for (IgfsPath child : children)
-                        files.add(child.name());
-                }
+                        Collection<IgfsPath> children = secondaryFs.listPaths(path);
 
-                IgniteUuid fileId = meta.fileId(path);
-
-                if (fileId != null)
-                    files.addAll(meta.directoryListing(fileId).keySet());
-                else if (mode == PRIMARY) {
-                    checkConflictWithPrimary(path);
-
-                    throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
-                }
-
-                return F.viewReadOnly(files, new C1<String, IgfsPath>() {
-                    @Override public IgfsPath apply(String e) {
-                        return new IgfsPath(path, e);
+                        for (IgfsPath child : children)
+                            files.add(child.name());
                     }
-                });
-            }
-        });
+
+                    IgniteUuid fileId = meta.fileId(path);
+
+                    if (fileId != null)
+                        files.addAll(meta.directoryListing(fileId).keySet());
+                    else if (mode == PRIMARY) {
+                        checkConflictWithPrimary(path);
+
+                        throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
+                    }
+
+                    return F.viewReadOnly(files, new C1<String, IgfsPath>() {
+                        @Override public IgfsPath apply(String e) {
+                            return new IgfsPath(path, e);
+                        }
+                    });
+                }
+            });
+        } finally {
+            System.out.println((System.currentTimeMillis() - t) + " listPaths");
+        }
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgfsFile> listFiles(final IgfsPath path) {
         A.notNull(path, "path");
 
-        return safeOp(new Callable<Collection<IgfsFile>>() {
-            @Override public Collection<IgfsFile> call() throws Exception {
-                if (log.isDebugEnabled())
-                    log.debug("List directory details: " + path);
+        long t = System.currentTimeMillis();
 
-                IgfsMode mode = resolveMode(path);
+        try {
 
-                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+            return safeOp(new Callable<Collection<IgfsFile>>() {
+                @Override public Collection<IgfsFile> call() throws Exception {
+                    if (log.isDebugEnabled())
+                        log.debug("List directory details: " + path);
 
-                Collection<IgfsFile> files = new HashSet<>();
+                    IgfsMode mode = resolveMode(path);
 
-                if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
-                    assert secondaryFs != null;
+                    Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
-                    Collection<IgfsFile> children = secondaryFs.listFiles(path);
+                    Collection<IgfsFile> files = new HashSet<>();
 
-                    for (IgfsFile child : children) {
-                        IgfsFileImpl impl = new IgfsFileImpl(child, data.groupBlockSize());
+                    if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
+                        assert secondaryFs != null;
 
-                        files.add(impl);
-                    }
-                }
+                        Collection<IgfsFile> children = secondaryFs.listFiles(path);
 
-                IgniteUuid fileId = meta.fileId(path);
+                        for (IgfsFile child : children) {
+                            IgfsFileImpl impl = new IgfsFileImpl(child, data.groupBlockSize());
 
-                if (fileId != null) {
-                    IgfsFileInfo info = meta.info(fileId);
-
-                    // Handle concurrent deletion.
-                    if (info != null) {
-                        if (info.isFile())
-                            // If this is a file, return its description.
-                            return Collections.<IgfsFile>singleton(new IgfsFileImpl(path, info,
-                                data.groupBlockSize()));
-
-                        // Perform the listing.
-                        for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
-                            IgfsPath p = new IgfsPath(path, e.getKey());
-
-                            files.add(new IgfsFileImpl(p, e.getValue(), data.groupBlockSize()));
+                            files.add(impl);
                         }
                     }
-                } else if (mode == PRIMARY) {
-                    checkConflictWithPrimary(path);
 
-                    throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
+                    IgniteUuid fileId = meta.fileId(path);
+
+                    if (fileId != null) {
+                        IgfsFileInfo info = meta.info(fileId);
+
+                        // Handle concurrent deletion.
+                        if (info != null) {
+                            if (info.isFile())
+                                // If this is a file, return its description.
+                                return Collections.<IgfsFile>singleton(new IgfsFileImpl(path, info,
+                                    data.groupBlockSize()));
+
+                            // Perform the listing.
+                            for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
+                                IgfsPath p = new IgfsPath(path, e.getKey());
+
+                                files.add(new IgfsFileImpl(p, e.getValue(), data.groupBlockSize()));
+                            }
+                        }
+                    }
+                    else if (mode == PRIMARY) {
+                        checkConflictWithPrimary(path);
+
+                        throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
+                    }
+
+                    return files;
                 }
-
-                return files;
-            }
-        });
+            });
+        } finally {
+            System.out.println((System.currentTimeMillis() - t) + " listFiles " + path);
+        }
     }
 
     /** {@inheritDoc} */
@@ -909,48 +952,54 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(bufSize >= 0, "bufSize >= 0");
         A.ensure(seqReadsBeforePrefetch >= 0, "seqReadsBeforePrefetch >= 0");
 
-        return safeOp(new Callable<IgfsInputStreamAdapter>() {
-            @Override public IgfsInputStreamAdapter call() throws Exception {
-                if (log.isDebugEnabled())
-                    log.debug("Open file for reading [path=" + path + ", bufSize=" + bufSize + ']');
+        long t = System.currentTimeMillis();
 
-                int bufSize0 = bufSize == 0 ? cfg.getStreamBufferSize() : bufSize;
+        try {
+            return safeOp(new Callable<IgfsInputStreamAdapter>() {
+                @Override public IgfsInputStreamAdapter call() throws Exception {
+                    if (log.isDebugEnabled())
+                        log.debug("Open file for reading [path=" + path + ", bufSize=" + bufSize + ']');
 
-                IgfsMode mode = resolveMode(path);
+                    int bufSize0 = bufSize == 0 ? cfg.getStreamBufferSize() : bufSize;
 
-                if (mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    IgfsMode mode = resolveMode(path);
 
-                    IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize0);
+                    if (mode != PRIMARY) {
+                        assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
-                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(),
-                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
+                        IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize0);
+
+                        IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(),
+                            cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
+
+                        IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
+
+                        return os;
+                    }
+
+                    IgfsFileInfo info = meta.info(meta.fileId(path));
+
+                    if (info == null) {
+                        checkConflictWithPrimary(path);
+
+                        throw new IgfsPathNotFoundException("File not found: " + path);
+                    }
+
+                    if (!info.isFile())
+                        throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
+
+                    // Input stream to read data from grid cache with separate blocks.
+                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info,
+                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
                     IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
 
                     return os;
                 }
-
-                IgfsFileInfo info = meta.info(meta.fileId(path));
-
-                if (info == null) {
-                    checkConflictWithPrimary(path);
-
-                    throw new IgfsPathNotFoundException("File not found: " + path);
-                }
-
-                if (!info.isFile())
-                    throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
-
-                // Input stream to read data from grid cache with separate blocks.
-                IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info,
-                    cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
-
-                IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
-
-                return os;
-            }
-        });
+            });
+        } finally {
+            System.out.println((System.currentTimeMillis() - t) + " open " + path);
+        }
     }
 
     /** {@inheritDoc} */
@@ -994,53 +1043,60 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
         A.ensure(bufSize >= 0, "bufSize >= 0");
 
-        return safeOp(new Callable<IgfsOutputStream>() {
-            @Override public IgfsOutputStream call() throws Exception {
-                if (log.isDebugEnabled())
-                    log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
-                        overwrite + ", props=" + props + ']');
+        long t = System.currentTimeMillis();
 
-                final IgfsMode mode = resolveMode(path);
+        try {
+            return safeOp(new Callable<IgfsOutputStream>() {
+                @Override public IgfsOutputStream call() throws Exception {
+                    if (log.isDebugEnabled())
+                        log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
+                            overwrite + ", props=" + props + ']');
 
-                IgfsFileWorkerBatch batch;
+                    final IgfsMode mode = resolveMode(path);
 
-                if (mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    IgfsFileWorkerBatch batch;
 
-                    await(path);
+                    if (mode != PRIMARY) {
+                        assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
-                    IgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
-                        props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
+                        await(path);
 
-                    batch = newBatch(path, desc.out());
+                        IgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
+                            props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
 
-                    IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
-                        bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
+                        batch = newBatch(path, desc.out());
 
-                    IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_WRITE);
+                        IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
 
-                    return os;
+                            bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
+
+                        IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_WRITE);
+
+                        return os;
+                    }
+
+                    final Map<String, String> dirProps, fileProps;
+
+                    if (props == null) {
+                        dirProps = DFLT_DIR_META;
+
+                        fileProps = null;
+                    }
+                    else
+                        dirProps = fileProps = new HashMap<>(props);
+
+                    IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = meta.create(path, false/*append*/, overwrite, dirProps,
+                        cfg.getBlockSize(), affKey, evictExclude(path, true), fileProps);
+
+                    assert t2 != null;
+
+                    return new IgfsEventAwareOutputStream(path, t2.get1(), t2.get2(),
+                        bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
                 }
-
-                final Map<String, String> dirProps, fileProps;
-
-                if (props == null) {
-                    dirProps = DFLT_DIR_META;
-
-                    fileProps = null;
-                }
-                else
-                    dirProps = fileProps = new HashMap<>(props);
-
-                IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = meta.create(path, false/*append*/, overwrite, dirProps,
-                    cfg.getBlockSize(), affKey, evictExclude(path, true), fileProps);
-
-                assert t2 != null;
-
-                return new IgfsEventAwareOutputStream(path, t2.get1(), t2.get2(),
-                    bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
-            }
-        });
+            });
+        } finally {
+            System.out.println((System.currentTimeMillis() - t) + " create0 " + path);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1109,7 +1165,7 @@ public final class IgfsImpl implements IgfsEx {
                 assert t2 != null;
 
                 return new IgfsEventAwareOutputStream(path, t2.get1(), t2.get2(),
-                        bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
+                    bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
             }
         });
     }
@@ -1524,7 +1580,7 @@ public final class IgfsImpl implements IgfsEx {
     <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
-        return igfsCtx.kernalContext().task().execute((Class<IgfsTask<T, R>>)taskCls,
+        return igfsCtx.kernalContext().task().execute((Class<IgfsTask<T, R>>) taskCls,
             new IgfsTaskArgsImpl<>(cfg.getName(), paths, rslvr, skipNonExistentFiles, maxRangeLen, arg));
     }
 
@@ -1937,6 +1993,8 @@ public final class IgfsImpl implements IgfsEx {
                 return act.call();
             }
             catch (Exception e) {
+                e.printStackTrace();
+
                 throw IgfsUtils.toIgfsException(e);
             }
             finally {

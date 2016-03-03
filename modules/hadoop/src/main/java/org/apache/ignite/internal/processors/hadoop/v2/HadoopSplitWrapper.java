@@ -70,10 +70,16 @@ public class HadoopSplitWrapper extends HadoopInputSplit {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(id);
+        long t = System.currentTimeMillis();
+        try {
+            out.writeInt(id);
 
-        out.writeUTF(clsName);
-        U.writeByteArray(out, bytes);
+            out.writeUTF(clsName);
+            U.writeByteArray(out, bytes);
+        }
+        finally {
+            System.out.println((System.currentTimeMillis() - t) + " HadoopSplitWrapper-write " + bytes.length + " b");
+        }
     }
 
     /**
@@ -93,10 +99,16 @@ public class HadoopSplitWrapper extends HadoopInputSplit {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = in.readInt();
+        long t = System.currentTimeMillis();
+        try {
+            id = in.readInt();
 
-        clsName = in.readUTF();
-        bytes = U.readByteArray(in);
+            clsName = in.readUTF();
+            bytes = U.readByteArray(in);
+        }
+        finally {
+            System.out.println((System.currentTimeMillis() - t) + " HadoopSplitWrapper-read " + bytes.length + " b");
+        }
     }
 
     /** {@inheritDoc} */

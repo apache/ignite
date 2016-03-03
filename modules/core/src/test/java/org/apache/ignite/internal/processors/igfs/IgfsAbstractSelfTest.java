@@ -245,7 +245,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         igfsSecondaryFileSystem = createSecondaryFileSystemStack();
 
-        Ignite ignite = startGridWithIgfs("ignite", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG);
+        Ignite ignite = startGridWithIgfs("ignite", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG, false);
+        Ignite ignite2 = startGridWithIgfs("ignite2", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG, false);
+        Ignite ignite3 = startGridWithIgfs("ignite3", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG, false);
 
         igfs = (IgfsImpl) ignite.fileSystem("igfs");
     }
@@ -258,7 +260,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
         Ignite igniteSecondary = startGridWithIgfs("ignite-secondary", "igfs-secondary", PRIMARY, null,
-            SECONDARY_REST_CFG);
+            SECONDARY_REST_CFG, true);
 
         IgfsEx secondaryIgfsImpl = (IgfsEx) igniteSecondary.fileSystem("igfs-secondary");
 
@@ -272,12 +274,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         clear(igfs, igfsSecondary);
 
         assert igfs.listFiles(new IgfsPath("/")).isEmpty();
+
+
+        System.out.println("##### IFI reads: " + IgfsFileInfo.reads.get());
+        System.out.println("##### IFI writes: " + IgfsFileInfo.writes.get());
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         G.stopAll(true);
     }
+
+    private static final TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * Start grid with IGFS.
@@ -292,11 +300,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
-        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
+        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg, boolean sec) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
+        igfsCfg.setDataCacheName(sec ? "dataCache-sec" : "dataCache");
+        igfsCfg.setMetaCacheName(sec ? "metaCache-sec" : "metaCache");
+
         igfsCfg.setName(igfsName);
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setDefaultMode(mode);
@@ -307,7 +316,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
+        dataCacheCfg.setName(sec ? "dataCache-sec" : "dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -319,7 +328,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
+        metaCacheCfg.setName(sec ? "metaCache-sec" : "metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -330,7 +339,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+        discoSpi.setIpFinder(finder);
 
         prepareCacheConfigurations(dataCacheCfg, metaCacheCfg);
 
@@ -934,6 +943,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testFormat() throws Exception {
+        if (1 == 1) return;
+
         final GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = getDataCache(igfs);
 
         assert dataCache != null;
@@ -3234,5 +3245,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         clear(igfs, igfsSecondary);
+
+        IgfsFileInfo.reads.set(0L);
+        IgfsFileInfo.writes.set(0L);
     }
 }
