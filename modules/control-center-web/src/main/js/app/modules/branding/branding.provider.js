@@ -16,6 +16,8 @@
  */
 
 export default ['IgniteBranding', [function() {
+    let titleSuffix = ' – Apache Ignite Web Console';
+
     let headerLogo = '/images/ignite-logo.png';
 
     let headerText = 'Management console for Apache Ignite';
@@ -38,6 +40,15 @@ export default ['IgniteBranding', [function() {
         '   <li>Connect to cluster and run SQL analytics on it</li>',
         '</ul>'
     ];
+
+    /**
+     * Change title suffix.
+     *
+     * @param {String} suffix.
+     */
+    this.titleSuffix = (suffix) => {
+        titleSuffix = suffix;
+    };
 
     /**
      * Change logo in header.
@@ -88,6 +99,7 @@ export default ['IgniteBranding', [function() {
 
     this.$get = [() => {
         return {
+            titleSuffix,
             headerLogo,
             headerText,
             featuresHtml: featuresHtml.join('\n'),

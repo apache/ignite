@@ -28,9 +28,9 @@ angular
         url: '/profile',
         templateUrl: '/settings/profile.html',
         resolve: {
-            $title: () => {
-                return 'User profile';
-            }
+            $title: ['IgniteBranding', (branding) => {
+                return 'User profile' + branding.titleSuffix;
+            }]
         }
     });
 }]);

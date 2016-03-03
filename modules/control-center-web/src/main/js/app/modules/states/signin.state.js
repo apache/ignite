@@ -30,9 +30,9 @@ angular
         url: '/signin',
         templateUrl: '/signin.html',
         resolve: {
-            $title: () => {
-                return 'Sign In';
-            }
+            $title: ['IgniteBranding', (branding) => {
+                return 'Management Tool and Configuration Wizard for Apache Ignite' + branding.titleSuffix;
+            }]
         }
     });
 }])

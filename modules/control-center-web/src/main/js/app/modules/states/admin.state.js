@@ -28,9 +28,9 @@ angular
         url: '/admin',
         templateUrl: '/settings/admin.html',
         resolve: {
-            $title: () => {
-                return 'List of registered users';
-            }
+            $title: ['IgniteBranding', (branding) => {
+                return 'List of registered users' + branding.titleSuffix;
+            }]
         }
     });
 }]);

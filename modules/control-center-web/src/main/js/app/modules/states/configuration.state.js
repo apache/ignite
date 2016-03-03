@@ -112,9 +112,9 @@ angular
             loading: 'Loading clusters screen...'
         },
         resolve: {
-            $title: () => {
-                return 'Configure Clusters';
-            }
+            $title: ['IgniteBranding', (branding) => {
+                return 'Configure Clusters' + branding.titleSuffix;
+            }]
         }
     })
     .state('base.configuration.caches', {
@@ -127,9 +127,9 @@ angular
             loading: 'Loading caches screen...'
         },
         resolve: {
-            $title: () => {
-                return 'Configure Caches';
-            }
+            $title: ['IgniteBranding', (branding) => {
+                return 'Configure Caches' + branding.titleSuffix;
+            }]
         }
     })
     .state('base.configuration.domains', {
@@ -142,9 +142,9 @@ angular
             loading: 'Loading domain models screen...'
         },
         resolve: {
-            $title: () => {
-                return 'Configure Domain Model';
-            }
+            $title: ['IgniteBranding', (branding) => {
+                return 'Configure Domain Model' + branding.titleSuffix;
+            }]
         }
     })
     .state('base.configuration.igfs', {
@@ -157,9 +157,9 @@ angular
             loading: 'Loading IGFS screen...'
         },
         resolve: {
-            $title: () => {
-                return 'Configure IGFS';
-            }
+            $title: ['IgniteBranding', (branding) => {
+                return 'Configure IGFS' + branding.titleSuffix;
+            }]
         }
     })
     .state('base.configuration.summary', {
@@ -171,9 +171,9 @@ angular
             loading: 'Loading summary screen...'
         },
         resolve: {
-            $title: () => {
-                return 'Configurations Summary';
-            }
+            $title: ['IgniteBranding', (branding) => {
+                return 'Configurations Summary' + branding.titleSuffix;
+            }]
         }
     });
 }]);

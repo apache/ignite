@@ -36,9 +36,9 @@ angular
             loading: 'Loading notebook screen...'
         },
         resolve: {
-            $title: () => {
-                return 'Query notebook';
-            }
+            $title: ['IgniteBranding', (branding) => {
+                return 'Query notebook' + branding.titleSuffix;
+            }]
         }
     })
     .state('base.sql.demo', {
@@ -48,9 +48,9 @@ angular
             loading: 'Enable SQL demo...'
         },
         resolve: {
-            $title: () => {
-                return 'SQL demo';
-            }
+            $title: ['IgniteBranding', (branding) => {
+                return 'SQL demo' + branding.titleSuffix;
+            }]
         }
     });
 }]);
