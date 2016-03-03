@@ -68,6 +68,18 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary>
         /// Initializes a new instance of the <see cref="TransactionOptimisticException"/> class.
         /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="javaStackTrace">The Java stack trace.</param>
+        /// <param name="cause">The cause.</param>
+        public TransactionOptimisticException(string message, string javaStackTrace, Exception cause) 
+            : base(message, javaStackTrace, cause)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TransactionOptimisticException"/> class.
+        /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="ctx">Streaming context.</param>
         protected TransactionOptimisticException(SerializationInfo info, StreamingContext ctx)

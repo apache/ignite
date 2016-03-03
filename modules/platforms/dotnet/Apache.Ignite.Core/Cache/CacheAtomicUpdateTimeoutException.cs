@@ -67,6 +67,18 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheAtomicUpdateTimeoutException"/> class.
         /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="javaStackTrace">The Java stack trace.</param>
+        /// <param name="cause">The cause.</param>
+        public CacheAtomicUpdateTimeoutException(string message, string javaStackTrace, Exception cause) 
+            : base(message, javaStackTrace, cause)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheAtomicUpdateTimeoutException"/> class.
+        /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="ctx">Streaming context.</param>
         protected CacheAtomicUpdateTimeoutException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)
