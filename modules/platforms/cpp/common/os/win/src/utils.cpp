@@ -17,6 +17,8 @@
 
 #include <windows.h>
 
+#include <time.h>
+
 #include <ignite/common/utils.h>
 
 namespace ignite
@@ -288,6 +290,18 @@ namespace ignite
 
                 // 3. Return.
                 return res;
+            }
+
+            time_t IgniteTimeGm(const tm& time)
+            {
+                tm tmc = time;
+
+                return _mkgmtime(&tmc);
+            }
+
+            bool IgniteGmTime(time_t in, tm& out)
+            {
+                return gmtime_s(&out, &in) == 0;
             }
 
             char* CopyChars(const char* val)

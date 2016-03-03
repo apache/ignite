@@ -296,6 +296,18 @@ namespace ignite
                 return res;
             }
 
+            time_t IgniteTimeGm(const tm& time)
+            {
+                tm tmc = time;
+
+                return timegm(&tmc);
+            }
+
+            bool IgniteGmTime(time_t in, tm& out)
+            {
+                return gmtime_r(&in, &out) != NULL;
+            }
+
             char* CopyChars(const char* val)
             {
                 if (val) {

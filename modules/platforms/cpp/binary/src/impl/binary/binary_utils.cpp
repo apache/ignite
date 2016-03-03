@@ -17,6 +17,8 @@
 
 #include <time.h>
 
+#include "ignite/common/utils.h"
+
 #include "ignite/impl/interop/interop.h"
 #include "ignite/impl/binary/binary_utils.h"
 
@@ -249,14 +251,14 @@ namespace ignite
             {
                 time_t tmt = DateToCTime(date);
 
-                return gmtime_r(&tmt, &ctime) != NULL;
+                return common::utils::IgniteGmTime(tmt, ctime);
             }
 
             bool BinaryUtils::TimestampToCTm(const Timestamp& ts, tm& ctime)
             {
                 time_t tmt = TimestampToCTime(ts);
 
-                return gmtime_r(&tmt, &ctime) != NULL;
+                return common::utils::IgniteGmTime(tmt, ctime);
             }
 
             Date BinaryUtils::CTimeToDate(time_t ctime)
@@ -271,16 +273,16 @@ namespace ignite
 
             Date BinaryUtils::CTmToDate(const tm& ctime)
             {
-                tm tmc = ctime;
+                time_t time = common::utils::IgniteTimeGm(ctime);
 
-                return CTimeToDate(timegm(&tmc));
+                return CTimeToDate(time);
             }
 
             Timestamp BinaryUtils::CTmToTimestamp(const tm& ctime, int32_t ns)
             {
-                tm tmc = ctime;
+                time_t time = common::utils::IgniteTimeGm(ctime);
 
-                return CTimeToTimestamp(timegm(&tmc), ns);
+                return CTimeToTimestamp(time, ns);
             }
 
             Date BinaryUtils::MakeDate(int year, int month, int day, int hour,

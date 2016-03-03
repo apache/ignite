@@ -84,6 +84,23 @@ namespace ignite
             }
 
             /**
+             * Convert struct tm to time_t (UTC).
+             *
+             * @param time Standard C type struct tm value.
+             * @return Standard C type time_t value.
+             */
+            IGNITE_IMPORT_EXPORT time_t IgniteTimeGm(const tm& time);
+
+            /**
+             * Convert time_t to struct tm (UTC).
+             *
+             * @param in Standard C type time_t value.
+             * @param out Standard C type struct tm value.
+             * @return True on success.
+             */
+            IGNITE_IMPORT_EXPORT bool IgniteGmTime(time_t in, tm& out);
+
+            /**
              * Copy characters.
              *
              * @param val Value.
