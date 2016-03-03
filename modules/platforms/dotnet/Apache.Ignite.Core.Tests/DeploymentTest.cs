@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#pragma warning disable 649
+#pragma warning disable 169
 #pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
@@ -24,6 +26,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>
@@ -166,10 +169,16 @@ namespace Apache.Ignite.Core.Tests
         [Serializable]
         private class ProcessPathFunc : IComputeFunc<string>
         {
+            [InstanceResource]
+            private IIgnite _ignite;
+
             /** <inheritdoc /> */
             public string Invoke()
             {
-                return typeof(IgniteRunner).Assembly.Location;
+                // Should be null
+                var igniteHome = _ignite.GetConfiguration().IgniteHome;
+
+                return typeof(IgniteRunner).Assembly.Location + igniteHome;
             }
         }
     }
