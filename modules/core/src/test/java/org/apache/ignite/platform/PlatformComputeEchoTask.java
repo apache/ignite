@@ -128,7 +128,7 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
          *
          * @param type Result type.
          */
-        public EchoJob(Integer type) {
+        private EchoJob(Integer type) {
             this.type = type;
         }
 
@@ -154,7 +154,7 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                     return 1;
 
                 case TYPE_LONG:
-                    return (long)1;
+                    return 1L;
 
                 case TYPE_FLOAT:
                     return (float)1;
