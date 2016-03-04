@@ -46,8 +46,7 @@ namespace Apache.Ignite.Core.Tests
             // Copy jars
             var home = IgniteHome.Resolve(null);
 
-            // TODO: This does not copy Spring on TC!
-            var jarNames = new[] {@"\ignite-core-", @"\cache-api-1.0.0.jar", @"\ignite-spring\" };
+            var jarNames = new[] {@"\ignite-core-", @"\cache-api-1.0.0.jar", @"\modules\spring\" };
 
             var jars = Directory.GetFiles(home, "*.jar", SearchOption.AllDirectories)
                 .Where(jarPath => jarNames.Any(jarPath.Contains)).ToArray();
