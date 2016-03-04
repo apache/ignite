@@ -20,13 +20,17 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -39,9 +43,12 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import java.io.Serializable;
 import java.util.Map;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Checks whether storing to local store doesn't cause binary objects unmarshalling,
@@ -66,6 +73,16 @@ public class GridCacheStreamLocalStoreTest extends GridCommonAbstractTest {
         return CacheMode.PARTITIONED;
     }
 
+    /** Cache write order mode. */
+    protected CacheAtomicWriteOrderMode cacheAtomicWriteOrderMode() {
+        return CacheAtomicWriteOrderMode.PRIMARY;
+    }
+
+    /** Cache synchronization mode. */
+    private CacheWriteSynchronizationMode cacheWriteSynchronizationMode() {
+        return CacheWriteSynchronizationMode.PRIMARY_SYNC;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
@@ -82,9 +99,15 @@ public class GridCacheStreamLocalStoreTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
+        c.setCacheConfiguration(cacheConfiguration());
+
+        return c;
+    }
+
+    /** Cache configuration */
+    protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setSwapEnabled(false);
         cc.setRebalanceMode(SYNC);
 
@@ -95,12 +118,19 @@ public class GridCacheStreamLocalStoreTest extends GridCommonAbstractTest {
         cc.setStoreKeepBinary(true);
 
         cc.setCacheMode(cacheMode());
+        cc.setAtomicWriteOrderMode(cacheAtomicWriteOrderMode());
+        cc.setWriteSynchronizationMode(cacheWriteSynchronizationMode());
+
+        cc.setBackups(0);
 
         cc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
-        c.setCacheConfiguration(cc);
+        return cc;
+    }
 
-        return c;
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        store.map.clear();
     }
 
     /** {@inheritDoc} */
@@ -129,6 +159,47 @@ public class GridCacheStreamLocalStoreTest extends GridCommonAbstractTest {
 
         assert testObj.equals(cache2.get(testObj));
         assert store.map.containsKey(testObj);
+    }
+
+    /**
+     * Simulate case where is called
+     * {@link org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry#clearInternal(
+     * GridCacheVersion, boolean, GridCacheObsoleteEntryExtras)}
+     *
+     * @throws Exception
+     */
+    public void testPartitionMove() throws Exception {
+        final Ignite grid = startGrid("binaryGrid1");
+
+        grid.createCache(CACHE_NAME);
+
+        final BinaryObjectBuilder builder = grid.binary().builder("custom_type");
+
+        final IgniteDataStreamer<BinaryObject, BinaryObject> streamer = grid.dataStreamer(CACHE_NAME);
+
+        streamer.keepBinary(true);
+
+        final int itemsNum = 10_000;
+
+        for (int i = 0; i < itemsNum; i++) {
+            final BinaryObject key = builder.setField("id", i).build();
+
+            streamer.addData(key, key);
+        }
+
+        streamer.close();
+
+        streamer.future().get();
+
+        assert store.map.size() == itemsNum;
+
+        startGrid("binaryGrid2");
+        startGrid("binaryGrid3");
+        startGrid("binaryGrid4");
+
+        Thread.sleep(10_000);
+
+        assert store.map.size() == 0; // tested method removes items from store
     }
 
     /**
