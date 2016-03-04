@@ -494,7 +494,7 @@ public class WebSessionFilter implements Filter {
 
         /** {@inheritDoc} */
         @Override public HttpSession getSession(boolean create) {
-            if (cache.get(ses.getId()) == null) {
+            if (!ses.isValid()) {
                 if (create) {
                     this.ses = createSession((HttpServletRequest)getRequest());
                     this.ses.servletContext(ctx);

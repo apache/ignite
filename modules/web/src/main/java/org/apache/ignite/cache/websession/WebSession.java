@@ -160,6 +160,15 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /**
+     * Checks if the session is valid.
+     *
+     * @return True is valid, otherwise false.
+     */
+    protected boolean isValid() {
+        return this.isValid;
+    }
+
+    /**
      * Resets updates list.
      */
     public void resetUpdates() {
