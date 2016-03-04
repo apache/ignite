@@ -106,13 +106,13 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public static void VisitMethodCall(MethodCallExpression expression, CacheQueryExpressionVisitor visitor)
         {
-            var method = expression.Method;
+            var mtd = expression.Method;
 
             VisitMethodDelegate del;
 
-            if (!Delegates.TryGetValue(method, out del))
+            if (!Delegates.TryGetValue(mtd, out del))
                 throw new NotSupportedException(string.Format("Method not supported: {0}.({1})",
-                    method.DeclaringType == null ? "static" : method.DeclaringType.FullName, method));
+                    mtd.DeclaringType == null ? "static" : mtd.DeclaringType.FullName, mtd));
 
             del(expression, visitor);
         }

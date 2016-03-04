@@ -46,9 +46,9 @@ namespace Apache.Ignite.Linq.Impl
         {
             var transformerRegistry = ExpressionTransformerRegistry.CreateDefault();
 
-            var processor = new TransformingExpressionTreeProcessor(transformerRegistry);
+            var proc = new TransformingExpressionTreeProcessor(transformerRegistry);
 
-            var parser = new ExpressionTreeParser(ExpressionTreeParser.CreateDefaultNodeTypeProvider(), processor);
+            var parser = new ExpressionTreeParser(ExpressionTreeParser.CreateDefaultNodeTypeProvider(), proc);
 
             return new QueryParser(parser);
         }
