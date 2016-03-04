@@ -946,8 +946,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(count, cache.AsCacheQueryable(false).ToArray().Length);
 
             // Local query returns only some of the records
-            Assert.Less(count/2, cache.AsCacheQueryable(true).ToArray().Length);
-            Assert.Greater(count, cache.AsCacheQueryable(true).ToArray().Length);
+            var localCount = cache.AsCacheQueryable(true).ToArray().Length;
+            Assert.Less(localCount, count);
+            Assert.Greater(localCount, 0);
         }
 
         /// <summary>
