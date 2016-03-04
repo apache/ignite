@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -163,6 +164,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
     /** Keep binary. */
     private final boolean keepBinary;
+
+    private final AtomicInteger counter = new AtomicInteger();
 
     /**
      * @param cctx Cache context.
@@ -544,14 +547,14 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * @return Mini future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (futs) {
             // Avoid iterator creation.
             for (int i = 0; i < futs.size(); i++) {
                 MiniFuture mini = (MiniFuture)futs.get(i);
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.miniId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -860,7 +863,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                         inTx() ? tx.nearXidVersion() : null,
                         threadId,
                         futId,
-                        fut.futureId(),
+                        fut.miniId(),
                         lockVer,
                         topVer,
                         inTx(),
@@ -1108,7 +1111,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int miniId = counter.incrementAndGet();
 
         /** Node. */
         @GridToStringExclude
@@ -1132,8 +1135,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
-            return futId;
+        int miniId() {
+            return miniId;
         }
 
         /**

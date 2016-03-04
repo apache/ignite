@@ -39,7 +39,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     private static final long serialVersionUID = 0L;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** Explicit lock flag. */
     private boolean explicitLock;
@@ -146,14 +146,14 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
     /**
      * @param miniId Mini future ID.
      */
-    public void miniId(IgniteUuid miniId) {
+    public void miniId(int miniId) {
         this.miniId = miniId;
     }
 
@@ -200,7 +200,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -254,7 +254,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 19:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;

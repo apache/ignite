@@ -29,7 +29,7 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteSemaphore;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponseV1;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -202,7 +202,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
         srvAtomicSeq.batchSize(1);
 
-        commSpi.blockMessage(GridNearLockResponse.class);
+        commSpi.blockMessage(GridNearLockResponseV1.class);
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -362,7 +362,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
         BlockTpcCommunicationSpi servCommSpi = commSpi(srv);
 
-        servCommSpi.blockMessage(GridNearLockResponse.class);
+        servCommSpi.blockMessage(GridNearLockResponseV1.class);
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -522,7 +522,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
         BlockTpcCommunicationSpi servCommSpi = commSpi(srv);
 
-        servCommSpi.blockMessage(GridNearLockResponse.class);
+        servCommSpi.blockMessage(GridNearLockResponseV1.class);
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -654,7 +654,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
         final IgniteAtomicLong srvAtomicLong = srv.atomicLong("atomicLongInProggress", 0, false);
 
-        commSpi.blockMessage(GridNearLockResponse.class);
+        commSpi.blockMessage(GridNearLockResponseV1.class);
 
         final IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {

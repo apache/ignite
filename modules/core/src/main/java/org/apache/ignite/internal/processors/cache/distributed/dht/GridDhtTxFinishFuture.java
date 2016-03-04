@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -92,6 +93,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
     /** Trackable flag. */
     private boolean trackable = true;
+
+    private final AtomicInteger counter = new AtomicInteger();
 
     /**
      * @param cctx Context.
@@ -190,7 +193,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
-                    if (f.futureId().equals(res.miniId())) {
+                    if (f.miniId() == res.miniId()) {
                         assert f.node().id().equals(nodeId);
 
                         f.onResult(res);
@@ -294,7 +297,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
                 futId,
-                fut.futureId(),
+                fut.miniId(),
                 tx.topologyVersion(),
                 tx.xidVersion(),
                 tx.commitVersion(),
@@ -377,7 +380,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                 tx.nearNodeId(),
                 futId,
-                fut.futureId(),
+                fut.miniId(),
                 tx.topologyVersion(),
                 tx.xidVersion(),
                 tx.commitVersion(),
@@ -432,7 +435,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 GridDhtTxFinishRequest req = new GridDhtTxFinishRequest(
                     tx.nearNodeId(),
                     futId,
-                    fut.futureId(),
+                    fut.miniId(),
                     tx.topologyVersion(),
                     tx.xidVersion(),
                     tx.commitVersion(),
@@ -503,7 +506,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int miniId = counter.incrementAndGet();
 
         /** DHT mapping. */
         @GridToStringInclude
@@ -538,8 +541,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
-            return futId;
+        int miniId() {
+            return miniId;
         }
 
         /**

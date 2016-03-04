@@ -50,8 +50,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequestV1;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponseV1;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
@@ -484,13 +484,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             case 51: {
-                GridNearLockRequest req = (GridNearLockRequest)msg;
+                GridNearLockRequestV1 req = (GridNearLockRequestV1)msg;
 
-                GridNearLockResponse res = new GridNearLockResponse(
+                GridNearLockResponseV1 res = new GridNearLockResponseV1(
                     ctx.cacheId(),
                     req.version(),
                     req.futureId(),
-                    req.miniId(),
+                    req.oldVersionMiniId(),
                     false,
                     0,
                     req.classError(),

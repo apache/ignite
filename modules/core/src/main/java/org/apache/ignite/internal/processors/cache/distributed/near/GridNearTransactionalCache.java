@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -94,8 +95,14 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearLockResponse.class, new CI2<UUID, GridNearLockResponse>() {
-            @Override public void apply(UUID nodeId, GridNearLockResponse res) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearLockResponseV1.class, new CI2<UUID, GridNearLockResponseV1>() {
+            @Override public void apply(UUID nodeId, GridNearLockResponseV1 res) {
+                processLockResponse(nodeId, res);
+            }
+        });
+
+        ctx.io().addHandler(ctx.cacheId(), GridNearLockResponseV2.class, new CI2<UUID, GridNearLockResponseV2>() {
+            @Override public void apply(UUID nodeId, GridNearLockResponseV2 res) {
                 processLockResponse(nodeId, res);
             }
         });

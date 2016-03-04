@@ -49,7 +49,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     private IgniteUuid futId;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** Near mapping flag. */
     private boolean near;
@@ -175,14 +175,14 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
     /**
      * @param miniId Mini future ID.
      */
-    public void miniId(IgniteUuid miniId) {
+    public void miniId(int miniId) {
         this.miniId = miniId;
     }
 
@@ -319,7 +319,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 29:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -419,7 +419,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 29:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;

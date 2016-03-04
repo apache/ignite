@@ -55,7 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransa
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponseV1;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -150,8 +150,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearLockResponse.class, new CI2<UUID, GridNearLockResponse>() {
-            @Override public void apply(UUID nodeId, GridNearLockResponse res) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearLockResponseV1.class, new CI2<UUID, GridNearLockResponseV1>() {
+            @Override public void apply(UUID nodeId, GridNearLockResponseV1 res) {
                 processLockResponse(nodeId, res);
             }
         });
@@ -1076,7 +1076,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param nodeId Node ID.
      * @param res Response.
      */
-    private void processLockResponse(UUID nodeId, GridNearLockResponse res) {
+    private void processLockResponse(UUID nodeId, GridNearLockResponseV1 res) {
         assert nodeId != null;
         assert res != null;
 

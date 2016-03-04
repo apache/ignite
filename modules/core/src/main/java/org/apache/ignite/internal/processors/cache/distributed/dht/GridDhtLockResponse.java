@@ -52,7 +52,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     private Collection<IgniteTxKey> nearEvicted;
 
     /** Mini ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** Invalid partitions. */
     @GridToStringInclude
@@ -77,11 +77,9 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param cnt Key count.
      * @param addDepInfo Deployment info.
      */
-    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId, int cnt,
+    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, int miniId, int cnt,
         boolean addDepInfo) {
         super(cacheId, lockVer, futId, cnt, addDepInfo);
-
-        assert miniId != null;
 
         this.miniId = miniId;
     }
@@ -93,11 +91,9 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param err Error.
      * @param addDepInfo
      */
-    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId,
+    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, int miniId,
         Throwable err, boolean addDepInfo) {
         super(cacheId, lockVer, futId, err, addDepInfo);
-
-        assert miniId != null;
 
         this.miniId = miniId;
     }
@@ -119,7 +115,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
@@ -211,7 +207,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -253,7 +249,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 11:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;

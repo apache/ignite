@@ -82,8 +82,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequestV1;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequestV2;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponseV1;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponseV2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
@@ -417,12 +419,12 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 51:
-                msg = new GridNearLockRequest();
+                msg = new GridNearLockRequestV1();
 
                 break;
 
             case 52:
-                msg = new GridNearLockResponse();
+                msg = new GridNearLockResponseV1();
 
                 break;
 
@@ -723,6 +725,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 124:
                 msg = new GridMessageCollection<>();
+
+                break;
+
+            case 125:
+                msg = new GridNearLockRequestV2();
+
+                break;
+
+            case 126:
+                msg = new GridNearLockResponseV2();
 
                 break;
 
