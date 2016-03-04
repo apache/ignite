@@ -128,7 +128,7 @@ public class GridDhtPartitionDemanderAssertionTest  extends GridCommonAbstractTe
 
         grid.createCache(CACHE_NAME).withKeepBinary();
 
-        final BinaryObjectBuilder builder = grid.binary().builder("custom_type");
+        final BinaryObjectBuilder builder = grid.binary().builder(TestObj.class.getName());
 
         final IgniteDataStreamer<BinaryObject, BinaryObject> streamer = grid.dataStreamer(CACHE_NAME);
 
@@ -146,7 +146,17 @@ public class GridDhtPartitionDemanderAssertionTest  extends GridCommonAbstractTe
         startGrid("binaryGrid3");
         startGrid("binaryGrid4");
 
-        Thread.sleep(60_000);
+        Thread.sleep(20_000);
+    }
+
+    /** */
+    private static class TestObj {
+        /** */
+        private int id;
+
+        public TestObj(final int id) {
+            this.id = id;
+        }
     }
 
 
