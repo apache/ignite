@@ -166,6 +166,7 @@ angular
         });
 
     $urlRouterProvider.when('/', '/signin');
+    $urlRouterProvider.otherwise("/signin");
 
     $locationProvider.html5Mode(true);
 }])
