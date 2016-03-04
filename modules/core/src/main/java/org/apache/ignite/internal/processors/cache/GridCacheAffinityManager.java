@@ -182,11 +182,11 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         return aff.calculate(topVer, discoEvt);
     }
 
-    public void pendingAssignment(List<List<ClusterNode>> assignment) {
+    public void idealAssignment(List<List<ClusterNode>> assignment) {
         pendingAssignment = assignment;
     }
 
-    public List<List<ClusterNode>> pendingAssignment() {
+    public List<List<ClusterNode>> idealAssignment() {
         return pendingAssignment;
     }
 

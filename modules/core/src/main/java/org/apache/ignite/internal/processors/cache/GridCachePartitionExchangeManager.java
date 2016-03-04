@@ -985,7 +985,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     refreshPartitions();
             }
             else
-                exchangeFuture(msg.exchangeId(), null, null, null).onReceive(node.id(), msg);
+                exchangeFuture(msg.exchangeId(), null, null, null).onReceive(node, msg);
         }
         finally {
             leaveBusy();
@@ -1047,12 +1047,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     exchFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                         @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                             // Finished future should reply only to sender client node.
-                            exchFut.onReceive(node.id(), msg);
+                            exchFut.onReceive(node, msg);
                         }
                     });
                 }
                 else
-                    exchangeFuture(msg.exchangeId(), null, null, null).onReceive(node.id(), msg);
+                    exchangeFuture(msg.exchangeId(), null, null, null).onReceive(node, msg);
             }
         }
         finally {

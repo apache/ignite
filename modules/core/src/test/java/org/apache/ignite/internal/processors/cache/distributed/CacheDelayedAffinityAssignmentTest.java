@@ -90,6 +90,10 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testDelayedAffinityAssignment0() throws Exception {
         startGrid(0);
+
+        startGrid(1);
+
+        Thread.sleep(10_000);
     }
 
     /**

@@ -186,6 +186,7 @@ public class GridAffinityAssignmentCache {
         if (it.hasNext())
             prevVer = it.next();
 
+        // TODO GG-10885: use previous ideal assignment.
         GridAffinityAssignment prev = prevVer == null ? null : affCache.get(prevVer);
 
         List<ClusterNode> sorted;

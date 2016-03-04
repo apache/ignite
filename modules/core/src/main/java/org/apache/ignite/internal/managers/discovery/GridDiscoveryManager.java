@@ -2538,8 +2538,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             for (ClusterNode node : allNodes) {
                 assert node.order() != 0 : "Invalid node order [locNode=" + loc + ", node=" + node + ']';
+                assert !node.isDaemon();
 
-                if (!node.isDaemon() && !CU.clientNode(node))
+                if (!CU.clientNode(node))
                     srvNodes.add(node);
 
                 if (node.order() > maxOrder0)
