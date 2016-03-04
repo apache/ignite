@@ -33,6 +33,9 @@ import org.apache.ignite.internal.util.worker.GridWorker;
  * <b>Note</b>: this class is intended for internal use only.
  */
 public class IgniteThread extends Thread {
+    /** Index for unassigned thread. */
+    public static final int GRP_IDX_UNASSIGNED = -1;
+
     /** Default thread's group. */
     private static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite");
 
@@ -42,13 +45,16 @@ public class IgniteThread extends Thread {
     /** The name of the grid this thread belongs to. */
     protected final String gridName;
 
+    /** Group index. */
+    private final int grpIdx;
+
     /**
      * Creates thread with given worker.
      *
      * @param worker Runnable to create thread with.
      */
     public IgniteThread(GridWorker worker) {
-        this(DFLT_GRP, worker.gridName(), worker.name(), worker);
+        this(DFLT_GRP, worker.gridName(), worker.name(), worker, GRP_IDX_UNASSIGNED);
     }
 
     /**
@@ -59,7 +65,19 @@ public class IgniteThread extends Thread {
      * @param r Runnable to execute.
      */
     public IgniteThread(String gridName, String threadName, Runnable r) {
-        this(DFLT_GRP, gridName, threadName, r);
+        this(gridName, threadName, r, GRP_IDX_UNASSIGNED);
+    }
+
+    /**
+     * Creates grid thread with given name for a given grid.
+     *
+     * @param gridName Name of grid this thread is created for.
+     * @param threadName Name of thread.
+     * @param r Runnable to execute.
+     * @param grpIdx Index within a group.
+     */
+    public IgniteThread(String gridName, String threadName, Runnable r, int grpIdx) {
+        this(DFLT_GRP, gridName, threadName, r, grpIdx);
     }
 
     /**
@@ -70,11 +88,13 @@ public class IgniteThread extends Thread {
      * @param gridName Name of grid this thread is created for.
      * @param threadName Name of thread.
      * @param r Runnable to execute.
+     * @param grpIdx Thread index within a group.
      */
-    public IgniteThread(ThreadGroup grp, String gridName, String threadName, Runnable r) {
+    public IgniteThread(ThreadGroup grp, String gridName, String threadName, Runnable r, int grpIdx) {
         super(grp, r, createName(cntr.incrementAndGet(), threadName, gridName));
 
         this.gridName = gridName;
+        this.grpIdx = grpIdx;
     }
 
     /**
@@ -86,6 +106,7 @@ public class IgniteThread extends Thread {
         super(threadGrp, threadName);
 
         this.gridName = gridName;
+        this.grpIdx = GRP_IDX_UNASSIGNED;
     }
 
     /**
@@ -95,6 +116,13 @@ public class IgniteThread extends Thread {
      */
     public String getGridName() {
         return gridName;
+    }
+
+    /**
+     * @return Group index.
+     */
+    public int groupIndex() {
+        return grpIdx;
     }
 
     /**
