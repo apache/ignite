@@ -303,9 +303,21 @@ namespace ignite
                 return timegm(&tmc);
             }
 
+            time_t IgniteTimeLocal(const tm& time)
+            {
+                tm tmc = time;
+
+                return mktime(&tmc);
+            }
+
             bool IgniteGmTime(time_t in, tm& out)
             {
                 return gmtime_r(&in, &out) != NULL;
+            }
+
+            bool IgniteLocalTime(time_t in, tm& out)
+            {
+                return localtime_r(&in, &out) == 0;
             }
 
             char* CopyChars(const char* val)

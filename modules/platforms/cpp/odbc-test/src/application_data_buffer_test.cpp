@@ -344,7 +344,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToString)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
 
-    Date date = BinaryUtils::MakeDate(1999, 2, 22);
+    Date date = BinaryUtils::MakeDateGmt(1999, 2, 22);
 
     appBuf.PutDate(date);
 
@@ -358,7 +358,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
 
-    Timestamp date = BinaryUtils::MakeTimestamp(2018, 11, 1, 17, 45, 59);
+    Timestamp date = BinaryUtils::MakeTimestampGmt(2018, 11, 1, 17, 45, 59);
 
     appBuf.PutTimestamp(date);
 
@@ -375,7 +375,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToDate)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
 
-    Date date = BinaryUtils::MakeDate(1984, 5, 27);
+    Date date = BinaryUtils::MakeDateGmt(1984, 5, 27);
 
     appBuf.PutDate(date);
 
@@ -394,7 +394,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToDate)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
 
-    Timestamp ts = BinaryUtils::MakeTimestamp(2004, 8, 14, 6, 34, 51, 573948623);
+    Timestamp ts = BinaryUtils::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
 
     appBuf.PutTimestamp(ts);
 
@@ -413,7 +413,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToTimestamp)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
 
-    Timestamp ts = BinaryUtils::MakeTimestamp(2004, 8, 14, 6, 34, 51, 573948623);
+    Timestamp ts = BinaryUtils::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
 
     appBuf.PutTimestamp(ts);
 
@@ -437,7 +437,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToTimestamp)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
 
-    Date date = BinaryUtils::MakeDate(1984, 5, 27);
+    Date date = BinaryUtils::MakeDateGmt(1984, 5, 27);
 
     appBuf.PutDate(date);
 

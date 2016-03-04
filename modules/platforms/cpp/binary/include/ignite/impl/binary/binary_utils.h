@@ -20,6 +20,8 @@
 
 #include <stdint.h>
 
+#include "ignite/common/utils.h"
+
 #include "ignite/guid.h"
 #include "ignite/date.h"
 #include "ignite/timestamp.h"
@@ -377,7 +379,10 @@ namespace ignite
                  * @param date Date type value.
                  * @return Corresponding value of time_t.
                  */
-                static time_t DateToCTime(const Date& date);
+                static inline time_t DateToCTime(const Date& date)
+                {
+                    return static_cast<time_t>(date.GetSeconds());
+                }
 
                 /**
                  * Convert Timestamp type to standard C type time_t.
@@ -385,7 +390,10 @@ namespace ignite
                  * @param ts Timestamp type value.
                  * @return Corresponding value of time_t.
                  */
-                static time_t TimestampToCTime(const Timestamp& ts);
+                static inline time_t TimestampToCTime(const Timestamp& ts)
+                {
+                    return static_cast<time_t>(ts.GetSeconds());
+                }
 
                 /**
                  * Convert Date type to standard C type time_t.
@@ -394,7 +402,12 @@ namespace ignite
                  * @param ctime Corresponding value of struct tm.
                  * @return True on success.
                  */
-                static bool DateToCTm(const Date& date, tm& ctime);
+                static inline bool DateToCTm(const Date& date, tm& ctime)
+                {
+                    time_t tmt = DateToCTime(date);
+
+                    return common::utils::IgniteGmTime(tmt, ctime);
+                }
 
                 /**
                  * Convert Timestamp type to standard C type struct tm.
@@ -403,7 +416,12 @@ namespace ignite
                  * @param ctime Corresponding value of struct tm.
                  * @return True on success.
                  */
-                static bool TimestampToCTm(const Timestamp& ts, tm& ctime);
+                static inline bool TimestampToCTm(const Timestamp& ts, tm& ctime)
+                {
+                    time_t tmt = TimestampToCTime(ts);
+
+                    return common::utils::IgniteGmTime(tmt, ctime);
+                }
 
                 /**
                  * Convert standard C type time_t to Date struct tm.
@@ -411,7 +429,10 @@ namespace ignite
                  * @param ctime Standard C type time_t.
                  * @return Corresponding value of Date.
                  */
-                static Date CTimeToDate(time_t ctime);
+                static inline Date CTimeToDate(time_t ctime)
+                {
+                    return Date(ctime * 1000);
+                }
 
                 /**
                  * Convert standard C type time_t to Timestamp type.
@@ -420,7 +441,10 @@ namespace ignite
                  * @param ns Nanoseconds second fraction.
                  * @return Corresponding value of Timestamp.
                  */
-                static Timestamp CTimeToTimestamp(time_t ctime, int32_t ns);
+                static inline Timestamp CTimeToTimestamp(time_t ctime, int32_t ns)
+                {
+                    return Timestamp(ctime, ns);
+                }
 
                 /**
                  * Convert standard C type struct tm to Date type.
@@ -428,7 +452,12 @@ namespace ignite
                  * @param ctime Standard C type struct tm.
                  * @return Corresponding value of Date.
                  */
-                static Date CTmToDate(const tm& ctime);
+                static inline Date CTmToDate(const tm& ctime)
+                {
+                    time_t time = common::utils::IgniteTimeGm(ctime);
+
+                    return CTimeToDate(time);
+                }
 
                 /**
                  * Convert standard C type struct tm to Timestamp type.
@@ -437,10 +466,17 @@ namespace ignite
                  * @param ns Nanoseconds second fraction.
                  * @return Corresponding value of Timestamp.
                  */
-                static Timestamp CTmToTimestamp(const tm& ctime, int32_t ns);
+                static inline Timestamp CTmToTimestamp(const tm& ctime, int32_t ns)
+                {
+                    time_t time = common::utils::IgniteTimeGm(ctime);
+
+                    return CTimeToTimestamp(time, ns);
+                }
 
                 /**
                  * Make Date in human understandable way.
+                 *
+                 * Created Date uses GMT timezone.
                  *
                  * @param year Year.
                  * @param month Month.
@@ -450,11 +486,29 @@ namespace ignite
                  * @param sec Sec.
                  * @return Date.
                  */
-                static Date MakeDate(int year = 1900, int month = 1,
+                static Date MakeDateGmt(int year = 1900, int month = 1,
                     int day = 1, int hour = 0, int min = 0, int sec = 0);
 
                 /**
                  * Make Date in human understandable way.
+                 *
+                 * Created Date uses local timezone.
+                 *
+                 * @param year Year.
+                 * @param month Month.
+                 * @param day Day.
+                 * @param hour Hour.
+                 * @param min Min.
+                 * @param sec Sec.
+                 * @return Date.
+                 */
+                static Date MakeDateLocal(int year = 1900, int month = 1,
+                    int day = 1, int hour = 0, int min = 0, int sec = 0);
+
+                /**
+                 * Make Date in human understandable way.
+                 *
+                 * Created Timestamp uses GMT timezone.
                  *
                  * @param year Year.
                  * @param month Month.
@@ -465,7 +519,24 @@ namespace ignite
                  * @param ns Nanosecond.
                  * @return Timestamp.
                  */
-                static Timestamp MakeTimestamp(int year = 1900, int month = 1,
+                static Timestamp MakeTimestampGmt(int year = 1900, int month = 1,
+                    int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
+
+                /**
+                 * Make Date in human understandable way.
+                 *
+                 * Created Timestamp uses Local timezone.
+                 *
+                 * @param year Year.
+                 * @param month Month.
+                 * @param day Day.
+                 * @param hour Hour.
+                 * @param min Minute.
+                 * @param sec Second.
+                 * @param ns Nanosecond.
+                 * @return Timestamp.
+                 */
+                static Timestamp MakeTimestampLocal(int year = 1900, int month = 1,
                     int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
             };
         }

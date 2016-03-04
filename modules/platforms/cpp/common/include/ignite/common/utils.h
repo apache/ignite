@@ -92,6 +92,14 @@ namespace ignite
             IGNITE_IMPORT_EXPORT time_t IgniteTimeGm(const tm& time);
 
             /**
+             * Convert struct tm to time_t (Local time).
+             *
+             * @param time Standard C type struct tm value.
+             * @return Standard C type time_t value.
+             */
+            IGNITE_IMPORT_EXPORT time_t IgniteTimeLocal(const tm& time);
+
+            /**
              * Convert time_t to struct tm (UTC).
              *
              * @param in Standard C type time_t value.
@@ -99,6 +107,15 @@ namespace ignite
              * @return True on success.
              */
             IGNITE_IMPORT_EXPORT bool IgniteGmTime(time_t in, tm& out);
+
+            /**
+             * Convert time_t to struct tm (Local time).
+             *
+             * @param in Standard C type time_t value.
+             * @param out Standard C type struct tm value.
+             * @return True on success.
+             */
+            IGNITE_IMPORT_EXPORT bool IgniteLocalTime(time_t in, tm& out);
 
             /**
              * Copy characters.
