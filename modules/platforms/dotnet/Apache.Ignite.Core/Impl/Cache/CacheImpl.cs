@@ -923,15 +923,20 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
-            return QueryFields(qry, (reader, count) =>
-            {
-                IList res = new ArrayList(count);
+            return QueryFields(qry, ReadFieldsArrayList);
+        }
 
-                for (var i = 0; i < count; i++)
-                    res.Add(reader.ReadObject<object>());
+        /// <summary>
+        /// Reads the fields array list.
+        /// </summary>
+        private static IList ReadFieldsArrayList(IBinaryRawReader reader, int count)
+        {
+            IList res = new ArrayList(count);
 
-                return res;
-            });
+            for (var i = 0; i < count; i++)
+                res.Add(reader.ReadObject<object>());
+
+            return res;
         }
 
         /** <inheritDoc /> */
