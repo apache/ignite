@@ -27,7 +27,7 @@ html(ng-app='ignite-web-console' id='app')
 
         meta(name='description' content='{{$meta.description}}')
         meta(name='keywords' content='{{$meta.keywords}}')
-        meta(ng-repeat='(key, value) in $meta.properties' property='{{::key}}' content='{{::value}}')
+        meta(ng-repeat='(key, value) in $meta.properties' name='{{::key}}' content='{{::value}}')
 
         link(rel='stylesheet', href='/app.min.css')
 
