@@ -23,15 +23,16 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
+import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryCreatedListener;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
@@ -54,10 +55,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
+import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
@@ -70,6 +72,7 @@ import static javax.cache.event.EventType.REMOVED;
 import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
+import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.QUERY_MSG_VER_2_SINCE;
 
 /**
  * Continuous queries manager.
@@ -413,28 +416,80 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
-    public UUID executeQuery(CacheEntryUpdatedListener locLsnr,
-        CacheEntryEventSerializableFilter rmtFilter,
+    public UUID executeQuery(final CacheEntryUpdatedListener locLsnr,
+        @Nullable final CacheEntryEventSerializableFilter rmtFilter,
+        @Nullable final Factory<? extends CacheEntryEventFilter> rmtFilterFactory,
         int bufSize,
         long timeInterval,
         boolean autoUnsubscribe,
         boolean loc,
-        boolean keepBinary) throws IgniteCheckedException
+        final boolean keepBinary) throws IgniteCheckedException
     {
+        IgniteClosure<Boolean, CacheContinuousQueryHandler> clsr;
+
+        if (rmtFilterFactory != null)
+            clsr = new IgniteClosure<Boolean, CacheContinuousQueryHandler>() {
+                @Override public CacheContinuousQueryHandler apply(Boolean v2) {
+                    CacheContinuousQueryHandler hnd;
+
+                    if (v2)
+                        hnd = new CacheContinuousQueryHandlerV2(
+                            cctx.name(),
+                            TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                            locLsnr,
+                            rmtFilterFactory,
+                            true,
+                            false,
+                            true,
+                            false,
+                            null);
+                    else {
+                        CacheEntryEventFilter fltr = rmtFilterFactory.create();
+
+                        if (!(fltr instanceof CacheEntryEventSerializableFilter))
+                            throw new IgniteException("Topology has nodes of the old versions. In this case " +
+                                "EntryEventFilter should implement " +
+                                "org.apache.ignite.cache.CacheEntryEventSerializableFilter interface. Filter: " + fltr);
+
+                        hnd = new CacheContinuousQueryHandler(
+                            cctx.name(),
+                            TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                            locLsnr,
+                            (CacheEntryEventSerializableFilter)fltr,
+                            true,
+                            false,
+                            true,
+                            false);
+                    }
+
+                    return hnd;
+                }
+            };
+        else
+            clsr = new IgniteClosure<Boolean, CacheContinuousQueryHandler>() {
+                @Override public CacheContinuousQueryHandler apply(Boolean ignore) {
+                    return new CacheContinuousQueryHandler(
+                        cctx.name(),
+                        TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                        locLsnr,
+                        rmtFilter,
+                        true,
+                        false,
+                        true,
+                        false);
+                }
+            };
+
         return executeQuery0(
             locLsnr,
-            rmtFilter,
+            clsr,
             bufSize,
             timeInterval,
             autoUnsubscribe,
             false,
             false,
-            true,
-            false,
-            true,
             loc,
-            keepBinary,
-            false);
+            keepBinary);
     }
 
     /**
@@ -445,27 +500,35 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
-    public UUID executeInternalQuery(CacheEntryUpdatedListener<?, ?> locLsnr,
-        CacheEntryEventSerializableFilter rmtFilter,
-        boolean loc,
-        boolean notifyExisting,
-        boolean ignoreClassNotFound)
+    public UUID executeInternalQuery(final CacheEntryUpdatedListener<?, ?> locLsnr,
+        final CacheEntryEventSerializableFilter rmtFilter,
+        final boolean loc,
+        final boolean notifyExisting,
+        final boolean ignoreClassNotFound)
         throws IgniteCheckedException
     {
         return executeQuery0(
             locLsnr,
-            rmtFilter,
+            new IgniteClosure<Boolean, CacheContinuousQueryHandler>() {
+                @Override public CacheContinuousQueryHandler apply(Boolean aBoolean) {
+                    return new CacheContinuousQueryHandler(
+                        cctx.name(),
+                        TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                        locLsnr,
+                        rmtFilter,
+                        true,
+                        false,
+                        true,
+                        ignoreClassNotFound);
+                }
+            },
             ContinuousQuery.DFLT_PAGE_SIZE,
             ContinuousQuery.DFLT_TIME_INTERVAL,
             ContinuousQuery.DFLT_AUTO_UNSUBSCRIBE,
             true,
             notifyExisting,
-            true,
-            false,
-            true,
             loc,
-            false,
-            ignoreClassNotFound);
+            false);
     }
 
     /**
@@ -539,32 +602,24 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
     /**
      * @param locLsnr Local listener.
-     * @param rmtFilter Remote filter.
      * @param bufSize Buffer size.
      * @param timeInterval Time interval.
      * @param autoUnsubscribe Auto unsubscribe flag.
      * @param internal Internal flag.
      * @param notifyExisting Notify existing flag.
-     * @param oldValRequired Old value required flag.
-     * @param sync Synchronous flag.
-     * @param ignoreExpired Ignore expired event flag.
      * @param loc Local flag.
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
     private UUID executeQuery0(CacheEntryUpdatedListener locLsnr,
-        final CacheEntryEventSerializableFilter rmtFilter,
+        IgniteClosure<Boolean, CacheContinuousQueryHandler> clsr,
         int bufSize,
         long timeInterval,
         boolean autoUnsubscribe,
         boolean internal,
         boolean notifyExisting,
-        boolean oldValRequired,
-        boolean sync,
-        boolean ignoreExpired,
         boolean loc,
-        final boolean keepBinary,
-        boolean ignoreClassNotFound) throws IgniteCheckedException
+        final boolean keepBinary) throws IgniteCheckedException
     {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
@@ -573,21 +628,16 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         boolean skipPrimaryCheck = loc && cctx.config().getCacheMode() == CacheMode.REPLICATED && cctx.affinityNode();
 
-        GridContinuousHandler hnd = new CacheContinuousQueryHandler(
-            cctx.name(),
-            TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
-            locLsnr,
-            rmtFilter,
-            internal,
-            notifyExisting,
-            oldValRequired,
-            sync,
-            ignoreExpired,
-            taskNameHash,
-            skipPrimaryCheck,
-            cctx.isLocal(),
-            keepBinary,
-            ignoreClassNotFound);
+        boolean v2 = useV2Protocol(cctx.discovery().allNodes());
+
+        final CacheContinuousQueryHandler hnd = clsr.apply(v2);
+
+        hnd.taskNameHash(taskNameHash);
+        hnd.skipPrimaryCheck(skipPrimaryCheck);
+        hnd.notifyExisting(notifyExisting);
+        hnd.internal(internal);
+        hnd.keepBinary(keepBinary);
+        hnd.localCache(cctx.isLocal());
 
         IgnitePredicate<ClusterNode> pred = (loc || cctx.config().getCacheMode() == CacheMode.LOCAL) ?
             F.nodeForNodeId(cctx.localNodeId()) : F.<ClusterNode>alwaysTrue();
@@ -654,7 +704,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                                     cctx.kernalContext().cache().jcache(cctx.name()),
                                     cctx, entry);
 
-                                if (rmtFilter != null && !rmtFilter.evaluate(next))
+                                if (hnd.getEventFilter() != null && !hnd.getEventFilter().evaluate(next))
                                     next = null;
                             }
                         }
@@ -664,6 +714,20 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         }
 
         return id;
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @return {@code True} if all nodes greater than {@link GridContinuousProcessor#QUERY_MSG_VER_2_SINCE},
+     *     otherwise {@code false}.
+     */
+    private boolean useV2Protocol(Collection<ClusterNode> nodes) {
+        for (ClusterNode node : nodes) {
+            if (QUERY_MSG_VER_2_SINCE.compareTo(node.version()) > 0)
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -767,36 +831,70 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             if (types == 0)
                 throw new IgniteCheckedException("Listener must implement one of CacheEntryListener sub-interfaces.");
 
-            CacheEntryUpdatedListener locLsnr = new JCacheQueryLocalListener(
+            final byte types0 = types;
+
+            final CacheEntryUpdatedListener locLsnr = new JCacheQueryLocalListener(
                 locLsnrImpl,
                 log);
 
-            CacheEntryEventFilter fltr = null;
-
-            if (cfg.getCacheEntryEventFilterFactory() != null) {
-                fltr = (CacheEntryEventFilter)cfg.getCacheEntryEventFilterFactory().create();
-
-                if (!(fltr instanceof Serializable))
-                    throw new IgniteCheckedException("Cache entry event filter must implement java.io.Serializable: "
-                        + fltr);
-            }
-
-            CacheEntryEventSerializableFilter rmtFilter = new JCacheQueryRemoteFilter(fltr, types);
-
             routineId = executeQuery0(
                 locLsnr,
-                rmtFilter,
+                new IgniteClosure<Boolean, CacheContinuousQueryHandler>() {
+                    @Override public CacheContinuousQueryHandler apply(Boolean v2) {
+                        CacheContinuousQueryHandler hnd;
+                        Factory<CacheEntryEventFilter> rmtFilterFactory = cfg.getCacheEntryEventFilterFactory();
+
+                        v2 = rmtFilterFactory != null && v2;
+
+                        if (v2)
+                            hnd = new CacheContinuousQueryHandlerV2(
+                                cctx.name(),
+                                TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                                locLsnr,
+                                rmtFilterFactory,
+                                cfg.isOldValueRequired(),
+                                cfg.isSynchronous(),
+                                false,
+                                false,
+                                types0);
+                        else {
+                            JCacheQueryRemoteFilter jCacheFilter;
+
+                            CacheEntryEventFilter filter = null;
+
+                            if (rmtFilterFactory != null) {
+                                filter = rmtFilterFactory.create();
+
+                                if (!(filter instanceof Serializable))
+                                    throw new IgniteException("Topology has nodes of the old versions. " +
+                                        "In this case EntryEventFilter must implement java.io.Serializable " +
+                                        "interface. Filter: " + filter);
+                            }
+
+                            jCacheFilter = new JCacheQueryRemoteFilter(filter, types0);
+
+                            hnd = new CacheContinuousQueryHandler(
+                                cctx.name(),
+                                TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement()),
+                                locLsnr,
+                                jCacheFilter,
+                                cfg.isOldValueRequired(),
+                                cfg.isSynchronous(),
+                                false,
+                                false);
+                        }
+
+                        return hnd;
+                    }
+                },
                 ContinuousQuery.DFLT_PAGE_SIZE,
                 ContinuousQuery.DFLT_TIME_INTERVAL,
                 ContinuousQuery.DFLT_AUTO_UNSUBSCRIBE,
                 false,
                 false,
-                cfg.isOldValueRequired(),
-                cfg.isSynchronous(),
                 false,
-                false,
-                keepBinary,
-                false);
+                keepBinary
+            );
         }
 
         /**
@@ -814,6 +912,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     }
 
     /**
+     *
      */
     private static class JCacheQueryLocalListener<K, V> implements CacheEntryUpdatedListener<K, V> {
         /** */
@@ -896,8 +995,9 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * For handler version 2.0 this filter should not be serialized.
      */
-    private static class JCacheQueryRemoteFilter implements CacheEntryEventSerializableFilter, Externalizable {
+    protected static class JCacheQueryRemoteFilter implements CacheEntryEventSerializableFilter, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -922,7 +1022,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
          * @param impl Filter.
          * @param types Types.
          */
-        JCacheQueryRemoteFilter(CacheEntryEventFilter impl, byte types) {
+        JCacheQueryRemoteFilter(@Nullable CacheEntryEventFilter impl, byte types) {
             assert types != 0;
 
             this.impl = impl;

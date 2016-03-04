@@ -105,6 +105,7 @@
     <Compile Include="Compute\FailoverTaskSelfTest.cs" />
     <Compile Include="Compute\BinarizableClosureTaskTest.cs" />
     <Compile Include="Compute\BinarizableTaskTest.cs" />
+    <Compile Include="Compute\MixedClusterTest.cs" />
     <Compile Include="Compute\ResourceTaskTest.cs" />
     <Compile Include="Compute\SerializableClosureTaskTest.cs" />
     <Compile Include="Compute\TaskAdapterTest.cs" />
@@ -133,6 +134,7 @@
     <Compile Include="BinaryConfigurationTest.cs" />
     <Compile Include="Binary\BinaryStructureTest.cs" />
     <Compile Include="ProcessExtensions.cs" />
+    <Compile Include="ProjectFilesTest.cs" />
     <Compile Include="ReconnectTest.cs" />
     <Compile Include="SerializationTest.cs" />
     <Compile Include="IgniteStartStopTest.cs" />

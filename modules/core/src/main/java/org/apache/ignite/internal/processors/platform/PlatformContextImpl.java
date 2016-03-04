@@ -115,6 +115,9 @@ public class PlatformContextImpl implements PlatformContext {
     /** Node ids that has been sent to native platform. */
     private final Set<UUID> sentNodes = Collections.newSetFromMap(new ConcurrentHashMap<UUID, Boolean>());
 
+    /** Platform name. */
+    private final String platform;
+
     /**
      * Static initializer.
      */
@@ -149,11 +152,14 @@ public class PlatformContextImpl implements PlatformContext {
      * @param ctx Kernal context.
      * @param gate Callback gateway.
      * @param mem Memory manager.
+     * @param platform Platform name.
      */
-    public PlatformContextImpl(GridKernalContext ctx, PlatformCallbackGateway gate, PlatformMemoryManagerImpl mem) {
+    public PlatformContextImpl(GridKernalContext ctx, PlatformCallbackGateway gate, PlatformMemoryManagerImpl mem,
+        String platform) {
         this.ctx = ctx;
         this.gate = gate;
         this.mem = mem;
+        this.platform = platform;
 
         cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
@@ -674,6 +680,11 @@ public class PlatformContextImpl implements PlatformContext {
     /** {@inheritDoc} */
     @Override public PlatformClusterNodeFilter createClusterNodeFilter(Object filter) {
         return new PlatformClusterNodeFilterImpl(filter, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String platform() {
+        return platform;
     }
 
     /**
