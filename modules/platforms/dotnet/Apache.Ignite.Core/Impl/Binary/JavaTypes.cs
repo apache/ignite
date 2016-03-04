@@ -50,12 +50,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         };
 
         /** */
-        private static readonly HashSet<Type> IndirectMappingTypes = new HashSet<Type>
+        private static readonly Dictionary<Type, Type> IndirectMappingTypes = new Dictionary<Type, Type>
         {
-            typeof(sbyte),
-            typeof(ushort),
-            typeof(uint),
-            typeof(ulong)
+            {typeof (sbyte), typeof (byte)},
+            {typeof (ushort), typeof (short)},
+            {typeof (uint), typeof (int)},
+            {typeof (ulong), typeof (long)}
         };
 
         /** */
@@ -67,21 +67,24 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /// <summary>
         /// Gets the corresponding Java type name.
+        /// Logs a warning for indirectly mapped types.
         /// </summary>
-        public static string GetJavaTypeName(Type type)
+        public static string GetJavaTypeNameAndLogWarning(Type type)
         {
             if (type == null)
                 return null;
-
 
             string res;
 
             if (!NetToJava.TryGetValue(type, out res))
                 return null;
 
-            if (IndirectMappingTypes.Contains(type))
+            Type directType;
+
+            if (IndirectMappingTypes.TryGetValue(type, out directType))
                 Logger.LogWarning("Type '{0}' maps to Java type '{1}' using unchecked conversion. " +
-                                  "This may cause issues in SQL queries.", type, res);
+                                  "This may cause issues in SQL queries. " +
+                                  "You can use '{2}' instead to achieve direct mapping.", type, res, directType);
 
             return res;
         }
