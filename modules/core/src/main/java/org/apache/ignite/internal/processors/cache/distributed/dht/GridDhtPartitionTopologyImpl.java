@@ -532,8 +532,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     private GridDhtLocalPartition createPartition(int p) {
-        assert lock.writeLock().isHeldByCurrentThread();
-
         GridDhtLocalPartition loc = locParts.get(p);
 
         if (loc != null && loc.state() == EVICTED) {
@@ -1097,7 +1095,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param updateSeq Update sequence.
      * @return Checks if any of the local partitions need to be evicted.
      */
-    private boolean checkEvictions(long updateSeq) {
+    private boolean checkEvictions(long updateSeq, List<List<ClusterNode>> aff) {
         if (aff == null)
             aff = cctx.affinity().assignments(topVer);
 
