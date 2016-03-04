@@ -319,12 +319,12 @@ namespace Apache.Ignite.Linq.Impl
 
             Debug.Assert(keyValTypes.Length == 2);
 
-            var queryEntity = cacheCfg.QueryEntities.FirstOrDefault(e =>
+            var entity = cacheCfg.QueryEntities.FirstOrDefault(e =>
                 e.Aliases != null &&
                 (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].Name) &&
                 (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].Name));
 
-            if (queryEntity == null)
+            if (entity == null)
                 return fieldName;
 
             // There are some aliases for the current query type
@@ -336,7 +336,7 @@ namespace Apache.Ignite.Linq.Impl
                    member.Member.DeclaringType != queryable.ElementType)
                 fullFieldName = GetFieldName(member, queryable) + "." + fullFieldName;
 
-            var alias = queryEntity.Aliases.Where(x => x.FullName == fullFieldName)
+            var alias = entity.Aliases.Where(x => x.FullName == fullFieldName)
                 .Select(x => x.Alias).FirstOrDefault();
 
             return alias ?? fieldName;
@@ -362,12 +362,12 @@ namespace Apache.Ignite.Linq.Impl
                     m.DeclaringType.GetGenericTypeDefinition() == typeof (ICacheEntry<,>))
                     return "_" + m.Name.ToLowerInvariant().Substring(0, 3);
 
-                var queryFieldAttr = m.GetCustomAttributes(true)
+                var qryFieldAttr = m.GetCustomAttributes(true)
                     .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
 
-                return queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name)
+                return qryFieldAttr == null || string.IsNullOrEmpty(qryFieldAttr.Name)
                     ? m.Name
-                    : queryFieldAttr.Name;
+                    : qryFieldAttr.Name;
             });
         }
 
@@ -384,15 +384,15 @@ namespace Apache.Ignite.Linq.Impl
             if (from == null)
                 return false;
 
-            var subQuery = from.FromExpression as SubQueryExpression;
-            if (subQuery == null)
+            var subQry = from.FromExpression as SubQueryExpression;
+            if (subQry == null)
                 return false;
 
-            var groupBy = subQuery.QueryModel.ResultOperators.OfType<GroupResultOperator>().FirstOrDefault();
-            if (groupBy == null)
+            var grpBy = subQry.QueryModel.ResultOperators.OfType<GroupResultOperator>().FirstOrDefault();
+            if (grpBy == null)
                 return false;
 
-            Visit(groupBy.KeySelector);
+            Visit(grpBy.KeySelector);
 
             return true;
         }

@@ -76,9 +76,9 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public T ExecuteSingle<T>(QueryModel queryModel, bool returnDefaultWhenEmpty)
         {
-            var collection = ExecuteCollection<T>(queryModel);
+            var col = ExecuteCollection<T>(queryModel);
 
-            return returnDefaultWhenEmpty ? collection.SingleOrDefault() : collection.Single();
+            return returnDefaultWhenEmpty ? col.SingleOrDefault() : col.Single();
         }
 
         /** <inheritdoc /> */
@@ -87,18 +87,16 @@ namespace Apache.Ignite.Linq.Impl
         {
             Debug.Assert(queryModel != null);
 
-            var queryData = GetQueryData(queryModel);
+            var qryData = GetQueryData(queryModel);
 
-            Debug.WriteLine("\nFields Query: {0} | {1}", queryData.QueryText,
-                string.Join(", ", queryData.Parameters.Select(x => x == null ? "null" : x.ToString())));
+            Debug.WriteLine("\nFields Query: {0} | {1}", qryData.QueryText,
+                string.Join(", ", qryData.Parameters.Select(x => x == null ? "null" : x.ToString())));
 
-            var query = new SqlFieldsQuery(queryData.QueryText, _local, queryData.Parameters.ToArray());
+            var qry = new SqlFieldsQuery(qryData.QueryText, _local, qryData.Parameters.ToArray());
 
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
-            var queryCursor = _cache.QueryFields(query, selector);
-
-            return queryCursor;
+            return _cache.QueryFields(qry, selector);
         }
 
         /// <summary>
@@ -108,38 +106,38 @@ namespace Apache.Ignite.Linq.Impl
         {
             Debug.Assert(queryModel != null);
 
-            var queryData = GetQueryData(queryModel);
+            var qryData = GetQueryData(queryModel);
 
-            var queryText = queryData.QueryText;
+            var qryText = qryData.QueryText;
 
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
             if (queryCaller == null)
-                return args => _cache.QueryFields(new SqlFieldsQuery(queryText, _local, args), selector);
+                return args => _cache.QueryFields(new SqlFieldsQuery(qryText, _local, args), selector);
 
             // Compiled query is a delegate with query parameters
             // Delegate parameters order and query parameters order may differ
 
             // These are in order of usage in query
-            var queryOrderParams = queryData.ParameterExpressions.OfType<MemberExpression>()
+            var qryOrderParams = qryData.ParameterExpressions.OfType<MemberExpression>()
                 .Select(x => x.Member.Name).ToList();
 
             // These are in order they come from user
             var userOrderParams = queryCaller.Method.GetParameters().Select(x => x.Name).ToList();
 
-            if ((queryOrderParams.Count != queryData.Parameters.Count) ||
-                (queryOrderParams.Count != userOrderParams.Count))
+            if ((qryOrderParams.Count != qryData.Parameters.Count) ||
+                (qryOrderParams.Count != userOrderParams.Count))
                 throw new InvalidOperationException("Error compiling query: all compiled query arguments " +
                                                     "should come from enclosing lambda expression");
 
-            var indices = queryOrderParams.Select(x => userOrderParams.IndexOf(x)).ToArray();
+            var indices = qryOrderParams.Select(x => userOrderParams.IndexOf(x)).ToArray();
 
             // Check if user param order is already correct
             if (indices.SequenceEqual(Enumerable.Range(0, indices.Length)))
-                return args => _cache.QueryFields(new SqlFieldsQuery(queryText, _local, args), selector);
+                return args => _cache.QueryFields(new SqlFieldsQuery(qryText, _local, args), selector);
 
             // Return delegate with reorder
-            return args => _cache.QueryFields(new SqlFieldsQuery(queryText, _local,
+            return args => _cache.QueryFields(new SqlFieldsQuery(qryText, _local,
                 args.Select((x, i) => args[indices[i]]).ToArray()), selector);
         }
 

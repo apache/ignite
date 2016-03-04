@@ -60,9 +60,9 @@ namespace Apache.Ignite.Linq.Impl
             if (char.IsWhiteSpace(_builder[_builder.Length - 1]))
                 _builder.Remove(_builder.Length - 1, 1);  // TrimEnd
 
-            var queryText = _builder.ToString();
+            var qryText = _builder.ToString();
 
-            return new QueryData(queryText, _parameters, _parameterExpressions);
+            return new QueryData(qryText, _parameters, _parameterExpressions);
         }
 
         /// <summary>
