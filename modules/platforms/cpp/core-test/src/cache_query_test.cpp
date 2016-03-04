@@ -885,7 +885,10 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1970 + i), BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+
+        cache.Put(i, val);
     }
 
     cursor = cache.Query(qry);
@@ -948,8 +951,10 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateLess)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+
+        cache.Put(i, val);
     }
 
     cursor = cache.Query(qry);
@@ -1007,8 +1012,10 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateMore)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+
+        cache.Put(i, val);
     }
 
     cursor = cache.Query(qry);
@@ -1066,8 +1073,10 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDateEqual)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+
+        cache.Put(i, val);
     }
 
     cursor = cache.Query(qry);
@@ -1116,8 +1125,10 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampLess)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+
+        cache.Put(i, val);
     }
 
     cursor = cache.Query(qry);
@@ -1175,8 +1186,10 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampMore)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+
+        cache.Put(i, val);
     }
 
     cursor = cache.Query(qry);
@@ -1236,8 +1249,10 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestampEqual)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
-            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60)));
+        QueryPerson val(stream.str(), i * 10, BinaryUtils::MakeDateLocal(1980 + i, 1, 1),
+            BinaryUtils::MakeTimestampLocal(2016, 1, 1, i / 60, i % 60));
+
+        cache.Put(i, val);
     }
 
     cursor = cache.Query(qry);
