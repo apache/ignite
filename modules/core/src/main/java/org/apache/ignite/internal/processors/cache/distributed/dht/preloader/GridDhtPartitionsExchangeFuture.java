@@ -422,115 +422,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         try {
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                if (!F.isEmpty(reqs)) {
-                    assert false;
-
-                    DynamicCacheChangeRequest changeReq = reqs.iterator().next();
-
-
-                }
+                if (!F.isEmpty(reqs))
+                    onCacheChangeRequest();
                 else {
                     assert affChangeMsg != null;
 
-                    for (GridCacheContext cacheCtx : cctx.cacheContexts())
-                        cacheCtx.topology().updateTopologyVersion(exchId, this, -1, false);
-
-                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                        if (cacheCtx.isLocal())
-                            continue;
-
-                        cacheCtx.preloader().onTopologyChanged(this);
-                    }
-
-                    if (cctx.topology().onChangeAffinityMessage(this, affChangeMsg)) {
-                        waitPartitionRelease();
-
-                        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                            if (cacheCtx.isLocal())
-                                continue;
-
-                            cacheCtx.topology().beforeExchange(this, cacheCtx.affinity().assignments(topologyVersion()));
-                        }
-                    }
-
-                    onDone(topologyVersion());
+                    onAffinityChangeRequest();
                 }
             }
             else {
-                if (discoEvt.eventNode().isClient()) {
-                    assert false;
-                }
-                else {
-                    srvNodes = new ArrayList<>(cctx.discovery().serverNodes(topologyVersion()));
-
-                    assert !srvNodes.isEmpty();
-
-                    crd = srvNodes.get(0);
-
-                    srvNodes.remove(cctx.localNode());
-
-                    remaining.addAll(F.nodeIds(srvNodes));
-
-                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                        GridClientPartitionTopology clientTop = cctx.topology().clearClientTopology(
-                            cacheCtx.cacheId());
-
-                        long updSeq = clientTop == null ? -1 : clientTop.lastUpdateSequence();
-
-                        if (!cacheCtx.isLocal())
-                            cacheCtx.topology().updateTopologyVersion(exchId, this, updSeq, false);
-                    }
-
-                    if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED) {
-                        onLeft();
-
-                        warnNoAffinityNodes();
-
-                        centralizedAff = cctx.topology().onServerLeft(this, crd.isLocal());
-                    }
-                    else {
-                        assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
-
-                        cctx.topology().onServerJoin(this, crd.isLocal());
-                    }
-
-                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                        if (cacheCtx.isLocal())
-                            continue;
-
-                        cacheCtx.preloader().onTopologyChanged(this);
-                    }
-
-                    waitPartitionRelease();
-
-                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                        if (cacheCtx.isLocal())
-                            continue;
-
-                        List<List<ClusterNode>> aff = cacheCtx.affinity().idealAssignment();
-
-                        if (aff == null) {
-                            assert discoEvt.type() == EVT_NODE_JOINED && discoEvt.eventNode().isLocal();
-
-                            AffinityTopologyVersion affTopVer = cacheCtx.affinity().affinityTopologyVersion();
-
-                            assert topologyVersion().equals(affTopVer) : affTopVer;
-
-                            aff = cacheCtx.affinity().assignments(affTopVer);
-                        }
-
-                        cacheCtx.topology().beforeExchange(this, aff);
-                    }
-
-                    if (crd.isLocal()) {
-                        if (remaining.isEmpty())
-                            onDone(exchId.topologyVersion());
-                    }
-                    else
-                        sendPartitions(crd);
-
-                    initFut.onDone(true);
-                }
+                if (CU.clientNode(discoEvt.eventNode()))
+                    onClientNodeEvent();
+                else
+                    onServerNodeEvent();
             }
         }
         catch (IgniteInterruptedCheckedException e) {
@@ -546,6 +450,130 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (e instanceof Error)
                 throw (Error)e;
         }
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void onCacheChangeRequest() throws IgniteCheckedException {
+        assert !!F.isEmpty(reqs) : this;
+        assert false;
+
+        DynamicCacheChangeRequest changeReq = reqs.iterator().next();
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void onAffinityChangeRequest() throws IgniteCheckedException {
+        assert affChangeMsg != null : this;
+
+        for (GridCacheContext cacheCtx : cctx.cacheContexts())
+            cacheCtx.topology().updateTopologyVersion(exchId, this, -1, false);
+
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (cacheCtx.isLocal())
+                continue;
+
+            cacheCtx.preloader().onTopologyChanged(this);
+        }
+
+        if (cctx.topology().onChangeAffinityMessage(this, affChangeMsg)) {
+            waitPartitionRelease();
+
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (cacheCtx.isLocal())
+                    continue;
+
+                cacheCtx.topology().beforeExchange(this, cacheCtx.affinity().assignments(topologyVersion()));
+            }
+        }
+
+        onDone(topologyVersion());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void onClientNodeEvent() throws IgniteCheckedException {
+        assert CU.clientNode(discoEvt.eventNode()) : this;
+
+        assert false;
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void onServerNodeEvent() throws IgniteCheckedException {
+        assert !CU.clientNode(discoEvt.eventNode()) : this;
+
+        srvNodes = new ArrayList<>(cctx.discovery().serverNodes(topologyVersion()));
+
+        assert !srvNodes.isEmpty();
+
+        crd = srvNodes.get(0);
+
+        remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
+
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            GridClientPartitionTopology clientTop = cctx.topology().clearClientTopology(
+                cacheCtx.cacheId());
+
+            long updSeq = clientTop == null ? -1 : clientTop.lastUpdateSequence();
+
+            if (!cacheCtx.isLocal())
+                cacheCtx.topology().updateTopologyVersion(exchId, this, updSeq, false);
+        }
+
+        if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED) {
+            onLeft();
+
+            warnNoAffinityNodes();
+
+            centralizedAff = cctx.topology().onServerLeft(this, crd.isLocal());
+        }
+        else {
+            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
+
+            cctx.topology().onServerJoin(this, crd.isLocal());
+        }
+
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (cacheCtx.isLocal())
+                continue;
+
+            cacheCtx.preloader().onTopologyChanged(this);
+        }
+
+        waitPartitionRelease();
+
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (cacheCtx.isLocal())
+                continue;
+
+            List<List<ClusterNode>> aff = cacheCtx.affinity().idealAssignment();
+
+            if (aff == null) {
+                assert discoEvt.type() == EVT_NODE_JOINED && discoEvt.eventNode().isLocal();
+
+                AffinityTopologyVersion affTopVer = cacheCtx.affinity().affinityTopologyVersion();
+
+                assert topologyVersion().equals(affTopVer) : affTopVer;
+
+                aff = cacheCtx.affinity().assignments(affTopVer);
+            }
+
+            cacheCtx.topology().beforeExchange(this, aff);
+        }
+
+        if (crd.isLocal()) {
+            if (remaining.isEmpty())
+                onAllReceived();
+        }
+        else
+            sendPartitions(crd);
+
+        initFut.onDone(true);
     }
 
     /**
@@ -1071,22 +1099,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         cctx.io().send(node, m, SYSTEM_POOL);
     }
 
-    /**
-     * @param nodes Nodes.
-     * @param id ID.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void sendAllPartitions(Collection<? extends ClusterNode> nodes, GridDhtPartitionExchangeId id)
-        throws IgniteCheckedException {
+    private GridDhtPartitionsFullMessage createPartitionsMessage(Collection<ClusterNode> nodes, GridDhtPartitionExchangeId id) {
         GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(id,
             lastVer.get(),
             id.topologyVersion());
 
         boolean useOldApi = false;
 
-        for (ClusterNode node : nodes) {
-            if (node.version().compareTo(GridDhtPartitionMap2.SINCE) < 0)
-                useOldApi = true;
+        if (nodes != null) {
+            for (ClusterNode node : nodes) {
+                if (node.version().compareTo(GridDhtPartitionMap2.SINCE) < 0)
+                    useOldApi = true;
+            }
         }
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
@@ -1114,6 +1138,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             m.addPartitionUpdateCounters(top.cacheId(), top.updateCounters());
         }
+
+        return m;
+    }
+
+    /**
+     * @param nodes Nodes.
+     * @param id ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void sendAllPartitions(Collection<ClusterNode> nodes, GridDhtPartitionExchangeId id)
+        throws IgniteCheckedException {
+        GridDhtPartitionsFullMessage m = createPartitionsMessage(nodes, id);
 
         if (log.isDebugEnabled())
             log.debug("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, F.node2id()) +
@@ -1187,7 +1223,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
                     "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
 
-            log.info("Complete exchange: " + exchId.topologyVersion());
+            log.info("Complete exchange: " + exchId.topologyVersion() + ", evt=" + discoEvt + ']');
 
             initFut.onDone(err == null);
 
@@ -1381,9 +1417,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             assert crd.isLocal();
 
             if (centralizedAff) {
-                cctx.topology().initAffinityConsiderState(this);
+                Map<Integer, Map<Integer, List<UUID>>> assignmentChange =
+                    cctx.topology().initAffinityConsiderState(this);
 
-                CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId);
+                GridDhtPartitionsFullMessage m = createPartitionsMessage(null, exchId);
+
+                CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
+
+                log.info("Centralized affinity exchange, send affinity change message: " + msg);
 
                 cctx.discovery().sendCustomEvent(msg);
             }
@@ -1391,6 +1432,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 List<ClusterNode> nodes;
 
                 synchronized (mux) {
+                    srvNodes.remove(cctx.localNode());
+
                     nodes = new ArrayList<>(srvNodes);
                 }
 
@@ -1571,13 +1614,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 try {
                     if (crd.equals(node)) {
-                        Map<Integer, Map<Integer, List<UUID>>> affChange = msg.affinityChange();
+                        cctx.topology().onExchangeAffinityMessage(GridDhtPartitionsExchangeFuture.this, msg);
+
+                        if (!crd.isLocal())
+                            processMessage(crd, msg.partitionsMessage());
 
                         onDone(exchId.topologyVersion());
                     }
                     else {
-                        if (log.isDebugEnabled())
-                            log.debug("Ignore affinity change message, coordinator changed.");
+                        log.info("Ignore affinity change message, coordinator changed [node=" + node.id() +
+                            ", crd=" + crd.id() +
+                            ", msg=" + msg +
+                            ']');
                     }
                 }
                 finally {

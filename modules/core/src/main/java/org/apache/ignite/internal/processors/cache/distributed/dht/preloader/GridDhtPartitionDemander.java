@@ -44,6 +44,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
+import org.apache.ignite.internal.processors.cache.CacheTopologyManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -366,8 +367,15 @@ public class GridDhtPartitionDemander {
         GridDhtPreloaderAssignments assigns
     ) throws IgniteCheckedException {
         for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
-            if (topologyChanged(fut))
+            if (topologyChanged(fut)) {
+                if (CacheTopologyManager.LOG_AFF_CHANGE) {
+                    CacheTopologyManager.logAffinityChange(log,
+                        cctx.name(),
+                        "Cancel request partitions, topology changed: " + fut.topologyVersion());
+                }
+
                 return false;
+            }
 
             final ClusterNode node = e.getKey();
 
@@ -407,7 +415,6 @@ public class GridDhtPartitionDemander {
 
                 for (cnt = 0; cnt < lsnrCnt; cnt++) {
                     if (!sParts.get(cnt).isEmpty()) {
-
                         // Create copy.
                         GridDhtPartitionDemandMessage initD = new GridDhtPartitionDemandMessage(d, sParts.get(cnt));
 
@@ -416,11 +423,20 @@ public class GridDhtPartitionDemander {
                         initD.timeout(cctx.config().getRebalanceTimeout());
 
                         synchronized (fut) {
-                            if (!fut.isDone())
+                            if (!fut.isDone()) {
+                                if (CacheTopologyManager.LOG_AFF_CHANGE) {
+                                    CacheTopologyManager.logAffinityChange(log,
+                                        cctx.name(),
+                                        "Send demand message [node=" + node.id() +
+                                            ", parts=" + initD.partitions() +
+                                            ", topVer=" + fut.topologyVersion());
+                                }
+
                                 // Future can be already cancelled at this moment and all failovers happened.
                                 // New requests will not be covered by failovers.
                                 cctx.io().sendOrderedMessage(node,
                                     rebalanceTopics.get(cnt), initD, cctx.ioPolicy(), initD.timeout());
+                            }
                         }
 
                         if (log.isDebugEnabled())
@@ -583,6 +599,12 @@ public class GridDhtPartitionDemander {
                             // If message was last for this partition,
                             // then we take ownership.
                             if (last) {
+                                if (CacheTopologyManager.LOG_AFF_CHANGE) {
+                                    CacheTopologyManager.logAffinityChange(log,
+                                        cctx.name(),
+                                        "Owned partition, rebalanced [cache=" + cctx.name() + ", part=" + p + ']');
+                                }
+
                                 top.own(part);
 
                                 fut.partitionDone(id, p);
@@ -1341,6 +1363,12 @@ public class GridDhtPartitionDemander {
                                         // then we take ownership.
                                         if (last) {
                                             fut.partitionDone(node.id(), p);
+
+                                            if (CacheTopologyManager.LOG_AFF_CHANGE) {
+                                                CacheTopologyManager.logAffinityChange(log,
+                                                    cctx.name(),
+                                                    "Owned partition, rebalanced [cache=" + cctx.name() + ", part=" + p + ']');
+                                            }
 
                                             top.own(part);
 

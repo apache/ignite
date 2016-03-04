@@ -243,7 +243,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             exchFut = exchangeFuture(exchId, e, null, msg);
                         }
                         else
-                            exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChange(customEvt.node(), msg);
+                            exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChange(customEvt.eventNode(), msg);
                     }
                 }
 
@@ -1002,8 +1002,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         try {
             if (msg.exchangeId() == null) {
-                //if (log.isDebugEnabled())
-                    log.info("Received local partition update [nodeId=" + node.id() + ", parts=" +
+                if (log.isDebugEnabled())
+                    log.debug("Received local partition update [nodeId=" + node.id() + ", parts=" +
                         msg + ']');
 
                 boolean updated = false;
@@ -1030,7 +1030,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (top.update(null, entry.getValue(), null, true) != null)
                             updated = true;
 
-                        cctx.topology().checkRebalanceState(cacheId);
+                        cctx.topology().checkRebalanceState(entry.getValue().topologyVersion(), cacheId);
                     }
                 }
 

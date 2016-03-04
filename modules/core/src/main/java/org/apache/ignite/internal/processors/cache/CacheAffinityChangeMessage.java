@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -41,34 +42,42 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     private GridDhtPartitionExchangeId exchId;
 
     /** */
-    private Map<Integer, Map<Integer, List<UUID>>> affChange;
+    private Map<Integer, Map<Integer, List<UUID>>> assignmentChange;
+
+    /** */
+    private GridDhtPartitionsFullMessage partsMsg;
 
     /**
      * @param topVer Topology version.
+     * @param assignmentChange Assignment change.
      */
-    public CacheAffinityChangeMessage(AffinityTopologyVersion topVer) {
+    public CacheAffinityChangeMessage(AffinityTopologyVersion topVer,
+        Map<Integer, Map<Integer, List<UUID>>> assignmentChange) {
         this.topVer = topVer;
+        this.assignmentChange = assignmentChange;
     }
 
     /**
      * @param exchId Exchange ID.
+     * @param assignmentChange Assignment change.
      */
-    public CacheAffinityChangeMessage(GridDhtPartitionExchangeId exchId) {
+    public CacheAffinityChangeMessage(GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsFullMessage partsMsg,
+        Map<Integer, Map<Integer, List<UUID>>> assignmentChange) {
         this.exchId = exchId;
+        this.partsMsg = partsMsg;
+        this.assignmentChange = assignmentChange;
+    }
+
+    public GridDhtPartitionsFullMessage partitionsMessage() {
+        return partsMsg;
     }
 
     /**
-     * @param affChange Affinity change.
+     * @return Affinity assignments.
      */
-    public void affinityChange(Map<Integer, Map<Integer, List<UUID>>> affChange) {
-        this.affChange = affChange;
-    }
-
-    /**
-     * @return Affinity assignment.
-     */
-    @Nullable public Map<Integer, Map<Integer, List<UUID>>> affinityChange() {
-        return affChange;
+    @Nullable public Map<Integer, Map<Integer, List<UUID>>> assignmentChange() {
+        return assignmentChange;
     }
 
     /**

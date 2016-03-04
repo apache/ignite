@@ -36,6 +36,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
+import org.apache.ignite.internal.processors.cache.CacheTopologyManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -346,6 +347,12 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (localNode(p, aff)) {
                             GridDhtLocalPartition locPart = createPartition(p);
 
+                            if (CacheTopologyManager.LOG_AFF_CHANGE) {
+                                CacheTopologyManager.logAffinityChange(log,
+                                    cctx.name(),
+                                    "Owned partition, first node [cache=" + cctx.name() + ", part=" + p + ']');
+                            }
+
                             boolean owned = locPart.own();
 
                             assert owned : "Failed to own partition for oldest node [cacheName" + cctx.name() +
@@ -468,6 +475,12 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             // If there are no other owners, then become an owner.
                             if (F.isEmpty(owners)) {
+                                if (CacheTopologyManager.LOG_AFF_CHANGE) {
+                                    CacheTopologyManager.logAffinityChange(log,
+                                        cctx.name(),
+                                        "Owned partition, no owners (exchange) [cache=" + cctx.name() + ", part=" + p + ']');
+                                }
+
                                 boolean owned = locPart.own();
 
                                 assert owned : "Failed to own partition [cacheName" + cctx.name() + ", locPart=" +
