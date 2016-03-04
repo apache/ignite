@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
+import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -403,18 +404,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
                         }
                     }
                 },
-                new Factory<CacheEntryEventSerializableFilter<Integer, Object>>() {
-                    /** {@inheritDoc} */
-                    @Override public CacheEntryEventSerializableFilter<Integer, Object> create() {
-                        try {
-
-                            return cls2.newInstance();
-                        }
-                        catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                },
+                new ClassFilterFactory(cls2),
                 true,
                 true
             );
@@ -944,6 +934,31 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             latch.countDown();
 
             return true;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ClassFilterFactory implements Factory<CacheEntryEventFilter<Integer, Object>> {
+        /** */
+        private Class<CacheEntryEventSerializableFilter> cls;
+
+        /**
+         * @param cls Class.
+         */
+        public ClassFilterFactory(Class<CacheEntryEventSerializableFilter> cls) {
+            this.cls = cls;
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheEntryEventSerializableFilter<Integer, Object> create() {
+            try {
+                return cls.newInstance();
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }
