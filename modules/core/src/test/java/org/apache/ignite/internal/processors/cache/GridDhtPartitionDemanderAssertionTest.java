@@ -41,6 +41,7 @@ import org.jsr166.ConcurrentHashMap8;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
+import java.io.Serializable;
 import java.util.Map;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -126,7 +127,9 @@ public class GridDhtPartitionDemanderAssertionTest  extends GridCommonAbstractTe
     public void testPartitionMove() throws Exception {
         final Ignite grid = startGrid("binaryGrid1");
 
-        grid.createCache(CACHE_NAME).withKeepBinary();
+        final IgniteCache<TestObj, TestObj> cache = grid.createCache(CACHE_NAME).withKeepBinary();
+
+        cache.put(new TestObj(-1), new TestObj(-1));
 
         final BinaryObjectBuilder builder = grid.binary().builder(TestObj.class.getName());
 
@@ -150,12 +153,28 @@ public class GridDhtPartitionDemanderAssertionTest  extends GridCommonAbstractTe
     }
 
     /** */
-    private static class TestObj {
+    private static class TestObj implements Serializable {
         /** */
         private int id;
 
         public TestObj(final int id) {
             this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(final Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            final TestObj testObj = (TestObj) o;
+
+            return id == testObj.id;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return id;
         }
     }
 
