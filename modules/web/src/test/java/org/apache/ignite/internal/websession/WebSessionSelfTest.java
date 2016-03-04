@@ -122,6 +122,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @throws Exception Exception If failed.
      */
     public void testInvalidatedSession() throws Exception {
+        String invalidatedSesId;
         Server srv = null;
 
         try {
@@ -137,7 +138,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
 
                 // checks if the old session object is invalidated.
-                String invalidatedSesId = rdr.readLine();
+                invalidatedSesId = rdr.readLine();
 
                 assertNotNull(invalidatedSesId);
 
@@ -170,8 +171,10 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
             ignite.events().localListen(putLsnr, EVT_CACHE_OBJECT_PUT);
 
-            // new request with a new session id.
+            // new request that creates a new session.
             conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/valid").openConnection();
+
+            conn.addRequestProperty("Cookie", "JSESSIONID=" + invalidatedSesId);
 
             conn.connect();
 
@@ -396,7 +399,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             assert ses != null;
 
             if (req.getPathInfo().equals("/invalidated")) {
-                X.println(">>>", "Created session: " + ses.getId(), ">>>");
+                X.println(">>>", "Session to invalidate with id: " + ses.getId(), ">>>");
 
                 ses.invalidate();
 

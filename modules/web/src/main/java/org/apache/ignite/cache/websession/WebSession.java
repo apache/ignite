@@ -314,7 +314,6 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeBoolean(isValid);
         U.writeString(out, id);
         out.writeLong(createTime);
         out.writeLong(accessTime);
@@ -324,7 +323,6 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        isValid = in.readBoolean();
         id = U.readString(in);
         createTime = in.readLong();
         accessTime = in.readLong();

@@ -478,7 +478,7 @@ public class WebSessionFilter implements Filter {
      */
     private class RequestWrapper extends HttpServletRequestWrapper {
         /** Session. */
-        private WebSession ses;
+        private volatile WebSession ses;
 
         /**
          * @param req Request.
