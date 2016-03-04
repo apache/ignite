@@ -89,6 +89,9 @@ class WebSession implements HttpSession, Externalizable {
     /** Updates list. */
     private transient Collection<T2<String, Object>> updates;
 
+    /** Genuine http session. */
+    private transient HttpSession genuineSession;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -117,6 +120,8 @@ class WebSession implements HttpSession, Externalizable {
 
             attrs.put(name, ses.getAttribute(name));
         }
+
+        genuineSession = ses;
     }
 
     /**
@@ -152,15 +157,6 @@ class WebSession implements HttpSession, Externalizable {
         assert lsnr != null;
 
         this.lsnr = lsnr;
-    }
-
-    /**
-     * Checks if the session is valid.
-     *
-     * @return True is valid, otherwise false.
-     */
-    protected boolean isValid() {
-        return this.isValid;
     }
 
     /**
@@ -288,6 +284,8 @@ class WebSession implements HttpSession, Externalizable {
         updates = null;
 
         lsnr.destroySession(id);
+
+        genuineSession.invalidate();
 
         isValid = false;
     }

@@ -492,26 +492,9 @@ public class WebSessionFilter implements Filter {
             this.ses = ses;
         }
 
-        /**
-         * Gets genuine HTTP session.
-         *
-         * @param create See {@link HttpServletRequest#getSession(boolean)}.
-         * @return Session or null. See {@link HttpServletRequest#getSession(boolean)}.
-         */
-        private HttpSession getGenuineSession(boolean create) {
-            HttpServletRequest req = (HttpServletRequest)getRequest();
-
-            return req.getSession(create);
-        }
-
         /** {@inheritDoc} */
         @Override public HttpSession getSession(boolean create) {
-            if (!ses.isValid()) {
-                HttpSession genSes = getGenuineSession(false);
-
-                if (genSes != null)
-                    genSes.invalidate();
-
+            if (cache.get(ses.getId()) == null) {
                 if (create) {
                     this.ses = createSession((HttpServletRequest)getRequest());
                     this.ses.servletContext(ctx);
