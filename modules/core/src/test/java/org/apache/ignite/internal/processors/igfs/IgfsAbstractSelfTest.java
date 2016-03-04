@@ -3249,4 +3249,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         IgfsFileInfo.reads.set(0L);
         IgfsFileInfo.writes.set(0L);
     }
+
+    @Override protected long getTestTimeout() {
+        return 30 * 60 * 1000L;
+    }
 }

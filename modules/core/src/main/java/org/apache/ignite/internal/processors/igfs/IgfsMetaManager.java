@@ -3446,6 +3446,182 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
+     * Builds a directory.
+     */
+    static class CreateDirEntryProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
+        Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        protected IgniteUuid fileId;
+        protected Map<String, String> leafProps;
+        protected long t;
+
+        /**
+         * Empty constructor required by {@link Externalizable}.
+         */
+        public CreateDirEntryProcessor() {
+            // No-op.
+        }
+
+        /**
+         * @param fileId Expected file id in parent directory listing.
+         * @param fileName File name.
+         * @param lenDelta Length delta.
+         * @param accessTime Last access time.
+         * @param modificationTime Last modification time.
+         */
+        private CreateDirEntryProcessor(IgniteUuid fileId, Map<String, String> leafProps, long t) {
+            this.fileId = fileId;
+
+            this.leafProps = leafProps;
+
+            this.t = t;
+        }
+
+        /** {@inheritDoc} */
+        @Override public final Void process(MutableEntry<IgniteUuid, IgfsFileInfo> e, Object... args) {
+            assert fileId.equals(e.getKey());
+
+            IgfsFileInfo info = buildInfo();
+
+            assert fileId.equals(info.id());
+            assert info.isDirectory() == isDirectory();
+
+            e.setValue(info);
+
+            return null;
+        }
+
+        public IgniteUuid id() {
+            return fileId;
+        }
+
+        public boolean isDirectory() {
+            return true;
+        }
+
+        protected IgfsFileInfo buildInfo() {
+            return new IgfsFileInfo(true, fileId, leafProps, t, t);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeGridUuid(out, fileId);
+            U.writeMap(out, leafProps);
+            out.writeLong(t);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            fileId = U.readGridUuid(in);
+            leafProps = U.readMap(in);
+            t = in.readLong();
+        }
+    }
+
+    static class CreateDirWithListingEntryProcessor extends CreateDirEntryProcessor {
+        private static final long serialVersionUID = 0L;
+
+        private String childName;
+        private CreateDirEntryProcessor childProcessor;
+
+        public CreateDirWithListingEntryProcessor() {
+            super();
+        }
+
+        CreateDirWithListingEntryProcessor(IgniteUuid fileId, Map<String, String> leafProps,
+                                           String childName, CreateDirEntryProcessor childProcessor) {
+            super(fileId, leafProps, 0L/*unused*/);
+
+            this.childName = childName;
+            this.childProcessor = childProcessor;
+        }
+
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+
+            U.writeString(out, childName);
+            out.writeObject(childProcessor);
+        }
+
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+
+            childName = U.readString(in);
+            childProcessor = (CreateDirEntryProcessor)in.readObject();
+        }
+
+        @Override protected IgfsFileInfo buildInfo() {
+            IgfsFileInfo childInfo = childProcessor.buildInfo();
+
+            IgfsListingEntry le = new IgfsListingEntry(childInfo);
+
+            // TODO: it looks like we should pass the time there, otherwise
+            // TODO: different nodes may have different file mod/acc time.
+            return new IgfsFileInfo(fileId, Collections.singletonMap(childName, le), leafProps);
+        }
+    }
+
+    /**
+     *
+     */
+    static class CreateFileEntryProcessor extends CreateDirEntryProcessor {
+        private static final long serialVersionUID = 0L;
+        
+        private int blockSize;
+        private IgniteUuid affKey;
+        private IgniteUuid lockId;
+        private boolean evictExclude;
+
+        public CreateFileEntryProcessor() {
+            super();
+        }
+
+        CreateFileEntryProcessor(IgniteUuid fileId,
+                                 int b, IgniteUuid affKey, IgniteUuid lockId, boolean evictExclude,
+                                 Map<String, String> leafProps, long t) {
+            super(fileId, leafProps, t);
+
+            assert b > 0; // fil's block size must be positive.
+
+            this.blockSize = b;
+            this.affKey = affKey;
+            this.lockId = lockId;
+            this.evictExclude = evictExclude;
+        }
+
+        @Override protected IgfsFileInfo buildInfo() {
+
+
+            return new IgfsFileInfo(fileId, blockSize, 0L, affKey, lockId,
+                evictExclude, leafProps, t, t);
+        }
+
+        @Override public boolean isDirectory() {
+            return false;
+        }
+
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+
+            out.writeInt(blockSize);
+            U.writeGridUuid(out, affKey);
+            U.writeGridUuid(out, lockId);
+            out.writeBoolean(evictExclude);
+        }
+
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+
+            blockSize = in.readInt();
+            affKey = U.readGridUuid(in);
+            lockId = U.readGridUuid(in);
+            evictExclude = in.readBoolean();
+        }
+    }
+
+    /**
      * Create a new file.
      *
      * @param path Path.
@@ -3478,11 +3654,11 @@ public class IgfsMetaManager extends IgfsManager {
                 try {
                     b = new DirectoryChainBuilder(path, dirProps, fileProps) {
                         /** {@inheritDoc} */
-                        @Override protected IgfsFileInfo buildLeaf(IgniteUuid id) {
+                        @Override protected CreateDirEntryProcessor buildLeaf(IgniteUuid id) {
                             long t = System.currentTimeMillis();
 
-                            return new IgfsFileInfo(id, blockSize, 0L, affKey, composeLockId(false),
-                                 evictExclude, leafProps, t, t);
+                            return new CreateFileEntryProcessor(id, blockSize, affKey, composeLockId(false),
+                                evictExclude, leafProps, t);
                         }
                     };
 
@@ -3581,22 +3757,23 @@ public class IgfsMetaManager extends IgfsManager {
                                         id2InfoPrj.invoke(lowermostExistingInfo.id(), new UpdatePath(path));
 
                                         // Make a new locked info:
-                                        long t = System.currentTimeMillis();
+                                        CreateFileEntryProcessor fileProc = new CreateFileEntryProcessor(overwriteId,
+                                            blockSize, affKey, composeLockId(false), evictExclude, fileProps,
+                                            System.currentTimeMillis());
 
-                                        final IgfsFileInfo newFileInfo = new IgfsFileInfo(overwriteId,
-                                            cfg.getBlockSize(), 0L, affKey, composeLockId(false), evictExclude,
-                                            fileProps, t, t);
+//                                        final IgfsFileInfo newFileInfo = new IgfsFileInfo(overwriteId,
+//                                            cfg.getBlockSize(), 0L, affKey, composeLockId(false), evictExclude,
+//                                            fileProps, t, t);
 
-                                        assert newFileInfo.lockId() != null; // locked info should be created.
+                                        assert fileProc.lockId != null; // locked info should be created.
 
-                                        boolean put = id2InfoPrj.putIfAbsent(newFileInfo.id(), newFileInfo);
+//                                        boolean put = id2InfoPrj.putIfAbsent(newFileInfo.id(), newFileInfo);
+//
+//                                        assert put;
+                                        id2InfoPrj.invoke(overwriteId, fileProc);
+                                        id2InfoPrj.invoke(parentId, new ListingAdd2(name, fileProc));
 
-                                        assert put;
-
-                                        id2InfoPrj.invoke(parentId,
-                                                new ListingAdd(name, new IgfsListingEntry(newFileInfo)));
-
-                                        IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(newFileInfo, parentId);
+                                        IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(fileProc.buildInfo(), parentId);
 
                                         tx.commit();
 
@@ -3633,7 +3810,7 @@ public class IgfsMetaManager extends IgfsManager {
                                 assert b.leafInfo != null;
                                 assert b.leafParentId != null;
 
-                                IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(b.leafInfo, b.leafParentId);
+                                IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(b.leafInfo.buildInfo(), b.leafParentId);
 
                                 tx.commit();
 
@@ -3687,7 +3864,7 @@ public class IgfsMetaManager extends IgfsManager {
         protected final IgfsPath existingPath;
 
         /** The created leaf info. */
-        protected IgfsFileInfo leafInfo;
+        protected CreateDirEntryProcessor leafInfo;
 
         /** The leaf parent id. */
         protected IgniteUuid leafParentId;
@@ -3699,7 +3876,8 @@ public class IgfsMetaManager extends IgfsManager {
          * Creates the builder and performa all the initial calculations.
          */
         protected DirectoryChainBuilder(IgfsPath path,
-                 Map<String,String> middleProps, Map<String,String> leafProps) throws IgniteCheckedException {
+                 Map<String,String> middleProps,
+                 Map<String,String> leafProps) throws IgniteCheckedException {
             this.path = path;
 
             this.components = path.components();
@@ -3755,39 +3933,39 @@ public class IgfsMetaManager extends IgfsManager {
         /**
          * Builds middle nodes.
          */
-        protected IgfsFileInfo buildMiddleNode(IgniteUuid id, String childName, IgfsFileInfo childInfo) {
-            return new IgfsFileInfo(id, Collections.singletonMap(childName,
-                    new IgfsListingEntry(childInfo)), middleProps);
+        protected CreateDirEntryProcessor buildMiddleNode(IgniteUuid id, String childName,
+                CreateDirEntryProcessor childInfo) {
+//            return new IgfsFileInfo(id,
+//                Collections.singletonMap(childName, new IgfsListingEntry(childInfo)), middleProps);
+            return new CreateDirWithListingEntryProcessor(id, middleProps, childName, childInfo);
         }
 
         /**
          * Builds leaf.
          */
-        protected IgfsFileInfo buildLeaf(IgniteUuid id)  {
-            long t = System.currentTimeMillis();
-
-            return new IgfsFileInfo(true, id, leafProps, t, t);
+        protected CreateDirEntryProcessor buildLeaf(final IgniteUuid id)  {
+            return new CreateDirEntryProcessor(id, leafProps, System.currentTimeMillis());
         }
 
-        /**
-         * Links newly created chain to existing parent.
-         */
-        final void linkBuiltChainToExistingParent(String childName, IgfsFileInfo childInfo)
-                throws IgniteCheckedException {
-            assert childInfo != null;
-
-            id2InfoPrj.invoke(lowermostExistingId, new ListingAdd(childName, new IgfsListingEntry(childInfo)));
-        }
+//        /**
+//         * Links newly created chain to existing parent.
+//         */
+//        final void linkBuiltChainToExistingParent(String childName, IgfsFileInfo childInfo)
+//                throws IgniteCheckedException {
+//            assert childInfo != null;
+//
+//            id2InfoPrj.invoke(lowermostExistingId, new ListingAdd(childName, new IgfsListingEntry(childInfo)));
+//        }
 
         /**
          * Does the main portion of job building the renmaining path.
          */
         public final void doBuild() throws IgniteCheckedException {
-            IgfsFileInfo childInfo = null;
+            CreateDirEntryProcessor childInfo = null;
 
             String childName = null;
 
-            IgfsFileInfo newLeafInfo;
+            CreateDirEntryProcessor newLeafInfo;
             IgniteUuid parentId = null;
 
             // This loop creates the missing directory chain from the bottom to the top:
@@ -3814,9 +3992,10 @@ public class IgfsMetaManager extends IgfsManager {
                         parentId = newLeafInfo.id();
                 }
 
-                boolean put = id2InfoPrj.putIfAbsent(newLeafInfo.id(), newLeafInfo);
+                //boolean put = id2InfoPrj.putIfAbsent(newLeafInfo.id(), newLeafInfo);
+                //assert put;
 
-                assert put; // Because we used a new id that should be unique.
+                id2InfoPrj.invoke(newLeafInfo.id(), newLeafInfo);
 
                 childInfo = newLeafInfo;
 
@@ -3829,7 +4008,8 @@ public class IgfsMetaManager extends IgfsManager {
             leafParentId = parentId;
 
             // Now link the newly created directory chain to the lowermost existing parent:
-            linkBuiltChainToExistingParent(childName, childInfo);
+            //linkBuiltChainToExistingParent(childName, childInfo);
+            id2InfoPrj.invoke(lowermostExistingId, new ListingAdd2(childName, childInfo));
         }
 
         /**
@@ -3912,6 +4092,86 @@ public class IgfsMetaManager extends IgfsManager {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(LockFileProcessor.class, this);
+        }
+    }
+
+    /**
+     * Update directory listing closure.
+     */
+    @GridInternal
+    private static final class ListingAdd2 implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
+        Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** File name to add into parent listing. */
+        private String fileName;
+
+        /** File ID.*/
+        private CreateDirEntryProcessor childProc;
+
+        /**
+         * Constructs update directory listing closure.
+         *
+         * @param fileName File name to add into parent listing.
+         * @param entry Listing entry to add or remove.
+         */
+        private ListingAdd2(String fileName, CreateDirEntryProcessor childProc) {
+            assert fileName != null;
+            assert childProc != null;
+
+            this.fileName = fileName;
+            this.childProc = childProc;
+        }
+
+        /**
+         * Empty constructor required for {@link Externalizable}.
+         *
+         */
+        public ListingAdd2() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> e, Object... args) {
+            IgfsFileInfo fileInfo = e.getValue();
+
+            IgfsFileInfo info = childProc.buildInfo();
+            IgfsListingEntry entry = new IgfsListingEntry(info);
+
+            assert fileInfo != null : "File info not found for the child: " + entry.fileId();
+            assert fileInfo.isDirectory();
+
+            Map<String, IgfsListingEntry> listing = new HashMap<>(fileInfo.listing());
+
+            // Modify listing in-place.
+            IgfsListingEntry oldEntry = listing.put(fileName, entry);
+
+            if (oldEntry != null && !oldEntry.fileId().equals(entry.fileId()))
+                throw new IgniteException("Directory listing contains unexpected file" +
+                    " [listing=" + listing + ", fileName=" + fileName + ", entry=" + entry +
+                    ", oldEntry=" + oldEntry + ']');
+
+            e.setValue(new IgfsFileInfo(listing, fileInfo));
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, fileName);
+            out.writeObject(childProc);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            fileName = U.readString(in);
+            childProc = (CreateDirEntryProcessor)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ListingAdd2.class, this);
         }
     }
 }
