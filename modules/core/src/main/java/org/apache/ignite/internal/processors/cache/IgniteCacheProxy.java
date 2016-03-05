@@ -325,10 +325,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public <K1, V1> IgniteCache<K1, V1> withKeepBinary() {
-        if (ctx.kernalContext().config().getMarshaller() instanceof BinaryMarshaller)
+        if ((ctx.kernalContext().config().getMarshaller() != null) && (ctx.kernalContext().config().getMarshaller() instanceof BinaryMarshaller))
             return keepBinary();
         else
-            return (IgniteCache)this;
+            throw new IgniteException("error: withKeepBinary() cannot be invoked on a cache that has no binary marshaller");
     }
 
     /** {@inheritDoc} */
