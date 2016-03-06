@@ -51,7 +51,7 @@ public class CacheWithKeepBinarySelfTest extends GridCommonAbstractTest {
 
         /* test with a non-binary marshaller - should induce an exception */
         binaryCache = false;
-        Ignite ignite = startGrid("non_binary");
+        final Ignite ignite = startGrid("non_binary");
 
         GridTestUtils.assertThrows(
                 new GridStringLogger(false),
