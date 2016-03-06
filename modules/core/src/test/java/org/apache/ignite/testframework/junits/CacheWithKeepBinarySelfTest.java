@@ -47,17 +47,17 @@ public class CacheWithKeepBinarySelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    public void testWithKeepBinaryOnNonBinaryCacheMarshaller() throws Exception {
+    public void testWithKeepBinary() throws Exception {
 
         /* test with a non-binary marshaller - should induce an exception */
         binaryCache = false;
-        final Ignite ignite = startGrid("non_binary");
+        final Ignite ignite = startGrid("binary_tests");
 
         GridTestUtils.assertThrows(
                 new GridStringLogger(false),
                 new Callable<IgniteCache<String,String>>() {
                     @Override public IgniteCache<String,String> call() throws Exception {
-                        IgniteCache<String, String> cacheNonBin = ignite.cache("non_binary").withKeepBinary();
+                        IgniteCache<String, String> cacheNonBin = ignite.cache(null).withKeepBinary();
                         return null;
                     }
                 },
@@ -65,12 +65,9 @@ public class CacheWithKeepBinarySelfTest extends GridCommonAbstractTest {
                 "error: withKeepBinary() cannot be invoked on a cache that has no binary marshaller"
         );
 
-        stopGrid();
-
         /* now test with a binary marshaller - should return a valid cache */
         binaryCache = true;
-        Ignite ignite2 = startGrid("binary");
-        IgniteCache<String, String> cacheNormal = ignite2.cache("binary");
+        IgniteCache<String, String> cacheNormal = ignite.cache("binary");
         cacheNormal.put("1","1");
         IgniteCache<String, BinaryObject> cacheBin = cacheNormal.withKeepBinary();
         BinaryObject binOb = cacheBin.get("1");
