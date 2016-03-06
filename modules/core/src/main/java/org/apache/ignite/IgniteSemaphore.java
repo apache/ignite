@@ -290,13 +290,9 @@ public interface IgniteSemaphore extends Closeable {
     public int getQueueLength();
 
     /**
-     * Gets {@code broken} status of the local semaphore instance. Semaphore is broken if any of the following occurs:
-     * 1. Any node that previously acquired but not released a permit on this semaphore has failed and semaphore was
-     * created in non-failoverSafe mode; 2. Local node has been stopped. In this case every attempt to acquire throws
-     * {@link IgniteInterruptedException}.
+     * Gets {@code broken} status of the semaphore.
      *
-     * @return {@code True} if a node failed on this semaphore and failoverSafe flag was set to false, or this node has
-     * been stopped. {@code false} otherwise.
+     * @return {@code True} if a node failed on this semaphore and failoverSafe flag was set to false, {@code false} otherwise.
      */
     public boolean isBroken();
 
