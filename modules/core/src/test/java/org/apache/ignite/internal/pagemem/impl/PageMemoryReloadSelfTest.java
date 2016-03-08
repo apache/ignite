@@ -24,11 +24,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.Page;
@@ -57,7 +58,7 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testPageContentReload() {
+    public void testPageContentReload() throws Exception {
         PageMemory mem = memory(true);
 
         Collection<Long> pages = new ArrayList<>();
@@ -357,7 +358,7 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
      * @param mem Memory.
      * @return Page.
      */
-    public static long allocatePage(PageMemory mem) {
+    public static long allocatePage(PageMemory mem) throws IgniteCheckedException {
         return mem.allocatePage(0, -1, PageIdAllocator.FLAG_DATA);
     }
 }

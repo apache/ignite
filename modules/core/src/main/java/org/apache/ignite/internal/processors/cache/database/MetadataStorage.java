@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.database;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -50,7 +51,10 @@ public class MetadataStorage {
      * @return A tuple, consisting of a root page ID for the given index and a boolean flag
      *      indicating whether the page was newly allocated.
      */
-    public IgniteBiTuple<Long, Boolean> getOrAllocateForIndex(int cacheId, String idxName) {
+    public IgniteBiTuple<Long, Boolean> getOrAllocateForIndex(
+        int cacheId,
+        String idxName
+    ) throws IgniteCheckedException {
         byte[] idxNameBytes = idxName.getBytes(UTF_8);
 
         long metaId = metaPage(cacheId);
@@ -83,7 +87,7 @@ public class MetadataStorage {
      * @param idxNameBytes Index name to find.
      * @return Non-zero root page iD if an index with the given name was found.
      */
-    private long tryFindIndexRoot(Page meta, byte[] idxNameBytes, SearchState state) {
+    private long tryFindIndexRoot(Page meta, byte[] idxNameBytes, SearchState state) throws IgniteCheckedException {
         ByteBuffer buf = meta.getForRead();
 
         try {
@@ -138,7 +142,7 @@ public class MetadataStorage {
         int cacheId,
         byte[] idxNameBytes,
         SearchState state
-    ) {
+    ) throws IgniteCheckedException {
         ByteBuffer buf = meta.getForWrite();
 
         try {
@@ -246,7 +250,7 @@ public class MetadataStorage {
      * @param cacheId Cache ID to get meta page for.
      * @return Meta page.
      */
-    private long metaPage(int cacheId) {
+    private long metaPage(int cacheId) throws IgniteCheckedException {
         Page meta = pageMem.metaPage();
 
         try {

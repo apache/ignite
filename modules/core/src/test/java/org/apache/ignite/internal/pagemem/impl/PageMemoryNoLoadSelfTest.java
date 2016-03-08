@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.Page;
@@ -247,7 +249,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
      * @param mem Memory.
      * @return Page.
      */
-    public static long allocatePage(PageMemory mem) {
+    public static long allocatePage(PageMemory mem) throws IgniteCheckedException {
         return mem.allocatePage(0, -1, PageIdAllocator.FLAG_DATA);
     }
 }

@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.pagemem;
 
+import org.apache.ignite.IgniteCheckedException;
+
 /**
  * Persistent store of pages.
  */
 public interface PageStore extends PageIdAllocator {
 
-    public void read(Page page);
+    public void read(Page page) throws IgniteCheckedException;
 
-    public void write(Page page);
+    public void write(Page page) throws IgniteCheckedException;
 }

@@ -88,10 +88,20 @@ public final class PageIdUtils {
      * @param pageIdx Page index.
      * @return Page ID.
      */
-    public static long pageId(int fileId, int pageIdx) {
+    public static long pageId(int fileId, long pageIdx) {
         assert (pageIdx & ~PAGE_NUM_MASK) == 0;
 
         return (((long)fileId) << PAGE_NUM_SIZE) | pageIdx;
+    }
+
+    /**
+     * Extracts a page index from the given pageId.
+     *
+     * @param pageId Page id.
+     * @return Page ID.
+     */
+    public static long pageIdx(long pageId) {
+        return pageId & PAGE_NUM_MASK;
     }
 
     /**
@@ -133,7 +143,7 @@ public final class PageIdUtils {
     public static int dwordsOffset(long link) {
         return (int)(link >> (PAGE_NUM_SIZE + FILE_ID_SIZE)) & OFFSET_SHIFTED_MASK;
     }
-    
+
     /**
      * @param cacheId Cache ID.
      * @param partId Partition ID.
