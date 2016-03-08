@@ -90,7 +90,7 @@ class WebSession implements HttpSession, Externalizable {
     private transient Collection<T2<String, Object>> updates;
 
     /** Genuine http session. */
-    private transient HttpSession genuineSession;
+    private transient HttpSession genSes;
 
     /**
      * Required by {@link Externalizable}.
@@ -120,8 +120,6 @@ class WebSession implements HttpSession, Externalizable {
 
             attrs.put(name, ses.getAttribute(name));
         }
-
-        genuineSession = ses;
     }
 
     /**
@@ -132,6 +130,15 @@ class WebSession implements HttpSession, Externalizable {
         this(ses);
 
         this.isNew = isNew;
+    }
+
+    /**
+     * Sets the genuine http session.
+     *
+     * @param genSes Genuine http session.
+     */
+    protected void genSes(HttpSession genSes) {
+        this.genSes = genSes;
     }
 
     /**
@@ -189,6 +196,15 @@ class WebSession implements HttpSession, Externalizable {
     /** {@inheritDoc} */
     @Override public String getId() {
         return id;
+    }
+
+    /**
+     * Sets a session id.
+     *
+     * @param id Session id.
+     */
+    protected void setId(String id) {
+        this.id = id;
     }
 
     /** {@inheritDoc} */
@@ -294,7 +310,7 @@ class WebSession implements HttpSession, Externalizable {
 
         lsnr.destroySession(id);
 
-        genuineSession.invalidate();
+        genSes.invalidate();
 
         isValid = false;
     }
