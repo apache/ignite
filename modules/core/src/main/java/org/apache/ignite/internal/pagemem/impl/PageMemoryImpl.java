@@ -24,9 +24,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -115,6 +117,12 @@ public class PageMemoryImpl implements PageMemory {
 
     /** */
     private long dbMetaPageIdPtr;
+
+    /** Pages marked as dirty since the last checkpoint. */
+    private Set<Long> dirtyPages;
+
+    /** Pages captured for the checkpoint process. */
+    private Set<Long> checkpointPages;
 
     /**
      * @param log Logger to use.
@@ -355,6 +363,21 @@ public class PageMemoryImpl implements PageMemory {
     /** {@inheritDoc} */
     @Override public int pageSize() {
         return sysPageSize - PAGE_OVERHEAD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Long> beginCheckpoint() throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishCheckpoint() throws IgniteCheckedException {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public ByteBuffer getForCheckpoint(long pageId) throws IgniteCheckedException {
+        return null;
     }
 
     /**
