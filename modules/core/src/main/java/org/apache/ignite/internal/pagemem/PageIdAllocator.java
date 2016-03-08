@@ -1,5 +1,7 @@
 package org.apache.ignite.internal.pagemem;
 
+import org.apache.ignite.IgniteCheckedException;
+
 /**
  * Allocates page ID's.
  */
@@ -21,7 +23,7 @@ public interface PageIdAllocator {
      * @param flags Flags to separate page spaces.
      * @return Allocated page ID.
      */
-    public long allocatePage(int cacheId, int partId, byte flags);
+    public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException;
 
     /**
      * The given page is free now.
@@ -29,5 +31,5 @@ public interface PageIdAllocator {
      * @param pageId Page ID.
      * @return
      */
-    public boolean freePage(long pageId);
+    public boolean freePage(long pageId) throws IgniteCheckedException;
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.pagemem;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
@@ -25,7 +26,7 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
     /**
      * @return Meta page.
      */
-    public Page metaPage();
+    public Page metaPage() throws IgniteCheckedException;
 
     /**
      * Gets the page associated with the given page ID. Each page obtained with this method must be released by
@@ -34,15 +35,15 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @param pageId Page ID.
      * @return Page or {@code null} if this page ID was not allocated.
      */
-    public Page page(long pageId);
+    public Page page(long pageId) throws IgniteCheckedException;
 
     /**
      * @param page Page to release.
      */
-    public void releasePage(Page page);
+    public void releasePage(Page page) throws IgniteCheckedException;
 
     /**
      * @return Page size in bytes.
      */
-    public int pageSize();
+    public int pageSize() throws IgniteCheckedException;
 }

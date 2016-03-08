@@ -28,6 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.mem.DirectMemory;
@@ -160,7 +162,7 @@ public class PageMemoryImpl implements PageMemory {
             else
                 initNew(memory);
         }
-        catch (ClassNotFoundException | NoSuchMethodException e) {
+        catch (ClassNotFoundException | IgniteCheckedException | NoSuchMethodException e) {
             throw new IgniteException("Failed to initialize DirectBuffer class internals.", e);
         }
     }
@@ -185,7 +187,7 @@ public class PageMemoryImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public long allocatePage(int cacheId, int partId, byte flags) {
+    @Override public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException {
         if (fileStore != null)
             return fileStore.allocatePage(cacheId, partId, flags);
 
@@ -231,7 +233,7 @@ public class PageMemoryImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean freePage(long pageId) {
+    @Override public boolean freePage(long pageId) throws IgniteCheckedException {
         if (fileStore != null)
             return fileStore.freePage(pageId);
 
@@ -263,12 +265,12 @@ public class PageMemoryImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public Page metaPage() {
+    @Override public Page metaPage() throws IgniteCheckedException {
         return page(mem.readLong(dbMetaPageIdPtr));
     }
 
     /** {@inheritDoc} */
-    @Override public Page page(long pageId) {
+    @Override public Page page(long pageId) throws IgniteCheckedException {
         Segment seg = segment(pageId);
 
         seg.readLock().lock();
@@ -364,7 +366,7 @@ public class PageMemoryImpl implements PageMemory {
         ByteBuffer buf;
 
         try {
-             buf = directByteBufCtor.newInstance(ptr, len, null);
+            buf = directByteBufCtor.newInstance(ptr, len, null);
         }
         catch (InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -540,7 +542,7 @@ public class PageMemoryImpl implements PageMemory {
     /**
      *
      */
-    private void initNew(DirectMemory memory) {
+    private void initNew(DirectMemory memory) throws IgniteCheckedException {
         long totalMemory = 0;
 
         for (DirectMemoryFragment fr : memory.fragments())
