@@ -28,13 +28,8 @@ namespace Apache.Ignite.Core.Common
         Java,
 
         /// <summary>
-        /// .NET platform
+        /// .NET platform.
         /// </summary>
-        DotNet,
-
-        /// <summary>
-        /// C++ platform
-        /// </summary>
-        Cpp
+        DotNet
     }
 }
