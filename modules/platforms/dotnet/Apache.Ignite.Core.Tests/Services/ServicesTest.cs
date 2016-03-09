@@ -511,6 +511,8 @@ namespace Apache.Ignite.Core.Tests.Services
             Grid1.GetCompute()
                 .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
 
+            Assert.AreEqual(1, Services.GetServices<IJavaService>(javaSvcName).Count);
+
             var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false);
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(javaSvcName, false);
