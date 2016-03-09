@@ -90,7 +90,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Apache.Ignite.Linq.nuspec" />
     <None Include="Apache.Ignite.Linq.snk" />
+    <None Include="NuGet\LINQPad\QueryExample.linq" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
