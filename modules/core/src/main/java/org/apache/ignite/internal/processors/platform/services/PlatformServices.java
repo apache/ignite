@@ -58,10 +58,10 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_DOTNET_DEPLOY_MULTIPLE = 2;
 
     /** */
-    private static final int OP_DOTNET_SERVICES = 3;
+    private static final int OP_SERVICES = 3;
 
     /** */
-    private static final int OP_DOTNET_INVOKE = 4;
+    private static final int OP_INVOKE = 4;
 
     /** */
     private static final int OP_DESCRIPTORS = 5;
@@ -139,7 +139,7 @@ public class PlatformServices extends PlatformAbstractTarget {
             throw new IgniteException("Failed to find deployed service: " + name);
 
         Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
-            ? services.serviceProxy(name, PlatformDotNetService.class, sticky)
+            ? services.serviceProxy(name, PlatformService.class, sticky)
             : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, platformCtx.kernalContext());
 
         return new ServiceProxyHolder(proxy, d.serviceClass());
@@ -204,7 +204,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
-            case OP_DOTNET_SERVICES: {
+            case OP_SERVICES: {
                 Collection<Service> svcs = services.services(reader.readString());
 
                 PlatformUtils.writeNullableCollection(writer, svcs,
@@ -232,7 +232,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     @Override protected void processInObjectStreamOutStream(int type, Object arg, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
-            case OP_DOTNET_INVOKE: {
+            case OP_INVOKE: {
                 assert arg != null;
                 assert arg instanceof ServiceProxyHolder;
 
