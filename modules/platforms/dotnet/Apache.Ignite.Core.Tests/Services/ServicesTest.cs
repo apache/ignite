@@ -508,10 +508,18 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             const string javaSvcName = "javaService";
 
+            // Deploy Java service
             Grid1.GetCompute()
                 .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
 
-            Assert.AreEqual(1, Services.GetServiceDescriptors().Count(x => x.Name == javaSvcName));
+            // Verify decriptor
+            var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
+            Assert.AreEqual(javaSvcName, descriptor.Name);
+            Assert.Throws<ServiceInvocationException>(() =>
+            {
+                // ReSharper disable once UnusedVariable
+                var type = descriptor.Type;
+            });
 
             var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false);
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()

@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 catch (Exception ex)
                 {
                     throw new ServiceInvocationException(
-                        "Failed to retrieve service type. It has either been cancelled, or is not a .Net service", ex);
+                        "Failed to retrieve service type. It has either been cancelled, or is not a .NET service", ex);
                 }
             }
         }
