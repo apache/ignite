@@ -78,6 +78,7 @@
                             </xs:element>
                         </xs:all>
                         <xs:attribute name="defaultKeepDeserialized" type="xs:boolean" />
+                        <xs:attribute name="compactFooter" type="xs:boolean" />
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="cacheConfiguration" minOccurs="0">
