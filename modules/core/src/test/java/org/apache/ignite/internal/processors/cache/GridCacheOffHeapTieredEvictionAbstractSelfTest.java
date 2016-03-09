@@ -169,7 +169,10 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testTransform() throws Exception {
-        final IgniteCache<Integer, Object> cache = grid(0).cache(null).withKeepBinary();
+        /* we need to enforce binary marshaller in this test since IGNITE-2693 */
+        final CacheConfiguration<Integer, Object> cacheCfg = new CacheConfiguration();
+        cacheCfg.setStoreKeepBinary(true);
+        final IgniteCache<Integer, Object> cache = grid(0).createCache(cacheCfg).withKeepBinary();
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
