@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618
+#pragma warning disable 618   // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using Apache.Ignite.Core.Binary;
@@ -31,9 +31,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         private IIgnite _grid1;
 
         /** */
-        //private IIgnite _grid2;
-        
-        /** */
         private IIgnite _clientGrid;
 
         [SetUp]
@@ -41,7 +38,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             // Start fresh cluster for each test
             _grid1 = Ignition.Start(Config("config\\compute\\compute-grid1.xml"));
-            //_grid2 = Ignition.Start(Config("config\\compute\\compute-grid2.xml"));
             _clientGrid = Ignition.Start(Config("config\\compute\\compute-grid3.xml"));
         }
 
@@ -62,6 +58,21 @@ namespace Apache.Ignite.Core.Tests.Binary
                 ComputeApiTest.EchoTypeBinarizable);
 
             Assert.AreEqual(1, fromJava.Field);
+        }
+
+        [Test]
+        public void TestFromDotNet([Values(true, false)] bool client)
+        {
+            var grid = client ? _clientGrid : _grid1;
+
+            var compute = grid.GetCompute();
+
+            var arg = new PlatformComputeNetBinarizable {Field = 100};
+
+            var res = compute.ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
+
+            Assert.AreEqual(arg.Field, res);
+
         }
 
         /// <summary>

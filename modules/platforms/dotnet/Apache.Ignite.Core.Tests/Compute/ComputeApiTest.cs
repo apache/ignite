@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         public const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
 
         /** Binary argument task name. */
-        private const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
+        public const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
 
         /** Broadcast task name. */
         public const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
