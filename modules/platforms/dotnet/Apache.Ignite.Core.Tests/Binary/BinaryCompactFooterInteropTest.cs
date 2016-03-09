@@ -19,6 +19,7 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System.Collections;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
@@ -106,6 +107,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             var qryRes = grid.GetCompute().ExecuteJavaTask<IList>(PlatformSqlQueryTask, "Field < 10");
 
             Assert.AreEqual(10, qryRes.Count);
+            Assert.IsTrue(qryRes.OfType<PlatformComputeBinarizable>().All(x => x.Field < 10));
         }
 
         /// <summary>
