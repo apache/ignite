@@ -212,11 +212,6 @@ public class PlatformServices extends PlatformAbstractTarget {
                         @Override public void write(BinaryRawWriterEx writer, Service svc) {
                             writer.writeLong(((PlatformService) svc).pointer());
                         }
-                    },
-                    new IgnitePredicate<Service>() {
-                        @Override public boolean apply(Service svc) {
-                            return svc instanceof PlatformDotNetService;
-                        }
                     }
                 );
 
