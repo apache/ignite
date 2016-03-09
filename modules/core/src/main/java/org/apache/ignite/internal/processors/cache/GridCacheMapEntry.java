@@ -1718,7 +1718,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (writeThrough)
                     // Must persist inside synchronization in non-tx mode.
-                    cctx.store().put(null, key, val, ver);
+                    cctx.store().put(null, key, updated, ver);
+
 
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
