@@ -386,7 +386,7 @@ namespace ignite
 			JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE = JniMethod("withServerKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL = JniMethod("cancel", "(Ljava/lang/String;)V", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL_ALL = JniMethod("cancelAll", "()V", false);
-			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("dotNetServiceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
+			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("serviceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
 
             const char* C_PLATFORM_ATOMIC_LONG = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicLong";
             JniMethod M_PLATFORM_ATOMIC_LONG_GET = JniMethod("get", "()J", false);

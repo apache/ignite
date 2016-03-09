@@ -132,7 +132,7 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @param sticky Whether or not Ignite should always contact the same remote service.
      * @return Either proxy over remote service or local service if it is deployed locally.
      */
-    public Object dotNetServiceProxy(String name, boolean sticky) {
+    public Object serviceProxy(String name, boolean sticky) {
         ServiceDescriptor d = findDescriptor(name);
 
         if (d == null)
