@@ -602,7 +602,13 @@ public class BinaryContext {
 
         String clsName = cls.getName();
 
-        if (marshCtx.isSystemType(clsName) && !BINARYLIZABLE_SYSTEM_CLASSES.contains(clsName)) {
+        if (marshCtx.isSystemType(clsName)) {
+
+            BinarySerializer serializer = null;
+
+            if (BINARYLIZABLE_SYSTEM_CLASSES.contains(clsName))
+                serializer = new BinaryReflectiveSerializer();
+
             desc = new BinaryClassDescriptor(this,
                 cls,
                 false,
@@ -610,7 +616,7 @@ public class BinaryContext {
                 clsName,
                 null,
                 SIMPLE_NAME_LOWER_CASE_MAPPER,
-                null,
+                serializer,
                 false,
                 true /* registered */
             );

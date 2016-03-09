@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -68,6 +69,8 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
             cfg.setCacheConfiguration(cacheCfg);
         }
 
+        cfg.setMarshaller(new BinaryMarshaller());
+
         return cfg;
     }
 
@@ -84,12 +87,14 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testAffinity() throws IgniteCheckedException {
+    public void testAffinity() throws Exception {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);
 
         assert caches(g1).size() == 0;
         assert F.first(caches(g2)).getCacheMode() == PARTITIONED;
+
+        awaitPartitionMapExchange();
 
         Map<ClusterNode, Collection<String>> map = g1.<String>affinity(null).mapKeysToNodes(F.asList("1"));
 
