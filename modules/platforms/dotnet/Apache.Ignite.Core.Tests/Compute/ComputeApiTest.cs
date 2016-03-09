@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class ComputeApiTest
     {
         /** Echo task name. */
-        private const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
+        public const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
 
         /** Binary argument task name. */
         private const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private const int EchoTypeMap = 11;
 
         /** Echo type: binarizable. */
-        private const int EchoTypeBinarizable = 12;
+        public const int EchoTypeBinarizable = 12;
 
         /** Echo type: binary (Java only). */
         private const int EchoTypeBinarizableJava = 13;
