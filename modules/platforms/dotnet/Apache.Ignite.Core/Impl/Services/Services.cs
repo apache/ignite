@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Services
         private const int OpDeployMultiple = 2;
 
         /** */
-        private const int OpServices = 3;
+        private const int OpDotnetServices = 3;
 
         /** */
         private const int OpInvokeMethod = 4;
@@ -308,22 +308,23 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            return DoOutInOp<ICollection<T>>(OpServices, w => w.WriteString(name),
+            return DoOutInOp<ICollection<T>>(OpDotnetServices, w => w.WriteString(name),
                 r =>
                 {
                     bool hasVal = r.ReadBool();
 
-                    if (!hasVal)
-                        return null;
-
-                    var count = r.ReadInt();
+                    if (hasVal)
+                    {
+                        var count = r.ReadInt();
                         
-                    var res = new List<T>(count);
+                        var res = new List<T>(count);
 
-                    for (var i = 0; i < count; i++)
-                        res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
+                        for (var i = 0; i < count; i++)
+                            res.Add(Marshaller.Ignite.HandleRegistry.Get<T>(r.ReadLong()));
 
-                    return res;
+                        return res;
+                    }
+                    return null;
                 });
         }
 

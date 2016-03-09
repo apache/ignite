@@ -58,7 +58,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_DOTNET_DEPLOY_MULTIPLE = 2;
 
     /** */
-    private static final int OP_SERVICES = 3;
+    private static final int OP_DOTNET_SERVICES = 3;
 
     /** */
     private static final int OP_INVOKE = 4;
@@ -204,13 +204,18 @@ public class PlatformServices extends PlatformAbstractTarget {
     @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
-            case OP_SERVICES: {
+            case OP_DOTNET_SERVICES: {
                 Collection<Service> svcs = services.services(reader.readString());
 
                 PlatformUtils.writeNullableCollection(writer, svcs,
                     new PlatformWriterClosure<Service>() {
                         @Override public void write(BinaryRawWriterEx writer, Service svc) {
                             writer.writeLong(((PlatformService) svc).pointer());
+                        }
+                    },
+                    new IgnitePredicate<Service>() {
+                        @Override public boolean apply(Service svc) {
+                            return svc instanceof PlatformDotNetService;
                         }
                     }
                 );
