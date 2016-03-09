@@ -62,6 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
+    <Compile Include="Binary\BinaryCompactFooterInteropTest.cs" />
     <Compile Include="Binary\BinarySelfTestFullFooter.cs" />
     <Compile Include="Cache\CacheConfigurationTest.cs" />
     <Compile Include="Cache\CacheDynamicStartTest.cs" />
