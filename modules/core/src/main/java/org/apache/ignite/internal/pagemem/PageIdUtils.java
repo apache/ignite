@@ -34,6 +34,18 @@ public final class PageIdUtils {
     private static final int FILE_ID_SIZE = Long.bitCount(FILE_ID_MASK);
 
     /** */
+    private static final int PART_ID_SIZE = 14;
+
+    /** */
+    private static final int PART_ID_MASK = ~(-1 << PART_ID_SIZE);
+
+    /** */
+    private static final int FLAG_SIZE = 3;
+
+    /** */
+    private static final int FLAG_MASK = ~(-1 << FLAG_SIZE);
+
+    /** */
     private static final int PAGE_NUM_SIZE = Long.bitCount(PAGE_NUM_MASK);
 
     /** Maximum page number. */
@@ -44,6 +56,9 @@ public final class PageIdUtils {
 
     /** Maximum offset in dwords. */
     public static final int MAX_OFFSET_DWORDS = OFFSET_SHIFTED_MASK;
+
+    /** Maximum part number. */
+    public static final int MAX_PART_ID = (1 << PART_ID_SIZE) - 1;
 
     /**
      *
@@ -91,7 +106,7 @@ public final class PageIdUtils {
     public static long pageId(int fileId, long pageIdx) {
         assert (pageIdx & ~PAGE_NUM_MASK) == 0;
 
-        return (((long)fileId) << PAGE_NUM_SIZE) | pageIdx;
+        return (( ((long)fileId) << PAGE_NUM_SIZE) & FILE_ID_MASK ) | pageIdx;
     }
 
     /**
@@ -151,5 +166,28 @@ public final class PageIdUtils {
      */
     public static int fileId(int cacheId, int partId) {
         return (cacheId & 0xFF << 14) | partId;
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param partId Partition ID.
+     * @return Part ID constructed from the given cache ID and partition ID.
+     */
+    public static long pageId(int cacheId, int partId, byte flag, long pageIdx) {
+        int fileId = cacheId;
+
+        fileId = (fileId << FLAG_SIZE) | (flag & FLAG_MASK);
+
+        fileId = (fileId << PART_ID_SIZE) | (partId & PART_ID_MASK);
+
+        return pageId(fileId, pageIdx);
+    }
+
+    public static byte flag(long pageId) {
+        return (byte) (( pageId >>> (PART_ID_SIZE + PAGE_NUM_SIZE) ) & FLAG_MASK);
+    }
+
+    public static int partId(long pageId) {
+        return (int) ((pageId >>> PAGE_NUM_SIZE) & PART_ID_MASK);
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.pagemem;
 
+import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
@@ -27,4 +28,6 @@ public interface PageStore extends PageIdAllocator {
     public void read(Page page) throws IgniteCheckedException;
 
     public void write(Page page) throws IgniteCheckedException;
+
+    public void sync(Iterable<Page> pages) throws IgniteCheckedException;
 }
