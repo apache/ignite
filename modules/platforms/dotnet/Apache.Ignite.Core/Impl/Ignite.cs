@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -86,9 +87,12 @@ namespace Apache.Ignite.Core.Impl
         private readonly UnmanagedCallbacks _cbs;
 
         /** Node info cache. */
-
         private readonly ConcurrentDictionary<Guid, ClusterNodeImpl> _nodes =
             new ConcurrentDictionary<Guid, ClusterNodeImpl>();
+
+        /** Client reconnect task completion source. */
+        private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
+            new TaskCompletionSource<bool>();
 
         /// <summary>
         /// Constructor.
@@ -128,6 +132,9 @@ namespace Apache.Ignite.Core.Impl
             // Grid is not completely started here, can't initialize interop transactions right away.
             _transactions = new Lazy<TransactionsImpl>(
                     () => new TransactionsImpl(UU.ProcessorTransactions(proc), marsh, GetLocalNode().Id));
+
+            // Set reconnected task to completed state for convenience.
+            _clientReconnectTaskCompletionSource.SetResult(false);
         }
 
         /// <summary>
@@ -429,6 +436,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public Task<bool> ClientReconnectTask
+        {
+            get { return _clientReconnectTaskCompletionSource.Task; }
+        }
+
+        /** <inheritdoc /> */
         public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
         {
             return new DataStreamerImpl<TK, TV>(UU.ProcessorDataStreamer(_proc, cacheName, false),
@@ -483,6 +496,56 @@ namespace Apache.Ignite.Core.Impl
                 return null;
 
             return new AtomicLong(nativeLong, Marshaller, name);
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            var nativeSeq = UU.ProcessorAtomicSequence(_proc, name, initialValue, create);
+
+            if (nativeSeq == null)
+                return null;
+
+            return new AtomicSequence(nativeSeq, Marshaller, name);
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            var refTarget = GetAtomicReferenceUnmanaged(name, initialValue, create);
+
+            return refTarget == null ? null : new AtomicReference<T>(refTarget, Marshaller, name);
+        }
+
+        /// <summary>
+        /// Gets the unmanaged atomic reference.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="initialValue">The initial value.</param>
+        /// <param name="create">Create flag.</param>
+        /// <returns>Unmanaged atomic reference, or null.</returns>
+        private IUnmanagedTarget GetAtomicReferenceUnmanaged<T>(string name, T initialValue, bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            // Do not allocate memory when default is not used.
+            if (!create)
+                return UU.ProcessorAtomicReference(_proc, name, 0, false);
+            
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
+
+                writer.Write(initialValue);
+
+                var memPtr = stream.SynchronizeOutput();
+
+                return UU.ProcessorAtomicReference(_proc, name, memPtr, true);
+            }
         }
 
         /** <inheritdoc /> */
@@ -579,6 +642,23 @@ namespace Apache.Ignite.Core.Impl
         internal IUnmanagedTarget InteropProcessor
         {
             get { return _proc; }
+        }
+
+        /// <summary>
+        /// Called when local client node has been disconnected from the cluster.
+        /// </summary>
+        public void OnClientDisconnected()
+        {
+            _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
+        }
+
+        /// <summary>
+        /// Called when local client node has been reconnected to the cluster.
+        /// </summary>
+        /// <param name="clusterRestarted">Cluster restarted flag.</param>
+        public void OnClientReconnected(bool clusterRestarted)
+        {
+            _clientReconnectTaskCompletionSource.TrySetResult(clusterRestarted);
         }
     }
 }

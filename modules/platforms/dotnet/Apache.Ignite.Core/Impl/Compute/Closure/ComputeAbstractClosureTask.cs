@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Base class for all tasks working with closures.

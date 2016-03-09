@@ -189,7 +189,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             /// <value>
             /// The name.
             /// </value>
-            [QueryTextField]
+            [QueryTextField(Name = "Name")]
             public string Name { get; set; }
 
             /// <summary>
@@ -258,7 +258,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             [QuerySqlField]
             public double SqlField { get; set; }
 
-            [QuerySqlField(IsIndexed = true, Name = "IndexedField1")]
+            [QuerySqlField(IsIndexed = true, Name = "IndexedField1", IsDescending = true)]
             public int IndexedField { get; set; }
 
             [QueryTextField]

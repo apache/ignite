@@ -17,14 +17,19 @@
 
 package org.apache.ignite.schema.ui;
 
+import java.awt.Desktop;
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.SQLException;
@@ -39,6 +44,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -75,6 +82,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Callback;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.schema.generator.CodeGenerator;
 import org.apache.ignite.schema.generator.XmlGenerator;
@@ -118,6 +126,9 @@ import static org.apache.ignite.schema.ui.Controls.vBox;
 public class SchemaImportApp extends Application {
     /** Logger. */
     private static final Logger log = Logger.getLogger(SchemaImportApp.class.getName());
+
+    /** Ability to use xdg-open utility flag. */
+    private static final boolean HAS_XDG_OPEN = U.isUnix() && new File("/usr/bin/xdg-open").canExecute();
 
     /** Presets for database settings. */
     private static class Preset {
@@ -661,6 +672,194 @@ public class SchemaImportApp extends Application {
                 return null;
             }
 
+            /**
+             * Running of command with reading of first printed line.
+             *
+             * @param cmdLine Process to run.
+             * @return First printed by command line.
+             */
+            private String execAndReadLine(Process cmdLine) {
+                InputStream stream = cmdLine.getInputStream();
+                Charset cs = Charset.defaultCharset();
+
+                try(BufferedReader reader = new BufferedReader(
+                        cs == null ? new InputStreamReader(stream) : new InputStreamReader(stream, cs))) {
+                    return reader.readLine();
+                }
+                catch (IOException ignored){
+                    return null;
+                }
+            }
+
+            /**
+             * Start specified command in separate process.
+             *
+             * @param commands Executable file and command parameters in array.
+             * @return Process instance for run command.
+             */
+            private Process startProcess(List<String> commands) throws IOException {
+                ProcessBuilder builder = new ProcessBuilder(commands);
+
+                Map<String, String> environment = builder.environment();
+
+                environment.clear();
+
+                environment.putAll(System.getenv());
+
+                return builder.start();
+            }
+
+            /**
+             * Convert specified command parameters to system specific parameters.
+             *
+             * @param cmd Path to executable file.
+             * @param parameters Params for created process.
+             * @return List of converted system specific parameters.
+             */
+            private List<String> toCommandLine(String cmd, String... parameters) {
+                boolean isWin = U.isWindows();
+
+                List<String> params = new ArrayList<>(parameters.length + 1);
+
+                params.add(cmd.replace('/', File.separatorChar).replace('\\', File.separatorChar));
+
+                for (String parameter: parameters) {
+                    if (isWin) {
+                        if (parameter.contains("\"")) params.add(parameter.replace("\"", "\\\""));
+                        else if (parameter.isEmpty()) params.add("\"\"");
+                        else params.add(parameter);
+                    }
+                    else
+                        params.add(parameter);
+                }
+
+                return params;
+            }
+
+            /**
+             * Create process for run specified command.
+             *
+             * @param execPath Path to executable file.
+             * @param params Params for created process.
+             * @return Process instance for run command.
+             */
+            private Process createProcess(String execPath, String... params) throws IOException {
+                if (F.isEmpty(execPath))
+                    throw new IllegalArgumentException("Executable not specified");
+
+                return startProcess(toCommandLine(execPath, params));
+            }
+
+            /**
+             * Compare two version strings.
+             *
+             * @param v1 Version string 1.
+             * @param v2 Version string 2.
+             * @return The value 0 if the argument version is equal to this version.
+             * A value less than 0 if this version is less than the version argument.
+             * A value greater than 0 if this version is greater than the version argument.
+             */
+            private int compareVersionNumbers(String v1, String v2) {
+                if (v1 == null && v2 == null)
+                    return 0;
+
+                if (v1 == null)
+                    return -1;
+
+                if (v2 == null)
+                    return 1;
+
+                String[] part1 = v1.split("[._-]");
+                String[] part2 = v2.split("[._-]");
+
+                int idx = 0;
+
+                while (idx < part1.length && idx < part2.length) {
+                    String p1 = part1[idx];
+                    String p2 = part2[idx];
+
+                    int cmp = p1.matches("\\d+") && p2.matches("\\d+") ? new Integer(p1).compareTo(new Integer(p2)) :
+                            part1[idx].compareTo(part2[idx]);
+
+                    if (cmp != 0)
+                        return cmp;
+
+                    idx += 1;
+                }
+
+                if (part1.length == part2.length)
+                    return 0;
+                else {
+                    boolean left = part1.length > idx;
+                    String[] parts = left ? part1 : part2;
+
+                    while (idx < parts.length) {
+                        String p = parts[idx];
+
+                        int cmp = p.matches("\\d+") ? new Integer(p).compareTo(0) : 1;
+
+                        if (cmp != 0) return left ? cmp : -cmp;
+
+                        idx += 1;
+                    }
+
+                    return 0;
+                }
+            }
+
+            /**
+             * Check that system has Nautilus.
+             * @return {@code True} when Nautilus is installed or {@code false} otherwise.
+             * @throws IOException
+             */
+            private boolean canUseNautilus() throws IOException {
+                if (U.isUnix() || new File("/usr/bin/xdg-mime").canExecute() || new File("/usr/bin/nautilus").canExecute()) {
+                    String appName = execAndReadLine(createProcess("xdg-mime", "query", "default", "inode/directory"));
+
+                    if (appName == null || !appName.matches("nautilus.*\\.desktop"))
+                        return false;
+                    else {
+                        String ver = execAndReadLine(createProcess("nautilus", "--version"));
+
+                        if (ver != null) {
+                            Matcher m = Pattern.compile("GNOME nautilus ([0-9.]+)").matcher(ver);
+
+                            return m.find() && compareVersionNumbers(m.group(1), "3") >= 0;
+                        }
+                        else
+                            return false;
+                    }
+                }
+                else
+                    return false;
+            }
+
+            /**
+             * Open specified folder with selection of specified file in system file manager.
+             *
+             * @param dir Opened folder.
+             */
+            private void openFolder(File dir) throws IOException {
+                if (U.isWindows())
+                    Runtime.getRuntime().exec("explorer /root," + dir.getAbsolutePath());
+                else if (U.isMacOs())
+                    createProcess("open", dir.getAbsolutePath());
+                else if (canUseNautilus())
+                    createProcess("nautilus", dir.getAbsolutePath());
+                else {
+                    String path = dir.getAbsolutePath();
+
+                    if (HAS_XDG_OPEN)
+                        createProcess("/usr/bin/xdg-open", path);
+                    else if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN))
+                        Desktop.getDesktop().open(new File(path));
+                    else
+                        MessageBox.warningDialog(owner, "This action isn't supported on the current platform" +
+                            ((U.isLinux() || U.isUnix() || U.isSolaris()) ?
+                            ".\nTo fix this issue you should install library libgnome2-0." : ""));
+                }
+            }
+
             /** {@inheritDoc} */
             @Override protected void succeeded() {
                 super.succeeded();
@@ -670,9 +869,9 @@ public class SchemaImportApp extends Application {
                 if (MessageBox.confirmDialog(owner, "Generation complete!\n\n" +
                     "Reveal output folder in system default file browser?"))
                     try {
-                        java.awt.Desktop.getDesktop().open(destFolder);
+                        openFolder(destFolder);
                     }
-                    catch (IOException e) {
+                    catch (Exception e) {
                         MessageBox.errorDialog(owner, "Failed to open folder with results.", e);
                     }
             }
@@ -1550,7 +1749,7 @@ public class SchemaImportApp extends Application {
 
                 if (customPrefsFile == null)
                     log.log(Level.WARNING, "Failed to resolve path to file with custom preferences: " +
-                        customPrefsFile);
+                        customPrefsFileName);
                 else {
                     Properties customPrefs = new Properties();
 

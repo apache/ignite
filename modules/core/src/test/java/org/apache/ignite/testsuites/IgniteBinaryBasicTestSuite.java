@@ -30,14 +30,17 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingNe
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingRebalanceErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingTxErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
+import org.apache.ignite.internal.util.GridHandleTableSelfTest;
 import org.apache.ignite.internal.util.GridStartupWithSpecifiedWorkDirectorySelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsSelfTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSelfTest;
 import org.apache.ignite.internal.util.nio.GridNioSslSelfTest;
+import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
 import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerNodeFailoverTest;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshallerPooledSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerSerialPersistentFieldsSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerTest;
@@ -84,6 +87,9 @@ public class IgniteBinaryBasicTestSuite extends TestSuite {
         ignoredTests.add(GridMessagingSelfTest.class);
         ignoredTests.add(GridVersionSelfTest.class);
         ignoredTests.add(GridDeploymentMessageCountSelfTest.class);
+        ignoredTests.add(DynamicProxySerializationMultiJvmSelfTest.class);
+        ignoredTests.add(GridHandleTableSelfTest.class);
+        ignoredTests.add(OptimizedMarshallerPooledSelfTest.class);
 
         // TODO: check and delete if pass.
         ignoredTests.add(IgniteDaemonNodeMarshallerCacheTest.class);

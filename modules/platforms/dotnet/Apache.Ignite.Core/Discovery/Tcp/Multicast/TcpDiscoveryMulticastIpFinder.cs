@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Discovery.Tcp.Multicast
         /// Gets or sets the time to live for multicast packets sent out on this
         /// IP finder in order to control the scope of the multicast.
         /// </summary>
-        public byte? TimeToLive { get; set; }  // TODO: Nullable?
+        public byte? TimeToLive { get; set; } 
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TcpDiscoveryMulticastIpFinder"/> class.
@@ -124,7 +124,9 @@ namespace Apache.Ignite.Core.Discovery.Tcp.Multicast
                 writer.WriteInt(TimeToLive.Value);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the type code to be used in Java to determine ip finder type.
+        /// </summary>
         protected override byte TypeCode
         {
             get { return TypeCodeMulticastIpFinder; }

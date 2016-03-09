@@ -909,7 +909,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (!_curSchemaMap.TryGetValue(fieldId, out pos))
                     return false;
 
-                Stream.Seek(pos, SeekOrigin.Begin);
+                Stream.Seek(pos + _curPos, SeekOrigin.Begin);
             }
 
             return true;

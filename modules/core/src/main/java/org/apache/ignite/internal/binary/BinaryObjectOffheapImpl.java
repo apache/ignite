@@ -392,6 +392,11 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         throw new UnsupportedOperationException(); // To make sure it is not marshalled.
     }
 
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
     /**
      * @return Deserialized value.
      */
