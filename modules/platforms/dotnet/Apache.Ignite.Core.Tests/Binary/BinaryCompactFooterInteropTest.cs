@@ -18,6 +18,7 @@
 #pragma warning disable 618   // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using System.Collections;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
@@ -27,6 +28,9 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// </summary>
     public class BinaryCompactFooterInteropTest
     {
+        /** */
+        private const string PlatformSqlQueryTask = "org.apache.ignite.platform.PlatformSqlQueryTask";
+
         /** */
         private IIgnite _grid;
 
@@ -82,6 +86,26 @@ namespace Apache.Ignite.Core.Tests.Binary
             var res = compute.ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
 
             Assert.AreEqual(arg.Field, res);
+        }
+
+        /// <summary>
+        /// Tests the indexing.
+        /// </summary>
+        [Test]
+        public void TestIndexing([Values(true, false)] bool client)
+        {
+            var grid = client ? _clientGrid : _grid;
+
+            var cache = grid.GetCache<int, PlatformComputeBinarizable>(null);
+
+            // Populate cache in .NET
+            for (var i = 0; i < 100; i++)
+                cache[i] = new PlatformComputeBinarizable {Field = i};
+
+            // Run SQL query on Java side
+            var qryRes = grid.GetCompute().ExecuteJavaTask<IList>(PlatformSqlQueryTask, "Field < 10");
+
+            Assert.AreEqual(10, qryRes.Count);
         }
 
         /// <summary>
