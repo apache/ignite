@@ -35,6 +35,7 @@ import org.apache.ignite.cache.affinity.AffinityCentralizedFunction;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -143,7 +144,7 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
                             List<List<ClusterNode>> idealAssignment = cache.idealAssignment(rebalancingInfo.topVer);
 
-                            assert idealAssignment != null;
+                            assert idealAssignment != null : rebalancingInfo.topVer;
 
                             Set<Integer> parts = e.getValue();
 
@@ -329,15 +330,12 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         assert !F.isEmpty(assignment) : msg;
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (cacheCtx.isLocal())
-                continue;
-
-            int parts = cacheCtx.affinity().partitions();
+        for (CacheHolder cache : caches.values()) {
+            int parts = cache.partitions();
 
             List<List<ClusterNode>> newAssignment = new ArrayList<>(parts);
 
-            Map<Integer, List<UUID>> cacheAssignment = assignment.get(cacheCtx.cacheId());
+            Map<Integer, List<UUID>> cacheAssignment = assignment.get(cache.cacheId());
 
             assert cacheAssignment != null;
 
@@ -347,7 +345,7 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
                 newAssignment.add(toNodes(topVer, ids));
             }
 
-            cacheCtx.affinity().initializeAffinity(topVer, newAssignment);
+            cache.initializeAffinity(topVer, newAssignment);
         }
     }
 
@@ -374,17 +372,14 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
             assert !F.isEmpty(affChange) : msg;
 
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.isLocal())
-                    continue;
-
-                AffinityTopologyVersion affTopVer = cacheCtx.affinity().affinityTopologyVersion();
+            for (CacheHolder cache : caches.values()) {
+                AffinityTopologyVersion affTopVer = cache.affinityTopologyVersion();
 
                 assert affTopVer.topologyVersion() > 0 : affTopVer;
 
-                List<List<ClusterNode>> curAff = cacheCtx.affinity().assignments(affTopVer);
+                List<List<ClusterNode>> curAff = cache.assignment(affTopVer).assignment();
 
-                Map<Integer, List<UUID>> change = affChange.get(cacheCtx.cacheId());
+                Map<Integer, List<UUID>> change = affChange.get(cache.cacheId());
 
                 if (change != null) {
                     assert !change.isEmpty() : msg;
@@ -397,7 +392,7 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
                         List<ClusterNode> nodes = toNodes(topVer, e.getValue());
 
                         if (LOG_AFF_CHANGE) {
-                            logAffinityChange(log, cacheCtx.name(), "New assignment [cache=" + cacheCtx.name() +
+                            logAffinityChange(log, cache.name(), "New assignment [cache=" + cache.name() +
                                 ", part=" + part +
                                 ", cur=" + F.nodeIds(assignment.get(part)) +
                                 ", new=" + F.nodeIds(nodes) + ']');
@@ -408,10 +403,10 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
                         assignment.set(part, nodes);
                     }
 
-                    cacheCtx.affinity().initializeAffinity(topVer, assignment);
+                    cache.initializeAffinity(topVer, assignment);
                 }
                 else
-                    cacheCtx.affinity().clientEventTopologyChange(exchFut.discoveryEvent(), topVer);
+                    cache.clientEventTopologyChange(exchFut.discoveryEvent(), topVer);
             }
 
             if (affCalcVer == null)
@@ -424,15 +419,12 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
                 ", affCalcVer=" + affCalcVer +
                 ", msgVer=" + msg.topologyVersion() +']');
 
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.isLocal())
-                    continue;
-
-                AffinityTopologyVersion affTopVer = cacheCtx.affinity().affinityTopologyVersion();
+            for (CacheHolder cache : caches.values()) {
+                AffinityTopologyVersion affTopVer = cache.affinityTopologyVersion();
 
                 assert affTopVer.topologyVersion() > 0 : affTopVer;
 
-                cacheCtx.affinity().clientEventTopologyChange(exchFut.discoveryEvent(), topVer);
+                cache.clientEventTopologyChange(exchFut.discoveryEvent(), topVer);
             }
 
             return false;
@@ -444,24 +436,52 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @throws IgniteCheckedException If failed.
      */
     public void onClientEvent(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+        initCaches(fut);
+
         if (!fut.discoveryEvent().eventNode().isLocal()) {
             AffinityTopologyVersion topVer = fut.topologyVersion();
 
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.isLocal())
-                    continue;
-
-                cacheCtx.affinity().clientEventTopologyChange(fut.discoveryEvent(), topVer);
-            }
+            for (CacheHolder cache : caches.values())
+                cache.clientEventTopologyChange(fut.discoveryEvent(), topVer);
         }
         else
             fetchAffinity(fut);
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (cacheCtx.isLocal())
+        for (CacheHolder cache : caches.values())
+            cache.topology().updateTopologyVersion(fut.exchangeId(), fut, -1, false);
+    }
+
+    /**
+     * @param fut Exchange future.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void initCaches(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+        for (DynamicCacheDescriptor cacheDesc : cctx.cache().cacheDescriptors()) {
+            Integer cacheId = CU.cacheId(cacheDesc.cacheConfiguration().getName());
+
+            GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+            if (cacheCtx == null && cctx.kernalContext().clientNode())
                 continue;
 
-            cacheCtx.topology().updateTopologyVersion(fut.exchangeId(), fut, -1, false);
+            CacheHolder cache = caches.get(cacheId);
+
+            if (cache == null) {
+                cache = cacheCtx != null ? new CacheHolder1(cacheCtx) : new CacheHolder2(cacheDesc);
+
+                List<List<ClusterNode>> newAff = cache.calculateAffinity(fut);
+
+                cache.initializeAffinity(fut.topologyVersion(), newAff);
+
+                CacheHolder old = caches.put(cacheId, cache);
+
+                assert old == null : old;
+            }
+            else if (cache.client() && cacheCtx != null) {
+                cache = new CacheHolder1(cacheCtx, (CacheHolder2)cache);
+
+                caches.put(cacheId, cache);
+            }
         }
     }
 
@@ -471,6 +491,8 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @throws IgniteCheckedException If failed.
      */
     public void onServerJoin(GridDhtPartitionsExchangeFuture fut, boolean crd) throws IgniteCheckedException {
+        initCaches(fut);
+
         AffinityTopologyVersion topVer = fut.topologyVersion();
 
         ClusterNode joinNode = fut.discoveryEvent().eventNode();
@@ -480,16 +502,6 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
         RebalanceWait rebalanceWait = null;
 
         if (joinNode.isLocal()) {
-            for (DynamicCacheDescriptor cacheDesc : cctx.cache().cacheDescriptors()) {
-                GridCacheContext cacheCtx = cctx.cacheContext(CU.cacheId(cacheDesc.cacheConfiguration().getName()));
-
-                CacheHolder cacheHolder = cacheCtx != null ? new CacheHolder1(cacheCtx) : new CacheHolder2(cacheDesc);
-
-                CacheHolder old = caches.put(cacheHolder.cacheId(), cacheHolder);
-
-                assert old == null : old;
-            }
-
             if (crd) {
                 for (CacheHolder cache : caches.values())  {
                     List<List<ClusterNode>> newAff = cache.calculateAffinity(fut);
@@ -514,7 +526,11 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
     }
 
     interface CacheHolder {
+        boolean client();
+
         int cacheId();
+
+        int partitions();
 
         String name();
 
@@ -524,9 +540,11 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         void initializeAffinity(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment);
 
+        void clientEventTopologyChange(DiscoveryEvent evt, AffinityTopologyVersion topVer);
+
         AffinityTopologyVersion affinityTopologyVersion();
 
-        List<List<ClusterNode>> assignments(AffinityTopologyVersion topVer);
+        GridAffinityAssignment assignment(AffinityTopologyVersion topVer);
 
         void idealAssignment(AffinityTopologyVersion topVer, List<List<ClusterNode>> assignment);
 
@@ -549,10 +567,12 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         /** */
         private GridAffinityAssignmentCache aff;
+
         /**
          * @param cacheDesc Cache descriptor.
+         * @throws IgniteCheckedException If failed.
          */
-        CacheHolder2(DynamicCacheDescriptor cacheDesc) {
+        CacheHolder2(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
             CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
             assert ccfg != null : cacheDesc;
@@ -560,11 +580,26 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
             cacheName = ccfg.getName();
             cacheId = CU.cacheId(ccfg.getName());
 
-            aff = new GridAffinityAssignmentCache(null,
+            AffinityFunction affFunc = ccfg.getAffinity();
+
+            cctx.kernalContext().resource().injectGeneric(affFunc);
+
+            cctx.kernalContext().resource().injectCacheName(affFunc, cacheName);
+
+            aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
                 cacheName,
-                ccfg.getAffinity(),
-                ccfg.getAffinityMapper(),
+                affFunc,
                 ccfg.getBackups());
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partitions() {
+            return aff.partitions();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean client() {
+            return true;
         }
 
         /** {@inheritDoc} */
@@ -583,6 +618,11 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
         }
 
         /** {@inheritDoc} */
+        @Override public void clientEventTopologyChange(DiscoveryEvent evt, AffinityTopologyVersion topVer) {
+            aff.clientEventTopologyChange(evt, topVer);
+        }
+
+        /** {@inheritDoc} */
         @Override public List<List<ClusterNode>> calculateAffinity(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
             return aff.calculate(fut.topologyVersion(), fut.discoveryEvent());
         }
@@ -598,8 +638,8 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
         }
 
         /** {@inheritDoc} */
-        @Override public List<List<ClusterNode>> assignments(AffinityTopologyVersion topVer) {
-            return aff.assignments(topVer);
+        @Override public GridAffinityAssignment assignment(AffinityTopologyVersion topVer) {
+            return aff.cachedAffinity(topVer);
         }
 
         /** {@inheritDoc} */
@@ -609,7 +649,7 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         /** {@inheritDoc} */
         @Override public List<List<ClusterNode>> idealAssignment(AffinityTopologyVersion topVer) {
-            return null;
+            return aff.idealAssignment(topVer);
         }
     }
 
@@ -625,6 +665,22 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
          */
         public CacheHolder1(GridCacheContext cctx) {
             this.cctx = cctx;
+        }
+
+        /**
+         * @param cctx Cache context.
+         */
+        public CacheHolder1(GridCacheContext cctx, CacheHolder2 cacheHolder) {
+            this.cctx = cctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean client() {
+            return false;
+        }
+
+        @Override public int partitions() {
+            return cctx.affinity().partitions();
         }
 
         /** {@inheritDoc} */
@@ -648,6 +704,11 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
         }
 
         /** {@inheritDoc} */
+        @Override public void clientEventTopologyChange(DiscoveryEvent evt, AffinityTopologyVersion topVer) {
+            cctx.affinity().clientEventTopologyChange(evt, topVer);
+        }
+
+        /** {@inheritDoc} */
         @Override public void initializeAffinity(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
             cctx.affinity().initializeAffinity(topVer, affAssignment);
         }
@@ -658,8 +719,8 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
         }
 
         /** {@inheritDoc} */
-        @Override public List<List<ClusterNode>> assignments(AffinityTopologyVersion topVer) {
-            return cctx.affinity().assignments(topVer);
+        @Override public GridAffinityAssignment assignment(AffinityTopologyVersion topVer) {
+            return cctx.affinity().assignment(topVer);
         }
 
         /** {@inheritDoc} */
@@ -722,15 +783,12 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         boolean centralizedAff = false;
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (cacheCtx.isLocal())
-                continue;
-
-            AffinityTopologyVersion affTopVer = cacheCtx.affinity().affinityTopologyVersion();
+        for (CacheHolder cache : caches.values()) {
+            AffinityTopologyVersion affTopVer = cache.affinityTopologyVersion();
 
             assert affTopVer.topologyVersion() > 0 : affTopVer;
 
-            GridAffinityAssignment assignment = cacheCtx.affinity().assignment(affTopVer);
+            GridAffinityAssignment assignment = cache.assignment(affTopVer);
 
             if (!assignment.primaryPartitions(leftNode.id()).isEmpty()) {
                 centralizedAff = true;
@@ -740,15 +798,12 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
         }
 
         if (centralizedAff) {
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.isLocal())
-                    continue;
+            for (CacheHolder cache : caches.values()) {
+                // assert canCalculateAffinity(cacheCtx, fut);
 
-                assert canCalculateAffinity(cacheCtx, fut);
+                List<List<ClusterNode>> assignment = cache.calculateAffinity(fut);
 
-                List<List<ClusterNode>> assignment = calculateAffinity(cacheCtx, fut);
-
-                cacheCtx.affinity().idealAssignment(fut.topologyVersion(), assignment);
+                cache.idealAssignment(fut.topologyVersion(), assignment);
             }
         }
         else
@@ -785,7 +840,7 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
             assert affTopVer.topologyVersion() > 0 : affTopVer;
 
-            List<List<ClusterNode>> curAff = cache.assignments(affTopVer);
+            List<List<ClusterNode>> curAff = cache.assignment(affTopVer).assignment();
 
             //assert canCalculateAffinity(cacheCtx, fut);
 
@@ -802,7 +857,7 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
                 if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
                     assert cctx.discovery().node(topVer, curPrimary.id()) != null : curPrimary;
 
-                    List<ClusterNode> nodes0 = delayedPrimary(cache.cacheId(),
+                    List<ClusterNode> nodes0 = delayedPrimary(cache,
                         p,
                         curPrimary,
                         newNodes,
@@ -830,7 +885,7 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
     }
 
     private List<ClusterNode> delayedPrimary(
-        Integer cacheId,
+        CacheHolder cache,
         int part,
         ClusterNode curPrimary,
         List<ClusterNode> newNodes,
@@ -848,7 +903,7 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         if (rebalance != null) {
             if (LOG_AFF_CHANGE) {
-                String cacheName = cctx.cacheContext(cacheId).name();
+                String cacheName = cache.name();
 
                 logAffinityChange(log, cacheName, "Delayed primary assignment [cache=" + cacheName +
                     ", part=" + part +
@@ -859,10 +914,10 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
             if (rebalance.waitCaches == null)
                 rebalance.waitCaches = new HashMap<>();
 
-            Map<Integer, UUID> cacheRebalanceWait = rebalance.waitCaches.get(cacheId);
+            Map<Integer, UUID> cacheRebalanceWait = rebalance.waitCaches.get(cache.cacheId());
 
             if (cacheRebalanceWait == null)
-                rebalance.waitCaches.put(cacheId, cacheRebalanceWait = new HashMap<>());
+                rebalance.waitCaches.put(cache.cacheId(), cacheRebalanceWait = new HashMap<>());
 
             cacheRebalanceWait.put(part, newNodes.get(0).id());
         }
@@ -885,19 +940,16 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         Map<Integer, Map<Integer, List<UUID>>> assignment = new HashMap<>();
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (cacheCtx.isLocal())
-                continue;
-
-            AffinityTopologyVersion affTopVer = cacheCtx.affinity().affinityTopologyVersion();
+        for (CacheHolder cache : caches.values()) {
+            AffinityTopologyVersion affTopVer = cache.affinityTopologyVersion();
 
             assert affTopVer.topologyVersion() > 0 : affTopVer;
 
-            List<List<ClusterNode>> curAssignment = cacheCtx.affinity().assignments(affTopVer);
+            List<List<ClusterNode>> curAssignment = cache.assignment(affTopVer).assignment();
 
-            List<List<ClusterNode>> newAssignment = calculateAffinity(cacheCtx, fut);
+            List<List<ClusterNode>> newAssignment = cache.calculateAffinity(fut);
 
-            GridDhtPartitionTopology top = cacheCtx.topology();
+            GridDhtPartitionTopology top = cache.topology();
 
             Map<Integer, List<UUID>> cacheAssignment = new HashMap<>();
 
@@ -916,7 +968,7 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
                                 GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
 
                                 if (state != GridDhtPartitionState.OWNING) {
-                                    newNodes = delayedPrimary(cacheCtx.cacheId(),
+                                    newNodes = delayedPrimary(cache,
                                         p,
                                         curPrimary,
                                         newNodes,
@@ -933,7 +985,7 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
                                 if (!owners.isEmpty()) {
                                     ClusterNode primary = owners.get(0);
 
-                                    newNodes = delayedPrimary(cacheCtx.cacheId(),
+                                    newNodes = delayedPrimary(cache,
                                         p,
                                         primary,
                                         newNodes,
@@ -947,7 +999,7 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
                 cacheAssignment.put(p, toIds0(newNodes));
             }
 
-            assignment.put(cacheCtx.cacheId(), cacheAssignment);
+            assignment.put(cache.cacheId(), cacheAssignment);
         }
 
         synchronized (mux) {
@@ -976,10 +1028,7 @@ public class CacheTopologyManager<K, V> extends GridCacheSharedManagerAdapter<K,
             if (log.isDebugEnabled())
                 log.debug("Will recalculate affinity [locNodeId=" + cctx.localNodeId() + ", exchId=" + exchId + ']');
 
-            List<List<ClusterNode>> assignment =
-                cacheCtx.affinity().calculateAffinity(exchId.topologyVersion(), fut.discoveryEvent());
-
-            return assignment;
+            return cacheCtx.affinity().calculateAffinity(exchId.topologyVersion(), fut.discoveryEvent());
         }
         else {
             if (log.isDebugEnabled())

@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -52,12 +55,20 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /** Affinity cached function. */
     private GridAffinityAssignmentCache aff;
 
+    /** */
+    private AffinityFunction affFunction;
+
+    /** */
+    private AffinityKeyMapper affMapper;
+
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
+        affFunction = cctx.config().getAffinity();
+        affMapper = cctx.config().getAffinityMapper();
+
         aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
             cctx.namex(),
-            cctx.config().getAffinity(),
-            cctx.config().getAffinityMapper(),
+            affFunction,
             cctx.config().getBackups());
     }
 
@@ -241,7 +252,21 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         if (aff0 == null)
             throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
-        return aff0.partition(cctx, key);
+        return affFunction.partition(affinityKey(key));
+    }
+
+    /**
+     * If Key is {@link GridCacheInternal GridCacheInternal} entry when won't passed into user's mapper and
+     * will use {@link GridCacheDefaultAffinityKeyMapper default}.
+     *
+     * @param key Key.
+     * @return Affinity key.
+     */
+    private Object affinityKey(Object key) {
+        if (key instanceof CacheObject && !(key instanceof BinaryObject))
+            key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
+
+        return (key instanceof GridCacheInternal ? cctx.defaultAffMapper() : affMapper).affinityKey(key);
     }
 
     /**

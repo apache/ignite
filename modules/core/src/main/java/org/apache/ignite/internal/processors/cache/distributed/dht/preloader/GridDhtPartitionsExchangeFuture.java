@@ -428,6 +428,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
             else {
+                cctx.cache().startReceivedCaches(topologyVersion());
+
                 if (CU.clientNode(discoEvt.eventNode()))
                     onClientNodeEvent();
                 else
@@ -468,14 +470,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         for (GridCacheContext cacheCtx : cctx.cacheContexts())
             cacheCtx.topology().updateTopologyVersion(exchId, this, -1, false);
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (cacheCtx.isLocal())
-                continue;
-
-            cacheCtx.preloader().onTopologyChanged(this);
-        }
-
         if (cctx.topology().onChangeAffinityMessage(this, affChangeMsg)) {
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (cacheCtx.isLocal())
+                    continue;
+
+                cacheCtx.preloader().onTopologyChanged(this);
+            }
+
             waitPartitionRelease();
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {

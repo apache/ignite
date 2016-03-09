@@ -1577,7 +1577,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 desc.onStart();
         }
 
-        // Start statically configured caches received from remote nodes during exchange.
+        startReceivedCaches(topVer);
+    }
+
+    /**
+     * Starts statically configured caches received from remote nodes during exchange.
+     *
+     * @param topVer Topology version.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void startReceivedCaches(AffinityTopologyVersion topVer) throws IgniteCheckedException {
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             if (desc.staticallyConfigured() && !desc.locallyConfigured()) {
                 if (desc.onStart()) {

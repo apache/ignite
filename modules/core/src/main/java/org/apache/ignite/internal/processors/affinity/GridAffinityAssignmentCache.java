@@ -30,18 +30,12 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,9 +60,6 @@ public class GridAffinityAssignmentCache {
 
     /** Partitions count. */
     private final int partsCnt;
-
-    /** Affinity mapper function. */
-    private final AffinityKeyMapper affMapper;
 
     /** Affinity calculation results cache: topology version => partition => nodes. */
     private final ConcurrentLinkedHashMap<AffinityTopologyVersion, GridAffinityAssignment> affCache;
@@ -97,23 +88,19 @@ public class GridAffinityAssignmentCache {
      * @param ctx Kernal context.
      * @param cacheName Cache name.
      * @param aff Affinity function.
-     * @param affMapper Affinity key mapper.
      * @param backups Number of backups.
      */
     @SuppressWarnings("unchecked")
     public GridAffinityAssignmentCache(GridKernalContext ctx,
         String cacheName,
         AffinityFunction aff,
-        AffinityKeyMapper affMapper,
         int backups)
     {
         assert ctx != null;
         assert aff != null;
-        assert affMapper != null;
 
         this.ctx = ctx;
         this.aff = aff;
-        this.affMapper = affMapper;
         this.cacheName = cacheName;
         this.backups = backups;
 
@@ -384,32 +371,6 @@ public class GridAffinityAssignmentCache {
      */
     public int partitions() {
         return partsCnt;
-    }
-
-    /**
-     * NOTE: Use this method always when you need to calculate partition id for
-     * a key provided by user. It's required since we should apply affinity mapper
-     * logic in order to find a key that will eventually be passed to affinity function.
-     *
-     * @param key Key.
-     * @return Partition.
-     */
-    public int partition(GridCacheContext ctx, Object key) {
-        return aff.partition(affinityKey(ctx, key));
-    }
-
-    /**
-     * If Key is {@link GridCacheInternal GridCacheInternal} entry when won't passed into user's mapper and
-     * will use {@link GridCacheDefaultAffinityKeyMapper default}.
-     *
-     * @param key Key.
-     * @return Affinity key.
-     */
-    private Object affinityKey(GridCacheContext ctx, Object key) {
-        if (key instanceof CacheObject && !(key instanceof BinaryObject))
-            key = ((CacheObject)key).value(ctx.cacheObjectContext(), false);
-
-        return (key instanceof GridCacheInternal ? ctx.defaultAffMapper() : affMapper).affinityKey(key);
     }
 
     /**
