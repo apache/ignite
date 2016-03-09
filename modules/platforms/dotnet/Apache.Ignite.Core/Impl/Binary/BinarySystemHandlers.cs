@@ -198,16 +198,16 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteBinary;
             if (type == typeof (BinaryEnum))
                 return WriteBinaryEnum;
+            if (type.IsEnum)
+                return WriteEnum;
+
+            // All types below can be written as handles.
+            supportsHandles = true;
+
             if (type == typeof (ArrayList))
-            {
-                supportsHandles = true;
                 return WriteArrayList;
-            }
             if (type == typeof (Hashtable))
-            {
-                supportsHandles = true;
                 return WriteHashtable;
-            }
 
             if (type.IsArray)
             {
@@ -254,15 +254,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Object array.
                 if (elemType == typeof (object) || elemType == typeof (IBinaryObject) ||
                     elemType == typeof (BinaryObject))
-                {
-                    supportsHandles = true;
                     return WriteArray;
-                }
             }
-
-            if (type.IsEnum)
-                // We know how to write enums.
-                return WriteEnum;
 
             if (type.IsSerializable)
                 return WriteSerializable;

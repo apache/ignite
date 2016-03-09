@@ -930,7 +930,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
-                if (!val.GetType().GetElementType().IsValueType && WriteHandle(_stream.Position, val))
+                if (WriteHandle(_stream.Position, val))
                     return;
 
                 _stream.WriteByte(BinaryUtils.TypeArray);
