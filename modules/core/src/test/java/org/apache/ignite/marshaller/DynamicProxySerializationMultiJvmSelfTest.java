@@ -22,6 +22,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgniteCallable;
@@ -49,74 +50,133 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */
-    public void testOptimized() throws Exception {
+    public void testOptimizedMarshaller() throws Exception {
         marshFactory = new Callable<Marshaller>() {
             @Override public Marshaller call() throws Exception {
                 return new OptimizedMarshaller(false);
             }
         };
 
-        doTest();
+        doTestMarshaller();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testBinary() throws Exception {
+    public void testBinaryMarshaller() throws Exception {
         marshFactory = new Callable<Marshaller>() {
             @Override public Marshaller call() throws Exception {
                 return new BinaryMarshaller();
             }
         };
 
-        doTest();
+        doTestMarshaller();
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void doTest() throws Exception {
-        try {
-            Ignite ignite = startGrids(2);
+    public void testToBinary() throws Exception {
+        marshFactory = new Callable<Marshaller>() {
+            @Override public Marshaller call() throws Exception {
+                return new BinaryMarshaller();
+            }
+        };
 
-            MyProxy p = (MyProxy)Proxy.newProxyInstance(getClass().getClassLoader(),
-                new Class[] { MyProxy.class }, new InvocationHandler() {
-                    @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                        if ("value".equals(method.getName()))
-                            return 42;
+        Ignite ignite = startGrid(0);
 
-                        throw new IllegalStateException();
-                    }
-                });
+        MyProxy p = create();
 
-            int val = ignite.compute(ignite.cluster().forRemotes()).call(new MyCallable(p));
+        MyProxy p0 = ignite.binary().toBinary(p);
 
-            assertEquals(42, val);
-        }
-        finally {
-            stopAllGrids();
-        }
+        assertSame(p, p0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBinaryField() throws Exception {
+        marshFactory = new Callable<Marshaller>() {
+            @Override public Marshaller call() throws Exception {
+                return new BinaryMarshaller();
+            }
+        };
+
+        Ignite ignite = startGrids(2);
+
+        BinaryObject bo = ignite.binary().builder("ProxyWrapper").setField("proxy", create()).build();
+
+        int val = ignite.compute(ignite.cluster().forRemotes()).call(new FieldTestCallable(bo));
+
+        assertEquals(42, val);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestMarshaller() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        int val = ignite.compute(ignite.cluster().forRemotes()).call(new MarshallerTestCallable(create()));
+
+        assertEquals(42, val);
+    }
+
+    /**
+     * @return New proxy.
+     */
+    private static MyProxy create() {
+        return (MyProxy)Proxy.newProxyInstance(DynamicProxySerializationMultiJvmSelfTest.class.getClassLoader(),
+            new Class[] { MyProxy.class }, new InvocationHandler() {
+                @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    if ("value".equals(method.getName()))
+                        return 42;
+
+                    throw new IllegalStateException();
+                }
+            });
     }
 
     /**
      */
-    private static class MyCallable implements IgniteCallable<Integer> {
+    private static class MarshallerTestCallable implements IgniteCallable<Integer> {
         /** */
         private final MyProxy p;
 
         /**
          * @param p Proxy.
          */
-        public MyCallable(MyProxy p) {
+        public MarshallerTestCallable(MyProxy p) {
             this.p = p;
         }
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
             return p.value();
+        }
+    }
+
+    /**
+     */
+    private static class FieldTestCallable implements IgniteCallable<Integer> {
+        /** */
+        private final BinaryObject bo;
+
+        public FieldTestCallable(BinaryObject bo) {
+            this.bo = bo;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer call() throws Exception {
+            return bo.<MyProxy>field("proxy").value();
         }
     }
 
