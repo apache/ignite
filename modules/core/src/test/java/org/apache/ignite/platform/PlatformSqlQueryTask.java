@@ -18,6 +18,7 @@
 package org.apache.ignite.platform;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterNode;
@@ -29,10 +30,13 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
+import javax.cache.Cache;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +90,18 @@ public class PlatformSqlQueryTask extends ComputeTaskAdapter<String, Object> {
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
-            return ignite.cache(null).query(new SqlQuery("PlatformComputeBinarizable", arg)).getAll();
+            IgniteCache<Integer, PlatformComputeBinarizable> cache = ignite.cache(null);
+
+            SqlQuery<Integer, PlatformComputeBinarizable> qry = new SqlQuery<>("PlatformComputeBinarizable", arg);
+
+            List<Cache.Entry<Integer, PlatformComputeBinarizable>> qryRes = cache.query(qry).getAll();
+
+            Collection<PlatformComputeBinarizable> res = new ArrayList<>(qryRes.size());
+
+            for (Cache.Entry<Integer, PlatformComputeBinarizable> e : qryRes)
+                res.add(e.getValue());
+
+            return res;
         }
 
         /** {@inheritDoc} */
