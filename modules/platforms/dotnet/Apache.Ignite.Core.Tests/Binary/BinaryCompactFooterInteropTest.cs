@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var grid = client ? _clientGrid : _grid1;
 
-            var compute = grid.GetCompute();
+            var compute = grid.GetCompute().WithKeepBinary();
 
             var arg = new PlatformComputeNetBinarizable {Field = 100};
 
@@ -85,7 +85,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 SpringConfigUrl = springUrl,
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                BinaryConfiguration = new BinaryConfiguration(typeof(PlatformComputeBinarizable))
+                BinaryConfiguration = new BinaryConfiguration(
+                    typeof (PlatformComputeBinarizable),
+                    typeof (PlatformComputeNetBinarizable))
             };
         }
     }
