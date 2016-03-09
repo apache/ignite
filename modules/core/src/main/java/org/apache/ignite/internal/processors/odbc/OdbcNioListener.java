@@ -154,10 +154,10 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
 
         OdbcRequest res;
 
-        short version = reader.readByte();
+        short version = reader.readShort();
 
         if (version != PROTOCOL_VERSION)
-            throw new IgniteException("Unsupported ODBC communcation protocol version: " +
+            throw new IgniteException("Unsupported ODBC communication protocol version: " +
                     "[ver=" + version + ", current_ver=" + PROTOCOL_VERSION + ']');
 
         byte cmd = reader.readByte();
