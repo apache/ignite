@@ -49,7 +49,11 @@ public:
     /**
      * Constructor.
      */
-    QueryPerson() : name(NULL), age(0)
+    QueryPerson() : 
+        name(NULL),
+        age(0),
+        birthday(),
+        recordCreated()
     {
         // No-op.
     }
@@ -60,7 +64,12 @@ public:
      * @param name Name.
      * @param age Age.
      */
-    QueryPerson(const std::string& name, int age) : name(CopyChars(name.c_str())), age(age)
+    QueryPerson(const std::string& name, int age,
+        const Date& birthday, const Timestamp& recordCreated) : 
+        name(CopyChars(name.c_str())),
+        age(age),
+        birthday(birthday),
+        recordCreated(recordCreated)
     {
         // No-op.
     }
@@ -70,10 +79,13 @@ public:
      *
      * @param other Other instance.
      */
-    QueryPerson(const QueryPerson& other)
+    QueryPerson(const QueryPerson& other) :
+        name(CopyChars(other.name)),
+        age(other.age),
+        birthday(other.birthday),
+        recordCreated(other.recordCreated)
     {
-        name = CopyChars(other.name);
-        age = other.age;
+        // No-op.
     }
 
     /**
@@ -84,18 +96,16 @@ public:
      */
     QueryPerson& operator=(const QueryPerson& other)
     {
+        using std::swap;
+
         if (&other != this)
         {
             QueryPerson tmp(other);
 
-            char* name0 = name;
-            int age0 = age;
-
-            name = tmp.name;
-            age = tmp.age;
-
-            tmp.name = name0;
-            tmp.age = age0;
+            swap(name, tmp.name);
+            swap(age, tmp.age);
+            swap(birthday, tmp.birthday);
+            swap(recordCreated, tmp.recordCreated);
         }
 
         return *this;
@@ -114,7 +124,7 @@ public:
      * 
      * @return Name.
      */
-    std::string GetName()
+    std::string GetName() const
     {
         return name ? std::string(name) : std::string();
     }
@@ -124,9 +134,29 @@ public:
      * 
      * @return Age.
      */
-    int32_t GetAge()
+    int32_t GetAge() const
     {
         return age;
+    }
+
+    /**
+     * Get birthday.
+     * 
+     * @return Birthday date.
+     */
+    const Date& GetBirthday() const
+    {
+        return birthday;
+    }
+
+    /**
+     * Get creation time.
+     * 
+     * @return Creation time.
+     */
+    const Timestamp& GetCreationTime() const
+    {
+        return recordCreated;
     }
 
 private:
@@ -135,6 +165,12 @@ private:
 
     /** Age. */
     int age;
+
+    /** Birthday. */
+    Date birthday;
+
+    /** Record creation timestamp. */
+    Timestamp recordCreated;
 };
 
 namespace ignite
@@ -156,14 +192,18 @@ namespace ignite
             {
                 writer.WriteString("name", obj.GetName());
                 writer.WriteInt32("age", obj.GetAge());
+                writer.WriteDate("birthday", obj.GetBirthday());
+                writer.WriteTimestamp("recordCreated", obj.GetCreationTime());
             }
 
             QueryPerson Read(BinaryReader& reader)
             {
                 std::string name = reader.ReadString("name");
                 int age = reader.ReadInt32("age");
+                Date birthday = reader.ReadDate("birthday");
+                Timestamp recordCreated = reader.ReadTimestamp("recordCreated");
             
-                return QueryPerson(name, age);
+                return QueryPerson(name, age, birthday, recordCreated);
             }
 
         IGNITE_BINARY_TYPE_END
@@ -480,6 +520,61 @@ void CheckMultipleGetAll(Cursor& cur, int key1, const std::string& name1,
     }
 }
 
+/**
+ * Make Date in human understandable way.
+ *
+ * @param year Year.
+ * @param month Month.
+ * @param day Day.
+ * @param hour Hour.
+ * @param min Min.
+ * @param sec Sec.
+ * @return Date.
+ */
+Date MakeDate(int year = 1900, int month = 1, int day = 1, int hour = 0, int min = 0, int sec = 0)
+{
+    tm date;
+
+    date.tm_year = year - 1900;
+    date.tm_mon = month - 1;
+    date.tm_mday = day;
+    date.tm_hour = hour;
+    date.tm_min = min;
+    date.tm_sec = sec;
+
+    time_t ct = mktime(&date);
+
+    return Date(ct * 1000);
+}
+
+/**
+ * Make Date in human understandable way.
+ *
+ * @param year Year.
+ * @param month Month.
+ * @param day Day.
+ * @param hour Hour.
+ * @param min Minute.
+ * @param sec Second.
+ * @param ns Nanosecond.
+ * @return Timestamp.
+ */
+Timestamp MakeTimestamp(int year = 1900, int month = 1, int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0)
+{
+    tm date;
+
+    date.tm_year = year - 1900;
+    date.tm_mon = month - 1;
+    date.tm_mday = day;
+    date.tm_hour = hour;
+    date.tm_min = min;
+    date.tm_sec = sec;
+
+    time_t ct = mktime(&date);
+
+    return Timestamp(ct, ns);
+}
+
 BOOST_FIXTURE_TEST_SUITE(CacheQueryTestSuite, CacheQueryTestSuiteFixture)
 
 /**
@@ -499,8 +594,8 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
     CheckEmptyGetAll(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10));
-    cache.Put(2, QueryPerson("A2", 20));
+    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(2, QueryPerson("A2", 20, MakeDate(1989, 10, 26), MakeTimestamp(2016, 02, 10, 17, 39, 35, 678403201)));
     
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -555,8 +650,8 @@ BOOST_AUTO_TEST_CASE(TestTextQuery)
     CheckEmptyGetAll(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10));
-    cache.Put(2, QueryPerson("A2", 20));
+    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(2, QueryPerson("A2", 20, MakeDate(1989, 10, 26), MakeTimestamp(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -601,7 +696,7 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
     CheckEmptyGetAll(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10));
+    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -610,7 +705,7 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
     // Test query returning multiple entries.
-    cache.Put(2, QueryPerson("A2", 20));
+    cache.Put(2, QueryPerson("A2", 20, MakeDate(1989, 10, 26), MakeTimestamp(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
     CheckMultiple(cursor, 1, "A1", 10, 2, "A2", 20);
@@ -633,10 +728,10 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
     for (int i = 0; i < entryCnt; i++) 
     {
         std::stringstream stream; 
-        
+
         stream << "A" << i;
-            
-        cache.Put(i, QueryPerson(stream.str(), i * 10));
+
+        cache.Put(i, QueryPerson(stream.str(), i * 10, MakeDate(1970 + i), MakeTimestamp(2016, 1, 1, i / 60, i % 60)));
     }
 
     // Iterate over all partitions and collect data.
@@ -683,7 +778,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
     CheckEmpty(cursor);
     
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10));
+    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
 
     cursor = cache.Query(qry);
 
@@ -714,6 +809,51 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
 }
 
 /**
+ * Test fields query with single entry.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
+{
+    // Test simple query.
+    Cache<int, QueryPerson> cache = GetCache();
+
+    // Test query with two fields of different type.
+    SqlFieldsQuery qry("select age, name from QueryPerson");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+
+    // Test simple query.
+    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
+
+    cursor = cache.Query(qry);
+
+    try
+    {
+        BOOST_REQUIRE(cursor.HasNext());
+
+        QueryFieldsRow row = cursor.GetNext();
+
+        BOOST_REQUIRE(row.HasNext());
+
+        int age = row.GetNext<int>();
+
+        BOOST_REQUIRE(age == 10);
+
+        std::string name = row.GetNext<std::string>();
+
+        BOOST_REQUIRE(name == "A1");
+
+        BOOST_REQUIRE(!row.HasNext());
+
+        CheckEmpty(cursor);
+    }
+    catch (IgniteError& error)
+    {
+        BOOST_FAIL(error.GetText());
+    }
+}
+
+/**
  * Test fields query with two simultaneously handled rows.
  */
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
@@ -728,8 +868,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
     CheckEmpty(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10));
-    cache.Put(2, QueryPerson("A2", 20));
+    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(2, QueryPerson("A2", 20, MakeDate(1989, 10, 26), MakeTimestamp(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
 
@@ -798,7 +938,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10));
+        cache.Put(i, QueryPerson(stream.str(), i * 10, MakeDate(1970 + i), MakeTimestamp(2016, 1, 1, i / 60, i % 60)));
     }
 
     cursor = cache.Query(qry);
@@ -835,6 +975,122 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
 
         BOOST_REQUIRE(!row.HasNext());
     }
+
+    CheckEmpty(cursor);
+}
+
+/**
+ * Test query for Date type.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryDate)
+{
+    // Test simple query.
+    Cache<int, QueryPerson> cache = GetCache();
+
+    // Test query with field of type 'Date'.
+    SqlFieldsQuery qry("select birthday from QueryPerson where birthday<'1990-01-01'");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+
+    int32_t entryCnt = 100; // Number of entries.
+
+    for (int i = 0; i < entryCnt; i++)
+    {
+        std::stringstream stream;
+
+        stream << "A" << i;
+
+        cache.Put(i, QueryPerson(stream.str(), i * 10, MakeDate(1980 + i), MakeTimestamp(2016, 1, 1, i / 60, i % 60)));
+    }
+
+    cursor = cache.Query(qry);
+
+    IgniteError error;
+
+    int32_t resultSetSize = 0; // Number of entries in query result set.
+
+    while (cursor.HasNext(error))
+    {
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        QueryFieldsRow row = cursor.GetNext(error);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        BOOST_REQUIRE(row.HasNext(error));
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        Date birthday = row.GetNext<Date>(error);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        BOOST_CHECK(birthday == MakeDate(1980 + resultSetSize));
+
+        BOOST_CHECK(birthday < MakeDate(1990, 1, 1));
+
+        BOOST_REQUIRE(!row.HasNext());
+
+        ++resultSetSize;
+    }
+
+    BOOST_CHECK_EQUAL(resultSetSize, 10);
+
+    CheckEmpty(cursor);
+}
+
+/**
+ * Test query for Timestamp type.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestamp)
+{
+    // Test simple query.
+    Cache<int, QueryPerson> cache = GetCache();
+
+    // Test query with field of type 'Timestamp'.
+    SqlFieldsQuery qry("select recordCreated from QueryPerson where recordCreated<'2016-01-01 01:00:00'");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+
+    int32_t entryCnt = 1000; // Number of entries.
+
+    for (int i = 0; i < entryCnt; i++)
+    {
+        std::stringstream stream;
+
+        stream << "A" << i;
+
+        cache.Put(i, QueryPerson(stream.str(), i * 10, MakeDate(1980 + i), MakeTimestamp(2016, 1, 1, i / 60, i % 60)));
+    }
+
+    cursor = cache.Query(qry);
+
+    IgniteError error;
+
+    int32_t resultSetSize = 0; // Number of entries in query result set.
+
+    while (cursor.HasNext(error))
+    {
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        QueryFieldsRow row = cursor.GetNext(error);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        BOOST_REQUIRE(row.HasNext(error));
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        Timestamp recordCreated = row.GetNext<Timestamp>(error);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        BOOST_CHECK(recordCreated == MakeTimestamp(2016, 1, 1, 0, resultSetSize % 60, 0));
+
+        BOOST_CHECK(recordCreated < MakeTimestamp(2016, 1, 1, 1, 0, 0));
+
+        BOOST_REQUIRE(!row.HasNext());
+
+        ++resultSetSize;
+    }
+
+    BOOST_CHECK_EQUAL(resultSetSize, 60);
 
     CheckEmpty(cursor);
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * ODBC query get tables meta request.
  */
@@ -74,5 +76,10 @@ public class OdbcQueryGetTablesMetaRequest extends OdbcRequest {
      */
     public String tableType() {
         return tableType;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcQueryGetTablesMetaRequest.class, this);
     }
 }

@@ -180,6 +180,8 @@ public class GridNioRecoveryDescriptor {
             if (fut.ackClosure() != null)
                 fut.ackClosure().apply(null);
 
+            fut.onAckReceived();
+
             acked++;
         }
     }

@@ -201,6 +201,40 @@ namespace ignite
             void WriteGuidArray(const char* fieldName, const Guid* val, int32_t len);
 
             /**
+             * Write Date. Maps to "Date" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param val Value.
+             */
+            void WriteDate(const char* fieldName, const Date& val);
+
+            /**
+             * Write array of Dates. Maps to "Date[]" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param val Array.
+             * @param len Array length.
+             */
+            void WriteDateArray(const char* fieldName, const Date* val, const int32_t len);
+
+            /**
+             * Write Timestamp. Maps to "Timestamp" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param val Value.
+             */
+            void WriteTimestamp(const char* fieldName, const Timestamp& val);
+
+            /**
+             * Write array of Timestamps. Maps to "Timestamp[]" type in Java.
+             *
+             * @param fieldName Field name.
+             * @param val Array.
+             * @param len Array length.
+             */
+            void WriteTimestampArray(const char* fieldName, const Timestamp* val, const int32_t len);
+
+            /**
              * Write string.
              *
              * @param fieldName Field name.

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * ODBC query close request.
  */
@@ -38,5 +40,10 @@ public class OdbcQueryCloseRequest extends OdbcRequest {
      */
     public long queryId() {
         return queryId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcQueryCloseRequest.class, this);
     }
 }

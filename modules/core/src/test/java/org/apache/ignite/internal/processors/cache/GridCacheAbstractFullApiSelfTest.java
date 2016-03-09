@@ -53,6 +53,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -64,7 +65,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -230,8 +230,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     Ignite ignite = grid(entry.getKey());
 
                     for (CacheConfiguration cfg : entry.getValue())
-                        ignite.createCache(cfg);
+                        ignite.getOrCreateCache(cfg);
                 }
+
+                awaitPartitionMapExchange();
             }
             else {
                 int cnt = gridCount();
@@ -258,6 +260,71 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
+    }
+
+    /**
+     * Checks that skipStore flag gets overriden inside a transaction.
+     *
+     * @throws Exception if failed.
+     */
+    public void testWriteThroughTx() {
+        if(isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-1088");
+
+        String key = "writeThroughKey";
+
+        map.remove(key);
+
+        try (final Transaction transaction = grid(0).transactions().txStart()) {
+            IgniteCache<String, Integer> cache = jcache(0);
+
+            // retrieve market type from the grid
+            Integer old = cache.withSkipStore().get(key);
+
+            assertNull(old);
+
+            // update the grid
+            cache.put(key, 2);
+
+            // finally commit the transaction
+            transaction.commit();
+        }
+
+        assertEquals(2, map.get(key));
+    }
+
+    /**
+     * Checks that skipStore flag gets overriden inside a transaction.
+     *
+     * @throws Exception if failed.
+     */
+    public void testNoReadThroughTx() {
+        if(isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-1088");
+
+        String key = "writeThroughKey";
+
+        IgniteCache<String, Integer> cache = jcache(0);
+
+        resetStore();
+
+        cache.put(key, 1);
+
+        putToStore(key, 2);
+
+        try (final Transaction transaction = grid(0).transactions().txStart()) {
+            Integer old = cache.get(key);
+
+            assertEquals((Integer)1, old);
+
+            // update the grid
+            cache.put(key, 2);
+
+            // finally commit the transaction
+            transaction.commit();
+        }
+
+        assertEquals(0, reads.get());
     }
 
     /** {@inheritDoc} */
@@ -325,7 +392,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             map.put("key" + i, i);
 
         // Put in primary nodes to avoid near readers which will prevent entry from being cleared.
-        Map<ClusterNode, Collection<String>> mapped = grid(0).cluster().mapKeysToNodes(null, map.keySet());
+        Map<ClusterNode, Collection<String>> mapped = grid(0).<String>affinity(null).mapKeysToNodes(map.keySet());
 
         for (int i = 0; i < gridCount(); i++) {
             Collection<String> keys = mapped.get(grid(i).localNode());
@@ -338,7 +405,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         map.remove("key0");
 
-        mapped = grid(0).cluster().mapKeysToNodes(null, map.keySet());
+        mapped = grid(0).<String>affinity(null).mapKeysToNodes(map.keySet());
 
         for (int i = 0; i < gridCount(); i++) {
             // Will actually delete entry from map.
@@ -556,6 +623,30 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
+    public void testGetEntry() throws Exception {
+        IgniteCache<String, Integer> cache = jcache();
+
+        cache.put("key1", 1);
+        cache.put("key2", 2);
+
+        CacheEntry<String, Integer> key1e =  cache.getEntry("key1");
+        CacheEntry<String, Integer> key2e =  cache.getEntry("key2");
+        CacheEntry<String, Integer> wrongKeye =  cache.getEntry("wrongKey");
+
+        assert key1e.getValue() == 1;
+        assert key1e.getKey().equals("key1");
+        assert key1e.version() != null;
+
+        assert key2e.getValue() == 2;
+        assert key2e.getKey().equals("key2");
+        assert key2e.version() != null;
+
+        assert wrongKeye == null;
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
     public void testGetAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -655,6 +746,122 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 assertEquals(1, (int)map2.get("key1"));
                 assertEquals(2, (int)map2.get("key2"));
                 assertNull(map2.get("key9999"));
+
+                tx0.commit();
+            }
+        }
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testGetEntries() throws Exception {
+        Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
+
+        final IgniteCache<String, Integer> cache = jcache();
+
+        try {
+            cache.put("key1", 1);
+            cache.put("key2", 2);
+
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.getEntries(null).isEmpty();
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
+        assert cache.getEntries(Collections.<String>emptySet()).isEmpty();
+
+        Collection<CacheEntry<String, Integer>> c1 = cache.getEntries(ImmutableSet.of("key1", "key2", "key9999"));
+
+        info("Retrieved c1: " + c1);
+
+        assert 2 == c1.size() : "Invalid collection: " + c1;
+
+        boolean b1 = false;
+        boolean b2 = false;
+
+        for (CacheEntry<String, Integer> e: c1){
+            if (e.getKey().equals("key1") && e.getValue().equals(1))
+                b1 = true;
+
+            if (e.getKey().equals("key2") && e.getValue().equals(2))
+                b2 = true;
+        }
+
+        assertTrue(b1 && b2);
+
+        Collection<CacheEntry<String, Integer>> c2 = cache.getEntries(ImmutableSet.of("key1", "key2", "key9999"));
+
+        info("Retrieved c2: " + c2);
+
+        assert 2 == c2.size() : "Invalid collection: " + c2;
+
+        b1 = false;
+        b2 = false;
+
+        for (CacheEntry<String, Integer> e: c2){
+            if (e.getKey().equals("key1") && e.getValue().equals(1))
+                b1 = true;
+
+            if (e.getKey().equals("key2") && e.getValue().equals(2))
+                b2 = true;
+        }
+
+        assertTrue(b1 && b2);
+
+        // Now do the same checks but within transaction.
+        if (txShouldBeUsed()) {
+            try (Transaction tx0 = transactions().txStart()) {
+                assert cache.getEntries(Collections.<String>emptySet()).isEmpty();
+
+                c1 = cache.getEntries(ImmutableSet.of("key1", "key2", "key9999"));
+
+                info("Retrieved c1: " + c1);
+
+                assert 2 == c1.size() : "Invalid collection: " + c1;
+
+                b1 = false;
+                b2 = false;
+
+                for (CacheEntry<String, Integer> e : c1) {
+                    if (e.getKey().equals("key1") && e.getValue().equals(1))
+                        b1 = true;
+
+                    if (e.getKey().equals("key2") && e.getValue().equals(2))
+                        b2 = true;
+                }
+
+                assertTrue(b1 && b2);
+
+                c2 = cache.getEntries(ImmutableSet.of("key1", "key2", "key9999"));
+
+                info("Retrieved c2: " + c2);
+
+                assert 2 == c2.size() : "Invalid collection: " + c2;
+
+                b1 = false;
+                b2 = false;
+
+                for (CacheEntry<String, Integer> e : c2) {
+                    if (e.getKey().equals("key1") && e.getValue().equals(1))
+                        b1 = true;
+
+                    if (e.getKey().equals("key2") && e.getValue().equals(2))
+                        b2 = true;
+                }
+
+                assertTrue(b1 && b2);
 
                 tx0.commit();
             }
@@ -5359,12 +5566,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      */
     private static class CheckCacheSizeTask extends TestIgniteIdxRunnable {
+        /** */
         private final Map<String, Integer> map;
 
         /**
          * @param map Map.
          */
-        public CheckCacheSizeTask(Map<String, Integer> map) {
+        CheckCacheSizeTask(Map<String, Integer> map) {
             this.map = map;
         }
 
@@ -5375,7 +5583,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             int size = 0;
 
             for (String key : map.keySet())
-                if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
+                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
                     size++;
 
             assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(ctx.name()).localSize(ALL));

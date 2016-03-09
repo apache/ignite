@@ -69,10 +69,13 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgniteTransactionsEx;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -94,6 +97,7 @@ import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactionsImpl;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.F0;
@@ -434,6 +438,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         switch (cc.getMemoryMode()) {
             case OFFHEAP_VALUES: {
+                if (cacheType.userCache() && cc.getEvictionPolicy() == null && cc.getOffHeapMaxMemory() >= 0)
+                    U.quietAndWarn(log, "Off heap maximum memory configuration property will be ignored for the " +
+                        "cache working in OFFHEAP_VALUES mode (memory usage will be unlimited): " +
+                        U.maskName(cc.getName()) + ". Consider configuring eviction policy or switching to " +
+                        "OFFHEAP_TIERED mode or.");
+
                 if (cc.getOffHeapMaxMemory() < 0)
                     cc.setOffHeapMaxMemory(0); // Set to unlimited.
 
@@ -2261,6 +2271,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.startCacheConfiguration(ccfg);
         }
 
+        // Fail cache with swap enabled creation on grid without swap space SPI.
+        if (ccfg.isSwapEnabled())
+            for (ClusterNode n : ctx.discovery().allNodes())
+                if (!GridCacheUtils.clientNode(n) && !GridCacheUtils.isSwapEnabled(n))
+                    return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start cache " +
+                        cacheName + " with swap enabled: Remote Node with ID " + n.id().toString().toUpperCase() +
+                        " has not swap SPI configured"));
+
         if (nearCfg != null)
             req.nearCacheConfiguration(nearCfg);
 
@@ -2864,9 +2882,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 try {
                     KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
 
-                    GridCacheSwapEntry swapEntry = GridCacheSwapEntryImpl.unmarshal(valBytes, true);
-
-                    CacheObject val = swapEntry.value();
+                    CacheObject val = cctx.swap().unmarshalSwapEntryValue(valBytes);
 
                     assert val != null;
 
@@ -3279,8 +3295,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void onUndeployed(ClassLoader ldr) {
         if (!ctx.isStopping()) {
             for (GridCacheAdapter<?, ?> cache : caches.values()) {
-                // Do not notify system caches.
-                if (cache.context().userCache())
+                // Do not notify system caches and caches for which deployment is disabled.
+                if (cache.context().userCache() && cache.context().deploymentEnabled())
                     cache.onUndeploy(ldr);
             }
         }
@@ -3298,6 +3314,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteTransactionsEx transactions() {
         return transactions;
+    }
+
+    /**
+     * Starts client caches that do not exist yet.
+     *
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void createMissingCaches() throws IgniteCheckedException {
+        for (String cacheName : registeredCaches.keySet()) {
+            if (!CU.isSystemCache(cacheName) && !caches.containsKey(cacheName))
+                dynamicStartCache(null, cacheName, null, false, true, true).get();
+        }
     }
 
     /**
@@ -3409,23 +3437,43 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (val == null)
             return null;
 
-        if (val.getCacheStoreFactory() != null) {
-            try {
-                marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
-                    val.getCacheStoreFactory().getClass().getClassLoader());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteCheckedException("Failed to validate cache configuration. " +
-                    "Cache store factory is not serializable. Cache name: " + U.maskName(val.getName()), e);
-            }
+        IgniteCacheObjectProcessor objProc = ctx.cacheObjects();
+        BinaryContext oldCtx = null;
+
+        if (objProc instanceof CacheObjectBinaryProcessorImpl) {
+            GridBinaryMarshaller binMarsh = ((CacheObjectBinaryProcessorImpl)objProc).marshaller();
+
+            oldCtx = binMarsh == null ? null : binMarsh.pushContext();
         }
 
         try {
-            return marshaller.unmarshal(marshaller.marshal(val), val.getClass().getClassLoader());
+            if (val.getCacheStoreFactory() != null) {
+                try {
+                    ClassLoader ldr = ctx.config().getClassLoader();
+
+                    if (ldr == null)
+                        ldr = val.getCacheStoreFactory().getClass().getClassLoader();
+
+                    marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
+                        U.resolveClassLoader(ldr, ctx.config()));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteCheckedException("Failed to validate cache configuration. " +
+                        "Cache store factory is not serializable. Cache name: " + U.maskName(val.getName()), e);
+                }
+            }
+
+            try {
+                return marshaller.unmarshal(marshaller.marshal(val), U.resolveClassLoader(ctx.config()));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteCheckedException("Failed to validate cache configuration " +
+                    "(make sure all objects in cache configuration are serializable): " + U.maskName(val.getName()), e);
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Failed to validate cache configuration " +
-                "(make sure all objects in cache configuration are serializable): " + U.maskName(val.getName()), e);
+        finally {
+            if (objProc instanceof CacheObjectBinaryProcessorImpl)
+                GridBinaryMarshaller.popContext(oldCtx);
         }
     }
 

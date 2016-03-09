@@ -243,20 +243,18 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CACHE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.internal.util.GridUnsafe.objectFieldOffset;
+import static org.apache.ignite.internal.util.GridUnsafe.putObjectVolatile;
+import static org.apache.ignite.internal.util.GridUnsafe.staticFieldBase;
+import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
 
 /**
  * Collection of utility methods used throughout the system.
  */
 @SuppressWarnings({"UnusedReturnValue", "UnnecessaryFullyQualifiedName"})
 public abstract class IgniteUtils {
-    /** Unsafe. */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** {@code True} if {@code unsafe} should be used for array copy. */
     private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
-
-    /** Offset. */
-    private static final int BYTE_ARRAY_DATA_OFFSET = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** Sun-specific JDK constructor factory for objects that don't have empty constructor. */
     private static final Method CTOR_FACTORY;
@@ -477,6 +475,15 @@ public abstract class IgniteUtils {
     /** */
     private static volatile Boolean hasShmem;
 
+    /** Object.hashCode() */
+    private static Method hashCodeMtd;
+
+    /** Object.equals(...) */
+    private static Method equalsMtd;
+
+    /** Object.toString() */
+    private static Method toStringMtd;
+
     /**
      * Initializes enterprise check.
      */
@@ -526,7 +533,7 @@ public abstract class IgniteUtils {
                 }
 
             // UNIX name detection.
-            if (osLow.contains("olaris"))
+            if (osLow.contains("olaris") || osLow.contains("sunos"))
                 solaris = true;
             else if (osLow.contains("inux"))
                 linux = true;
@@ -669,9 +676,8 @@ public abstract class IgniteUtils {
 
                 // We use unsafe operations to update static fields on interface because
                 // they are treated as static final and cannot be updated via standard reflection.
-                UNSAFE.putObjectVolatile(UNSAFE.staticFieldBase(f1), UNSAFE.staticFieldOffset(f1), gridEvents());
-                UNSAFE.putObjectVolatile(UNSAFE.staticFieldBase(f2), UNSAFE.staticFieldOffset(f2),
-                    gridEvents(EVT_NODE_METRICS_UPDATED));
+                putObjectVolatile(staticFieldBase(f1), staticFieldOffset(f1), gridEvents());
+                putObjectVolatile(staticFieldBase(f2), staticFieldOffset(f2), gridEvents(EVT_NODE_METRICS_UPDATED));
 
                 assert EVTS_ALL != null;
                 assert EVTS_ALL.length == GRID_EVTS.length;
@@ -698,6 +704,15 @@ public abstract class IgniteUtils {
 
         // Set the http.strictPostRedirect property to prevent redirected POST from being mapped to a GET.
         System.setProperty("http.strictPostRedirect", "true");
+
+        for (Method mtd : Object.class.getMethods()) {
+            if ("hashCode".equals(mtd.getName()))
+                hashCodeMtd = mtd;
+            else if ("equals".equals(mtd.getName()))
+                equalsMtd = mtd;
+            else if ("toString".equals(mtd.getName()))
+                toStringMtd = mtd;
+        }
     }
 
     /**
@@ -2190,6 +2205,29 @@ public abstract class IgniteUtils {
      */
     public static ClassLoader gridClassLoader() {
         return gridClassLoader;
+    }
+
+    /**
+     * @return ClassLoader at IgniteConfiguration in case it is not null or
+     * ClassLoader used to start Ignite.
+     */
+    public static ClassLoader resolveClassLoader(IgniteConfiguration cfg) {
+        return resolveClassLoader(null, cfg);
+    }
+
+    /**
+     * @return ClassLoader passed as param in case it is not null or
+     * ClassLoader at IgniteConfiguration in case it is not null or
+     * ClassLoader used to start Ignite.
+     */
+    public static ClassLoader resolveClassLoader(ClassLoader ldr, IgniteConfiguration cfg) {
+        assert cfg != null;
+
+        return (ldr != null && ldr != gridClassLoader) ?
+            ldr :
+            cfg.getClassLoader() != null ?
+                cfg.getClassLoader() :
+                gridClassLoader;
     }
 
     /**
@@ -5874,7 +5912,9 @@ public abstract class IgniteUtils {
      * @return {@code True} if given class is of {@code Ignite} type.
      */
     public static boolean isIgnite(Class<?> cls) {
-        return cls.getName().startsWith("org.apache.ignite");
+        String name = cls.getName();
+
+        return name.startsWith("org.apache.ignite") || name.startsWith("org.jsr166");
     }
 
     /**
@@ -7685,7 +7725,7 @@ public abstract class IgniteUtils {
      */
     public static long fieldOffset(Class<?> cls, String fieldName) {
         try {
-            return UNSAFE.objectFieldOffset(cls.getDeclaredField(fieldName));
+            return objectFieldOffset(cls.getDeclaredField(fieldName));
         }
         catch (NoSuchFieldException e) {
             throw new IllegalStateException(e);
@@ -8297,7 +8337,7 @@ public abstract class IgniteUtils {
     @SuppressWarnings("TypeParameterExtendsFinalClass")
     private static boolean unsafeByteArrayCopyAvailable() {
         try {
-            Class<? extends Unsafe> unsafeCls = UNSAFE.getClass();
+            Class<? extends Unsafe> unsafeCls = Unsafe.class;
 
             unsafeCls.getMethod("copyMemory", Object.class, long.class, Object.class, long.class, long.class);
 
@@ -8320,7 +8360,7 @@ public abstract class IgniteUtils {
         assert resBuf.length >= resOff + len;
 
         if (UNSAFE_BYTE_ARR_CP)
-            UNSAFE.copyMemory(src, BYTE_ARRAY_DATA_OFFSET + off, resBuf, BYTE_ARRAY_DATA_OFFSET + resOff, len);
+            GridUnsafe.copyMemory(src, GridUnsafe.BYTE_ARR_OFF + off, resBuf, GridUnsafe.BYTE_ARR_OFF + resOff, len);
         else
             System.arraycopy(src, off, resBuf, resOff, len);
 
@@ -8853,18 +8893,18 @@ public abstract class IgniteUtils {
      * @return Offset.
      */
     public static long writeGridUuid(byte[] arr, long off, @Nullable IgniteUuid uid) {
-        UNSAFE.putBoolean(arr, off++, uid != null);
+        GridUnsafe.putBoolean(arr, off++, uid != null);
 
         if (uid != null) {
-            UNSAFE.putLong(arr, off, uid.globalId().getMostSignificantBits());
+            GridUnsafe.putLong(arr, off, uid.globalId().getMostSignificantBits());
 
             off += 8;
 
-            UNSAFE.putLong(arr, off, uid.globalId().getLeastSignificantBits());
+            GridUnsafe.putLong(arr, off, uid.globalId().getLeastSignificantBits());
 
             off += 8;
 
-            UNSAFE.putLong(arr, off, uid.localId());
+            GridUnsafe.putLong(arr, off, uid.localId());
 
             off += 8;
         }
@@ -8878,18 +8918,18 @@ public abstract class IgniteUtils {
      * @return UUID.
      */
     @Nullable public static IgniteUuid readGridUuid(byte[] arr, long off) {
-        if (UNSAFE.getBoolean(arr, off++)) {
-            long most = UNSAFE.getLong(arr, off);
+        if (GridUnsafe.getBoolean(arr, off++)) {
+            long most = GridUnsafe.getLong(arr, off);
 
             off += 8;
 
-            long least = UNSAFE.getLong(arr, off);
+            long least = GridUnsafe.getLong(arr, off);
 
             off += 8;
 
             UUID globalId = new UUID(most, least);
 
-            long locId = UNSAFE.getLong(arr, off);
+            long locId = GridUnsafe.getLong(arr, off);
 
             return new IgniteUuid(globalId, locId);
         }
@@ -8902,18 +8942,18 @@ public abstract class IgniteUtils {
      * @return UUID.
      */
     @Nullable public static IgniteUuid readGridUuid(long ptr) {
-        if (UNSAFE.getBoolean(null, ptr++)) {
-            long most = UNSAFE.getLong(ptr);
+        if (GridUnsafe.getBoolean(null, ptr++)) {
+            long most = GridUnsafe.getLong(ptr);
 
             ptr += 8;
 
-            long least = UNSAFE.getLong(ptr);
+            long least = GridUnsafe.getLong(ptr);
 
             ptr += 8;
 
             UUID globalId = new UUID(most, least);
 
-            long locId = UNSAFE.getLong(ptr);
+            long locId = GridUnsafe.getLong(ptr);
 
             return new IgniteUuid(globalId, locId);
         }
@@ -8930,43 +8970,43 @@ public abstract class IgniteUtils {
     public static long writeVersion(byte[] arr, long off, GridCacheVersion ver) {
         boolean verEx = ver instanceof GridCacheVersionEx;
 
-        UNSAFE.putBoolean(arr, off++, verEx);
+        GridUnsafe.putBoolean(arr, off++, verEx);
 
         if (verEx) {
             GridCacheVersion drVer = ver.conflictVersion();
 
             assert drVer != null;
 
-            UNSAFE.putInt(arr, off, drVer.topologyVersion());
+            GridUnsafe.putInt(arr, off, drVer.topologyVersion());
 
             off += 4;
 
-            UNSAFE.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
+            GridUnsafe.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
 
             off += 4;
 
-            UNSAFE.putLong(arr, off, drVer.globalTime());
+            GridUnsafe.putLong(arr, off, drVer.globalTime());
 
             off += 8;
 
-            UNSAFE.putLong(arr, off, drVer.order());
+            GridUnsafe.putLong(arr, off, drVer.order());
 
             off += 8;
         }
 
-        UNSAFE.putInt(arr, off, ver.topologyVersion());
+        GridUnsafe.putInt(arr, off, ver.topologyVersion());
 
         off += 4;
 
-        UNSAFE.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
+        GridUnsafe.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
 
         off += 4;
 
-        UNSAFE.putLong(arr, off, ver.globalTime());
+        GridUnsafe.putLong(arr, off, ver.globalTime());
 
         off += 8;
 
-        UNSAFE.putLong(arr, off, ver.order());
+        GridUnsafe.putLong(arr, off, ver.order());
 
         off += 8;
 
@@ -8979,18 +9019,18 @@ public abstract class IgniteUtils {
      * @return Version.
      */
     public static GridCacheVersion readVersion(long ptr, boolean verEx) {
-        GridCacheVersion ver = new GridCacheVersion(UNSAFE.getInt(ptr),
-            UNSAFE.getInt(ptr + 4),
-            UNSAFE.getLong(ptr + 8),
-            UNSAFE.getLong(ptr + 16));
+        GridCacheVersion ver = new GridCacheVersion(GridUnsafe.getInt(ptr),
+            GridUnsafe.getInt(ptr + 4),
+            GridUnsafe.getLong(ptr + 8),
+            GridUnsafe.getLong(ptr + 16));
 
         if (verEx) {
             ptr += 24;
 
-            ver = new GridCacheVersionEx(UNSAFE.getInt(ptr),
-                UNSAFE.getInt(ptr + 4),
-                UNSAFE.getLong(ptr + 8),
-                UNSAFE.getLong(ptr + 16),
+            ver = new GridCacheVersionEx(GridUnsafe.getInt(ptr),
+                GridUnsafe.getInt(ptr + 4),
+                GridUnsafe.getLong(ptr + 8),
+                GridUnsafe.getLong(ptr + 16),
                 ver);
         }
 
@@ -9004,38 +9044,38 @@ public abstract class IgniteUtils {
      * @return Version.
      */
     public static GridCacheVersion readVersion(byte[] arr, long off, boolean verEx) {
-        int topVer = UNSAFE.getInt(arr, off);
+        int topVer = GridUnsafe.getInt(arr, off);
 
         off += 4;
 
-        int nodeOrderDrId = UNSAFE.getInt(arr, off);
+        int nodeOrderDrId = GridUnsafe.getInt(arr, off);
 
         off += 4;
 
-        long globalTime = UNSAFE.getLong(arr, off);
+        long globalTime = GridUnsafe.getLong(arr, off);
 
         off += 8;
 
-        long order = UNSAFE.getLong(arr, off);
+        long order = GridUnsafe.getLong(arr, off);
 
         off += 8;
 
         GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
 
         if (verEx) {
-            topVer = UNSAFE.getInt(arr, off);
+            topVer = GridUnsafe.getInt(arr, off);
 
             off += 4;
 
-            nodeOrderDrId = UNSAFE.getInt(arr, off);
+            nodeOrderDrId = GridUnsafe.getInt(arr, off);
 
             off += 4;
 
-            globalTime = UNSAFE.getLong(arr, off);
+            globalTime = GridUnsafe.getLong(arr, off);
 
             off += 8;
 
-            order = UNSAFE.getLong(arr, off);
+            order = GridUnsafe.getLong(arr, off);
 
             ver = new GridCacheVersionEx(topVer, nodeOrderDrId, globalTime, order, ver);
         }
@@ -9051,7 +9091,7 @@ public abstract class IgniteUtils {
     public static byte[] copyMemory(long ptr, int size) {
         byte[] res = new byte[size];
 
-        UNSAFE.copyMemory(null, ptr, res, BYTE_ARRAY_DATA_OFFSET, size);
+        GridUnsafe.copyMemory(null, ptr, res, GridUnsafe.BYTE_ARR_OFF, size);
 
         return res;
     }
@@ -9419,5 +9459,26 @@ public abstract class IgniteUtils {
             return rmtProtoVer;
         else
             return GridIoManager.DIRECT_PROTO_VER;
+    }
+
+    /**
+     * @return Whether provided method is {@code Object.hashCode()}.
+     */
+    public static boolean isHashCodeMethod(Method mtd) {
+        return hashCodeMtd.equals(mtd);
+    }
+
+    /**
+     * @return Whether provided method is {@code Object.equals(...)}.
+     */
+    public static boolean isEqualsMethod(Method mtd) {
+        return equalsMtd.equals(mtd);
+    }
+
+    /**
+     * @return Whether provided method is {@code Object.toString()}.
+     */
+    public static boolean isToStringMethod(Method mtd) {
+        return toStringMtd.equals(mtd);
     }
 }

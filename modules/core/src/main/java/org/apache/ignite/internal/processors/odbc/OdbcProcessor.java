@@ -18,124 +18,99 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
+import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.spi.IgnitePortProtocol;
+
+import java.net.InetAddress;
+import java.nio.ByteOrder;
 
 /**
  * ODBC processor.
  */
 public class OdbcProcessor extends GridProcessorAdapter {
-    /** OBCD TCP Server. */
-    private OdbcTcpServer srv;
-
     /** Busy lock. */
-    private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
-    /** Command handler. */
-    private OdbcCommandHandler handler;
-
-    /** Protocol handler. */
-    private final OdbcProtocolHandler protoHnd = new OdbcProtocolHandler() {
-        /** {@inheritDoc} */
-        @Override public OdbcResponse handle(OdbcRequest req) throws IgniteCheckedException {
-            return handle0(req);
-        }
-    };
-
-    /**
-     * Handle request.
-     *
-     * @param req Request.
-     * @return Response.
-     */
-    private OdbcResponse handle0(final OdbcRequest req) throws IgniteCheckedException {
-        if (!busyLock.tryReadLock())
-            throw new IgniteCheckedException("Failed to handle request (received request while stopping grid).");
-
-        try {
-            if (log.isDebugEnabled())
-                log.debug("Received request from client: " + req);
-
-            OdbcResponse rsp;
-
-            try {
-                rsp = handler == null ? null : handler.handle(req);
-
-                if (rsp == null)
-                    throw new IgniteCheckedException("Failed to find registered handler for command: " + req.command());
-            }
-            catch (Exception e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
-
-                rsp = new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
-            }
-
-            return rsp;
-        }
-        finally {
-            busyLock.readUnlock();
-        }
-    }
+    /** OBCD TCP Server. */
+    private GridNioServer<byte[]> srv;
 
     /**
      * @param ctx Kernal context.
      */
     public OdbcProcessor(GridKernalContext ctx) {
         super(ctx);
-
-        srv = new OdbcTcpServer(ctx);
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (isOdbcEnabled()) {
-            Marshaller marsh = ctx.config().getMarshaller();
+        OdbcConfiguration odbcCfg = ctx.config().getOdbcConfiguration();
 
-            if (marsh != null && !(marsh instanceof BinaryMarshaller))
-                throw new IgniteCheckedException("ODBC may only be used with BinaryMarshaller.");
+        if (odbcCfg != null) {
+            try {
+                Marshaller marsh = ctx.config().getMarshaller();
 
-            // Register handler.
-            handler = new OdbcCommandHandler(ctx);
+                if (marsh != null && !(marsh instanceof BinaryMarshaller))
+                    throw new IgniteCheckedException("ODBC can only be used with BinaryMarshaller (please set it " +
+                        "through IgniteConfiguration.setMarshaller())");
 
-            srv.start(protoHnd);
-        }
-    }
+                String hostStr = odbcCfg.getHost();
 
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (isOdbcEnabled()) {
-            srv.stop();
-        }
-    }
+                if (hostStr == null)
+                    hostStr = ctx.config().getLocalHost();
 
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        if (isOdbcEnabled()) {
-            if (log.isDebugEnabled())
-                log.debug("ODBC processor started.");
+                InetAddress host = U.resolveLocalHost(hostStr);
+
+                int port = odbcCfg.getPort();
+
+                srv = GridNioServer.<byte[]>builder()
+                    .address(host)
+                    .port(port)
+                    .listener(new OdbcNioListener(ctx, busyLock))
+                    .logger(log)
+                    .selectorCount(odbcCfg.getSelectorCount())
+                    .gridName(ctx.gridName())
+                    .tcpNoDelay(odbcCfg.isNoDelay())
+                    .directBuffer(odbcCfg.isDirectBuffer())
+                    .byteOrder(ByteOrder.nativeOrder())
+                    .socketSendBufferSize(odbcCfg.getSendBufferSize())
+                    .socketReceiveBufferSize(odbcCfg.getReceiveBufferSize())
+                    .sendQueueLimit(odbcCfg.getSendQueueLimit())
+                    .filters(new GridNioCodecFilter(new OdbcBufferedParser(), log, false))
+                    .directMode(false)
+                    .idleTimeout(odbcCfg.getIdleTimeout())
+                    .build();
+
+                srv.start();
+
+                ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
+
+                log.info("ODBC processor has started on TCP port " + port);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to start ODBC processor.", e);
+            }
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (isOdbcEnabled()) {
-            busyLock.writeLock();
+        if (srv != null) {
+            busyLock.block();
+
+            srv.stop();
+
+            ctx.ports().deregisterPorts(getClass());
 
             if (log.isDebugEnabled())
                 log.debug("ODBC processor stopped.");
         }
-    }
-
-    /**
-     * Check if the ODBC is enabled.
-     *
-     * @return Whether or not ODBC is enabled.
-     */
-    public boolean isOdbcEnabled() {
-        return ctx.config().getOdbcConfiguration() != null;
     }
 }

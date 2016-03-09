@@ -42,7 +42,9 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public string Key { get { return _key; } }
 
-        /** <inheritDoc /> */
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
 	    public override string ToShortString()
 	    {
             return string.Format(CultureInfo.InvariantCulture, "{0}: Key={1}", Name, Key);

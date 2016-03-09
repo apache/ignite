@@ -97,6 +97,12 @@
     <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\date.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\timestamp.h">
+      <Filter>Code</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary\binary_containers.cpp">
@@ -158,6 +164,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\impl\ignite_environment.cpp">
       <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\date.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\timestamp.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

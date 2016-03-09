@@ -47,7 +47,7 @@ namespace ignite
                 const uint16_t port = 11443;
 
                 /** Default value for cache attribute. */
-                const std::string cache = "Persons";
+                const std::string cache = "";
             }
 
             /** Connection attribute keywords. */
@@ -65,7 +65,7 @@ namespace ignite
                 /** Connection attribute keyword for server port attribute. */
                 const std::string port = "port";
 
-                /** Default value for cache attribute. */
+                /** Connection attribute keyword for cache attribute. */
                 const std::string cache = "cache";
             }
 

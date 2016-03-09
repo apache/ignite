@@ -119,6 +119,26 @@ namespace ignite
             impl->WriteGuidArray(fieldName, val, len);
         }
 
+        void BinaryWriter::WriteDate(const char * fieldName, const Date & val)
+        {
+            impl->WriteDate(fieldName, val);
+        }
+
+        void BinaryWriter::WriteDateArray(const char * fieldName, const Date * val, const int32_t len)
+        {
+            impl->WriteDateArray(fieldName, val, len);
+        }
+
+        void BinaryWriter::WriteTimestamp(const char * fieldName, const Timestamp & val)
+        {
+            impl->WriteTimestamp(fieldName, val);
+        }
+
+        void BinaryWriter::WriteTimestampArray(const char * fieldName, const Timestamp * val, const int32_t len)
+        {
+            impl->WriteTimestampArray(fieldName, val, len);
+        }
+
         void BinaryWriter::WriteString(const char* fieldName, const char* val)
         {
             if (val)

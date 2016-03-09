@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
-
     using JNI = IgniteJniNativeMethods;
 
     /// <summary>
@@ -102,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             JNI.IgnitionStopAll(ctx, cancel);
         }
-        
+
         internal static void ProcessorReleaseStart(IUnmanagedTarget target)
         {
             JNI.ProcessorReleaseStart(target.Context, target.Target);
@@ -147,6 +146,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        internal static IUnmanagedTarget ProcessorCreateCache(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = JNI.ProcessorCreateCacheFromConfig(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
+        }
+
         internal static IUnmanagedTarget ProcessorGetOrCreateCache(IUnmanagedTarget target, string name)
         {
             sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
@@ -161,6 +167,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 Marshal.FreeHGlobal(new IntPtr(name0));
             }
+        }
+
+        internal static IUnmanagedTarget ProcessorGetOrCreateCache(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = JNI.ProcessorGetOrCreateCacheFromConfig(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
         }
 
         internal static void ProcessorDestroyCache(IUnmanagedTarget target, string name)
@@ -266,6 +279,45 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 Marshal.FreeHGlobal(new IntPtr(name0));
             }
+        }
+
+        internal static IUnmanagedTarget ProcessorAtomicSequence(IUnmanagedTarget target, string name, long initialValue, 
+            bool create)
+        {
+            var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                var res = JNI.ProcessorAtomicSequence(target.Context, target.Target, name0, initialValue, create);
+
+                return res == null ? null : target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static IUnmanagedTarget ProcessorAtomicReference(IUnmanagedTarget target, string name, long memPtr, 
+            bool create)
+        {
+            var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                var res = JNI.ProcessorAtomicReference(target.Context, target.Target, name0, memPtr, create);
+
+                return res == null ? null : target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static void ProcessorGetIgniteConfiguration(IUnmanagedTarget target, long memPtr)
+        {
+            JNI.ProcessorGetIgniteConfiguration(target.Context, target.Target, memPtr);
         }
 
         #endregion
@@ -847,6 +899,51 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void AtomicLongClose(IUnmanagedTarget target)
         {
             JNI.AtomicLongClose(target.Context, target.Target);
+        }
+
+        internal static long AtomicSequenceGet(IUnmanagedTarget target)
+        {
+            return JNI.AtomicSequenceGet(target.Context, target.Target);
+        }
+
+        internal static long AtomicSequenceIncrementAndGet(IUnmanagedTarget target)
+        {
+            return JNI.AtomicSequenceIncrementAndGet(target.Context, target.Target);
+        }
+
+        internal static long AtomicSequenceAddAndGet(IUnmanagedTarget target, long value)
+        {
+            return JNI.AtomicSequenceAddAndGet(target.Context, target.Target, value);
+        }
+
+        internal static int AtomicSequenceGetBatchSize(IUnmanagedTarget target)
+        {
+            return JNI.AtomicSequenceGetBatchSize(target.Context, target.Target);
+        }
+
+        internal static void AtomicSequenceSetBatchSize(IUnmanagedTarget target, int size)
+        {
+            JNI.AtomicSequenceSetBatchSize(target.Context, target.Target, size);
+        }
+
+        internal static bool AtomicSequenceIsClosed(IUnmanagedTarget target)
+        {
+            return JNI.AtomicSequenceIsClosed(target.Context, target.Target);
+        }
+
+        internal static void AtomicSequenceClose(IUnmanagedTarget target)
+        {
+            JNI.AtomicSequenceClose(target.Context, target.Target);
+        }
+
+        internal static bool AtomicReferenceIsClosed(IUnmanagedTarget target)
+        {
+            return JNI.AtomicReferenceIsClosed(target.Context, target.Target);
+        }
+
+        internal static void AtomicReferenceClose(IUnmanagedTarget target)
+        {
+            JNI.AtomicReferenceClose(target.Context, target.Target);
         }
 
         internal static bool ListenableCancel(IUnmanagedTarget target)

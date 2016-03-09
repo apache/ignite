@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Diagnostics;
     using System.Reflection;
+    using Apache.Ignite.Core.Tests.Cache.Query;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
@@ -31,9 +32,9 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            //TestOne(typeof(ContinuousQueryAtomiclBackupTest), "TestInitialQuery");
+            TestOne(typeof(IgniteConfigurationTest), "TestStaticIpFinder");
 
-            TestAll(typeof (ExecutableTest));
+            //TestAll(typeof (CacheQueriesCodeConfigurationTest));
             //TestAllInAssembly();
         }
 

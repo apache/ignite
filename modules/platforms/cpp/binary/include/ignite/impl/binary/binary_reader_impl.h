@@ -30,6 +30,8 @@
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
 #include "ignite/guid.h"
+#include "ignite/date.h"
+#include "ignite/timestamp.h"
 
 namespace ignite
 {
@@ -428,6 +430,86 @@ namespace ignite
                  *     -1 will be returned in case array in stream was null.
                  */
                 int32_t ReadGuidArray(const char* fieldName, Guid* res, const int32_t len);
+
+                /**
+                 * Read Date. Maps to "Date" type in Java.
+                 *
+                 * @return Result.
+                 */
+                Date ReadDate();
+
+                /**
+                 * Read array of Dates. Maps to "Date[]" type in Java.
+                 *
+                 * @param res Array to store data to.
+                 * @param len Expected length of array.             
+                 * @return Actual amount of elements read. If "len" argument is less than actual
+                 *     array size or resulting array is set to null, nothing will be written
+                 *     to resulting array and returned value will contain required array length.
+                 *     -1 will be returned in case array in stream was null.
+                 */
+                int32_t ReadDateArray(Date* res, int32_t len);
+
+                /**
+                 * Read Date. Maps to "Date" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @return Result.
+                 */
+                Date ReadDate(const char* fieldName);
+
+                /**
+                 * Read array of Dates. Maps to "Date[]" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @param res Array to store data to.
+                 * @param len Expected length of array.
+                 * @return Actual amount of elements read. If "len" argument is less than actual
+                 *     array size or resulting array is set to null, nothing will be written
+                 *     to resulting array and returned value will contain required array length.
+                 *     -1 will be returned in case array in stream was null.
+                 */
+                int32_t ReadDateArray(const char* fieldName, Date* res, const int32_t len);
+
+                /**
+                 * Read Timestamp. Maps to "Timestamp" type in Java.
+                 *
+                 * @return Result.
+                 */
+                Timestamp ReadTimestamp();
+
+                /**
+                 * Read array of Timestamps. Maps to "Timestamp[]" type in Java.
+                 *
+                 * @param res Array to store data to.
+                 * @param len Expected length of array.             
+                 * @return Actual amount of elements read. If "len" argument is less than actual
+                 *     array size or resulting array is set to null, nothing will be written
+                 *     to resulting array and returned value will contain required array length.
+                 *     -1 will be returned in case array in stream was null.
+                 */
+                int32_t ReadTimestampArray(Timestamp* res, int32_t len);
+
+                /**
+                 * Read Timestamp. Maps to "Timestamp" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @return Result.
+                 */
+                Timestamp ReadTimestamp(const char* fieldName);
+
+                /**
+                 * Read array of Timestamps. Maps to "Timestamp[]" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @param res Array to store data to.
+                 * @param len Expected length of array.
+                 * @return Actual amount of elements read. If "len" argument is less than actual
+                 *     array size or resulting array is set to null, nothing will be written
+                 *     to resulting array and returned value will contain required array length.
+                 *     -1 will be returned in case array in stream was null.
+                 */
+                int32_t ReadTimestampArray(const char* fieldName, Timestamp* res, const int32_t len);
 
                 /**
                  * Read string.
@@ -839,7 +921,7 @@ namespace ignite
                         default:
                         {
                             IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_BINARY, 
-                                           "Unexpected header during deserialization: ", hdr);
+                                           "Unexpected header during deserialization: ", static_cast<int>(hdr));
                         }
                     }
                 }
@@ -922,6 +1004,32 @@ namespace ignite
                 static void ReadGuidArrayInternal(
                     interop::InteropInputStream* stream, 
                     Guid* res,
+                    const int32_t len
+                );
+
+                /**
+                 * Internal routine to read Date array.
+                 *
+                 * @param stream Stream.
+                 * @param res Resulting array.
+                 * @param len Length.
+                 */
+                static void ReadDateArrayInternal(
+                    interop::InteropInputStream* stream, 
+                    Date* res,
+                    const int32_t len
+                );
+
+                /**
+                 * Internal routine to read Timestamp array.
+                 *
+                 * @param stream Stream.
+                 * @param res Resulting array.
+                 * @param len Length.
+                 */
+                static void ReadTimestampArrayInternal(
+                    interop::InteropInputStream* stream, 
+                    Timestamp* res,
                     const int32_t len
                 );
 
@@ -1113,11 +1221,11 @@ namespace ignite
                         if (hdr == expHdr)
                             return func(stream);
                         else if (hdr == IGNITE_HDR_NULL)
-                            return Guid();
+                            return T();
                         else {
                             ThrowOnInvalidHeader(stream->Position() - 1, expHdr, hdr);
 
-                            return Guid();
+                            return T();
                         }
                     }
                 }
@@ -1271,9 +1379,14 @@ namespace ignite
             template<>
             double IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<double>();
 
-            
             template<>
             Guid IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<Guid>();
+
+            template<>
+            Date IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<Date>();
+
+            template<>
+            Timestamp IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<Timestamp>();
 
             template<>
             inline std::string IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<std::string>()

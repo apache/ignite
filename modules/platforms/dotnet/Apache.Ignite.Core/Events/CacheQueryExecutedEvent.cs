@@ -88,7 +88,9 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public string TaskName { get { return _taskName; } }
 
-        /** <inheritDoc /> */
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
 	    public override string ToShortString()
 	    {
 	        return string.Format(CultureInfo.InvariantCulture,

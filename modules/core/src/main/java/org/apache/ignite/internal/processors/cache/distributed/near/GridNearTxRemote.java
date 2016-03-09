@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Externalizable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -255,7 +255,12 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> masterNodeIds() {
-        return Arrays.asList(nodeId, nearNodeId);
+        Collection<UUID> res = new ArrayList<>(2);
+
+        res.add(nodeId);
+        res.add(nearNodeId);
+
+        return res;
     }
 
     /**

@@ -192,6 +192,7 @@
     <ClInclude Include="..\..\include\ignite\binary\binary_reader.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_type.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_writer.h" />
+    <ClInclude Include="..\..\include\ignite\date.h" />
     <ClInclude Include="..\..\include\ignite\guid.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_common.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_id_resolver.h" />
@@ -210,6 +211,7 @@
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_memory.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_output_stream.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h" />
+    <ClInclude Include="..\..\include\ignite\timestamp.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary\binary_containers.cpp" />
@@ -218,6 +220,7 @@
     <ClCompile Include="..\..\src\binary\binary_reader.cpp" />
     <ClCompile Include="..\..\src\binary\binary_type.cpp" />
     <ClCompile Include="..\..\src\binary\binary_writer.cpp" />
+    <ClCompile Include="..\..\src\date.cpp" />
     <ClCompile Include="..\..\src\guid.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_reader_impl.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_schema.cpp" />
@@ -232,6 +235,7 @@
     <ClCompile Include="..\..\src\impl\interop\interop_input_stream.cpp" />
     <ClCompile Include="..\..\src\impl\interop\interop_memory.cpp" />
     <ClCompile Include="..\..\src\impl\interop\interop_output_stream.cpp" />
+    <ClCompile Include="..\..\src\timestamp.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

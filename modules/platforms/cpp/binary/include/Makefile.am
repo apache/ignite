@@ -42,7 +42,9 @@ nobase_include_HEADERS = ignite/binary/binary_raw_reader.h \
                          ignite/impl/interop/interop_stream_position_guard.h \
                          ignite/impl/interop/interop_output_stream.h \
                          ignite/impl/interop/interop_input_stream.h \
-                         ignite/guid.h
+                         ignite/guid.h \
+                         ignite/date.h \
+                         ignite/timestamp.h
 
 uninstall-hook:
 	find ${includedir}/ignite -type d -empty -delete

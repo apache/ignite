@@ -73,11 +73,7 @@ namespace ignite
 
                 BinaryWriterImpl writer(&outStream, 0);
 
-                int32_t msgLenPos = outStream.Reserve(4);
-
                 msg.Write(writer);
-
-                outStream.WriteInt32(msgLenPos, outStream.Position() - 4);
 
                 buf.resize(outStream.Position());
 
