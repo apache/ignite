@@ -51,6 +51,9 @@ WARNING: this only works with x64 build targets.
         <releaseNotes></releaseNotes>
         <copyright>Copyright 2015</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache linqpad-samples</tags>
+        <dependencies>
+            <dependency id="Apache.Ignite.NET" version="$version$" />
+        </dependencies>    
     </metadata>
     <files>
         <!-- LINQPad samples -->
