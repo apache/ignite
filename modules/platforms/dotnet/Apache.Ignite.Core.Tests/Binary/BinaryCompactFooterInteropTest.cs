@@ -18,6 +18,7 @@
 #pragma warning disable 618
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
@@ -72,7 +73,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 SpringConfigUrl = springUrl,
                 JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath()
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                BinaryConfiguration = new BinaryConfiguration(typeof(PlatformComputeBinarizable))
             };
         }
     }
