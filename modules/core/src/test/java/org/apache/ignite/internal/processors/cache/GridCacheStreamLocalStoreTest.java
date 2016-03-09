@@ -80,7 +80,7 @@ public class GridCacheStreamLocalStoreTest extends GridCommonAbstractTest {
 
     /** Cache synchronization mode. */
     private CacheWriteSynchronizationMode cacheWriteSynchronizationMode() {
-        return CacheWriteSynchronizationMode.PRIMARY_SYNC;
+        return CacheWriteSynchronizationMode.FULL_SYNC;
     }
 
     /** {@inheritDoc} */
@@ -212,6 +212,9 @@ public class GridCacheStreamLocalStoreTest extends GridCommonAbstractTest {
 
         final BinaryObject key = streamBinaryData(grid);
 
+        assert cache.containsKey(key);
+        assert store.map.containsKey(key);
+
         cache.destroy();
         cache.close();
 
@@ -242,6 +245,7 @@ public class GridCacheStreamLocalStoreTest extends GridCommonAbstractTest {
             streamer.addData(entity, entity);
         }
 
+        streamer.flush();
         streamer.close();
         streamer.future().get();
 
@@ -271,6 +275,7 @@ public class GridCacheStreamLocalStoreTest extends GridCommonAbstractTest {
             streamer.addData(entity, entity);
         }
 
+        streamer.flush();
         streamer.close();
         streamer.future().get();
 
