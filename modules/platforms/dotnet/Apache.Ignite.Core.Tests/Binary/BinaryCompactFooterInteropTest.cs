@@ -28,31 +28,38 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class BinaryCompactFooterInteropTest
     {
         /** */
-        private IIgnite _grid1;
+        private IIgnite _grid;
 
         /** */
         private IIgnite _clientGrid;
 
+        /// <summary>
+        /// Sets up the test.
+        /// </summary>
         [SetUp]
         public void TestSetUp()
         {
             // Start fresh cluster for each test
-            _grid1 = Ignition.Start(Config("config\\compute\\compute-grid1.xml"));
+            _grid = Ignition.Start(Config("config\\compute\\compute-grid1.xml"));
             _clientGrid = Ignition.Start(Config("config\\compute\\compute-grid3.xml"));
         }
 
+        /// <summary>
+        /// Tears down the test.
+        /// </summary>
         [TearDown]
         public void TestTearDown()
         {
             Ignition.StopAll(true);
         }
 
+        /// <summary>
+        /// Tests an object that comes from Java.
+        /// </summary>
         [Test]
         public void TestFromJava([Values(true, false)] bool client)
         {
-            // TODO: use compute-grid xmls
-            // Add ECHO_TYPE_FROM_CACHE 
-            var grid = client ? _clientGrid : _grid1;
+            var grid = client ? _clientGrid : _grid;
 
             var fromJava = grid.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(ComputeApiTest.EchoTask, 
                 ComputeApiTest.EchoTypeBinarizable);
@@ -60,10 +67,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(1, fromJava.Field);
         }
 
+        /// <summary>
+        /// Tests an object that comes from .NET in Java.
+        /// </summary>
         [Test]
         public void TestFromDotNet([Values(true, false)] bool client)
         {
-            var grid = client ? _clientGrid : _grid1;
+            var grid = client ? _clientGrid : _grid;
 
             var compute = grid.GetCompute().WithKeepBinary();
 
@@ -72,7 +82,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             var res = compute.ExecuteJavaTask<int>(ComputeApiTest.BinaryArgTask, arg);
 
             Assert.AreEqual(arg.Field, res);
-
         }
 
         /// <summary>
