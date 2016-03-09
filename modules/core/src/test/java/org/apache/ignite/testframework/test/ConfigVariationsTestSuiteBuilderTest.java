@@ -34,22 +34,22 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testDefaults() throws Exception {
-        TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class).build();
+        TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class).build();
 
         assertEquals(4, dfltSuite.countTestCases());
 
-        TestSuite dfltCacheSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class)
+        TestSuite dfltCacheSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
             .withBasicCacheParams().build();
 
         assertEquals(4 * 12, dfltCacheSuite.countTestCases());
 
         // With clients.
-        dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class)
+        dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
             .testedNodesCount(2).withClients().build();
 
         assertEquals(4 * 2, dfltSuite.countTestCases());
 
-        dfltCacheSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class)
+        dfltCacheSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
             .withBasicCacheParams().testedNodesCount(3).withClients().build();
 
         assertEquals(4 * 12 * 3, dfltCacheSuite.countTestCases());
@@ -60,11 +60,11 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
      */
     @SuppressWarnings("serial")
     public void testIgniteConfigFilter() throws Exception {
-        TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class).build();
+        TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class).build();
 
         final AtomicInteger cnt = new AtomicInteger();
 
-        TestSuite filteredSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class)
+        TestSuite filteredSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
             .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
                 @Override public boolean apply(IgniteConfiguration configuration) {
                     return cnt.getAndIncrement() % 2 == 0;
@@ -80,13 +80,13 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
      */
     @SuppressWarnings("serial")
     public void testCacheConfigFilter() throws Exception {
-        TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class)
+        TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
             .withBasicCacheParams()
             .build();
 
         final AtomicInteger cnt = new AtomicInteger();
 
-        TestSuite filteredSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class)
+        TestSuite filteredSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
             .withBasicCacheParams()
             .withCacheConfigFilters(new IgnitePredicate<CacheConfiguration>() {
                 @Override public boolean apply(CacheConfiguration configuration) {
@@ -101,7 +101,7 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
     /**
      *
      */
-    private static class OneTestCase extends IgniteConfigVariationsAbstractTest {
+    private static class NoopTest extends IgniteConfigVariationsAbstractTest {
         /**
          * @throws Exception If failed.
          */
