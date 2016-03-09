@@ -281,6 +281,9 @@ public class PlatformServices extends PlatformAbstractTarget {
                         writer.writeUuid(d.originNodeId());
                         writer.writeObject(d.affinityKey());
 
+                        // Write platform (true when .NET). There are only 2 platforms now.
+                        writer.writeBoolean(d.serviceClass().equals(PlatformDotNetServiceImpl.class));
+
                         Map<UUID, Integer> top = d.topologySnapshot();
 
                         PlatformUtils.writeMap(writer, top, new PlatformWriterBiClosure<UUID, Integer>() {

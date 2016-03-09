@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Services
 {
     using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Service deployment descriptor.
@@ -40,6 +41,14 @@ namespace Apache.Ignite.Core.Services
         /// Service type.
         /// </value>
         Type Type { get; }
+
+        /// <summary>
+        /// Gets the platform of the service (whether it was deployed from Java, .NET, or another platform).
+        /// </summary>
+        /// <value>
+        /// The platform of the service.
+        /// </value>
+        Platform Platform { get; }
 
         /// <summary>
         /// Gets maximum allowed total number of deployed services in the grid, 0 for unlimited.

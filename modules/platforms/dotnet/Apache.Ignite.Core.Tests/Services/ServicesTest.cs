@@ -345,6 +345,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(1, desc.TotalCount);
             Assert.AreEqual(typeof(TestIgniteServiceSerializable), desc.Type);
             Assert.AreEqual(Grid1.GetCluster().GetLocalNode().Id, desc.OriginNodeId);
+            Assert.AreEqual(Platform.DotNet, desc.Platform);
 
             var top = desc.TopologySnapshot;
             var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
@@ -515,6 +516,7 @@ namespace Apache.Ignite.Core.Tests.Services
             // Verify decriptor
             var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
             Assert.AreEqual(javaSvcName, descriptor.Name);
+            Assert.AreEqual(Platform.Java, descriptor.Platform);
             Assert.Throws<ServiceInvocationException>(() =>
             {
                 // ReSharper disable once UnusedVariable

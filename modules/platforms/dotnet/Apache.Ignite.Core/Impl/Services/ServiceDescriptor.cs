@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Collections;
     using Apache.Ignite.Core.Services;
@@ -55,6 +56,7 @@ namespace Apache.Ignite.Core.Impl.Services
             TotalCount = reader.ReadInt();
             OriginNodeId = reader.ReadGuid() ?? Guid.Empty;
             AffinityKey = reader.ReadObject<object>();
+            Platform = reader.ReadBoolean() ? Platform.DotNet : Platform.Java;
 
             var mapSize = reader.ReadInt();
             var snap = new Dictionary<Guid, int>(mapSize);
@@ -84,6 +86,9 @@ namespace Apache.Ignite.Core.Impl.Services
                 }
             }
         }
+
+        /** <inheritdoc /> */
+        public Platform Platform { get; private set; }
 
         /** <inheritdoc /> */
         public int TotalCount { get; private set; }
