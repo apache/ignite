@@ -43,6 +43,9 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
 
+    /** Current ODBC communication protocol version */
+    private static final short PROTOCOL_VERSION = 1;
+
     /** Handler metadata key. */
     private static final int HANDLER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -151,6 +154,12 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
 
         OdbcRequest res;
 
+        short version = reader.readByte();
+
+        if (version != PROTOCOL_VERSION)
+            throw new IgniteException("Unsupported ODBC communcation protocol version: " +
+                    "[ver=" + version + ", current_ver=" + PROTOCOL_VERSION + ']');
+
         byte cmd = reader.readByte();
 
         switch (cmd) {
@@ -227,7 +236,10 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
         // Creating new binary writer
         BinaryWriterExImpl writer = marsh.writer(new BinaryHeapOutputStream(INIT_CAP));
 
-        // Writing status
+        // Writing protocol version.
+        writer.writeShort(PROTOCOL_VERSION);
+
+        // Writing status.
         writer.writeByte((byte) msg.status());
 
         if (msg.status() != OdbcResponse.STATUS_SUCCESS) {
@@ -316,7 +328,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
                 tableMeta.writeBinary(writer);
         }
         else
-            assert false : "Should nor reach here.";
+            assert false : "Should not reach here.";
 
         return writer.array();
     }
