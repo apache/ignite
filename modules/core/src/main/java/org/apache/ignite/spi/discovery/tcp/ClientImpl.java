@@ -1182,7 +1182,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                         else
                             U.error(log, "Failed to reconnect to cluster (consider increasing 'networkTimeout'" +
-                                " configuration  property) [networkTimeout=" + spi.netTimeout + ']');
+                                " configuration property) [networkTimeout=" + spi.netTimeout + ']');
 
                         return;
                     }
@@ -1691,12 +1691,19 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     state = CONNECTED;
 
-                    if (disconnected)
+                    if (disconnected) {
                         notifyDiscovery(EVT_CLIENT_NODE_RECONNECTED, topVer, locNode, nodes);
+
+                        U.quietAndWarn(log, "Client node was reconnected after it was already considered " +
+                            "failed by the server topology (this could happen after all servers restarted or due " +
+                            "to a long network outage between the client and servers). All continuous queries and " +
+                            "remote event listeners created by this client will be unsubscribed, consider " +
+                            "listening to EVT_CLIENT_NODE_RECONNECTED event to restore them.");
+                    }
                     else
                         spi.stats.onJoinFinished();
 
-                    joinErr.set(null);;
+                    joinErr.set(null);
 
                     joinLatch.countDown();
                 }
