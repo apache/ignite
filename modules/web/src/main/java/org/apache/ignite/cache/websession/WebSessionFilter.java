@@ -328,7 +328,7 @@ public class WebSessionFilter implements Filter {
      * @param chain Filter chain.
      * @return Session ID.
      * @throws IOException In case of I/O error.
-     * @throws ServletException In case oif servlet error.
+     * @throws ServletException In case of servlet error.
      * @throws CacheException In case of other error.
      */
     private String doFilter0(HttpServletRequest httpReq, ServletResponse res, FilterChain chain) throws IOException,
@@ -476,9 +476,9 @@ public class WebSessionFilter implements Filter {
     /**
      * Request wrapper.
      */
-    private static class RequestWrapper extends HttpServletRequestWrapper {
+    private class RequestWrapper extends HttpServletRequestWrapper {
         /** Session. */
-        private final WebSession ses;
+        private volatile WebSession ses;
 
         /**
          * @param req Request.
@@ -494,12 +494,23 @@ public class WebSessionFilter implements Filter {
 
         /** {@inheritDoc} */
         @Override public HttpSession getSession(boolean create) {
+            if (!ses.isValid()) {
+                if (create) {
+                    this.ses = createSession((HttpServletRequest)getRequest());
+                    this.ses.servletContext(ctx);
+                    this.ses.listener(lsnr);
+                    this.ses.resetUpdates();
+                }
+                else
+                    return null;
+            }
+
             return ses;
         }
 
         /** {@inheritDoc} */
         @Override public HttpSession getSession() {
-            return ses;
+            return getSession(true);
         }
     }
 }

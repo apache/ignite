@@ -24,6 +24,8 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -32,17 +34,22 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 
 /**
  * Tests the correctness of web sessions caching functionality.
@@ -102,6 +109,91 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                 assertNotNull(ses);
                 assertEquals("val1", ses.getAttribute("key1"));
+            }
+        }
+        finally {
+            stopServer(srv);
+        }
+    }
+
+    /**
+     * Tests invalidated sessions.
+     *
+     * @throws Exception Exception If failed.
+     */
+    public void testInvalidatedSession() throws Exception {
+        String invalidatedSesId;
+        Server srv = null;
+
+        try {
+            srv = startServer(TEST_JETTY_PORT, "/modules/core/src/test/config/websession/example-cache.xml",
+                null, new InvalidatedSessionServlet());
+
+            Ignite ignite = G.ignite();
+
+            URLConnection conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/invalidated").openConnection();
+
+            conn.connect();
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+
+                // checks if the old session object is invalidated.
+                invalidatedSesId = rdr.readLine();
+
+                assertNotNull(invalidatedSesId);
+
+                IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
+
+                assertNotNull(cache);
+
+                HttpSession invalidatedSes = cache.get(invalidatedSesId);
+
+                assertNull(invalidatedSes);
+
+                // requests to subsequent getSession() returns null.
+                String ses = rdr.readLine();
+
+                assertEquals("null", ses);
+            }
+
+            // put and update.
+            final CountDownLatch latch = new CountDownLatch(2);
+
+            final IgnitePredicate<Event> putLsnr = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt != null;
+
+                    latch.countDown();
+
+                    return true;
+                }
+            };
+
+            ignite.events().localListen(putLsnr, EVT_CACHE_OBJECT_PUT);
+
+            // new request that creates a new session.
+            conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/valid").openConnection();
+
+            conn.addRequestProperty("Cookie", "JSESSIONID=" + invalidatedSesId);
+
+            conn.connect();
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String sesId = rdr.readLine();
+
+                assertFalse(sesId.equals("null"));
+
+                assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+                IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
+
+                assertNotNull(cache);
+
+                HttpSession ses = cache.get(sesId);
+
+                assertNotNull(ses);
+
+                assertEquals("val10", ses.getAttribute("key10"));
             }
         }
         finally {
@@ -290,6 +382,36 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             X.println(">>>", "Created session: " + ses.getId(), ">>>");
 
             res.getWriter().write(ses.getId());
+
+            res.getWriter().flush();
+        }
+    }
+
+    /**
+     * Test for invalidated sessions.
+     */
+    private static class InvalidatedSessionServlet extends HttpServlet {
+        /** {@inheritDoc} */
+        @Override protected void doGet(HttpServletRequest req, HttpServletResponse res)
+            throws ServletException, IOException {
+            HttpSession ses = req.getSession();
+
+            assert ses != null;
+
+            if (req.getPathInfo().equals("/invalidated")) {
+                X.println(">>>", "Session to invalidate with id: " + ses.getId(), ">>>");
+
+                ses.invalidate();
+
+                res.getWriter().println(ses.getId());
+            }
+            else if (req.getPathInfo().equals("/valid")) {
+                X.println(">>>", "Created session: " + ses.getId(), ">>>");
+
+                ses.setAttribute("key10", "val10");
+            }
+
+            res.getWriter().println((req.getSession(false) == null) ? "null" : ses.getId());
 
             res.getWriter().flush();
         }
