@@ -1747,6 +1747,43 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
+     * Adds write and execute (like "chmod u+wx") permission to the given property map.
+     * @param leafDirProps The original properties.
+     * @return Modified properties with fixed permission.
+     */
+    static Map<String, String> wXifyDirectoryPermissions(Map<String, String> leafDirProps) {
+        String perm = leafDirProps.get(IgfsEx.PROP_PERMISSION);
+
+        if (perm == null || perm.length() < 3)
+            perm = IgfsImpl.PERMISSION_DFLT_VAL; // Directory default.
+        else {
+            String ownerDigit = perm.substring(perm.length() - 3, perm.length() - 2);
+
+            assert ownerDigit.length() == 1;
+
+            int owner3Bits = Integer.parseInt(ownerDigit);
+
+            assert owner3Bits >= 0 && owner3Bits <= 7;
+
+            owner3Bits |= 3; // add write & execute permission.
+
+            char[] permArray = perm.toCharArray();
+
+            char fixedOwnerChar = Integer.toString(owner3Bits).charAt(0);
+
+            permArray[perm.length() - 3] = fixedOwnerChar;
+
+            perm = new String(permArray);
+        }
+
+        Map<String,String> map2 = new HashMap<String, String>(leafDirProps);
+
+        map2.put(IgfsEx.PROP_PERMISSION, perm);
+
+        return map2;
+    }
+
+    /**
      * Mkdirs implementation.
      *
      * @param path The path to create.
@@ -1763,7 +1800,7 @@ public class IgfsMetaManager extends IgfsManager {
         while (true) {
             if (busyLock.enterBusy()) {
                 try {
-                    b = new DirectoryChainBuilder(path, props, props);
+                    b = new DirectoryChainBuilder(path, wXifyDirectoryPermissions(props), props);
 
                     // Start TX.
                     IgniteInternalTx tx = startTx();
@@ -3429,7 +3466,7 @@ public class IgfsMetaManager extends IgfsManager {
         final IgfsPath path,
         final boolean append,
         final boolean overwrite,
-        Map<String, String> dirProps,
+        final Map<String, String> dirProps,
         final int blockSize,
         final @Nullable IgniteUuid affKey,
         final boolean evictExclude,
