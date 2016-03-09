@@ -320,6 +320,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert ttlMgr != null;
         assert rslvrMgr != null;
         assert pluginMgr != null;
+        assert dbMgr != null;
 
         this.ctx = ctx;
         this.sharedCtx = sharedCtx;

@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.pagemem.DirectMemoryUtils;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageStore;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -119,10 +121,10 @@ public class PageMemoryImpl implements PageMemory {
     private long dbMetaPageIdPtr;
 
     /** Pages marked as dirty since the last checkpoint. */
-    private Set<Long> dirtyPages;
+    private Collection<Long> dirtyPages = new GridConcurrentHashSet<>();
 
     /** Pages captured for the checkpoint process. */
-    private Set<Long> checkpointPages;
+    private Collection<Long> checkpointPages;
 
     /**
      * @param log Logger to use.
@@ -320,7 +322,7 @@ public class PageMemoryImpl implements PageMemory {
                 long absPtr = absolute(relPtr);
 
                 // We can clear dirty flag after the page has been allocated.
-                setDirty(absPtr, false);
+                setDirty(pageId, absPtr, false);
 
                 seg.loadedPages.put(pageId, relPtr);
 
@@ -367,7 +369,14 @@ public class PageMemoryImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public Collection<Long> beginCheckpoint() throws IgniteCheckedException {
-        return null;
+        if (checkpointPages != null)
+            throw new IgniteCheckedException("Failed to begin checkpoint (it is already in progress).");
+
+        checkpointPages = dirtyPages;
+
+        dirtyPages = new GridConcurrentHashSet<>();
+
+        return checkpointPages;
     }
 
     /** {@inheritDoc} */
@@ -485,8 +494,10 @@ public class PageMemoryImpl implements PageMemory {
      * @param absPtr Absolute pointer.
      * @param dirty {@code True} dirty flag.
      */
-    void setDirty(long absPtr, boolean dirty) {
+    void setDirty(long pageId, long absPtr, boolean dirty) {
         long relPtrWithFlags = mem.readLong(absPtr + RELATIVE_PTR_OFFSET);
+
+        boolean wasDirty = (relPtrWithFlags & DIRTY_FLAG) != 0;
 
         if (dirty)
             relPtrWithFlags |= DIRTY_FLAG;
@@ -494,6 +505,9 @@ public class PageMemoryImpl implements PageMemory {
             relPtrWithFlags &= ~DIRTY_FLAG;
 
         mem.writeLong(absPtr + RELATIVE_PTR_OFFSET, relPtrWithFlags);
+
+        if (!wasDirty && dirty)
+            dirtyPages.add(pageId);
     }
 
     /**

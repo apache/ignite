@@ -28,7 +28,7 @@ import org.h2.table.IndexColumn;
 /**
  *
  */
-public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter {
+public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implements IgniteCacheDatabaseManager {
     /** Primary index. */
     private Index primaryIdx;
 

@@ -170,7 +170,7 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
      * Mark dirty.
      */
     private void markDirty() {
-        pageMem.setDirty(ptr, true);
+        pageMem.setDirty(pageId, ptr, true);
     }
 
     /** {@inheritDoc} */

@@ -40,7 +40,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private MetadataStorage meta;
 
     /** {@inheritDoc} */
-    @Override public void start0() throws IgniteCheckedException {
+    @Override public void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
         DatabaseConfiguration dbCfg = cctx.kernalContext().config().getDatabaseConfiguration();
 
         if (dbCfg != null && !cctx.kernalContext().clientNode()) {
@@ -53,7 +53,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void stop0(boolean cancel) {
+    @Override public void onKernalStop0(boolean cancel) {
         if (pageMem != null)
             pageMem.stop();
     }

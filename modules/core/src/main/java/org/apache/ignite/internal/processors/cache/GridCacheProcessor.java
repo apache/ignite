@@ -76,6 +76,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseManager;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
@@ -139,6 +140,7 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
+import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
@@ -745,6 +747,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
+            sharedCtx.database().onKernalStart(false);
+
             // Start dynamic caches received from collect discovery data.
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
                 if (ctx.config().isDaemon() && !CU.isMarshallerCache(desc.cacheConfiguration().getName()))
@@ -800,8 +804,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         });
 
         // Must call onKernalStart on shared managers after creation of fetched caches.
-        for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
-            mgr.onKernalStart(false);
+        for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers()) {
+            if (sharedCtx.database() != mgr)
+                mgr.onKernalStart(false);
+        }
 
         for (GridCacheAdapter<?, ?> cache : caches.values())
             onKernalStart(cache);
@@ -1031,7 +1037,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void startCache(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
-        ctx.query().onCacheStart(cacheCtx);
         ctx.continuous().onCacheStart(cacheCtx);
 
         CacheConfiguration cfg = cacheCtx.config();
@@ -1065,6 +1070,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         cacheCtx.cache().start();
+
+        ctx.query().onCacheStart(cacheCtx);
 
         cacheCtx.onStarted();
 
@@ -1277,6 +1284,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
+        IgniteCacheDatabaseManager dbMgr = createDatabaseManager(cfg);
 
         storeMgr.initialize(cfgStore, sesHolders);
 
@@ -1301,7 +1309,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataStructuresMgr,
             ttlMgr,
             drMgr,
-            null, // TODO ignite-db
+            dbMgr,
             rslvrMgr,
             pluginMgr,
             affMgr
@@ -1431,7 +1439,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
-                null, // TODO ignite-db
+                dbMgr,
                 rslvrMgr,
                 pluginMgr,
                 affMgr
@@ -1489,6 +1497,25 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             registerMbean(cache.mxBean(), cache.name(), false);
 
         return ret;
+    }
+
+    private IgniteCacheDatabaseManager createDatabaseManager(CacheConfiguration ccfg) throws IgniteCheckedException {
+        if (sharedCtx.database().enabled()) {
+            if (!INDEXING.inClassPath())
+                throw new IgniteCheckedException("Failed to create cache with database enabled (" + INDEXING.module() +
+                    " must be present in classpath)");
+
+            try {
+                return (IgniteCacheDatabaseManager)Class
+                    .forName("org.apache.ignite.internal.processors.cache.database.IgniteCacheH2DatabaseManager")
+                    .newInstance();
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(e);
+            }
+        }
+        else
+            return new IgniteCacheNoopDatabaseManager();
     }
 
     /**
