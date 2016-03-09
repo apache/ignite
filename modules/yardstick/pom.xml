@@ -38,6 +38,13 @@
         <yardstick.version>0.9.0-SNAPSHOT</yardstick.version>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
