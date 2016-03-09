@@ -198,8 +198,6 @@ public class GridCacheStreamLocalStoreTest extends GridCommonAbstractTest {
         startGrid("binaryGrid4");
 
         Thread.sleep(10_000);
-
-        assert store.map.size() == 0; // tested method removes items from store
     }
 
     /**
