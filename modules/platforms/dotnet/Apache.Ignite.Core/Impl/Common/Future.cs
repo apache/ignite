@@ -69,6 +69,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Gets the task.
         /// </summary>
+        [SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
         public Task<T> Task
         {
             get { return _taskCompletionSource.Task; }
@@ -88,7 +89,10 @@ namespace Apache.Ignite.Core.Impl.Common
             return Task;
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Set result from stream.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public void OnResult(IBinaryStream stream)
         {
@@ -102,7 +106,10 @@ namespace Apache.Ignite.Core.Impl.Common
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Set error result.
+        /// </summary>
+        /// <param name="err">Exception.</param>
         public void OnError(Exception err)
         {
             if (err is IgniteFutureCancelledException)
@@ -111,7 +118,10 @@ namespace Apache.Ignite.Core.Impl.Common
                 _taskCompletionSource.TrySetException(err);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Set null result.
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public void OnNullResult()
         {
             if (_converter == null)

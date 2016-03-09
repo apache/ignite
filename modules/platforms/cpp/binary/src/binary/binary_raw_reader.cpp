@@ -117,7 +117,27 @@ namespace ignite
         int32_t BinaryRawReader::ReadGuidArray(Guid* res, const int32_t len)
         {
             return impl->ReadGuidArray(res, len);
-        }        
+        }
+
+        Date BinaryRawReader::ReadDate()
+        {
+            return impl->ReadDate();
+        }
+
+        int32_t BinaryRawReader::ReadDateArray(Date* res, int32_t len)
+        {
+            return impl->ReadDateArray(res, len);
+        }
+
+        Timestamp BinaryRawReader::ReadTimestamp()
+        {
+            return impl->ReadTimestamp();
+        }
+
+        int32_t BinaryRawReader::ReadTimestampArray(Timestamp * res, int32_t len)
+        {
+            return impl->ReadTimestampArray(res, len);
+        }
 
         int32_t BinaryRawReader::ReadString(char* res, const int32_t len)
         {

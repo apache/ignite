@@ -1034,7 +1034,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 else if (conflictPutVals != null) {
                     GridCacheDrInfo conflictPutVal = conflictPutValsIt.next();
 
-                    val = conflictPutVal.value();
+                    val = conflictPutVal.valueEx();
                     conflictVer = conflictPutVal.version();
                     conflictTtl =  conflictPutVal.ttl();
                     conflictExpireTime = conflictPutVal.expireTime();
@@ -1100,7 +1100,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             skipStore,
                             keepBinary,
                             cctx.kernalContext().clientNode(),
-                            cctx.deploymentEnabled());
+                            cctx.deploymentEnabled(),
+                            keys.size());
 
                         pendingMappings.put(nodeId, mapped);
                     }
@@ -1142,7 +1143,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 // Conflict PUT.
                 GridCacheDrInfo conflictPutVal = F.first(conflictPutVals);
 
-                val = conflictPutVal.value();
+                val = conflictPutVal.valueEx();
                 conflictVer = conflictPutVal.version();
                 conflictTtl = conflictPutVal.ttl();
                 conflictExpireTime = conflictPutVal.expireTime();
@@ -1199,7 +1200,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 skipStore,
                 keepBinary,
                 cctx.kernalContext().clientNode(),
-                cctx.deploymentEnabled());
+                cctx.deploymentEnabled(),
+                1);
 
             req.addUpdateEntry(cacheKey,
                 val,

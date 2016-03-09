@@ -206,7 +206,7 @@ namespace ignite
             }
 
             void BinaryWriterImpl::WriteGuid(const Guid val)
-            {                
+            {
                 CheckRawMode(true);
                 CheckSingleMode(true);
 
@@ -272,6 +272,140 @@ namespace ignite
                 {
                     stream->WriteInt8(IGNITE_HDR_NULL);
                 }
+            }
+
+            void BinaryWriterImpl::WriteDate(const Date& val)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                stream->WriteInt8(IGNITE_TYPE_DATE);
+
+                BinaryUtils::WriteDate(stream, val);
+            }
+
+            void BinaryWriterImpl::WriteDateArray(const Date* val, const int32_t len)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                if (val)
+                {
+                    stream->WriteInt8(IGNITE_TYPE_ARRAY_DATE);
+                    stream->WriteInt32(len);
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        const Date& elem = *(val + i);
+
+                        stream->WriteInt8(IGNITE_TYPE_DATE);
+                        BinaryUtils::WriteDate(stream, elem);
+                    }
+                }
+                else
+                    stream->WriteInt8(IGNITE_HDR_NULL);
+            }
+
+            void BinaryWriterImpl::WriteDate(const char* fieldName, const Date& val)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                WriteFieldId(fieldName, IGNITE_TYPE_DATE);
+
+                stream->WriteInt8(IGNITE_TYPE_DATE);
+
+                BinaryUtils::WriteDate(stream, val);
+            }
+
+            void BinaryWriterImpl::WriteDateArray(const char* fieldName, const Date* val, const int32_t len)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                WriteFieldId(fieldName, IGNITE_TYPE_ARRAY_DATE);
+
+                if (val)
+                {
+                    stream->WriteInt8(IGNITE_TYPE_ARRAY_DATE);
+                    stream->WriteInt32(len);
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        const Date& elem = *(val + i);
+
+                        WriteTopObject(elem);
+                    }
+                }
+                else
+                    stream->WriteInt8(IGNITE_HDR_NULL);
+            }
+
+            void BinaryWriterImpl::WriteTimestamp(const Timestamp& val)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                stream->WriteInt8(IGNITE_TYPE_TIMESTAMP);
+
+                BinaryUtils::WriteTimestamp(stream, val);
+            }
+
+            void BinaryWriterImpl::WriteTimestampArray(const Timestamp* val, const int32_t len)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                if (val)
+                {
+                    stream->WriteInt8(IGNITE_TYPE_ARRAY_TIMESTAMP);
+                    stream->WriteInt32(len);
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        const Timestamp& elem = *(val + i);
+
+                        stream->WriteInt8(IGNITE_TYPE_TIMESTAMP);
+                        BinaryUtils::WriteTimestamp(stream, elem);
+                    }
+                }
+                else
+                    stream->WriteInt8(IGNITE_HDR_NULL);
+            }
+
+            void BinaryWriterImpl::WriteTimestamp(const char* fieldName, const Timestamp& val)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                WriteFieldId(fieldName, IGNITE_TYPE_TIMESTAMP);
+
+                stream->WriteInt8(IGNITE_TYPE_TIMESTAMP);
+
+                BinaryUtils::WriteTimestamp(stream, val);
+            }
+
+            void BinaryWriterImpl::WriteTimestampArray(const char* fieldName, const Timestamp* val, const int32_t len)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                WriteFieldId(fieldName, IGNITE_TYPE_ARRAY_TIMESTAMP);
+
+                if (val)
+                {
+                    stream->WriteInt8(IGNITE_TYPE_ARRAY_TIMESTAMP);
+                    stream->WriteInt32(len);
+
+                    for (int i = 0; i < len; i++)
+                    {
+                        const Timestamp& elem = *(val + i);
+
+                        WriteTopObject(elem);
+                    }
+                }
+                else
+                    stream->WriteInt8(IGNITE_HDR_NULL);
             }
 
             void BinaryWriterImpl::WriteString(const char* val, const int32_t len)
@@ -557,6 +691,18 @@ namespace ignite
             void BinaryWriterImpl::WriteTopObject<Guid>(const Guid& obj)
             {
                 WriteTopObject0<Guid>(obj, BinaryUtils::WriteGuid, IGNITE_TYPE_UUID);
+            }
+
+            template <>
+            void BinaryWriterImpl::WriteTopObject<Date>(const Date& obj)
+            {
+                WriteTopObject0<Date>(obj, BinaryUtils::WriteDate, IGNITE_TYPE_DATE);
+            }
+
+            template <>
+            void BinaryWriterImpl::WriteTopObject<Timestamp>(const Timestamp& obj)
+            {
+                WriteTopObject0<Timestamp>(obj, BinaryUtils::WriteTimestamp, IGNITE_TYPE_TIMESTAMP);
             }
 
             void BinaryWriterImpl::PostWrite()

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Text;
 
@@ -69,6 +70,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void WriteByteArray(byte[] val)
         {
             int pos0 = EnsureWriteCapacityAndShift(val.Length);
@@ -91,6 +93,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void WriteBoolArray(bool[] val)
         {
             int pos0 = EnsureWriteCapacityAndShift(val.Length);
@@ -135,6 +138,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void WriteShortArray(short[] val)
         {
             int cnt = val.Length << 1;
@@ -161,6 +165,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void WriteCharArray(char[] val)
         {
             int cnt = val.Length << 1;
@@ -220,6 +225,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void WriteIntArray(int[] val)
         {
             int cnt = val.Length << 2;
@@ -246,6 +252,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void WriteFloatArray(float[] val)
         {
             int cnt = val.Length << 2;
@@ -294,6 +301,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void WriteLongArray(long[] val)
         {
             int cnt = val.Length << 3;
@@ -320,6 +328,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void WriteDoubleArray(double[] val)
         {
             int cnt = val.Length << 3;

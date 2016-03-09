@@ -103,7 +103,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
 
             byte[] valBytes = null;
 
-            if (cctx.useOffheapEntry())
+            if (cctx.offheapTiered())
                 valBytes = cctx.offheap().get(cctx.swap().spaceName(), cached.partition(), key, keyBytes);
             else {
                 CacheObject cacheObj = cached.valueBytes();
@@ -221,7 +221,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
         if (obj instanceof CacheEvictableEntryImpl) {
             CacheEvictableEntryImpl<K, V> other = (CacheEvictableEntryImpl<K, V>)obj;
 
-            return cached.key().equals(other.getKey());
+            return cached.key().equals(other.cached.key());
         }
 
         return false;

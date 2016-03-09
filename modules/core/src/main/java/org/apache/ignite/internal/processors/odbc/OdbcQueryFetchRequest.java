@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * ODBC query fetch request.
  */
@@ -50,5 +52,10 @@ public class OdbcQueryFetchRequest extends OdbcRequest {
      */
     public long queryId() {
         return queryId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcQueryFetchRequest.class, this);
     }
 }

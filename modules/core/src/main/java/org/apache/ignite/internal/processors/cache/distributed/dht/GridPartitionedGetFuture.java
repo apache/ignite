@@ -490,17 +490,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                             cache.removeIfObsolete(key);
                     }
                     else {
-                        if (needVer)
-                            versionedResult(locVals, key, v, ver);
-                        else {
-                            cctx.addResult(locVals,
-                                key,
-                                v,
-                                skipVals,
-                                keepCacheObjects,
-                                deserializeBinary,
-                                true);
-                        }
+                        cctx.addResult(locVals,
+                            key,
+                            v,
+                            skipVals,
+                            keepCacheObjects,
+                            deserializeBinary,
+                            true,
+                            ver);
 
                         return true;
                     }
@@ -552,17 +549,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             for (GridCacheEntryInfo info : infos) {
                 assert skipVals == (info.value() == null);
 
-                if (needVer)
-                    versionedResult(map, info.key(), info.value(), info.version());
-                else {
-                    cctx.addResult(map,
-                        info.key(),
-                        info.value(),
-                        skipVals,
-                        keepCacheObjects,
-                        deserializeBinary,
-                        false);
-                }
+                cctx.addResult(map,
+                    info.key(),
+                    info.value(),
+                    skipVals,
+                    keepCacheObjects,
+                    deserializeBinary,
+                    false,
+                    needVer ? info.version() : null);
             }
 
             return map;

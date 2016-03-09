@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.binary.streams;
 
+import org.apache.ignite.internal.util.GridUnsafe;
+
+import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
+
 /**
  * Binary offheap output stream.
  */
@@ -73,7 +77,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
     @Override public byte[] arrayCopy() {
         byte[] res = new byte[pos];
 
-        UNSAFE.copyMemory(null, ptr, res, BYTE_ARR_OFF, pos);
+        GridUnsafe.copyMemory(null, ptr, res, GridUnsafe.BYTE_ARR_OFF, pos);
 
         return res;
     }
@@ -94,34 +98,54 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
 
     /** {@inheritDoc} */
     @Override protected void writeByteAndShift(byte val) {
-        UNSAFE.putByte(ptr + pos++, val);
+        GridUnsafe.putByte(ptr + pos++, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void copyAndShift(Object src, long offset, int len) {
-        UNSAFE.copyMemory(src, offset, null, ptr + pos, len);
+        GridUnsafe.copyMemory(src, offset, null, ptr + pos, len);
 
         shift(len);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeShortFast(short val) {
-        UNSAFE.putShort(ptr + pos, val);
+        long addr = ptr + pos;
+
+        if (BIG_ENDIAN)
+            GridUnsafe.putShortLE(addr, val);
+        else
+            GridUnsafe.putShort(addr, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeCharFast(char val) {
-        UNSAFE.putChar(ptr + pos, val);
+        long addr = ptr + pos;
+
+        if (BIG_ENDIAN)
+            GridUnsafe.putCharLE(addr, val);
+        else
+            GridUnsafe.putChar(addr, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeIntFast(int val) {
-        UNSAFE.putInt(ptr + pos, val);
+        long addr = ptr + pos;
+
+        if (BIG_ENDIAN)
+            GridUnsafe.putIntLE(addr, val);
+        else
+            GridUnsafe.putInt(addr, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeLongFast(long val) {
-        UNSAFE.putLong(ptr + pos, val);
+        long addr = ptr + pos;
+
+        if (BIG_ENDIAN)
+            GridUnsafe.putLongLE(addr, val);
+        else
+            GridUnsafe.putLong(addr, val);
     }
 
     /** {@inheritDoc} */
@@ -131,61 +155,73 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteByte(byte val) {
-        UNSAFE.putByte(ptr + pos++, val);
+        GridUnsafe.putByte(ptr + pos++, val);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteShort(short val) {
-        if (!LITTLE_ENDIAN)
-            val = Short.reverseBytes(val);
+        long addr = ptr + pos;
 
-        UNSAFE.putShort(ptr + pos, val);
+        if (BIG_ENDIAN)
+            GridUnsafe.putShortLE(addr, val);
+        else
+            GridUnsafe.putShort(addr, val);
 
         shift(2);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteShort(int pos, short val) {
-        if (!LITTLE_ENDIAN)
-            val = Short.reverseBytes(val);
+        long addr = ptr + pos;
 
-        UNSAFE.putShort(ptr + pos, val);
+        if (BIG_ENDIAN)
+            GridUnsafe.putShortLE(addr, val);
+        else
+            GridUnsafe.putShort(addr, val);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteChar(char val) {
-        if (!LITTLE_ENDIAN)
-            val = Character.reverseBytes(val);
+        long addr = ptr + pos;
 
-        UNSAFE.putChar(ptr + pos, val);
+        if (BIG_ENDIAN)
+            GridUnsafe.putCharLE(addr, val);
+        else
+            GridUnsafe.putChar(addr, val);
 
         shift(2);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteInt(int val) {
-        if (!LITTLE_ENDIAN)
-            val = Integer.reverseBytes(val);
+        long addr = ptr + pos;
 
-        UNSAFE.putInt(ptr + pos, val);
+        if (BIG_ENDIAN)
+            GridUnsafe.putIntLE(addr, val);
+        else
+            GridUnsafe.putInt(addr, val);
 
         shift(4);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteInt(int pos, int val) {
-        if (!LITTLE_ENDIAN)
-            val = Integer.reverseBytes(val);
+        long addr = ptr + pos;
 
-        UNSAFE.putInt(ptr + pos, val);
+        if (BIG_ENDIAN)
+            GridUnsafe.putIntLE(addr, val);
+        else
+            GridUnsafe.putInt(addr, val);
     }
 
     /** {@inheritDoc} */
     @Override public void unsafeWriteLong(long val) {
-        if (!LITTLE_ENDIAN)
-            val = Long.reverseBytes(val);
+        long addr = ptr + pos;
 
-        UNSAFE.putLong(ptr + pos, val);
+        if (BIG_ENDIAN)
+            GridUnsafe.putLongLE(addr, val);
+        else
+            GridUnsafe.putLong(addr, val);
 
         shift(8);
     }
@@ -197,7 +233,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
      * @return Pointer.
      */
     protected long allocate(int cap) {
-        return UNSAFE.allocateMemory(cap);
+        return GridUnsafe.allocateMemory(cap);
     }
 
     /**
@@ -208,7 +244,7 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
      * @return New pointer.
      */
     protected long reallocate(long ptr, int cap) {
-        return UNSAFE.reallocateMemory(ptr, cap);
+        return GridUnsafe.reallocateMemory(ptr, cap);
     }
 
     /**
@@ -217,6 +253,6 @@ public class BinaryOffheapOutputStream extends BinaryAbstractOutputStream {
      * @param ptr Pointer.
      */
     protected void release(long ptr) {
-        UNSAFE.freeMemory(ptr);
+        GridUnsafe.freeMemory(ptr);
     }
 }

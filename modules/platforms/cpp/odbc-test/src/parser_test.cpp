@@ -72,21 +72,14 @@ BOOST_AUTO_TEST_CASE(TestParserEncodeDecode)
 {
     Parser parser;
 
-    std::vector<int8_t> outBuffer;
-    std::vector<int8_t> inBuffer;
+    std::vector<int8_t> buffer;
 
     TestMessage outMsg(42, "Test message");
     TestMessage inMsg;
 
-    parser.Encode(outMsg, outBuffer);
+    parser.Encode(outMsg, buffer);
 
-    inBuffer.reserve(outBuffer.size());
-
-    // First 4 bytes contain message size after encoding but are not expected
-    // during decoding.
-    std::copy(outBuffer.begin() + 4, outBuffer.end(), std::back_inserter(inBuffer));
-
-    parser.Decode(inMsg, inBuffer);
+    parser.Decode(inMsg, buffer);
 
     BOOST_REQUIRE(outMsg == inMsg);
 }

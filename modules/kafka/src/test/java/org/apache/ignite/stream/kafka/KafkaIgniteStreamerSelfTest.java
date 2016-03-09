@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import kafka.consumer.ConsumerConfig;
 import kafka.producer.KeyedMessage;
@@ -40,14 +41,13 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
-import static org.apache.ignite.stream.kafka.KafkaEmbeddedBroker.getZKAddress;
 
 /**
  * Tests {@link KafkaStreamer}.
  */
 public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
     /** Embedded Kafka. */
-    private KafkaEmbeddedBroker embeddedBroker;
+    private TestKafkaBroker embeddedBroker;
 
     /** Count. */
     private static final int CNT = 100;
@@ -77,7 +77,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
 
-        embeddedBroker = new KafkaEmbeddedBroker();
+        embeddedBroker = new TestKafkaBroker();
     }
 
     /** {@inheritDoc} */
@@ -176,7 +176,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
             kafkaStmr.setThreads(4);
 
             // Set the consumer configuration.
-            kafkaStmr.setConsumerConfig(createDefaultConsumerConfig(getZKAddress(), "groupX"));
+            kafkaStmr.setConsumerConfig(createDefaultConsumerConfig(embeddedBroker.getZookeeperAddress(), "groupX"));
 
             // Set the decoders.
             StringDecoder strDecoder = new StringDecoder(new VerifiableProperties());
@@ -199,7 +199,8 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
             ignite.events(ignite.cluster().forCacheNodes(null)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
 
-            latch.await();
+            // Checks all events successfully processed in 10 seconds.
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
 
             for (Map.Entry<String, String> entry : keyValMap.entrySet())
                 assertEquals(entry.getValue(), cache.get(entry.getKey()));

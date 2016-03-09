@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryClassDescriptor;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-
-import java.io.IOException;
 
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
@@ -43,26 +42,13 @@ public class OdbcColumnMeta {
     private final Class<?> dataType;
 
     /**
-     * Add quotation marks at the beginning and end of the string.
-     *
-     * @param str Input string.
-     * @return String surrounded with quotation marks.
-     */
-    private String AddQuotationMarksIfNeeded(String str) {
-        if (!str.startsWith("\"") && !str.isEmpty())
-            return "\"" + str + "\"";
-
-        return str;
-    }
-
-    /**
      * @param schemaName Cache name.
      * @param tableName Table name.
      * @param columnName Column name.
      * @param dataType Data type.
      */
     public OdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType) {
-        this.schemaName = AddQuotationMarksIfNeeded(schemaName);
+        this.schemaName = OdbcUtils.addQuotationMarksIfNeeded(schemaName);
         this.tableName = tableName;
         this.columnName = columnName;
         this.dataType = dataType;
@@ -72,11 +58,12 @@ public class OdbcColumnMeta {
      * @param info Field metadata.
      */
     public OdbcColumnMeta(GridQueryFieldMetadata info) {
-        this.schemaName = AddQuotationMarksIfNeeded(info.schemaName());
+        this.schemaName = OdbcUtils.addQuotationMarksIfNeeded(info.schemaName());
         this.tableName = info.typeName();
         this.columnName = info.fieldName();
 
         Class<?> type;
+
         try {
             type = Class.forName(info.fieldTypeName());
         }
@@ -88,17 +75,26 @@ public class OdbcColumnMeta {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o)
-    {
-        if (!(o instanceof OdbcColumnMeta))
-            return false;
+    @Override public int hashCode() {
+        int hash = schemaName.hashCode();
 
-        OdbcColumnMeta another = (OdbcColumnMeta)o;
+        hash = 31 * hash + tableName.hashCode();
+        hash = 31 * hash + columnName.hashCode();
+        hash = 31 * hash + dataType.hashCode();
 
-        return schemaName.equals(another.schemaName) &&
-               tableName.equals(another.tableName)   &&
-               columnName.equals(another.columnName) &&
-               dataType.equals(another.dataType);
+        return hash;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (o instanceof OdbcColumnMeta) {
+            OdbcColumnMeta other = (OdbcColumnMeta) o;
+
+            return this == other || schemaName.equals(other.schemaName) && tableName.equals(other.tableName) &&
+                columnName.equals(other.columnName) && dataType.equals(other.dataType);
+        }
+
+        return false;
     }
 
     /**
@@ -106,9 +102,8 @@ public class OdbcColumnMeta {
      *
      * @param writer Binary writer.
      * @param ctx Portable context.
-     * @throws IOException
      */
-    public void writeBinary(BinaryRawWriterEx writer, BinaryContext ctx) throws IOException {
+    public void writeBinary(BinaryRawWriterEx writer, BinaryContext ctx) {
         writer.writeString(schemaName);
         writer.writeString(tableName);
         writer.writeString(columnName);
@@ -119,7 +114,7 @@ public class OdbcColumnMeta {
         BinaryClassDescriptor desc = ctx.descriptorForClass(dataType, false);
 
         if (desc == null)
-            throw new IOException("Object is not portable: [class=" + dataType + ']');
+            throw new IgniteException("Object is not portable: [class=" + dataType + ']');
 
         if (desc.registered())
             typeId = (byte)desc.typeId();

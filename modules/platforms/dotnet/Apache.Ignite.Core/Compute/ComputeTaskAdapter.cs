@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Compute
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
 
@@ -42,6 +43,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="res">Received remote Ignite executable result.</param>
         /// <param name="rcvd">All previously received results.</param>
         /// <returns>Result policy that dictates how to process further upcoming job results.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public virtual ComputeJobResultPolicy OnResult(IComputeJobResult<TJobRes> res,
             IList<IComputeJobResult<TJobRes>> rcvd)
         {

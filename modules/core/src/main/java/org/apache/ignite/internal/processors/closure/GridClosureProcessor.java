@@ -1095,12 +1095,12 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                         }
 
                         if (c.job == closure)
-                            c.job = marsh.unmarshal(closureBytes, null);
+                            c.job = marsh.unmarshal(closureBytes, U.resolveClassLoader(ctx.config()));
                         else
-                            c.job = marsh.unmarshal(marsh.marshal(c.job), null);
+                            c.job = marsh.unmarshal(marsh.marshal(c.job), U.resolveClassLoader(ctx.config()));
                     }
                     else
-                        job = marsh.unmarshal(marsh.marshal(job), null);
+                        job = marsh.unmarshal(marsh.marshal(job), U.resolveClassLoader(ctx.config()));
                 }
                 else
                     hadLocNode = true;

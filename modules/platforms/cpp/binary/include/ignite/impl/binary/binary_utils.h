@@ -21,6 +21,8 @@
 #include <stdint.h>
 
 #include "ignite/guid.h"
+#include "ignite/date.h"
+#include "ignite/timestamp.h"
 
 namespace ignite
 {
@@ -327,6 +329,38 @@ namespace ignite
                  * @param val Value.
                  */
                 static void WriteGuid(interop::InteropOutputStream* stream, const Guid val);
+
+                /**
+                 * Utility method to read Date from stream.
+                 *
+                 * @param stream Stream.
+                 * @param res Value.
+                 */
+                static Date ReadDate(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to write Date to stream.
+                 *
+                 * @param stream Stream.
+                 * @param val Value.
+                 */
+                static void WriteDate(interop::InteropOutputStream* stream, const Date val);
+
+                /**
+                 * Utility method to read Timestamp from stream.
+                 *
+                 * @param stream Stream.
+                 * @param res Value.
+                 */
+                static Timestamp ReadTimestamp(interop::InteropInputStream* stream);
+
+                /**
+                 * Utility method to write Timestamp to stream.
+                 *
+                 * @param stream Stream.
+                 * @param val Value.
+                 */
+                static void WriteTimestamp(interop::InteropOutputStream* stream, const Timestamp val);
 
                 /**
                  * Utility method to write string to stream.

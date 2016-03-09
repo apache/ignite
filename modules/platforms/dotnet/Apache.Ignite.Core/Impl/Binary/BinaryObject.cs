@@ -110,11 +110,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Field value.</returns>
         public T GetField<T>(int pos, BinaryObjectBuilder builder)
         {
-            IBinaryStream stream = new BinaryHeapStream(_data);
+            using (IBinaryStream stream = new BinaryHeapStream(_data))
+            {
+                stream.Seek(pos + _offset, SeekOrigin.Begin);
 
-            stream.Seek(pos + _offset, SeekOrigin.Begin);
-
-            return _marsh.Unmarshal<T>(stream, BinaryMode.ForceBinary, builder);
+                return _marsh.Unmarshal<T>(stream, BinaryMode.ForceBinary, builder);
+            }
         }
 
         /** <inheritdoc /> */
@@ -150,13 +151,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (_deserialized == null)
             {
-                IBinaryStream stream = new BinaryHeapStream(_data);
+                T res;
 
-                stream.Seek(_offset, SeekOrigin.Begin);
+                using (IBinaryStream stream = new BinaryHeapStream(_data))
+                {
+                    stream.Seek(_offset, SeekOrigin.Begin);
 
-                T res = _marsh.Unmarshal<T>(stream, mode);
+                    res = _marsh.Unmarshal<T>(stream, mode);
+                }
 
-                IBinaryTypeDescriptor desc = _marsh.GetDescriptor(true, _header.TypeId);
+                var desc = _marsh.GetDescriptor(true, _header.TypeId);
 
                 if (!desc.KeepDeserialized)
                     return res;
@@ -208,11 +212,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_fields != null) 
                 return;
 
-            var stream = new BinaryHeapStream(_data);
+            using (var stream = new BinaryHeapStream(_data))
+            {
+                var hdr = BinaryObjectHeader.Read(stream, _offset);
 
-            var hdr = BinaryObjectHeader.Read(stream, _offset);
-
-            _fields = hdr.ReadSchemaAsDictionary(stream, _offset) ?? EmptyFields;
+                _fields = hdr.ReadSchemaAsDictionary(stream, _offset) ?? EmptyFields;
+            }
         }
 
         /** <inheritdoc /> */
@@ -262,15 +267,16 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     // 4. Check if objects have the same raw data.
                     // ReSharper disable ImpureMethodCallOnReadonlyValueField (method is not impure)
-                    var stream = new BinaryHeapStream(_data);
-                    var rawOffset = _header.GetRawOffset(stream, _offset);
+                    using (var stream = new BinaryHeapStream(_data))
+                    using (var thatStream = new BinaryHeapStream(that._data))
+                    {
+                        var rawOffset = _header.GetRawOffset(stream, _offset);
+                        var thatRawOffset = that._header.GetRawOffset(thatStream, that._offset);
 
-                    var thatStream = new BinaryHeapStream(that._data);
-                    var thatRawOffset = that._header.GetRawOffset(thatStream, that._offset);
+                        return BinaryUtils.CompareArrays(_data, _offset + rawOffset, _header.Length - rawOffset,
+                            that._data, that._offset + thatRawOffset, that._header.Length - thatRawOffset);
+                    }
                     // ReSharper restore ImpureMethodCallOnReadonlyValueField
-
-                    return BinaryUtils.CompareArrays(_data, _offset + rawOffset, _header.Length - rawOffset, 
-                        that._data, that._offset + thatRawOffset, that._header.Length - thatRawOffset);
                 }
             }
 

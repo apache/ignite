@@ -76,16 +76,18 @@ void CheckCursorNeedUpdate(Cursor& cursor)
 {
     BOOST_REQUIRE(cursor.NeedDataUpdate());
 
-    BOOST_REQUIRE(cursor.HasNext());
+    BOOST_REQUIRE(cursor.HasData());
 
     BOOST_REQUIRE(!cursor.Increment());
+
+    BOOST_REQUIRE(!cursor.GetRow());
 }
 
 void CheckCursorReady(Cursor& cursor)
 {
     BOOST_REQUIRE(!cursor.NeedDataUpdate());
 
-    BOOST_REQUIRE(cursor.HasNext());
+    BOOST_REQUIRE(cursor.HasData());
 
     BOOST_REQUIRE(cursor.GetRow());
 }
@@ -94,11 +96,11 @@ void CheckCursorEnd(Cursor& cursor)
 {
     BOOST_REQUIRE(!cursor.NeedDataUpdate());
 
-    BOOST_REQUIRE(!cursor.HasNext());
+    BOOST_REQUIRE(!cursor.HasData());
 
     BOOST_REQUIRE(!cursor.Increment());
 
-    BOOST_REQUIRE(cursor.GetRow());
+    BOOST_REQUIRE(!cursor.GetRow());
 }
 
 BOOST_AUTO_TEST_SUITE(CursorTestSuite)
@@ -126,7 +128,7 @@ BOOST_AUTO_TEST_CASE(TestCursorLast)
 
     CheckCursorReady(cursor);
 
-    for (int32_t i = 0; i < pageSize - 1; ++i)
+    for (int32_t i = 0; i < pageSize; ++i)
         BOOST_REQUIRE(cursor.Increment());
 
     CheckCursorEnd(cursor);
@@ -144,10 +146,12 @@ BOOST_AUTO_TEST_CASE(TestCursorUpdate)
 
     BOOST_REQUIRE(cursor.GetQueryId() == testQueryId);
 
-    CheckCursorReady(cursor);
+    for (int32_t i = 0; i < pageSize; ++i)
+    {
+        CheckCursorReady(cursor);
 
-    for (int32_t i = 0; i < pageSize - 1; ++i)
         BOOST_REQUIRE(cursor.Increment());
+    }
 
     CheckCursorNeedUpdate(cursor);
 
@@ -157,10 +161,45 @@ BOOST_AUTO_TEST_CASE(TestCursorUpdate)
 
     CheckCursorReady(cursor);
 
-    for (int32_t i = 0; i < pageSize - 1; ++i)
+    for (int32_t i = 0; i < pageSize; ++i)
+    {
+        CheckCursorReady(cursor);
+
         BOOST_REQUIRE(cursor.Increment());
+    }
 
     CheckCursorEnd(cursor);
+}
+
+BOOST_AUTO_TEST_CASE(TestCursorUpdateOneRow)
+{
+    Cursor cursor(testQueryId);
+
+    std::auto_ptr<ResultPage> resultPage = CreateTestPage(false, 1);
+
+    cursor.UpdateData(resultPage);
+
+    BOOST_REQUIRE(cursor.GetQueryId() == testQueryId);
+
+    CheckCursorReady(cursor);
+
+    BOOST_REQUIRE(cursor.Increment());
+
+    CheckCursorNeedUpdate(cursor);
+
+    BOOST_REQUIRE(!cursor.Increment());
+
+    resultPage = CreateTestPage(true, 1);
+
+    cursor.UpdateData(resultPage);
+
+    CheckCursorReady(cursor);
+
+    BOOST_REQUIRE(cursor.Increment());
+
+    CheckCursorEnd(cursor);
+
+    BOOST_REQUIRE(!cursor.Increment());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

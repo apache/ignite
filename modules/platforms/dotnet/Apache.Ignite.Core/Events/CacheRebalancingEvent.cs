@@ -88,7 +88,9 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public long DiscoveryTimestamp { get { return _discoveryTimestamp; } }
 
-        /** <inheritDoc /> */
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
 	    public override string ToShortString()
 	    {
 	        return string.Format(CultureInfo.InvariantCulture,
