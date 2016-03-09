@@ -74,6 +74,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -276,8 +277,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         assert igfs.listFiles(new IgfsPath("/")).isEmpty();
 
 
-        System.out.println("##### IFI reads: " + IgfsFileInfo.reads.get());
-        System.out.println("##### IFI writes: " + IgfsFileInfo.writes.get());
+//        System.out.println("##### IFI reads: " + IgfsFileInfo.reads.get());
+//        System.out.println("##### IFI writes: " + IgfsFileInfo.writes.get());
     }
 
     /** {@inheritDoc} */
@@ -332,6 +333,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
+        if (!sec)
+            metaCacheCfg.setCopyOnRead(false);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -349,6 +352,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
+
+
+
+        OptimizedMarshaller m = new OptimizedMarshaller();
+        m.setRequireSerializable(false);
+        cfg.setMarshaller(m);
 
         return G.start(cfg);
     }
@@ -2730,7 +2739,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             writeFileChunks(os, chunks);
         }
         finally {
+            System.out.println("closing...");
+
             U.closeQuiet(os);
+
+            System.out.println("done.");
 
             awaitFileClose(igfs, file);
         }
@@ -3246,8 +3259,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         clear(igfs, igfsSecondary);
 
-        IgfsFileInfo.reads.set(0L);
-        IgfsFileInfo.writes.set(0L);
+//        IgfsFileInfo.reads.set(0L);
+//        IgfsFileInfo.writes.set(0L);
     }
 
     @Override protected long getTestTimeout() {

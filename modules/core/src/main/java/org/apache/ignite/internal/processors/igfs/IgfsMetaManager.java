@@ -39,6 +39,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
@@ -104,6 +105,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class IgfsMetaManager extends IgfsManager {
     /** Lock Id used to lock files being deleted from TRASH. This is a global constant. */
     static final IgniteUuid DELETE_LOCK_ID = new IgniteUuid(new UUID(0L, 0L), 0L);
+
+    static final AtomicBoolean procSerializationAllowed = new AtomicBoolean(true);
 
     /** Comparator for Id sorting. */
     private static final Comparator<IgniteUuid> PATH_ID_SORTING_COMPARATOR
@@ -413,11 +416,26 @@ public class IgfsMetaManager extends IgfsManager {
                 if (fileId == null)
                     return null;
 
-                IgfsFileInfo info = id2InfoPrj.get(fileId);
+                IgfsFileInfo.readAllowed.set(true);
+                IgfsFileInfo.writeAllowed.set(true);
+                IgfsListingEntry.serializationAllowed.set(true);
+                procSerializationAllowed.set(true);
 
-                // Force root ID always exist in cache.
-                if (info == null && ROOT_ID.equals(fileId))
-                    id2InfoPrj.putIfAbsent(ROOT_ID, info = new IgfsFileInfo());
+                IgfsFileInfo info;
+
+                try {
+                    info = id2InfoPrj.get(fileId);
+
+                    // Force root ID always exist in cache.
+                    if (info == null && ROOT_ID.equals(fileId))
+                        id2InfoPrj.putIfAbsent(ROOT_ID, info = new IgfsFileInfo());
+                }
+                finally {
+                    IgfsFileInfo.readAllowed.set(false);
+                    IgfsFileInfo.writeAllowed.set(false);
+                    IgfsListingEntry.serializationAllowed.set(false);
+                    procSerializationAllowed.set(false);
+                }
 
                 return info;
             }
@@ -468,6 +486,23 @@ public class IgfsMetaManager extends IgfsManager {
             throw new IllegalStateException("Failed to get file infos because Grid is stopping: " + fileIds);
     }
 
+    private void commit(IgniteInternalTx tx) throws IgniteCheckedException {
+        IgfsFileInfo.readAllowed.set(true);
+        IgfsFileInfo.writeAllowed.set(true);
+        IgfsListingEntry.serializationAllowed.set(true);
+        procSerializationAllowed.set(true);
+
+        try {
+            tx.commit();
+        }
+        finally {
+            IgfsFileInfo.readAllowed.set(false);
+            IgfsFileInfo.writeAllowed.set(false);
+            IgfsListingEntry.serializationAllowed.set(false);
+            procSerializationAllowed.set(false);
+        }
+    }
+
     /**
      * Lock the file explicitly outside of transaction.
      *
@@ -501,7 +536,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     assert newInfo.id().equals(oldInfo.id()); // Same id.
 
-                    tx.commit();
+                    commit(tx);
 
                     return newInfo;
                 }
@@ -668,51 +703,33 @@ public class IgfsMetaManager extends IgfsManager {
         assert isSorted(fileIds);
         assert validTxState(true);
 
-        if (log.isDebugEnabled())
-            log.debug("Locking file ids: " + fileIds);
+        IgfsFileInfo.readAllowed.set(true);
+        IgfsFileInfo.writeAllowed.set(true);
+        IgfsListingEntry.serializationAllowed.set(true);
+        procSerializationAllowed.set(true);
 
-        Map<IgniteUuid, IgfsFileInfo> map = id2InfoPrj.getAll(fileIds);
+        try {
+            if (log.isDebugEnabled())
+                log.debug("Locking file ids: " + fileIds);
 
-//        // ------------------------------------
-//        GridCacheContext<IgniteUuid, IgfsFileInfo> ctx = id2InfoPrj.context();
-//        Collection<KeyCacheObject> keyObjects = ctx.cacheKeysView(fileIds);
-//        IgniteTxLocalEx tx = ctx.tm().threadLocalTx(ctx);
-//
-//        boolean locked = (Boolean)((GridCacheAdapter) id2InfoPrj).txLockAsync(
-//            keyObjects,
-//            0,
-//            tx,
-//            true,
-//            false/* retval */,
-//            TransactionIsolation.REPEATABLE_READ, false, -1).get();
-//
-//        //Map<IgniteUuid, IgfsFileInfo> map = id2InfoPrj.getAll(fileIds);
-//
-//        //boolean locked = id2InfoPrj.lockAll(fileIds, 0L);
-//        assert locked;
-//
-//        // Lock files and get their infos.
-//
-//        //final Map<IgniteUuid, IgfsFileInfo> map = new HashMap<>();
-//
-//        IgfsFileInfo i;
-//        for (IgniteUuid id : fileIds) {
-//            i = id2InfoPrj.localPeek(id, modes_all, null);
-//
-//            if (i != null)
-//                map.put(id, i);
-//        }
-//        // -----------------------------------------------------
+            Map<IgniteUuid, IgfsFileInfo> map = id2InfoPrj.getAll(fileIds);
 
-        if (log.isDebugEnabled())
-            log.debug("Locked file ids: " + fileIds);
+            if (log.isDebugEnabled())
+                log.debug("Locked file ids: " + fileIds);
 
-        // Force root & trash IDs always exist in cache.
-        addInfoIfNeeded(fileIds, map, ROOT_ID);
-        addInfoIfNeeded(fileIds, map, TRASH_ID);
+            // Force root & trash IDs always exist in cache.
+            addInfoIfNeeded(fileIds, map, ROOT_ID);
+            addInfoIfNeeded(fileIds, map, TRASH_ID);
 
-        // Returns detail's map for locked IDs.
-        return map;
+            // Returns detail's map for locked IDs.
+            return map;
+        } finally {
+            IgfsFileInfo.readAllowed.set(false);
+            IgfsFileInfo.writeAllowed.set(false);
+
+            IgfsListingEntry.serializationAllowed.set(false);
+            procSerializationAllowed.set(false);
+        }
     }
 
     /**
@@ -992,7 +1009,7 @@ public class IgfsMetaManager extends IgfsManager {
                     id2InfoPrj.invoke(srcTargetId, new ListingRemove(srcName, entry.fileId()));
                     id2InfoPrj.invoke(dstTargetId, new ListingAdd(dstName, entry));
 
-                    tx.commit();
+                    commit(tx);
 
                     IgfsPath realNewPath = new IgfsPath(dstDirPath, dstName);
 
@@ -1174,7 +1191,7 @@ public class IgfsMetaManager extends IgfsManager {
                     // Note that root directory properties and other attributes are preserved:
                     id2InfoPrj.put(ROOT_ID, new IgfsFileInfo(null/*listing*/, rootInfo));
 
-                    tx.commit();
+                    commit(tx);
 
                     delWorker.signal();
 
@@ -1276,7 +1293,7 @@ public class IgfsMetaManager extends IgfsManager {
                         // which will be used by delete worker for event notifications.
                         id2InfoPrj.invoke(victimId, new UpdatePath(path));
 
-                    tx.commit();
+                    commit(tx);
 
                     delWorker.signal();
 
@@ -1445,7 +1462,7 @@ public class IgfsMetaManager extends IgfsManager {
                         id2InfoPrj.put(parentId, new IgfsFileInfo(newListing, parentInfo));
                     }
 
-                    tx.commit();
+                    commit(tx);
 
                     return res;
                 }
@@ -1510,7 +1527,7 @@ public class IgfsMetaManager extends IgfsManager {
                         res = true;
                     }
 
-                    tx.commit();
+                    commit(tx);
 
                     return res;
                 }
@@ -1663,7 +1680,7 @@ public class IgfsMetaManager extends IgfsManager {
                 try {
                     IgfsFileInfo info = updatePropertiesNonTx(parentId, fileId, fileName, props);
 
-                    tx.commit();
+                    commit(tx);
 
                     return info;
                 }
@@ -1731,8 +1748,11 @@ public class IgfsMetaManager extends IgfsManager {
                 IgniteInternalTx tx = id2InfoPrj.isLockedByThread(fileId) ? null : startTx();
 
                 try {
+                    //System.out.println("getting info: " + fileId);
                     // Lock file ID for this transaction.
                     IgfsFileInfo oldInfo = info(fileId);
+
+                    //System.out.println("done.");
 
                     if (oldInfo == null)
                         return null; // File not found.
@@ -1757,7 +1777,7 @@ public class IgfsMetaManager extends IgfsManager {
                         ", c=" + c + ']';
 
                     if (tx != null)
-                        tx.commit();
+                        commit(tx);
 
                     return newInfo;
                 }
@@ -1803,6 +1823,9 @@ public class IgfsMetaManager extends IgfsManager {
                     try {
                         final Map<IgniteUuid, IgfsFileInfo> lockedInfos = lockIds(b.idSet);
 
+//                        final long r0 = IgfsFileInfo.reads.get();
+//                        final long w0 = IgfsFileInfo.writes.get();
+
                         // If the path was changed, we close the current Tx and repeat the procedure again
                         // starting from taking the path ids.
                         if (verifyPathIntegrity(b.existingPath, b.idList, lockedInfos)) {
@@ -1834,7 +1857,12 @@ public class IgfsMetaManager extends IgfsManager {
                             if (entry == null) {
                                 b.doBuild();
 
-                                tx.commit();
+//                                long r = IgfsFileInfo.reads.get();
+//                                long w = IgfsFileInfo.writes.get();
+//                                assert w - w0 == 0 : "Extra writes: " + (w - w0);
+//                                assert r - r0 == 0 : "Extra reads: " + (r - r0);
+
+                                commit(tx);
 
                                 break;
                             }
@@ -1888,7 +1916,7 @@ public class IgfsMetaManager extends IgfsManager {
                 try {
                     Object prev = val != null ? metaCache.getAndPut(sampling, val) : metaCache.getAndRemove(sampling);
 
-                    tx.commit();
+                    commit(tx);
 
                     return !F.eq(prev, val);
                 }
@@ -2891,7 +2919,7 @@ public class IgfsMetaManager extends IgfsManager {
                     }
                 }
 
-                tx.commit();
+                commit(tx);
             }
             catch (IgniteCheckedException e) {
                 if (!finished) {
@@ -3006,7 +3034,7 @@ public class IgfsMetaManager extends IgfsManager {
                     id2InfoPrj.invoke(parentId, new UpdateListingEntry(fileId, fileName, 0, accessTime,
                         modificationTime));
 
-                    tx.commit();
+                    commit(tx);
                 }
                 finally {
                     tx.close();
@@ -3228,6 +3256,8 @@ public class IgfsMetaManager extends IgfsManager {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
+            assert procSerializationAllowed.get();
+
             U.writeGridUuid(out, fileId);
             out.writeUTF(fileName);
             out.writeLong(lenDelta);
@@ -3237,6 +3267,8 @@ public class IgfsMetaManager extends IgfsManager {
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException {
+            assert procSerializationAllowed.get();
+
             fileId = U.readGridUuid(in);
             fileName = in.readUTF();
             lenDelta = in.readLong();
@@ -3306,12 +3338,16 @@ public class IgfsMetaManager extends IgfsManager {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
+            assert procSerializationAllowed.get();
+
             U.writeString(out, fileName);
             U.writeGridUuid(out, fileId);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            assert procSerializationAllowed.get();
+
             fileName = U.readString(in);
             fileId = U.readGridUuid(in);
         }
@@ -3378,12 +3414,16 @@ public class IgfsMetaManager extends IgfsManager {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
+            assert procSerializationAllowed.get();
+
             U.writeString(out, fileName);
             out.writeObject(entry);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            assert procSerializationAllowed.get();
+
             fileName = U.readString(in);
             entry = (IgfsListingEntry)in.readObject();
         }
@@ -3431,11 +3471,15 @@ public class IgfsMetaManager extends IgfsManager {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
+            assert procSerializationAllowed.get();
+
             out.writeObject(path);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            assert procSerializationAllowed.get();
+
             path = (IgfsPath)in.readObject();
         }
 
@@ -3677,6 +3721,9 @@ public class IgfsMetaManager extends IgfsManager {
 
                         final Map<IgniteUuid, IgfsFileInfo> lockedInfos = lockIds(b.idSet);
 
+                        //final long r0 = IgfsFileInfo.reads.get();
+                        //final long w0 = IgfsFileInfo.writes.get();
+
                         assert !overwrite || lockedInfos.get(TRASH_ID) != null; // TRASH must exist at this point.
 
                         // If the path was changed, we close the current Tx and repeat the procedure again
@@ -3727,7 +3774,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                                         IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(lockedInfo, parentId);
 
-                                        tx.commit();
+                                        commit(tx);
 
                                         IgfsUtils.sendEvents(igfsCtx.kernalContext(), path,
                                                 EventType.EVT_IGFS_FILE_OPENED_WRITE);
@@ -3775,7 +3822,12 @@ public class IgfsMetaManager extends IgfsManager {
 
                                         IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(fileProc.buildInfo(), parentId);
 
-                                        tx.commit();
+//                                        long r = IgfsFileInfo.reads.get();
+//                                        long w = IgfsFileInfo.writes.get();
+//                                        assert r - r0 == 0 : "Extra reads: " + (r - r0);
+//                                        assert w - w0 == 0 : "Extra writes: " + (w - w0);
+
+                                        commit(tx);
 
                                         delWorker.signal();
 
@@ -3812,7 +3864,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                                 IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(b.leafInfo.buildInfo(), b.leafParentId);
 
-                                tx.commit();
+                                commit(tx);
 
                                 b.sendEvents();
 
@@ -4081,11 +4133,15 @@ public class IgfsMetaManager extends IgfsManager {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
+            assert procSerializationAllowed.get();
+
             U.writeGridUuid(out, newLockId);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            assert procSerializationAllowed.get();
+
             newLockId = U.readGridUuid(in);
         }
 
@@ -4159,12 +4215,16 @@ public class IgfsMetaManager extends IgfsManager {
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
+            assert procSerializationAllowed.get();
+
             U.writeString(out, fileName);
             out.writeObject(childProc);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            assert procSerializationAllowed.get();
+
             fileName = U.readString(in);
             childProc = (CreateDirEntryProcessor)in.readObject();
         }

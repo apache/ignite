@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
@@ -40,8 +41,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class IgfsFileInfo implements Externalizable {
 
-    public static final AtomicLong writes = new AtomicLong();
-    public static final AtomicLong reads = new AtomicLong();
+//    public static final AtomicLong writes = new AtomicLong();
+//    public static final AtomicLong reads = new AtomicLong();
+
+    public static final AtomicBoolean readAllowed = new AtomicBoolean(true);
+    public static final AtomicBoolean writeAllowed = new AtomicBoolean(true);
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -529,6 +533,8 @@ public final class IgfsFileInfo implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        assert writeAllowed.get();
+
         U.writeGridUuid(out, id);
         out.writeInt(blockSize);
         out.writeLong(len);
@@ -541,13 +547,13 @@ public final class IgfsFileInfo implements Externalizable {
         out.writeLong(modificationTime);
         out.writeBoolean(evictExclude);
         out.writeObject(path);
-
-        writes.incrementAndGet();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        assert readAllowed.get();
+
         id = U.readGridUuid(in);
         blockSize = in.readInt();
         len = in.readLong();
@@ -560,8 +566,6 @@ public final class IgfsFileInfo implements Externalizable {
         modificationTime = in.readLong();
         evictExclude = in.readBoolean();
         path = (IgfsPath)in.readObject();
-
-        reads.incrementAndGet();
     }
 
     /** {@inheritDoc} */
