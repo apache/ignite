@@ -207,6 +207,14 @@
             }
             else
                 writer.WriteBoolean(false);
+
+            // Binary config
+            var isCompactFooterSet = BinaryConfiguration != null && BinaryConfiguration.CompactFooterInternal != null;
+
+            writer.WriteBoolean(isCompactFooterSet);
+
+            if (isCompactFooterSet)
+                writer.WriteBoolean(BinaryConfiguration.CompactFooter);
         }
 
         /// <summary>
@@ -237,6 +245,13 @@
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
+
+            // Binary config
+            if (r.ReadBoolean())
+            {
+                BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
+                BinaryConfiguration.CompactFooter = r.ReadBoolean();
+            }
         }
 
         /// <summary>
