@@ -172,30 +172,38 @@ namespace ignite
 
             OdbcProtocolHeader hdr;
 
-            hdr.len = len;
+            hdr.len = static_cast<int32_t>(len);
 
-            int sent = socket.Send(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
-
-            LOG_MSG("Sent: %d\n", sent);
+            size_t sent = SendAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
 
             if (sent != sizeof(hdr))
                 return false;
 
-            sent = 0;
+            sent = SendAll(data, len);
 
-            while (sent != len) 
+            if (sent != len)
+                return false;
+
+            return true;
+        }
+
+        size_t Connection::SendAll(const int8_t* data, size_t len)
+        {
+            int sent = 0;
+
+            while (sent != len)
             {
                 int res = socket.Send(data + sent, len - sent);
 
                 LOG_MSG("Sent: %d\n", res);
 
                 if (res <= 0)
-                    return false;
+                    return sent;
 
                 sent += res;
             }
 
-            return true;
+            return sent;
         }
 
         bool Connection::Receive(std::vector<int8_t>& msg)
@@ -207,35 +215,51 @@ namespace ignite
 
             OdbcProtocolHeader hdr;
 
-            int received = socket.Receive(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
-
-            LOG_MSG("Received: %d\n", received);
+            size_t received = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
 
             if (received != sizeof(hdr))
                 return false;
 
-            size_t remain = hdr.len;
-            size_t receivedAtAll = 0;
+            if (hdr.len < 0)
+                return false;
 
-            msg.resize(remain);
+            if (hdr.len == 0)
+                return true;
 
-            while (remain)
+            msg.resize(hdr.len);
+
+            received = ReceiveAll(&msg[0], hdr.len);
+
+            if (received != hdr.len)
             {
-                received = socket.Receive(&msg[receivedAtAll], remain);
-                LOG_MSG("Received: %d\n", received);
-                LOG_MSG("remain: %d\n", remain);
+                msg.resize(received);
 
-                if (received <= 0)
-                {
-                    msg.resize(receivedAtAll);
-
-                    return false;
-                }
-
-                remain -= static_cast<size_t>(received);
+                return false;
             }
 
             return true;
+        }
+
+        size_t Connection::ReceiveAll(void* dst, size_t len)
+        {
+            size_t remain = len;
+            int8_t* buffer = reinterpret_cast<int8_t*>(dst);
+
+            while (remain)
+            {
+                size_t received = len - remain;
+
+                int res = socket.Receive(buffer + received, remain);
+                LOG_MSG("Receive res: %d\n", res);
+                LOG_MSG("remain: %d\n", remain);
+
+                if (res <= 0)
+                    return received;
+
+                remain -= static_cast<size_t>(res);
+            }
+
+            return len;
         }
 
         const std::string& Connection::GetCache() const

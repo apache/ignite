@@ -236,6 +236,24 @@ namespace ignite
             SqlResult InternalTransactionRollback();
 
             /**
+             * Receive specified number of bytes.
+             *
+             * @param dst Buffer for data.
+             * @param len Number of bytes to receive.
+             * @return Number of successfully received bytes.
+             */
+            size_t ReceiveAll(void* dst, size_t len);
+
+            /**
+             * Send specified number of bytes.
+             *
+             * @param data Data buffer.
+             * @param len Data length.
+             * @return Number of successfully sent bytes.
+             */
+            size_t SendAll(const int8_t* data, size_t len);
+
+            /**
              * Constructor.
              */
             Connection();
