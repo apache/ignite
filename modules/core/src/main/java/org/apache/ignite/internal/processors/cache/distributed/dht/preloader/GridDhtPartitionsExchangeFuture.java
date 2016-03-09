@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,13 +50,11 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -498,7 +495,33 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void onClientNodeEvent() throws IgniteCheckedException {
         assert CU.clientNode(discoEvt.eventNode()) : this;
 
-        assert false;
+        if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED) {
+            onLeft();
+
+            assert !discoEvt.eventNode().isLocal() : discoEvt;
+        }
+        else
+            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
+
+        cctx.topology().onClientEvent(this);
+
+        if (discoEvt.eventNode().isLocal()) {
+            clientOnlyExchange = true;
+
+            srvNodes = new ArrayList<>(cctx.discovery().serverNodes(topologyVersion()));
+
+            if (!srvNodes.isEmpty()) {
+                crd = srvNodes.get(0);
+
+                sendLocalPartitions(crd, exchId);
+
+                initFut.onDone(true);
+            }
+            else
+                onDone(topologyVersion());
+        }
+        else
+            onDone(topologyVersion());
     }
 
     /**
@@ -509,11 +532,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         srvNodes = new ArrayList<>(cctx.discovery().serverNodes(topologyVersion()));
 
-        assert !srvNodes.isEmpty();
-
-        crd = srvNodes.get(0);
-
-        remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
+        crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             GridClientPartitionTopology clientTop = cctx.topology().clearClientTopology(
@@ -530,13 +549,31 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             warnNoAffinityNodes();
 
-            centralizedAff = cctx.topology().onServerLeft(this, crd.isLocal());
+            centralizedAff = cctx.topology().onServerLeft(this, crd != null && crd.isLocal());
         }
         else {
             assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
 
-            cctx.topology().onServerJoin(this, crd.isLocal());
+            cctx.topology().onServerJoin(this, crd != null && crd.isLocal());
         }
+
+        if (cctx.kernalContext().clientNode()) {
+            clientOnlyExchange = true;
+
+            if (crd != null) {
+                sendLocalPartitions(crd, exchId);
+
+                initFut.onDone(true);
+            }
+            else
+                onDone(topologyVersion());
+
+            return;
+        }
+
+        assert crd != null;
+
+        remaining.addAll(F.nodeIds(F.view(srvNodes, F.remoteNodes(cctx.localNodeId()))));
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal())
@@ -551,7 +588,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (cacheCtx.isLocal())
                 continue;
 
-            List<List<ClusterNode>> aff = cacheCtx.affinity().idealAssignment();
+            List<List<ClusterNode>> aff = cacheCtx.affinity().idealAssignment(topologyVersion());
 
             if (aff == null) {
                 assert discoEvt.type() == EVT_NODE_JOINED && discoEvt.eventNode().isLocal();
@@ -648,7 +685,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     // Client need to initialize affinity for local join event or for stated client caches.
                     if (!node.isLocal() || clientCacheClose()) {
-                        cctx.topology().onClientExchange(this);
+                        //cctx.topology().onClientExchange(this);
 
                         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                             if (cacheCtx.isLocal())
@@ -674,7 +711,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (clientOnlyExchange) {
                     skipPreload = cctx.kernalContext().clientNode();
 
-                    cctx.topology().onClientExchange(this);
+                    //cctx.topology().onClientExchange(this);
 
                     if (oldest != null) {
 //                        rmtNodes = new ConcurrentLinkedQueue<>(CU.aliveRemoteServerNodesWithCaches(cctx,
@@ -764,7 +801,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 AffinityTopologyVersion topVer = exchId.topologyVersion();
 
-                cctx.topology().onExchangeStart(this);
+                // cctx.topology().onExchangeStart(this);
 
                 waitPartitionRelease();
 
@@ -943,12 +980,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (cacheCtx.isLocal())
                 continue;
 
-            if (exchId.isLeft())
-                cacheCtx.preloader().unwindUndeploys();
+            cacheCtx.preloader().unwindUndeploys();
         }
 
-        if (exchId.isLeft())
-            cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
+        cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
     }
 
     /**
@@ -1614,7 +1649,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 try {
                     if (crd.equals(node)) {
-                        cctx.topology().onExchangeAffinityMessage(GridDhtPartitionsExchangeFuture.this, msg);
+                        cctx.topology().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this, msg);
 
                         if (!crd.isLocal())
                             processMessage(crd, msg.partitionsMessage());

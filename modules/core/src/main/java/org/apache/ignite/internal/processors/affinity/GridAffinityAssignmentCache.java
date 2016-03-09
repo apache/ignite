@@ -24,16 +24,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -71,17 +73,20 @@ public class GridAffinityAssignmentCache {
     /** Affinity calculation results cache: topology version => partition => nodes. */
     private final ConcurrentLinkedHashMap<AffinityTopologyVersion, GridAffinityAssignment> affCache;
 
+    /** */
+    private final ConcurrentMap<AffinityTopologyVersion, List<List<ClusterNode>>> idealAffCache;
+
     /** Cache item corresponding to the head topology version. */
     private final AtomicReference<GridAffinityAssignment> head;
-
-    /** Discovery manager. */
-    private final GridCacheContext ctx;
 
     /** Ready futures. */
     private final ConcurrentMap<AffinityTopologyVersion, AffinityReadyFuture> readyFuts = new ConcurrentHashMap8<>();
 
     /** Log. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
+
+    /** */
+    private final GridKernalContext ctx;
 
     /** Node stop flag. */
     private volatile IgniteCheckedException stopErr;
@@ -96,7 +101,7 @@ public class GridAffinityAssignmentCache {
      * @param backups Number of backups.
      */
     @SuppressWarnings("unchecked")
-    public GridAffinityAssignmentCache(GridCacheContext ctx,
+    public GridAffinityAssignmentCache(GridKernalContext ctx,
         String cacheName,
         AffinityFunction aff,
         AffinityKeyMapper affMapper,
@@ -112,10 +117,11 @@ public class GridAffinityAssignmentCache {
         this.cacheName = cacheName;
         this.backups = backups;
 
-        log = ctx.logger(GridAffinityAssignmentCache.class);
+        log = ctx.log(GridAffinityAssignmentCache.class);
 
         partsCnt = aff.partitions();
         affCache = new ConcurrentLinkedHashMap<>();
+        idealAffCache = new ConcurrentHashMap();
         head = new AtomicReference<>(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
     }
 
@@ -144,6 +150,24 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
+     * @param topVer Topology version.
+     * @param assignment Assignment.
+     */
+    public void idealAssignment(AffinityTopologyVersion topVer, List<List<ClusterNode>> assignment) {
+        List<List<ClusterNode>> old = idealAffCache.put(topVer, assignment);
+
+        assert old == null : topVer;
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return Assignment.
+     */
+    @Nullable public List<List<ClusterNode>> idealAssignment(AffinityTopologyVersion topVer) {
+        return idealAffCache.get(topVer);
+    }
+
+    /**
      * Kernal stop callback.
      *
      * @param err Error.
@@ -160,6 +184,7 @@ public class GridAffinityAssignmentCache {
      */
     public void onReconnected() {
         affCache.clear();
+        idealAffCache.clear();
 
         head.set(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
 
@@ -191,9 +216,9 @@ public class GridAffinityAssignmentCache {
 
         List<ClusterNode> sorted;
 
-        if (ctx.isLocal())
+        if (false) // if (ctx.isLocal())
             // For local cache always use local node.
-            sorted = Collections.singletonList(ctx.localNode());
+            sorted = Collections.singletonList(ctx.discovery().localNode());
         else {
             // Resolve nodes snapshot for specified topology version.
             sorted = new ArrayList<>(ctx.discovery().cacheAffinityNodes(cacheName, topVer));
@@ -206,7 +231,7 @@ public class GridAffinityAssignmentCache {
         List<List<ClusterNode>> assignment;
 
         if (prevAssignment != null && discoEvt != null) {
-            boolean affNode = ctx.discovery().cacheAffinityNode(discoEvt.eventNode(), ctx.name());
+            boolean affNode = ctx.discovery().cacheAffinityNode(discoEvt.eventNode(), cacheName);
 
             if (!affNode)
                 assignment = prevAssignment;
@@ -298,9 +323,15 @@ public class GridAffinityAssignmentCache {
             log.debug("Cleaning up cache for version [locNodeId=" + ctx.localNodeId() +
                 ", topVer=" + topVer + ']');
 
-        for (Iterator<AffinityTopologyVersion> it = affCache.keySet().iterator(); it.hasNext(); )
+        for (Iterator<AffinityTopologyVersion> it = affCache.keySet().iterator(); it.hasNext(); ) {
             if (it.next().compareTo(topVer) < 0)
                 it.remove();
+        }
+
+        for (Iterator<AffinityTopologyVersion> it = idealAffCache.keySet().iterator(); it.hasNext(); ) {
+            if (it.next().compareTo(topVer) < 0)
+                it.remove();
+        }
     }
 
     /**
@@ -363,8 +394,8 @@ public class GridAffinityAssignmentCache {
      * @param key Key.
      * @return Partition.
      */
-    public int partition(Object key) {
-        return aff.partition(affinityKey(key));
+    public int partition(GridCacheContext ctx, Object key) {
+        return aff.partition(affinityKey(ctx, key));
     }
 
     /**
@@ -374,7 +405,7 @@ public class GridAffinityAssignmentCache {
      * @param key Key.
      * @return Affinity key.
      */
-    private Object affinityKey(Object key) {
+    private Object affinityKey(GridCacheContext ctx, Object key) {
         if (key instanceof CacheObject && !(key instanceof BinaryObject))
             key = ((CacheObject)key).value(ctx.cacheObjectContext(), false);
 

@@ -2447,8 +2447,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public boolean onCustomEvent(DiscoveryCustomMessage msg,
         AffinityTopologyVersion topVer) {
-        return (msg instanceof CacheAffinityChangeMessage) ||
-            msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch) msg, topVer);
+        if (msg instanceof CacheAffinityChangeMessage)
+            return ((CacheAffinityChangeMessage) msg).exchangeId() == null;
+
+        return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch) msg, topVer);
     }
 
     /**
@@ -3122,6 +3124,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Cache doesn't exist: " + name);
         else
             return desc.cacheConfiguration();
+    }
+
+    /**
+     * @return Cache descriptors.
+     */
+    Collection<DynamicCacheDescriptor> cacheDescriptors() {
+        return registeredCaches.values();
     }
 
     /**

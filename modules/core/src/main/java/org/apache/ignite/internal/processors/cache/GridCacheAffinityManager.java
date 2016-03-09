@@ -52,13 +52,13 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /** Affinity cached function. */
     private GridAffinityAssignmentCache aff;
 
-    /** */
-    private List<List<ClusterNode>> pendingAssignment;
-
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        aff = new GridAffinityAssignmentCache(cctx, cctx.namex(), cctx.config().getAffinity(),
-            cctx.config().getAffinityMapper(), cctx.config().getBackups());
+        aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
+            cctx.namex(),
+            cctx.config().getAffinity(),
+            cctx.config().getAffinityMapper(),
+            cctx.config().getBackups());
     }
 
     /** {@inheritDoc} */
@@ -182,12 +182,24 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         return aff.calculate(topVer, discoEvt);
     }
 
-    public void idealAssignment(List<List<ClusterNode>> assignment) {
-        pendingAssignment = assignment;
+    /**
+     * @param topVer Topology version.
+     * @param assignment Assignment.
+     */
+    public void idealAssignment(AffinityTopologyVersion topVer, List<List<ClusterNode>> assignment) {
+        assert !cctx.isLocal();
+
+        aff.idealAssignment(topVer, assignment);
     }
 
-    public List<List<ClusterNode>> idealAssignment() {
-        return pendingAssignment;
+    /**
+     * @param topVer Topology version.
+     * @return Assignment.
+     */
+    public List<List<ClusterNode>> idealAssignment(AffinityTopologyVersion topVer) {
+        assert !cctx.isLocal();
+
+        return aff.idealAssignment(topVer);
     }
 
     /**
@@ -229,7 +241,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         if (aff0 == null)
             throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
-        return aff0.partition(key);
+        return aff0.partition(cctx, key);
     }
 
     /**

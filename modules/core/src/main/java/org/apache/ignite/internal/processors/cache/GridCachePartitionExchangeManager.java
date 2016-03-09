@@ -919,11 +919,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 skipped++;
 
                 if (skipped == EXCH_FUT_CLEANUP_HISTORY_SIZE) {
-                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                        if (err == null) {
+                    if (err == null) {
+                        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                             if (!cacheCtx.isLocal())
                                 cacheCtx.affinity().cleanUpCache(fut.topologyVersion());
                         }
+
+                        cctx.topology().cleanUpCache(fut.topologyVersion());
                     }
                 }
 
