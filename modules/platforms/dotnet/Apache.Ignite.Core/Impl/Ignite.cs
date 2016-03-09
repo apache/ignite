@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618   // SpringConfigUrl
 namespace Apache.Ignite.Core.Impl
 {
     using System;
@@ -135,6 +136,24 @@ namespace Apache.Ignite.Core.Impl
 
             // Set reconnected task to completed state for convenience.
             _clientReconnectTaskCompletionSource.SetResult(false);
+
+            SetCompactFooter();
+        }
+
+        /// <summary>
+        /// Sets the compact footer setting.
+        /// </summary>
+        private void SetCompactFooter()
+        {
+            if (!string.IsNullOrEmpty(_cfg.SpringConfigUrl))
+            {
+                // If there is a Spring config, use setting from Spring, 
+                // since we ignore .NET config in legacy mode.
+                var cfg0 = GetConfiguration().BinaryConfiguration;
+
+                if (cfg0 != null)
+                    _marsh.CompactFooter = cfg0.CompactFooter;
+            }
         }
 
         /// <summary>
