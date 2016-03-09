@@ -165,10 +165,10 @@ namespace ignite
             return SQL_RESULT_SUCCESS;
         }
 
-        bool Connection::Send(const int8_t* data, size_t len)
+        void Connection::Send(const int8_t* data, size_t len)
         {
             if (!connected)
-                return false;
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
 
             OdbcProtocolHeader hdr;
 
@@ -177,14 +177,12 @@ namespace ignite
             size_t sent = SendAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
 
             if (sent != sizeof(hdr))
-                return false;
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message header");
 
             sent = SendAll(data, len);
 
             if (sent != len)
-                return false;
-
-            return true;
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message body");
         }
 
         size_t Connection::SendAll(const int8_t* data, size_t len)
@@ -206,10 +204,10 @@ namespace ignite
             return sent;
         }
 
-        bool Connection::Receive(std::vector<int8_t>& msg)
+        void Connection::Receive(std::vector<int8_t>& msg)
         {
             if (!connected)
-                return false;
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
 
             msg.clear();
 
@@ -218,13 +216,13 @@ namespace ignite
             size_t received = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
 
             if (received != sizeof(hdr))
-                return false;
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message header");
 
             if (hdr.len < 0)
-                return false;
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Message lenght is negative");
 
             if (hdr.len == 0)
-                return true;
+                return;
 
             msg.resize(hdr.len);
 
@@ -234,10 +232,8 @@ namespace ignite
             {
                 msg.resize(received);
 
-                return false;
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message body");
             }
-
-            return true;
         }
 
         size_t Connection::ReceiveAll(void* dst, size_t len)

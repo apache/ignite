@@ -97,17 +97,15 @@ namespace ignite
              *
              * @param data Data buffer.
              * @param len Data length.
-             * @return True on success.
              */
-            bool Send(const int8_t* data, size_t len);
+            void Send(const int8_t* data, size_t len);
 
             /**
              * Receive next message.
              *
              * @param msg Buffer for message.
-             * @return True on success.
              */
-            bool Receive(std::vector<int8_t>& msg);
+            void Receive(std::vector<int8_t>& msg);
 
             /**
              * Get name of the assotiated cache.
@@ -133,28 +131,19 @@ namespace ignite
              *
              * @param req Request message.
              * @param rsp Response message.
-             * @return True on success.
              */
             template<typename ReqT, typename RspT>
-            bool SyncMessage(const ReqT& req, RspT& rsp)
+            void SyncMessage(const ReqT& req, RspT& rsp)
             {
                 std::vector<int8_t> tempBuffer;
 
                 parser.Encode(req, tempBuffer);
 
-                bool requestSent = Send(tempBuffer.data(), tempBuffer.size());
+                Send(tempBuffer.data(), tempBuffer.size());
 
-                if (!requestSent)
-                    return false;
-
-                bool responseReceived = Receive(tempBuffer);
-
-                if (!responseReceived)
-                    return false;
+                Receive(tempBuffer);
 
                 parser.Decode(rsp, tempBuffer);
-
-                return true;
             }
 
             /**
