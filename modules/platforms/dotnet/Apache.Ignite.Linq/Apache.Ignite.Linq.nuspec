@@ -28,8 +28,8 @@ Creating NuGet package:
 
 <package >
     <metadata>
-        <id>Apache.Ignite.NET.LINQ</id>
-        <title>Apache Ignite.NET LINQ x64</title>
+        <id>Apache.Ignite.LINQ</id>
+        <title>Apache Ignite LINQ Provider</title>
         <!-- -->
         <version>$version$</version>
         <authors>Apache Ignite</authors>
@@ -39,20 +39,20 @@ Creating NuGet package:
         <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
-LINQ Provider for Apache Ignite.NET
+LINQ Provider for Apache Ignite
             
 More info: https://apacheignite-net.readme.io/
             
 WARNING: this only works with x64 build targets.
         </description>
         <summary>
-            LINQ Provider for Apache Ignite.NET
+            LINQ Provider for Apache Ignite
         </summary>
         <releaseNotes></releaseNotes>
         <copyright>Copyright 2015</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache linqpad-samples</tags>
         <dependencies>
-            <dependency id="Apache.Ignite.NET" version="[$version$]" />
+            <dependency id="Apache.Ignite" version="[$version$]" />
             <dependency id="Remotion.Linq" version="[2.0.1]" />
         </dependencies>    
     </metadata>
