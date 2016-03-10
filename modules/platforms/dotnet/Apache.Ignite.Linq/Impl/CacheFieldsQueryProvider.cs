@@ -19,19 +19,33 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Remotion.Linq;
+    using Remotion.Linq.Clauses.StreamedData;
     using Remotion.Linq.Parsing.Structure;
+    using Remotion.Linq.Utilities;
 
     /// <summary>
     /// Query provider for fields queries (projections).
     /// </summary>
-    internal class CacheFieldsQueryProvider : QueryProviderBase
+    internal class CacheFieldsQueryProvider : IQueryProvider
     {
+        /** */
+        private static readonly MethodInfo GenericCreateQueryMethod =
+            typeof (CacheFieldsQueryProvider).GetMethods().Single(m => m.Name == "CreateQuery" && m.IsGenericMethod);
+
+        /** */
+        private readonly IQueryParser _parser;
+        
+        /** */
+        private readonly IQueryExecutor _executor;
+
         /** */
         private readonly IIgnite _ignite;
 
@@ -46,12 +60,15 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public CacheFieldsQueryProvider(IQueryParser queryParser, IQueryExecutor executor, IIgnite ignite, 
             CacheConfiguration cacheConfiguration, string tableName, Type cacheValueType) 
-            : base(queryParser, executor)
         {
+            Debug.Assert(queryParser != null);
+            Debug.Assert(executor != null);
             Debug.Assert(ignite != null);
             Debug.Assert(cacheConfiguration != null);
             Debug.Assert(cacheValueType != null);
 
+            _parser = queryParser;
+            _executor = executor;
             _ignite = ignite;
             _cacheConfiguration = cacheConfiguration;
 
@@ -89,10 +106,61 @@ namespace Apache.Ignite.Linq.Impl
             get { return _tableName; }
         }
 
+        /// <summary>
+        /// Gets the executor.
+        /// </summary>
+        public IQueryExecutor Executor
+        {
+            get { return _executor; }
+        }
+
+        /// <summary>
+        /// Generates the query model.
+        /// </summary>
+        public QueryModel GenerateQueryModel(Expression expression)
+        {
+            return _parser.GetParsedQuery(expression);
+        }
+
         /** <inheritdoc /> */
-        public override IQueryable<T> CreateQuery<T>(Expression expression)
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
+        public IQueryable CreateQuery(Expression expression)
+        {
+            Debug.Assert(expression != null);
+
+            var elementType = GetItemTypeOfClosedGenericIEnumerable(expression.Type, "expression");
+
+            // TODO: Compile delegate
+            return (IQueryable) GenericCreateQueryMethod.MakeGenericMethod(elementType)
+                .Invoke(this, new object[] {expression});
+        }
+
+        /** <inheritdoc /> */
+        public IQueryable<T> CreateQuery<T>(Expression expression)
         {
             return new CacheFieldsQueryable<T>(this, expression);
+        }
+
+        /** <inheritdoc /> */
+        object IQueryProvider.Execute(Expression expression)
+        {
+            return Execute(expression);
+        }
+
+        /** <inheritdoc /> */
+        public TResult Execute<TResult>(Expression expression)
+        {
+            return (TResult) Execute(expression).Value;
+        }
+
+        /// <summary>
+        /// Executes the specified expression.
+        /// </summary>
+        private IStreamedData Execute(Expression expression)
+        {
+            var model = GenerateQueryModel(expression);
+
+            return model.Execute(_executor);
         }
 
         /// <summary>
@@ -148,6 +216,24 @@ namespace Apache.Ignite.Linq.Impl
                                                    "please use AsCacheQueryable overload with tableName parameter. " +
                                                    "Valid table names: {1}", _cacheConfiguration.Name ?? "null",
                                                     validTableNames.Aggregate((x, y) => x + ", " + y)));
+        }
+
+        /// <summary>
+        /// Gets the item type of closed generic i enumerable.
+        /// </summary>
+        private static Type GetItemTypeOfClosedGenericIEnumerable(Type enumerableType, string argumentName)
+        {
+            Type itemType;
+
+            if (!ItemTypeReflectionUtility.TryGetItemTypeOfClosedGenericIEnumerable(enumerableType, out itemType))
+            {
+                var message = string.Format("Expected a closed generic type implementing IEnumerable<T>, " +
+                                            "but found '{0}'.", enumerableType);
+
+                throw new ArgumentException(message, argumentName);
+            }
+
+            return itemType;
         }
     }
 }
