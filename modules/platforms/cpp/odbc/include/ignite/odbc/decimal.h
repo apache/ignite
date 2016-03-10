@@ -22,7 +22,11 @@
 
 namespace ignite
 {
-    //TODO: move to binary or common library.
+    
+    /**
+     * Big decimal number implementation.
+     * @todo Move to binary or common library.
+     */
     class Decimal
     {
         friend void swap(Decimal& first, Decimal& second);

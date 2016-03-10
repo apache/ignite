@@ -152,7 +152,7 @@ namespace ignite
 
                             out->precision = 0;
                             out->scale = 0;
-                            out->sign = value > 0 ? 1 : 0;
+                            out->sign = value < 0 ? 2 : 1;
 
                             memset(out->val, 0, SQL_MAX_NUMERIC_LEN);
 
@@ -560,9 +560,12 @@ namespace ignite
                             SQL_NUMERIC_STRUCT* numeric =
                                 reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
 
-                            numeric->sign = value.IsNegative() ? 1 : 0;
+                            memset(numeric, 0, sizeof(*numeric));
+
+                            numeric->sign = value.IsNegative() ? 2 : 1;
                             numeric->precision = 0;
                             numeric->scale = value.GetScale();
+
                             memcpy(numeric->val, value.GetMagnitude(), std::min<size_t>(SQL_MAX_NUMERIC_LEN, value.GetLength()));
                         }
 
@@ -1036,7 +1039,7 @@ namespace ignite
                         // TODO: implement propper conversation from numeric type.
                         memcpy(&resInt, numeric->val, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(resInt)));
 
-                        if (numeric->sign)
+                        if (numeric->sign == 2)
                             resInt *= -1;
 
                         double resDouble = static_cast<double>(resInt);

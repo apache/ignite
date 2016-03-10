@@ -50,28 +50,28 @@ BOOST_AUTO_TEST_CASE(TestPutIntToString)
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
 
     appBuf.PutInt8(12);
-    BOOST_REQUIRE(!strcmp(buffer, "12"));
-    BOOST_REQUIRE(reslen == strlen("12"));
+    BOOST_CHECK(!strcmp(buffer, "12"));
+    BOOST_CHECK(reslen == strlen("12"));
 
     appBuf.PutInt8(-12);
-    BOOST_REQUIRE(!strcmp(buffer, "-12"));
-    BOOST_REQUIRE(reslen == strlen("-12"));
+    BOOST_CHECK(!strcmp(buffer, "-12"));
+    BOOST_CHECK(reslen == strlen("-12"));
 
     appBuf.PutInt16(9876);
-    BOOST_REQUIRE(!strcmp(buffer, "9876"));
-    BOOST_REQUIRE(reslen == strlen("9876"));
+    BOOST_CHECK(!strcmp(buffer, "9876"));
+    BOOST_CHECK(reslen == strlen("9876"));
 
     appBuf.PutInt16(-9876);
-    BOOST_REQUIRE(!strcmp(buffer, "-9876"));
-    BOOST_REQUIRE(reslen == strlen("-9876"));
+    BOOST_CHECK(!strcmp(buffer, "-9876"));
+    BOOST_CHECK(reslen == strlen("-9876"));
 
     appBuf.PutInt32(1234567);
-    BOOST_REQUIRE(!strcmp(buffer, "1234567"));
-    BOOST_REQUIRE(reslen == strlen("1234567"));
+    BOOST_CHECK(!strcmp(buffer, "1234567"));
+    BOOST_CHECK(reslen == strlen("1234567"));
 
     appBuf.PutInt32(-1234567);
-    BOOST_REQUIRE(!strcmp(buffer, "-1234567"));
-    BOOST_REQUIRE(reslen == strlen("-1234567"));
+    BOOST_CHECK(!strcmp(buffer, "-1234567"));
+    BOOST_CHECK(reslen == strlen("-1234567"));
 }
 
 BOOST_AUTO_TEST_CASE(TestPutFloatToString)
@@ -83,20 +83,20 @@ BOOST_AUTO_TEST_CASE(TestPutFloatToString)
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer), &reslen, &offset);
 
     appBuf.PutFloat(12.42f);
-    BOOST_REQUIRE(!strcmp(buffer, "12.42"));
-    BOOST_REQUIRE(reslen == strlen("12.42"));
+    BOOST_CHECK(!strcmp(buffer, "12.42"));
+    BOOST_CHECK(reslen == strlen("12.42"));
 
     appBuf.PutFloat(-12.42f);
-    BOOST_REQUIRE(!strcmp(buffer, "-12.42"));
-    BOOST_REQUIRE(reslen == strlen("-12.42"));
+    BOOST_CHECK(!strcmp(buffer, "-12.42"));
+    BOOST_CHECK(reslen == strlen("-12.42"));
 
     appBuf.PutDouble(1000.21);
-    BOOST_REQUIRE(!strcmp(buffer, "1000.21"));
-    BOOST_REQUIRE(reslen == strlen("1000.21"));
+    BOOST_CHECK(!strcmp(buffer, "1000.21"));
+    BOOST_CHECK(reslen == strlen("1000.21"));
 
     appBuf.PutDouble(-1000.21);
-    BOOST_REQUIRE(!strcmp(buffer, "-1000.21"));
-    BOOST_REQUIRE(reslen == strlen("-1000.21"));
+    BOOST_CHECK(!strcmp(buffer, "-1000.21"));
+    BOOST_CHECK(reslen == strlen("-1000.21"));
 }
 
 BOOST_AUTO_TEST_CASE(TestPutGuidToString)
@@ -111,8 +111,8 @@ BOOST_AUTO_TEST_CASE(TestPutGuidToString)
 
     appBuf.PutGuid(guid);
 
-    BOOST_REQUIRE(!strcmp(buffer, "1da1ef8f-39ff-4d62-8b72-e8e9f3371801"));
-    BOOST_REQUIRE(reslen == strlen("1da1ef8f-39ff-4d62-8b72-e8e9f3371801"));
+    BOOST_CHECK(!strcmp(buffer, "1da1ef8f-39ff-4d62-8b72-e8e9f3371801"));
+    BOOST_CHECK(reslen == strlen("1da1ef8f-39ff-4d62-8b72-e8e9f3371801"));
 }
 
 BOOST_AUTO_TEST_CASE(TestPutBinaryToString)
@@ -127,8 +127,8 @@ BOOST_AUTO_TEST_CASE(TestPutBinaryToString)
 
     appBuf.PutBinaryData(binary, sizeof(binary));
 
-    BOOST_REQUIRE(!strcmp(buffer, "2184f4dc0100fff0"));
-    BOOST_REQUIRE(reslen == strlen("2184f4dc0100fff0"));
+    BOOST_CHECK(!strcmp(buffer, "2184f4dc0100fff0"));
+    BOOST_CHECK(reslen == strlen("2184f4dc0100fff0"));
 }
 
 BOOST_AUTO_TEST_CASE(TestPutStringToString)
@@ -143,8 +143,8 @@ BOOST_AUTO_TEST_CASE(TestPutStringToString)
 
     appBuf.PutString(testString);
 
-    BOOST_REQUIRE(!strcmp(buffer, testString.c_str()));
-    BOOST_REQUIRE(reslen == testString.size());
+    BOOST_CHECK(!strcmp(buffer, testString.c_str()));
+    BOOST_CHECK(reslen == testString.size());
 }
 
 BOOST_AUTO_TEST_CASE(TestPutStringToWstring)
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(TestPutStringToWstring)
     std::string testString("Test string");
 
     appBuf.PutString(testString);
-    BOOST_REQUIRE(!wcscmp(buffer, L"Test string"));
+    BOOST_CHECK(!wcscmp(buffer, L"Test string"));
 }
 
 BOOST_AUTO_TEST_CASE(TestPutStringToLong)
@@ -170,10 +170,10 @@ BOOST_AUTO_TEST_CASE(TestPutStringToLong)
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen, &offset);
 
     appBuf.PutString("424242424");
-    BOOST_REQUIRE(numBuf == 424242424L);
+    BOOST_CHECK(numBuf == 424242424L);
 
     appBuf.PutString("-424242424");
-    BOOST_REQUIRE(numBuf == -424242424L);
+    BOOST_CHECK(numBuf == -424242424L);
 }
 
 BOOST_AUTO_TEST_CASE(TestPutStringToTiny)
@@ -185,10 +185,10 @@ BOOST_AUTO_TEST_CASE(TestPutStringToTiny)
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_TINYINT, &numBuf, sizeof(numBuf), &reslen, &offset);
 
     appBuf.PutString("12");
-    BOOST_REQUIRE(numBuf == 12);
+    BOOST_CHECK(numBuf == 12);
 
     appBuf.PutString("-12");
-    BOOST_REQUIRE(numBuf == -12);
+    BOOST_CHECK(numBuf == -12);
 }
 
 BOOST_AUTO_TEST_CASE(TestPutStringToFloat)
@@ -200,10 +200,10 @@ BOOST_AUTO_TEST_CASE(TestPutStringToFloat)
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen, &offset);
 
     appBuf.PutString("12.21");
-    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, 12.21, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(numBuf, 12.21, FLOAT_PRECISION);
 
     appBuf.PutString("-12.21");
-    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, -12.21, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(numBuf, -12.21, FLOAT_PRECISION);
 }
 
 BOOST_AUTO_TEST_CASE(TestPutIntToFloat)
@@ -215,22 +215,22 @@ BOOST_AUTO_TEST_CASE(TestPutIntToFloat)
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_FLOAT, &numBuf, sizeof(numBuf), &reslen, &offset);
 
     appBuf.PutInt8(5);
-    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, 5.0, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(numBuf, 5.0, FLOAT_PRECISION);
 
     appBuf.PutInt8(-5);
-    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, -5.0, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(numBuf, -5.0, FLOAT_PRECISION);
 
     appBuf.PutInt16(4242);
-    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, 4242.0, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(numBuf, 4242.0, FLOAT_PRECISION);
 
     appBuf.PutInt16(-4242);
-    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, -4242.0, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(numBuf, -4242.0, FLOAT_PRECISION);
 
     appBuf.PutInt32(1234567);
-    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, 1234567.0, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(numBuf, 1234567.0, FLOAT_PRECISION);
 
     appBuf.PutInt32(-1234567);
-    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, -1234567.0, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(numBuf, -1234567.0, FLOAT_PRECISION);
 }
 
 BOOST_AUTO_TEST_CASE(TestPutFloatToShort)
@@ -242,16 +242,16 @@ BOOST_AUTO_TEST_CASE(TestPutFloatToShort)
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_SHORT, &numBuf, sizeof(numBuf), &reslen, &offset);
 
     appBuf.PutDouble(5.42);
-    BOOST_REQUIRE(numBuf == 5);
+    BOOST_CHECK(numBuf == 5);
 
     appBuf.PutDouble(-5.42);
-    BOOST_REQUIRE(numBuf == -5.0);
+    BOOST_CHECK(numBuf == -5.0);
 
     appBuf.PutFloat(42.99f);
-    BOOST_REQUIRE(numBuf == 42);
+    BOOST_CHECK(numBuf == 42);
 
     appBuf.PutFloat(-42.99f);
-    BOOST_REQUIRE(numBuf == -42);
+    BOOST_CHECK(numBuf == -42);
 }
 
 BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
@@ -263,24 +263,24 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
 
     Decimal decimal;
 
-    BOOST_REQUIRE_CLOSE_FRACTION(static_cast<double>(decimal), 0.0, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(static_cast<double>(decimal), 0.0, FLOAT_PRECISION);
 
     appBuf.PutDecimal(decimal);
-    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, 0.0, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(numBuf, 0.0, FLOAT_PRECISION);
 
     int8_t mag1[] = { 1, 0 };
 
     decimal = Decimal(0, mag1, sizeof(mag1));
 
     appBuf.PutDecimal(decimal);
-    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, 256.0, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(numBuf, 256.0, FLOAT_PRECISION);
 
     int8_t mag2[] = { 2, 23 };
 
     decimal = Decimal(1 | 0x80000000, mag2, sizeof(mag2));
 
     appBuf.PutDecimal(decimal);
-    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, -53.5, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(numBuf, -53.5, FLOAT_PRECISION);
 }
 
 BOOST_AUTO_TEST_CASE(TestPutDecimalToLong)
@@ -293,21 +293,21 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToLong)
     Decimal decimal;
 
     appBuf.PutDecimal(decimal);
-    BOOST_REQUIRE(numBuf == 0);
+    BOOST_CHECK(numBuf == 0);
 
     int8_t mag1[] = { 1, 0 };
 
     decimal = Decimal(0, mag1, sizeof(mag1));
 
     appBuf.PutDecimal(decimal);
-    BOOST_REQUIRE(numBuf == 256);
+    BOOST_CHECK(numBuf == 256);
 
     int8_t mag2[] = { 2, 23 };
 
     decimal = Decimal(1 | 0x80000000, mag2, sizeof(mag2));
 
     appBuf.PutDecimal(decimal);
-    BOOST_REQUIRE(numBuf == -53);
+    BOOST_CHECK(numBuf == -53);
 }
 
 BOOST_AUTO_TEST_CASE(TestPutDecimalToString)
@@ -320,21 +320,56 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToString)
     Decimal decimal;
 
     appBuf.PutDecimal(decimal);
-    BOOST_REQUIRE(std::string(strBuf, reslen) == "0");
+    BOOST_CHECK(std::string(strBuf, reslen) == "0");
 
     int8_t mag1[] = { 1, 0 };
 
     decimal = Decimal(0, mag1, sizeof(mag1));
 
     appBuf.PutDecimal(decimal);
-    BOOST_REQUIRE(std::string(strBuf, reslen) == "256");
+    BOOST_CHECK(std::string(strBuf, reslen) == "256");
 
     int8_t mag2[] = { 2, 23 };
 
     decimal = Decimal(1 | 0x80000000, mag2, sizeof(mag2));
 
     appBuf.PutDecimal(decimal);
-    BOOST_REQUIRE(std::string(strBuf, reslen) == "-53.5");
+    BOOST_CHECK(std::string(strBuf, reslen) == "-53.5");
+}
+
+BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
+{
+    SQL_NUMERIC_STRUCT buf;
+    SqlLen reslen;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_NUMERIC, &buf, sizeof(buf), &reslen, 0);
+
+    Decimal decimal;
+
+    appBuf.PutDecimal(decimal);
+    BOOST_CHECK_EQUAL(1, buf.sign); // Positive
+    BOOST_CHECK_EQUAL(0, buf.scale);
+    BOOST_CHECK_EQUAL(0, buf.precision);
+
+    for (int i = 0; i < SQL_MAX_NUMERIC_LEN; ++i)
+        BOOST_CHECK_EQUAL(0, buf.val[i]);
+
+    // Trying to store 123.45 => 12345 => 0x3930 => [0x39, 0x30].
+    int16_t mag = 12345;
+    int8_t* mag_bytes = reinterpret_cast<int8_t*>(&mag);
+
+    decimal = Decimal(2, mag_bytes, sizeof(mag));
+
+    appBuf.PutDecimal(decimal);
+    BOOST_CHECK_EQUAL(1, buf.sign); // Positive
+    BOOST_CHECK_EQUAL(2, buf.scale);
+    BOOST_CHECK_EQUAL(5, buf.precision);
+
+    BOOST_CHECK_EQUAL(mag_bytes[0], 0x39);
+    BOOST_CHECK_EQUAL(mag_bytes[1], 0x30);
+
+    for (int i = 2; i < SQL_MAX_NUMERIC_LEN; ++i)
+        BOOST_CHECK_EQUAL(0, buf.val[i]);
 }
 
 BOOST_AUTO_TEST_CASE(TestPutDateToString)
@@ -460,13 +495,13 @@ BOOST_AUTO_TEST_CASE(TestGetStringFromLong)
 
     std::string res = appBuf.GetString(32);
 
-    BOOST_REQUIRE(res == "42");
+    BOOST_CHECK(res == "42");
 
     numBuf = -77;
 
     res = appBuf.GetString(32);
 
-    BOOST_REQUIRE(res == "-77");
+    BOOST_CHECK(res == "-77");
 }
 
 BOOST_AUTO_TEST_CASE(TestGetStringFromDouble)
@@ -479,13 +514,13 @@ BOOST_AUTO_TEST_CASE(TestGetStringFromDouble)
 
     std::string res = appBuf.GetString(32);
 
-    BOOST_REQUIRE(res == "43.36");
+    BOOST_CHECK(res == "43.36");
 
     numBuf = -58.91;
 
     res = appBuf.GetString(32);
 
-    BOOST_REQUIRE(res == "-58.91");
+    BOOST_CHECK(res == "-58.91");
 }
 
 BOOST_AUTO_TEST_CASE(TestGetStringFromString)
@@ -498,7 +533,7 @@ BOOST_AUTO_TEST_CASE(TestGetStringFromString)
 
     std::string res = appBuf.GetString(reslen);
 
-    BOOST_REQUIRE(res.compare(buf));
+    BOOST_CHECK(res.compare(buf));
 }
 
 BOOST_AUTO_TEST_CASE(TestGetFloatFromUshort)
@@ -511,11 +546,11 @@ BOOST_AUTO_TEST_CASE(TestGetFloatFromUshort)
 
     float resFloat = appBuf.GetFloat();
 
-    BOOST_REQUIRE_CLOSE_FRACTION(resFloat, 7162.0f, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(resFloat, 7162.0f, FLOAT_PRECISION);
 
     double resDouble = appBuf.GetDouble();
 
-    BOOST_REQUIRE_CLOSE_FRACTION(resDouble, 7162.0, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(resDouble, 7162.0, FLOAT_PRECISION);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetFloatFromString)
@@ -528,11 +563,11 @@ BOOST_AUTO_TEST_CASE(TestGetFloatFromString)
 
     float resFloat = appBuf.GetFloat();
 
-    BOOST_REQUIRE_CLOSE_FRACTION(resFloat, 28.562f, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(resFloat, 28.562f, FLOAT_PRECISION);
 
     double resDouble = appBuf.GetDouble();
 
-    BOOST_REQUIRE_CLOSE_FRACTION(resDouble, 28.562, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(resDouble, 28.562, FLOAT_PRECISION);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetFloatFromFloat)
@@ -545,11 +580,11 @@ BOOST_AUTO_TEST_CASE(TestGetFloatFromFloat)
 
     float resFloat = appBuf.GetFloat();
 
-    BOOST_REQUIRE_CLOSE_FRACTION(resFloat, 207.49f, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(resFloat, 207.49f, FLOAT_PRECISION);
 
     double resDouble = appBuf.GetDouble();
 
-    BOOST_REQUIRE_CLOSE_FRACTION(resDouble, 207.49, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(resDouble, 207.49, FLOAT_PRECISION);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetFloatFromDouble)
@@ -562,11 +597,11 @@ BOOST_AUTO_TEST_CASE(TestGetFloatFromDouble)
 
     float resFloat = appBuf.GetFloat();
 
-    BOOST_REQUIRE_CLOSE_FRACTION(resFloat, 893.162f, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(resFloat, 893.162f, FLOAT_PRECISION);
 
     double resDouble = appBuf.GetDouble();
 
-    BOOST_REQUIRE_CLOSE_FRACTION(resDouble, 893.162, FLOAT_PRECISION);
+    BOOST_CHECK_CLOSE_FRACTION(resDouble, 893.162, FLOAT_PRECISION);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetIntFromString)
@@ -579,19 +614,19 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromString)
 
     int64_t resInt64 = appBuf.GetInt64();
 
-    BOOST_REQUIRE(resInt64 == 39);
+    BOOST_CHECK(resInt64 == 39);
 
     int32_t resInt32 = appBuf.GetInt32();
 
-    BOOST_REQUIRE(resInt32 == 39);
+    BOOST_CHECK(resInt32 == 39);
 
     int16_t resInt16 = appBuf.GetInt16();
 
-    BOOST_REQUIRE(resInt16 == 39);
+    BOOST_CHECK(resInt16 == 39);
 
     int8_t resInt8 = appBuf.GetInt8();
 
-    BOOST_REQUIRE(resInt8 == 39);
+    BOOST_CHECK(resInt8 == 39);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetIntFromFloat)
@@ -604,19 +639,19 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromFloat)
 
     int64_t resInt64 = appBuf.GetInt64();
 
-    BOOST_REQUIRE(resInt64 == -107);
+    BOOST_CHECK(resInt64 == -107);
 
     int32_t resInt32 = appBuf.GetInt32();
 
-    BOOST_REQUIRE(resInt32 == -107);
+    BOOST_CHECK(resInt32 == -107);
 
     int16_t resInt16 = appBuf.GetInt16();
 
-    BOOST_REQUIRE(resInt16 == -107);
+    BOOST_CHECK(resInt16 == -107);
 
     int8_t resInt8 = appBuf.GetInt8();
 
-    BOOST_REQUIRE(resInt8 == -107);
+    BOOST_CHECK(resInt8 == -107);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetIntFromDouble)
@@ -629,19 +664,19 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromDouble)
 
     int64_t resInt64 = appBuf.GetInt64();
 
-    BOOST_REQUIRE(resInt64 == 42);
+    BOOST_CHECK(resInt64 == 42);
 
     int32_t resInt32 = appBuf.GetInt32();
 
-    BOOST_REQUIRE(resInt32 == 42);
+    BOOST_CHECK(resInt32 == 42);
 
     int16_t resInt16 = appBuf.GetInt16();
 
-    BOOST_REQUIRE(resInt16 == 42);
+    BOOST_CHECK(resInt16 == 42);
 
     int8_t resInt8 = appBuf.GetInt8();
 
-    BOOST_REQUIRE(resInt8 == 42);
+    BOOST_CHECK(resInt8 == 42);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetIntFromBigint)
@@ -654,19 +689,19 @@ BOOST_AUTO_TEST_CASE(TestGetIntFromBigint)
 
     int64_t resInt64 = appBuf.GetInt64();
 
-    BOOST_REQUIRE(resInt64 == 19);
+    BOOST_CHECK(resInt64 == 19);
 
     int32_t resInt32 = appBuf.GetInt32();
 
-    BOOST_REQUIRE(resInt32 == 19);
+    BOOST_CHECK(resInt32 == 19);
 
     int16_t resInt16 = appBuf.GetInt16();
 
-    BOOST_REQUIRE(resInt16 == 19);
+    BOOST_CHECK(resInt16 == 19);
 
     int8_t resInt8 = appBuf.GetInt8();
 
-    BOOST_REQUIRE(resInt8 == 19);
+    BOOST_CHECK(resInt8 == 19);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetIntWithOffset)
@@ -689,19 +724,19 @@ BOOST_AUTO_TEST_CASE(TestGetIntWithOffset)
 
     int64_t val = appBuf.GetInt64();
 
-    BOOST_REQUIRE(val == 12);
+    BOOST_CHECK(val == 12);
 
     offset += sizeof(TestStruct);
 
     val = appBuf.GetInt64();
 
-    BOOST_REQUIRE(val == 42);
+    BOOST_CHECK(val == 42);
 
     offsetPtr = 0;
 
     val = appBuf.GetInt64();
 
-    BOOST_REQUIRE(val == 12);
+    BOOST_CHECK(val == 12);
 }
 
 BOOST_AUTO_TEST_CASE(TestSetStringWithOffset)
@@ -726,9 +761,9 @@ BOOST_AUTO_TEST_CASE(TestSetStringWithOffset)
 
     std::string res(buf[0].val, buf[0].reslen);
 
-    BOOST_REQUIRE(buf[0].reslen == strlen("Hello Ignite!"));
-    BOOST_REQUIRE(res == "Hello Ignite!");
-    BOOST_REQUIRE(res.size() == strlen("Hello Ignite!"));
+    BOOST_CHECK(buf[0].reslen == strlen("Hello Ignite!"));
+    BOOST_CHECK(res == "Hello Ignite!");
+    BOOST_CHECK(res.size() == strlen("Hello Ignite!"));
 
     offset += sizeof(TestStruct);
 
@@ -736,15 +771,15 @@ BOOST_AUTO_TEST_CASE(TestSetStringWithOffset)
 
     res.assign(buf[0].val, buf[0].reslen);
 
-    BOOST_REQUIRE(res == "Hello Ignite!");
-    BOOST_REQUIRE(res.size() == strlen("Hello Ignite!"));
-    BOOST_REQUIRE(buf[0].reslen == strlen("Hello Ignite!"));
+    BOOST_CHECK(res == "Hello Ignite!");
+    BOOST_CHECK(res.size() == strlen("Hello Ignite!"));
+    BOOST_CHECK(buf[0].reslen == strlen("Hello Ignite!"));
 
     res.assign(buf[1].val, buf[1].reslen);
 
-    BOOST_REQUIRE(res == "Hello with offset!");
-    BOOST_REQUIRE(res.size() == strlen("Hello with offset!"));
-    BOOST_REQUIRE(buf[1].reslen == strlen("Hello with offset!"));
+    BOOST_CHECK(res == "Hello with offset!");
+    BOOST_CHECK(res.size() == strlen("Hello with offset!"));
+    BOOST_CHECK(buf[1].reslen == strlen("Hello with offset!"));
 }
 
 BOOST_AUTO_TEST_CASE(TestGetDateFromString)
