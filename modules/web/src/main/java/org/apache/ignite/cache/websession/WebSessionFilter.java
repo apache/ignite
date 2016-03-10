@@ -379,6 +379,7 @@ public class WebSessionFilter implements Filter {
         cached.servletContext(ctx);
         cached.listener(lsnr);
         cached.resetUpdates();
+        cached.genSes(httpReq.getSession(false));
 
         httpReq = new RequestWrapper(httpReq, cached);
 
@@ -399,8 +400,10 @@ public class WebSessionFilter implements Filter {
     }
 
     /**
-     * @param httpReq HTTP request.
-     * @return Cached session.
+     * Creates a new session from http request.
+     *
+     * @param httpReq Request.
+     * @return New session.
      */
     @SuppressWarnings("unchecked")
     private WebSession createSession(HttpServletRequest httpReq) {
@@ -408,10 +411,24 @@ public class WebSessionFilter implements Filter {
 
         String sesId = sesIdTransformer != null ? sesIdTransformer.apply(ses.getId()) : ses.getId();
 
+        return createSession(ses, sesId);
+    }
+
+    /**
+     * Creates a new web session with the specified id.
+     *
+     * @param ses Base session.
+     * @param sesId Session id.
+     * @return New session.
+     */
+    @SuppressWarnings("unchecked")
+    private WebSession createSession(HttpSession ses, String sesId) {
+        WebSession cached = new WebSession(sesId, ses, true);
+
+        cached.genSes(ses);
+
         if (log.isDebugEnabled())
             log.debug("Session created: " + sesId);
-
-        WebSession cached = new WebSession(sesId, ses, true);
 
         for (int i = 0; i < retries; i++) {
             try {
@@ -516,6 +533,22 @@ public class WebSessionFilter implements Filter {
         /** {@inheritDoc} */
         @Override public HttpSession getSession() {
             return getSession(true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String changeSessionId() {
+            HttpServletRequest req = (HttpServletRequest)getRequest();
+
+            String newId = req.changeSessionId();
+
+            this.ses.setId(newId);
+
+            this.ses = createSession(ses, newId);
+            this.ses.servletContext(ctx);
+            this.ses.listener(lsnr);
+            this.ses.resetUpdates();
+
+            return newId;
         }
     }
 }
