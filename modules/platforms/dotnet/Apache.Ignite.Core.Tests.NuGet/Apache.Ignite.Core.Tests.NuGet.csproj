@@ -85,7 +85,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.NuGet.sln.DotSettings" />
-    <None Include="install-package.cmd" />
     <None Include="install-package.ps1" />
     <None Include="NuGet.config">
       <SubType>Designer</SubType>
