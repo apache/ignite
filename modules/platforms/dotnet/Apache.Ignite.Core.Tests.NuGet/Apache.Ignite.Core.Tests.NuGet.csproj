@@ -60,6 +60,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>pkg\Apache.Ignite.Linq\lib\net40\Apache.Ignite.Linq.dll</HintPath>
     </Reference>
+    <Reference Include="Remotion.Linq">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>pkg\Remotion.Linq.2.0.1\lib\net40\Remotion.Linq.dll</HintPath>
+    </Reference>
     <Reference Include="nunit-console-runner">
       <HintPath>..\libs\nunit-console-runner.dll</HintPath>
     </Reference>
