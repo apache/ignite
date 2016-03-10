@@ -1944,7 +1944,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             Object computed = entryProcessor.process(entry, invokeArgs);
 
                             if (entry.modified()) {
-                                writeObj0 = keepBinary ? entry.getValue() : cctx.unwrapTemporary(entry.getValue());
+                                writeObj0 = cctx.unwrapTemporary(entry.getValue());
                                 writeObj = cctx.toCacheObject(writeObj0);
                             }
                             else {
