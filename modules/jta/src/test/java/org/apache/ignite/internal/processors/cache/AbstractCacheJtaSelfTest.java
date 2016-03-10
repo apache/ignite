@@ -33,7 +33,7 @@ import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 /**
  * Abstract class for cache tests.
  */
-public abstract class AbstarctCacheJtaSelfTest extends GridCacheAbstractSelfTest {
+public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int GRID_CNT = 1;
 

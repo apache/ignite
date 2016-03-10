@@ -15,27 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.cache.hibernate;
 
-import javax.cache.configuration.Factory;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
-import org.objectweb.transaction.jta.TransactionManager;
+import javax.transaction.Synchronization;
 
 /**
- * Factory JTA integration test using PARTITIONED cache.
+ * Tests Hibernate L2 cache with TRANSACTIONAL access mode and {@link Synchronization}
+ * instead of XA resource.
  */
-public class GridPartitionedCacheJtaFactorySelfTest extends AbstractCacheJtaSelfTest {
+public class HibernateL2CacheTransactionalUseSyncSelfTest extends HibernateL2CacheTransactionalSelfTest {
     /** {@inheritDoc} */
-    @Override protected void configureJta(IgniteConfiguration cfg) {
-        TransactionConfiguration txCfg = cfg.getTransactionConfiguration();
-
-        txCfg.setTxManagerFactory(new Factory<TransactionManager>() {
-            private static final long serialVersionUID = 0L;
-
-            @Override public TransactionManager create() {
-                return jotm.getTransactionManager();
-            }
-        });
+    @Override protected boolean useJtaSynchronization() {
+        return true;
     }
 }
