@@ -237,6 +237,9 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
         }
     }
 
+    /**
+     * Test Binarylizable IgniteClosure with ComputeJobMasterLeaveAware interface.
+     */
     private static class TestBinarylizableMasterLeaveAwareClosure extends TestBinarylizableClosure
         implements ComputeJobMasterLeaveAware {
 
@@ -263,6 +266,9 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
         }
     }
 
+    /**
+     * Test Binarylizable object.
+     */
     private static class TestBinarylizableObject implements Binarylizable {
 
         /** Tracks {@link TestBinarylizableObject::writeBinary(BinaryWriter writer)} calls. */
@@ -282,6 +288,9 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
         }
     }
 
+    /**
+     * Test Binarylizable Callable.
+     */
     private static class TestBinarylizableCallable implements IgniteCallable, Binarylizable {
 
         /** Tracks {@link TestBinarylizableCallable::writeBinary(BinaryWriter writer)} calls. */
@@ -310,6 +319,9 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
         }
     }
 
+    /**
+     * Test Binarylizable Callable with ComputeJobMasterLeaveAware interface.
+     */
     private static class TestBinarylizableMasterLeaveAwareCallable extends TestBinarylizableCallable
         implements ComputeJobMasterLeaveAware {
 
@@ -336,6 +348,9 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
         }
     }
 
+    /**
+     * Test Binarylizable Runnable.
+     */
     private static class TestBinarylizableRunnable implements IgniteRunnable, Binarylizable {
 
         /** Tracks {@link TestBinarylizableRunnable::writeBinary(BinaryWriter writer)} calls. */
@@ -363,6 +378,9 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
         }
     }
 
+    /**
+     * Test Binarylizable Runnable with ComputeJobMasterLeaveAware interface.
+     */
     private static class TestBinarylizableMasterLeaveAwareRunnable extends TestBinarylizableRunnable
         implements ComputeJobMasterLeaveAware {
 
