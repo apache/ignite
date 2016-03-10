@@ -166,7 +166,7 @@ public class WebSessionFilter implements Filter {
     /** Web sessions caching cache name parameter name. */
     public static final String WEB_SES_CACHE_NAME_PARAM = "IgniteWebSessionsCacheName";
 
-    /** Web sessions caching retry on fail parameter name (valid for ATOMIC */
+    /** Web sessions caching retry on fail parameter name (valid for ATOMIC cache only). */
     public static final String WEB_SES_MAX_RETRIES_ON_FAIL_NAME_PARAM = "IgniteWebSessionsMaximumRetriesOnFail";
 
     /** Default retry on fail flag value. */
@@ -338,6 +338,9 @@ public class WebSessionFilter implements Filter {
         String sesId = httpReq.getRequestedSessionId();
 
         if (sesId != null) {
+            if (sesIdTransformer != null)
+                sesId = sesIdTransformer.apply(sesId);
+
             cached = cache.get(sesId);
 
             if (cached != null) {
@@ -345,7 +348,7 @@ public class WebSessionFilter implements Filter {
                     log.debug("Using cached session for ID: " + sesId);
 
                 if (cached.isNew())
-                    cached = new WebSession(cached, false);
+                    cached = new WebSession(cached.getId(), cached, false);
             }
             else {
                 if (log.isDebugEnabled())
@@ -386,8 +389,10 @@ public class WebSessionFilter implements Filter {
         if (ses != null && ses instanceof WebSession) {
             Collection<T2<String, Object>> updates = ((WebSession)ses).updates();
 
-            if (updates != null)
-                lsnr.updateAttributes(ses.getId(), updates, ses.getMaxInactiveInterval());
+            if (updates != null) {
+                lsnr.updateAttributes(sesIdTransformer != null ? sesIdTransformer.apply(ses.getId()) : ses.getId(),
+                    updates, ses.getMaxInactiveInterval());
+            }
         }
 
         return sesId;
@@ -406,7 +411,7 @@ public class WebSessionFilter implements Filter {
         if (log.isDebugEnabled())
             log.debug("Session created: " + sesId);
 
-        WebSession cached = new WebSession(ses, true);
+        WebSession cached = new WebSession(sesId, ses, true);
 
         for (int i = 0; i < retries; i++) {
             try {
@@ -428,7 +433,7 @@ public class WebSessionFilter implements Filter {
                     cached = old;
 
                     if (cached.isNew())
-                        cached = new WebSession(cached, false);
+                        cached = new WebSession(cached.getId(), cached, false);
                 }
 
                 break;

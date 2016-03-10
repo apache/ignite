@@ -49,24 +49,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 CacheConfiguration = new List<CacheConfiguration>
                 {
                     new CacheConfiguration(),
                     GetCustomCacheConfiguration()
                 },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
                 GridName = CacheName,
-                BinaryConfiguration = new BinaryConfiguration(typeof(Entity)),
-                DiscoverySpi = new TcpDiscoverySpi
-                {
-                    IpFinder = new TcpDiscoveryStaticIpFinder
-                    {
-                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
-                    }
-                }
+                BinaryConfiguration = new BinaryConfiguration(typeof (Entity))
             };
 
             _ignite = Ignition.Start(cfg);

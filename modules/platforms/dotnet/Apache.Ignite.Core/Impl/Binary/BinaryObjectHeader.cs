@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Runtime.InteropServices;
@@ -183,7 +182,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public int SchemaFieldSize
         {
-            get { return SchemaFieldOffsetSize + 4; }
+            get { return IsCompactFooter ? SchemaFieldOffsetSize : SchemaFieldOffsetSize + 4; }
         }
 
         /// <summary>
@@ -197,6 +196,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return 0;
 
                 var schemaSize = Length - SchemaOffset;
+
+                if (HasRaw)
+                    schemaSize -= 4;
 
                 return schemaSize / SchemaFieldSize;
             }
@@ -218,164 +220,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             stream.Seek(position + Length - 4, SeekOrigin.Begin);
 
             return stream.ReadInt();
-        }
-
-        /// <summary>
-        /// Reads the schema as dictionary according to this header data.
-        /// </summary>
-        /// <param name="stream">The stream.</param>
-        /// <param name="position">The position.</param>
-        /// <returns>Schema.</returns>
-        public Dictionary<int, int> ReadSchemaAsDictionary(IBinaryStream stream, int position)
-        {
-            Debug.Assert(stream != null);
-
-            ThrowIfUnsupported();
-
-            var schemaSize = SchemaFieldCount;
-
-            if (schemaSize == 0)
-                return null;
-
-            stream.Seek(position + SchemaOffset, SeekOrigin.Begin);
-
-            var schema = new Dictionary<int, int>(schemaSize);
-
-            var offsetSize = SchemaFieldOffsetSize;
-
-            if (offsetSize == 1)
-            {
-                for (var i = 0; i < schemaSize; i++)
-                    schema.Add(stream.ReadInt(), stream.ReadByte());
-            }
-            else if (offsetSize == 2)
-            {
-                for (var i = 0; i < schemaSize; i++)
-                    schema.Add(stream.ReadInt(), stream.ReadShort());
-            }
-            else
-            {
-                for (var i = 0; i < schemaSize; i++)
-                    schema.Add(stream.ReadInt(), stream.ReadInt());
-            }
-
-            return schema;
-        }
-
-        /// <summary>
-        /// Reads the schema according to this header data.
-        /// </summary>
-        /// <param name="stream">The stream.</param>
-        /// <param name="position">The position.</param>
-        /// <returns>Schema.</returns>
-        public BinaryObjectSchemaField[] ReadSchema(IBinaryStream stream, int position)
-        {
-            Debug.Assert(stream != null);
-
-            ThrowIfUnsupported();
-
-            var schemaSize = SchemaFieldCount;
-
-            if (schemaSize == 0)
-                return null;
-
-            stream.Seek(position + SchemaOffset, SeekOrigin.Begin);
-
-            var schema = new BinaryObjectSchemaField[schemaSize];
-
-            var offsetSize = SchemaFieldOffsetSize;
-
-            if (offsetSize == 1)
-            {
-                for (var i = 0; i < schemaSize; i++)
-                    schema[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadByte());
-            }
-            else if (offsetSize == 2)
-            {
-                for (var i = 0; i < schemaSize; i++)
-                    schema[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadShort());
-            }
-            else
-            {
-                for (var i = 0; i < schemaSize; i++)
-                    schema[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadInt());
-            }
-
-            return schema;
-        }
-
-        /// <summary>
-        /// Writes an array of fields to a stream.
-        /// </summary>
-        /// <param name="fields">Fields.</param>
-        /// <param name="stream">Stream.</param>
-        /// <param name="offset">Offset in the array.</param>
-        /// <param name="count">Field count to write.</param>
-        /// <returns>
-        /// Flags according to offset sizes: <see cref="Flag.OffsetOneByte" />,
-        /// <see cref="Flag.OffsetTwoBytes" />, or 0.
-        /// </returns>
-        public static unsafe Flag WriteSchema(BinaryObjectSchemaField[] fields, IBinaryStream stream, int offset,
-            int count)
-        {
-            Debug.Assert(fields != null);
-            Debug.Assert(stream != null);
-            Debug.Assert(count > 0);
-            Debug.Assert(offset >= 0);
-            Debug.Assert(offset < fields.Length);
-
-            unchecked
-            {
-                // Last field is the farthest in the stream
-                var maxFieldOffset = fields[offset + count - 1].Offset;
-
-                if (maxFieldOffset <= byte.MaxValue)
-                {
-                    for (int i = offset; i < count + offset; i++)
-                    {
-                        var field = fields[i];
-
-                        stream.WriteInt(field.Id);
-                        stream.WriteByte((byte)field.Offset);
-                    }
-
-                    return Flag.OffsetOneByte;
-                }
-
-                if (maxFieldOffset <= ushort.MaxValue)
-                {
-                    for (int i = offset; i < count + offset; i++)
-                    {
-                        var field = fields[i];
-
-                        stream.WriteInt(field.Id);
-
-                        stream.WriteShort((short)field.Offset);
-                    }
-
-                    return Flag.OffsetTwoBytes;
-                }
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    fixed (BinaryObjectSchemaField* ptr = &fields[offset])
-                    {
-                        stream.Write((byte*)ptr, count / BinaryObjectSchemaField.Size);
-                    }
-                }
-                else
-                {
-                    for (int i = offset; i < count + offset; i++)
-                    {
-                        var field = fields[i];
-
-                        stream.WriteInt(field.Id);
-                        stream.WriteInt(field.Offset);
-                    }
-                }
-
-                return Flag.None;
-            }
         }
 
         /// <summary>
@@ -423,8 +267,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             else
                 hdr = new BinaryObjectHeader(stream);
-
-            hdr.ThrowIfUnsupported();
 
             // Only one of the flags can be set
             var f = hdr.Flags;
@@ -481,16 +323,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static bool operator !=(BinaryObjectHeader left, BinaryObjectHeader right)
         {
             return !left.Equals(right);
-        }
-
-        /// <summary>
-        /// Throws an exception if current header represents unsupported mode.
-        /// </summary>
-        private void ThrowIfUnsupported()
-        {
-            // Compact schema is not supported
-            if (IsCompactFooter)
-                throw new NotSupportedException("Compact binary object footer is not supported in Ignite.NET.");
         }
     }
 }
