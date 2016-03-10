@@ -1267,32 +1267,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         return key.value(cctx.cacheObjectContext(), cpy);
     }
 
-    /**
-     * Deserialize entity if need (if {@code keepBinary} is {@code false}).
-     *
-     * @param obj Cache object.
-     * @param cpy Copy flag.
-     * @param keepBinary Keep binary flag.
-     * @return value.
-     */
-    protected Object unwrapBinaryValue(final CacheObject obj, final boolean cpy, final boolean keepBinary) {
-        if (!keepBinary)
-            return CU.value(obj, cctx, cpy);
-
-        return obj;
-    }
-
-    /**
-     * Deserialize key if need (if {@code keepBinary} is {@code false}).
-     *
-     * @param cpy Copy flag.
-     * @param keepBinary Keep binary flag.
-     * @return key.
-     */
-    protected Object keyValue(boolean cpy, final boolean keepBinary) {
-        return keepBinary ? key : key.value(cctx.cacheObjectContext(), cpy);
-    }
-
     /** {@inheritDoc} */
     @Override public final GridCacheUpdateTxResult innerRemove(
         @Nullable IgniteInternalTx tx,
@@ -1949,7 +1923,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             }
                             else {
                                 writeObj = oldVal;
-                                writeObj0 = unwrapBinaryValue(oldVal, false, keepBinary);
+                                writeObj0 = cctx.unwrapBinaryIfNeeded(oldVal, keepBinary, false);
                             }
 
                             key0 = entry.key();
@@ -1961,11 +1935,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             invokeRes = new IgniteBiTuple(null, e);
 
                             writeObj = oldVal;
-                            writeObj0 = unwrapBinaryValue(oldVal, false, keepBinary);
+                            writeObj0 = cctx.unwrapBinaryIfNeeded(oldVal, keepBinary, false);
                         }
                     }
                     else
-                        writeObj0 = unwrapBinaryValue((CacheObject)writeObj, false, keepBinary);
+                        writeObj0 = cctx.unwrapBinaryIfNeeded(writeObj, keepBinary, false);
 
                     GridTuple3<Long, Long, Boolean> expiration = ttlAndExpireTime(expiryPlc,
                         explicitTtl,
@@ -3384,8 +3358,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         CacheObject val = isNew ? unswap(true) : rawGetOrUnmarshalUnlocked(false);
 
-        return new GridCachePlainVersionedEntry<>(keyValue(true, keepBinary),
-            unwrapBinaryValue(val, true, keepBinary),
+        return new GridCachePlainVersionedEntry<>(cctx.unwrapBinaryIfNeeded(key, keepBinary, true),
+            cctx.unwrapBinaryIfNeeded(val, keepBinary, true),
             ttlExtras(),
             expireTimeExtras(),
             ver.conflictVersion(),
