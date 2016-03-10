@@ -323,6 +323,8 @@ public class HadoopJobTracker extends HadoopComponent {
             meta.pendingSplits(allSplits(mrPlan));
             meta.pendingReducers(allReducers(mrPlan));
 
+            printPlan(job.id(), mrPlan);
+
             GridFutureAdapter<HadoopJobId> completeFut = new GridFutureAdapter<>();
 
             GridFutureAdapter<HadoopJobId> old = activeFinishFuts.put(jobId, completeFut);
