@@ -130,6 +130,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var elementType = GetItemTypeOfClosedGenericIEnumerable(expression.Type, "expression");
 
+            // Slow, but this method is never called during normal LINQ usage with generics
             return (IQueryable) GenericCreateQueryMethod.MakeGenericMethod(elementType)
                 .Invoke(this, new object[] {expression});
         }
