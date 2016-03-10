@@ -77,14 +77,17 @@ public class OdbcRequestHandler {
 
         try {
             switch (req.command()) {
+                case HANDSHAKE:
+                    return performHandshake();
+
                 case EXECUTE_SQL_QUERY:
-                    return executeQuery((OdbcQueryExecuteRequest)req);
+                    return executeQuery((OdbcQueryExecuteRequest) req);
 
                 case FETCH_SQL_QUERY:
-                    return fetchQuery((OdbcQueryFetchRequest)req);
+                    return fetchQuery((OdbcQueryFetchRequest) req);
 
                 case CLOSE_SQL_QUERY:
-                    return closeQuery((OdbcQueryCloseRequest)req);
+                    return closeQuery((OdbcQueryCloseRequest) req);
 
                 case GET_COLUMNS_META:
                     return getColumnsMeta((OdbcQueryGetColumnsMetaRequest) req);
@@ -98,6 +101,15 @@ public class OdbcRequestHandler {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * {@link OdbcHandshakeRequest} command handler.
+     *
+     * @return Response.
+     */
+    private OdbcResponse performHandshake() {
+        return new OdbcResponse(null);
     }
 
     /**

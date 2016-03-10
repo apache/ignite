@@ -182,7 +182,13 @@ public class OdbcMessageParser {
 
         Object res0 = msg.response();
 
-        if (res0 instanceof OdbcQueryExecuteResult) {
+        if (res0 instanceof OdbcHandshakeRequest) {
+            if (log.isDebugEnabled())
+                log.debug("Responding to handshake");
+
+            // Write nothing. Just send response with success status.
+        }
+        else if (res0 instanceof OdbcQueryExecuteResult) {
             OdbcQueryExecuteResult res = (OdbcQueryExecuteResult) res0;
 
             if (log.isDebugEnabled())
