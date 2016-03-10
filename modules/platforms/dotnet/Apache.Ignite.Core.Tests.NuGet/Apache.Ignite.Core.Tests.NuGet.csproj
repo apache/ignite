@@ -54,7 +54,11 @@
   <ItemGroup>
     <Reference Include="Apache.Ignite.Core">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>pkg\lib\net40\Apache.Ignite.Core.dll</HintPath>
+      <HintPath>pkg\Apache.Ignite\lib\net40\Apache.Ignite.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Apache.Ignite.Linq">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>pkg\Apache.Ignite.Linq\lib\net40\Apache.Ignite.Linq.dll</HintPath>
     </Reference>
     <Reference Include="nunit-console-runner">
       <HintPath>..\libs\nunit-console-runner.dll</HintPath>
@@ -82,16 +86,19 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.NuGet.sln.DotSettings" />
     <None Include="install-package.cmd" />
-    <None Include="NuGet.config" />
+    <None Include="install-package.ps1" />
+    <None Include="NuGet.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if not exist $(TargetDir)Libs md $(TargetDir)Libs
-xcopy /s /y  $(ProjectDir)pkg\Libs $(TargetDir)Libs</PostBuildEvent>
+xcopy /s /y  $(ProjectDir)pkg\Apache.Ignite\Libs $(TargetDir)Libs</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>cd $(ProjectDir)
-if not exist pkg install-package.cmd</PreBuildEvent>
+PowerShell.exe -executionpolicy remotesigned -File install-package.ps1</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

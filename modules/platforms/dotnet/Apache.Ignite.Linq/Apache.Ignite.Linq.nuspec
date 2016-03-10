@@ -28,7 +28,7 @@ Creating NuGet package:
 
 <package >
     <metadata>
-        <id>Apache.Ignite.LINQ</id>
+        <id>Apache.Ignite.Linq</id>
         <title>Apache Ignite LINQ Provider</title>
         <!-- -->
         <version>$version$</version>
