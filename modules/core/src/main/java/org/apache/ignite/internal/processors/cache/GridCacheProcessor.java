@@ -1557,27 +1557,30 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.isDaemon())
             return;
 
-        for (DynamicCacheChangeRequest req : reqs) {
-            assert req.start() : req;
-            assert req.cacheType() != null : req;
-
-            prepareCacheStart(
-                req.startCacheConfiguration(),
-                req.nearCacheConfiguration(),
-                req.cacheType(),
-                req.clientStartOnly(),
-                req.initiatingNodeId(),
-                req.deploymentId(),
-                topVer
-            );
-
-            DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
-
-            if (desc != null)
-                desc.onStart();
-        }
+        for (DynamicCacheChangeRequest req : reqs)
+            prepareCacheStart(req, topVer);
 
         startReceivedCaches(topVer);
+    }
+
+    public void prepareCacheStart(DynamicCacheChangeRequest req, AffinityTopologyVersion topVer) throws IgniteCheckedException {
+        assert req.start() : req;
+        assert req.cacheType() != null : req;
+
+        prepareCacheStart(
+            req.startCacheConfiguration(),
+            req.nearCacheConfiguration(),
+            req.cacheType(),
+            req.clientStartOnly(),
+            req.initiatingNodeId(),
+            req.deploymentId(),
+            topVer
+        );
+
+        DynamicCacheDescriptor desc = registeredCaches.get(maskNull(req.cacheName()));
+
+        if (desc != null)
+            desc.onStart();
     }
 
     /**
@@ -1800,7 +1803,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheDeploymentManager depMgr = new GridCacheDeploymentManager();
         GridCachePartitionExchangeManager exchMgr = new GridCachePartitionExchangeManager();
         GridCacheIoManager ioMgr = new GridCacheIoManager();
-        CacheTopologyManager topMgr = new CacheTopologyManager();
+        CacheAffinitySharedManager topMgr = new CacheAffinitySharedManager();
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
 

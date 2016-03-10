@@ -33,7 +33,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheTopologyManager;
+import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
@@ -144,8 +144,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
 
-        if (CacheTopologyManager.LOG_AFF_CHANGE) {
-            CacheTopologyManager.logAffinityChange(log,
+        if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
+            CacheAffinitySharedManager.logAffinityChange(log,
                 cctx.name(),
                 "Created partition [cache=" + cctx.name() + ", part=" + id + ']');
         }
@@ -477,8 +477,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 if (log.isDebugEnabled())
                     log.debug("Moved partition to RENTING state: " + this);
 
-                if (CacheTopologyManager.LOG_AFF_CHANGE) {
-                    CacheTopologyManager.logAffinityChange(log,
+                if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
+                    CacheAffinitySharedManager.logAffinityChange(log,
                         cctx.name(),
                         "Moved partition to RENTING state [cache=" + cctx.name() + ", part=" + id + ']');
                 }
@@ -508,8 +508,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
-            if (CacheTopologyManager.LOG_AFF_CHANGE) {
-                CacheTopologyManager.logAffinityChange(log,
+            if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
+                CacheAffinitySharedManager.logAffinityChange(log,
                     cctx.name(),
                     "Evicted partition [cache=" + cctx.name() + ", part=" + id + ']');
             }
@@ -561,8 +561,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
-            if (CacheTopologyManager.LOG_AFF_CHANGE) {
-                CacheTopologyManager.logAffinityChange(log,
+            if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
+                CacheAffinitySharedManager.logAffinityChange(log,
                     cctx.name(),
                     "Evicted partition [cache=" + cctx.name() + ", part=" + id + ']');
             }

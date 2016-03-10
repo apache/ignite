@@ -51,6 +51,9 @@ public class GridAffinityAssignment implements Serializable {
     /** Assignment node IDs */
     private transient volatile List<HashSet<UUID>> assignmentIds;
 
+    /** */
+    private transient List<List<ClusterNode>> idealAssignment;
+
     /**
      * Constructs cached affinity calculations item.
      *
@@ -65,10 +68,18 @@ public class GridAffinityAssignment implements Serializable {
     /**
      * @param topVer Topology version.
      * @param assignment Assignment.
+     * @param idealAssignment Ideal assignment.
      */
-    GridAffinityAssignment(AffinityTopologyVersion topVer, List<List<ClusterNode>> assignment) {
+    GridAffinityAssignment(AffinityTopologyVersion topVer,
+        List<List<ClusterNode>> assignment,
+        List<List<ClusterNode>> idealAssignment) {
+        assert topVer != null;
+        assert assignment != null;
+        assert idealAssignment != null;
+
         this.topVer = topVer;
         this.assignment = assignment;
+        this.idealAssignment = idealAssignment;
 
         primary = new HashMap<>();
         backup = new HashMap<>();
@@ -84,6 +95,7 @@ public class GridAffinityAssignment implements Serializable {
         this.topVer = topVer;
 
         assignment = aff.assignment;
+        idealAssignment = aff.idealAssignment;
         primary = aff.primary;
         backup = aff.backup;
     }

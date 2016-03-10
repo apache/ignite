@@ -35,7 +35,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheTopologyManager;
+import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAssignmentFetchFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -63,7 +62,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
@@ -113,10 +111,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** Demand lock. */
     private final ReadWriteLock demandLock = new ReentrantReadWriteLock();
 
-    /** Pending affinity assignment futures. */
-    private ConcurrentMap<AffinityTopologyVersion, GridDhtAssignmentFetchFuture> pendingAssignmentFetchFuts =
-        new ConcurrentHashMap8<>();
-
     /** */
     private final ConcurrentLinkedDeque8<GridDhtLocalPartition> partsToEvict = new ConcurrentLinkedDeque8<>();
 
@@ -145,11 +139,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 assert e.type() != EVT_NODE_JOINED || n.order() > loc.order() : "Node joined with smaller-than-local " +
                     "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
-
-                if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {
-                    for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
-                        fut.onNodeLeft(e.eventNode().id());
-                }
 
                 if (!initRebalanceFut.isDone()) {
                     startFut.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -200,19 +189,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 }
             });
 
-        cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentRequest.class,
-            new MessageHandler<GridDhtAffinityAssignmentRequest>() {
-                @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentRequest msg) {
-                    processAffinityAssignmentRequest(node, msg);
-                }
-            });
-
-        cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentResponse.class,
-            new MessageHandler<GridDhtAffinityAssignmentResponse>() {
-                @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentResponse msg) {
-                    processAffinityAssignmentResponse(node, msg);
-                }
-            });
+        if (!cctx.kernalContext().clientNode()) {
+            cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentRequest.class,
+                new MessageHandler<GridDhtAffinityAssignmentRequest>() {
+                    @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentRequest msg) {
+                        processAffinityAssignmentRequest(node, msg);
+                    }
+                });
+        }
 
         supplier = new GridDhtPartitionSupplier(cctx);
         demander = new GridDhtPartitionDemander(cctx, demandLock);
@@ -293,8 +277,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityTopologyVersion topVer = assigns.topologyVersion();
 
-        if (CacheTopologyManager.LOG_AFF_CHANGE) {
-            CacheTopologyManager.logAffinityChange(log,
+        if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
+            CacheAffinitySharedManager.logAffinityChange(log,
                 cctx.name(),
                 "Create assignments [cache=" + cctx.name() + ", topVer=" + exchFut.topologyVersion() + ']');
         }
@@ -305,8 +289,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
                         exchFut.exchangeId());
 
-                if (CacheTopologyManager.LOG_AFF_CHANGE) {
-                    CacheTopologyManager.logAffinityChange(log,
+                if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
+                    CacheAffinitySharedManager.logAffinityChange(log,
                         cctx.name(),
                         "Skipping assignments creation, there are pending assignments [cache=" + cctx.name() +
                             ", topVer=" + exchFut.topologyVersion() + ']');
@@ -334,8 +318,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 Collection<ClusterNode> picked = pickedOwners(p, topVer);
 
                 if (picked.isEmpty()) {
-                    if (CacheTopologyManager.LOG_AFF_CHANGE) {
-                        CacheTopologyManager.logAffinityChange(log,
+                    if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
+                        CacheAffinitySharedManager.logAffinityChange(log,
                             cctx.name(),
                             "Own partition, no owners (assign) [part=" + part + ", topVer=" + topVer + ']');
                     }
@@ -356,8 +340,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 else {
                     ClusterNode n = F.rand(picked);
 
-                    if (CacheTopologyManager.LOG_AFF_CHANGE) {
-                        CacheTopologyManager.logAffinityChange(log,
+                    if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
+                        CacheAffinitySharedManager.logAffinityChange(log,
                             cctx.name(),
                             "Added rebalance assign [part=" + part +
                                 ", node=" + n.id() +
@@ -480,26 +464,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> initialRebalanceFuture() {
         return cctx.kernalContext().clientNode() ? startFut : initRebalanceFut;
-    }
-
-    /**
-     * @param topVer Requested topology version.
-     * @param fut Future to add.
-     */
-    public void addDhtAssignmentFetchFuture(AffinityTopologyVersion topVer, GridDhtAssignmentFetchFuture fut) {
-        GridDhtAssignmentFetchFuture old = pendingAssignmentFetchFuts.putIfAbsent(topVer, fut);
-
-        assert old == null : "More than one thread is trying to fetch partition assignments: " + topVer;
-    }
-
-    /**
-     * @param topVer Requested topology version.
-     * @param fut Future to remove.
-     */
-    public void removeDhtAssignmentFetchFuture(AffinityTopologyVersion topVer, GridDhtAssignmentFetchFuture fut) {
-        boolean rmv = pendingAssignmentFetchFuts.remove(topVer, fut);
-
-        assert rmv : "Failed to remove assignment fetch future: " + topVer;
     }
 
     /**
@@ -683,18 +647,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /**
-     * @param node Node.
-     * @param res Response.
-     */
-    private void processAffinityAssignmentResponse(ClusterNode node, GridDhtAffinityAssignmentResponse res) {
-        if (log.isDebugEnabled())
-            log.debug("Processing affinity assignment response [node=" + node + ", res=" + res + ']');
-
-        for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
-            fut.onResponse(node, res);
-    }
-
-    /**
      * Resends partitions on partition evict within configured timeout.
      *
      * @param part Evicted partition.
@@ -855,13 +807,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             U.warn(log, "Pending force key futures [cache=" + cctx.name() +"]:");
 
             for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
-                U.warn(log, ">>> " + fut);
-        }
-
-        if (!pendingAssignmentFetchFuts.isEmpty()) {
-            U.warn(log, "Pending assignment fetch futures [cache=" + cctx.name() +"]:");
-
-            for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
                 U.warn(log, ">>> " + fut);
         }
 

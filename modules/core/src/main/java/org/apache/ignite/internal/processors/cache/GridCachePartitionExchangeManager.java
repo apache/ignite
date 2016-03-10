@@ -732,7 +732,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         // It is important that client topologies be added after contexts.
-        for (GridClientPartitionTopology top : cctx.topology().clientTopologies())
+        for (GridClientPartitionTopology top : cctx.affinity().clientTopologies())
             m.addFullPartitionsMap(top.cacheId(), top.partitionMap(true));
 
         if (log.isDebugEnabled())
@@ -775,7 +775,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        for (GridClientPartitionTopology top : cctx.topology().clientTopologies()) {
+        for (GridClientPartitionTopology top : cctx.affinity().clientTopologies()) {
             GridDhtPartitionMap2 locMap = top.localPartitionMap();
 
             m.addLocalPartitionMap(top.cacheId(), locMap);
@@ -925,7 +925,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 cacheCtx.affinity().cleanUpCache(fut.topologyVersion());
                         }
 
-                        cctx.topology().cleanUpCache(fut.topologyVersion());
+                        cctx.affinity().cleanUpCache(fut.topologyVersion());
                     }
                 }
 
@@ -975,7 +975,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     GridDhtPartitionTopology top = null;
 
                     if (cacheCtx == null)
-                        top = cctx.topology().clientTopology(cacheId);
+                        top = cctx.affinity().clientTopology(cacheId);
                     else if (!cacheCtx.isLocal())
                         top = cacheCtx.topology();
 
@@ -1024,7 +1024,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     GridDhtPartitionTopology top = null;
 
                     if (cacheCtx == null)
-                        top = cctx.topology().clientTopology(cacheId);
+                        top = cctx.affinity().clientTopology(cacheId);
                     else if (!cacheCtx.isLocal())
                         top = cacheCtx.topology();
 
@@ -1032,7 +1032,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (top.update(null, entry.getValue(), null, true) != null)
                             updated = true;
 
-                        cctx.topology().checkRebalanceState(entry.getValue().topologyVersion(), cacheId);
+                        cctx.affinity().checkRebalanceState(entry.getValue().topologyVersion(), cacheId);
                     }
                 }
 

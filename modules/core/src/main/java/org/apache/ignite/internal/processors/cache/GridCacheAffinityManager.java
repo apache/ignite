@@ -194,23 +194,21 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * @param topVer Topology version.
      * @param assignment Assignment.
      */
-    public void idealAssignment(AffinityTopologyVersion topVer, List<List<ClusterNode>> assignment) {
+    public void idealAssignment(List<List<ClusterNode>> assignment) {
         assert !cctx.isLocal();
 
-        aff.idealAssignment(topVer, assignment);
+        aff.idealAssignment(assignment);
     }
 
     /**
-     * @param topVer Topology version.
      * @return Assignment.
      */
-    public List<List<ClusterNode>> idealAssignment(AffinityTopologyVersion topVer) {
+    public List<List<ClusterNode>> idealAssignment() {
         assert !cctx.isLocal();
 
-        return aff.idealAssignment(topVer);
+        return aff.idealAssignment();
     }
 
     /**
@@ -498,7 +496,10 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
             aff0.dumpDebugInfo();
     }
 
-    public boolean partitionNode(int part, AffinityTopologyVersion topVer) {
-        return nodes(part, topVer).contains(cctx.localNode());
+    /**
+     * @return Affinity cache.
+     */
+    GridAffinityAssignmentCache affinityCache() {
+        return aff;
     }
 }

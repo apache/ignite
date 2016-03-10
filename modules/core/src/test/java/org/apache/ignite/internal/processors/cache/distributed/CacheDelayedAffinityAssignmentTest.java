@@ -147,11 +147,70 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks that new joined primary is not assigned immediately.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDelayedAffinityCalculation() throws Exception {
+        Ignite ignite0 = startGrid(0);
+
+        checkAffinity(1, topVer(1, 0), true);
+
+        GridCacheContext cctx = ((IgniteKernal)ignite0).context().cache().internalCache(CACHE_NAME1).context();
+
+        AffinityFunction func = cctx.config().getAffinity();
+
+        AffinityFunctionContext ctx = new GridAffinityFunctionContextImpl(
+            new ArrayList<>(ignite0.cluster().nodes()),
+            null,
+            null,
+            topVer(1, 0),
+            cctx.config().getBackups());
+
+        List<List<ClusterNode>> calcAff1_0 = func.assignPartitions(ctx);
+
+        startGrid(1);
+
+        ctx = new GridAffinityFunctionContextImpl(
+            new ArrayList<>(ignite0.cluster().nodes()),
+            calcAff1_0,
+            null,
+            topVer(1, 0),
+            cctx.config().getBackups());
+
+        List<List<ClusterNode>> calcAff2_0 = func.assignPartitions(ctx);
+
+        checkAffinity(2, topVer(2, 0), false);
+
+        List<List<ClusterNode>> aff2_0 = affinity(ignite0, topVer(2, 0), CACHE_NAME1);
+
+        for (int p = 0; p < calcAff1_0.size(); p++) {
+            List<ClusterNode> a1 = calcAff1_0.get(p);
+            List<ClusterNode> a2 = calcAff2_0.get(p);
+
+            List<ClusterNode> a = aff2_0.get(p);
+
+            // Primary did not change.
+            assertEquals(a1.get(0), a.get(0));
+
+            // New primary is backup.
+            if (!a1.get(0).equals(a2.get(0)))
+                assertTrue(a.contains(a2.get(0)));
+        }
+
+        checkAffinity(2, topVer(2, 1), true);
+
+        List<List<ClusterNode>> aff2_1 = affinity(ignite0, topVer(2, 1), CACHE_NAME1);
+
+        assertEquals(calcAff2_0, aff2_1);
+    }
+
+    /**
      * Simple test, node join.
      *
      * @throws Exception If failed.
      */
-    public void testAffinitySequentialStart() throws Exception {
+    public void testAffinitySimpleSequentialStart() throws Exception {
         startGrid(0);
 
         startGrid(1);
@@ -172,7 +231,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testAffinitySequentialStartNoCacheOnCoordinator() throws Exception {
+    public void testAffinitySimpleSequentialStartNoCacheOnCoordinator() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration>() {
             @Override public CacheConfiguration apply(String gridName) {
                 if (gridName.equals(getTestGridName(0)))
@@ -184,9 +243,47 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         cacheNodeFilter = new CachePredicate(F.asList(getTestGridName(1), getTestGridName(2)));
 
-        testAffinitySequentialStart();
+        testAffinitySimpleSequentialStart();
 
         assertNull(((IgniteKernal)ignite(0)).context().cache().internalCache(CACHE_NAME1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinitySimpleNoCacheOnCoordinator() throws Exception {
+        cacheC = new IgniteClosure<String, CacheConfiguration>() {
+            @Override public CacheConfiguration apply(String gridName) {
+                if (gridName.equals(getTestGridName(1)))
+                    return null;
+
+                CacheConfiguration ccfg = cacheConfiguration();
+
+                ccfg.setBackups(1);
+
+                return ccfg;
+            }
+        };
+
+        cacheNodeFilter = new CachePredicate(F.asList(getTestGridName(0), getTestGridName(2), getTestGridName(3)));
+
+        startGrid(0);
+
+        startGrid(1);
+
+        checkAffinity(2, topVer(2, 1), true);
+
+        startGrid(2);
+
+        startGrid(3);
+
+        checkAffinity(4, topVer(4, 1), true);
+
+        stopGrid(0); // Kill coordinator, now coordinator node1 without cache.
+
+        checkAffinity(3, topVer(5, 0), true);
+
+        assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
     }
 
     /**

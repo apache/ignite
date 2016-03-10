@@ -24,12 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.affinity.AffinityCentralizedFunction;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -65,7 +65,7 @@ public class GridAffinityAssignmentCache {
     private final ConcurrentLinkedHashMap<AffinityTopologyVersion, GridAffinityAssignment> affCache;
 
     /** */
-    private final ConcurrentMap<AffinityTopologyVersion, List<List<ClusterNode>>> idealAffCache;
+    private List<List<ClusterNode>> idealAssignment;
 
     /** Cache item corresponding to the head topology version. */
     private final AtomicReference<GridAffinityAssignment> head;
@@ -108,19 +108,19 @@ public class GridAffinityAssignmentCache {
 
         partsCnt = aff.partitions();
         affCache = new ConcurrentLinkedHashMap<>();
-        idealAffCache = new ConcurrentHashMap();
         head = new AtomicReference<>(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
     }
 
     /**
-     * Initializes affinity with given topology version and assignment. The assignment is calculated on remote nodes
-     * and brought to local node on partition map exchange.
+     * Initializes affinity with given topology version and assignment.
      *
      * @param topVer Topology version.
      * @param affAssignment Affinity assignment for topology version.
      */
     public void initialize(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
-        GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment);
+        assert idealAssignment != null;
+
+        GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
 
         affCache.put(topVer, assignment);
         head.set(assignment);
@@ -137,21 +137,24 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * @param topVer Topology version.
      * @param assignment Assignment.
      */
-    public void idealAssignment(AffinityTopologyVersion topVer, List<List<ClusterNode>> assignment) {
-        List<List<ClusterNode>> old = idealAffCache.put(topVer, assignment);
-
-        assert old == null : topVer;
+    public void idealAssignment(List<List<ClusterNode>> assignment) {
+        this.idealAssignment = assignment;
     }
 
     /**
-     * @param topVer Topology version.
      * @return Assignment.
      */
-    @Nullable public List<List<ClusterNode>> idealAssignment(AffinityTopologyVersion topVer) {
-        return idealAffCache.get(topVer);
+    @Nullable public List<List<ClusterNode>> idealAssignment() {
+        return idealAssignment;
+    }
+
+    /**
+     * @return {@code True} if affinity function has {@link AffinityCentralizedFunction} annotation.
+     */
+    public boolean centralizedAffinityFunction() {
+        return U.hasAnnotation(aff, AffinityCentralizedFunction.class);
     }
 
     /**
@@ -171,7 +174,6 @@ public class GridAffinityAssignmentCache {
      */
     public void onReconnected() {
         affCache.clear();
-        idealAffCache.clear();
 
         head.set(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
 
@@ -191,29 +193,12 @@ public class GridAffinityAssignmentCache {
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');
 
-        Iterator<AffinityTopologyVersion> it = affCache.descendingKeySet().iterator();
+        List<List<ClusterNode>> prevAssignment = idealAssignment;
 
-        AffinityTopologyVersion prevVer = null;
+        // Resolve nodes snapshot for specified topology version.
+        List<ClusterNode> sorted = new ArrayList<>(ctx.discovery().cacheAffinityNodes(cacheName, topVer));
 
-        if (it.hasNext())
-            prevVer = it.next();
-
-        // TODO GG-10885: use previous ideal assignment.
-        GridAffinityAssignment prev = prevVer == null ? null : affCache.get(prevVer);
-
-        List<ClusterNode> sorted;
-
-        if (false) // if (ctx.isLocal())
-            // For local cache always use local node.
-            sorted = Collections.singletonList(ctx.discovery().localNode());
-        else {
-            // Resolve nodes snapshot for specified topology version.
-            sorted = new ArrayList<>(ctx.discovery().cacheAffinityNodes(cacheName, topVer));
-
-            Collections.sort(sorted, GridNodeOrderComparator.INSTANCE);
-        }
-
-        List<List<ClusterNode>> prevAssignment = prev == null ? null : prev.assignment();
+        Collections.sort(sorted, GridNodeOrderComparator.INSTANCE);
 
         List<List<ClusterNode>> assignment;
 
@@ -232,36 +217,9 @@ public class GridAffinityAssignmentCache {
 
         assert assignment != null;
 
-        return assignment;
+        idealAssignment = assignment;
 
-//        assert assignment != null;
-//
-//        GridAffinityAssignment updated = new GridAffinityAssignment(topVer, assignment);
-//
-//        updated = F.addIfAbsent(affCache, topVer, updated);
-//
-//        // Update top version, if required.
-//        while (true) {
-//            GridAffinityAssignment headItem = head.get();
-//
-//            if (headItem.topologyVersion().compareTo(topVer) >= 0)
-//                break;
-//
-//            if (head.compareAndSet(headItem, updated))
-//                break;
-//        }
-//
-//        for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
-//            if (entry.getKey().compareTo(topVer) <= 0) {
-//                if (log.isDebugEnabled())
-//                    log.debug("Completing topology ready future (calculated affinity) [locNodeId=" + ctx.localNodeId() +
-//                        ", futVer=" + entry.getKey() + ", topVer=" + topVer + ']');
-//
-//                entry.getValue().onDone(topVer);
-//            }
-//        }
-//
-//        return updated.assignment();
+        return assignment;
     }
 
     /**
@@ -311,11 +269,6 @@ public class GridAffinityAssignmentCache {
                 ", topVer=" + topVer + ']');
 
         for (Iterator<AffinityTopologyVersion> it = affCache.keySet().iterator(); it.hasNext(); ) {
-            if (it.next().compareTo(topVer) < 0)
-                it.remove();
-        }
-
-        for (Iterator<AffinityTopologyVersion> it = idealAffCache.keySet().iterator(); it.hasNext(); ) {
             if (it.next().compareTo(topVer) < 0)
                 it.remove();
         }

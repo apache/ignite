@@ -51,6 +51,12 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     /** Affinity assignment bytes. */
     private byte[] affAssignmentBytes;
 
+    /** */
+    private List<List<ClusterNode>> idealAffAssignment;
+
+    /** Affinity assignment bytes. */
+    private byte[] idealAffAssignmentBytes;
+
     /**
      * Empty constructor.
      */
@@ -89,6 +95,13 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
         return affAssignment;
     }
 
+    /**
+     * @return Ideal affinity assignment.
+     */
+    public List<List<ClusterNode>> idealAffinityAssignment() {
+        return idealAffAssignment;
+    }
+
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 29;
@@ -107,32 +120,55 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
         if (affAssignment != null && affAssignmentBytes == null)
             affAssignmentBytes = ctx.marshaller().marshal(affAssignment);
+
+        if (idealAffAssignment != null && idealAffAssignmentBytes == null)
+            idealAffAssignmentBytes = ctx.marshaller().marshal(idealAffAssignment);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (affAssignmentBytes != null && affAssignment == null) {
-            affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        if (affAssignmentBytes != null && affAssignment == null)
+            affAssignment = unmarshalNodes(affAssignmentBytes, ctx, ldr);
 
-            // TODO IGNITE-2110: setting 'local' for nodes not needed when IGNITE-2110 is implemented.
-            int assignments = affAssignment.size();
+        if (idealAffAssignmentBytes != null && idealAffAssignment == null)
+            idealAffAssignment = unmarshalNodes(idealAffAssignmentBytes, ctx, ldr);
+    }
 
-            for (int n = 0; n < assignments; n++) {
-                List<ClusterNode> nodes = affAssignment.get(n);
+    /**
+     * @param bytes Assignment bytes.
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @return Assignment.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private List<List<ClusterNode>> unmarshalNodes(byte[] bytes,
+        GridCacheSharedContext ctx,
+        ClassLoader ldr)
+        throws IgniteCheckedException
+    {
+        List<List<ClusterNode>> affAssignment = ctx.marshaller().unmarshal(bytes,
+            U.resolveClassLoader(ldr, ctx.gridConfig()));
 
-                int size = nodes.size();
+        // TODO IGNITE-2110: setting 'local' for nodes not needed when IGNITE-2110 is implemented.
+        int assignments = affAssignment.size();
 
-                for (int i = 0; i < size; i++) {
-                    ClusterNode node = nodes.get(i);
+        for (int n = 0; n < assignments; n++) {
+            List<ClusterNode> nodes = affAssignment.get(n);
 
-                    if (node instanceof TcpDiscoveryNode)
-                        ((TcpDiscoveryNode)node).local(node.id().equals(ctx.localNodeId()));
-                }
+            int size = nodes.size();
+
+            for (int i = 0; i < size; i++) {
+                ClusterNode node = nodes.get(i);
+
+                if (node instanceof TcpDiscoveryNode)
+                    ((TcpDiscoveryNode)node).local(node.id().equals(ctx.localNodeId()));
             }
         }
+
+        return affAssignment;
     }
 
     /** {@inheritDoc} */

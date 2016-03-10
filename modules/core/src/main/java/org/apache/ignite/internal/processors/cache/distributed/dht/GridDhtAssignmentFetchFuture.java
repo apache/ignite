@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,9 +29,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFF
 /**
  * Future that fetches affinity assignment from remote cache nodes.
  */
-public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<ClusterNode>>> {
+public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffinityAssignmentResponse> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,29 +51,32 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
     /** Logger. */
     private static IgniteLogger log;
 
-    /** Cache context. */
-    private final GridCacheContext ctx;
+    /** */
+    private final GridCacheSharedContext ctx;
 
     /** List of available nodes this future can fetch data from. */
     private Queue<ClusterNode> availableNodes;
 
-    /** Topology version. */
-    private final AffinityTopologyVersion topVer;
-
     /** Pending node from which response is being awaited. */
     private ClusterNode pendingNode;
 
+    /** */
+    private final T2<Integer, AffinityTopologyVersion> key;
+
     /**
-     * @param ctx Cache context.
-     * @param availableNodes Available nodes.
+     * @param ctx Context.
+     * @param cacheName Cache name.
+     * @param topVer Topology version.
      */
     public GridDhtAssignmentFetchFuture(
-        GridCacheContext ctx,
-        AffinityTopologyVersion topVer,
-        Collection<ClusterNode> availableNodes
+        GridCacheSharedContext ctx,
+        String cacheName,
+        AffinityTopologyVersion topVer
     ) {
         this.ctx = ctx;
-        this.topVer = topVer;
+        this.key = new T2<>(CU.cacheId(cacheName), topVer);
+
+        Collection<ClusterNode> availableNodes = ctx.discovery().cacheAffinityNodes(cacheName, topVer);
 
         LinkedList<ClusterNode> tmp = new LinkedList<>();
 
@@ -94,40 +97,40 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
      * Initializes fetch future.
      */
     public void init() {
-        ((GridDhtPreloader)ctx.preloader()).addDhtAssignmentFetchFuture(topVer, this);
+        ctx.affinity().addDhtAssignmentFetchFuture(this);
 
         requestFromNextNode();
     }
 
     /**
-     * @return Context.
+     * @return Future key.
      */
-    public GridCacheContext context() {
-        return ctx;
+    public T2<Integer, AffinityTopologyVersion> key() {
+        return key;
     }
 
     /**
-     * @param node Node.
+     * @param nodeId Node ID.
      * @param res Response.
      */
-    public void onResponse(ClusterNode node, GridDhtAffinityAssignmentResponse res) {
-        if (!res.topologyVersion().equals(topVer)) {
+    public void onResponse(UUID nodeId, GridDhtAffinityAssignmentResponse res) {
+        if (!res.topologyVersion().equals(key.get2())) {
             if (log.isDebugEnabled())
                 log.debug("Received affinity assignment for wrong topology version (will ignore) " +
-                    "[node=" + node + ", res=" + res + ", topVer=" + topVer + ']');
+                    "[node=" + nodeId + ", res=" + res + ", topVer=" + key.get2() + ']');
 
             return;
         }
 
-        List<List<ClusterNode>> assignment = null;
+        GridDhtAffinityAssignmentResponse res0 = null;
 
         synchronized (this) {
-            if (pendingNode != null && pendingNode.equals(node))
-                assignment = res.affinityAssignment();
+            if (pendingNode != null && pendingNode.id().equals(nodeId))
+                res0 = res;
         }
 
-        if (assignment != null)
-            onDone(assignment);
+        if (res0 != null)
+            onDone(res);
     }
 
     /**
@@ -146,9 +149,9 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable List<List<ClusterNode>> res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable GridDhtAffinityAssignmentResponse res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
-            ((GridDhtPreloader)ctx.preloader()).removeDhtAssignmentFetchFuture(topVer, this);
+            ctx.affinity().removeDhtAssignmentFetchFuture(this);
 
             return true;
         }
@@ -174,7 +177,7 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
                         log0.debug("Sending affinity fetch request to remote node [locNodeId=" + ctx.localNodeId() +
                             ", node=" + node + ']');
 
-                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest(ctx.cacheId(), topVer),
+                    ctx.io().send(node, new GridDhtAffinityAssignmentRequest(key.get1(), key.get2()),
                         AFFINITY_POOL);
 
                     // Close window for listener notification.
@@ -205,6 +208,6 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
         // No more nodes left, complete future with null outside of synchronization.
         // Affinity should be calculated from scratch.
         if (complete)
-            onDone((List<List<ClusterNode>>)null);
+            onDone((GridDhtAffinityAssignmentResponse)null);
     }
 }
