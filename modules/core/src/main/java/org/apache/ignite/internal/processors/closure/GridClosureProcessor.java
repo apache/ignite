@@ -1117,6 +1117,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         return job(r);
     }
 
+    /**
+     * Downgrades provided job to older version if target does not support it.
+     *
+     * @param job Job.
+     * @param targetVersion Target version.
+     * @return Provided or downgraded job.
+     */
     private static ComputeJob downgradeJobIfNeed(ComputeJob job, IgniteProductVersion targetVersion) {
         A.notNull(job, "job");
 
