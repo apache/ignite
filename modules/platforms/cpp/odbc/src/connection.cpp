@@ -22,6 +22,7 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
+#include "ignite/odbc/message.h"
 #include "ignite/odbc/config/configuration.h"
 
 // TODO: implement appropriate protocol with de-/serialisation.
@@ -118,7 +119,7 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            return SQL_RESULT_SUCCESS;
+            return MakeRequestHandshake();
         }
 
         void Connection::Release()
@@ -290,6 +291,34 @@ namespace ignite
                 "Rollback operation is not supported.");
 
             return SQL_RESULT_ERROR;
+        }
+
+        SqlResult Connection::MakeRequestHandshake()
+        {
+            HandshakeRequest req(Parser::PROTOCOL_VERSION);
+            QueryResponse rsp;
+
+            try
+            {
+                SyncMessage(req, rsp);
+            }
+            catch (const IgniteError& err)
+            {
+                AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
+            {
+                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
+
+                return SQL_RESULT_ERROR;
+            }
+
+            return SQL_RESULT_SUCCESS;
         }
     }
 }

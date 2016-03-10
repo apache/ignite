@@ -243,6 +243,13 @@ namespace ignite
             size_t SendAll(const int8_t* data, size_t len);
 
             /**
+             * Perform handshake request.
+             *
+             * @return Operation result.
+             */
+            SqlResult MakeRequestHandshake();
+
+            /**
              * Constructor.
              */
             Connection();

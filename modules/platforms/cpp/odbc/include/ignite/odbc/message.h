@@ -36,15 +36,17 @@ namespace ignite
     {
         enum RequestType
         {
-            REQUEST_TYPE_EXECUTE_SQL_QUERY = 1,
+            REQUEST_TYPE_HANDSHAKE = 1,
 
-            REQUEST_TYPE_FETCH_SQL_QUERY = 2,
+            REQUEST_TYPE_EXECUTE_SQL_QUERY = 2,
 
-            REQUEST_TYPE_CLOSE_SQL_QUERY = 3,
+            REQUEST_TYPE_FETCH_SQL_QUERY = 3,
 
-            REQUEST_TYPE_GET_COLUMNS_METADATA = 4,
+            REQUEST_TYPE_CLOSE_SQL_QUERY = 4,
 
-            REQUEST_TYPE_GET_TABLES_METADATA = 5
+            REQUEST_TYPE_GET_COLUMNS_METADATA = 5,
+
+            REQUEST_TYPE_GET_TABLES_METADATA = 6
         };
 
         enum ResponseStatus
@@ -52,6 +54,46 @@ namespace ignite
             RESPONSE_STATUS_SUCCESS = 0,
 
             RESPONSE_STATUS_FAILED = 1
+        };
+
+        /**
+         * Handshake request.
+         */
+        class HandshakeRequest
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param version Protocol version.
+             */
+            HandshakeRequest(int16_t version) : version(version)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~HandshakeRequest()
+            {
+                // No-op.
+            }
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+            {
+                writer.WriteInt8(REQUEST_TYPE_HANDSHAKE);
+
+                writer.WriteInt16(version);
+            }
+
+        private:
+            /** Protocol version. */
+            int16_t version;
         };
 
         /**
@@ -367,9 +409,11 @@ namespace ignite
         protected:
             /**
              * Read data if response status is RESPONSE_STATUS_SUCCESS.
-             * @param reader Reader.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader) = 0;
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl&)
+            {
+                // No-op.
+            }
 
         private:
             /** Request processing status. */

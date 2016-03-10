@@ -76,8 +76,6 @@ namespace ignite
 
                 BinaryWriterImpl writer(&outStream, 0);
 
-                writer.WriteInt16(PROTOCOL_VERSION);
-
                 msg.Write(writer);
 
                 buf.resize(outStream.Position());
@@ -107,11 +105,6 @@ namespace ignite
                 ignite::impl::interop::InteropInputStream inStream(&inMem);
 
                 BinaryReaderImpl reader(&inStream);
-
-                int16_t version = reader.ReadInt16();
-
-                if (version != PROTOCOL_VERSION)
-                    IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC, "Unsupported protocol version.", "version", version);
 
                 msg.Read(reader);
             }
