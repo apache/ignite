@@ -31,9 +31,6 @@ import org.apache.ignite.lang.IgniteUuid;
  * Directory listing entry.
  */
 public class IgfsListingEntry implements Externalizable {
-
-    public static AtomicBoolean serializationAllowed = new AtomicBoolean(true);
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -164,7 +161,7 @@ public class IgfsListingEntry implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        assert serializationAllowed.get();
+        IgfsMetaManager.checkAllowed();
 
         U.writeGridUuid(out, fileId);
         out.writeInt(blockSize);
@@ -176,7 +173,7 @@ public class IgfsListingEntry implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        assert serializationAllowed.get();
+        IgfsMetaManager.checkAllowed();
 
         fileId = U.readGridUuid(in);
         blockSize = in.readInt();

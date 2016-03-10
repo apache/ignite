@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
@@ -40,15 +41,10 @@ import org.jetbrains.annotations.Nullable;
  * Unmodifiable file information.
  */
 public final class IgfsFileInfo implements Externalizable {
-
-//    public static final AtomicLong writes = new AtomicLong();
-//    public static final AtomicLong reads = new AtomicLong();
-
-    public static final AtomicBoolean readAllowed = new AtomicBoolean(true);
-    public static final AtomicBoolean writeAllowed = new AtomicBoolean(true);
-
     /** */
     private static final long serialVersionUID = 0L;
+
+    public static final AtomicInteger serCnt = new AtomicInteger();
 
     /** ID for the root directory. */
     public static final IgniteUuid ROOT_ID = new IgniteUuid(new UUID(0, 0), 0);
@@ -533,7 +529,13 @@ public final class IgfsFileInfo implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        assert writeAllowed.get();
+        IgfsMetaManager.checkAllowed();
+
+        if (!ROOT_ID.equals(id) && !TRASH_ID.equals(id)) {
+            System.out.println("write: " + id);
+
+            serCnt.incrementAndGet();
+        }
 
         U.writeGridUuid(out, id);
         out.writeInt(blockSize);
@@ -552,7 +554,13 @@ public final class IgfsFileInfo implements Externalizable {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        assert readAllowed.get();
+        IgfsMetaManager.checkAllowed();
+
+        if (!ROOT_ID.equals(id) && !TRASH_ID.equals(id)) {
+            serCnt.incrementAndGet();
+
+            System.out.println("read: " + id);
+        }
 
         id = U.readGridUuid(in);
         blockSize = in.readInt();

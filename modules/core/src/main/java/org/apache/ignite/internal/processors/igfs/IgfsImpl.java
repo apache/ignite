@@ -1439,7 +1439,11 @@ public final class IgfsImpl implements IgfsEx {
     @Nullable private FileDescriptor getFileDescriptor(IgfsPath path) throws IgniteCheckedException {
         assert path != null;
 
+        IgfsMetaManager.ALLOW.incrementAndGet();
+
         List<IgniteUuid> ids = meta.fileIds(path);
+
+        IgfsMetaManager.ALLOW.decrementAndGet();
 
         IgfsFileInfo fileInfo = meta.info(ids.get(ids.size() - 1));
 

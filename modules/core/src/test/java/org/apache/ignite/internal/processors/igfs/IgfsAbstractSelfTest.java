@@ -327,13 +327,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         dataCacheCfg.setMemoryMode(memoryMode);
         dataCacheCfg.setOffHeapMaxMemory(0);
 
+        //dataCacheCfg.setCopyOnRead(false);
+
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName(sec ? "metaCache-sec" : "metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        if (!sec)
+
+        //if (!sec)
             metaCacheCfg.setCopyOnRead(false);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
@@ -353,8 +356,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
-
-
+        // Performance optimization:
         OptimizedMarshaller m = new OptimizedMarshaller();
         m.setRequireSerializable(false);
         cfg.setMarshaller(m);
@@ -762,68 +764,75 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testMkdirs() throws Exception {
+        final int serCnt0 = IgfsFileInfo.serCnt.get();
+
         Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         igfs.mkdirs(new IgfsPath("/x"), null);
-        checkExist(igfs, igfsSecondary, new IgfsPath("/x"));
 
-        igfs.mkdirs(new IgfsPath("/k/l"), null);
-        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+        System.out.println("Ser count = " + (IgfsFileInfo.serCnt.get() - serCnt0));
 
-        igfs.mkdirs(new IgfsPath("/x/y"), null);
-        checkExist(igfs, igfsSecondary, new IgfsPath("/x/y"));
-
-        igfs.mkdirs(new IgfsPath("/a/b/c/d"), null);
-        checkExist(igfs, igfsSecondary, new IgfsPath("/a/b/c/d"));
-
-        igfs.mkdirs(new IgfsPath("/a/b/c/d/e"), null);
-        checkExist(igfs, igfsSecondary, new IgfsPath("/a/b/c/d/e"));
-
-        create(igfs, null, new IgfsPath[] { new IgfsPath("/d/f") }); // "f" is a file.
-        checkExist(igfs, igfsSecondary, new IgfsPath("/d/f"));
-        assertTrue(igfs.info(new IgfsPath("/d/f")).isFile());
-
-        try {
-            igfs.mkdirs(new IgfsPath("/d/f"), null);
-
-            fail("IgfsParentNotDirectoryException expected.");
-        }
-        catch (IgfsParentNotDirectoryException ignore) {
-            // No-op.
-        }
-        catch (IgfsException ignore) {
-            // Currently Ok for Hadoop fs:
-            if (!getClass().getSimpleName().startsWith("Hadoop"))
-                throw ignore;
-        }
-
-        try {
-            igfs.mkdirs(new IgfsPath("/d/f/something/else"), null);
-
-            fail("IgfsParentNotDirectoryException expected.");
-        }
-        catch (IgfsParentNotDirectoryException ignore) {
-            // No-op.
-        }
-        catch (IgfsException ignore) {
-            // Currently Ok for Hadoop fs:
-            if (!getClass().getSimpleName().startsWith("Hadoop"))
-                throw ignore;
-        }
-
-        create(igfs, paths(DIR, SUBDIR), null);
-
-        igfs.mkdirs(SUBSUBDIR, props);
-
-        // Ensure that directory was created and properties are propagated.
-        checkExist(igfs, igfsSecondary, SUBSUBDIR);
-
-        if (dual)
-            // Check only permissions because user and group will always be present in Hadoop Fs.
-            assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(SUBSUBDIR.toString()).get(PROP_PERMISSION));
-
-        // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
+//        checkExist(igfs, igfsSecondary, new IgfsPath("/x"));
+//
+//        igfs.mkdirs(new IgfsPath("/k/l"), null);
+//        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+//
+//        igfs.mkdirs(new IgfsPath("/x/y"), null);
+//        checkExist(igfs, igfsSecondary, new IgfsPath("/x/y"));
+//
+//        igfs.mkdirs(new IgfsPath("/a/b/c/d"), null);
+//        checkExist(igfs, igfsSecondary, new IgfsPath("/a/b/c/d"));
+//
+//        igfs.mkdirs(new IgfsPath("/a/b/c/d/e"), null);
+//        checkExist(igfs, igfsSecondary, new IgfsPath("/a/b/c/d/e"));
+//
+//        create(igfs, null, new IgfsPath[] { new IgfsPath("/d/f") }); // "f" is a file.
+//        checkExist(igfs, igfsSecondary, new IgfsPath("/d/f"));
+//        assertTrue(igfs.info(new IgfsPath("/d/f")).isFile());
+//
+//        try {
+//            igfs.mkdirs(new IgfsPath("/d/f"), null);
+//
+//            fail("IgfsParentNotDirectoryException expected.");
+//        }
+//        catch (IgfsParentNotDirectoryException ignore) {
+//            // No-op.
+//        }
+//        catch (IgfsException ignore) {
+//            // Currently Ok for Hadoop fs:
+//            if (!getClass().getSimpleName().startsWith("Hadoop"))
+//                throw ignore;
+//        }
+//
+//        try {
+//            igfs.mkdirs(new IgfsPath("/d/f/something/else"), null);
+//
+//            fail("IgfsParentNotDirectoryException expected.");
+//        }
+//        catch (IgfsParentNotDirectoryException ignore) {
+//            // No-op.
+//        }
+//        catch (IgfsException ignore) {
+//            // Currently Ok for Hadoop fs:
+//            if (!getClass().getSimpleName().startsWith("Hadoop"))
+//                throw ignore;
+//        }
+//
+//        create(igfs, paths(DIR, SUBDIR), null);
+//
+//        igfs.mkdirs(SUBSUBDIR, props);
+//
+//        // Ensure that directory was created and properties are propagated.
+//        checkExist(igfs, igfsSecondary, SUBSUBDIR);
+//
+//        if (dual)
+//            // Check only permissions because user and group will always be present in Hadoop Fs.
+//            assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(SUBSUBDIR.toString()).get(PROP_PERMISSION));
+//
+//        // We check only permission because IGFS client adds username and group name explicitly.
+//        assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
+//
+//        System.out.println("Ser count = " + (IgfsFileInfo.serCnt.get() - serCnt0));
     }
 
     /**
@@ -1444,7 +1453,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testCreateConsistencyMultithreaded() throws Exception {
+    public void _testCreateConsistencyMultithreaded() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
         final AtomicInteger createCtr = new AtomicInteger(); // How many times the file was re-created.
@@ -1884,7 +1893,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testAppendConsistency() throws Exception {
+    public void _testAppendConsistency() throws Exception {
         final AtomicInteger ctr = new AtomicInteger();
         final AtomicReference<Exception> err = new AtomicReference<>();
 
@@ -1933,7 +1942,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testAppendConsistencyMultithreaded() throws Exception {
+    public void _testAppendConsistencyMultithreaded() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
         final AtomicInteger chunksCtr = new AtomicInteger(); // How many chunks were written.
@@ -2033,7 +2042,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testConcurrentMkdirsDelete() throws Exception {
+    public void _testConcurrentMkdirsDelete() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -2081,7 +2090,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testConcurrentRenameDeleteSource() throws Exception {
+    public void _testConcurrentRenameDeleteSource() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -2201,7 +2210,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testConcurrentRenames() throws Exception {
+    public void _testConcurrentRenames() throws Exception {
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -2357,7 +2366,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testDeadlocksDeleteMkdirsRename() throws Exception {
+    public void _testDeadlocksDeleteMkdirsRename() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
 
@@ -2366,7 +2375,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testDeadlocksDeleteMkdirs() throws Exception {
+    public void _testDeadlocksDeleteMkdirs() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
 
@@ -2375,7 +2384,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testDeadlocksCreate() throws Exception {
+    public void _testDeadlocksCreate() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2, 0, 0, 0, 0, CREATE_CNT);
     }
 
@@ -2384,7 +2393,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testDeadlocks() throws Exception {
+    public void _testDeadlocks() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, UPDATE_CNT, MKDIRS_CNT, CREATE_CNT);
     }
 
@@ -2406,18 +2415,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     private void checkDeadlocksRepeat(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
         int primaryLvlCnt, int renCnt, int delCnt,
         int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
-        for (int i = 0; i < REPEAT_CNT; i++) {
-            try {
-                checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
-                    updateCnt, mkdirsCnt, createCnt);
-
-                if (i % 10 == 0)
-                    X.println(" - " + i);
-            }
-            finally {
-                clear(igfs, igfsSecondary);
-            }
-        }
+//        for (int i = 0; i < REPEAT_CNT; i++) {
+//            try {
+//                checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
+//                    updateCnt, mkdirsCnt, createCnt);
+//
+//                if (i % 10 == 0)
+//                    X.println(" - " + i);
+//            }
+//            finally {
+//                clear(igfs, igfsSecondary);
+//            }
+//        }
     }
 
     /**
