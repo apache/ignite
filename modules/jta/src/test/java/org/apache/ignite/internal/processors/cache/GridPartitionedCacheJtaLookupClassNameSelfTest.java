@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 /**
  * Lookup class name based JTA integration test using PARTITIONED cache.
  */
-public class GridPartitionedCacheJtaLookupClassNameSelfTest extends AbstarctCacheJtaSelfTest {
+public class GridPartitionedCacheJtaLookupClassNameSelfTest extends AbstractCacheJtaSelfTest {
     /** {@inheritDoc} */
     @Override protected void configureJta(IgniteConfiguration cfg) {
         cfg.getTransactionConfiguration().setTxManagerLookupClassName(TestTmLookup.class.getName());

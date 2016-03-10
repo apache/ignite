@@ -1,3 +1,10 @@
+rem Install NuGet package to a 'pkg' folder no matter what version it is
+
 rmdir pkg /S /Q
-nuget install Apache.Ignite.NET
-move Apache.Ignite.NET* pkg
+rmdir tmp1 /S /Q
+mkdir tmp1
+cd tmp1
+nuget install Apache.Ignite
+cd ..
+move tmp1\Apache.Ignite.* pkg
+rmdir tmp1 /S /Q
