@@ -46,8 +46,8 @@ public class OdbcMessageParser {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Handshake flag. */
-    private boolean handshakePerformed = false;
+    /** Protocol version confirmation flag. */
+    private boolean versionConfirmed = false;
 
     /**
      * @param ctx Context.
@@ -73,15 +73,29 @@ public class OdbcMessageParser {
 
         BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null);
 
-        OdbcRequest res;
-
-        short version = reader.readShort();
-
-        if (version != PROTOCOL_VERSION)
-            throw new IgniteException("Unsupported ODBC communication protocol version: " +
-                    "[ver=" + version + ", current_ver=" + PROTOCOL_VERSION + ']');
-
         byte cmd = reader.readByte();
+
+        // This is a special case because we can not decode
+        // protocol messages until we has not confirmed that
+        // the remote client uses the same protocol version.
+        if (!versionConfirmed) {
+            if (cmd == OdbcRequest.HANDSHAKE) {
+                short version = reader.readShort();
+
+                if (version != PROTOCOL_VERSION)
+                    throw new IgniteException("Unsupported ODBC communication protocol version: " +
+                            "[ver=" + version + ", current_ver=" + PROTOCOL_VERSION + ']');
+
+                versionConfirmed = true;
+
+                return new OdbcHandshakeRequest(version);
+            }
+            else
+                throw new IgniteException("Unexpected ODBC command " +
+                        "(First message is not handshake request): [cmd=" + cmd + ']');
+        }
+
+        OdbcRequest res;
 
         switch (cmd) {
             case OdbcRequest.EXECUTE_SQL_QUERY: {
@@ -139,7 +153,7 @@ public class OdbcMessageParser {
             }
 
             default:
-                throw new IgniteException("Unknown ODBC command: " + cmd);
+                throw new IgniteException("Unknown ODBC command: [cmd=" + cmd + ']');
         }
 
         return res;
@@ -156,9 +170,6 @@ public class OdbcMessageParser {
 
         // Creating new binary writer
         BinaryWriterExImpl writer = marsh.writer(new BinaryHeapOutputStream(INIT_CAP));
-
-        // Writing protocol version.
-        writer.writeShort(PROTOCOL_VERSION);
 
         // Writing status.
         writer.writeByte((byte) msg.status());
@@ -187,7 +198,6 @@ public class OdbcMessageParser {
 
             for (OdbcColumnMeta meta : metas)
                 meta.writeBinary(writer, marsh.context());
-
         }
         else if (res0 instanceof OdbcQueryFetchResult) {
             OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;
