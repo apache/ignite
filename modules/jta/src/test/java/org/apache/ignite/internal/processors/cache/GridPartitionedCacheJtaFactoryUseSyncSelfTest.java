@@ -15,28 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.cache;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.GridComputationBinarylizableClosuresSelfTest;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- *
+ * Factory JTA integration test using PARTITIONED cache.
  */
-public class IgniteBinaryObjectsComputeGridTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
+public class GridPartitionedCacheJtaFactoryUseSyncSelfTest extends GridPartitionedCacheJtaFactorySelfTest {
+    /** {@inheritDoc} */
+    @Override protected void configureJta(IgniteConfiguration cfg) {
+        super.configureJta(cfg);
 
-        TestSuite suite = IgniteComputeGridTestSuite.suite();
-
-        suite.addTestSuite(GridComputationBinarylizableClosuresSelfTest.class);
-
-        return suite;
+        cfg.getTransactionConfiguration().setUseJtaSynchronization(true);
     }
 }

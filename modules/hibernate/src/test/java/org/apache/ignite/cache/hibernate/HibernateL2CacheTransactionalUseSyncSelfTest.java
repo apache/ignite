@@ -15,28 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.cache.hibernate;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.GridComputationBinarylizableClosuresSelfTest;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import javax.transaction.Synchronization;
 
 /**
- *
+ * Tests Hibernate L2 cache with TRANSACTIONAL access mode and {@link Synchronization}
+ * instead of XA resource.
  */
-public class IgniteBinaryObjectsComputeGridTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
-
-        TestSuite suite = IgniteComputeGridTestSuite.suite();
-
-        suite.addTestSuite(GridComputationBinarylizableClosuresSelfTest.class);
-
-        return suite;
+public class HibernateL2CacheTransactionalUseSyncSelfTest extends HibernateL2CacheTransactionalSelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean useJtaSynchronization() {
+        return true;
     }
 }
