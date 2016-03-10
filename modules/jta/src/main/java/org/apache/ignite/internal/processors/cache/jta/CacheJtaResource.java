@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.cache.jta;
 
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
+import javax.transaction.Status;
+import javax.transaction.Synchronization;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -35,9 +38,9 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /**
- * Cache XA resource implementation.
+ * Cache {@link XAResource} and {@link Synchronization} implementation.
  */
-public final class GridCacheXAResource implements XAResource {
+final class CacheJtaResource implements XAResource, Synchronization {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -57,14 +60,14 @@ public final class GridCacheXAResource implements XAResource {
      * @param cacheTx Cache jta.
      * @param ctx Kernal context.
      */
-    public GridCacheXAResource(IgniteInternalTx cacheTx, GridKernalContext ctx) {
+    public CacheJtaResource(IgniteInternalTx cacheTx, GridKernalContext ctx) {
         assert cacheTx != null;
         assert ctx != null;
 
         this.cacheTx = cacheTx;
 
         if (log == null)
-            log = U.logger(ctx, logRef, GridCacheXAResource.class);
+            log = U.logger(ctx, logRef, CacheJtaResource.class);
     }
 
     /** {@inheritDoc} */
@@ -226,12 +229,62 @@ public final class GridCacheXAResource implements XAResource {
         if (xar == this)
             return true;
 
-        if (!(xar instanceof GridCacheXAResource))
+        if (!(xar instanceof CacheJtaResource))
             return false;
 
-        GridCacheXAResource other = (GridCacheXAResource)xar;
+        CacheJtaResource other = (CacheJtaResource)xar;
 
         return cacheTx == other.cacheTx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeCompletion() {
+        if (log.isDebugEnabled())
+            log.debug("Synchronization.beforeCompletion() [xid=" + cacheTx.xid() + "]");
+
+        if (cacheTx.state() != ACTIVE)
+            throw new CacheException("Cache transaction is not in active state.");
+
+        try {
+            cacheTx.prepare();
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheException("Failed to prepare cache transaction.", e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterCompletion(int status) {
+        switch (status) {
+            case Status.STATUS_COMMITTED:
+                if (log.isDebugEnabled())
+                    log.debug("Synchronization.afterCompletion(STATUS_COMMITTED) [xid=" + cacheTx.xid() + "]");
+
+                try {
+                    cacheTx.commit();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException("Failed to commit cache transaction.", e);
+                }
+
+                break;
+
+            case Status.STATUS_ROLLEDBACK:
+                if (log.isDebugEnabled())
+                    log.debug("Synchronization.afterCompletion(STATUS_ROLLEDBACK) [xid=" + cacheTx.xid() + "]");
+
+                try {
+                    cacheTx.rollback();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException("Failed to rollback cache transaction.", e);
+                }
+
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unknown transaction status: " + status);
+        }
     }
 
     /**
@@ -246,6 +299,6 @@ public final class GridCacheXAResource implements XAResource {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheXAResource.class, this);
+        return S.toString(CacheJtaResource.class, this);
     }
 }

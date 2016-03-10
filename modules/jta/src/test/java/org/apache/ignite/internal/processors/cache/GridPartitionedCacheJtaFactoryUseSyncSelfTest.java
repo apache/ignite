@@ -17,25 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.configuration.Factory;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
-import org.objectweb.transaction.jta.TransactionManager;
 
 /**
  * Factory JTA integration test using PARTITIONED cache.
  */
-public class GridPartitionedCacheJtaFactorySelfTest extends AbstractCacheJtaSelfTest {
+public class GridPartitionedCacheJtaFactoryUseSyncSelfTest extends GridPartitionedCacheJtaFactorySelfTest {
     /** {@inheritDoc} */
     @Override protected void configureJta(IgniteConfiguration cfg) {
-        TransactionConfiguration txCfg = cfg.getTransactionConfiguration();
+        super.configureJta(cfg);
 
-        txCfg.setTxManagerFactory(new Factory<TransactionManager>() {
-            private static final long serialVersionUID = 0L;
-
-            @Override public TransactionManager create() {
-                return jotm.getTransactionManager();
-            }
-        });
+        cfg.getTransactionConfiguration().setUseJtaSynchronization(true);
     }
 }
