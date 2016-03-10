@@ -2689,6 +2689,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(outItf.checkAfterUnmarshalled(), 17);
     }
 
+    /**
+     * Test object with {@link Proxy} field.
+     *
+     * @throws Exception If fails.
+     */
     public void testObjectContainingProxy() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 

@@ -35,7 +35,6 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbstractTest {
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);

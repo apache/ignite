@@ -61,6 +61,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -78,7 +79,6 @@ import org.jsr166.ConcurrentHashMap8;
  * Binary context.
  */
 public class BinaryContext {
-
     /** */
     private static final ClassLoader dfltLdr = U.gridClassLoader();
 
@@ -90,17 +90,19 @@ public class BinaryContext {
     static final BinaryInternalMapper SIMPLE_NAME_LOWER_CASE_MAPPER =
         new BinaryInternalMapper(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true), false);
 
+    /** Set of system classes that should be marshalled with BinaryMarshaller. */
     private static final Set<String> BINARYLIZABLE_SYSTEM_CLASSES;
 
+    /** Binarylizable system classes set initialization. */
     static {
         Set<String> classes = new HashSet<>();
 
-        classes.add("org.apache.ignite.internal.processors.closure.GridClosureProcessor$C1V2");
-        classes.add("org.apache.ignite.internal.processors.closure.GridClosureProcessor$C1MLAV2");
-        classes.add("org.apache.ignite.internal.processors.closure.GridClosureProcessor$C2V2");
-        classes.add("org.apache.ignite.internal.processors.closure.GridClosureProcessor$C2MLAV2");
-        classes.add("org.apache.ignite.internal.processors.closure.GridClosureProcessor$C4V2");
-        classes.add("org.apache.ignite.internal.processors.closure.GridClosureProcessor$C4MLAV2");
+        classes.add(GridClosureProcessor.C1V2.class.getName());
+        classes.add(GridClosureProcessor.C1MLAV2.class.getName());
+        classes.add(GridClosureProcessor.C2V2.class.getName());
+        classes.add(GridClosureProcessor.C2MLAV2.class.getName());
+        classes.add(GridClosureProcessor.C4V2.class.getName());
+        classes.add(GridClosureProcessor.C4MLAV2.class.getName());
 
         BINARYLIZABLE_SYSTEM_CLASSES = Collections.unmodifiableSet(classes);
     }
@@ -603,7 +605,6 @@ public class BinaryContext {
         String clsName = cls.getName();
 
         if (marshCtx.isSystemType(clsName)) {
-
             BinarySerializer serializer = null;
 
             if (BINARYLIZABLE_SYSTEM_CLASSES.contains(clsName))

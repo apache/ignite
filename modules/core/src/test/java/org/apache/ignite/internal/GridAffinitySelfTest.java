@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -68,8 +67,6 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
             cfg.setCacheConfiguration(cacheCfg);
         }
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         return cfg;
     }

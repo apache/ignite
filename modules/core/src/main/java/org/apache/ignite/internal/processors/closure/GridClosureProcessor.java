@@ -83,7 +83,6 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
  *
  */
 public class GridClosureProcessor extends GridProcessorAdapter {
-
     /** Ignite version in which binarylizable versions of closures were introduced. */
     public static final IgniteProductVersion BINARYLIZABLE_CLOSURES_SINCE = IgniteProductVersion.fromString("1.6.0");
 
@@ -1835,7 +1834,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class C1V2<T, R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
+    public static class C1V2<T, R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
         GridInternalWrapper<IgniteClosure> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -1934,7 +1933,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class C1MLAV2<T, R> extends C1V2<T, R> implements ComputeJobMasterLeaveAware {
+    public static class C1MLAV2<T, R> extends C1V2<T, R> implements ComputeJobMasterLeaveAware {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2027,7 +2026,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class C2V2<R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
+    public static class C2V2<R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
         GridInternalWrapper<Callable> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -2118,7 +2117,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class C2MLAV2<R> extends C2V2<R> implements ComputeJobMasterLeaveAware {
+    public static class C2MLAV2<R> extends C2V2<R> implements ComputeJobMasterLeaveAware {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2205,7 +2204,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private static class C4V2 implements ComputeJob, Binarylizable, GridNoImplicitInjection, GridInternalWrapper<Runnable> {
+    public static class C4V2 implements ComputeJob, Binarylizable, GridNoImplicitInjection, GridInternalWrapper<Runnable> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2292,7 +2291,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class C4MLAV2 extends C4V2 implements ComputeJobMasterLeaveAware {
+    public static class C4MLAV2 extends C4V2 implements ComputeJobMasterLeaveAware {
         /** */
         private static final long serialVersionUID = 0L;
 
