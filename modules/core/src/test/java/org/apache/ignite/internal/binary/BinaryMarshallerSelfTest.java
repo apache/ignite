@@ -2690,6 +2690,35 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test object with {@link Proxy} field.
+     *
+     * @throws Exception If fails.
+     */
+    public void testObjectContainingProxy() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller();
+
+        SomeItf inItf = (SomeItf)Proxy.newProxyInstance(
+            BinaryMarshallerSelfTest.class.getClassLoader(), new Class[] {SomeItf.class},
+            new InvocationHandler() {
+                private NonSerializable obj = new NonSerializable(null);
+
+                @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
+                    if ("hashCode".equals(mtd.getName()))
+                        return obj.hashCode();
+
+                    obj.checkAfterUnmarshalled();
+
+                    return 17;
+                }
+            }
+        );
+
+        SomeItf outItf = marsh.unmarshal(marsh.marshal(inItf), null);
+
+        assertEquals(outItf.checkAfterUnmarshalled(), 17);
+    }
+
+    /**
      * Test duplicate fields.
      *
      * @throws Exception If failed.
@@ -4674,6 +4703,27 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
             rawVal = rawReader.readDecimal();
             rawValArr = rawReader.readDecimalArray();
+        }
+    }
+
+    /**
+     * Wrapper object.
+     */
+    private static class Wrapper {
+
+        /** Value. */
+        private final Object value;
+
+        /** Constructor. */
+        public Wrapper(Object value) {
+            this.value = value;
+        }
+
+        /**
+         * @return Value.
+         */
+        public Object getValue() {
+            return value;
         }
     }
 }
