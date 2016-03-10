@@ -64,7 +64,7 @@ namespace Apache.Ignite.Linq.Impl
         public SqlFieldsQuery GetFieldsQuery()
         {
             var data = GetQueryData();
-            var executor = (CacheFieldsQueryExecutor) CacheQueryProvider.Executor;
+            var executor = CacheQueryProvider.Executor;
 
             return new SqlFieldsQuery(data.QueryText, executor.Local, data.Parameters.ToArray());
         }
@@ -84,7 +84,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public Func<object[], IQueryCursor<TQ>> CompileQuery<TQ>(Delegate queryCaller)
         {
-            var executor = (CacheFieldsQueryExecutor) CacheQueryProvider.Executor;
+            var executor = CacheQueryProvider.Executor;
 
             return executor.CompileQuery<TQ>(GetQueryModel(), queryCaller);
         }

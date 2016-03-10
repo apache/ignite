@@ -44,7 +44,7 @@ namespace Apache.Ignite.Linq.Impl
         private readonly IQueryParser _parser;
         
         /** */
-        private readonly IQueryExecutor _executor;
+        private readonly CacheFieldsQueryExecutor _executor;
 
         /** */
         private readonly IIgnite _ignite;
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryProvider"/> class.
         /// </summary>
-        public CacheFieldsQueryProvider(IQueryParser queryParser, IQueryExecutor executor, IIgnite ignite, 
+        public CacheFieldsQueryProvider(IQueryParser queryParser, CacheFieldsQueryExecutor executor, IIgnite ignite, 
             CacheConfiguration cacheConfiguration, string tableName, Type cacheValueType) 
         {
             Debug.Assert(queryParser != null);
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the executor.
         /// </summary>
-        public IQueryExecutor Executor
+        public CacheFieldsQueryExecutor Executor
         {
             get { return _executor; }
         }
@@ -150,6 +150,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public TResult Execute<TResult>(Expression expression)
         {
+            // TODO: Here we can cache compiled queries
             return (TResult) Execute(expression).Value;
         }
 
