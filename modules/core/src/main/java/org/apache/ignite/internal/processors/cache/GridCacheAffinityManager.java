@@ -502,4 +502,12 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     GridAffinityAssignmentCache affinityCache() {
         return aff;
     }
+
+    void affinityCache(GridAffinityAssignmentCache aff) {
+        assert aff.lastVersion().compareTo(this.aff.lastVersion()) >= 0;
+        assert aff.idealAssignment() != null;
+
+        this.aff.idealAssignment(aff.idealAssignment());
+        this.aff.initialize(aff.lastVersion(), aff.assignments(aff.lastVersion()));
+    }
 }

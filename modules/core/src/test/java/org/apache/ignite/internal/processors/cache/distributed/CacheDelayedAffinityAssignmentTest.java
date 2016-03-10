@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -74,6 +75,9 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
     /** */
     private static final String CACHE_NAME1 = "aff_log_cache";
+
+    /** */
+    private static final String CACHE_NAME2 = "cache2";
 
     /** */
     private IgniteClosure<String, CacheConfiguration> cacheC;
@@ -241,7 +245,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         };
 
-        cacheNodeFilter = new CachePredicate(F.asList(getTestGridName(1), getTestGridName(2)));
+        cacheNodeFilter = new CachePredicate(false, F.asList(getTestGridName(0)));
 
         testAffinitySimpleSequentialStart();
 
@@ -257,15 +261,11 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
                 if (gridName.equals(getTestGridName(1)))
                     return null;
 
-                CacheConfiguration ccfg = cacheConfiguration();
-
-                ccfg.setBackups(1);
-
-                return ccfg;
+                return cacheConfiguration();
             }
         };
 
-        cacheNodeFilter = new CachePredicate(F.asList(getTestGridName(0), getTestGridName(2), getTestGridName(3)));
+        cacheNodeFilter = new CachePredicate(false, F.asList(getTestGridName(1)));
 
         startGrid(0);
 
@@ -284,6 +284,52 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         checkAffinity(3, topVer(5, 0), true);
 
         assertNull(((IgniteKernal)ignite(1)).context().cache().internalCache(CACHE_NAME1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateCloseClientCacheOnCoordinator() throws Exception {
+        cacheC = new IgniteClosure<String, CacheConfiguration>() {
+            @Override public CacheConfiguration apply(String gridName) {
+                if (gridName.equals(getTestGridName(0)))
+                    return null;
+
+                return cacheConfiguration();
+            }
+        };
+
+        cacheNodeFilter = new CachePredicate(false, F.asList(getTestGridName(0)));
+
+        Ignite ignite0 = startGrid(0);
+
+        int topVer = 1;
+
+        int nodes = 1;
+
+        for (int i = 0;  i < 3; i++) {
+            log.info("Iteration: " + i);
+
+            startGrid(nodes++);
+
+            topVer++;
+
+            checkAffinity(nodes, topVer(topVer, 1), true);
+
+            ignite0.cache(CACHE_NAME1);
+
+            checkAffinity(nodes, topVer(topVer, 2), true);
+
+            startGrid(nodes++);
+
+            topVer++;
+
+            checkAffinity(nodes, topVer(topVer, 1), true);
+
+            ignite0.cache(CACHE_NAME1).close();
+
+            checkAffinity(nodes, topVer(topVer, 2), true);
+        }
     }
 
     /**
@@ -654,6 +700,63 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClientCacheStartClose() throws Exception {
+        cacheC = new IgniteClosure<String, CacheConfiguration>() {
+            @Override public CacheConfiguration apply(String gridName) {
+                if (gridName.equals(getTestGridName(1)))
+                    return null;
+
+                return cacheConfiguration();
+            }
+        };
+
+        startGrid(0);
+
+        Ignite client = startClient(1);
+
+        checkAffinity(2, topVer(2, 0), true);
+
+        IgniteCache cache = client.cache(CACHE_NAME1);
+
+        checkAffinity(2, topVer(2, 1), true);
+
+        cache.close();
+
+        checkAffinity(2, topVer(2, 2), true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheStartDestroy() throws Exception {
+        startGridsMultiThreaded(3, false);
+
+        checkAffinity(3, topVer(3, 1), true);
+
+        Ignite client = startClient(3);
+
+        checkAffinity(4, topVer(4, 0), true);
+
+        CacheConfiguration ccfg = cacheConfiguration();
+
+        ccfg.setName(CACHE_NAME2);
+
+        ignite(0).createCache(ccfg);
+
+        checkAffinity(4, topVer(4, 1), true);
+
+        client.cache(CACHE_NAME2);
+
+        checkAffinity(4, topVer(4, 2), true);
+
+        client.destroyCache(CACHE_NAME2);
+
+        checkAffinity(4, topVer(4, 2), true);
+    }
+
+    /**
      * @param node Node.
      * @param topVer Topology version.
      * @param cache Cache name.
@@ -819,10 +922,13 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         /** */
         private List<String> cacheNodes;
 
+        private boolean include;
+
         /**
          * @param cacheNodes Cache nodes names.
          */
-        public CachePredicate(List<String> cacheNodes) {
+        public CachePredicate(boolean include, List<String> cacheNodes) {
+            this.include = include;
             this.cacheNodes = cacheNodes;
         }
 
@@ -830,7 +936,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         @Override public boolean apply(ClusterNode clusterNode) {
             String name = clusterNode.attribute(ATTR_GRID_NAME).toString();
 
-            return cacheNodes.contains(name);
+            return include == cacheNodes.contains(name);
         }
     }
 
