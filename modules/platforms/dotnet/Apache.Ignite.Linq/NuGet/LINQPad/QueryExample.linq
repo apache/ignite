@@ -1,9 +1,10 @@
 <Query Kind="Program">
-  <NuGetReference>Apache.Ignite</NuGetReference>
+  <NuGetReference>Apache.Ignite.Linq</NuGetReference>
   <Namespace>Apache.Ignite.Core</Namespace>
   <Namespace>Apache.Ignite.Core.Binary</Namespace>
   <Namespace>Apache.Ignite.Core.Cache.Configuration</Namespace>
   <Namespace>Apache.Ignite.Core.Cache.Query</Namespace>
+  <Namespace>Apache.Ignite.Linq</Namespace>
 </Query>
 
 /*
@@ -41,37 +42,52 @@ void Main()
 	// Configure cacheable types
     var cfg = new IgniteConfiguration { BinaryConfiguration = new BinaryConfiguration(typeof(Organization), typeof(Person))	};
 
-    // Start instance
-    using (var ignite = Ignition.Start(cfg))
-    {
-        // Create and populate organization cache
-        var orgs = ignite.GetOrCreateCache<int, Organization>(new CacheConfiguration("orgs", 
+	// Start instance
+	using (var ignite = Ignition.Start(cfg))
+	{
+		// Create and populate organization cache
+		var orgs = ignite.GetOrCreateCache<int, Organization>(new CacheConfiguration("orgs",
 			new QueryEntity(typeof(int), typeof(Organization))));
-        orgs[1] = new Organization { Name = "Apache", Type = "Private", Size = 5300 };
-        orgs[2] = new Organization { Name = "Microsoft", Type = "Private", Size = 110000 };
-        orgs[3] = new Organization { Name = "Red Cross", Type = "Non-Profit", Size = 35000 };
+		orgs[1] = new Organization { Name = "Apache", Type = "Private", Size = 5300 };
+		orgs[2] = new Organization { Name = "Microsoft", Type = "Private", Size = 110000 };
+		orgs[3] = new Organization { Name = "Red Cross", Type = "Non-Profit", Size = 35000 };
 
-        // Create and populate person cache
-        var persons = ignite.CreateCache<int, Person>(new CacheConfiguration("persons", typeof(Person)));
-        persons[1] = new Person { OrgId = 1, Name = "James Wilson" };
-        persons[2] = new Person { OrgId = 1, Name = "Daniel Adams" };
-        persons[3] = new Person { OrgId = 2, Name = "Christian Moss" };
-        persons[4] = new Person { OrgId = 3, Name = "Allison Mathis" };
+		// Create and populate person cache
+		var persons = ignite.CreateCache<int, Person>(new CacheConfiguration("persons", typeof(Person)));
+		persons[1] = new Person { OrgId = 1, Name = "James Wilson" };
+		persons[2] = new Person { OrgId = 1, Name = "Daniel Adams" };
+		persons[3] = new Person { OrgId = 2, Name = "Christian Moss" };
+		persons[4] = new Person { OrgId = 3, Name = "Allison Mathis" };
 		persons[5] = new Person { OrgId = 3, Name = "Christopher Adams" };
 
-        // SQL query
-        orgs.Query(new SqlQuery(typeof(Organization), "size < ?", 100000)).Dump("Organizations with size less than 100K");
-		
+		// Create LINQ queryable
+		// NOTE: You can use LINQ-to-objects on ICache<K,V> instance directly, but this will cause local execution (slow)
+		var orgsQry = orgs.AsCacheQueryable();
+		var personsQry = persons.AsCacheQueryable();
+
+		// SQL query
+		var sizeQry = orgsQry.Where(x => x.Value.Size < 100000);
+		sizeQry.Dump("Organizations with size less than 100K");
+
+		// Introspection
+		((ICacheQueryable)sizeQry).GetFieldsQuery().Sql.Dump("Generated SQL");
+
 		// SQL query with join
 		const string orgName = "Apache";
-		persons.Query(new SqlQuery(typeof(Person), "from Person, \"orgs\".Organization where Person.OrgId = \"orgs\".Organization._key and \"orgs\".Organization.Name = ?", orgName))
-			.Dump("Persons working for " + orgName);
+
+		var joinQry =
+			from p in personsQry
+			from o in orgsQry
+			where p.Value.OrgId == o.Key && o.Value.Name == orgName
+			select p;
+
+		joinQry.Dump("Persons working for " + orgName);
+		((ICacheQueryable)joinQry).GetFieldsQuery().Sql.Dump("Generated SQL");
 
 		// Fields query
-		orgs.QueryFields(new SqlFieldsQuery("select name, size from Organization")).Dump("Fields query");
-
-		// Full text query
-		persons.Query(new TextQuery(typeof(Person), "Chris*")).Dump("Persons starting with 'Chris'");
+		var fieldsQry = orgsQry.Select(o => new { o.Value.Name, o.Value.Size });
+		fieldsQry.Dump("Fields query");
+		((ICacheQueryable)fieldsQry).GetFieldsQuery().Sql.Dump("Generated SQL");
 	}
 }
 
@@ -88,7 +104,6 @@ public class Organization
 
 public class Person
 {
-	[QueryTextField]
 	public string Name { get; set; }
 
 	[QuerySqlField]
