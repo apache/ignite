@@ -130,7 +130,6 @@ namespace Apache.Ignite.Linq.Impl
 
             var elementType = GetItemTypeOfClosedGenericIEnumerable(expression.Type, "expression");
 
-            // TODO: Compile delegate
             return (IQueryable) GenericCreateQueryMethod.MakeGenericMethod(elementType)
                 .Invoke(this, new object[] {expression});
         }
@@ -150,7 +149,6 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public TResult Execute<TResult>(Expression expression)
         {
-            // TODO: Here we can cache compiled queries
             return (TResult) Execute(expression).Value;
         }
 
