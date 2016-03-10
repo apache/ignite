@@ -10,6 +10,7 @@ mkdir pkg
 $ver = (Get-ChildItem nupkg\Apache.Ignite.Linq*)[0].Name -replace '\D+([\d.]+)\.\D+','$1'
 $nugetSrc = (Get-Location).Path + "\nupkg"
 
+& nuget install Remotion.Linq -Version 2.0.1 -OutputDirectory pkg  # Force install to fix teamcity issues
 & nuget install Apache.Ignite.Linq -Version $ver -OutputDirectory pkg -Source $nugetSrc
 
 move ".\pkg\Apache.Ignite.$ver" ".\pkg\Apache.Ignite"
