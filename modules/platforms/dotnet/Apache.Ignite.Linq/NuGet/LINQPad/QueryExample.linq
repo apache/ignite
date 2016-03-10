@@ -85,7 +85,7 @@ void Main()
 		((ICacheQueryable)joinQry).GetFieldsQuery().Sql.Dump("Generated SQL");
 
 		// Fields query
-		var fieldsQry = orgsQry.Select(o => new { o.Value.Name, o.Value.Size });
+		var fieldsQry = orgsQry.Select(o => new { o.Value.Name, o.Value.Size }).OrderBy(x => x.Size);
 		fieldsQry.Dump("Fields query");
 		((ICacheQueryable)fieldsQry).GetFieldsQuery().Sql.Dump("Generated SQL");
 	}
