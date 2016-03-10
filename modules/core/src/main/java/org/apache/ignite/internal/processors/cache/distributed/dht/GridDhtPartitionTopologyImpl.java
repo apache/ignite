@@ -279,6 +279,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, List<List<ClusterNode>> aff)
         throws IgniteCheckedException {
+        assert aff != null;
+
         waitForRent();
 
         ClusterNode loc = cctx.localNode();
@@ -439,6 +441,11 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
+        assert cctx.affinity().affinityTopologyVersion().equals(topVer) : "Affinity is not initialized " +
+            "[topVer=" + topVer +
+            ", affVer=" + cctx.affinity().affinityTopologyVersion() +
+            ", fut=" + exchFut + ']';
+
         lock.writeLock().lock();
 
         try {
@@ -527,7 +534,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            updateRebalanceVersion(null);
+            updateRebalanceVersion(cctx.affinity().assignments(topVer));
 
             consistencyCheck();
         }
@@ -726,6 +733,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer1=" + topVer +
                 ", topVer2=" + this.topVer +
+                ", node=" + cctx.gridName() +
                 ", cache=" + cctx.name() +
                 ", node2part=" + node2part + ']';
 
@@ -971,9 +979,15 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             part2node = p2n;
 
-            boolean changed = checkEvictions(updateSeq, null);
+            boolean changed = false;
 
-            updateRebalanceVersion(null);
+            if (cctx.affinity().affinityTopologyVersion().compareTo(topVer) >= 0) {
+                List<List<ClusterNode>> aff = cctx.affinity().assignments(topVer);
+
+                changed = checkEvictions(updateSeq, aff);
+
+                updateRebalanceVersion(aff);
+            }
 
             consistencyCheck();
 
@@ -991,8 +1005,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Nullable @Override public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap2 parts,
-        @Nullable Map<Integer, Long> cntrMap,
-        boolean affReady) {
+        @Nullable Map<Integer, Long> cntrMap) {
         if (log.isDebugEnabled())
             log.debug("Updating single partition map [exchId=" + exchId + ", parts=" + mapString(parts) + ']');
 
@@ -1086,10 +1099,12 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            if (affReady) {
-                changed |= checkEvictions(updateSeq, null);
+            if (cctx.affinity().affinityTopologyVersion().compareTo(topVer) >= 0) {
+                List<List<ClusterNode>> aff = cctx.affinity().assignments(topVer);
 
-                updateRebalanceVersion(null);
+                changed |= checkEvictions(updateSeq, aff);
+
+                updateRebalanceVersion(aff);
             }
 
             consistencyCheck();
@@ -1106,12 +1121,10 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /**
      * @param updateSeq Update sequence.
+     * @param aff Affinity assignments.
      * @return Checks if any of the local partitions need to be evicted.
      */
     private boolean checkEvictions(long updateSeq, List<List<ClusterNode>> aff) {
-        if (aff == null)
-            aff = cctx.affinity().assignments(topVer);
-
         boolean changed = false;
 
         UUID locId = cctx.nodeId();
@@ -1376,15 +1389,15 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /**
-     *
+     * @param aff Affinity assignments.
      */
-    private void updateRebalanceVersion(@Nullable  List<List<ClusterNode>> aff) {
+    private void updateRebalanceVersion(List<List<ClusterNode>> aff) {
         if (!rebalancedTopVer.equals(topVer)) {
             if (node2part == null || !node2part.valid())
                 return;
 
             for (int i = 0; i < cctx.affinity().partitions(); i++) {
-                List<ClusterNode> affNodes = aff != null ? aff.get(i) : cctx.affinity().nodes(i, topVer);
+                List<ClusterNode> affNodes = aff.get(i);
 
                 // Topology doesn't contain server nodes (just clients).
                 if (affNodes.isEmpty())

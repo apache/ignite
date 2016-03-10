@@ -477,7 +477,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
-            if (clientCacheStarted && cctx.kernalContext().clientNode())
+            if (clientCacheStarted)
                 clientOnlyExchange();
             else
                 onDone(topologyVersion());
@@ -563,8 +563,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void clientOnlyExchange() throws IgniteCheckedException {
         clientOnlyExchange = true;
 
-        if (crd != null) {
-            sendLocalPartitions(crd, exchId);
+        if (crd != null && !crd.isLocal()) {
+            if (!centralizedAff)
+                sendLocalPartitions(crd, exchId);
 
             initFut.onDone(true);
         }
@@ -1352,8 +1353,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 log.debug("Received message for finished future (will reply only to sender) [msg=" + msg +
                     ", fut=" + this + ']');
 
-            // TODO
-            sendAllPartitions(node.id(), cctx.gridConfig().getNetworkSendRetryCount());
+            if (!centralizedAff)
+                sendAllPartitions(node.id(), cctx.gridConfig().getNetworkSendRetryCount());
         }
         else {
             initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
@@ -1567,9 +1568,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         assert msg.exchangeId().equals(exchId);
 
-        assert msg.lastVersion() != null;
-
-        cctx.versions().onReceived(node.id(), msg.lastVersion());
+        if (msg.lastVersion() != null)
+            cctx.versions().onReceived(node.id(), msg.lastVersion());
 
         updatePartitionFullMap(msg);
 
@@ -1613,7 +1613,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             GridDhtPartitionTopology top = cacheCtx != null ? cacheCtx.topology() :
                 cctx.affinity().clientTopology(cacheId, this);
 
-            top.update(exchId, entry.getValue(), msg.partitionUpdateCounters(cacheId), false);
+            top.update(exchId, entry.getValue(), msg.partitionUpdateCounters(cacheId));
         }
     }
 
@@ -1628,12 +1628,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
             @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                assert centralizedAff;
-
                 if (isDone() || !enterBusy())
                     return;
 
                 try {
+                    assert centralizedAff;
+
                     if (crd.equals(node)) {
                         cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this, msg);
 

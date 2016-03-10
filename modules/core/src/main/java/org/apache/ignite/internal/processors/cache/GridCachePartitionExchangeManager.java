@@ -1029,7 +1029,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         top = cacheCtx.topology();
 
                     if (top != null) {
-                        if (top.update(null, entry.getValue(), null, true) != null)
+                        if (top.update(null, entry.getValue(), null) != null)
                             updated = true;
 
                         cctx.affinity().checkRebalanceState(entry.getValue().topologyVersion(), cacheId);

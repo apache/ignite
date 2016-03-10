@@ -289,7 +289,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCreateCloseClientCacheOnCoordinator() throws Exception {
+    public void _testCreateCloseClientCacheOnCoordinator() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration>() {
             @Override public CacheConfiguration apply(String gridName) {
                 if (gridName.equals(getTestGridName(0)))
@@ -348,9 +348,32 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        checkAffinity(1, topVer(3, 0), false);
+        checkAffinity(1, topVer(3, 0), true);
 
         checkNoExchange(1, topVer(3, 1));
+
+        awaitPartitionMapExchange();
+    }
+
+    /**
+     * Simple test, node leaves.
+     *
+     * @throws Exception If failed.
+     */
+    public void testAffinitySimpleNodeLeaveClientAffinity() throws Exception {
+        startGrid(0);
+
+        startGrid(1);
+
+        checkAffinity(2, topVer(2, 1), true);
+
+        startClient(2);
+
+        checkAffinity(3, topVer(3, 0), true);
+
+        stopGrid(1);
+
+        checkAffinity(2, topVer(4, 0), true);
 
         awaitPartitionMapExchange();
     }
