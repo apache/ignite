@@ -42,9 +42,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Session listener for web sessions caching.
  */
 class WebSessionListener {
-    /** */
-    private static final long RETRY_DELAY = 1000;
-
     /** Filter. */
     private final WebSessionFilter filter;
 
@@ -75,7 +72,6 @@ class WebSessionListener {
     public void destroySession(String sesId) {
         assert sesId != null;
         for (int i = 0; i < retries; i++) {
-
             try {
                 if (filter.getCache().remove(sesId) && log.isDebugEnabled())
                     log.debug("Session destroyed: " + sesId);

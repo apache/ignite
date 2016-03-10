@@ -194,8 +194,8 @@ public class WebSessionFilter implements Filter {
     /** Transactions enabled flag. */
     private boolean txEnabled;
 
-    /** Grid name. */
-    private String gridName;
+    /** Node. */
+    private Ignite webSesIgnite;
 
     /** Cache name. */
     private String cacheName;
@@ -207,7 +207,7 @@ public class WebSessionFilter implements Filter {
     @Override public void init(FilterConfig cfg) throws ServletException {
         ctx = cfg.getServletContext();
 
-        gridName = U.firstNotNull(
+        String gridName = U.firstNotNull(
             cfg.getInitParameter(WEB_SES_NAME_PARAM),
             ctx.getInitParameter(WEB_SES_NAME_PARAM));
 
@@ -226,7 +226,7 @@ public class WebSessionFilter implements Filter {
             throw new IgniteException("Maximum number of retries parameter is invalid: " + retriesStr, e);
         }
 
-        Ignite webSesIgnite = G.ignite(gridName);
+        webSesIgnite = G.ignite(gridName);
 
         if (webSesIgnite == null)
             throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
@@ -306,8 +306,6 @@ public class WebSessionFilter implements Filter {
      * Reinits cache.
      */
     void reinitCache() {
-        Ignite webSesIgnite = G.ignite(gridName);
-
         cache = webSesIgnite.cache(cacheName);
     }
 
@@ -505,6 +503,8 @@ public class WebSessionFilter implements Filter {
 
         if (e instanceof IllegalStateException) {
             reinitCache();
+
+            return;
         }
         else if (X.hasCause(e, IgniteClientDisconnectedException.class)) {
             IgniteClientDisconnectedException cause = X.cause(e, IgniteClientDisconnectedException.class);

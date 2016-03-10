@@ -80,8 +80,8 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testClientRestartRequest() throws Exception {
-        testClientRestartRequest("/modules/core/src/test/config/websession/example-cache.xml",
+    public void testClientReconnectRequest() throws Exception {
+        testClientReconnectRequest("/modules/core/src/test/config/websession/example-cache.xml",
             "/modules/core/src/test/config/websession/example-cache2.xml",
             "/modules/core/src/test/config/websession/example-cache-client.xml");
     }
@@ -93,7 +93,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @param clientCfg Client configuration.
      * @throws Exception If failed.
      */
-    private void testClientRestartRequest(String srvCfg, String srvCfg2, String clientCfg) throws Exception {
+    private void testClientReconnectRequest(String srvCfg, String srvCfg2, String clientCfg) throws Exception {
         Server srv = null;
 
         Ignite ignite = Ignition.start(srvCfg);
