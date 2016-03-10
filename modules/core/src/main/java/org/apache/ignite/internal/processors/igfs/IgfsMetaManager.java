@@ -1622,6 +1622,8 @@ public class IgfsMetaManager extends IgfsManager {
                     return null;
             }
 
+            // TODO: move this paragraph to #invoke() closure.
+            // ----------------------------------------------------
             Map<String, String> tmp = oldInfo.properties();
 
             tmp = tmp == null ? new GridLeanMap<String, String>(props.size()) : new GridLeanMap<>(tmp);
@@ -1636,8 +1638,9 @@ public class IgfsMetaManager extends IgfsManager {
             }
 
             IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, tmp);
+            // -------------------------------------------------------
 
-            id2InfoPrj.put(fileId, newInfo); // TODO
+            id2InfoPrj.put(fileId, newInfo);
 
             if (parentId != null) {
                 IgfsListingEntry entry = new IgfsListingEntry(newInfo);
