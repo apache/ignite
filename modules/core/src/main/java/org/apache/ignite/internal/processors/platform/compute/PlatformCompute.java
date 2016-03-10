@@ -78,12 +78,15 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param platformCtx Context.
      * @param grp Cluster group.
      */
-    public PlatformCompute(PlatformContext platformCtx, ClusterGroup grp) {
+    public PlatformCompute(PlatformContext platformCtx, ClusterGroup grp, String platformAttr) {
         super(platformCtx);
+
+        assert grp != null;
+        assert platformAttr != null;
 
         compute = (IgniteComputeImpl)grp.ignite().compute(grp);
 
-        ClusterGroup platformGrp = grp.forAttribute(PlatformUtils.ATTR_PLATFORM, platformCtx.platform());
+        ClusterGroup platformGrp = grp.forAttribute(platformAttr, platformCtx.platform());
 
         computeForPlatform = (IgniteComputeImpl)grp.ignite().compute(platformGrp);
     }

@@ -202,6 +202,88 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests session id change.
+     *
+     * @throws Exception Exception If failed.
+     */
+    public void testChangeSessionId() throws Exception {
+        String newWebSesId;
+        Server srv = null;
+
+        try {
+            srv = startServer(TEST_JETTY_PORT, "/modules/core/src/test/config/websession/example-cache.xml",
+                null, new SessionIdChangeServlet());
+
+            Ignite ignite = G.ignite();
+
+            URLConnection conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/chngsesid").openConnection();
+
+            conn.connect();
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+
+                // checks if the old session object is invalidated.
+                String oldId = rdr.readLine();
+
+                assertNotNull(oldId);
+
+                // id from genuine session
+                String newGenSesId = rdr.readLine();
+
+                assertNotNull(newGenSesId);
+
+                assertFalse(newGenSesId.equals(oldId));
+
+                // id from replicated session
+                newWebSesId = rdr.readLine();
+
+                assertNotNull(newWebSesId);
+
+                assertTrue(newGenSesId.equals(newWebSesId));
+
+                IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
+
+                assertNotNull(cache);
+
+                Thread.sleep(1000);
+
+                HttpSession ses = cache.get(newWebSesId);
+
+                assertNotNull(ses);
+
+                assertEquals("val1", ses.getAttribute("key1"));
+            }
+
+            conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/simple").openConnection();
+
+            conn.addRequestProperty("Cookie", "JSESSIONID=" + newWebSesId);
+
+            conn.connect();
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+
+                // checks if it can be handled with the subsequent request.
+                String sesId = rdr.readLine();
+
+                assertTrue(newWebSesId.equals(sesId));
+
+                String attr = rdr.readLine();
+
+                assertEquals("val1", attr);
+
+                String reqSesValid = rdr.readLine();
+
+                assertEquals("true", reqSesValid);
+
+                assertEquals("invalidated", rdr.readLine());
+            }
+        }
+        finally {
+            stopServer(srv);
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testRestarts() throws Exception {
@@ -404,6 +486,9 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 ses.invalidate();
 
                 res.getWriter().println(ses.getId());
+
+                // invalidates again.
+                req.getSession().invalidate();
             }
             else if (req.getPathInfo().equals("/valid")) {
                 X.println(">>>", "Created session: " + ses.getId(), ">>>");
@@ -414,6 +499,57 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             res.getWriter().println((req.getSession(false) == null) ? "null" : ses.getId());
 
             res.getWriter().flush();
+        }
+    }
+
+    /**
+     * Test session behavior on id change.
+     */
+    private static class SessionIdChangeServlet extends HttpServlet {
+        /** {@inheritDoc} */
+        @Override protected void doGet(HttpServletRequest req, HttpServletResponse res)
+            throws ServletException, IOException {
+            HttpSession ses = req.getSession();
+
+            assertNotNull(ses);
+
+            if (req.getPathInfo().equals("/chngsesid")) {
+
+                ses.setAttribute("key1", "val1");
+
+                X.println(">>>", "Created session: " + ses.getId(), ">>>");
+
+                res.getWriter().println(req.getSession().getId());
+
+                String newId = req.changeSessionId();
+
+                // new id from genuine session.
+                res.getWriter().println(newId);
+
+                // new id from WebSession.
+                res.getWriter().println(req.getSession().getId());
+
+                res.getWriter().flush();
+            }
+            else if (req.getPathInfo().equals("/simple")) {
+                res.getWriter().println(req.getSession().getId());
+
+                res.getWriter().println(req.getSession().getAttribute("key1"));
+
+                res.getWriter().println(req.isRequestedSessionIdValid());
+
+                try {
+                    req.getSession().invalidate();
+                    res.getWriter().println("invalidated");
+                }
+                catch (Exception e) {
+                    res.getWriter().println("failed");
+                }
+
+                res.getWriter().flush();
+            }
+            else
+                throw new ServletException("Nonexisting path: " + req.getPathInfo());
         }
     }
 
