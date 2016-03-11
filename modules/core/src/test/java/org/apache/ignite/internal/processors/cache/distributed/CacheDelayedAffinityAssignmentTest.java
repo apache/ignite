@@ -245,7 +245,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         };
 
-        cacheNodeFilter = new CachePredicate(false, F.asList(getTestGridName(0)));
+        cacheNodeFilter = new CachePredicate(F.asList(getTestGridName(0)));
 
         testAffinitySimpleSequentialStart();
 
@@ -265,7 +265,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         };
 
-        cacheNodeFilter = new CachePredicate(false, F.asList(getTestGridName(1)));
+        cacheNodeFilter = new CachePredicate(F.asList(getTestGridName(1)));
 
         startGrid(0);
 
@@ -289,7 +289,32 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testCreateCloseClientCacheOnCoordinator() throws Exception {
+    public void testCreateCloseClientCacheOnCoordinator1() throws Exception {
+        cacheC = new IgniteClosure<String, CacheConfiguration>() {
+            @Override public CacheConfiguration apply(String gridName) {
+                return null;
+            }
+        };
+
+        cacheNodeFilter = new CachePredicate(F.asList(getTestGridName(0)));
+
+        Ignite ignite0 = startGrid(0);
+
+        ignite0.createCache(cacheConfiguration());
+
+        ignite0.cache(CACHE_NAME1);
+
+        ignite0.cache(CACHE_NAME1).close();
+
+        startGrid(1);
+
+        startGrid(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateCloseClientCacheOnCoordinator2() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration>() {
             @Override public CacheConfiguration apply(String gridName) {
                 if (gridName.equals(getTestGridName(0)))
@@ -299,7 +324,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         };
 
-        cacheNodeFilter = new CachePredicate(false, F.asList(getTestGridName(0)));
+        cacheNodeFilter = new CachePredicate(F.asList(getTestGridName(0)));
 
         Ignite ignite0 = startGrid(0);
 
@@ -943,23 +968,20 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     static class CachePredicate implements IgnitePredicate<ClusterNode> {
         /** */
-        private List<String> cacheNodes;
-
-        private boolean include;
+        private List<String> excludeNodes;
 
         /**
-         * @param cacheNodes Cache nodes names.
+         * @param excludeNodes Nodes names.
          */
-        public CachePredicate(boolean include, List<String> cacheNodes) {
-            this.include = include;
-            this.cacheNodes = cacheNodes;
+        public CachePredicate(List<String> excludeNodes) {
+            this.excludeNodes = excludeNodes;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
             String name = clusterNode.attribute(ATTR_GRID_NAME).toString();
 
-            return include == cacheNodes.contains(name);
+            return !excludeNodes.contains(name);
         }
     }
 

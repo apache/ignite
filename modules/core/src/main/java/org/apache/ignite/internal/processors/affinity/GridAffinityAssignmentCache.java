@@ -38,6 +38,7 @@ import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -52,8 +53,11 @@ public class GridAffinityAssignmentCache {
     /** Cache name. */
     private final String cacheName;
 
+    /** */
+    private final Integer cacheId;
+
     /** Number of backups. */
-    private int backups;
+    private final int backups;
 
     /** Affinity function. */
     private final AffinityFunction aff;
@@ -104,11 +108,21 @@ public class GridAffinityAssignmentCache {
         this.cacheName = cacheName;
         this.backups = backups;
 
+        cacheId = CU.cacheId(cacheName);
+
         log = ctx.log(GridAffinityAssignmentCache.class);
 
         partsCnt = aff.partitions();
         affCache = new ConcurrentLinkedHashMap<>();
         head = new AtomicReference<>(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
+    }
+
+    public String cacheName() {
+        return cacheName;
+    }
+
+    public Integer cacheId() {
+        return cacheId;
     }
 
     /**
@@ -405,6 +419,15 @@ public class GridAffinityAssignmentCache {
         assert cache.topologyVersion().equals(topVer) : "Invalid cached affinity: " + cache;
 
         return cache;
+    }
+
+    public void init(GridAffinityAssignmentCache aff) {
+        assert aff.lastVersion().compareTo(lastVersion()) >= 0;
+        assert aff.idealAssignment() != null;
+
+        idealAssignment(aff.idealAssignment());
+
+        initialize(aff.lastVersion(), aff.assignments(aff.lastVersion()));
     }
 
     /**

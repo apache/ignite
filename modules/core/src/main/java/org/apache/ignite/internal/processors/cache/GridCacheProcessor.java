@@ -104,6 +104,7 @@ import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -3457,10 +3458,45 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If validation failed.
      * @return Configuration copy.
      */
-    private CacheConfiguration cloneCheckSerializable(CacheConfiguration val) throws IgniteCheckedException {
+    private CacheConfiguration cloneCheckSerializable(final CacheConfiguration val) throws IgniteCheckedException {
         if (val == null)
             return null;
 
+        return withBinaryContext(new IgniteOutClosureX<CacheConfiguration>() {
+            @Override public CacheConfiguration applyx() throws IgniteCheckedException {
+                if (val.getCacheStoreFactory() != null) {
+                    try {
+                        ClassLoader ldr = ctx.config().getClassLoader();
+
+                        if (ldr == null)
+                            ldr = val.getCacheStoreFactory().getClass().getClassLoader();
+
+                        marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
+                            U.resolveClassLoader(ldr, ctx.config()));
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteCheckedException("Failed to validate cache configuration. " +
+                            "Cache store factory is not serializable. Cache name: " + U.maskName(val.getName()), e);
+                    }
+                }
+
+                try {
+                    return marshaller.unmarshal(marshaller.marshal(val), U.resolveClassLoader(ctx.config()));
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteCheckedException("Failed to validate cache configuration " +
+                        "(make sure all objects in cache configuration are serializable): " + U.maskName(val.getName()), e);
+                }
+            }
+        });
+    }
+
+    /**
+     * @param c Closure.
+     * @throws IgniteCheckedException If failed.
+     * @return Closure result.
+     */
+    private <T> T withBinaryContext(IgniteOutClosureX<T> c) throws IgniteCheckedException {
         IgniteCacheObjectProcessor objProc = ctx.cacheObjects();
         BinaryContext oldCtx = null;
 
@@ -3471,35 +3507,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         try {
-            if (val.getCacheStoreFactory() != null) {
-                try {
-                    ClassLoader ldr = ctx.config().getClassLoader();
-
-                    if (ldr == null)
-                        ldr = val.getCacheStoreFactory().getClass().getClassLoader();
-
-                    marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
-                        U.resolveClassLoader(ldr, ctx.config()));
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteCheckedException("Failed to validate cache configuration. " +
-                        "Cache store factory is not serializable. Cache name: " + U.maskName(val.getName()), e);
-                }
-            }
-
-            try {
-                return marshaller.unmarshal(marshaller.marshal(val), U.resolveClassLoader(ctx.config()));
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteCheckedException("Failed to validate cache configuration " +
-                    "(make sure all objects in cache configuration are serializable): " + U.maskName(val.getName()), e);
-            }
+            return c.applyx();
         }
         finally {
             if (objProc instanceof CacheObjectBinaryProcessorImpl)
                 GridBinaryMarshaller.popContext(oldCtx);
         }
     }
+
+    /**
+     * @param obj Object to clone.
+     * @return Object copy.
+     * @throws IgniteCheckedException If failed.
+     */
+    <T> T clone(final T obj) throws IgniteCheckedException {
+        return withBinaryContext(new IgniteOutClosureX<T>() {
+            @Override public T applyx() throws IgniteCheckedException {
+                return marshaller.unmarshal(marshaller.marshal(obj), U.resolveClassLoader(ctx.config()));
+            }
+        });
+    };
 
     /**
      * @param name Name to mask.

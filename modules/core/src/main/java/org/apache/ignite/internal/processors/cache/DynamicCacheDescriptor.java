@@ -25,6 +25,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -71,6 +72,9 @@ public class DynamicCacheDescriptor {
     /** */
     private boolean rcvdOnDiscovery;
 
+    /** */
+    private Integer cacheId;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -83,12 +87,23 @@ public class DynamicCacheDescriptor {
         CacheType cacheType,
         boolean template,
         IgniteUuid deploymentId) {
+        assert cacheCfg != null;
+
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
         this.template = template;
         this.deploymentId = deploymentId;
 
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
+
+        cacheId = CU.cacheId(cacheCfg.getName());
+    }
+
+    /**
+     * @return Cache ID.
+     */
+    public Integer cacheId() {
+        return cacheId;
     }
 
     /**

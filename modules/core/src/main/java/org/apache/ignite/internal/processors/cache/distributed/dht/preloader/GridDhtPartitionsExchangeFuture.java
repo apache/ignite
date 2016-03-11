@@ -424,13 +424,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
+            skipPreload = cctx.kernalContext().clientNode();
+
+            ExchangeType exchange;
+
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 if (!F.isEmpty(reqs))
-                    onCacheChangeRequest();
+                    exchange = onCacheChangeRequest();
                 else {
                     assert affChangeMsg != null : this;
 
-                    onAffinityChangeRequest();
+                    exchange = onAffinityChangeRequest();
                 }
             }
             else {
@@ -438,9 +442,26 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     cctx.cache().startReceivedCaches(topologyVersion());
 
                 if (CU.clientNode(discoEvt.eventNode()))
-                    onClientNodeEvent();
+                    exchange = onClientNodeEvent();
                 else
-                    onServerNodeEvent();
+                    exchange = onServerNodeEvent();
+            }
+
+            updateTopologies(crd != null && crd.isLocal());
+
+            switch (exchange) {
+                case ALL:
+                    distributedExchange();
+
+                    break;
+
+                case CLIENT:
+                    clientOnlyExchange();
+
+                    break;
+
+                case NONE:
+                    onDone(topologyVersion());
             }
         }
         catch (IgniteInterruptedCheckedException e) {
@@ -458,10 +479,36 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
+    private void updateTopologies(boolean crd) throws IgniteCheckedException {
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (cacheCtx.isLocal())
+                continue;
+
+            GridClientPartitionTopology clientTop = cctx.affinity().clearClientTopology(cacheCtx.cacheId());
+
+            long updSeq = clientTop == null ? -1 : clientTop.lastUpdateSequence();
+
+            GridDhtPartitionTopology top = cacheCtx.topology();
+
+            if (crd) {
+                boolean updateTop = !cacheCtx.isLocal() &&
+                    exchId.topologyVersion().equals(cacheCtx.startTopologyVersion());
+
+                if (updateTop && clientTop != null)
+                    cacheCtx.topology().update(exchId, clientTop.partitionMap(true), clientTop.updateCounters());
+            }
+
+            top.updateTopologyVersion(exchId, this, updSeq, stopping(cacheCtx.cacheId()));
+        }
+
+        for (GridClientPartitionTopology top : cctx.affinity().clientTopologies())
+            top.updateTopologyVersion(exchId, this, -1, stopping(top.cacheId()));
+    }
+
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void onCacheChangeRequest() throws IgniteCheckedException {
+    private ExchangeType onCacheChangeRequest() throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
 
         boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, reqs);
@@ -478,45 +525,34 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
 
             if (clientCacheStarted)
-                clientOnlyExchange();
+                return ExchangeType.CLIENT;
             else
-                onDone(topologyVersion());
+                return ExchangeType.NONE;
         }
         else
-            exchange();
+            return ExchangeType.ALL;
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void onAffinityChangeRequest() throws IgniteCheckedException {
+    private ExchangeType onAffinityChangeRequest() throws IgniteCheckedException {
         assert affChangeMsg != null : this;
 
-        if (cctx.affinity().onChangeAffinityMessage(this, affChangeMsg)) {
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.isLocal())
-                    continue;
+        if (cctx.affinity().onChangeAffinityMessage(this, crd != null && crd.isLocal(), affChangeMsg)) {
+            if (cctx.kernalContext().clientNode())
+                return ExchangeType.CLIENT;
 
-                cacheCtx.preloader().onTopologyChanged(this);
-            }
-
-            waitPartitionRelease();
-
-            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.isLocal())
-                    continue;
-
-                cacheCtx.topology().beforeExchange(this, cacheCtx.affinity().assignments(topologyVersion()));
-            }
+            return ExchangeType.ALL;
         }
 
-        onDone(topologyVersion());
+        return ExchangeType.NONE;
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void onClientNodeEvent() throws IgniteCheckedException {
+    private ExchangeType onClientNodeEvent() throws IgniteCheckedException {
         assert CU.clientNode(discoEvt.eventNode()) : this;
 
         if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED) {
@@ -530,15 +566,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         cctx.affinity().onClientEvent(this);
 
         if (discoEvt.eventNode().isLocal())
-            clientOnlyExchange();
+            return ExchangeType.CLIENT;
         else
-            onDone(topologyVersion());
+            return ExchangeType.NONE;
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
-    private void onServerNodeEvent() throws IgniteCheckedException {
+    private ExchangeType onServerNodeEvent() throws IgniteCheckedException {
         assert !CU.clientNode(discoEvt.eventNode()) : this;
 
         if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED) {
@@ -555,25 +591,61 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         if (cctx.kernalContext().clientNode())
-            clientOnlyExchange();
+            return ExchangeType.CLIENT;
         else
-            exchange();
+            return ExchangeType.ALL;
     }
 
+    /**
+     *
+     */
+    enum ExchangeType {
+        CLIENT,
+        ALL,
+        NONE
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     private void clientOnlyExchange() throws IgniteCheckedException {
         clientOnlyExchange = true;
 
-        if (crd != null && !crd.isLocal()) {
-            if (!centralizedAff)
+        if (crd != null) {
+            if (crd.isLocal()) {
+                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                    boolean updateTop = !cacheCtx.isLocal() &&
+                        exchId.topologyVersion().equals(cacheCtx.startTopologyVersion());
+
+                    if (updateTop) {
+                        for (GridClientPartitionTopology top : cctx.affinity().clientTopologies()) {
+                            if (top.cacheId() == cacheCtx.cacheId()) {
+                                cacheCtx.topology().update(exchId,
+                                    top.partitionMap(true),
+                                    top.updateCounters());
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            else {
                 sendLocalPartitions(crd, exchId);
 
-            initFut.onDone(true);
+                initFut.onDone(true);
+
+                return;
+            }
         }
-        else
-            onDone(topologyVersion());
+
+        onDone(topologyVersion());
     }
 
-    private void exchange() throws IgniteCheckedException {
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    private void distributedExchange() throws IgniteCheckedException {
         assert crd != null;
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
@@ -585,9 +657,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         waitPartitionRelease();
 
+        boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT;
+
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal())
                 continue;
+
+            if (topChanged)
+                cacheCtx.continuousQueries().beforeExchange(exchId.topologyVersion());
+
+            // Partition release future is done so we can flush the write-behind store.
+            cacheCtx.store().forceFlush();
 
             List<List<ClusterNode>> aff = cacheCtx.affinity().idealAssignment();
 
@@ -1251,7 +1331,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
                     "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
 
-            log.info("Complete exchange: " + exchId.topologyVersion() + ", evt=" + discoEvt + ']');
+            log.info("Complete exchange [ver=" + exchId.topologyVersion() + ", err=" + err + ", evt=" + discoEvt + ']');
 
             initFut.onDone(err == null);
 
@@ -1635,7 +1715,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     assert centralizedAff;
 
                     if (crd.equals(node)) {
-                        cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this, msg);
+                        cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this, crd.isLocal(), msg);
 
                         if (!crd.isLocal())
                             processMessage(crd, msg.partitionsMessage());
@@ -1699,7 +1779,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             assert cctx.kernalContext().clientNode() || cctx.localNode().isDaemon() : cctx.localNode();
 
                             ClusterTopologyCheckedException err = new ClusterTopologyCheckedException("Failed to " +
-                                    "wait for exchange future, all server nodes left.");
+                                "wait for exchange future, all server nodes left.");
 
                             onDone(err);
 
