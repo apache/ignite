@@ -44,4 +44,9 @@ public interface GridCacheSemaphoreEx extends IgniteSemaphore, GridCacheRemovabl
      * @param nodeId Id of the node that left the grid.
      */
     public void onNodeRemoved(UUID nodeId);
+
+    /**
+     * Callback to notify local semaphore instance on node stop.
+     */
+    public void stop();
 }
