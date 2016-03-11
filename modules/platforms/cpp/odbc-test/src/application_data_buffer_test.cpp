@@ -347,26 +347,42 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
     Decimal decimal;
 
     appBuf.PutDecimal(decimal);
-    BOOST_CHECK_EQUAL(1, buf.sign); // Positive
-    BOOST_CHECK_EQUAL(0, buf.scale);
-    BOOST_CHECK_EQUAL(0, buf.precision);
+    BOOST_CHECK_EQUAL(1, buf.sign);         // Positive
+    BOOST_CHECK_EQUAL(0, buf.scale);        // Scale is 0 by default according to specification
+    BOOST_CHECK_EQUAL(20, buf.precision);   // Precision is driver specific. We use 20.
 
     for (int i = 0; i < SQL_MAX_NUMERIC_LEN; ++i)
         BOOST_CHECK_EQUAL(0, buf.val[i]);
 
-    // Trying to store 123.45 => 12345 => 0x3930 => [0x39, 0x30].
-    int16_t mag = 12345;
-    int8_t* mag_bytes = reinterpret_cast<int8_t*>(&mag);
+    // Trying to store 123.45 => 12345 => 0x3039 => [0x30, 0x39].
+    uint8_t mag1[] = { 0x30, 0x39 };
 
-    decimal = Decimal(2, mag_bytes, sizeof(mag));
+    decimal = Decimal(2, reinterpret_cast<int8_t*>(mag1), sizeof(mag1));
 
     appBuf.PutDecimal(decimal);
-    BOOST_CHECK_EQUAL(1, buf.sign); // Positive
-    BOOST_CHECK_EQUAL(2, buf.scale);
-    BOOST_CHECK_EQUAL(5, buf.precision);
+    BOOST_CHECK_EQUAL(1, buf.sign);         // Positive
+    BOOST_CHECK_EQUAL(0, buf.scale);        // Scale is 0 by default according to specification
+    BOOST_CHECK_EQUAL(20, buf.precision);   // Precision is driver specific. We use 20.
 
-    BOOST_CHECK_EQUAL(mag_bytes[0], 0x39);
-    BOOST_CHECK_EQUAL(mag_bytes[1], 0x30);
+    // 123.45 => (scale=0) 123 => 0x7B => [0x7B].
+    BOOST_CHECK_EQUAL(buf.val[0], 0x7B);
+
+    for (int i = 1; i < SQL_MAX_NUMERIC_LEN; ++i)
+        BOOST_CHECK_EQUAL(0, buf.val[i]);
+
+    // Trying to store 12345.678 => 12345678 => 0xBC614E => [0xBC, 0x61, 0x4E].
+    uint8_t mag2[] = { 0xBC, 0x61, 0x4E };
+
+    decimal = Decimal(3 | 0x80000000, reinterpret_cast<int8_t*>(mag2), sizeof(mag2));
+
+    appBuf.PutDecimal(decimal);
+    BOOST_CHECK_EQUAL(2, buf.sign);         // Negative
+    BOOST_CHECK_EQUAL(0, buf.scale);        // Scale is 0 by default according to specification
+    BOOST_CHECK_EQUAL(20, buf.precision);   // Precision is driver specific. We use 20.
+
+    // 12345.678 => (scale=0) 12345 => 0x3039 => [0x39, 0x30].
+    BOOST_CHECK_EQUAL(buf.val[0], 0x39);
+    BOOST_CHECK_EQUAL(buf.val[1], 0x30);
 
     for (int i = 2; i < SQL_MAX_NUMERIC_LEN; ++i)
         BOOST_CHECK_EQUAL(0, buf.val[i]);
