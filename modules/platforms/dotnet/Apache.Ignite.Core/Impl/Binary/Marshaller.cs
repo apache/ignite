@@ -49,12 +49,14 @@ namespace Apache.Ignite.Core.Impl.Binary
             new Dictionary<string, IBinaryTypeDescriptor>();
 
         /** ID to descriptor map. */
-        private readonly IDictionary<long, IBinaryTypeDescriptor> _idToDesc =
+        private readonly IDictionary<long, IBinaryTypeDescriptor> _idToDesc = 
             new Dictionary<long, IBinaryTypeDescriptor>();
 
         /** Cached metadatas. */
-        private volatile IDictionary<int, BinaryTypeHolder> _metas =
-            new Dictionary<int, BinaryTypeHolder>();
+        private volatile IDictionary<int, BinaryTypeHolder> _metas = new Dictionary<int, BinaryTypeHolder>();
+
+        /** */
+        private readonly BinaryReflectiveSerializer _defaultSerializer = new BinaryReflectiveSerializer();
 
         /// <summary>
         /// Constructor.
@@ -79,8 +81,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemTypes();
 
             // 2. Define user types.
-            _cfg.DefaultSerializer = _cfg.DefaultSerializer ?? new BinaryReflectiveSerializer();
-
             var typeResolver = new TypeResolver();
 
             ICollection<BinaryTypeConfiguration> typeCfgs = _cfg.TypeConfigurations;
@@ -428,7 +428,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
                 var serializer = typeCfg.Serializer ?? _cfg.DefaultSerializer
-                                 ?? GetBinarizableSerializer(type) ?? _cfg.DefaultSerializer;
+                                 ?? GetBinarizableSerializer(type) ?? _defaultSerializer;
 
                 var refSerializer = serializer as BinaryReflectiveSerializer;
 
