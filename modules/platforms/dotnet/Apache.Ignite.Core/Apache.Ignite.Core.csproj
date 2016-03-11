@@ -398,18 +398,18 @@
     <Compile Include="Transactions\TransactionTimeoutException.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <EmbeddedResource Include="$(SolutionDir)..\cpp\common\project\vs\x64\Debug\ignite.common.dll">
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\x64\Debug\ignite.common.dll">
       <Link>resources\debug\x64\ignite.common.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(SolutionDir)..\cpp\common\project\vs\Win32\Debug\ignite.common.dll">
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\Win32\Debug\ignite.common.dll">
       <Link>resources\debug\x86\ignite.common.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)' == 'Release'">
-    <EmbeddedResource Include="$(SolutionDir)..\cpp\common\project\vs\x64\Release\ignite.common.dll">
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\x64\Release\ignite.common.dll">
       <Link>resources\release\x64\ignite.common.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(SolutionDir)..\cpp\common\project\vs\Win32\Release\ignite.common.dll">
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\Win32\Release\ignite.common.dll">
       <Link>resources\release\x86\ignite.common.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
@@ -428,11 +428,11 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>"$(MSBuildBinPath)\msbuild.exe" $(SolutionDir)..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Release
-"$(MSBuildBinPath)\msbuild.exe" $(SolutionDir)..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Debug
+    <PreBuildEvent>"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Release
+"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Debug
 set JAVA_HOME=%25JAVA_HOME32%25
-"$(MSBuildBinPath)\msbuild.exe" $(SolutionDir)..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Release
-"$(MSBuildBinPath)\msbuild.exe" $(SolutionDir)..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Debug</PreBuildEvent>
+"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Release
+"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Debug</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
