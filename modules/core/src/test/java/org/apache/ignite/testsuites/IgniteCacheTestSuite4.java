@@ -19,15 +19,14 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListenerSelfTest;
+import org.apache.ignite.internal.processors.GridCacheTxLoadFromStoreOnLockSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheClientStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticReadCommittedSeltTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticRepeatableReadSeltTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryOptimisticSerializableSeltTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticReadCommittedSeltTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticRepeatableReadSeltTest;
 import org.apache.ignite.internal.processors.cache.CacheGetEntryPessimisticSerializableSeltTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
-import org.apache.ignite.internal.processors.GridCacheTxLoadFromStoreOnLockSelfTest;
-import org.apache.ignite.internal.processors.cache.CacheClientStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheOffheapMapEntrySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughAtomicRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReadThroughLocalAtomicRestartSelfTest;
@@ -49,7 +48,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateAtomi
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateNearEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheStoreManagerDeserializationTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionMultinodeTest;
+import org.apache.ignite.internal.processors.cache.GridLocalCacheStoreManagerDeserializationTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicCopyOnReadDisabledTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalStoreValueTest;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicStoreValueTe
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationDefaultTemplateTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationTemplateTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDynamicStopSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectionsSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeReadThroughTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxCopyOnReadDisabledTest;
@@ -265,6 +267,9 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(CacheStoreUsageMultinodeStaticStartTxTest.class);
         suite.addTestSuite(CacheStoreUsageMultinodeDynamicStartAtomicTest.class);
         suite.addTestSuite(CacheStoreUsageMultinodeDynamicStartTxTest.class);
+
+        suite.addTestSuite(GridCacheStoreManagerDeserializationTest.class);
+        suite.addTestSuite(GridLocalCacheStoreManagerDeserializationTest.class);
 
         suite.addTestSuite(IgniteStartCacheInTransactionSelfTest.class);
         suite.addTestSuite(IgniteStartCacheInTransactionAtomicSelfTest.class);

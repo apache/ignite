@@ -23,6 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -97,6 +98,9 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
     /** Type: enum array. */
     private static final int TYPE_ENUM_FIELD = 18;
 
+    /** Type: enum array. */
+    private static final int TYPE_AFFINITY_KEY = 19;
+
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable Integer arg) {
@@ -124,7 +128,7 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
          *
          * @param type Result type.
          */
-        public EchoJob(Integer type) {
+        private EchoJob(Integer type) {
             this.type = type;
         }
 
@@ -150,7 +154,7 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                     return 1;
 
                 case TYPE_LONG:
-                    return (long)1;
+                    return 1L;
 
                 case TYPE_FLOAT:
                     return (float)1;
@@ -199,6 +203,9 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                     BinaryObject val = obj.field("interopEnum");
 
                     return val.deserialize();
+
+                case TYPE_AFFINITY_KEY:
+                    return new AffinityKey<>("interopAffinityKey");
 
                 default:
                     throw new IgniteException("Unknown type: " + type);

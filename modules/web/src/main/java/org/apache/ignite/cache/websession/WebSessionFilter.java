@@ -166,7 +166,7 @@ public class WebSessionFilter implements Filter {
     /** Web sessions caching cache name parameter name. */
     public static final String WEB_SES_CACHE_NAME_PARAM = "IgniteWebSessionsCacheName";
 
-    /** Web sessions caching retry on fail parameter name (valid for ATOMIC */
+    /** Web sessions caching retry on fail parameter name (valid for ATOMIC cache only). */
     public static final String WEB_SES_MAX_RETRIES_ON_FAIL_NAME_PARAM = "IgniteWebSessionsMaximumRetriesOnFail";
 
     /** Default retry on fail flag value. */
@@ -328,7 +328,7 @@ public class WebSessionFilter implements Filter {
      * @param chain Filter chain.
      * @return Session ID.
      * @throws IOException In case of I/O error.
-     * @throws ServletException In case oif servlet error.
+     * @throws ServletException In case of servlet error.
      * @throws CacheException In case of other error.
      */
     private String doFilter0(HttpServletRequest httpReq, ServletResponse res, FilterChain chain) throws IOException,
@@ -338,6 +338,9 @@ public class WebSessionFilter implements Filter {
         String sesId = httpReq.getRequestedSessionId();
 
         if (sesId != null) {
+            if (sesIdTransformer != null)
+                sesId = sesIdTransformer.apply(sesId);
+
             cached = cache.get(sesId);
 
             if (cached != null) {
@@ -345,7 +348,7 @@ public class WebSessionFilter implements Filter {
                     log.debug("Using cached session for ID: " + sesId);
 
                 if (cached.isNew())
-                    cached = new WebSession(cached, false);
+                    cached = new WebSession(cached.getId(), cached, false);
             }
             else {
                 if (log.isDebugEnabled())
@@ -376,6 +379,7 @@ public class WebSessionFilter implements Filter {
         cached.servletContext(ctx);
         cached.listener(lsnr);
         cached.resetUpdates();
+        cached.genSes(httpReq.getSession(false));
 
         httpReq = new RequestWrapper(httpReq, cached);
 
@@ -386,16 +390,20 @@ public class WebSessionFilter implements Filter {
         if (ses != null && ses instanceof WebSession) {
             Collection<T2<String, Object>> updates = ((WebSession)ses).updates();
 
-            if (updates != null)
-                lsnr.updateAttributes(ses.getId(), updates, ses.getMaxInactiveInterval());
+            if (updates != null) {
+                lsnr.updateAttributes(sesIdTransformer != null ? sesIdTransformer.apply(ses.getId()) : ses.getId(),
+                    updates, ses.getMaxInactiveInterval());
+            }
         }
 
         return sesId;
     }
 
     /**
-     * @param httpReq HTTP request.
-     * @return Cached session.
+     * Creates a new session from http request.
+     *
+     * @param httpReq Request.
+     * @return New session.
      */
     @SuppressWarnings("unchecked")
     private WebSession createSession(HttpServletRequest httpReq) {
@@ -403,10 +411,24 @@ public class WebSessionFilter implements Filter {
 
         String sesId = sesIdTransformer != null ? sesIdTransformer.apply(ses.getId()) : ses.getId();
 
+        return createSession(ses, sesId);
+    }
+
+    /**
+     * Creates a new web session with the specified id.
+     *
+     * @param ses Base session.
+     * @param sesId Session id.
+     * @return New session.
+     */
+    @SuppressWarnings("unchecked")
+    private WebSession createSession(HttpSession ses, String sesId) {
+        WebSession cached = new WebSession(sesId, ses, true);
+
+        cached.genSes(ses);
+
         if (log.isDebugEnabled())
             log.debug("Session created: " + sesId);
-
-        WebSession cached = new WebSession(ses, true);
 
         for (int i = 0; i < retries; i++) {
             try {
@@ -428,7 +450,7 @@ public class WebSessionFilter implements Filter {
                     cached = old;
 
                     if (cached.isNew())
-                        cached = new WebSession(cached, false);
+                        cached = new WebSession(cached.getId(), cached, false);
                 }
 
                 break;
@@ -476,9 +498,9 @@ public class WebSessionFilter implements Filter {
     /**
      * Request wrapper.
      */
-    private static class RequestWrapper extends HttpServletRequestWrapper {
+    private class RequestWrapper extends HttpServletRequestWrapper {
         /** Session. */
-        private final WebSession ses;
+        private volatile WebSession ses;
 
         /**
          * @param req Request.
@@ -494,12 +516,39 @@ public class WebSessionFilter implements Filter {
 
         /** {@inheritDoc} */
         @Override public HttpSession getSession(boolean create) {
+            if (!ses.isValid()) {
+                if (create) {
+                    this.ses = createSession((HttpServletRequest)getRequest());
+                    this.ses.servletContext(ctx);
+                    this.ses.listener(lsnr);
+                    this.ses.resetUpdates();
+                }
+                else
+                    return null;
+            }
+
             return ses;
         }
 
         /** {@inheritDoc} */
         @Override public HttpSession getSession() {
-            return ses;
+            return getSession(true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String changeSessionId() {
+            HttpServletRequest req = (HttpServletRequest)getRequest();
+
+            String newId = req.changeSessionId();
+
+            this.ses.setId(newId);
+
+            this.ses = createSession(ses, newId);
+            this.ses.servletContext(ctx);
+            this.ses.listener(lsnr);
+            this.ses.resetUpdates();
+
+            return newId;
         }
     }
 }
