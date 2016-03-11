@@ -17,6 +17,42 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -81,6 +117,7 @@ import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
+import org.h2.constant.ErrorCode;
 import org.h2.constant.SysProperties;
 import org.h2.index.Index;
 import org.h2.index.SpatialIndex;
@@ -114,43 +151,6 @@ import org.h2.value.ValueTime;
 import org.h2.value.ValueUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-
-import javax.cache.Cache;
-import javax.cache.CacheException;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE;
 import static org.apache.ignite.IgniteSystemProperties.getString;
@@ -1035,13 +1035,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else {
             PreparedStatement stmt;
 
-            try {
-                // Do not cache this statement because the whole two step query object will be cached later on.
-                stmt = prepareStatement(c, sqlQry, false);
+            boolean cachesCreated = false;
+
+            while (true) {
+                try {
+                    // Do not cache this statement because the whole two step query object will be cached later on.
+                    stmt = prepareStatement(c, sqlQry, false);
+
+                    break;
+                }
+                catch (SQLException e) {
+                    if (!cachesCreated && e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1) {
+                        try {
+                            ctx.cache().createMissingCaches();
+                        }
+                        catch (IgniteCheckedException e1) {
+                            throw new CacheException("Failed to create missing caches.", e);
+                        }
+
+                        cachesCreated = true;
+                    }
+                    else
+                        throw new CacheException("Failed to parse query: " + sqlQry, e);
+                }
             }
-            catch (SQLException e) {
-                throw new CacheException("Failed to parse query: " + sqlQry, e);
-            }
+
             try {
                 try {
                     bindParameters(stmt, F.asList(qry.getArgs()));
@@ -1607,6 +1625,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to drop schema on cache stop (will ignore): " + U.maskName(ccfg.getName()), e);
+            }
+
+            for (Iterator<Map.Entry<T3<String, String, Boolean>, TwoStepCachedQuery>> it = twoStepCache.entrySet().iterator();
+                 it.hasNext();) {
+                Map.Entry<T3<String, String, Boolean>, TwoStepCachedQuery> e = it.next();
+
+                if (F.eq(e.getKey().get1(), ccfg.getName()))
+                    it.remove();
             }
         }
     }

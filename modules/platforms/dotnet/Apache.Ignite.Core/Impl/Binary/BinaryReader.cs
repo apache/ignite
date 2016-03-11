@@ -718,16 +718,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     // Set new frame.
                     _curHdr = hdr;
                     _curPos = pos;
-                    
-                    _curSchema = desc.Schema.Get(hdr.SchemaId);
-
-                    if (_curSchema == null)
-                    {
-                        _curSchema = ReadSchema();
-
-                        desc.Schema.Add(hdr.SchemaId, _curSchema);
-                    }
-
+                    SetCurSchema(desc);
                     _curStruct = new BinaryStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
 
@@ -790,10 +781,40 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Sets the current schema.
+        /// </summary>
+        private void SetCurSchema(IBinaryTypeDescriptor desc)
+        {
+            if (_curHdr.HasSchema)
+            {
+                _curSchema = desc.Schema.Get(_curHdr.SchemaId);
+
+                if (_curSchema == null)
+                {
+                    _curSchema = ReadSchema();
+
+                    desc.Schema.Add(_curHdr.SchemaId, _curSchema);
+                }
+            }
+        }
+
+        /// <summary>
         /// Reads the schema.
         /// </summary>
         private int[] ReadSchema()
         {
+            if (_curHdr.IsCompactFooter)
+            {
+                // Get schema from Java
+                var schema = Marshaller.Ignite.ClusterGroup.GetSchema(_curHdr.TypeId, _curHdr.SchemaId);
+
+                if (schema == null)
+                    throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
+                        "typeId=" + _curHdr.TypeId + ", schemaId=" + _curHdr.SchemaId + ']');
+
+                return schema;
+            }
+
             Stream.Seek(_curPos + _curHdr.SchemaOffset, SeekOrigin.Begin);
 
             var count = _curHdr.SchemaFieldCount;
@@ -929,9 +950,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (_curSchema == null || actionId >= _curSchema.Length || fieldId != _curSchema[actionId])
             {
-                _curSchema = null; // read order is different, ignore schema for future reads
+                _curSchemaMap = _curSchemaMap ?? BinaryObjectSchemaSerializer.ReadSchema(Stream, _curPos, _curHdr,
+                                    () => _curSchema).ToDictionary();
 
-                _curSchemaMap = _curSchemaMap ?? _curHdr.ReadSchemaAsDictionary(Stream, _curPos);
+                _curSchema = null; // read order is different, ignore schema for future reads
 
                 int pos;
 

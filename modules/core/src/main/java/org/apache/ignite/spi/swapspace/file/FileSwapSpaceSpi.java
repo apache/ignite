@@ -61,6 +61,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
+import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.IgniteSpiThread;
@@ -137,6 +138,7 @@ import static org.apache.ignite.events.EventType.EVT_SWAP_SPACE_DATA_STORED;
  * @see org.apache.ignite.spi.swapspace.SwapSpaceSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
+@IgniteSpiConsistencyChecked(optional = false, checkClient = false)
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
 public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, FileSwapSpaceSpiMBean {
     /**

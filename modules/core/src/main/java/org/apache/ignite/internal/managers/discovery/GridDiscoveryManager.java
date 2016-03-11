@@ -30,7 +30,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -112,7 +111,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -166,14 +164,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     protected static final int DISCOVERY_HISTORY_SIZE = 100;
 
     /** Predicate filtering out daemon nodes. */
-    private static final IgnitePredicate<ClusterNode> daemonFilter = new P1<ClusterNode>() {
+    private static final IgnitePredicate<ClusterNode> FILTER_DAEMON = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
             return !n.isDaemon();
         }
     };
 
     /** Predicate filtering client nodes. */
-    private static final IgnitePredicate<ClusterNode> clientFilter = new P1<ClusterNode>() {
+    private static final IgnitePredicate<ClusterNode> FILTER_CLI = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
             return CU.clientNode(n);
         }
@@ -567,7 +565,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             @Override public ClusterNode apply(ClusterNode e) {
                                 return e;
                             }
-                        }, daemonFilter)));
+                        }, FILTER_DAEMON)));
 
                     locJoinEvt.onDone(discoEvt);
 
@@ -1121,9 +1119,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Collection<ClusterNode> rmtNodes = discoCache.remoteNodes();
 
-        Collection<ClusterNode> srvNodes = F.view(discoCache.allNodes(), F.not(clientFilter));
+        Collection<ClusterNode> srvNodes = F.view(discoCache.allNodes(), F.not(FILTER_CLI));
 
-        Collection<ClusterNode> clientNodes = F.view(discoCache.allNodes(), clientFilter);
+        Collection<ClusterNode> clientNodes = F.view(discoCache.allNodes(), FILTER_CLI);
 
         ClusterNode locNode = discoCache.localNode();
 
@@ -1945,7 +1943,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 evt.eventNode(node);
                 evt.type(type);
 
-                evt.topologySnapshot(topVer, U.<ClusterNode, ClusterNode>arrayList(topSnapshot, daemonFilter));
+                evt.topologySnapshot(topVer, U.<ClusterNode, ClusterNode>arrayList(topSnapshot, FILTER_DAEMON));
 
                 if (type == EVT_NODE_METRICS_UPDATED)
                     evt.message("Metrics were updated: " + node);
@@ -2469,7 +2467,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private DiscoCache(ClusterNode loc, Collection<ClusterNode> rmts) {
             this.loc = loc;
 
-            rmtNodes = Collections.unmodifiableList(new ArrayList<>(F.view(rmts, daemonFilter)));
+            rmtNodes = Collections.unmodifiableList(new ArrayList<>(F.view(rmts, FILTER_DAEMON)));
 
             assert !rmtNodes.contains(loc) : "Remote nodes collection shouldn't contain local node" +
                 " [rmtNodes=" + rmtNodes + ", loc=" + loc + ']';
@@ -2592,7 +2590,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             nearEnabledCaches = Collections.unmodifiableSet(nearEnabledSet);
 
             daemonNodes = Collections.unmodifiableList(new ArrayList<>(
-                F.view(F.concat(false, loc, rmts), F0.not(daemonFilter))));
+                F.view(F.concat(false, loc, rmts), F0.not(FILTER_DAEMON))));
 
             Map<UUID, ClusterNode> nodeMap = new HashMap<>(allNodes().size() + daemonNodes.size(), 1.0f);
 

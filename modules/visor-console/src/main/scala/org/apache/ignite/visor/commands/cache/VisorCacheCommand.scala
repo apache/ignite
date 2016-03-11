@@ -316,7 +316,7 @@ class VisorCacheCommand {
 
             val sumT = VisorTextTable()
 
-            sumT #= ("Name(@)", "Mode", "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
+            sumT #= ("Name(@)", "Mode", "Nodes", "Entries (Heap / Off heap)", "Hits", "Misses", "Reads", "Writes")
 
             sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
                 ad => {
@@ -328,9 +328,12 @@ class VisorCacheCommand {
                         ad.mode(),
                         ad.nodes.size(),
                         (
-                            "min: " + ad.minimumSize,
-                            "avg: " + formatDouble(ad.averageSize),
-                            "max: " + ad.maximumSize
+                            "min: " + (ad.minimumHeapSize() + ad.minimumOffHeapSize()) +
+                                " (" + ad.minimumHeapSize() + " / " + ad.minimumOffHeapSize() + ")",
+                            "avg: " + formatDouble(ad.averageHeapSize() + ad.averageOffHeapSize()) +
+                                " (" + formatDouble(ad.averageHeapSize()) + " / " + formatDouble(ad.averageOffHeapSize()) + ")",
+                            "max: " + (ad.maximumHeapSize() + ad.maximumOffHeapSize()) +
+                                " (" + ad.maximumHeapSize() + " / " + ad.maximumOffHeapSize() + ")"
                             ),
                         (
                             "min: " + ad.minimumHits,
@@ -382,7 +385,13 @@ class VisorCacheCommand {
 
                     csT += ("Name(@)", cacheNameVar)
                     csT += ("Nodes", m.size())
-                    csT += ("Size Min/Avg/Max", ad.minimumSize + " / " + formatDouble(ad.averageSize) + " / " + ad.maximumSize)
+                    csT += ("Total size Min/Avg/Max", (ad.minimumHeapSize() + ad.minimumOffHeapSize()) + " / " +
+                        formatDouble(ad.averageHeapSize() + ad.averageOffHeapSize()) + " / " +
+                        (ad.maximumHeapSize() + ad.maximumOffHeapSize()))
+                    csT += ("  Heap size Min/Avg/Max", ad.minimumHeapSize() + " / " +
+                        formatDouble(ad.averageHeapSize()) + " / " + ad.maximumHeapSize())
+                    csT += ("  Off heap size Min/Avg/Max", ad.minimumOffHeapSize() + " / " +
+                        formatDouble(ad.averageOffHeapSize()) + " / " + ad.maximumOffHeapSize())
 
                     val ciT = VisorTextTable()
 
@@ -617,7 +626,7 @@ class VisorCacheCommand {
 
         val sumT = VisorTextTable()
 
-        sumT #= ("#", "Name(@)", "Mode", "Size")
+        sumT #= ("#", "Name(@)", "Mode", "Size (Heap / Off heap)")
 
         sortedAggrData.indices.foreach(i => {
             val ad = sortedAggrData(i)
@@ -630,9 +639,12 @@ class VisorCacheCommand {
                 mkCacheName(ad.name()),
                 ad.mode(),
                 (
-                    "min: " + ad.minimumSize,
-                    "avg: " + formatDouble(ad.averageSize),
-                    "max: " + ad.maximumSize
+                    "min: " + (ad.minimumHeapSize() + ad.minimumOffHeapSize()) +
+                        " (" + ad.minimumHeapSize() + " / " + ad.minimumOffHeapSize() + ")",
+                    "avg: " + formatDouble(ad.averageHeapSize() + ad.averageOffHeapSize()) +
+                        " (" + formatDouble(ad.averageHeapSize()) + " / " + formatDouble(ad.averageOffHeapSize()) + ")",
+                    "max: " + (ad.maximumHeapSize() + ad.maximumOffHeapSize()) +
+                        " (" + ad.maximumHeapSize() + " / " + ad.maximumOffHeapSize() + ")"
                 ))
         })
 

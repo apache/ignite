@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
+namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections.Generic;
     using System.Reflection;
-    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Binary serializer which reflectively writes all fields except of ones with 
@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// <para />
     /// Note that Java platform stores dates as a difference between current time 
     /// and predefined absolute UTC date. Therefore, this difference is always the 
-    /// same for all time zones. .Net, in contrast, stores dates as a difference 
+    /// same for all time zones. .NET, in contrast, stores dates as a difference 
     /// between current time and some predefined date relative to the current time 
     /// zone. It means that this difference will be different as you change time zones. 
     /// To overcome this discrepancy Ignite always converts .Net date to UTC form 
@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// local date in any field/property, it will be implicitly converted to UTC
     /// form after the first serialization-deserialization cycle. 
     /// </summary>
-    internal class BinaryReflectiveSerializer : IBinarySerializer
+    public sealed class BinaryReflectiveSerializer : IBinarySerializer
     {
         /** Cached binding flags. */
         private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | 
@@ -47,6 +47,28 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Cached type descriptors. */
         private readonly IDictionary<Type, Descriptor> _types = new Dictionary<Type, Descriptor>();
+
+        /** Raw mode flag. */
+        private bool _rawMode;
+
+        /// <summary>
+        /// Gets or value indicating whether raw mode serialization should be used.
+        /// <para />
+        /// Raw mode does not include field names, improving performance and memory usage.
+        /// However, queries do not support raw objects.
+        /// </summary>
+        public bool RawMode
+        {
+            get { return _rawMode; }
+            set
+            {
+                if (_types.Count > 0)
+                    throw new InvalidOperationException(typeof (BinarizableSerializer).Name +
+                        ".RawMode cannot be changed after first serialization.");
+
+                _rawMode = value;
+            }
+        }
 
         /// <summary>
         /// Write portalbe object.
@@ -85,7 +107,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="typeId">Type ID.</param>
         /// <param name="converter">Name converter.</param>
         /// <param name="idMapper">ID mapper.</param>
-        public void Register(Type type, int typeId, IBinaryNameMapper converter,
+        internal void Register(Type type, int typeId, IBinaryNameMapper converter,
             IBinaryIdMapper idMapper)
         {
             if (type.GetInterface(typeof(IBinarizable).Name) != null)
@@ -126,7 +148,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fields.Sort(Compare);
 
-            Descriptor desc = new Descriptor(fields);
+            Descriptor desc = new Descriptor(fields, _rawMode);
 
             _types[type] = desc;
         }
@@ -171,7 +193,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// Constructor.
             /// </summary>
             /// <param name="fields">Fields.</param>
-            public Descriptor(List<FieldInfo> fields)
+            /// <param name="raw">Raw mode.</param>
+            public Descriptor(List<FieldInfo> fields, bool raw)
             {
                 _wActions = new List<BinaryReflectiveWriteAction>(fields.Count);
                 _rActions = new List<BinaryReflectiveReadAction>(fields.Count);
@@ -181,7 +204,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     BinaryReflectiveWriteAction writeAction;
                     BinaryReflectiveReadAction readAction;
 
-                    BinaryReflectiveActions.TypeActions(field, out writeAction, out readAction);
+                    BinaryReflectiveActions.GetTypeActions(field, out writeAction, out readAction, raw);
 
                     _wActions.Add(writeAction);
                     _rActions.Add(readAction);

@@ -42,6 +42,7 @@ import javax.cache.configuration.FactoryBuilder;
 import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
 import javax.cache.event.CacheEntryCreatedListener;
 import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryExpiredListener;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.event.CacheEntryListenerException;
@@ -99,6 +100,9 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /** */
     private boolean useObjects;
 
+    /** */
+    private static AtomicBoolean serialized = new AtomicBoolean(false);
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
@@ -138,6 +142,8 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
             assertEquals(0, syncMsgFuts.size());
         }
+
+        serialized.set(false);
     }
 
     /**
@@ -178,11 +184,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                     return new CreateUpdateRemoveExpireListener();
                 }
             },
-            new Factory<CacheEntryEventSerializableFilter<Object, Object>>() {
-                @Override public CacheEntryEventSerializableFilter<Object, Object> create() {
-                    return new ExceptionFilter();
-                }
-            },
+            new ExceptionFilterFactory(),
             false,
             false
         );
@@ -443,18 +445,23 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         jcache(0).registerCacheEntryListener(new MutableCacheEntryListenerConfiguration<>(
             FactoryBuilder.factoryOf(lsnr),
-            null,
+            new SerializableFactory(),
             true,
             false
         ));
 
         try {
             startGrid(gridCount());
+
+            jcache(0).put(1, 1);
         }
         finally {
             stopGrid(gridCount());
         }
 
+        jcache(0).put(2, 2);
+
+        assertFalse(IgniteCacheEntryListenerAbstractTest.serialized.get());
         assertFalse(serialized.get());
     }
 
@@ -1130,9 +1137,9 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    private static class TestFilterFactory implements Factory<CacheEntryEventSerializableFilter<Object, Object>> {
+    private static class TestFilterFactory implements Factory<CacheEntryEventFilter<Object, Object>> {
         /** {@inheritDoc} */
-        @Override public CacheEntryEventSerializableFilter<Object, Object> create() {
+        @Override public CacheEntryEventFilter<Object, Object> create() {
             return new TestFilter();
         }
     }
@@ -1184,7 +1191,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     /**
      *
      */
-    private static class TestFilter implements CacheEntryEventSerializableFilter<Object, Object> {
+    private static class TestFilter implements CacheEntryEventFilter<Object, Object>, Externalizable {
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
             assert evt != null;
@@ -1200,6 +1207,16 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
                 key = (Integer)evt.getKey();
 
             return key % 2 == 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            throw new UnsupportedOperationException("Filter must not be marshaled.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            throw new UnsupportedOperationException("Filter must not be unmarshaled.");
         }
     }
 
@@ -1355,6 +1372,36 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     }
 
     /**
+     *
+     */
+    public static class SerializableFactory implements Factory<NonSerializableFilter> {
+        /** {@inheritDoc} */
+        @Override public NonSerializableFilter create() {
+            return new NonSerializableFilter();
+        }
+    }
+
+    /**
+     *
+     */
+    public static class NonSerializableFilter implements CacheEntryEventFilter<Object, Object>, Externalizable {
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            serialized.set(true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            serialized.set(true);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean evaluate(CacheEntryEvent<?, ?> event) throws CacheEntryListenerException {
+            return true;
+        }
+    }
+
+    /**
      */
     public static class NonSerializableListener implements CacheEntryCreatedListener<Object, Object>, Externalizable {
         /** */
@@ -1465,6 +1512,16 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ListenerTestValue.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    static class ExceptionFilterFactory implements Factory<CacheEntryEventSerializableFilter<Object, Object>> {
+        /** {@inheritDoc} */
+        @Override public CacheEntryEventSerializableFilter<Object, Object> create() {
+            return new ExceptionFilter();
         }
     }
 }

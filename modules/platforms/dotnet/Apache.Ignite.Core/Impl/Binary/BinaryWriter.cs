@@ -950,10 +950,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeCollection);
 
-            if (val == null)
-                WriteNullField();
-            else
-                WriteCollection(val);
+            WriteCollection(val);
         }
 
         /// <summary>
@@ -962,8 +959,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Collection.</param>
         public void WriteCollection(ICollection val)
         {
-            WriteByte(BinaryUtils.TypeCollection);
-            BinaryUtils.WriteCollection(val, this);
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                WriteByte(BinaryUtils.TypeCollection);
+                BinaryUtils.WriteCollection(val, this);
+            }
         }
 
         /// <summary>
@@ -975,10 +977,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeDictionary);
 
-            if (val == null)
-                WriteNullField();
-            else
-                WriteDictionary(val);
+            WriteDictionary(val);
         }
 
         /// <summary>
@@ -987,8 +986,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(IDictionary val)
         {
-            WriteByte(BinaryUtils.TypeDictionary);
-            BinaryUtils.WriteDictionary(val, this);
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                WriteByte(BinaryUtils.TypeDictionary);
+                BinaryUtils.WriteDictionary(val, this);
+            }
         }
 
         /// <summary>
@@ -1133,6 +1137,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                         ? BinaryObjectHeader.Flag.UserType
                         : BinaryObjectHeader.Flag.None;
 
+                    if (Marshaller.CompactFooter && desc.UserType)
+                        flags |= BinaryObjectHeader.Flag.CompactFooter;
+
                     var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags);
 
                     if (hasSchema)
@@ -1142,6 +1149,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                         // Calculate and write header.
                         if (_curRawPos > 0)
                             _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
+
+                        // Update schema in type descriptor
+                        if (desc.Schema.Get(schemaId) == null)
+                            desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
                     }
                     else
                         schemaOffset = BinaryObjectHeader.Size;
@@ -1447,18 +1458,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 BinaryType meta;
 
                 if (_metas.TryGetValue(desc.TypeId, out meta))
-                {
-                    if (fields != null)
-                    {
-                        IDictionary<string, int> existingFields = meta.GetFieldsMap();
-
-                        foreach (KeyValuePair<string, int> field in fields)
-                        {
-                            if (!existingFields.ContainsKey(field.Key))
-                                existingFields[field.Key] = field.Value;
-                        }
-                    }
-                }
+                    meta.UpdateFields(fields);
                 else
                     _metas[desc.TypeId] = new BinaryType(desc, fields);
             }

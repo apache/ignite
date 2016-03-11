@@ -632,7 +632,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     else
                     {
                         // New object, write in full form.
-                        var inSchema = inHeader.ReadSchema(inStream, inStartPos);
+                        var inSchema = BinaryObjectSchemaSerializer.ReadSchema(inStream, inStartPos, inHeader, 
+                            _desc.Schema, _binary.Marshaller);
 
                         var outSchema = BinaryObjectSchemaHolder.Current;
                         var schemaIdx = outSchema.PushSchema();
@@ -709,6 +710,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                             var schemaPos = outStream.Position;
                             int outSchemaId;
 
+                            if (inHeader.IsCompactFooter)
+                                flags |= BinaryObjectHeader.Flag.CompactFooter;
+
                             var hasSchema = outSchema.WriteSchema(outStream, schemaIdx, out outSchemaId, ref flags);
 
                             if (hasSchema)
@@ -719,6 +723,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                                 if (inHeader.HasRaw)
                                     outStream.WriteInt(outRawOff);
+
+                                if (_desc.Schema.Get(outSchemaId) == null)
+                                    _desc.Schema.Add(outSchemaId, outSchema.GetSchema(schemaIdx));
                             }
 
                             var outLen = outStream.Position - outStartPos;

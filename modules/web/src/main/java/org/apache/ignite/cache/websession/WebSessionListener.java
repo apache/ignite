@@ -46,7 +46,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 class WebSessionListener {
     /** */
-    private static final long RETRY_DELAY = 1;
+    private static final long RETRY_DELAY = 1000;
 
     /** Cache. */
     private final IgniteCache<String, WebSession> cache;
@@ -186,7 +186,9 @@ class WebSessionListener {
             if (!entry.exists())
                 return null;
 
-            WebSession ses = new WebSession(entry.getValue());
+            WebSession ses0 = entry.getValue();
+
+            WebSession ses = new WebSession(ses0.getId(), ses0);
 
             for (T2<String, Object> update : updates) {
                 String name = update.get1();

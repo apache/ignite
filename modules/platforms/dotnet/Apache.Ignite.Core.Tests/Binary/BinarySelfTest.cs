@@ -20,6 +20,7 @@
 // ReSharper disable PossibleInvalidOperationException
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedMember.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
@@ -37,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
-    /// 
+    /// Binary tests.
     /// </summary>
     [TestFixture]
     public class BinarySelfTest { 
@@ -50,7 +51,16 @@ namespace Apache.Ignite.Core.Tests.Binary
         [TestFixtureSetUp]
         public void BeforeTest()
         {
-            _marsh = new Marshaller(null);
+            _marsh = new Marshaller(GetBinaryConfiguration());
+        }
+
+        /// <summary>
+        /// Gets the binary configuration.
+        /// </summary>
+        /// <returns></returns>
+        protected virtual BinaryConfiguration GetBinaryConfiguration()
+        {
+            return new BinaryConfiguration { CompactFooter = true };
         }
         
         /**
@@ -727,16 +737,22 @@ namespace Apache.Ignite.Core.Tests.Binary
          * <summary>Check write of primitive fields through reflection.</summary>
          */
         [Test]
-        public void TestPrimitiveFieldsReflective()
+        public void TestPrimitiveFieldsReflective([Values(false, true)] bool raw)
         {
-            ICollection<BinaryTypeConfiguration> typeCfgs = 
-                new List<BinaryTypeConfiguration>();
+            var serializer = new BinaryReflectiveSerializer {RawMode = raw};
 
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldType)));
+            Assert.AreEqual(raw, serializer.RawMode);
 
-            BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
-
-            Marshaller marsh = new Marshaller(cfg);
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration(typeof (PrimitiveFieldType))
+                    {
+                        Serializer = serializer
+                    }
+                }
+            });
 
             PrimitiveFieldType obj = new PrimitiveFieldType();
 
@@ -927,15 +943,21 @@ namespace Apache.Ignite.Core.Tests.Binary
          * <summary>Check write of object with enums.</summary>
          */
         [Test]
-        public void TestEnumsReflective()
+        public void TestEnumsReflective([Values(false, true)] bool raw)
         {
             Marshaller marsh =
                 new Marshaller(new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
                     {
-                        new BinaryTypeConfiguration(typeof (EnumType)),
+                        new BinaryTypeConfiguration(typeof (EnumType))
+                        {
+                            Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                        },
                         new BinaryTypeConfiguration(typeof (TestEnum))
+                        {
+                            Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                        }
                     }
                 });
 
@@ -951,18 +973,26 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
-            // Test enum field in binary form
-            var binEnum = portObj.GetField<IBinaryObject>("PEnum");
-            Assert.AreEqual(obj.PEnum.GetHashCode(), binEnum.GetHashCode());
-            Assert.AreEqual((int) obj.PEnum, binEnum.EnumValue);
-            Assert.AreEqual(obj.PEnum, binEnum.Deserialize<TestEnum>());
-            Assert.AreEqual(obj.PEnum, binEnum.Deserialize<object>());
-            Assert.AreEqual(typeof(TestEnum), binEnum.Deserialize<object>().GetType());
-            Assert.AreEqual(null, binEnum.GetField<object>("someField"));
-            Assert.IsFalse(binEnum.HasField("anyField"));
+            if (!raw)
+            {
+                // Test enum field in binary form
+                var binEnum = portObj.GetField<IBinaryObject>("PEnum");
+                Assert.AreEqual(obj.PEnum.GetHashCode(), binEnum.GetHashCode());
+                Assert.AreEqual((int) obj.PEnum, binEnum.EnumValue);
+                Assert.AreEqual(obj.PEnum, binEnum.Deserialize<TestEnum>());
+                Assert.AreEqual(obj.PEnum, binEnum.Deserialize<object>());
+                Assert.AreEqual(typeof (TestEnum), binEnum.Deserialize<object>().GetType());
+                Assert.AreEqual(null, binEnum.GetField<object>("someField"));
+                Assert.IsFalse(binEnum.HasField("anyField"));
 
-            var binEnumArr = portObj.GetField<IBinaryObject[]>("PEnumArray");
-            Assert.IsTrue(binEnumArr.Select(x => x.Deserialize<TestEnum>()).SequenceEqual(obj.PEnumArray));
+                var binEnumArr = portObj.GetField<IBinaryObject[]>("PEnumArray");
+                Assert.IsTrue(binEnumArr.Select(x => x.Deserialize<TestEnum>()).SequenceEqual(obj.PEnumArray));
+            }
+            else
+            {
+                Assert.IsFalse(portObj.HasField("PEnum"));
+                Assert.IsFalse(portObj.HasField("PEnumArray"));
+            }
 
             EnumType newObj = portObj.Deserialize<EnumType>();
 
@@ -974,14 +1004,20 @@ namespace Apache.Ignite.Core.Tests.Binary
          * <summary>Check write of object with collections.</summary>
          */
         [Test]
-        public void TestCollectionsReflective()
+        public void TestCollectionsReflective([Values(false, true)] bool raw)
         {
             var marsh = new Marshaller(new BinaryConfiguration
             {
-                TypeConfigurations = new List<BinaryTypeConfiguration>
+                TypeConfigurations = new[]
                 {
-                    new BinaryTypeConfiguration(typeof (CollectionsType)),
+                    new BinaryTypeConfiguration(typeof (CollectionsType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                    },
                     new BinaryTypeConfiguration(typeof (InnerObjectType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                    }
                 }
             });
             
@@ -1043,29 +1079,39 @@ namespace Apache.Ignite.Core.Tests.Binary
          * <summary>Check write of object fields through reflective serializer.</summary>
          */
         [Test]
-        public void TestObjectReflective()
+        public void TestObjectReflective([Values(false, true)] bool raw)
         {
-            ICollection<BinaryTypeConfiguration> typeCfgs = 
-                new List<BinaryTypeConfiguration>();
-
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(OuterObjectType)));
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(InnerObjectType)));
-
-            BinaryConfiguration cfg = new BinaryConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
-
-            Marshaller marsh = new Marshaller(cfg);
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration(typeof (OuterObjectType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                    },
+                    new BinaryTypeConfiguration(typeof (InnerObjectType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                    }
+                }
+            });
 
             CheckObject(marsh, new OuterObjectType(), new InnerObjectType());
         }
 
         [Test]
-        public void TestStructsReflective()
+        public void TestStructsReflective([Values(false, true)] bool raw)
         {
             var marsh = new Marshaller(new BinaryConfiguration
             {
-                TypeConfigurations = new[] {new BinaryTypeConfiguration(typeof (ReflectiveStruct))}
+                TypeConfigurations =
+                    new[]
+                    {
+                        new BinaryTypeConfiguration(typeof (ReflectiveStruct))
+                        {
+                            Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                        }
+                    }
             });
 
             var obj = new ReflectiveStruct(15, 28.8);
@@ -1380,6 +1426,15 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // ReSharper disable once ObjectCreationAsStatement
             Assert.Throws<BinaryObjectException>(() => new Marshaller(cfg));
+        }
+
+        /// <summary>
+        /// Tests the compact footer setting.
+        /// </summary>
+        [Test]
+        public void TestCompactFooterSetting()
+        {
+            Assert.AreEqual(GetBinaryConfiguration().CompactFooter, _marsh.CompactFooter);
         }
 
         private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
