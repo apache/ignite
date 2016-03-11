@@ -417,18 +417,18 @@
     <Compile Include="Transactions\TransactionTimeoutException.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <EmbeddedResource Include="$(SolutionDir)\x64\Debug\ignite.common.dll">
+    <EmbeddedResource Include="$(SolutionDir)..\cpp\common\project\vs\x64\Debug\ignite.common.dll">
       <Link>resources\debug\x64\ignite.common.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(SolutionDir)\Win32\Debug\ignite.common.dll">
+    <EmbeddedResource Include="$(SolutionDir)..\cpp\common\project\vs\Win32\Debug\ignite.common.dll">
       <Link>resources\debug\x86\ignite.common.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)' == 'Release'">
-    <EmbeddedResource Include="$(SolutionDir)\x64\Release\ignite.common.dll">
+    <EmbeddedResource Include="$(SolutionDir)..\cpp\common\project\vs\x64\Release\ignite.common.dll">
       <Link>resources\release\x64\ignite.common.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(SolutionDir)\Win32\Release\ignite.common.dll">
+    <EmbeddedResource Include="$(SolutionDir)..\cpp\common\project\vs\Win32\Release\ignite.common.dll">
       <Link>resources\release\x86\ignite.common.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
