@@ -92,11 +92,18 @@ namespace ignite
         bool IsNegative() const;
 
         /**
-         * Get magnitude length.
+         * Get magnitude length in bytes.
          *
-         * @return Magnitude length.
+         * @return Magnitude length in bytes.
          */
         int32_t GetLength() const;
+
+        /**
+         * Get number of significant bits of the magnitude.
+         *
+         * @return Number of significant bits of the magnitude.
+         */
+        int64_t GetBits() const;
 
         /**
          * Get magnitude pointer.

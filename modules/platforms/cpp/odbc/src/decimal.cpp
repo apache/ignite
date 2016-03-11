@@ -18,6 +18,8 @@
 #include <cstring>
 #include <utility>
 
+#include "ignite/common/utils.h"
+
 #include "ignite/odbc/decimal.h"
 
 namespace ignite
@@ -97,7 +99,31 @@ namespace ignite
 
     int32_t Decimal::GetLength() const
     {
-        return scale;
+        return len;
+    }
+
+    int64_t Decimal::GetBits() const
+    {
+        using namespace common::utils;
+
+        if (len == 0)
+            return 0;
+
+        int64_t bitsLen = static_cast<int64_t>(len - 1) * 8 + 
+            BitLengthForOctet(magnitude[len - 1]);
+
+        if (IsNegative()) {
+
+            // Check if magnitude is a power of two
+            bool pow2 = PowerOfTwo(magnitude[len - 1]);
+            for (int i = 0; i < len - 1 && pow2; ++i)
+                pow2 = (magnitude[i] == 0);
+
+            if (pow2)
+                --bitsLen;
+        }
+
+        return bitsLen;
     }
 
     const int8_t* Decimal::GetMagnitude() const
