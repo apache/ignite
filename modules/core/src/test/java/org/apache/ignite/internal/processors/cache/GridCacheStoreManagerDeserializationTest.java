@@ -188,6 +188,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
             streamer.addData(key, key);
         }
 
+        streamer.flush();
         streamer.close();
 
         streamer.future().get();
