@@ -1089,113 +1089,116 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (WriteBuilderSpecials(obj))
                 return;
 
+            // Are we dealing with a well-known type?
+            var handler = BinarySystemHandlers.GetWriteHandler(type);
+
+            if (handler != null)
+            {
+                handler(this, obj);
+
+                return;
+            }
+
             // Suppose that we faced normal object and perform descriptor lookup.
             IBinaryTypeDescriptor desc = _marsh.GetDescriptor(type);
 
-            if (desc != null)
+            if (desc == null)
             {
-                // Writing normal object.
-                var pos = _stream.Position;
+                // TODO: Dynamic types
+                throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
+            }
 
-                // Dealing with handles.
-                if (!(desc.Serializer is IBinarySystemTypeSerializer) && WriteHandle(pos, obj))
-                    return;
+            // Writing normal object.
+            var pos = _stream.Position;
 
-                // Skip header length as not everything is known now
-                _stream.Seek(BinaryObjectHeader.Size, SeekOrigin.Current);
+            // Dealing with handles.
+            if (!(desc.Serializer is IBinarySystemTypeSerializer) && WriteHandle(pos, obj))
+                return;
 
-                // Preserve old frame.
-                int oldTypeId = _curTypeId;
-                IBinaryNameMapper oldConverter = _curConverter;
-                IBinaryIdMapper oldMapper = _curMapper;
-                int oldRawPos = _curRawPos;
-                var oldPos = _curPos;
+            // Skip header length as not everything is known now
+            _stream.Seek(BinaryObjectHeader.Size, SeekOrigin.Current);
+
+            // Preserve old frame.
+            int oldTypeId = _curTypeId;
+            IBinaryNameMapper oldConverter = _curConverter;
+            IBinaryIdMapper oldMapper = _curMapper;
+            int oldRawPos = _curRawPos;
+            var oldPos = _curPos;
                 
-                var oldStruct = _curStruct;
+            var oldStruct = _curStruct;
 
-                // Push new frame.
-                _curTypeId = desc.TypeId;
-                _curConverter = desc.NameMapper;
-                _curMapper = desc.IdMapper;
-                _curRawPos = 0;
-                _curPos = pos;
+            // Push new frame.
+            _curTypeId = desc.TypeId;
+            _curConverter = desc.NameMapper;
+            _curMapper = desc.IdMapper;
+            _curRawPos = 0;
+            _curPos = pos;
 
-                _curStruct = new BinaryStructureTracker(desc, desc.WriterTypeStructure);
-                var schemaIdx = _schema.PushSchema();
+            _curStruct = new BinaryStructureTracker(desc, desc.WriterTypeStructure);
+            var schemaIdx = _schema.PushSchema();
 
-                try
-                {
-                    // Write object fields.
-                    desc.Serializer.WriteBinary(obj, this);
+            try
+            {
+                // Write object fields.
+                desc.Serializer.WriteBinary(obj, this);
 
-                    // Write schema
-                    var schemaOffset = _stream.Position - pos;
+                // Write schema
+                var schemaOffset = _stream.Position - pos;
 
-                    int schemaId;
+                int schemaId;
                     
-                    var flags = desc.UserType
-                        ? BinaryObjectHeader.Flag.UserType
-                        : BinaryObjectHeader.Flag.None;
+                var flags = desc.UserType
+                    ? BinaryObjectHeader.Flag.UserType
+                    : BinaryObjectHeader.Flag.None;
 
-                    if (Marshaller.CompactFooter && desc.UserType)
-                        flags |= BinaryObjectHeader.Flag.CompactFooter;
+                if (Marshaller.CompactFooter && desc.UserType)
+                    flags |= BinaryObjectHeader.Flag.CompactFooter;
 
-                    var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags);
+                var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags);
 
-                    if (hasSchema)
-                    {
-                        flags |= BinaryObjectHeader.Flag.HasSchema;
-
-                        // Calculate and write header.
-                        if (_curRawPos > 0)
-                            _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
-
-                        // Update schema in type descriptor
-                        if (desc.Schema.Get(schemaId) == null)
-                            desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
-                    }
-                    else
-                        schemaOffset = BinaryObjectHeader.Size;
-
-                    if (_curRawPos > 0)
-                        flags |= BinaryObjectHeader.Flag.HasRaw;
-
-                    var len = _stream.Position - pos;
-
-                    var header = new BinaryObjectHeader(desc.TypeId, obj.GetHashCode(), len,
-                        schemaId, schemaOffset, flags);
-
-                    BinaryObjectHeader.Write(header, _stream, pos);
-
-                    Stream.Seek(pos + len, SeekOrigin.Begin); // Seek to the end
-                }
-                finally
+                if (hasSchema)
                 {
-                    _schema.PopSchema(schemaIdx);
+                    flags |= BinaryObjectHeader.Flag.HasSchema;
+
+                    // Calculate and write header.
+                    if (_curRawPos > 0)
+                        _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
+
+                    // Update schema in type descriptor
+                    if (desc.Schema.Get(schemaId) == null)
+                        desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
                 }
+                else
+                    schemaOffset = BinaryObjectHeader.Size;
 
-                // Apply structure updates if any.
-                _curStruct.UpdateWriterStructure(this);
+                if (_curRawPos > 0)
+                    flags |= BinaryObjectHeader.Flag.HasRaw;
 
-                // Restore old frame.
-                _curTypeId = oldTypeId;
-                _curConverter = oldConverter;
-                _curMapper = oldMapper;
-                _curRawPos = oldRawPos;
-                _curPos = oldPos;
+                var len = _stream.Position - pos;
 
-                _curStruct = oldStruct;
+                var header = new BinaryObjectHeader(desc.TypeId, obj.GetHashCode(), len,
+                    schemaId, schemaOffset, flags);
+
+                BinaryObjectHeader.Write(header, _stream, pos);
+
+                Stream.Seek(pos + len, SeekOrigin.Begin); // Seek to the end
             }
-            else
+            finally
             {
-                // Are we dealing with a well-known type?
-                var handler = BinarySystemHandlers.GetWriteHandler(type);
-
-                if (handler == null)  // We did our best, object cannot be marshalled.
-                    throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
-                
-                handler(this, obj);
+                _schema.PopSchema(schemaIdx);
             }
+
+            // Apply structure updates if any.
+            _curStruct.UpdateWriterStructure(this);
+
+            // Restore old frame.
+            _curTypeId = oldTypeId;
+            _curConverter = oldConverter;
+            _curMapper = oldMapper;
+            _curRawPos = oldRawPos;
+            _curPos = oldPos;
+
+            _curStruct = oldStruct;
         }
 
         /// <summary>
