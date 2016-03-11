@@ -1142,8 +1142,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ResultOfMethodCallIgnored", "ThrowableResultOfMethodCallIgnored"})
-    // TODO: this test hangs wil last IgfsMetaManager optimizations.
-    public void _testOpenNoPrefetch() throws Exception {
+    public void testOpenNoPrefetch() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
 
         // Write enough data to the secondary file system.

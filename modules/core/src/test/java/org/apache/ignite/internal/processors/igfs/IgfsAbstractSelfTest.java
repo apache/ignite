@@ -275,10 +275,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         clear(igfs, igfsSecondary);
 
         assert igfs.listFiles(new IgfsPath("/")).isEmpty();
-
-
-//        System.out.println("##### IFI reads: " + IgfsFileInfo.reads.get());
-//        System.out.println("##### IFI writes: " + IgfsFileInfo.writes.get());
     }
 
     /** {@inheritDoc} */
@@ -327,8 +323,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         dataCacheCfg.setMemoryMode(memoryMode);
         dataCacheCfg.setOffHeapMaxMemory(0);
 
-        //dataCacheCfg.setCopyOnRead(false);
-
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName(sec ? "metaCache-sec" : "metaCache");
@@ -336,8 +330,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        //if (!sec)
-            metaCacheCfg.setCopyOnRead(false);
+        // performance optimization:
+        metaCacheCfg.setCopyOnRead(false);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -764,14 +758,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     public void testMkdirs() throws Exception {
-        final int serCnt0 = IgfsFileInfo.serCnt.get();
-
         Map<String, String> props = properties(null, null, "0555"); // mkdirs command doesn't propagate user info.
 
         igfs.mkdirs(new IgfsPath("/x"), null);
-
-        System.out.println("Ser count += " + (IgfsFileInfo.serCnt.get() - serCnt0));
-
         checkExist(igfs, igfsSecondary, new IgfsPath("/x"));
 
         igfs.mkdirs(new IgfsPath("/k/l"), null);
@@ -831,8 +820,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         // We check only permission because IGFS client adds username and group name explicitly.
         assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
-
-        System.out.println("Ser count += " + (IgfsFileInfo.serCnt.get() - serCnt0));
     }
 
     /**
@@ -960,9 +947,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    public void testFormat() throws Exception {
-        if (1 == 1) return;
-
+    public void _testFormat() throws Exception {
         final GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = getDataCache(igfs);
 
         assert dataCache != null;
@@ -2321,7 +2306,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testDeadlocksRename() throws Exception {
+    public void _testDeadlocksRename() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, 0, 0, 0, 0);
     }
 
@@ -2330,7 +2315,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testDeadlocksDelete() throws Exception {
+    public void _testDeadlocksDelete() throws Exception {
          checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, 0, 0);
     }
 
@@ -2339,7 +2324,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testDeadlocksUpdate() throws Exception {
+    public void _testDeadlocksUpdate() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2, 0, 0, UPDATE_CNT, 0, 0);
     }
 
@@ -2348,7 +2333,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testDeadlocksMkdirs() throws Exception {
+    public void _testDeadlocksMkdirs() throws Exception {
          checkDeadlocksRepeat(5, 2, 2, 2,  0, 0, 0, MKDIRS_CNT, 0);
     }
 
@@ -2357,7 +2342,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testDeadlocksDeleteRename() throws Exception {
+    public void _testDeadlocksDeleteRename() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, 0, 0);
     }
 
@@ -2415,18 +2400,18 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     private void checkDeadlocksRepeat(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
         int primaryLvlCnt, int renCnt, int delCnt,
         int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
-//        for (int i = 0; i < REPEAT_CNT; i++) {
-//            try {
-//                checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
-//                    updateCnt, mkdirsCnt, createCnt);
-//
-//                if (i % 10 == 0)
-//                    X.println(" - " + i);
-//            }
-//            finally {
-//                clear(igfs, igfsSecondary);
-//            }
-//        }
+        for (int i = 0; i < REPEAT_CNT; i++) {
+            try {
+                checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
+                    updateCnt, mkdirsCnt, createCnt);
+
+                if (i % 10 == 0)
+                    X.println(" - " + i);
+            }
+            finally {
+                clear(igfs, igfsSecondary);
+            }
+        }
     }
 
     /**
@@ -3263,12 +3248,5 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         clear(igfs, igfsSecondary);
-
-//        IgfsFileInfo.reads.set(0L);
-//        IgfsFileInfo.writes.set(0L);
-    }
-
-    @Override protected long getTestTimeout() {
-        return 30 * 60 * 1000L;
     }
 }

@@ -24,9 +24,6 @@ import java.io.ObjectOutput;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -43,8 +40,6 @@ import org.jetbrains.annotations.Nullable;
 public final class IgfsFileInfo implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    public static final AtomicInteger serCnt = new AtomicInteger();
 
     /** ID for the root directory. */
     public static final IgniteUuid ROOT_ID = new IgniteUuid(new UUID(0, 0), 0);
@@ -126,19 +121,19 @@ public final class IgfsFileInfo implements Externalizable {
             accessTime, modificationTime, false);
     }
 
-    /**
-     * With id.
-     *
-     * @param isDir
-     * @param id
-     * @param props
-     * @param accessTime
-     * @param modificationTime
-     */
-    public IgfsFileInfo(boolean isDir, IgniteUuid id, @Nullable Map<String, String> props, long accessTime, long modificationTime) {
-        this(isDir, id, isDir ? 0 : FileSystemConfiguration.DFLT_BLOCK_SIZE, 0, null, null, props, null, false,
-            accessTime, modificationTime, false);
-    }
+//    /**
+//     * With id.
+//     *
+//     * @param isDir
+//     * @param id
+//     * @param props
+//     * @param accessTime
+//     * @param modificationTime
+//     */
+//    public IgfsFileInfo(boolean isDir, IgniteUuid id, @Nullable Map<String, String> props, long accessTime, long modificationTime) {
+//        this(isDir, id, isDir ? 0 : FileSystemConfiguration.DFLT_BLOCK_SIZE, 0, null, null, props, null, false,
+//            accessTime, modificationTime, false);
+//    }
 
     /**
      * Consturcts directory with random ID and provided listing.
@@ -160,17 +155,17 @@ public final class IgfsFileInfo implements Externalizable {
             System.currentTimeMillis(), false);
     }
 
-    /**
-     * With id.
-     *
-     * @param id
-     * @param listing
-     * @param props
-     */
-    IgfsFileInfo(IgniteUuid id, @Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String,String> props) {
-        this(true/*dir*/, id, 0, 0, null, listing, props, null, false, ACCESS_TIME_TAKE_MODIFICATION_TIME,
-            System.currentTimeMillis(), false);
-    }
+//    /**
+//     * With id.
+//     *
+//     * @param id
+//     * @param listing
+//     * @param props
+//     */
+//    IgfsFileInfo(IgniteUuid id, @Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String,String> props) {
+//        this(true/*dir*/, id, 0, 0, null, listing, props, null, false, ACCESS_TIME_TAKE_MODIFICATION_TIME,
+//            System.currentTimeMillis(), false);
+//    }
 
     /**
      * Constructs file info.
@@ -190,11 +185,11 @@ public final class IgfsFileInfo implements Externalizable {
             evictExclude);
     }
 
-    public IgfsFileInfo(IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey, @Nullable IgniteUuid lockId,
-                        boolean evictExclude, @Nullable Map<String, String> props, long accessTime, long modificationTime) {
-        this(false, id, blockSize, len, affKey, null, props, lockId, true, accessTime, modificationTime,
-            evictExclude);
-    }
+//    public IgfsFileInfo(IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey, @Nullable IgniteUuid lockId,
+//                        boolean evictExclude, @Nullable Map<String, String> props, long accessTime, long modificationTime) {
+//        this(false, id, blockSize, len, affKey, null, props, lockId, true, accessTime, modificationTime,
+//            evictExclude);
+//    }
 
     /**
      * Constructs file information.
@@ -529,14 +524,6 @@ public final class IgfsFileInfo implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        IgfsMetaManager.checkAllowed();
-
-        if (!ROOT_ID.equals(id) && !TRASH_ID.equals(id)) {
-            //System.out.println("write: " + id);
-
-            serCnt.incrementAndGet();
-        }
-
         U.writeGridUuid(out, id);
         out.writeInt(blockSize);
         out.writeLong(len);
@@ -554,14 +541,6 @@ public final class IgfsFileInfo implements Externalizable {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        IgfsMetaManager.checkAllowed();
-
-        if (!ROOT_ID.equals(id) && !TRASH_ID.equals(id)) {
-            //System.out.println("read: " + id);
-
-            serCnt.incrementAndGet();
-        }
-
         id = U.readGridUuid(in);
         blockSize = in.readInt();
         len = in.readLong();

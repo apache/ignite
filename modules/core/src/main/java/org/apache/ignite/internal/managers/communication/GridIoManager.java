@@ -830,15 +830,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         assert obj != null;
 
-        try {
-            lsnr.onMessage(nodeId, obj);
-        }
-        catch (AssertionError ae) {
-            System.err.println("eror in #onMessage():");
-            ae.printStackTrace();
-
-            throw ae;
-        }
+        lsnr.onMessage(nodeId, obj);
     }
 
     /**

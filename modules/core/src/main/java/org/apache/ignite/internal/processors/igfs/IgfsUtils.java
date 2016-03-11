@@ -144,14 +144,7 @@ public class IgfsUtils {
             try (Transaction tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 T res = clo.applyx();
 
-                IgfsMetaManager.ALLOW.incrementAndGet();
-
-                try {
-                    tx.commit();
-                }
-                finally {
-                    IgfsMetaManager.ALLOW.decrementAndGet();
-                }
+                tx.commit();
 
                 return res;
             }
