@@ -47,6 +47,9 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     /** */
     private GridDhtPartitionsFullMessage partsMsg;
 
+    /** */
+    private transient boolean exchangeNeeded;
+
     /**
      * @param topVer Topology version.
      * @param assignmentChange Assignment change.
@@ -55,6 +58,20 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
         Map<Integer, Map<Integer, List<UUID>>> assignmentChange) {
         this.topVer = topVer;
         this.assignmentChange = assignmentChange;
+    }
+
+    /**
+     * @return {@code True} if request should trigger partition exchange.
+     */
+    public boolean exchangeNeeded() {
+        return exchangeNeeded;
+    }
+
+    /**
+     * @param exchangeNeeded {@code True} if request should trigger partition exchange.
+     */
+    public void exchangeNeeded(boolean exchangeNeeded) {
+        this.exchangeNeeded = exchangeNeeded;
     }
 
     /**

@@ -495,6 +495,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     updateClientNodes(node.id());
                 }
 
+
                 final AffinityTopologyVersion nextTopVer;
 
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
@@ -508,9 +509,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         verChanged = true;
                     }
-                }
 
-                nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
+                    nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
+                }
+                else {
+                    nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
+
+                    ctx.cache().context().affinity().onDiscoveryEvent(type, node, nextTopVer);
+                }
 
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
                     for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {

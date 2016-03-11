@@ -117,10 +117,16 @@ public class GridAffinityAssignmentCache {
         head = new AtomicReference<>(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
     }
 
+    /**
+     * @return Cache name.
+     */
     public String cacheName() {
         return cacheName;
     }
 
+    /**
+     * @return Cache ID.
+     */
     public Integer cacheId() {
         return cacheId;
     }

@@ -424,6 +424,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
+            boolean crdNode = crd != null && crd.isLocal();
+
             skipPreload = cctx.kernalContext().clientNode();
 
             ExchangeType exchange;
@@ -438,8 +440,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
             else {
-                if (discoEvt.type() == EVT_NODE_JOINED)
+                if (discoEvt.type() == EVT_NODE_JOINED) {
                     cctx.cache().startReceivedCaches(topologyVersion());
+
+                    cctx.affinity().initStartedCaches(crdNode, this);
+                }
 
                 if (CU.clientNode(discoEvt.eventNode()))
                     exchange = onClientNodeEvent();
@@ -447,7 +452,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     exchange = onServerNodeEvent();
             }
 
-            updateTopologies(crd != null && crd.isLocal());
+            updateTopologies(crdNode);
 
             switch (exchange) {
                 case ALL:
@@ -484,7 +489,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (cacheCtx.isLocal())
                 continue;
 
-            GridClientPartitionTopology clientTop = cctx.affinity().clearClientTopology(cacheCtx.cacheId());
+            GridClientPartitionTopology clientTop = cctx.exchange().clearClientTopology(cacheCtx.cacheId());
 
             long updSeq = clientTop == null ? -1 : clientTop.lastUpdateSequence();
 
@@ -501,7 +506,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             top.updateTopologyVersion(exchId, this, updSeq, stopping(cacheCtx.cacheId()));
         }
 
-        for (GridClientPartitionTopology top : cctx.affinity().clientTopologies())
+        for (GridClientPartitionTopology top : cctx.exchange().clientTopologies())
             top.updateTopologyVersion(exchId, this, -1, stopping(top.cacheId()));
     }
 
@@ -511,7 +516,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private ExchangeType onCacheChangeRequest() throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
 
-        boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, reqs);
+        boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd != null && crd.isLocal(), reqs);
 
         if (clientOnly || cctx.kernalContext().clientNode()) {
             boolean clientCacheStarted = false;
@@ -539,14 +544,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private ExchangeType onAffinityChangeRequest() throws IgniteCheckedException {
         assert affChangeMsg != null : this;
 
-        if (cctx.affinity().onChangeAffinityMessage(this, crd != null && crd.isLocal(), affChangeMsg)) {
-            if (cctx.kernalContext().clientNode())
-                return ExchangeType.CLIENT;
+        cctx.affinity().onChangeAffinityMessage(this, crd != null && crd.isLocal(), affChangeMsg);
 
-            return ExchangeType.ALL;
-        }
+        if (cctx.kernalContext().clientNode())
+            return ExchangeType.CLIENT;
 
-        return ExchangeType.NONE;
+        return ExchangeType.ALL;
     }
 
     /**
@@ -563,7 +566,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         else
             assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
 
-        cctx.affinity().onClientEvent(this);
+        cctx.affinity().onClientEvent(this, crd != null && crd.isLocal());
 
         if (discoEvt.eventNode().isLocal())
             return ExchangeType.CLIENT;
@@ -618,7 +621,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         exchId.topologyVersion().equals(cacheCtx.startTopologyVersion());
 
                     if (updateTop) {
-                        for (GridClientPartitionTopology top : cctx.affinity().clientTopologies()) {
+                        for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
                             if (top.cacheId() == cacheCtx.cacheId()) {
                                 cacheCtx.topology().update(exchId,
                                     top.partitionMap(true),
@@ -660,7 +663,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT;
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (cacheCtx.isLocal())
+            if (cacheCtx.isLocal() || stopping(cacheCtx.cacheId()))
                 continue;
 
             if (topChanged)
@@ -671,7 +674,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             List<List<ClusterNode>> aff = cacheCtx.affinity().idealAssignment();
 
-            assert aff != null;
+            assert aff != null : cacheCtx.name();
 
             cacheCtx.topology().beforeExchange(this, aff);
         }
@@ -803,7 +806,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                     exchId.topologyVersion().equals(cacheCtx.startTopologyVersion());
 
                                 if (updateTop) {
-                                    for (GridClientPartitionTopology top : cctx.affinity().clientTopologies()) {
+                                    for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
                                         if (top.cacheId() == cacheCtx.cacheId()) {
                                             cacheCtx.topology().update(exchId,
                                                 top.partitionMap(true),
@@ -848,7 +851,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 assert exchId.nodeId().equals(discoEvt.eventNode().id());
 
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                    GridClientPartitionTopology clientTop = cctx.affinity().clearClientTopology(
+                    GridClientPartitionTopology clientTop = cctx.exchange().clearClientTopology(
                         cacheCtx.cacheId());
 
                     long updSeq = clientTop == null ? -1 : clientTop.lastUpdateSequence();
@@ -917,7 +920,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     }
                 }
 
-                for (GridClientPartitionTopology top : cctx.affinity().clientTopologies()) {
+                for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
                     top.updateTopologyVersion(exchId, this, -1, stopping(top.cacheId()));
 
                     top.beforeExchange(this, null);
@@ -1241,7 +1244,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         // It is important that client topologies be added after contexts.
-        for (GridClientPartitionTopology top : cctx.affinity().clientTopologies()) {
+        for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
             m.addFullPartitionsMap(top.cacheId(), top.partitionMap(true));
 
             m.addPartitionUpdateCounters(top.cacheId(), top.updateCounters());
@@ -1675,7 +1678,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx, AffinityTopologyVersion.NONE);
 
                 if (oldest != null && oldest.isLocal())
-                    cctx.affinity().clientTopology(cacheId, this).update(exchId, entry.getValue(), cntrMap);
+                    cctx.exchange().clientTopology(cacheId, this).update(exchId, entry.getValue(), cntrMap);
             }
         }
     }
@@ -1691,7 +1694,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
             GridDhtPartitionTopology top = cacheCtx != null ? cacheCtx.topology() :
-                cctx.affinity().clientTopology(cacheId, this);
+                cctx.exchange().clientTopology(cacheId, this);
 
             top.update(exchId, entry.getValue(), msg.partitionUpdateCounters(cacheId));
         }

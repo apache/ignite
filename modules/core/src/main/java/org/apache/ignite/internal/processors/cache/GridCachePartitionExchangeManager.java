@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
@@ -125,6 +126,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     @GridToStringInclude
     private ExchangeWorker exchWorker;
+
+    /** */
+    @GridToStringExclude
+    private final ConcurrentMap<Integer, GridClientPartitionTopology> clientTops = new ConcurrentHashMap8<>();
 
     /** */
     private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
@@ -238,9 +243,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         CacheAffinityChangeMessage msg = (CacheAffinityChangeMessage)customEvt.customMessage();
 
                         if (msg.exchangeId() == null) {
-                            exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
+                            if (msg.exchangeNeeded()) {
+                                exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
 
-                            exchFut = exchangeFuture(exchId, e, null, msg);
+                                exchFut = exchangeFuture(exchId, e, null, msg);
+                            }
                         }
                         else
                             exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChange(customEvt.eventNode(), msg);
@@ -479,6 +486,38 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         busyLock.writeLock().lock();
 
         exchFuts = null;
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param exchFut Exchange future.
+     * @return Topology.
+     */
+    public GridClientPartitionTopology clientTopology(int cacheId, GridDhtPartitionsExchangeFuture exchFut) {
+        GridClientPartitionTopology top = clientTops.get(cacheId);
+
+        if (top != null)
+            return top;
+
+        GridClientPartitionTopology old = clientTops.putIfAbsent(cacheId,
+            top = new GridClientPartitionTopology(cctx, cacheId, exchFut));
+
+        return old != null ? old : top;
+    }
+
+    /**
+     * @return Collection of client topologies.
+     */
+    public Collection<GridClientPartitionTopology> clientTopologies() {
+        return clientTops.values();
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @return Client partition topology.
+     */
+    public GridClientPartitionTopology clearClientTopology(int cacheId) {
+        return clientTops.remove(cacheId);
     }
 
     /**
@@ -732,7 +771,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         // It is important that client topologies be added after contexts.
-        for (GridClientPartitionTopology top : cctx.affinity().clientTopologies())
+        for (GridClientPartitionTopology top : cctx.exchange().clientTopologies())
             m.addFullPartitionsMap(top.cacheId(), top.partitionMap(true));
 
         if (log.isDebugEnabled())
@@ -775,7 +814,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        for (GridClientPartitionTopology top : cctx.affinity().clientTopologies()) {
+        for (GridClientPartitionTopology top : clientTops.values()) {
             GridDhtPartitionMap2 locMap = top.localPartitionMap();
 
             m.addLocalPartitionMap(top.cacheId(), locMap);
@@ -975,7 +1014,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     GridDhtPartitionTopology top = null;
 
                     if (cacheCtx == null)
-                        top = cctx.affinity().clientTopology(cacheId);
+                        top = clientTops.get(cacheId);
                     else if (!cacheCtx.isLocal())
                         top = cacheCtx.topology();
 
@@ -1024,15 +1063,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     GridDhtPartitionTopology top = null;
 
                     if (cacheCtx == null)
-                        top = cctx.affinity().clientTopology(cacheId);
+                        top = clientTops.get(cacheId);
                     else if (!cacheCtx.isLocal())
                         top = cacheCtx.topology();
 
                     if (top != null) {
-                        if (top.update(null, entry.getValue(), null) != null)
-                            updated = true;
+                        updated |= top.update(null, entry.getValue(), null) != null;
 
-                        cctx.affinity().checkRebalanceState(entry.getValue().topologyVersion(), cacheId);
+                        cctx.affinity().checkRebalanceState(top, cacheId);
                     }
                 }
 
@@ -1117,6 +1155,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts())
             cacheCtx.preloader().dumpDebugInfo();
+
+        cctx.affinity().dumpDebugInfo();
     }
 
     /**

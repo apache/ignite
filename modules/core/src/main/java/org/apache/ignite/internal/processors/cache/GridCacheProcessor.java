@@ -2461,7 +2461,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public boolean onCustomEvent(DiscoveryCustomMessage msg,
         AffinityTopologyVersion topVer) {
         if (msg instanceof CacheAffinityChangeMessage)
-            return ((CacheAffinityChangeMessage) msg).exchangeId() == null;
+            return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage) msg));
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch) msg, topVer);
     }

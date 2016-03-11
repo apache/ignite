@@ -252,10 +252,12 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         assertNull(((IgniteKernal)ignite(0)).context().cache().internalCache(CACHE_NAME1));
     }
 
+    // TODO: left server exchange start, coordinator fails, new coordinator has no cache.
+
     /**
      * @throws Exception If failed.
      */
-    public void testAffinitySimpleNoCacheOnCoordinator() throws Exception {
+    public void _testAffinitySimpleNoCacheOnCoordinator() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration>() {
             @Override public CacheConfiguration apply(String gridName) {
                 if (gridName.equals(getTestGridName(1)))
@@ -333,7 +335,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         int nodes = 1;
 
         for (int i = 0;  i < 3; i++) {
-            log.info("Iteration: " + i);
+            log.info("Iteration [iter=" + i + ", topVer=" + topVer + ']');
 
             startGrid(nodes++);
 
@@ -734,17 +736,11 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(4, topVer(4, 0), false);
 
-        List<List<ClusterNode>> aff1 = affinity(ignite0, topVer(4, 0), CACHE_NAME1);
-
-        checkAffinity(4, topVer(4, 1), false);
-
-        List<List<ClusterNode>> aff2 = affinity(ignite0, topVer(4, 1), CACHE_NAME1);
-
-        assertEquals(aff1, aff2);
+        checkNoExchange(4, topVer(4, 1));
 
         commSpi0.stopBlock();
 
-        checkAffinity(4, topVer(4, 2), true);
+        checkAffinity(4, topVer(4, 1), true);
     }
 
     /**
