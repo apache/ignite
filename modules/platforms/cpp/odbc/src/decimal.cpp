@@ -65,19 +65,11 @@ namespace ignite
     {
         double res = 0;
 
-        int32_t localScale = GetScale();
-        
         for (int32_t i = 0; i < len; ++i)
-        {
-            res = (res * 256) + magnitude[i];
+            res = (res * 256) + static_cast<uint8_t>(magnitude[i]);
 
-            while (localScale && res > 10.0)
-            {
-                res /= 10.0;
-
-                --localScale;
-            }
-        }
+        for (int32_t i = 0; i < GetScale(); ++i)
+            res /= 10.0;
 
         return res * GetSign();
     }
@@ -102,14 +94,14 @@ namespace ignite
         return len;
     }
 
-    int64_t Decimal::GetBits() const
+    int32_t Decimal::BitLength() const
     {
         using namespace common::utils;
 
         if (len == 0)
             return 0;
 
-        int64_t bitsLen = static_cast<int64_t>(len - 1) * 8 + 
+        int32_t bitsLen = (len - 1) * 8 +
             BitLengthForOctet(magnitude[len - 1]);
 
         if (IsNegative()) {

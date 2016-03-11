@@ -103,7 +103,7 @@ namespace ignite
          *
          * @return Number of significant bits of the magnitude.
          */
-        int64_t GetBits() const;
+        int32_t BitLength() const;
 
         /**
          * Get magnitude pointer.
