@@ -150,13 +150,12 @@ namespace ignite
                             SQL_NUMERIC_STRUCT* out =
                                 reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
 
-                            out->precision = 0;
+                            out->precision = 20; // Max int64_t precision
                             out->scale = 0;
                             out->sign = value < 0 ? 2 : 1;
 
                             memset(out->val, 0, SQL_MAX_NUMERIC_LEN);
 
-                            // TODO: implement propper conversation to numeric type.
                             int64_t intVal = static_cast<int64_t>(std::abs(value));
 
                             memcpy(out->val, &intVal, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(intVal)));
@@ -547,27 +546,9 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_DOUBLE:
                     case IGNITE_ODBC_C_TYPE_CHAR:
                     case IGNITE_ODBC_C_TYPE_WCHAR:
-                    {
-                        PutNum<double>(static_cast<double>(value));
-
-                        break;
-                    }
-
                     case IGNITE_ODBC_C_TYPE_NUMERIC:
                     {
-                        if (GetData())
-                        {
-                            SQL_NUMERIC_STRUCT* numeric =
-                                reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
-
-                            memset(numeric, 0, sizeof(*numeric));
-
-                            numeric->sign = value.IsNegative() ? 2 : 1;
-                            numeric->precision = 0;
-                            numeric->scale = value.GetScale();
-
-                            memcpy(numeric->val, value.GetMagnitude(), std::min<size_t>(SQL_MAX_NUMERIC_LEN, value.GetLength()));
-                        }
+                        PutNum<double>(static_cast<double>(value));
 
                         break;
                     }
