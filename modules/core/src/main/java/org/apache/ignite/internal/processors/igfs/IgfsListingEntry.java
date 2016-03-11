@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -160,6 +161,8 @@ public class IgfsListingEntry implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        IgfsMetaManager.checkAllowed();
+
         U.writeGridUuid(out, fileId);
         out.writeInt(blockSize);
         out.writeLong(len);
@@ -170,6 +173,8 @@ public class IgfsListingEntry implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        IgfsMetaManager.checkAllowed();
+
         fileId = U.readGridUuid(in);
         blockSize = in.readInt();
         len = in.readLong();
