@@ -143,6 +143,8 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         }
         finally {
             stopServer(srv);
+
+            stopAllGrids();
         }
     }
 
