@@ -27,7 +27,7 @@ angular
     // set up the states
     $stateProvider
     .state('signin', {
-        url: '/signin',
+        url: '/',
         templateUrl: '/signin.html',
         metaTags: {
             title: 'Management Tool and Configuration Wizard for Apache Ignite'
