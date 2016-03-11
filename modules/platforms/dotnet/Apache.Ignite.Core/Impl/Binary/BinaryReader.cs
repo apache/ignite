@@ -699,7 +699,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                     // Find descriptor.
                     IBinaryTypeDescriptor desc;
 
-                    if (!_descs.TryGetValue(BinaryUtils.TypeKey(hdr.IsUserType, hdr.TypeId), out desc))
+                    if (hdr.TypeId == BinaryUtils.TypeUnregistered)
+                        // TODO: Send meta?
+                        desc = Marshaller.RegisterType(Type.GetType(ReadString(), true));
+                    else if (!_descs.TryGetValue(BinaryUtils.TypeKey(hdr.IsUserType, hdr.TypeId), out desc))
                         throw new BinaryObjectException("Unknown type ID: " + hdr.TypeId);
 
                     // Instantiate object. 

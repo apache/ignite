@@ -52,6 +52,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: object. */
         public const byte TypeObject = HdrFull;
 
+        /** Type: unregistered. */
+        public const byte TypeUnregistered = 0;
+
         /** Type: unsigned byte. */
         public const byte TypeByte = 1;
 
