@@ -1696,8 +1696,6 @@ public abstract class GridAbstractTest extends TestCase {
                     runTestInternal();
                 }
                 catch (Throwable e) {
-                    e.printStackTrace();
-
                     IgniteClosure<Throwable, Throwable> hnd = errorHandler();
 
                     ex.set(hnd != null ? hnd.apply(e) : e);
