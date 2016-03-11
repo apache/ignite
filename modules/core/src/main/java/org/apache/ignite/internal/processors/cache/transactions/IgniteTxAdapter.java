@@ -1413,10 +1413,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         assert newExpireTime != CU.EXPIRE_TIME_CALCULATE;
 
         // Construct old entry info.
-        GridCacheVersionedEntryEx oldEntry = old.versionedEntry();
+        GridCacheVersionedEntryEx oldEntry = old.versionedEntry(txEntry.keepBinary());
 
         // Construct new entry info.
-        Object newVal0 = CU.value(newVal, txEntry.context(), false);
+        GridCacheContext entryCtx = txEntry.context();
+
+        Object newVal0 = entryCtx.unwrapBinaryIfNeeded(newVal, txEntry.keepBinary(), false);
 
         GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry(
             oldEntry.key(),
