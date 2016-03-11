@@ -770,69 +770,69 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         igfs.mkdirs(new IgfsPath("/x"), null);
 
-        System.out.println("Ser count = " + (IgfsFileInfo.serCnt.get() - serCnt0));
+        System.out.println("Ser count += " + (IgfsFileInfo.serCnt.get() - serCnt0));
 
-//        checkExist(igfs, igfsSecondary, new IgfsPath("/x"));
-//
-//        igfs.mkdirs(new IgfsPath("/k/l"), null);
-//        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
-//
-//        igfs.mkdirs(new IgfsPath("/x/y"), null);
-//        checkExist(igfs, igfsSecondary, new IgfsPath("/x/y"));
-//
-//        igfs.mkdirs(new IgfsPath("/a/b/c/d"), null);
-//        checkExist(igfs, igfsSecondary, new IgfsPath("/a/b/c/d"));
-//
-//        igfs.mkdirs(new IgfsPath("/a/b/c/d/e"), null);
-//        checkExist(igfs, igfsSecondary, new IgfsPath("/a/b/c/d/e"));
-//
-//        create(igfs, null, new IgfsPath[] { new IgfsPath("/d/f") }); // "f" is a file.
-//        checkExist(igfs, igfsSecondary, new IgfsPath("/d/f"));
-//        assertTrue(igfs.info(new IgfsPath("/d/f")).isFile());
-//
-//        try {
-//            igfs.mkdirs(new IgfsPath("/d/f"), null);
-//
-//            fail("IgfsParentNotDirectoryException expected.");
-//        }
-//        catch (IgfsParentNotDirectoryException ignore) {
-//            // No-op.
-//        }
-//        catch (IgfsException ignore) {
-//            // Currently Ok for Hadoop fs:
-//            if (!getClass().getSimpleName().startsWith("Hadoop"))
-//                throw ignore;
-//        }
-//
-//        try {
-//            igfs.mkdirs(new IgfsPath("/d/f/something/else"), null);
-//
-//            fail("IgfsParentNotDirectoryException expected.");
-//        }
-//        catch (IgfsParentNotDirectoryException ignore) {
-//            // No-op.
-//        }
-//        catch (IgfsException ignore) {
-//            // Currently Ok for Hadoop fs:
-//            if (!getClass().getSimpleName().startsWith("Hadoop"))
-//                throw ignore;
-//        }
-//
-//        create(igfs, paths(DIR, SUBDIR), null);
-//
-//        igfs.mkdirs(SUBSUBDIR, props);
-//
-//        // Ensure that directory was created and properties are propagated.
-//        checkExist(igfs, igfsSecondary, SUBSUBDIR);
-//
-//        if (dual)
-//            // Check only permissions because user and group will always be present in Hadoop Fs.
-//            assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(SUBSUBDIR.toString()).get(PROP_PERMISSION));
-//
-//        // We check only permission because IGFS client adds username and group name explicitly.
-//        assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
-//
-//        System.out.println("Ser count = " + (IgfsFileInfo.serCnt.get() - serCnt0));
+        checkExist(igfs, igfsSecondary, new IgfsPath("/x"));
+
+        igfs.mkdirs(new IgfsPath("/k/l"), null);
+        checkExist(igfs, igfsSecondary, new IgfsPath("/k/l"));
+
+        igfs.mkdirs(new IgfsPath("/x/y"), null);
+        checkExist(igfs, igfsSecondary, new IgfsPath("/x/y"));
+
+        igfs.mkdirs(new IgfsPath("/a/b/c/d"), null);
+        checkExist(igfs, igfsSecondary, new IgfsPath("/a/b/c/d"));
+
+        igfs.mkdirs(new IgfsPath("/a/b/c/d/e"), null);
+        checkExist(igfs, igfsSecondary, new IgfsPath("/a/b/c/d/e"));
+
+        create(igfs, null, new IgfsPath[] { new IgfsPath("/d/f") }); // "f" is a file.
+        checkExist(igfs, igfsSecondary, new IgfsPath("/d/f"));
+        assertTrue(igfs.info(new IgfsPath("/d/f")).isFile());
+
+        try {
+            igfs.mkdirs(new IgfsPath("/d/f"), null);
+
+            fail("IgfsParentNotDirectoryException expected.");
+        }
+        catch (IgfsParentNotDirectoryException ignore) {
+            // No-op.
+        }
+        catch (IgfsException ignore) {
+            // Currently Ok for Hadoop fs:
+            if (!getClass().getSimpleName().startsWith("Hadoop"))
+                throw ignore;
+        }
+
+        try {
+            igfs.mkdirs(new IgfsPath("/d/f/something/else"), null);
+
+            fail("IgfsParentNotDirectoryException expected.");
+        }
+        catch (IgfsParentNotDirectoryException ignore) {
+            // No-op.
+        }
+        catch (IgfsException ignore) {
+            // Currently Ok for Hadoop fs:
+            if (!getClass().getSimpleName().startsWith("Hadoop"))
+                throw ignore;
+        }
+
+        create(igfs, paths(DIR, SUBDIR), null);
+
+        igfs.mkdirs(SUBSUBDIR, props);
+
+        // Ensure that directory was created and properties are propagated.
+        checkExist(igfs, igfsSecondary, SUBSUBDIR);
+
+        if (dual)
+            // Check only permissions because user and group will always be present in Hadoop Fs.
+            assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(SUBSUBDIR.toString()).get(PROP_PERMISSION));
+
+        // We check only permission because IGFS client adds username and group name explicitly.
+        assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
+
+        System.out.println("Ser count += " + (IgfsFileInfo.serCnt.get() - serCnt0));
     }
 
     /**
@@ -2748,11 +2748,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             writeFileChunks(os, chunks);
         }
         finally {
-            System.out.println("closing...");
-
             U.closeQuiet(os);
-
-            System.out.println("done.");
 
             awaitFileClose(igfs, file);
         }

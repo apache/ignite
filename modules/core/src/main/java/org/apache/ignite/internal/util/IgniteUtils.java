@@ -3803,7 +3803,6 @@ public abstract class IgniteUtils {
                 rsrc.close();
             }
             catch (Exception ignored) {
-
                 ignored.printStackTrace();
                 // No-op.
             }

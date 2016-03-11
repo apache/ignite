@@ -532,7 +532,7 @@ public final class IgfsFileInfo implements Externalizable {
         IgfsMetaManager.checkAllowed();
 
         if (!ROOT_ID.equals(id) && !TRASH_ID.equals(id)) {
-            System.out.println("write: " + id);
+            //System.out.println("write: " + id);
 
             serCnt.incrementAndGet();
         }
@@ -557,9 +557,9 @@ public final class IgfsFileInfo implements Externalizable {
         IgfsMetaManager.checkAllowed();
 
         if (!ROOT_ID.equals(id) && !TRASH_ID.equals(id)) {
-            serCnt.incrementAndGet();
+            //System.out.println("read: " + id);
 
-            System.out.println("read: " + id);
+            serCnt.incrementAndGet();
         }
 
         id = U.readGridUuid(in);
