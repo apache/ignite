@@ -28,13 +28,14 @@
 /// with binary values. Note that binary object can be retrieved in
 /// fully-deserialized form or in binary object format using special
 /// cache projection.
+/// 
+/// Requirements:
+/// * Java JRE (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
+/// * JAVA_HOME environment variable should point to the corresponding JRE installation
 /// </summary>
 
 void Main()
 {
-	if (!Environment.Is64BitProcess)
-		throw new Exception("x64 LINQPad is required to run this sample (see AnyCPU build: http://www.linqpad.net/Download.aspx)");	
-
 	// Force new LINQPad query process to reinit JVM
 	Util.NewProcess = true;
 	
