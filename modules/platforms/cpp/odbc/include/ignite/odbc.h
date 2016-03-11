@@ -20,6 +20,19 @@
 
 #include "ignite/odbc/system/odbc_constants.h"
 
+
+/**
+ * @file odbc.h
+ *
+ * Functions here are placed to the ignite namespace so there are no
+ * collisions with standard ODBC functions when we call driver API
+ * functions from other API functions. I.e, when we call SQLAllocEnv
+ * from SQLAllocHandle linker can place Driver Manager call here,
+ * instead of internal driver call. On other hand if we call
+ * ignite::SQLAllocEnv from ignite::SQLAllocHandle we can be sure 
+ * there are no collisions.
+ */
+
 namespace ignite
 {
     BOOL ConfigDSN(HWND     hwndParent,
