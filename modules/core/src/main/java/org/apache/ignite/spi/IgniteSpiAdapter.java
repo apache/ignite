@@ -102,6 +102,9 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     private long failureDetectionTimeout;
 
+    /** spi state */
+    private boolean initialized;
+
     /**
      * Creates new adapter and initializes it from the current (this) class.
      * SPI name will be initialized to the simple name of the class
@@ -116,6 +119,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     protected void startStopwatch() {
         startTstamp = U.currentTimeMillis();
+    }
+
+    /**
+     * Gets the initializing state.
+     *
+     * @return true if initialized, false otherwise.
+     */
+    public boolean initialized(){
+        return initialized;
     }
 
     /** {@inheritDoc} */
@@ -253,7 +265,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     @IgniteInstanceResource
     protected void injectResources(Ignite ignite) {
         this.ignite = ignite;
-
+        this.initialized = true;
         if (ignite != null)
             gridName = ignite.name();
     }

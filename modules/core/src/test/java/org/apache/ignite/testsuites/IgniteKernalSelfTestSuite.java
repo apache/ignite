@@ -35,7 +35,7 @@ import org.apache.ignite.internal.GridSameVmStartupSelfTest;
 import org.apache.ignite.internal.GridSpiExceptionSelfTest;
 import org.apache.ignite.internal.GridVersionSelfTest;
 import org.apache.ignite.internal.IgniteUpdateNotifierPerClusterSettingSelfTest;
-import org.apache.ignite.internal.managers.GridManagerStopSelfTest;
+import org.apache.ignite.internal.managers.GridManagerStartStopSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCommunicationSendMessageSelfTest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManagerStopSelfTest;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAliveCacheSelfTest;
@@ -95,7 +95,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCommunicationSendMessageSelfTest.class);
         suite.addTestSuite(GridCacheMessageSelfTest.class);
         suite.addTestSuite(GridDeploymentManagerStopSelfTest.class);
-        suite.addTestSuite(GridManagerStopSelfTest.class);
+        suite.addTestSuite(GridManagerStartStopSelfTest.class);
         suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.RegularDiscovery.class);
         suite.addTestSuite(GridDiscoveryManagerAttributesSelfTest.ClientDiscovery.class);
         suite.addTestSuite(GridDiscoveryManagerAliveCacheSelfTest.class);
