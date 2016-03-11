@@ -257,7 +257,22 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testCreateCloseClientCache2() throws Exception {
+    public void testCreateCloseClientCache2_1() throws Exception {
+        createCloseClientCache2(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateCloseClientCache2_2() throws Exception {
+        createCloseClientCache2(true);
+    }
+
+    /**
+     * @param createFromCacheClient If {@code true} creates cache from cache client node.
+     * @throws Exception If failed.
+     */
+    private void createCloseClientCache2(boolean createFromCacheClient) throws Exception {
         Ignite ignite0 = startGrid(0);
 
         Ignite ignite1 = startGrid(1);
@@ -266,15 +281,19 @@ public class IgniteDynamicClientCacheStartSelfTest extends GridCommonAbstractTes
 
         ccfg.setNodeFilter(new CachePredicate(F.asList(ignite0.name())));
 
-        ignite1.createCache(ccfg);
+        if (createFromCacheClient)
+            ignite0.createCache(ccfg);
+        else {
+            ignite1.createCache(ccfg);
 
-        assertNull(((IgniteKernal)ignite0).context().cache().internalCache(null));
+            assertNull(((IgniteKernal)ignite0).context().cache().internalCache(null));
+        }
 
-        ignite0.cache(null);
+        assertNotNull(ignite0.cache(null));
 
         ignite0.cache(null).close();
 
-        ignite0.cache(null);
+        assertNotNull(ignite0.cache(null));
 
         startGrid(2);
 
