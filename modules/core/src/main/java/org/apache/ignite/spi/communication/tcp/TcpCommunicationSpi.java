@@ -958,7 +958,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     @IgniteSpiConfiguration(optional = true)
     public void setLocalPortRange(int locPortRange) {
-        this.locPortRange = locPortRange;
+        this.locPortRange = locPortRange == 0 ? 1 : locPortRange;
     }
 
     /** {@inheritDoc} */

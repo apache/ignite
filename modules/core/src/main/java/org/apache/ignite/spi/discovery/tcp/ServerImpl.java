@@ -4861,27 +4861,25 @@ class ServerImpl extends TcpDiscoveryImpl {
                     else
                         srvrSock = new ServerSocket(port, 0, spi.locHost);
 
-                    break;
+                    if (log.isInfoEnabled())
+                        log.info("Successfully bound to TCP port [port=" + port + ", localHost=" + spi.locHost + ']');
+
+                    return;
                 }
                 catch (IOException e) {
-                    if (port < spi.locPort + spi.locPortRange - 1) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to bind to local port (will try next port within range) " +
-                                "[port=" + port + ", localHost=" + spi.locHost + ']');
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to bind to local port (will try next port within range) " +
+                            "[port=" + port + ", localHost=" + spi.locHost + ']');
 
-                        onException("Failed to bind to local port. " +
-                            "[port=" + port + ", localHost=" + spi.locHost + ']', e);
-                    }
-                    else {
-                        throw new IgniteSpiException("Failed to bind TCP server socket (possibly all ports in range " +
-                            "are in use) [firstPort=" + spi.locPort + ", lastPort=" + (spi.locPort + spi.locPortRange - 1) +
-                            ", addr=" + spi.locHost + ']', e);
-                    }
+                    onException("Failed to bind to local port. " +
+                        "[port=" + port + ", localHost=" + spi.locHost + ']', e);
                 }
             }
 
-            if (log.isInfoEnabled())
-                log.info("Successfully bound to TCP port [port=" + port + ", localHost=" + spi.locHost + ']');
+            // If free port wasn't found.
+            throw new IgniteSpiException("Failed to bind TCP server socket (possibly all ports in range " +
+                "are in use) [firstPort=" + spi.locPort + ", lastPort=" + (spi.locPort + spi.locPortRange - 1) +
+                ", addr=" + spi.locHost + ']');
         }
 
         /** {@inheritDoc} */
