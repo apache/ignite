@@ -1089,22 +1089,23 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (WriteBuilderSpecials(obj))
                 return;
 
-            // Are we dealing with a well-known type?
-            var handler = BinarySystemHandlers.GetWriteHandler(type);
-
-            if (handler != null)
-            {
-                handler(this, obj);
-
-                return;
-            }
-
             // Suppose that we faced normal object and perform descriptor lookup.
             IBinaryTypeDescriptor desc = _marsh.GetDescriptor(type);
 
             if (desc == null)
             {
+                // Are we dealing with a well-known type?
+                var handler = BinarySystemHandlers.GetWriteHandler(type);
+
+                if (handler != null)
+                {
+                    handler(this, obj);
+
+                    return;
+                }
+
                 // TODO: Dynamic types
+
                 throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
             }
 
