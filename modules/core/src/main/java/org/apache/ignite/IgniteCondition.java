@@ -21,6 +21,12 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
+/**
+ * This interface provides a rich API for working with conditions associated with distributed reentrant locks.
+ * <p>
+ * <h1 class="header">Functionality</h1>
+ * IgniteCondition provides functionality similar to {@code java.util.concurrent.locks.Condition}.
+ */
 public interface IgniteCondition extends Condition {
 
     /**

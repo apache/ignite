@@ -215,7 +215,6 @@ public interface IgniteLock extends Lock, Closeable {
      * Any invocation of this method will result in {@linkplain UnsupportedOperationException}.
      * Correct way to obtain Condition object is through method {@linkplain IgniteLock#getOrCreateCondition(String)}
      *
-     * @return
      */
     @Override public Condition newCondition();
 
