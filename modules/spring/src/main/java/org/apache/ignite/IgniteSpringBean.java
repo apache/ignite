@@ -425,7 +425,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteReentrantLock reentrantLock(String name,
+    @Nullable @Override public IgniteLock reentrantLock(String name,
         boolean failoverSafe,
         boolean create)
     {

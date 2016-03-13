@@ -43,9 +43,9 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.IgniteReentrantLock;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
@@ -137,8 +137,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /** Cache contains only {@code GridCacheSemaphoreState}. */
     private IgniteInternalCache<GridCacheInternalKey, GridCacheSemaphoreState> semView;
 
-    /** Cache contains only {@code GridCacheReentrantLockState}. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheReentrantLockState> reentrantLockView;
+    /** Cache contains only {@code GridCacheLockState}. */
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> reentrantLockView;
 
     /** Cache contains only {@code GridCacheAtomicReferenceValue}. */
     private IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicReferenceValue> atomicRefView;
@@ -194,8 +194,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                                 for (GridCacheRemovable ds : dsMap.values()) {
                                     if (ds instanceof GridCacheSemaphoreEx)
                                         ((GridCacheSemaphoreEx)ds).onNodeRemoved(leftNodeId);
-                                    else if(ds instanceof GridCacheReentrantLockEx)
-                                        ((GridCacheReentrantLockEx)ds).onNodeRemoved(leftNodeId);
+                                    else if(ds instanceof GridCacheLockEx)
+                                        ((GridCacheLockEx)ds).onNodeRemoved(leftNodeId);
                                 }
 
                                 return null;
@@ -266,6 +266,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         super.onKernalStop(cancel);
+
+        for (GridCacheRemovable ds : dsMap.values()) {
+            if (ds instanceof GridCacheLockEx)
+                ((GridCacheLockEx)ds).stop();
+        }
 
         if (initLatch.getCount() > 0) {
             initFailed = true;
@@ -1344,7 +1349,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      *      {@code create} is false.
      * @throws IgniteCheckedException If operation failed.
      */
-    public IgniteReentrantLock reentrantLock(final String name, final boolean failoverSafe, final boolean create)
+    public IgniteLock reentrantLock(final String name, final boolean failoverSafe, final boolean create)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
@@ -1354,17 +1359,17 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         startQuery();
 
-        return getAtomic(new IgniteOutClosureX<IgniteReentrantLock>() {
-            @Override public IgniteReentrantLock applyx() throws IgniteCheckedException {
+        return getAtomic(new IgniteOutClosureX<IgniteLock>() {
+            @Override public IgniteLock applyx() throws IgniteCheckedException {
                 GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
                 dsCacheCtx.gate().enter();
 
                 try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
-                    GridCacheReentrantLockState val = cast(dsView.get(key), GridCacheReentrantLockState.class);
+                    GridCacheLockState val = cast(dsView.get(key), GridCacheLockState.class);
 
                     // Check that reentrant lock hasn't been created in other thread yet.
-                    GridCacheReentrantLockEx reentrantLock = cast(dsMap.get(key), GridCacheReentrantLockEx.class);
+                    GridCacheLockEx reentrantLock = cast(dsMap.get(key), GridCacheLockEx.class);
 
                     if (reentrantLock != null) {
                         assert val != null;
@@ -1376,12 +1381,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         return null;
 
                     if (val == null) {
-                        val = new GridCacheReentrantLockState(0, dsCacheCtx.nodeId(), 0, failoverSafe);
+                        val = new GridCacheLockState(0, dsCacheCtx.nodeId(), 0, failoverSafe);
 
                         dsView.put(key, val);
                     }
 
-                    GridCacheReentrantLockEx reentrantLock0 = new GridCacheReentrantLockImpl(
+                    GridCacheLockEx reentrantLock0 = new GridCacheLockImpl(
                         name,
                         key,
                         reentrantLockView,
@@ -1404,7 +1409,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, REENTRANT_LOCK, null), create, GridCacheReentrantLockEx.class);
+        }, new DataStructureInfo(name, REENTRANT_LOCK, null), create, GridCacheLockEx.class);
     }
 
     /**
@@ -1414,7 +1419,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      * @param broken Flag indicating the reentrant lock is broken and should be removed unconditionally.
      * @throws IgniteCheckedException If operation failed.
      */
-    public void removeReentrantLock(final String name, boolean broken) throws IgniteCheckedException {
+    public void removeReentrantLock(final String name, final boolean broken) throws IgniteCheckedException {
         assert name != null;
         assert dsCacheCtx != null;
 
@@ -1428,7 +1433,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
                 try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                     // Check correctness type of removable object.
-                    GridCacheReentrantLockState val = cast(dsView.get(key), GridCacheReentrantLockState.class);
+                    GridCacheLockState val = cast(dsView.get(key), GridCacheLockState.class);
 
                     if (val != null) {
                         if (val.get() > 0 && !broken)
@@ -1500,7 +1505,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
             if (evt.getEventType() == EventType.CREATED || evt.getEventType() == EventType.UPDATED)
                 return evt.getValue() instanceof GridCacheCountDownLatchValue ||
                     evt.getValue() instanceof GridCacheSemaphoreState ||
-                    evt.getValue() instanceof GridCacheReentrantLockState;
+                    evt.getValue() instanceof GridCacheLockState;
             else {
                 assert evt.getEventType() == EventType.REMOVED : evt;
 
@@ -1597,22 +1602,22 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                                     ", actual=" + sem.getClass() + ", value=" + sem + ']');
                         }
                     }
-                    else if (val0 instanceof GridCacheReentrantLockState) {
+                    else if (val0 instanceof GridCacheLockState) {
                         GridCacheInternalKey key = evt.getKey();
 
                         // Notify reentrant lock on changes.
                         final GridCacheRemovable reentrantLock = dsMap.get(key);
 
-                        GridCacheReentrantLockState val = (GridCacheReentrantLockState)val0;
+                        GridCacheLockState val = (GridCacheLockState)val0;
 
-                        if (reentrantLock instanceof GridCacheReentrantLockEx) {
-                            final GridCacheReentrantLockEx lock0 = (GridCacheReentrantLockEx)reentrantLock;
+                        if (reentrantLock instanceof GridCacheLockEx) {
+                            final GridCacheLockEx lock0 = (GridCacheLockEx)reentrantLock;
 
                             lock0.onUpdate(val);
                         }
                         else if (reentrantLock != null) {
                             U.error(log, "Failed to cast object " +
-                                "[expected=" + IgniteReentrantLock.class.getSimpleName() +
+                                "[expected=" + IgniteLock.class.getSimpleName() +
                                 ", actual=" + reentrantLock.getClass() + ", value=" + reentrantLock + ']');
                         }
                     }
@@ -1837,7 +1842,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         SEMAPHORE(IgniteSemaphore.class.getSimpleName()),
 
         /** */
-        REENTRANT_LOCK(IgniteReentrantLock.class.getSimpleName());
+        REENTRANT_LOCK(IgniteLock.class.getSimpleName());
 
         /** */
         private static final DataStructureType[] VALS = values();

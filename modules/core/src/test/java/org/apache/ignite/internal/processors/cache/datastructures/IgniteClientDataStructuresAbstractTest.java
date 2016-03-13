@@ -24,8 +24,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.IgniteReentrantLock;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.CollectionConfiguration;
@@ -346,7 +346,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
         assertNull(creator.reentrantLock("lock1", true, false));
         assertNull(other.reentrantLock("lock1", true, false));
 
-        try (IgniteReentrantLock lock = creator.reentrantLock("lock1", true, true)) {
+        try (IgniteLock lock = creator.reentrantLock("lock1", true, true)) {
             assertNotNull(lock);
 
             assertFalse(lock.isLocked());
@@ -355,7 +355,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    IgniteReentrantLock lock0 = other.reentrantLock("lock1", true, false);
+                    IgniteLock lock0 = other.reentrantLock("lock1", true, false);
 
                     lock0.lock();
 

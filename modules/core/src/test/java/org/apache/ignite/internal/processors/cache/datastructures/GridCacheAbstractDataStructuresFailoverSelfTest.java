@@ -36,8 +36,8 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.IgniteReentrantLock;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
@@ -572,10 +572,10 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     private void doTestReentrantLock(ConstantTopologyChangeWorker topWorker, boolean failoverSafe) throws Exception {
-        try (IgniteReentrantLock lock = grid(0).reentrantLock(STRUCTURE_NAME, failoverSafe, true)) {
+        try (IgniteLock lock = grid(0).reentrantLock(STRUCTURE_NAME, failoverSafe, true)) {
             IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
                 @Override public Object apply(Ignite ignite) {
-                    IgniteReentrantLock l = ignite.reentrantLock(STRUCTURE_NAME, failoverSafe, false);
+                    IgniteLock l = ignite.reentrantLock(STRUCTURE_NAME, failoverSafe, false);
 
                     IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {

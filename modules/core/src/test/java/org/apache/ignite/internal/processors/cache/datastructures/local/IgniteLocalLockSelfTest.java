@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.datastructures.local;
 
 import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteReentrantLock;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.cache.datastructures.IgniteReentrantLockAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteLockAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -31,7 +31,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 /**
  *
  */
-public class IgniteLocalReentrantLockSelfTest extends IgniteReentrantLockAbstractSelfTest {
+public class IgniteLocalLockSelfTest extends IgniteLockAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
         return LOCAL;
@@ -45,7 +45,7 @@ public class IgniteLocalReentrantLockSelfTest extends IgniteReentrantLockAbstrac
     /** {@inheritDoc} */
     @Override public void testReentrantLock() throws Exception {
         // Test main functionality.
-        IgniteReentrantLock lock = grid(0).reentrantLock("lock", true, true);
+        IgniteLock lock = grid(0).reentrantLock("lock", true, true);
 
         assertNotNull(lock);
 
@@ -56,7 +56,7 @@ public class IgniteLocalReentrantLockSelfTest extends IgniteReentrantLockAbstrac
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
-                    IgniteReentrantLock lock = grid(0).reentrantLock("lock", true, true);
+                    IgniteLock lock = grid(0).reentrantLock("lock", true, true);
 
                     assert lock != null;
 
@@ -99,7 +99,7 @@ public class IgniteLocalReentrantLockSelfTest extends IgniteReentrantLockAbstrac
         fut.get();
 
         // Test operations on removed lock.
-        IgniteReentrantLock lock0 = grid(0).reentrantLock("lock", true, false);
+        IgniteLock lock0 = grid(0).reentrantLock("lock", true, false);
 
         assertNotNull(lock0);
 

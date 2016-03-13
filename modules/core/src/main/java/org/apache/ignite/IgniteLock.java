@@ -18,13 +18,12 @@
 package org.apache.ignite;
 
 import java.io.Closeable;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 /**
- * This interface provides a rich API for working with distributed reentrant lock.
+ * This interface provides a rich API for working with distributed reentrant locks.
  * <p>
  * <h1 class="header">Functionality</h1>
  * Distributed reentrant lock provides functionality similar to {@code java.util.concurrent.ReentrantLock}.
@@ -32,7 +31,7 @@ import java.util.concurrent.locks.Lock;
  * Instance of cache reentrant lock can be created by calling the following method:
  * {@link Ignite#reentrantLock(String, boolean, boolean)}.
  */
-public interface IgniteReentrantLock extends Closeable {
+public interface IgniteLock extends Lock, Closeable {
 
     /**
      * Name of atomic reentrant lock.
@@ -41,21 +40,8 @@ public interface IgniteReentrantLock extends Closeable {
      */
     public String name();
 
-    /**
-     * Acquires the lock.
-     *
-     * <p>Acquires the lock if it is not held by another thread and returns
-     * immediately, setting the lock hold count to one.
-     *
-     * <p>If the current thread already holds the lock then the hold
-     * count is incremented by one and the method returns immediately.
-     *
-     * <p>If the lock is held by another thread then the
-     * current thread becomes disabled for thread scheduling
-     * purposes and lies dormant until the lock has been acquired,
-     * at which time the lock hold count is set to one.
-     */
-    public void lock();
+    /** {@inheritDoc} */
+    @Override public void lock();
 
     /**
      * Acquires the lock unless the current thread is
@@ -69,7 +55,7 @@ public interface IgniteReentrantLock extends Closeable {
      *
      * <p>If the lock is held by another thread then the
      * current thread becomes disabled for thread scheduling
-     * purposes and lies dormant until one of two things happens:
+     * purposes and lies dormant until one of four things happens:
      *
      * <ul>
      *
@@ -77,6 +63,11 @@ public interface IgniteReentrantLock extends Closeable {
      *
      * <li>Some other thread {@linkplain Thread#interrupt interrupts} the
      * current thread.
+     *
+     * <li>Lock is broken (any node failed while owning this lock), and lock is created in
+     * non-failoverSafe mode.
+     *
+     * <li>Local node is stopped.
      *
      * </ul>
      *
@@ -90,7 +81,11 @@ public interface IgniteReentrantLock extends Closeable {
      * <li>has its interrupted status set on entry to this method; or
      *
      * <li>is {@linkplain Thread#interrupt interrupted} while acquiring
-     * the lock,
+     * the lock; or
+     *
+     * <li>lock is broken before or during the attempt to acquire this lock; or
+     *
+     * <li>local node is stopped,
      *
      * </ul>
      *
@@ -103,27 +98,10 @@ public interface IgniteReentrantLock extends Closeable {
      *
      * @throws IgniteInterruptedException if the current thread is interrupted
      */
-    public void lockInterruptibly() throws IgniteInterruptedException;
+    @Override public void lockInterruptibly() throws IgniteInterruptedException;
 
-    /**
-     * Acquires the lock only if it is not held by another thread at the time
-     * of invocation.
-     *
-     * <p>Acquires the lock if it is not held by another thread and
-     * returns immediately with the value {@code true}, setting the
-     * lock hold count to one.
-     *
-     * <p>If the current thread already holds this lock then the hold
-     * count is incremented by one and the method returns {@code true}.
-     *
-     * <p>If the lock is held by another thread then this method will return
-     * immediately with the value {@code false}.
-     *
-     * @return {@code true} if the lock was free and was acquired by the
-     *         current thread, or the lock was already held by the current
-     *         thread; and {@code false} otherwise
-     */
-    public boolean tryLock();
+    /** {@inheritDoc} */
+    @Override public boolean tryLock();
 
     /**
      * Acquires the lock if it is not held by another thread within the given
@@ -140,7 +118,7 @@ public interface IgniteReentrantLock extends Closeable {
      *
      * <p>If the lock is held by another thread then the
      * current thread becomes disabled for thread scheduling
-     * purposes and lies dormant until one of three things happens:
+     * purposes and lies dormant until one of five things happens:
      *
      * <ul>
      *
@@ -148,6 +126,11 @@ public interface IgniteReentrantLock extends Closeable {
      *
      * <li>Some other thread {@linkplain Thread#interrupt interrupts}
      * the current thread; or
+     *
+     * <li>Lock is broken (any node failed while owning this lock), and lock is created in
+     * non-failoverSafe mode.
+     *
+     * <li>Local node is stopped.
      *
      * <li>The specified waiting time elapses
      *
@@ -163,7 +146,11 @@ public interface IgniteReentrantLock extends Closeable {
      * <li>has its interrupted status set on entry to this method; or
      *
      * <li>is {@linkplain Thread#interrupt interrupted} while
-     * acquiring the lock,
+     * acquiring the lock; or
+     *
+     * <li>lock is broken before or during the attempt to acquire this lock; or
+     *
+     * <li>local node is stopped,
      *
      * </ul>
      * then {@link IgniteInterruptedException} is thrown and the current thread's
@@ -187,30 +174,14 @@ public interface IgniteReentrantLock extends Closeable {
      * @throws IgniteInterruptedException if the current thread is interrupted
      * @throws NullPointerException if the time unit is null
      */
-    public boolean tryLock(long timeout, TimeUnit unit) throws IgniteInterruptedException;
+    @Override public boolean tryLock(long timeout, TimeUnit unit) throws IgniteInterruptedException;
 
-    /**
-     * Attempts to release this lock.
-     *
-     * <p>If the current thread is the holder of this lock then the hold
-     * count is decremented.  If the hold count is now zero then the lock
-     * is released.  If the current thread is not the holder of this
-     * lock then {@link IllegalMonitorStateException} is thrown.
-     *
-     * @throws IllegalMonitorStateException if the current thread does not
-     *         hold this lock
-     */
-    public void unlock();
+    /** {@inheritDoc} */
+    @Override public void unlock();
 
     /**
      * Returns a {@link Condition} instance for use with this
-     * {@link Lock} instance.
-     *
-     * <p>The returned {@link Condition} instance supports the same
-     * usages as do the {@link Object} monitor methods ({@link
-     * Object#wait() wait}, {@link Object#notify notify}, and {@link
-     * Object#notifyAll notifyAll}) when used with the built-in
-     * monitor lock.
+     * {@link IgniteLock} instance.
      *
      * <ul>
      *
@@ -233,35 +204,23 @@ public interface IgniteReentrantLock extends Closeable {
      *
      * </ul>
      *
+     * @param name Name of the distributed condition object
+     *
      * @return the Condition object
      */
-    public IgniteCondition newCondition(String name);
+    public IgniteCondition getOrCreateCondition(String name);
+
+    /**
+     * This method is not supported in IgniteLock,
+     * Any invocation of this method will result in {@linkplain UnsupportedOperationException}.
+     * Correct way to obtain Condition object is through method {@linkplain IgniteLock#getOrCreateCondition(String)}
+     *
+     * @return
+     */
+    @Override public Condition newCondition();
 
     /**
      * Queries the number of holds on this lock by the current thread.
-     *
-     * <p>A thread has a hold on a lock for each lock action that is not
-     * matched by an unlock action.
-     *
-     * <p>The hold count information is typically only used for testing and
-     * debugging purposes. For example, if a certain section of code should
-     * not be entered with the lock already held then we can assert that
-     * fact:
-     *
-     *  <pre> {@code
-     * class X {
-     *   ReentrantLock lock = new ReentrantLock();
-     *   // ...
-     *   public void m() {
-     *     assert lock.getHoldCount() == 0;
-     *     lock.lock();
-     *     try {
-     *       // ... method body
-     *     } finally {
-     *       lock.unlock();
-     *     }
-     *   }
-     * }}</pre>
      *
      * @return the number of holds on this lock by the current thread,
      *         or zero if this lock is not held by the current thread
@@ -271,64 +230,29 @@ public interface IgniteReentrantLock extends Closeable {
     /**
      * Queries if this lock is held by the current thread.
      *
-     * <p>Analogous to the {@link Thread#holdsLock(Object)} method for
-     * built-in monitor locks, this method is typically used for
-     * debugging and testing. For example, a method that should only be
-     * called while a lock is held can assert that this is the case:
-     *
-     *  <pre> {@code
-     * class X {
-     *   ReentrantLock lock = new ReentrantLock();
-     *   // ...
-     *
-     *   public void m() {
-     *       assert lock.isHeldByCurrentThread();
-     *       // ... method body
-     *   }
-     * }}</pre>
-     *
-     * <p>It can also be used to ensure that a reentrant lock is used
-     * in a non-reentrant manner, for example:
-     *
-     *  <pre> {@code
-     * class X {
-     *   ReentrantLock lock = new ReentrantLock();
-     *   // ...
-     *
-     *   public void m() {
-     *       assert !lock.isHeldByCurrentThread();
-     *       lock.lock();
-     *       try {
-     *           // ... method body
-     *       } finally {
-     *           lock.unlock();
-     *       }
-     *   }
-     * }}</pre>
-     *
      * @return {@code true} if current thread holds this lock and
      *         {@code false} otherwise
      */
     public boolean isHeldByCurrentThread();
 
     /**
-     * Queries if this lock is held by any thread. This method is
+     * Queries if this lock is held by any thread on any node. This method is
      * designed for use in monitoring of the system state,
      * not for synchronization control.
      *
-     * @return {@code true} if any thread holds this lock and
+     * @return {@code true} if any thread on this or any other node holds this lock and
      *         {@code false} otherwise
      */
     public boolean isLocked();
 
     /**
-     * Queries whether any threads are waiting to acquire this lock. Note that
+     * Queries whether any threads on this node are waiting to acquire this lock. Note that
      * because cancellations may occur at any time, a {@code true}
      * return does not guarantee that any other thread will ever
      * acquire this lock.  This method is designed primarily for use in
      * monitoring of the system state.
      *
-     * @return {@code true} if there may be other threads waiting to
+     * @return {@code true} if there may be other threads on this node waiting to
      *         acquire the lock
      */
     public boolean hasQueuedThreads();
@@ -345,18 +269,6 @@ public interface IgniteReentrantLock extends Closeable {
      * @throws NullPointerException if the thread is null
      */
     public boolean hasQueuedThread(Thread thread);
-
-    /**
-     * Returns an estimate of the number of nodes waiting to
-     * acquire this lock.  The value is only an estimate because the number of
-     * nodes may change dynamically while this method traverses
-     * internal data structures.  This method is designed for use in
-     * monitoring of the system state, not for synchronization
-     * control.
-     *
-     * @return the estimated number of nodes waiting for this lock
-     */
-    public int getQueueLength();
 
     /**
      * Queries whether any threads on this node are waiting on the given condition
@@ -376,7 +288,7 @@ public interface IgniteReentrantLock extends Closeable {
     public boolean hasWaiters(IgniteCondition condition);
 
     /**
-     * Returns an estimate of the number of threads on this node are waiting on the
+     * Returns an estimate of the number of threads on this node that are waiting on the
      * given condition associated with this lock. Note that because
      * timeouts and interrupts may occur at any time, the estimate
      * serves only as an upper bound on the actual number of waiters.
@@ -401,22 +313,14 @@ public interface IgniteReentrantLock extends Closeable {
     public boolean isFailoverSafe();
 
     /**
-     * Returns true if any node that owned the locked failed before releasing the lock..
+     * Returns true if any node that owned the locked failed before releasing the lock.
      *
      * @return true if any node failed while owning the lock.
      */
     public boolean isBroken();
 
-    /**
-     * Returns a string identifying this lock, as well as its lock state.
-     * The state, in brackets, includes either the String {@code "Unlocked"}
-     * or the String {@code "Locked by"} followed by the
-     * {@linkplain UUID} of the owning node and {@linkplain Thread#getName name}
-     * of the owning thread.
-     *
-     * @return a string identifying this lock, as well as its lock state
-     */
-    public String toString();
+    /** {@inheritDoc} */
+    @Override public String toString();
 
     /**
      * Gets status of reentrant lock.

@@ -21,7 +21,7 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCondition;
-import org.apache.ignite.IgniteReentrantLock;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -35,7 +35,7 @@ import org.apache.ignite.lang.IgniteRunnable;
  * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node with {@code
  * examples/config/example-ignite.xml} configuration.
  */
-public class IgniteReentrantLockExample {
+public class IgniteLockExample {
     /** Number of items for each producer/consumer to produce/consume. */
     private static final int OPS_COUNT = 100;
 
@@ -74,7 +74,7 @@ public class IgniteReentrantLockExample {
             final String reentrantLockName = UUID.randomUUID().toString();
 
             // Initialize lock.
-            IgniteReentrantLock lock = ignite.reentrantLock(reentrantLockName, true, true);
+            IgniteLock lock = ignite.reentrantLock(reentrantLockName, true, true);
 
             // Init distributed cache.
             IgniteCache<String, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
@@ -99,7 +99,7 @@ public class IgniteReentrantLockExample {
             try {
                 lock.lock();
 
-                IgniteCondition notDone = lock.newCondition(SYNC_NAME);
+                IgniteCondition notDone = lock.getOrCreateCondition(SYNC_NAME);
 
                 int count = cache.get(SYNC_NAME);
 
@@ -152,16 +152,16 @@ public class IgniteReentrantLockExample {
         @Override public void run() {
             System.out.println("Producer started. ");
 
-            IgniteReentrantLock lock = Ignition.ignite().reentrantLock(reentrantLockName, true, true);
+            IgniteLock lock = Ignition.ignite().reentrantLock(reentrantLockName, true, true);
 
             // Condition to wait on when queue is full.
-            IgniteCondition notFull = lock.newCondition(NOT_FULL);
+            IgniteCondition notFull = lock.getOrCreateCondition(NOT_FULL);
 
             // Signaled to wait on when queue is empty.
-            IgniteCondition notEmpty = lock.newCondition(NOT_EMPTY);
+            IgniteCondition notEmpty = lock.getOrCreateCondition(NOT_EMPTY);
 
             // Signaled when job is done.
-            IgniteCondition done = lock.newCondition(SYNC_NAME);
+            IgniteCondition done = lock.getOrCreateCondition(SYNC_NAME);
 
             IgniteCache<String, Integer> cache = Ignition.ignite().cache(CACHE_NAME);
 
@@ -231,16 +231,16 @@ public class IgniteReentrantLockExample {
 
             Ignite g = Ignition.ignite();
 
-            IgniteReentrantLock lock = g.reentrantLock(reentrantLockName, true, true);
+            IgniteLock lock = g.reentrantLock(reentrantLockName, true, true);
 
             // Condition to wait on when queue is full.
-            IgniteCondition notFull = lock.newCondition(NOT_FULL);
+            IgniteCondition notFull = lock.getOrCreateCondition(NOT_FULL);
 
             // Signaled to wait on when queue is empty.
-            IgniteCondition notEmpty = lock.newCondition(NOT_EMPTY);
+            IgniteCondition notEmpty = lock.getOrCreateCondition(NOT_EMPTY);
 
             // Signaled when job is done.
-            IgniteCondition done = lock.newCondition(SYNC_NAME);
+            IgniteCondition done = lock.getOrCreateCondition(SYNC_NAME);
 
             IgniteCache<String, Integer> cache = g.cache(CACHE_NAME);
 

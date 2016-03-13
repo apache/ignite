@@ -30,7 +30,7 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.IgniteReentrantLock;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -369,7 +369,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                         res instanceof IgniteQueue ||
                         res instanceof IgniteSet ||
                         res instanceof IgniteSemaphore ||
-                        res instanceof IgniteReentrantLock);
+                        res instanceof IgniteLock);
 
                 log.info("Data structure created: " + dataStructure);
 

@@ -15,33 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.datastructures;
+package org.apache.ignite.internal.processors.cache.datastructures.replicated;
 
-import java.util.UUID;
-import org.apache.ignite.IgniteReentrantLock;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteLockAbstractSelfTest;
+
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- * Grid cache reentrant lock ({@code 'Ex'} stands for external).
+ *
  */
-public interface GridCacheReentrantLockEx extends IgniteReentrantLock, GridCacheRemovable {
-    /**
-     * Get current reentrant lock latch key.
-     *
-     * @return Lock key.
-     */
-    public GridCacheInternalKey key();
-
-    /**
-     * Callback to notify reentrant lock on changes.
-     *
-     * @param state New reentrant lock state.
-     */
-    public void onUpdate(GridCacheReentrantLockState state);
-
-    /**
-     * Callback to notify semaphore on topology changes.
-     *
-     * @param nodeId Id of the node that left the grid.
-     */
-    public void onNodeRemoved(UUID nodeId);
+public class IgniteReplicatedLockSelfTest extends IgniteLockAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode atomicsCacheMode() {
+        return REPLICATED;
+    }
 }

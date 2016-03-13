@@ -29,8 +29,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCondition;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteReentrantLock;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -54,7 +54,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 /**
  * Cache reentrant lock self test.
  */
-public abstract class IgniteReentrantLockAbstractSelfTest extends IgniteAtomicsAbstractTest
+public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTest
     implements Externalizable {
     /** */
     private static final int NODES_CNT = 4;
@@ -168,7 +168,7 @@ public abstract class IgniteReentrantLockAbstractSelfTest extends IgniteAtomicsA
         checkFailoverSafe();
 
         // Test main functionality.
-        IgniteReentrantLock lock1 = grid(0).reentrantLock("lock", true, true);
+        IgniteLock lock1 = grid(0).reentrantLock("lock", true, true);
 
         assertFalse(lock1.isLocked());
 
@@ -188,7 +188,7 @@ public abstract class IgniteReentrantLockAbstractSelfTest extends IgniteAtomicsA
                 IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
                     new Callable<Object>() {
                         @Nullable @Override public Object call() throws Exception {
-                            IgniteReentrantLock lock = ignite.reentrantLock("lock", true, true);
+                            IgniteLock lock = ignite.reentrantLock("lock", true, true);
 
                             assert lock != null;
 
@@ -241,10 +241,10 @@ public abstract class IgniteReentrantLockAbstractSelfTest extends IgniteAtomicsA
     }
 
     /**
-     * @param lock IgniteReentrantLock.
+     * @param lock IgniteLock.
      * @throws Exception If failed.
      */
-    protected void checkRemovedReentrantLock(final IgniteReentrantLock lock) throws Exception {
+    protected void checkRemovedReentrantLock(final IgniteLock lock) throws Exception {
         assert GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 return lock.removed();
@@ -261,20 +261,18 @@ public abstract class IgniteReentrantLockAbstractSelfTest extends IgniteAtomicsA
      * @throws Exception Exception.
      */
     private void checkFailoverSafe() throws Exception {
-        /*
-        // Checks only if semaphore is initialized properly
-        IgniteReentrantLock lock = createReentrantLock("rmv", true);
+        // Checks only if reentrant lock is initialized properly
+        IgniteLock lock = createReentrantLock("rmv", true);
 
         assert lock.isFailoverSafe();
 
         removeReentrantLock("rmv");
 
-        IgniteReentrantLock lock1 = createReentrantLock("rmv1", false);
+        IgniteLock lock1 = createReentrantLock("rmv1", false);
 
         assert !lock1.isFailoverSafe();
 
         removeReentrantLock("rmv1");
-    */
     }
 
     /**
@@ -282,7 +280,7 @@ public abstract class IgniteReentrantLockAbstractSelfTest extends IgniteAtomicsA
      */
     private void checkLock() throws Exception {
         // Check only 'false' cases here. Successful lock is tested over the grid.
-        final IgniteReentrantLock lock = createReentrantLock("acquire", false);
+        final IgniteLock lock = createReentrantLock("acquire", false);
 
         lock.lock();
 
@@ -311,14 +309,13 @@ public abstract class IgniteReentrantLockAbstractSelfTest extends IgniteAtomicsA
      * @return New distributed reentrant lock.
      * @throws Exception If failed.
      */
-    private IgniteReentrantLock createReentrantLock(String lockName, boolean failoverSafe)
+    private IgniteLock createReentrantLock(String lockName, boolean failoverSafe)
         throws Exception {
-        IgniteReentrantLock lock = grid(RND.nextInt(NODES_CNT)).reentrantLock(lockName, failoverSafe, true);
+        IgniteLock lock = grid(RND.nextInt(NODES_CNT)).reentrantLock(lockName, failoverSafe, true);
 
         // Test initialization.
         assert lockName.equals(lock.name());
         assert lock.isLocked() == false;
-        assert lock.getQueueLength() == 0;
         assert lock.isFailoverSafe() == failoverSafe;
 
         return lock;
@@ -330,12 +327,12 @@ public abstract class IgniteReentrantLockAbstractSelfTest extends IgniteAtomicsA
      */
     private void removeReentrantLock(String lockName)
         throws Exception {
-        IgniteReentrantLock lock = grid(RND.nextInt(NODES_CNT)).reentrantLock(lockName, false, true);
+        IgniteLock lock = grid(RND.nextInt(NODES_CNT)).reentrantLock(lockName, false, true);
 
         assert lock != null;
 
         // Remove lock on random node.
-        IgniteReentrantLock lock0 = grid(RND.nextInt(NODES_CNT)).reentrantLock(lockName, false, true);
+        IgniteLock lock0 = grid(RND.nextInt(NODES_CNT)).reentrantLock(lockName, false, true);
 
         assertNotNull(lock0);
 
@@ -355,7 +352,7 @@ public abstract class IgniteReentrantLockAbstractSelfTest extends IgniteAtomicsA
         if (gridCount() == 1)
             return;
 
-        IgniteReentrantLock lock = grid(0).reentrantLock("s1", true, true);
+        IgniteLock lock = grid(0).reentrantLock("s1", true, true);
 
         List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
@@ -364,13 +361,13 @@ public abstract class IgniteReentrantLockAbstractSelfTest extends IgniteAtomicsA
 
             futs.add(GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    IgniteReentrantLock lock = ignite.reentrantLock("s1", true, false);
+                    IgniteLock lock = ignite.reentrantLock("s1", true, false);
 
                     assertNotNull(lock);
 
-                    IgniteCondition cond1 = lock.newCondition("c1");
+                    IgniteCondition cond1 = lock.getOrCreateCondition("c1");
 
-                    IgniteCondition cond2 = lock.newCondition("c2");
+                    IgniteCondition cond2 = lock.getOrCreateCondition("c2");
 
                     try {
                         boolean wait = lock.tryLock(30_000, MILLISECONDS);
@@ -403,9 +400,9 @@ public abstract class IgniteReentrantLockAbstractSelfTest extends IgniteAtomicsA
             try{
                 lock.lock();
 
-                lock.newCondition("c1").signal();
+                lock.getOrCreateCondition("c1").signal();
 
-                lock.newCondition("c2").await(10,MILLISECONDS);
+                lock.getOrCreateCondition("c2").await(10,MILLISECONDS);
             }
             finally {
                 lock.unlock();

@@ -471,14 +471,14 @@ public interface Ignite extends AutoCloseable {
      *
      * @param name Name of the lock.
      * @param failoverSafe {@code True} to create failover safe lock which means that
-     *      if any node leaves topology lock already acquired by that node is silently released
-     *      and become available for alive nodes to acquire. If flag is {@code false} then
-     *      all threads waiting to acquire lock get interrupted.
+     *      if any node leaves topology, all locks already acquired by that node are silently released
+     *      and become available for other nodes to acquire. If flag is {@code false} then
+     *      all threads on other nodes waiting to acquire lock are interrupted.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return ReentrantLock for the given name.
      * @throws IgniteException If reentrant lock could not be fetched or created.
      */
-    public IgniteReentrantLock reentrantLock(String name, boolean failoverSafe, boolean create)
+    public IgniteLock reentrantLock(String name, boolean failoverSafe, boolean create)
         throws IgniteException;
 
     /**

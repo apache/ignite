@@ -21,24 +21,23 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCondition;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -49,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
@@ -58,7 +58,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Cache reentrant lock implementation based on AbstractQueuedSynchronizer.
  */
-public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockEx, Externalizable {
+public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -83,7 +83,7 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
     private GridCacheInternalKey key;
 
     /** Reentrant lock projection. */
-    private IgniteInternalCache<GridCacheInternalKey, GridCacheReentrantLockState> lockView;
+    private IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView;
 
     /** Cache context. */
     private GridCacheContext ctx;
@@ -100,10 +100,13 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
     /** Internal synchronization object. */
     private Sync sync;
 
+    /** Flag indicating that every operation on this lock should be interrupted. */
+    private volatile boolean interruptAll = false;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridCacheReentrantLockImpl() {
+    public GridCacheLockImpl() {
         // No-op.
     }
 
@@ -125,9 +128,6 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
         @Nullable
         private volatile String lastCondition;
 
-        /** Failed nodes. */
-        private Set<UUID> failedNodes = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
         /** True if any node owning the lock had failed. */
         private volatile boolean isBroken = false;
 
@@ -143,10 +143,7 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
         /** FailoverSafe flag. */
         private final boolean failoverSafe;
 
-        /** Flag indicating that every operation on this lock should be interrupted. */
-        private boolean interruptAll = false;
-
-        protected Sync(GridCacheReentrantLockState state) {
+        protected Sync(GridCacheLockState state) {
             setState(state.get());
 
             thisNode = ctx.localNodeId();
@@ -201,32 +198,49 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
             return ret;
         }
 
-        /** */
-        private void registerFailedNode(UUID failedNode){
-            failedNodes.add(failedNode);
-        }
-
-        /** */
-        private void clearFailedNodes(Set<UUID> nodes){
-            failedNodes.retainAll(nodes);
-        }
-
         /** Interrupt every thread on this node waiting on this lock. */
-        private void interruptAll(){
+        private synchronized void interruptAll(){
+            // First release all threads waiting on associated condition queues.
+            if(!conditionMap.isEmpty()) {
+                // Temporarily obtain ownership of the lock,
+                // in order to signal all conditions.
+                UUID tempUUID = getOwnerNode();
+
+                long tempThreadID = currentOwnerThreadId;
+
+                this.setCurrentOwnerNode(thisNode);
+
+                this.currentOwnerThreadId = Thread.currentThread().getId();
+
+                for (Condition c : conditionMap.values())
+                    c.signalAll();
+
+                // Restore owner node and owner thread.
+                this.setCurrentOwnerNode(tempUUID);
+
+                this.currentOwnerThreadId = tempThreadID;
+            }
+
+            // Interrupt any ongoing transactions.
+            for(Thread t: getQueuedThreads()){
+                t.interrupt();
+            }
+
+            // Interrupt any future call to acquire/release on this sync object.
             interruptAll = true;
         }
 
         /** Check if lock is in correct state (i.e. not broken in non-failoversafe mode),
          * if not throw  {@linkplain IgniteInterruptedException} */
         private void validate(){
-            if(interruptAll){
+            if(Thread.interrupted() || interruptAll){
                 throw new IgniteInterruptedException("Lock broken in non-failoversafe mode.");
             }
         }
 
         /**
          * Sets the number of permits currently acquired on this lock. This method should only be used in {@linkplain
-         * GridCacheReentrantLockImpl#onUpdate(GridCacheReentrantLockState)}.
+         * GridCacheLockImpl#onUpdate(GridCacheLockState)}.
          *
          * @param permits Number of permits acquired at this reentrant lock.
          */
@@ -245,7 +259,7 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
 
         /**
          * Sets the UUID of the node that currently owns this lock. This method should only be used in {@linkplain
-         * GridCacheReentrantLockImpl#onUpdate(GridCacheReentrantLockState)}.
+         * GridCacheLockImpl#onUpdate(GridCacheLockState)}.
          *
          * @param ownerNode UUID of the node owning this lock.
          */
@@ -310,7 +324,8 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
 
             int c = getState();
 
-            if(c == 0 || failedNodes.contains(currentOwner)){
+            // Check if lock is released or current owner failed.
+            if(c == 0 || ctx.discovery().node(currentOwner) == null){
                 if (compareAndSetGlobalState(0, acquires, current.getId())){
 
                     // Not used for synchronization (we use ThreadID), but updated anyway.
@@ -423,19 +438,17 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
                         @Override public Boolean call() throws Exception {
                             try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
 
-                                GridCacheReentrantLockState val = lockView.get(key);
+                                GridCacheLockState val = lockView.get(key);
 
                                 if (val == null)
                                     throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
 
-                                if (val.get() == expVal || sync.failedNodes.contains(val.getId())) {
+                                if (val.get() == expVal || ctx.discovery().node(val.getId()) == null) {
                                     val.set(newVal);
 
                                     val.setId(thisNode);
 
                                     val.setThreadId(newThreadID);
-
-                                    val.getNodes().add(thisNode);
 
                                     lockView.put(key, val);
 
@@ -474,7 +487,7 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
                             try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
-                                GridCacheReentrantLockState val = lockView.get(key);
+                                GridCacheLockState val = lockView.get(key);
 
                                 if (val == null)
                                     throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
@@ -487,11 +500,6 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
 
                                 // Get global condition queue.
                                 Map<String, LinkedList<UUID>> condMap = val.getConditionMap();
-
-                                // Check if any nodes in the global waiting queue have failed and remove them.
-                                if(!sync.failedNodes.isEmpty()){
-                                    val.getNodes().removeAll(sync.failedNodes);
-                                }
 
                                 // Create map containing signals from this node.
                                 Map<UUID, LinkedList<String>> signalMap = new HashMap<UUID, LinkedList<String>>();
@@ -518,7 +526,7 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
                                                 UUID uuid = list.remove(0);
 
                                                 // Skip if node to be released is not alive anymore.
-                                                if(!val.getNodes().contains(uuid)){
+                                                if(ctx.discovery().node(uuid) == null){
                                                     cnt++;
 
                                                     continue;
@@ -582,7 +590,7 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
             }
         }
 
-        protected synchronized boolean checkIncomingSignals(GridCacheReentrantLockState state){
+        protected synchronized boolean checkIncomingSignals(GridCacheLockState state){
             if(state.getSignals() == null)
                 return false;
 
@@ -624,9 +632,9 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
         }
 
         /**
+         *  Condition implementation for {@linkplain IgniteLock}.
          *
-         *
-         * */
+         **/
         public class IgniteConditionObject implements IgniteCondition {
 
             private final String name;
@@ -639,107 +647,158 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
                 this.object = object;
             }
 
+            /**
+             * Name of this condition.
+             *
+             * @return name Name of this condition object.
+             */
             @Override public String name() {
                 return name;
             }
 
             /** {@inheritDoc} */
             @Override public void await() throws IgniteInterruptedException {
-                if(!isHeldExclusively())
-                    throw new IllegalMonitorStateException();
-
-                lastCondition = this.name;
+                ctx.kernalContext().gateway().readLock();
 
                 try {
+                    if(!isHeldExclusively())
+                        throw new IllegalMonitorStateException();
+
+                    lastCondition = this.name;
+
                     object.await();
+
+                    sync.validate();
                 }
                 catch (InterruptedException e) {
                     throw new IgniteInterruptedException(e);
                 }
                 finally {
-                    sync.validate();
+                    ctx.kernalContext().gateway().readUnlock();
                 }
             }
 
             /** {@inheritDoc} */
             @Override public void awaitUninterruptibly() {
-                if(!isHeldExclusively())
-                    throw new IllegalMonitorStateException();
+                ctx.kernalContext().gateway().readLock();
 
-                lastCondition = this.name;
+                try {
+                    if (!isHeldExclusively())
+                        throw new IllegalMonitorStateException();
 
-                object.awaitUninterruptibly();
+                    lastCondition = this.name;
 
+                    object.awaitUninterruptibly();
+                }
+                finally {
+                    ctx.kernalContext().gateway().readUnlock();
+                }
             }
 
             /** {@inheritDoc} */
             @Override public long awaitNanos(long nanosTimeout) throws IgniteInterruptedException {
-                if(!isHeldExclusively())
-                    throw new IllegalMonitorStateException();
-
-                lastCondition = this.name;
+                ctx.kernalContext().gateway().readLock();
 
                 try {
-                    return object.awaitNanos(nanosTimeout);
+                    if(!isHeldExclusively())
+                        throw new IllegalMonitorStateException();
+
+                    lastCondition = this.name;
+
+                    long result =  object.awaitNanos(nanosTimeout);
+
+                    sync.validate();
+
+                    return result;
                 }
                 catch (InterruptedException e) {
                     throw new IgniteInterruptedException(e);
                 }
                 finally {
-                    sync.validate();
+                    ctx.kernalContext().gateway().readUnlock();
                 }
             }
 
             /** {@inheritDoc} */
             @Override public boolean await(long time, TimeUnit unit) throws IgniteInterruptedException {
-                if(!isHeldExclusively())
-                    throw new IllegalMonitorStateException();
-
-                lastCondition = this.name;
+                ctx.kernalContext().gateway().readLock();
 
                 try {
-                    return object.await(time, unit);
+                    if(!isHeldExclusively())
+                        throw new IllegalMonitorStateException();
+
+                    lastCondition = this.name;
+
+                    boolean result = object.await(time, unit);
+
+                    sync.validate();
+
+                    return result;
                 }
                 catch (InterruptedException e) {
                     throw new IgniteInterruptedException(e);
                 }
                 finally {
-                    sync.validate();
+                    ctx.kernalContext().gateway().readUnlock();
                 }
             }
 
             /** {@inheritDoc} */
             @Override public boolean awaitUntil(Date deadline) throws IgniteInterruptedException {
-                if(!isHeldExclusively())
-                    throw new IllegalMonitorStateException();
-
-                lastCondition = this.name;
+                ctx.kernalContext().gateway().readLock();
 
                 try {
-                    return object.awaitUntil(deadline);
+                    if(!isHeldExclusively())
+                        throw new IllegalMonitorStateException();
+
+                    lastCondition = this.name;
+
+                    boolean result = object.awaitUntil(deadline);
+
+                    sync.validate();
+
+                    return result;
                 }
                 catch (InterruptedException e) {
                     throw new IgniteInterruptedException(e);
                 }
                 finally {
-                    sync.validate();
+                    ctx.kernalContext().gateway().readUnlock();
                 }
             }
 
             /** {@inheritDoc} */
             @Override public void signal() {
-                if(!isHeldExclusively() || interruptAll)
-                    throw new IllegalMonitorStateException();
+                ctx.kernalContext().gateway().readLock();
 
-                addOutgoingSignal(name);
+                try {
+                    if (!isHeldExclusively())
+                        throw new IllegalMonitorStateException();
+
+                    validate();
+
+                    addOutgoingSignal(name);
+                }
+                finally {
+                    ctx.kernalContext().gateway().readUnlock();
+                }
             }
 
             /** {@inheritDoc} */
             @Override public void signalAll() {
-                if(!isHeldExclusively() || interruptAll)
-                    throw new IllegalMonitorStateException();
+                ctx.kernalContext().gateway().readLock();
 
-                addOutgoingSignalAll(name);
+                try {
+                    if (!isHeldExclusively())
+                        throw new IllegalMonitorStateException();
+
+                    sync.validate();
+
+                    addOutgoingSignalAll(name);
+                }
+                finally {
+                    ctx.kernalContext().gateway().readUnlock();
+                }
             }
         }
     }
@@ -752,9 +811,9 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
      * @param lockView Reentrant lock projection.
      * @param ctx Cache context.
      */
-    public GridCacheReentrantLockImpl(String name,
+    public GridCacheLockImpl(String name,
         GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheReentrantLockState> lockView,
+        IgniteInternalCache<GridCacheInternalKey, GridCacheLockState> lockView,
         GridCacheContext ctx) {
         assert name != null;
         assert key != null;
@@ -779,7 +838,7 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
                     retryTopologySafe(new Callable<Sync>() {
                         @Override public Sync call() throws Exception {
                             try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
-                                GridCacheReentrantLockState val = lockView.get(key);
+                                GridCacheLockState val = lockView.get(key);
 
                                 if (val == null) {
                                     if (log.isDebugEnabled())
@@ -813,7 +872,7 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
     }
 
     /** {@inheritDoc} */
-    @Override public void onUpdate(GridCacheReentrantLockState val) {
+    @Override public void onUpdate(GridCacheLockState val) {
         // Called only on initialization, so it's safe to ignore update.
         if (sync == null)
             return;
@@ -836,9 +895,6 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
             // Update permission count.
             sync.setPermits(val.get());
 
-            // Remove all processed failed nodes.
-            sync.clearFailedNodes(val.getNodes());
-
             // Check if any threads waiting on this node need to be notified.
             if ((incomingSignals || sync.getPermits() == 0) && !local) {
                 // Try to notify any waiting threads.
@@ -855,8 +911,6 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
         try {
             updateLock.lock();
 
-            sync.registerFailedNode(nodeId);
-
             if (nodeId.equals(sync.getOwnerNode())){
                 sync.setBroken(true);
 
@@ -867,9 +921,26 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
                 // Try to notify any waiting threads.
                 sync.release(0);
             }
-        } finally{
+        }
+        finally {
             updateLock.unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        if (sync == null) {
+            interruptAll = true;
+
+            return;
+        }
+
+        sync.setBroken(true);
+
+        sync.interruptAll();
+
+        // Try to notify any waiting threads.
+        sync.release(0);
     }
 
     /** {@inheritDoc} */
@@ -879,25 +950,33 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
 
     /** {@inheritDoc} */
     @Override public void lock() {
+        ctx.kernalContext().gateway().readLock();
+
         try{
             initializeReentrantLock();
 
             sync.lock();
+
+            sync.validate();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
         finally {
-            sync.validate();
+            ctx.kernalContext().gateway().readUnlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void lockInterruptibly() throws IgniteInterruptedException {
+        ctx.kernalContext().gateway().readLock();
+
         try {
             initializeReentrantLock();
 
             sync.acquireInterruptibly(1);
+
+            sync.validate();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -906,31 +985,43 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
             throw new IgniteInterruptedException(e);
         }
         finally {
-            sync.validate();
+            ctx.kernalContext().gateway().readUnlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean tryLock() {
+        ctx.kernalContext().gateway().readLock();
+
         try{
             initializeReentrantLock();
 
-            return sync.nonfairTryAcquire(1);
+            boolean result = sync.nonfairTryAcquire(1);
+
+            sync.validate();
+
+            return result;
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
         finally {
-            sync.validate();
+            ctx.kernalContext().gateway().readUnlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public boolean tryLock(long timeout, TimeUnit unit) throws IgniteInterruptedException {
+        ctx.kernalContext().gateway().readLock();
+
         try{
             initializeReentrantLock();
 
-            return sync.tryAcquireNanos(1, unit.toNanos(timeout));
+            boolean result = sync.tryAcquireNanos(1, unit.toNanos(timeout));
+
+            sync.validate();
+
+            return result;
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -939,14 +1030,19 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
             throw new IgniteInterruptedException(e);
         }
         finally {
-            sync.validate();
+            ctx.kernalContext().gateway().readUnlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void unlock() {
+        ctx.kernalContext().gateway().readLock();
+
         try{
             initializeReentrantLock();
+
+            // Validate before release.
+            sync.validate();
 
             sync.release(1);
         }
@@ -954,28 +1050,38 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
             throw U.convertException(e);
         }
         finally {
-            sync.validate();
+            ctx.kernalContext().gateway().readUnlock();
         }
     }
 
+    @NotNull @Override public Condition newCondition() {
+        throw new UnsupportedOperationException("IgniteLock does not allow creation of nameless conditions. ");
+    }
+
     /** {@inheritDoc} */
-    @Override public IgniteCondition newCondition(String name) {
+    @Override public IgniteCondition getOrCreateCondition(String name) {
+        ctx.kernalContext().gateway().readLock();
+
         try{
             initializeReentrantLock();
 
-            return sync.newCondition(name);
+            IgniteCondition result = sync.newCondition(name);
+
+            sync.validate();
+
+            return result;
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
         finally {
-            sync.validate();
+            ctx.kernalContext().gateway().readUnlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public int getHoldCount() {
-        try{
+       try{
             initializeReentrantLock();
 
             return sync.getHoldCount();
@@ -983,25 +1089,23 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-        finally {
-            sync.validate();
-        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isHeldByCurrentThread() {
-        if(sync == null)
-            return false;
+        try{
+            initializeReentrantLock();
 
-        return sync.isHeldExclusively();
+            return sync.isHeldExclusively();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean isLocked() {
         try{
-            if(sync != null && !sync.failoverSafe && sync.isBroken())
-                return false;
-
             initializeReentrantLock();
 
             return sync.isLocked();
@@ -1013,10 +1117,14 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
 
     /** {@inheritDoc} */
     @Override public boolean hasQueuedThreads() {
-        if(sync != null )
-            return false;
+        try{
+            initializeReentrantLock();
 
-        return sync.hasQueuedThreads();
+            return sync.hasQueuedThreads();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1025,18 +1133,6 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
             initializeReentrantLock();
 
             return sync.isQueued(thread);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getQueueLength() {
-        try{
-            initializeReentrantLock();
-
-            return sync.getQueueLength();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -1058,9 +1154,6 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-        finally {
-            sync.validate();
-        }
     }
 
     /** {@inheritDoc} */
@@ -1078,9 +1171,6 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
-        finally {
-            sync.validate();
-        }
     }
 
     @Override public boolean isFailoverSafe() {
@@ -1089,10 +1179,14 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
 
     /** {@inheritDoc} */
     @Override public boolean isBroken() {
-        if(sync == null)
-            return false;
+        try{
+            initializeReentrantLock();
 
-        return sync.isBroken();
+            return sync.isBroken();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1145,6 +1239,6 @@ public final class GridCacheReentrantLockImpl implements GridCacheReentrantLockE
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheReentrantLockImpl.class, this);
+        return S.toString(GridCacheLockImpl.class, this);
     }
 }

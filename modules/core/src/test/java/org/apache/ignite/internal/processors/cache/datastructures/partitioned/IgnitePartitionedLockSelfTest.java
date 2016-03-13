@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.internal.processors.cache.datastructures.IgniteReentrantLockAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteLockAbstractSelfTest;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
-public class IgnitePartitionedReentrantLockSelfTest extends IgniteReentrantLockAbstractSelfTest {
+public class IgnitePartitionedLockSelfTest extends IgniteLockAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
         return PARTITIONED;

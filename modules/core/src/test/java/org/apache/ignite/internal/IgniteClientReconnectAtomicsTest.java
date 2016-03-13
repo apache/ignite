@@ -20,7 +20,6 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
@@ -29,10 +28,9 @@ import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCountDownLatch;
-import org.apache.ignite.IgniteReentrantLock;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -788,11 +786,11 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
         Ignite srv = clientRouter(client);
 
-        IgniteReentrantLock clientLock = client.reentrantLock("lock1", true, true);
+        IgniteLock clientLock = client.reentrantLock("lock1", true, true);
 
         assertEquals(false, clientLock.isLocked());
 
-        final IgniteReentrantLock srvLock = srv.reentrantLock("lock1", true, true);
+        final IgniteLock srvLock = srv.reentrantLock("lock1", true, true);
 
         assertEquals(false, srvLock.isLocked());
 

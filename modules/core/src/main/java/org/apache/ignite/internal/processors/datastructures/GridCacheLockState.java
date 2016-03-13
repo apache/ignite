@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  *  Grid cache reentrant lock state.
  */
-public final class GridCacheReentrantLockState implements GridCacheInternal, Externalizable, Cloneable {
+public final class GridCacheLockState implements GridCacheInternal, Externalizable, Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -59,17 +59,13 @@ public final class GridCacheReentrantLockState implements GridCacheInternal, Ext
     @GridToStringInclude
     private Map<UUID, LinkedList<String>> signals;
 
-    /** Set containing nodes that are using this lock. */
-    @GridToStringInclude
-    private Set<UUID> nodes;
-
     /**
      * Constructor.
      *
      * @param cnt Initial count.
      * @param id UUID of owning node.
      */
-    public GridCacheReentrantLockState(int cnt, UUID id, long threadID, boolean failoverSafe) {
+    public GridCacheLockState(int cnt, UUID id, long threadID, boolean failoverSafe) {
         assert cnt >= 0;
 
         this.id = id;
@@ -80,17 +76,13 @@ public final class GridCacheReentrantLockState implements GridCacheInternal, Ext
 
         signals = null;
 
-        nodes = new LinkedHashSet<>();
-
-        nodes.add(id);
-
         this.failoverSafe = failoverSafe;
     }
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridCacheReentrantLockState() {
+    public GridCacheLockState() {
         // No-op.
     }
 
@@ -160,14 +152,6 @@ public final class GridCacheReentrantLockState implements GridCacheInternal, Ext
         this.signals = signals;
     }
 
-    public Set<UUID> getNodes() {
-        return nodes;
-    }
-
-    public void setNodes(Set<UUID> nodes) {
-        this.nodes = nodes;
-    }
-
     /** {@inheritDoc} */
     @Override public Object clone() throws CloneNotSupportedException {
         return super.clone();
@@ -210,16 +194,6 @@ public final class GridCacheReentrantLockState implements GridCacheInternal, Ext
                 for(String condition:e.getValue()){
                     U.writeString(out, condition);
                 }
-            }
-        }
-
-        out.writeBoolean(nodes != null);
-
-        if (nodes != null) {
-            out.writeInt(nodes.size());
-
-            for (UUID uuid: nodes) {
-                U.writeUuid(out, uuid);
             }
         }
     }
@@ -276,23 +250,10 @@ public final class GridCacheReentrantLockState implements GridCacheInternal, Ext
         else{
             signals = null;
         }
-
-        if (in.readBoolean()) {
-            int size = in.readInt();
-
-            nodes = U.newLinkedHashSet(size);
-
-            for (int i = 0; i < size; i++) {
-                nodes.add(U.readUuid(in));
-            }
-        }
-        else{
-            nodes = null;
-        }
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheReentrantLockState.class, this);
+        return S.toString(GridCacheLockState.class, this);
     }
 }
