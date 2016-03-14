@@ -50,7 +50,7 @@ object ScalarCacheAsyncApiExample extends App {
             val asyncCache = cache.withAsync()
 
             // Execute several puts asynchronously.
-            val t = (0 until 10).map(i => {
+            (0 until 10).map(i => {
                 asyncCache.put(i, String.valueOf(i))
 
                 asyncCache.future().asInstanceOf[IgniteFuture[_]]

@@ -30,7 +30,6 @@ import org.apache.ignite.examples.util.DbH2ServerStartup
 import org.apache.ignite.scalar.examples.model.Person
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
-import org.apache.ignite.transactions.Transaction
 import org.h2.jdbcx.JdbcConnectionPool
 
 /**

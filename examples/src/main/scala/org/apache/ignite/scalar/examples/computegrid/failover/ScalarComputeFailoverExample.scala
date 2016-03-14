@@ -39,9 +39,6 @@ object ScalarComputeFailoverExample extends App {
     /** Injected distributed task session. */
     @TaskSessionResource private var jobSes: ComputeTaskSession = null
 
-    /** Injected ignite logger. */
-    @LoggerResource private var log: IgniteLogger = null
-
     /** */
     private var state: IgniteBiTuple[Integer, Integer] = null
 
@@ -49,7 +46,7 @@ object ScalarComputeFailoverExample extends App {
     private var phrase: String = null
 
     /**
-     * The job will check the checkpoint with key `'fail'` and if
+     * The job will check the checkpoint with key `fail` and if
      * it's `true` it will throw exception to simulate a failure.
      * Otherwise, it will execute enabled method.
      */

@@ -58,21 +58,21 @@ object ScalarCacheDataStreamerExample extends App {
         try {
             val start = System.currentTimeMillis
 
-            val stmr = dataStreamer$[Integer, String](CACHE_NAME)
+            val streamer = dataStreamer$[Integer, String](CACHE_NAME)
 
             try {
-                stmr.perNodeBufferSize(1024)
-                stmr.perNodeParallelOperations(8)
+                streamer.perNodeBufferSize(1024)
+                streamer.perNodeParallelOperations(8)
 
                 for (i <- 0 until ENTRY_COUNT) {
-                    stmr.addData(i, Integer.toString(i))
+                    streamer.addData(i, Integer.toString(i))
 
                     if (i > 0 && i % 10000 == 0)
                         println("Loaded " + i + " keys.")
                 }
             }
             finally {
-                stmr.close()
+                streamer.close()
             }
 
             val end = System.currentTimeMillis

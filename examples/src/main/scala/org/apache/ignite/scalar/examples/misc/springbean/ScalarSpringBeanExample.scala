@@ -18,7 +18,6 @@
 package org.apache.ignite.scalar.examples.misc.springbean
 
 import java.util.concurrent.Callable
-import java.util.{ArrayList => JavaArrayList, Collection => JavaCollection}
 
 import org.apache.ignite.Ignite
 import org.apache.ignite.examples.ExampleNodeStartup

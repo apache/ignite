@@ -334,7 +334,7 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
     }
 
     /** */
-    def testMemcacheRestExampleNode() {
+    def testScalarMemcacheRestExample() {
         runWithNode(MemcacheRestExampleNodeStartup.configuration(), () => ScalarMemcacheRestExample.main(EMPTY_ARGS))
     }
 
