@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
@@ -123,6 +124,15 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *         </td>
  *         <td>{@code 3}</td>
  *     </tr>
+ *     <tr>
+ *         <td>IgniteWebSessionsRetriesTimeout</td>
+ *         <td>
+ *             Retry timeout. Related to IgniteWebSessionsMaximumRetriesOnFail param.
+ *             <p>
+ *             Further attempts will be cancelled in case timeout was exceeded.
+ *         </td>
+ *         <td>{@code 10000} (10 seconds)</td>
+ *     </tr>
  * </table>
  * These parameters are taken from either filter init parameter list or
  * servlet context parameters. You can specify filter init parameters as follows:
@@ -169,8 +179,14 @@ public class WebSessionFilter implements Filter {
     /** Web sessions caching retry on fail parameter name (valid for ATOMIC cache only). */
     public static final String WEB_SES_MAX_RETRIES_ON_FAIL_NAME_PARAM = "IgniteWebSessionsMaximumRetriesOnFail";
 
+    /** Web sessions caching retry on fail timeout parameter name. */
+    public static final String WEB_SES_RETRIES_TIMEOUT_NAME_PARAM = "IgniteWebSessionsRetriesTimeout";
+
     /** Default retry on fail flag value. */
     public static final int DFLT_MAX_RETRIES_ON_FAIL = 3;
+
+    /** Default retry on fail timeout flag value. */
+    public static final int DFLT_RETRIES_ON_FAIL_TIMEOUT = 10000;
 
     /** Cache. */
     private IgniteCache<String, WebSession> cache;
@@ -193,8 +209,17 @@ public class WebSessionFilter implements Filter {
     /** Transactions enabled flag. */
     private boolean txEnabled;
 
+    /** Node. */
+    private Ignite webSesIgnite;
+
+    /** Cache name. */
+    private String cacheName;
+
     /** */
     private int retries;
+
+    /** */
+    private int retriesTimeout;
 
     /** {@inheritDoc} */
     @Override public void init(FilterConfig cfg) throws ServletException {
@@ -204,7 +229,7 @@ public class WebSessionFilter implements Filter {
             cfg.getInitParameter(WEB_SES_NAME_PARAM),
             ctx.getInitParameter(WEB_SES_NAME_PARAM));
 
-        String cacheName = U.firstNotNull(
+        cacheName = U.firstNotNull(
             cfg.getInitParameter(WEB_SES_CACHE_NAME_PARAM),
             ctx.getInitParameter(WEB_SES_CACHE_NAME_PARAM));
 
@@ -219,7 +244,19 @@ public class WebSessionFilter implements Filter {
             throw new IgniteException("Maximum number of retries parameter is invalid: " + retriesStr, e);
         }
 
-        Ignite webSesIgnite = G.ignite(gridName);
+        String retriesTimeoutStr = U.firstNotNull(
+            cfg.getInitParameter(WEB_SES_RETRIES_TIMEOUT_NAME_PARAM),
+            ctx.getInitParameter(WEB_SES_RETRIES_TIMEOUT_NAME_PARAM));
+
+        try {
+            retriesTimeout = retriesTimeoutStr != null ?
+                Integer.parseInt(retriesTimeoutStr) : DFLT_RETRIES_ON_FAIL_TIMEOUT;
+        }
+        catch (NumberFormatException e) {
+            throw new IgniteException("Retries timeout parameter is invalid: " + retriesTimeoutStr, e);
+        }
+
+        webSesIgnite = G.ignite(gridName);
 
         if (webSesIgnite == null)
             throw new IgniteException("Grid for web sessions caching is not started (is it configured?): " +
@@ -229,35 +266,9 @@ public class WebSessionFilter implements Filter {
 
         log = webSesIgnite.log();
 
-        cache = webSesIgnite.cache(cacheName);
+        initCache();
 
-        if (cache == null)
-            throw new IgniteException("Cache for web sessions is not started (is it configured?): " + cacheName);
-
-        CacheConfiguration cacheCfg = cache.getConfiguration(CacheConfiguration.class);
-
-        if (cacheCfg.getWriteSynchronizationMode() == FULL_ASYNC)
-            throw new IgniteException("Cache for web sessions cannot be in FULL_ASYNC mode: " + cacheName);
-
-        if (!cacheCfg.isEagerTtl())
-            throw new IgniteException("Cache for web sessions cannot operate with lazy TTL. " +
-                "Consider setting eagerTtl to true for cache: " + cacheName);
-
-        if (cacheCfg.getCacheMode() == LOCAL)
-            U.quietAndWarn(webSesIgnite.log(), "Using LOCAL cache for web sessions caching " +
-                "(this is only OK in test mode): " + cacheName);
-
-        if (cacheCfg.getCacheMode() == PARTITIONED && cacheCfg.getAtomicityMode() != ATOMIC)
-            U.quietAndWarn(webSesIgnite.log(), "Using " + cacheCfg.getAtomicityMode() + " atomicity for web sessions " +
-                "caching (switch to ATOMIC mode for better performance)");
-
-        if (log.isInfoEnabled())
-            log.info("Started web sessions caching [gridName=" + gridName + ", cacheName=" + cacheName +
-                ", maxRetriesOnFail=" + retries + ']');
-
-        txEnabled = cacheCfg.getAtomicityMode() == TRANSACTIONAL;
-
-        lsnr = new WebSessionListener(webSesIgnite, cache, retries);
+        lsnr = new WebSessionListener(webSesIgnite, this, retries);
 
         String srvInfo = ctx.getServerInfo();
 
@@ -286,6 +297,46 @@ public class WebSessionFilter implements Filter {
                 }
             };
         }
+
+        if (log.isInfoEnabled())
+            log.info("Started web sessions caching [gridName=" + gridName + ", cacheName=" + cacheName +
+                ", maxRetriesOnFail=" + retries + ']');
+    }
+
+    /**
+     * @return Cache.
+     */
+    IgniteCache<String, WebSession> getCache(){
+        return cache;
+    }
+
+    /**
+     * Init cache.
+     */
+    void initCache() {
+        cache = webSesIgnite.cache(cacheName);
+
+        if (cache == null)
+            throw new IgniteException("Cache for web sessions is not started (is it configured?): " + cacheName);
+
+        CacheConfiguration cacheCfg = cache.getConfiguration(CacheConfiguration.class);
+
+        if (cacheCfg.getWriteSynchronizationMode() == FULL_ASYNC)
+            throw new IgniteException("Cache for web sessions cannot be in FULL_ASYNC mode: " + cacheName);
+
+        if (!cacheCfg.isEagerTtl())
+            throw new IgniteException("Cache for web sessions cannot operate with lazy TTL. " +
+                "Consider setting eagerTtl to true for cache: " + cacheName);
+
+        if (cacheCfg.getCacheMode() == LOCAL)
+            U.quietAndWarn(webSesIgnite.log(), "Using LOCAL cache for web sessions caching " +
+                "(this is only OK in test mode): " + cacheName);
+
+        if (cacheCfg.getCacheMode() == PARTITIONED && cacheCfg.getAtomicityMode() != ATOMIC)
+            U.quietAndWarn(webSesIgnite.log(), "Using " + cacheCfg.getAtomicityMode() + " atomicity for web sessions " +
+                "caching (switch to ATOMIC mode for better performance)");
+
+        txEnabled = cacheCfg.getAtomicityMode() == TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
@@ -333,7 +384,7 @@ public class WebSessionFilter implements Filter {
      */
     private String doFilter0(HttpServletRequest httpReq, ServletResponse res, FilterChain chain) throws IOException,
         ServletException, CacheException {
-        WebSession cached;
+        WebSession cached = null;
 
         String sesId = httpReq.getRequestedSessionId();
 
@@ -341,7 +392,24 @@ public class WebSessionFilter implements Filter {
             if (sesIdTransformer != null)
                 sesId = sesIdTransformer.apply(sesId);
 
-            cached = cache.get(sesId);
+            for (int i = 0; i < retries; i++) {
+                try {
+                    cached = cache.get(sesId);
+                }
+                catch (CacheException | IgniteException | IllegalStateException e) {
+                    if (log.isDebugEnabled())
+                        log.debug(e.getMessage());
+
+                    if (i == retries - 1)
+                        throw new IgniteException("Failed to handle request [session= " + sesId + "]", e);
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to handle request (will retry): " + sesId);
+
+                        handleCacheOperationException(e);
+                    }
+                }
+            }
 
             if (cached != null) {
                 if (log.isDebugEnabled())
@@ -455,7 +523,7 @@ public class WebSessionFilter implements Filter {
 
                 break;
             }
-            catch (CacheException | IgniteException e) {
+            catch (CacheException | IgniteException | IllegalStateException e) {
                 if (log.isDebugEnabled())
                     log.debug(e.getMessage());
 
@@ -465,29 +533,49 @@ public class WebSessionFilter implements Filter {
                     if (log.isDebugEnabled())
                         log.debug("Failed to save session (will retry): " + sesId);
 
-                    IgniteFuture<?> retryFut = null;
-
-                    if (X.hasCause(e, ClusterTopologyException.class)) {
-                        ClusterTopologyException cause = X.cause(e, ClusterTopologyException.class);
-
-                        assert cause != null : e;
-
-                        retryFut = cause.retryReadyFuture();
-                    }
-
-                    if (retryFut != null) {
-                        try {
-                            retryFut.get();
-                        }
-                        catch (IgniteException retryErr) {
-                            throw new IgniteException("Failed to save session: " + sesId, retryErr);
-                        }
-                    }
+                    handleCacheOperationException(e);
                 }
             }
         }
 
         return cached;
+    }
+
+    /**
+     * Handles cache operation exception.
+     * @param e Exception
+     */
+    void handleCacheOperationException(Exception e){
+        IgniteFuture<?> retryFut = null;
+
+        if (e instanceof IllegalStateException) {
+            initCache();
+
+            return;
+        }
+        else if (X.hasCause(e, IgniteClientDisconnectedException.class)) {
+            IgniteClientDisconnectedException cause = X.cause(e, IgniteClientDisconnectedException.class);
+
+            assert cause != null : e;
+
+            retryFut = cause.reconnectFuture();
+        }
+        else if (X.hasCause(e, ClusterTopologyException.class)) {
+            ClusterTopologyException cause = X.cause(e, ClusterTopologyException.class);
+
+            assert cause != null : e;
+
+            retryFut = cause.retryReadyFuture();
+        }
+
+        if (retryFut != null) {
+            try {
+                retryFut.get(retriesTimeout);
+            }
+            catch (IgniteException retryErr) {
+                throw new IgniteException("Failed to wait for retry: " + retryErr);
+            }
+        }
     }
 
     /** {@inheritDoc} */
