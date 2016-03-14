@@ -12,11 +12,12 @@ Support for the following will be added in next releases:
  * ACID transactions management.
  * Distributed locks.
  * Async operations.
- * Cache SQL queries and continuous queries.
+ * Cache SQL continuous queries.
  * Event listening.
  * Compute grid functionality.
 
 Full source code is provided. Users should build the library for intended platform.
+For build instructions please refer to DEVNOTES.txt.
 
 Linux info
 ==============
@@ -36,7 +37,7 @@ Development:
  * Library is placed in the "/usr/local/lib" directory. Link it to your project: "-lignite".
  * Ignite depends on "libjvm.so" library shipped with Java. Typically this library is located inside
    $JAVA_HOME/jre/lib/amd64/server directory. Ensure that LD_LIBRARY_PATH environment variable points to this directory.
- * To start Apache Ignite as a standalone node or Windows service use ignite
+ * To start Apache Ignite as a standalone node use "ignite" binary.
 
  
 Windows info
