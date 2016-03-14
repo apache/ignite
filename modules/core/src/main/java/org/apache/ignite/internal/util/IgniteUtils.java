@@ -475,6 +475,15 @@ public abstract class IgniteUtils {
     /** */
     private static volatile Boolean hasShmem;
 
+    /** Object.hashCode() */
+    private static Method hashCodeMtd;
+
+    /** Object.equals(...) */
+    private static Method equalsMtd;
+
+    /** Object.toString() */
+    private static Method toStringMtd;
+
     /**
      * Initializes enterprise check.
      */
@@ -580,6 +589,7 @@ public abstract class IgniteUtils {
         primitiveMap.put("double", double.class);
         primitiveMap.put("char", char.class);
         primitiveMap.put("boolean", boolean.class);
+        primitiveMap.put("void", void.class);
 
         boxedClsMap.put(byte.class, Byte.class);
         boxedClsMap.put(short.class, Short.class);
@@ -589,6 +599,7 @@ public abstract class IgniteUtils {
         boxedClsMap.put(double.class, Double.class);
         boxedClsMap.put(char.class, Character.class);
         boxedClsMap.put(boolean.class, Boolean.class);
+        boxedClsMap.put(void.class, Void.class);
 
         try {
             OBJECT_CTOR = Object.class.getConstructor();
@@ -695,6 +706,15 @@ public abstract class IgniteUtils {
 
         // Set the http.strictPostRedirect property to prevent redirected POST from being mapped to a GET.
         System.setProperty("http.strictPostRedirect", "true");
+
+        for (Method mtd : Object.class.getMethods()) {
+            if ("hashCode".equals(mtd.getName()))
+                hashCodeMtd = mtd;
+            else if ("equals".equals(mtd.getName()))
+                equalsMtd = mtd;
+            else if ("toString".equals(mtd.getName()))
+                toStringMtd = mtd;
+        }
     }
 
     /**
@@ -9441,5 +9461,26 @@ public abstract class IgniteUtils {
             return rmtProtoVer;
         else
             return GridIoManager.DIRECT_PROTO_VER;
+    }
+
+    /**
+     * @return Whether provided method is {@code Object.hashCode()}.
+     */
+    public static boolean isHashCodeMethod(Method mtd) {
+        return hashCodeMtd.equals(mtd);
+    }
+
+    /**
+     * @return Whether provided method is {@code Object.equals(...)}.
+     */
+    public static boolean isEqualsMethod(Method mtd) {
+        return equalsMtd.equals(mtd);
+    }
+
+    /**
+     * @return Whether provided method is {@code Object.toString()}.
+     */
+    public static boolean isToStringMethod(Method mtd) {
+        return toStringMtd.equals(mtd);
     }
 }

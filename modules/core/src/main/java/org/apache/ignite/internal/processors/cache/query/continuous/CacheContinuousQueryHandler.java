@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCache;
@@ -168,30 +168,18 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param topic Topic for ordered messages.
      * @param locLsnr Local listener.
      * @param rmtFilter Remote filter.
-     * @param internal Internal flag.
-     * @param notifyExisting Notify existing flag.
      * @param oldValRequired Old value required flag.
      * @param sync Synchronous flag.
      * @param ignoreExpired Ignore expired events flag.
-     * @param skipPrimaryCheck Whether to skip primary check for REPLICATED cache.
-     * @param taskHash Task name hash code.
-     * @param locCache {@code True} if local cache.
-     * @param keepBinary Keep binary flag.
      */
     public CacheContinuousQueryHandler(
         String cacheName,
         Object topic,
         CacheEntryUpdatedListener<K, V> locLsnr,
         CacheEntryEventSerializableFilter<K, V> rmtFilter,
-        boolean internal,
-        boolean notifyExisting,
         boolean oldValRequired,
         boolean sync,
         boolean ignoreExpired,
-        int taskHash,
-        boolean skipPrimaryCheck,
-        boolean locCache,
-        boolean keepBinary,
         boolean ignoreClsNotFound) {
         assert topic != null;
         assert locLsnr != null;
@@ -200,18 +188,47 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.topic = topic;
         this.locLsnr = locLsnr;
         this.rmtFilter = rmtFilter;
-        this.internal = internal;
-        this.notifyExisting = notifyExisting;
         this.oldValRequired = oldValRequired;
         this.sync = sync;
         this.ignoreExpired = ignoreExpired;
-        this.taskHash = taskHash;
-        this.skipPrimaryCheck = skipPrimaryCheck;
-        this.locCache = locCache;
-        this.keepBinary = keepBinary;
         this.ignoreClsNotFound = ignoreClsNotFound;
 
         cacheId = CU.cacheId(cacheName);
+    }
+
+    /**
+     * @param internal Internal query.
+     */
+    public void internal(boolean internal) {
+        this.internal = internal;
+    }
+
+    /**
+     * @param notifyExisting Notify existing.
+     */
+    public void notifyExisting(boolean notifyExisting) {
+        this.notifyExisting = notifyExisting;
+    }
+
+    /**
+     * @param locCache Local cache.
+     */
+    public void localCache(boolean locCache) {
+        this.locCache = locCache;
+    }
+
+    /**
+     * @param taskHash Task hash.
+     */
+    public void taskNameHash(int taskHash) {
+        this.taskHash = taskHash;
+    }
+
+    /**
+     * @param skipPrimaryCheck Whether to skip primary check for REPLICATED cache.
+     */
+    public void skipPrimaryCheck(boolean skipPrimaryCheck) {
+        this.skipPrimaryCheck = skipPrimaryCheck;
     }
 
     /** {@inheritDoc} */
@@ -262,8 +279,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (locLsnr != null)
             ctx.resource().injectGeneric(locLsnr);
 
-        if (rmtFilter != null)
-            ctx.resource().injectGeneric(rmtFilter);
+        final CacheEntryEventFilter filter = getEventFilter();
+
+        if (filter != null)
+            ctx.resource().injectGeneric(filter);
 
         entryBufs = new ConcurrentHashMap<>();
 
@@ -303,7 +322,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         null,
                         null,
                         null,
-                        rmtFilter,
+                        filter instanceof CacheEntryEventSerializableFilter ?
+                            (CacheEntryEventSerializableFilter)filter : null,
                         null,
                         nodeId,
                         taskName()
@@ -332,9 +352,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                 boolean notify = !evt.entry().isFiltered();
 
-                if (notify && rmtFilter != null) {
+                if (notify && filter != null) {
                     try {
-                        notify = rmtFilter.evaluate(evt);
+                        notify = filter.evaluate(evt);
                     }
                     catch (Exception e) {
                         U.error(cctx.logger(CacheContinuousQueryHandler.class), "CacheEntryEventFilter failed: " + e);
@@ -422,7 +442,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         null,
                         null,
                         null,
-                        rmtFilter,
+                        filter instanceof CacheEntryEventSerializableFilter ?
+                            (CacheEntryEventSerializableFilter)filter : null,
                         null,
                         nodeId,
                         taskName(),
@@ -435,8 +456,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
 
             @Override public void onUnregister() {
-                if (rmtFilter instanceof PlatformContinuousQueryFilter)
-                    ((PlatformContinuousQueryFilter)rmtFilter).onQueryUnregister();
+                if (filter instanceof PlatformContinuousQueryFilter)
+                    ((PlatformContinuousQueryFilter)filter).onQueryUnregister();
             }
 
             @Override public void cleanupBackupQueue(Map<Integer, Long> updateCntrs) {
@@ -514,6 +535,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             return RegisterStatus.DELAYED;
 
         return mgr.registerListener(routineId, lsnr, internal);
+    }
+
+    /**
+     * @return Cache entry event filter.
+     */
+    public CacheEntryEventFilter getEventFilter() {
+        return rmtFilter;
     }
 
     /**
@@ -1189,7 +1217,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /**
      * Deployable object.
      */
-    private static class DeployableObject implements Externalizable {
+    protected static class DeployableObject implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1214,7 +1242,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
          * @param ctx Kernal context.
          * @throws IgniteCheckedException In case of error.
          */
-        private DeployableObject(Object obj, GridKernalContext ctx) throws IgniteCheckedException {
+        protected DeployableObject(Object obj, GridKernalContext ctx) throws IgniteCheckedException {
             assert obj != null;
             assert ctx != null;
 

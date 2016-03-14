@@ -24,6 +24,8 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
@@ -83,11 +85,18 @@ namespace Apache.Ignite.Core.Tests.Binary
                         new BinaryTypeConfiguration(TypeEmpty),
                         new BinaryTypeConfiguration(typeof(TestEnumRegistered))
                     },
-                    DefaultIdMapper = new IdMapper()
+                    DefaultIdMapper = new IdMapper(),
+                    CompactFooter = GetCompactFooter()
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                SpringConfigUrl = "config\\binary.xml"
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
+                    }
+                }
             };
 
             _grid = (Ignite) Ignition.Start(cfg);
@@ -96,10 +105,18 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Gets the compact footer setting.
+        /// </summary>
+        protected virtual bool GetCompactFooter()
+        {
+            return true;
+        }
+
+        /// <summary>
         /// Tear down routine.
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void TearDown()
+        public void TearDown()
         {
             if (_grid != null)
                 Ignition.Stop(_grid.Name, true);
@@ -1418,6 +1435,16 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual((TestEnumRegistered)val, binEnum.Deserialize<TestEnumRegistered>());
             }
         }
+
+        /// <summary>
+        /// Tests the compact footer setting.
+        /// </summary>
+        [Test]
+        public void TestCompactFooterSetting()
+        {
+            Assert.AreEqual(GetCompactFooter(), _marsh.CompactFooter);
+        }
+
     }
 
     /// <summary>

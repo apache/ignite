@@ -891,8 +891,22 @@ public class IgniteConfiguration {
      * @see IgniteConfiguration#getMarshallerCacheThreadPoolSize()
      * @see IgniteConfiguration#getMarshallerCacheKeepAliveTime()
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setMarshallerCacheThreadPoolSize(int)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setMarshallerCachePoolSize(int poolSize) {
+        return setMarshallerCacheThreadPoolSize(poolSize);
+    }
+
+    /**
+     * Sets default thread pool size that will be used to process marshaller messages.
+     *
+     * @param poolSize Default executor service size to use for marshaller messages.
+     * @see IgniteConfiguration#getMarshallerCacheThreadPoolSize()
+     * @see IgniteConfiguration#getMarshallerCacheKeepAliveTime()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setMarshallerCacheThreadPoolSize(int poolSize) {
         marshCachePoolSize = poolSize;
 
         return this;
