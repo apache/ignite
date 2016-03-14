@@ -132,3 +132,4 @@ IgniteAtomicReferenceIsClosed @129
 IgniteAtomicReferenceClose @130
 IgniteProcessorRegisterClass @131
 IgniteProcessorGetClass @132
+IgniteReleaseChars @133

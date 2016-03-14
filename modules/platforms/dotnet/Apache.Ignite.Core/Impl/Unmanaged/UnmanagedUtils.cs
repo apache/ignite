@@ -341,7 +341,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             var res = IgniteUtils.Utf8UnmanagedToString(chars, resLen);
 
-            Marshal.FreeHGlobal(new IntPtr(chars));
+            JNI.ReleaseChars(chars);
 
             return res;
         }
