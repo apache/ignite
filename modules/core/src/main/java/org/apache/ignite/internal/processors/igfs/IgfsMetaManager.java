@@ -411,7 +411,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 // Force root ID always exist in cache.
                 if (info == null && IgfsUtils.ROOT_ID.equals(fileId))
-                    id2InfoPrj.putIfAbsent(IgfsUtils.ROOT_ID, info = new IgfsFileInfo());
+                    info = createSystemEntryIfAbsent(fileId);
 
                 return info;
             }
@@ -443,13 +443,9 @@ public class IgfsMetaManager extends IgfsManager {
 
                 // Force root ID always exist in cache.
                 if (fileIds.contains(IgfsUtils.ROOT_ID) && !map.containsKey(IgfsUtils.ROOT_ID)) {
-                    IgfsFileInfo info = new IgfsFileInfo();
-
-                    id2InfoPrj.putIfAbsent(IgfsUtils.ROOT_ID, info);
-
                     map = new GridLeanMap<>(map);
 
-                    map.put(IgfsUtils.ROOT_ID, info);
+                    map.put(IgfsUtils.ROOT_ID, createSystemEntryIfAbsent(IgfsUtils.ROOT_ID));
                 }
 
                 return map;
@@ -666,8 +662,6 @@ public class IgfsMetaManager extends IgfsManager {
      */
     private IgfsFileInfo createSystemEntryIfAbsent(IgniteUuid id)
         throws IgniteCheckedException {
-        assert validTxState(true);
-
         assert IgfsUtils.isRootOrTrashId(id);
 
         IgfsFileInfo info = new IgfsFileInfo(id);
@@ -2995,11 +2989,10 @@ public class IgfsMetaManager extends IgfsManager {
 
                     assert parentInfo.isDirectory();
 
-                    IgfsFileInfo updated = new IgfsFileInfo(fileInfo,
+                    id2InfoPrj.invoke(fileId, new UpdateTimesProcessor(
                         accessTime == -1 ? fileInfo.accessTime() : accessTime,
-                        modificationTime == -1 ? fileInfo.modificationTime() : modificationTime);
-
-                    id2InfoPrj.put(fileId, updated);
+                        modificationTime == -1 ? fileInfo.modificationTime() : modificationTime)
+                    );
 
                     id2InfoPrj.invoke(parentId, new UpdateListingEntry(fileId, fileName, 0, accessTime,
                         modificationTime));
@@ -4056,6 +4049,62 @@ public class IgfsMetaManager extends IgfsManager {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             space = in.readLong();
             affRange = (IgfsFileAffinityRange)in.readObject();
+        }
+    }
+
+    /**
+     * Update times entry processor.
+     */
+    private static class UpdateTimesProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
+        Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Access time. */
+        private long accessTime;
+
+        /** Modification time. */
+        private long modificationTime;
+
+        /**
+         * Default constructor.
+         */
+        public UpdateTimesProcessor() {
+            // No-op.
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param accessTime Access time.
+         * @param modificationTime Modification time.
+         */
+        public UpdateTimesProcessor(long accessTime, long modificationTime) {
+            this.accessTime = accessTime;
+            this.modificationTime = modificationTime;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
+            throws EntryProcessorException {
+
+            IgfsFileInfo oldInfo = entry.getValue();
+
+            entry.setValue(new IgfsFileInfo(oldInfo, accessTime, modificationTime));
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeLong(accessTime);
+            out.writeLong(modificationTime);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            accessTime = in.readLong();
+            modificationTime = in.readLong();
         }
     }
 }
