@@ -1076,6 +1076,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Suppose that we faced normal object and perform descriptor lookup.
             IBinaryTypeDescriptor desc = _marsh.GetDescriptor(type);
+            var unknownType = false;
 
             if (desc == null)
             {
@@ -1090,8 +1091,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
 
                 // TODO: Dynamic types
-
-                throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
+                // 1) Need to write full type name string after header
+                // 2) Write UnknownTypeId
+                unknownType = true;
+                desc = Marshaller.RegisterType(type);
             }
 
             // Writing normal object.
@@ -1103,6 +1106,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // Skip header length as not everything is known now
             _stream.Seek(BinaryObjectHeader.Size, SeekOrigin.Current);
+
+            // Write type name for unregistered types
+            if (unknownType)
+                WriteString(type.AssemblyQualifiedName);
 
             // Preserve old frame.
             var oldFrame = _frame;
@@ -1146,15 +1153,15 @@ namespace Apache.Ignite.Core.Impl.Binary
                         desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
                 }
                 else
-                    schemaOffset = BinaryObjectHeader.Size;
+                    schemaOffset = BinaryObjectHeader.Size;  // TODO: ???
 
                 if (_frame.RawPos > 0)
                     flags |= BinaryObjectHeader.Flag.HasRaw;
 
                 var len = _stream.Position - pos;
 
-                var header = new BinaryObjectHeader(desc.TypeId, obj.GetHashCode(), len,
-                    schemaId, schemaOffset, flags);
+                var header = new BinaryObjectHeader(unknownType ? BinaryUtils.TypeUnregistered : desc.TypeId,
+                    obj.GetHashCode(), len, schemaId, schemaOffset, flags);
 
                 BinaryObjectHeader.Write(header, _stream, pos);
 

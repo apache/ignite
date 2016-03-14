@@ -400,6 +400,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(type != null);
 
+            IBinaryTypeDescriptor res;
+
+            // Already registered
+            if (_typeToDesc.TryGetValue(type, out res))
+                return res;
+
+            // TODO: Concurrency! Need a thread-safe dictionary
             return AddUserType(new BinaryTypeConfiguration(type), new TypeResolver());
         }
 

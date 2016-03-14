@@ -726,8 +726,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _curRaw = false;
 
                     // Read object.
-                    Stream.Seek(pos + BinaryObjectHeader.Size, SeekOrigin.Begin);
-
                     object obj;
 
                     var sysSerializer = desc.Serializer as IBinarySystemTypeSerializer;
