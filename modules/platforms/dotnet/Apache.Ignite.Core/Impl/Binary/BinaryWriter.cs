@@ -1108,9 +1108,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             var oldFrame = _frame;
 
             // Push new frame.
-            _frame.TypeId = desc.TypeId;
-            _frame.Converter = desc.NameMapper;
-            _frame.Mapper = desc.IdMapper;
             _frame.RawPos = 0;
             _frame.Pos = pos;
             _frame.Struct = new BinaryStructureTracker(desc, desc.WriterTypeStructure);
@@ -1443,15 +1440,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         private struct Frame
         {
-            /** Current type ID. */
-            public int TypeId;
-
-            /** Current name converter */
-            public IBinaryNameMapper Converter;
-
-            /** Current mapper. */
-            public IBinaryIdMapper Mapper;
-
             /** Current object start position. */
             public int Pos;
 
