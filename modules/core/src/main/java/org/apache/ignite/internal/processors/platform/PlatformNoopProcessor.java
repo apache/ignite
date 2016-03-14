@@ -150,6 +150,16 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
+    @Override public boolean registerClass(int id, String name) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getClass(int id) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException {
         return null;
     }
