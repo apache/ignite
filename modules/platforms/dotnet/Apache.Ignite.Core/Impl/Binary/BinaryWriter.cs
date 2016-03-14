@@ -47,26 +47,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Metadatas collected during this write session. */
         private IDictionary<int, BinaryType> _metas;
 
-        /** Current type ID. */
-        private int _curTypeId;
-
-        /** Current name converter */
-        private IBinaryNameMapper _curConverter;
-
-        /** Current mapper. */
-        private IBinaryIdMapper _curMapper;
-        
-        /** Current object start position. */
-        private int _curPos;
-
-        /** Current raw position. */
-        private int _curRawPos;
+        /** Current stack frame. */
+        private Frame _frame;
 
         /** Whether we are currently detaching an object. */
         private bool _detaching;
-
-        /** Current type structure tracker, */
-        private BinaryStructureTracker _curStruct;
 
         /** Schema holder. */
         private readonly BinaryObjectSchemaHolder _schema = BinaryObjectSchemaHolder.Current;
@@ -1019,8 +1004,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public IBinaryRawWriter GetRawWriter()
         {
-            if (_curRawPos == 0)
-                _curRawPos = _stream.Position;
+            if (_frame.RawPos == 0)
+                _frame.RawPos = _stream.Position;
 
             return this;
         }
@@ -1120,22 +1105,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             _stream.Seek(BinaryObjectHeader.Size, SeekOrigin.Current);
 
             // Preserve old frame.
-            int oldTypeId = _curTypeId;
-            IBinaryNameMapper oldConverter = _curConverter;
-            IBinaryIdMapper oldMapper = _curMapper;
-            int oldRawPos = _curRawPos;
-            var oldPos = _curPos;
-                
-            var oldStruct = _curStruct;
+            var oldFrame = _frame;
 
             // Push new frame.
-            _curTypeId = desc.TypeId;
-            _curConverter = desc.NameMapper;
-            _curMapper = desc.IdMapper;
-            _curRawPos = 0;
-            _curPos = pos;
+            _frame.TypeId = desc.TypeId;
+            _frame.Converter = desc.NameMapper;
+            _frame.Mapper = desc.IdMapper;
+            _frame.RawPos = 0;
+            _frame.Pos = pos;
+            _frame.Struct = new BinaryStructureTracker(desc, desc.WriterTypeStructure);
 
-            _curStruct = new BinaryStructureTracker(desc, desc.WriterTypeStructure);
             var schemaIdx = _schema.PushSchema();
 
             try
@@ -1162,8 +1141,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                     flags |= BinaryObjectHeader.Flag.HasSchema;
 
                     // Calculate and write header.
-                    if (_curRawPos > 0)
-                        _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
+                    if (_frame.RawPos > 0)
+                        _stream.WriteInt(_frame.RawPos - pos); // raw offset is in the last 4 bytes
 
                     // Update schema in type descriptor
                     if (desc.Schema.Get(schemaId) == null)
@@ -1172,7 +1151,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else
                     schemaOffset = BinaryObjectHeader.Size;
 
-                if (_curRawPos > 0)
+                if (_frame.RawPos > 0)
                     flags |= BinaryObjectHeader.Flag.HasRaw;
 
                 var len = _stream.Position - pos;
@@ -1190,16 +1169,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             // Apply structure updates if any.
-            _curStruct.UpdateWriterStructure(this);
+            _frame.Struct.UpdateWriterStructure(this);
 
             // Restore old frame.
-            _curTypeId = oldTypeId;
-            _curConverter = oldConverter;
-            _curMapper = oldMapper;
-            _curRawPos = oldRawPos;
-            _curPos = oldPos;
-
-            _curStruct = oldStruct;
+            _frame = oldFrame;
         }
 
         /// <summary>
@@ -1433,12 +1406,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="fieldTypeId">Field type ID.</param>
         private void WriteFieldId(string fieldName, byte fieldTypeId)
         {
-            if (_curRawPos != 0)
+            if (_frame.RawPos != 0)
                 throw new BinaryObjectException("Cannot write named fields after raw data is written.");
 
-            var fieldId = _curStruct.GetFieldId(fieldName, fieldTypeId);
+            var fieldId = _frame.Struct.GetFieldId(fieldName, fieldTypeId);
 
-            _schema.PushField(fieldId, _stream.Position - _curPos);
+            _schema.PushField(fieldId, _stream.Position - _frame.Pos);
         }
 
         /// <summary>
@@ -1466,6 +1439,27 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else
                     _metas[desc.TypeId] = new BinaryType(desc, fields);
             }
+        }
+
+        private struct Frame
+        {
+            /** Current type ID. */
+            public int TypeId;
+
+            /** Current name converter */
+            public IBinaryNameMapper Converter;
+
+            /** Current mapper. */
+            public IBinaryIdMapper Mapper;
+
+            /** Current object start position. */
+            public int Pos;
+
+            /** Current raw position. */
+            public int RawPos;
+
+            /** Current type structure tracker, */
+            public BinaryStructureTracker Struct;
         }
     }
 }
