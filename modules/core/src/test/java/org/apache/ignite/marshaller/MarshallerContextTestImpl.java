@@ -48,7 +48,7 @@ public class MarshallerContextTestImpl extends MarshallerContextAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
+    @Override public boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
         String oldClsName = map.putIfAbsent(id, clsName);
 
         if (oldClsName != null && !oldClsName.equals(clsName))
@@ -59,7 +59,7 @@ public class MarshallerContextTestImpl extends MarshallerContextAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected String className(int id) {
+    @Override public String className(int id) {
         return map.get(id);
     }
 }

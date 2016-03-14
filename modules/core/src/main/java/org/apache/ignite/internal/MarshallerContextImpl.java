@@ -133,7 +133,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
+    @Override public boolean registerClassName(int id, String clsName) throws IgniteCheckedException {
         GridCacheAdapter<Integer, String> cache0 = cache;
 
         if (cache0 == null)
@@ -166,7 +166,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected String className(int id) throws IgniteCheckedException {
+    @Override public String className(int id) throws IgniteCheckedException {
         GridCacheAdapter<Integer, String> cache0 = cache;
 
         if (cache0 == null) {

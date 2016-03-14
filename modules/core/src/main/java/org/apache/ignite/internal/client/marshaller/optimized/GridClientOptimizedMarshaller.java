@@ -127,12 +127,12 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean registerClassName(int id, String clsName) {
+        @Override public boolean registerClassName(int id, String clsName) {
             throw new UnsupportedOperationException(clsName);
         }
 
         /** {@inheritDoc} */
-        @Override protected String className(int id) {
+        @Override public String className(int id) {
             throw new UnsupportedOperationException();
         }
     }

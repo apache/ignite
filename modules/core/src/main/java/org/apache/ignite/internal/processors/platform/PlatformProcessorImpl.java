@@ -56,7 +56,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.marshaller.MarshallerContext;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -413,15 +412,13 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public boolean registerClass(int id, String name) {
-        // TODO
-        return false;
+    @Override public boolean registerClass(int id, String name) throws IgniteCheckedException {
+        return platformMarshCtx.registerClassName(id, name);
     }
 
     /** {@inheritDoc} */
-    @Override public String getClass(int id) {
-        // TODO
-        return Integer.toString(id);
+    @Override public String getClass(int id) throws IgniteCheckedException {
+        return platformMarshCtx.className(id);
     }
 
     /**

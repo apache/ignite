@@ -249,7 +249,7 @@ public interface PlatformProcessor extends GridProcessor {
      * @param name Class name.
      * @return Whether class was registered.
      */
-    public boolean registerClass(int id, String name);
+    public boolean registerClass(int id, String name) throws IgniteCheckedException;
 
     /**
      * Gets platform class name for provided type ID.
@@ -257,5 +257,5 @@ public interface PlatformProcessor extends GridProcessor {
      * @param id Type ID.
      * @return Class name.
      */
-    public String getClass(int id);
+    public String getClass(int id) throws IgniteCheckedException;
 }
