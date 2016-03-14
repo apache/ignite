@@ -1438,6 +1438,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
+        /// <summary>
+        /// Stores current writer stack frame.
+        /// </summary>
         private struct Frame
         {
             /** Current object start position. */
