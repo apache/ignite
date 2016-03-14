@@ -126,6 +126,15 @@ extern "C" {
         return ctx->ProcessorGetIgniteConfiguration(static_cast<jobject>(obj), memPtr);
     }
 
+    bool IGNITE_CALL IgniteProcessorRegisterClass(gcj::JniContext* ctx, void* obj, int id, char* name) {
+        return ctx->ProcessorRegisterClass(static_cast<jobject>(obj), id, name);
+    }
+
+    char* IGNITE_CALL IgniteProcessorGetClass(gcj::JniContext* ctx, void* obj, int id, int* resLen) {
+        return ctx->ProcessorGetClass(static_cast<jobject>(obj), id, resLen);
+    }
+
+
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
         return ctx->TargetInStreamOutLong(static_cast<jobject>(obj), opType, memPtr);
     }

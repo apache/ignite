@@ -51,6 +51,8 @@ extern "C" {
     void* IGNITE_CALL IgniteProcessorAtomicSequence(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create);
     void* IGNITE_CALL IgniteProcessorAtomicReference(gcj::JniContext* ctx, void* obj, char* name, long long memPtr, bool create);
     void IGNITE_CALL IgniteProcessorGetIgniteConfiguration(gcj::JniContext* ctx, void* obj, long long memPtr);
+    bool IGNITE_CALL IgniteProcessorRegisterClass(gcj::JniContext* ctx, void* obj, int id, char* name);
+    char* IGNITE_CALL IgniteProcessorGetClass(gcj::JniContext* ctx, void* obj, int id, int* resLen);
     
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr);
     void IGNITE_CALL IgniteTargetInStreamOutStream(gcj::JniContext* ctx, void* obj, int opType, long long inMemPtr, long long outMemPtr);

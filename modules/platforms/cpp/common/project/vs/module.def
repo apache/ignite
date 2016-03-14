@@ -130,3 +130,5 @@ IgniteAtomicSequenceClose @127
 IgniteProcessorAtomicReference @128
 IgniteAtomicReferenceIsClosed @129
 IgniteAtomicReferenceClose @130
+IgniteProcessorRegisterClass @131
+IgniteProcessorGetClass @132
