@@ -31,11 +31,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * ODBC message listener.
  */
 public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
-    /** Handler metadata key. */
-    private static final int HANDLER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
-
-    /** Parser metadata key. */
-    private static final int PARSER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    /** Connection-related metadata key. */
+    private static final int CONNECTION_DATA_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Request ID generator. */
     private static final AtomicLong REQ_ID_GEN = new AtomicLong();
@@ -64,8 +61,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
         if (log.isDebugEnabled())
             log.debug("ODBC client connected: " + ses.remoteAddress());
 
-        ses.addMeta(HANDLER_META_KEY, new OdbcRequestHandler(ctx, busyLock));
-        ses.addMeta(PARSER_META_KEY, new OdbcMessageParser(ctx));
+        ses.addMeta(CONNECTION_DATA_META_KEY, new ConnectionData(ctx, busyLock));
     }
 
     /** {@inheritDoc} */
@@ -84,9 +80,11 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
 
         long reqId = REQ_ID_GEN.incrementAndGet();
 
-        OdbcMessageParser parser = ses.meta(PARSER_META_KEY);
+        ConnectionData connData = ses.meta(CONNECTION_DATA_META_KEY);
 
-        assert parser != null;
+        assert connData != null;
+
+        OdbcMessageParser parser = connData.getParser();
 
         try {
             long startTime = 0;
@@ -100,9 +98,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
                     ", req=" + req + ']');
             }
 
-            OdbcRequestHandler handler = ses.meta(HANDLER_META_KEY);
-
-            assert handler != null;
+            OdbcRequestHandler handler = connData.getHandler();
 
             OdbcResponse resp = handler.handle(req);
 
@@ -121,6 +117,43 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             log.error("Failed to process ODBC request [id=" + reqId + ", err=" + e + ']');
 
             ses.send(parser.encode(new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage())));
+        }
+    }
+
+    /**
+     * Connection-related data.
+     */
+    private class ConnectionData {
+        /** Request handler. */
+        private OdbcRequestHandler handler;
+
+        /** Message parser. */
+        private OdbcMessageParser parser;
+
+        /**
+         * @param ctx Context.
+         * @param busyLock Shutdown busy lock.
+         */
+        public ConnectionData(GridKernalContext ctx, GridSpinBusyLock busyLock) {
+            handler = new OdbcRequestHandler(ctx, busyLock);
+
+            parser = new OdbcMessageParser(ctx);
+        }
+
+        /**
+         * Handler getter.
+         * @return Request handler for the connection.
+         */
+        public OdbcRequestHandler getHandler() {
+            return handler;
+        }
+
+        /**
+         * Parser getter
+         * @return Message parser for the connection.
+         */
+        public OdbcMessageParser getParser() {
+            return parser;
         }
     }
 }
