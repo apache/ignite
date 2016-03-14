@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheTryPutFailedException;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.PluginProvider;
 
@@ -56,6 +57,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private final File workDir;
 
     /** */
+    private final String cacheName;
+
+    /** */
     private IgniteLogger log;
 
     /** */
@@ -69,9 +73,21 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     public MarshallerContextImpl(List<PluginProvider> plugins) throws IgniteCheckedException {
+        this(plugins, CU.MARSH_CACHE_NAME);
+    }
+
+    /**
+     * @param plugins Plugins.
+     * @param cacheName Cache name.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public MarshallerContextImpl(List<PluginProvider> plugins, String cacheName) throws IgniteCheckedException {
         super(plugins);
 
+        assert cacheName != null;
+
         workDir = U.resolveWorkDirectory("marshaller", false);
+        this.cacheName = cacheName;
     }
 
     /**
@@ -82,7 +98,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
             new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir),
             null,
-            ctx.cache().marshallerCache().context().affinityNode(),
+            ctx.cache().internalCache(cacheName).context().affinityNode(),
             true,
             false
         );
