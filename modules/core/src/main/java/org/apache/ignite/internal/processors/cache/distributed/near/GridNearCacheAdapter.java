@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheClearAllRunnable;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -93,9 +92,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         super(ctx, ctx.config().getNearConfiguration().getNearStartSize());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void init() {
-        map.setEntryFactory(new GridCacheMapEntryFactory() {
+    @Override protected GridCacheMapEntryFactory entryFactory() {
+        return new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
@@ -111,7 +109,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
                 return new GridNearCacheEntry(ctx, key, hash, val);
             }
-        });
+        };
     }
 
     /**
@@ -121,10 +119,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public void onReconnected() {
-        map = new GridCacheConcurrentMap(
-            ctx,
-            ctx.config().getNearConfiguration().getNearStartSize(),
-            map.getEntryFactory());
+        //TODO
+//        map = new GridCacheConcurrentMap(
+//            ctx,
+//            ctx.config().getNearConfiguration().getNearStartSize(),
+//            map.getEntryFactory());
     }
 
     /** {@inheritDoc} */
@@ -516,7 +515,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally(boolean srv, boolean near, boolean readers) {
+    @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally(boolean srv, boolean near,
+        boolean readers) {
         assert configuration().getNearConfiguration() != null;
 
         if (ctx.affinityNode()) {

@@ -234,8 +234,8 @@ public class VisorCache implements Serializable {
         int size = ca.size();
 
         Set<GridCacheEntryEx> set = ca.context().isNear()
-            ? ((GridNearCacheAdapter)ca).dht().map().entries0()
-            : ca.map().entries0();
+            ? ((GridNearCacheAdapter)ca).dht().entries()
+            : ca.entries();
 
         long memSz = 0;
 

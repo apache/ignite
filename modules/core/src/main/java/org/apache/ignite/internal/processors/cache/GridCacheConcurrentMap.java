@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.ObjectStreamException;
 import java.lang.reflect.Array;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
@@ -57,7 +56,7 @@ import org.jsr166.LongAdder8;
 /**
  * Concurrent implementation of cache map.
  */
-public class GridCacheConcurrentMap {
+public class GridCacheConcurrentMap implements GridCacheConcurrentMapInterface {
     /** Debug flag. */
     private static final boolean DEBUG = false;
 
@@ -420,8 +419,7 @@ public class GridCacheConcurrentMap {
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable CacheObject val,
-        boolean create)
-    {
+        boolean create) {
         assert key != null;
 
         int hash = hash(key.hashCode());
@@ -478,7 +476,7 @@ public class GridCacheConcurrentMap {
      * @param key Key.
      * @return Removed entry, possibly {@code null}.
      */
-    @SuppressWarnings( {"unchecked"})
+    @SuppressWarnings({"unchecked"})
     @Nullable public GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key) {
         assert key != null;
 
@@ -574,8 +572,7 @@ public class GridCacheConcurrentMap {
     /**
      *
      */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
-    void printDebugInfo() {
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"}) void printDebugInfo() {
         for (Segment s : segs)
             s.lock();
 
@@ -720,8 +717,7 @@ public class GridCacheConcurrentMap {
          * @param initCap Initial capacity.
          * @param lf Load factor.
          */
-        @SuppressWarnings("unchecked")
-        Segment(int initCap, float lf) {
+        @SuppressWarnings("unchecked") Segment(int initCap, float lf) {
             loadFactor = lf;
 
             tbl = new HashEntry[initCap];
@@ -786,8 +782,8 @@ public class GridCacheConcurrentMap {
          * @param topVer Topology version.
          * @return Associated value.
          */
-        @SuppressWarnings({"unchecked"})
-        GridCacheMapEntry put(KeyCacheObject key, int hash, @Nullable CacheObject val, AffinityTopologyVersion topVer) {
+        @SuppressWarnings({"unchecked"}) GridCacheMapEntry put(KeyCacheObject key, int hash, @Nullable CacheObject val,
+            AffinityTopologyVersion topVer) {
             lock();
 
             try {
@@ -869,8 +865,7 @@ public class GridCacheConcurrentMap {
          * @return Triple where the first element is current entry associated with the key,
          *      the second is created entry and the third is doomed (all may be null).
          */
-        @SuppressWarnings( {"unchecked"})
-        GridTriple<GridCacheMapEntry> putIfObsolete(KeyCacheObject key,
+        @SuppressWarnings({"unchecked"}) GridTriple<GridCacheMapEntry> putIfObsolete(KeyCacheObject key,
             int hash,
             @Nullable CacheObject val,
             AffinityTopologyVersion topVer,
@@ -924,8 +919,7 @@ public class GridCacheConcurrentMap {
         /**
          *
          */
-        @SuppressWarnings("unchecked")
-        void rehash() {
+        @SuppressWarnings("unchecked") void rehash() {
             HashEntry[] oldTbl = tbl;
 
             int oldCap = oldTbl.length;
@@ -952,7 +946,7 @@ public class GridCacheConcurrentMap {
 
             int sizeMask = newTbl.length - 1;
 
-            for (int i = 0; i < oldCap ; i++) {
+            for (int i = 0; i < oldCap; i++) {
                 HashEntry e = oldTbl[i];
 
                 if (e != null) {
@@ -1249,8 +1243,7 @@ public class GridCacheConcurrentMap {
          * @param id ID of the iterator.
          * @param totalCnt Total count of iterators.
          */
-        @SuppressWarnings({"unchecked"})
-        Iterator0(GridCacheConcurrentMap map, boolean isVal,
+        @SuppressWarnings({"unchecked"}) Iterator0(GridCacheConcurrentMap map, boolean isVal,
             CacheEntryPredicate[] filter, int id, int totalCnt) {
             this.filter = filter;
             this.isVal = isVal;
@@ -1308,7 +1301,7 @@ public class GridCacheConcurrentMap {
          * @param skipFirst {@code True} to skip check on first iteration.
          * @return {@code True} if advance succeeded.
          */
-        @SuppressWarnings( {"unchecked"})
+        @SuppressWarnings({"unchecked"})
         private boolean advanceInBucket(@Nullable HashEntry e, boolean skipFirst) {
             if (e == null)
                 return false;
@@ -1408,16 +1401,6 @@ public class GridCacheConcurrentMap {
             isVal = in.readBoolean();
             id = in.readInt();
             totalCnt = in.readInt();
-        }
-
-        /**
-         * Reconstructs object on unmarshalling.
-         *
-         * @return Reconstructed object.
-         * @throws ObjectStreamException Thrown in case of unmarshalling error.
-         */
-        protected Object readResolve() throws ObjectStreamException {
-            return new Iterator0<>(ctx.cache().map(), isVal, filter, id, totalCnt);
         }
     }
 
@@ -1582,16 +1565,6 @@ public class GridCacheConcurrentMap {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             ctx = (GridCacheContext<K, V>)in.readObject();
             filter = (CacheEntryPredicate[])in.readObject();
-        }
-
-        /**
-         * Reconstructs object on unmarshalling.
-         *
-         * @return Reconstructed object.
-         * @throws ObjectStreamException Thrown in case of unmarshalling error.
-         */
-        protected Object readResolve() throws ObjectStreamException {
-            return new Set0<>(ctx.cache().map(), filter);
         }
     }
 

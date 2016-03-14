@@ -70,11 +70,6 @@ public class GridNoStorageCacheMap extends GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry getEntry(Object key) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheMapEntry putEntry(AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable CacheObject val)

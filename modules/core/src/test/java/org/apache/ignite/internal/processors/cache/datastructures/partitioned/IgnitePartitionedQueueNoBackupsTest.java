@@ -80,7 +80,7 @@ public class IgnitePartitionedQueueNoBackupsTest extends GridCachePartitionedQue
             IgniteKernal grid = (IgniteKernal)grid(i);
 
             Iterator<GridCacheEntryEx> entries =
-                grid.context().cache().internalCache(cctx.name()).map().allEntries0().iterator();
+                grid.context().cache().internalCache(cctx.name()).map().entries0().iterator();
 
             if (entries.hasNext()) {
                 if (setNodeId == null)

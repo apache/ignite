@@ -175,7 +175,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
 
             for (int i = 0; i < gridCount(); i++) {
                 Iterator<GridCacheEntryEx> entries =
-                    ((IgniteKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
+                    ((IgniteKernal)grid(i)).context().cache().internalCache().map().entries0().iterator();
 
                 while (entries.hasNext()) {
                     GridCacheEntryEx entry = entries.next();
