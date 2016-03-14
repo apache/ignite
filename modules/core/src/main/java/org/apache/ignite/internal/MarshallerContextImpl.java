@@ -36,8 +36,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheTryPutFailedException;
 import org.apache.ignite.internal.util.GridStripedLock;
+import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -100,29 +102,28 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @param ctx Kernal context.
      * @throws IgniteCheckedException In case of error.
      */
-    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
-        ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
+    public void onMarshallerCacheStarted(final GridKernalContext ctx) throws IgniteCheckedException {
+        GridCacheContext<Object, Object> cacheCtx = ctx.cache().internalCache(cacheName).context();
+
+        cacheCtx.continuousQueries().executeInternalQuery(
             new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt),
             null,
-            ctx.cache().internalCache(cacheName).context().affinityNode(),
+            cacheCtx.affinityNode(),
             true,
             false
         );
+
+        cacheCtx.preloader().initialRebalanceFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
+            @Override public void applyx(IgniteInternalFuture<?> f) {
+                log = ctx.log(MarshallerContextImpl.class);
+
+                cache = ctx.cache().internalCache(cacheName);
+
+                latch.countDown();
+            }
+        });
     }
 
-    /**
-     * @param ctx Kernal context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void onMarshallerCachePreloaded(GridKernalContext ctx) throws IgniteCheckedException {
-        assert ctx != null;
-
-        log = ctx.log(MarshallerContextImpl.class);
-
-        cache = ctx.cache().marshallerCache();
-
-        latch.countDown();
-    }
 
     /**
      * Release marshaller context.

@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -52,8 +53,10 @@ import org.apache.ignite.internal.processors.platform.transactions.PlatformTrans
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.marshaller.MarshallerContext;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -90,6 +93,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** Interop configuration. */
     private final PlatformConfigurationEx interopCfg;
 
+    /** Platform marshaller context. */
+    private final MarshallerContextImpl platformMarshCtx;
+
     /** Whether processor is started. */
     private boolean started;
 
@@ -101,7 +107,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      *
      * @param ctx Kernal context.
      */
-    public PlatformProcessorImpl(GridKernalContext ctx) {
+    public PlatformProcessorImpl(GridKernalContext ctx) throws IgniteCheckedException {
         super(ctx);
 
         log = ctx.log(PlatformProcessorImpl.class);
@@ -121,6 +127,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         }
 
         platformCtx = new PlatformContextImpl(ctx, interopCfg.gate(), interopCfg.memory(), interopCfg.platform());
+
+        platformMarshCtx = new MarshallerContextImpl(null, CU.MARSH_CACHE_NAME_DOTNET, ".dotnettypename");
     }
 
     /** {@inheritDoc} */
@@ -397,6 +405,11 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration());
 
         stream.synchronize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public MarshallerContextImpl platformMarshallerContext() {
+        return platformMarshCtx;
     }
 
     /** {@inheritDoc} */
