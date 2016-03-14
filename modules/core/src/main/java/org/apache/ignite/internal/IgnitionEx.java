@@ -78,6 +78,7 @@ import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.IgnitionMXBean;
+import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.spi.IgniteSpi;
@@ -1912,7 +1913,8 @@ public class IgnitionEx {
 
             cacheCfgs.add(marshallerSystemCache());
 
-            // TODO: Create dotNetMarhsallerSystemCache
+            if (cfg.getPlatformConfiguration() instanceof PlatformDotNetConfiguration)
+                cacheCfgs.add(marshallerSystemCacheDotNet());
 
             cacheCfgs.add(utilitySystemCache());
 
@@ -1930,20 +1932,8 @@ public class IgnitionEx {
                         "like TcpDiscoverySpi)");
 
                 for (CacheConfiguration ccfg : userCaches) {
-                    if (CU.isHadoopSystemCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
-                            "\" because it is reserved for internal purposes.");
-
-                    if (CU.isAtomicsCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.ATOMICS_CACHE_NAME +
-                            "\" because it is reserved for internal purposes.");
-
-                    if (CU.isUtilityCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.UTILITY_CACHE_NAME +
-                            "\" because it is reserved for internal purposes.");
-
-                    if (CU.isMarshallerCache(ccfg.getName()))
-                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.MARSH_CACHE_NAME +
+                    if (CU.isSystemCache(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot be \"" + ccfg.getName() +
                             "\" because it is reserved for internal purposes.");
 
                     cacheCfgs.add(ccfg);
@@ -2110,6 +2100,15 @@ public class IgnitionEx {
             cache.setRebalanceOrder(-2);//Prior to other system caches.
 
             return cache;
+        }
+
+        /**
+         * Creates marshaller system cache configuration for .NET.
+         *
+         * @return Marshaller system cache configuration for .NET.
+         */
+        private static CacheConfiguration marshallerSystemCacheDotNet() {
+            return marshallerSystemCache().setName(CU.MARSH_CACHE_NAME_DOTNET);
         }
 
         /**

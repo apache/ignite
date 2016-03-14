@@ -127,6 +127,9 @@ public class GridCacheUtils {
     /** Marshaller system cache name. */
     public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
 
+    /** .NET Marshaller system cache name. */
+    public static final String MARSH_CACHE_NAME_DOTNET = "ignite-marshaller-sys-cache-dotnet";
+
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
 
@@ -1308,6 +1311,14 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
+     * @return {@code True} if this is marshaller system cache for .NET.
+     */
+    public static boolean isMarshallerCacheDotNet(String cacheName) {
+        return MARSH_CACHE_NAME_DOTNET.equals(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
      * @return {@code True} if this is utility system cache.
      */
     public static boolean isUtilityCache(String cacheName) {
@@ -1328,7 +1339,7 @@ public class GridCacheUtils {
      */
     public static boolean isSystemCache(String cacheName) {
         return isMarshallerCache(cacheName) || isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) ||
-            isAtomicsCache(cacheName);
+            isAtomicsCache(cacheName) || isMarshallerCacheDotNet(cacheName);
     }
 
     /**
