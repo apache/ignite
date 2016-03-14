@@ -767,7 +767,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (_frame.Schema == null)
                 {
-                    _frame.Schema = ReadSchema();
+                    _frame.Schema = ReadSchema(desc.TypeId);
 
                     desc.Schema.Add(_frame.Hdr.SchemaId, _frame.Schema);
                 }
@@ -777,16 +777,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads the schema.
         /// </summary>
-        private int[] ReadSchema()
+        private int[] ReadSchema(int typeId)
         {
             if (_frame.Hdr.IsCompactFooter)
             {
                 // Get schema from Java
-                var schema = Marshaller.Ignite.ClusterGroup.GetSchema(_frame.Hdr.TypeId, _frame.Hdr.SchemaId);
+                var schema = Marshaller.Ignite.ClusterGroup.GetSchema(typeId, _frame.Hdr.SchemaId);
 
                 if (schema == null)
                     throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
-                        "typeId=" + _frame.Hdr.TypeId + ", schemaId=" + _frame.Hdr.SchemaId + ']');
+                        "typeId=" + typeId + ", schemaId=" + _frame.Hdr.SchemaId + ']');
 
                 return schema;
             }
