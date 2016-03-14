@@ -27,16 +27,25 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCacheEntry;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicOffHeapCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -44,6 +53,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -53,6 +63,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.LongAdder8;
 
@@ -89,7 +100,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private final GridFutureAdapter<?> rent;
 
     /** Entries map. */
-    private final ConcurrentMap<KeyCacheObject, GridDhtCacheEntry> map;
+    private final GridCacheConcurrentMap map;
 
     /** Context. */
     private final GridCacheContext cctx;
@@ -120,8 +131,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param cctx Context.
      * @param id Partition ID.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    GridDhtLocalPartition(GridCacheContext cctx, int id) {
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor") GridDhtLocalPartition(GridCacheContext cctx,
+        int id) {
         assert cctx != null;
 
         this.id = id;
@@ -135,8 +146,23 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             }
         };
 
-        map = new ConcurrentHashMap8<>(cctx.config().getStartSize() /
-            cctx.affinity().partitions());
+        map = new GridCacheConcurrentMap(cctx, cctx.config().getStartSize() / cctx.affinity().partitions(), null);
+
+        map.setEntryFactory(new GridCacheMapEntryFactory() {
+            /** {@inheritDoc} */
+            @Override public GridCacheMapEntry create(
+                GridCacheContext ctx,
+                AffinityTopologyVersion topVer,
+                KeyCacheObject key,
+                int hash,
+                CacheObject val
+            ) {
+                if (ctx.useOffheapEntry())
+                    return new GridDhtAtomicOffHeapCacheEntry(ctx, topVer, key, hash, val);
+
+                return new GridDhtAtomicCacheEntry(ctx, topVer, key, hash, val);
+            }
+        });
 
         int delQueueSize = CU.isSystemCache(cctx.name()) ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
@@ -225,15 +251,19 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * Increments public size of the map.
      */
-    public void incrementPublicSize() {
+    public void incrementPublicSize(GridCacheMapEntry e) {
         mapPubSize.increment();
+
+        map.incrementSize(e);
     }
 
     /**
      * Decrements public size of the map.
      */
-    public void decrementPublicSize() {
+    public void decrementPublicSize(GridCacheMapEntry e) {
         mapPubSize.decrement();
+
+        map.decrementSize(e);
     }
 
     /**
@@ -252,17 +282,69 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return state == MOVING || state == OWNING || state == RENTING;
     }
 
+    @Nullable public GridCacheMapEntry getEntry(Object key) {
+        return map.getEntry(key);
+    }
+
+    public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(
+        AffinityTopologyVersion topVer, KeyCacheObject key,
+        @Nullable CacheObject val, boolean create) {
+        return map.putEntryIfObsoleteOrAbsent(topVer, key, val, create);
+    }
+
+    public boolean removeEntry(GridCacheEntryEx e) {
+        return map.removeEntry(e);
+    }
+
+    public Set<GridCacheEntryEx> entries0() {
+        return map.entries0();
+    }
+
+    public Set<GridCacheEntryEx> allEntries0() {
+        return map.allEntries0();
+    }
+
+    public <K, V> Set<Cache.Entry<K, V>> entriesx(CacheEntryPredicate... filter) {
+        return map.entriesx(filter);
+    }
+
+    public <K, V> Set<Cache.Entry<K, V>> entries(CacheEntryPredicate... filter) {
+        return map.entries(filter);
+    }
+
+    public <K, V> Set<K> keySet(CacheEntryPredicate... filter) {
+        return map.keySet(filter);
+    }
+
+    public <K, V> Set<K> keySetx(CacheEntryPredicate... filter) {
+        return map.keySetx(filter);
+    }
+
+    @Nullable public GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key) {
+        return map.removeEntryIfObsolete(key);
+    }
+
+    public <K, V> Collection<V> values(CacheEntryPredicate... filter) {
+        return map.values(filter);
+    }
+
     /**
      * @param entry Entry to add.
      */
-    void onAdded(GridDhtCacheEntry entry) {
+    void onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry entry) {
         GridDhtPartitionState state = state();
 
         if (state == EVICTED)
             throw new GridDhtInvalidPartitionException(id, "Adding entry to invalid partition " +
                 "(often may be caused by inconsistent 'key.hashCode()' implementation) [part=" + id + ']');
 
-        map.put(entry.key(), entry);
+        try {
+            CacheObject value = entry.hasValue() ? entry.versionedValue(topVer).get2() : null;
+            map.putEntryIfObsoleteOrAbsent(topVer, entry.key(), value, false);
+        }
+        catch (GridCacheEntryRemovedException e) {
+            throw new RuntimeException(e);
+        }
 
         if (!entry.isInternal()) {
             assert !entry.deleted() : entry;
@@ -274,13 +356,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * @param entry Entry to remove.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    void onRemoved(GridDhtCacheEntry entry) {
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter") void onRemoved(GridDhtCacheEntry entry) {
         assert entry.obsolete() : entry;
 
         // Make sure to remove exactly this entry.
         synchronized (entry) {
-            map.remove(entry.key(), entry);
+            map.removeEntry(entry);
 
             if (!entry.isInternal() && !entry.deleted())
                 mapPubSize.decrement();
@@ -312,7 +393,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * Locks partition.
      */
-    @SuppressWarnings( {"LockAcquiredButNotSafelyReleased"})
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     public void lock() {
         lock.lock();
     }
@@ -338,11 +419,11 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         Map<KeyCacheObject, GridCacheVersion> evictHist0 = evictHist;
 
-        if (evictHist0 != null ) {
+        if (evictHist0 != null) {
             GridCacheVersion ver0 = evictHist0.get(key);
 
             if (ver0 == null || ver0.isLess(ver)) {
-                GridCacheVersion ver1  = evictHist0.put(key, ver);
+                GridCacheVersion ver1 = evictHist0.put(key, ver);
 
                 assert ver1 == ver0;
             }
@@ -366,7 +447,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         Map<KeyCacheObject, GridCacheVersion> evictHist0 = evictHist;
 
-        if (evictHist0 != null)  {
+        if (evictHist0 != null) {
             GridCacheVersion ver0 = evictHist0.get(key);
 
             // Permit preloading if version in history
@@ -655,12 +736,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
-        Iterator<GridDhtCacheEntry> it = map.values().iterator();
+        Iterator<GridCacheEntryEx> it = map.entries0().iterator();
 
         GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
 
         if (swap && GridQueryProcessor.isEnabled(cctx.config())) { // Indexing needs to unswap cache values.
-            Iterator<GridDhtCacheEntry> unswapIt = null;
+            Iterator<GridCacheEntryEx> unswapIt = null;
 
             try {
                 swapIt = cctx.swap().iterator(id);
@@ -678,13 +759,16 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         try {
             while (it.hasNext()) {
-                GridDhtCacheEntry cached = null;
+                GridCacheEntryEx cached = null;
 
                 try {
                     cached = it.next();
 
-                    if (cached.clearInternal(clearVer, swap, extras)) {
-                        map.remove(cached.key(), cached);
+                    if (!(cached instanceof GridDhtCacheEntry))
+                        continue;
+
+                    if (((GridDhtCacheEntry)cached).clearInternal(clearVer, swap, extras)) {
+                        map.removeEntry(cached);
 
                         if (!cached.isInternal()) {
                             mapPubSize.decrement();
@@ -709,7 +793,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                     }
                 }
                 catch (GridDhtInvalidPartitionException e) {
-                    assert map.isEmpty() && state() == EVICTED: "Invalid error [e=" + e + ", part=" + this + ']';
+                    assert map.isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
                     assert swapEmpty() : "Invalid error when swap is not cleared [e=" + e + ", part=" + this + ']';
 
                     break; // Partition is already concurrently cleared and evicted.
@@ -750,12 +834,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param it Swap iterator.
      * @return Unswapping iterator over swapped entries.
      */
-    private Iterator<GridDhtCacheEntry> unswapIterator(
+    private Iterator<GridCacheEntryEx> unswapIterator(
         final GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it) {
         if (it == null)
             return null;
 
-        return new Iterator<GridDhtCacheEntry>() {
+        return new Iterator<GridCacheEntryEx>() {
             /** */
             GridDhtCacheEntry lastEntry;
 
@@ -789,7 +873,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             }
 
             @Override public void remove() {
-                map.remove(lastEntry.key(), lastEntry);
+                map.removeEntry(lastEntry);
             }
         };
     }
@@ -811,7 +895,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"OverlyStrongTypeCast"})
+    @SuppressWarnings({"OverlyStrongTypeCast"})
     @Override public boolean equals(Object obj) {
         return obj instanceof GridDhtLocalPartition && (obj == this || ((GridDhtLocalPartition)obj).id() == id);
     }
