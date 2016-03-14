@@ -408,7 +408,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public String getClass(int id) {
         // TODO
-        return null;
+        return Integer.toString(id);
     }
 
     /**
