@@ -233,4 +233,21 @@ public interface PlatformProcessor extends GridProcessor {
      * @param memPtr Stream to write data to.
      */
     public void getIgniteConfiguration(long memPtr);
+
+    /**
+     * Registers platform class name with provided type ID.
+     *
+     * @param id Type ID.
+     * @param name Class name.
+     * @return Whether class was registered.
+     */
+    public boolean registerClass(int id, String name);
+
+    /**
+     * Gets platform class name for provided type ID.
+     *
+     * @param id Type ID.
+     * @return Class name.
+     */
+    public String getClass(int id);
 }

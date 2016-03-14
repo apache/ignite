@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     /// </summary>
     internal class MarshallerContext
     {
-        public bool RegisterType(int id, TypeResolver type)
+        public bool RegisterType(int id, Type type)
         {
             // TODO: delegate to Java
             return false;
