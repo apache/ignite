@@ -60,6 +60,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     private final String cacheName;
 
     /** */
+    private final String fileExt;
+
+    /** */
     private IgniteLogger log;
 
     /** */
@@ -73,7 +76,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     public MarshallerContextImpl(List<PluginProvider> plugins) throws IgniteCheckedException {
-        this(plugins, CU.MARSH_CACHE_NAME);
+        this(plugins, CU.MARSH_CACHE_NAME, ".classname");
     }
 
     /**
@@ -81,13 +84,16 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @param cacheName Cache name.
      * @throws IgniteCheckedException In case of error.
      */
-    public MarshallerContextImpl(List<PluginProvider> plugins, String cacheName) throws IgniteCheckedException {
+    public MarshallerContextImpl(List<PluginProvider> plugins, String cacheName, String fileExt)
+        throws IgniteCheckedException {
         super(plugins);
 
         assert cacheName != null;
+        assert fileExt != null;
 
         workDir = U.resolveWorkDirectory("marshaller", false);
         this.cacheName = cacheName;
+        this.fileExt = fileExt;
     }
 
     /**
@@ -96,7 +102,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      */
     public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
         ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
-            new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir),
+            new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt),
             null,
             ctx.cache().internalCache(cacheName).context().affinityNode(),
             true,
@@ -174,7 +180,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         String clsName = cache0.getTopologySafe(id);
 
         if (clsName == null) {
-            String fileName = id + ".classname";
+            String fileName = id + fileExt;
 
             Lock lock = fileLock(fileName);
 
@@ -225,13 +231,18 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         /** */
         private final File workDir;
 
+        /** */
+        private final String fileExt;
+
         /**
          * @param log Logger.
          * @param workDir Work directory.
+         * @param fileExt File extension.
          */
-        private ContinuousQueryListener(IgniteLogger log, File workDir) {
+        private ContinuousQueryListener(IgniteLogger log, File workDir, String fileExt) {
             this.log = log;
             this.workDir = workDir;
+            this.fileExt = fileExt;
         }
 
         /** {@inheritDoc} */
@@ -242,7 +253,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                     "Received cache entry update for system marshaller cache: " + evt;
 
                 if (evt.getOldValue() == null) {
-                    String fileName = evt.getKey() + ".classname";
+                    String fileName = evt.getKey() + fileExt;
 
                     Lock lock = fileLock(fileName);
 
