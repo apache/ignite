@@ -67,7 +67,7 @@ namespace ignite
              *
              * @param version Protocol version.
              */
-            HandshakeRequest(int16_t version) : version(version)
+            HandshakeRequest(int64_t version) : version(version)
             {
                 // No-op.
             }
@@ -88,12 +88,12 @@ namespace ignite
             {
                 writer.WriteInt8(REQUEST_TYPE_HANDSHAKE);
 
-                writer.WriteInt16(version);
+                writer.WriteInt64(version);
             }
 
         private:
             /** Protocol version. */
-            int16_t version;
+            int64_t version;
         };
 
         /**

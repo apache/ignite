@@ -38,7 +38,7 @@ public class OdbcMessageParser {
     private static final int INIT_CAP = 1024;
 
     /** Current ODBC communication protocol version */
-    private static final short PROTOCOL_VERSION = 1;
+    private static final long PROTOCOL_VERSION = 1;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -80,7 +80,7 @@ public class OdbcMessageParser {
         // the remote client uses the same protocol version.
         if (!versionConfirmed) {
             if (cmd == OdbcRequest.HANDSHAKE) {
-                short version = reader.readShort();
+                long version = reader.readLong();
 
                 if (version != PROTOCOL_VERSION)
                     throw new IgniteException("Unsupported ODBC communication protocol version: " +
@@ -92,7 +92,7 @@ public class OdbcMessageParser {
             }
             else
                 throw new IgniteException("Unexpected ODBC command " +
-                        "(First message is not handshake request): [cmd=" + cmd + ']');
+                        "(First message is not a handshake request): [cmd=" + cmd + ']');
         }
 
         OdbcRequest res;
