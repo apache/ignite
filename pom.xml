@@ -439,7 +439,8 @@
             <id>scala</id>
 
             <activation>
-                <property><name>!scala-2.10</name></property>
+                <property><name>!scala-2.10 || scala-lgpl</name></property>
+                <!--<property><name>profile.scala-lgpl</name></property>-->
             </activation>
 
             <modules>

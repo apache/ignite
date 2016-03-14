@@ -18,11 +18,15 @@
 package org.apache.ignite.scalar
 
 import org.apache.ignite._
-import org.apache.ignite.cache.CacheMode
+import org.apache.ignite.cache.CacheAtomicityMode._
+import org.apache.ignite.cache.CacheMode._
+import org.apache.ignite.cache.{CacheAtomicityMode, CacheMode}
 import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
+import org.apache.ignite.configuration.{CollectionConfiguration, CacheConfiguration, IgniteConfiguration}
+import org.apache.ignite.configuration.TransactionConfiguration._
 import org.apache.ignite.internal.IgniteVersionUtils._
+import org.apache.ignite.transactions.{TransactionIsolation, TransactionConcurrency}
 import org.jetbrains.annotations.Nullable
 
 import java.net.URL
@@ -280,12 +284,14 @@ object scalar extends ScalarConversions {
      * @param cacheName Name of the cache to get.
      */
     @inline def createCache$[K, V](@Nullable cacheName: String, cacheMode: CacheMode = CacheMode.PARTITIONED,
-        indexedTypes: Seq[Class[_]] = Seq.empty): IgniteCache[K, V] = {
+        indexedTypes: Seq[Class[_]] = Seq.empty, 
+        @Nullable atomicityMode: CacheAtomicityMode = null): IgniteCache[K, V] = {
         val cfg = new CacheConfiguration[K, V]()
 
         cfg.setName(cacheName)
         cfg.setCacheMode(cacheMode)
         cfg.setIndexedTypes(indexedTypes:_*)
+        cfg.setAtomicityMode(atomicityMode)
 
         Ignition.ignite.createCache(cfg)
     }
@@ -298,6 +304,13 @@ object scalar extends ScalarConversions {
     @inline def destroyCache$(@Nullable cacheName: String) = {
         Ignition.ignite.destroyCache(cacheName)
     }
+
+    /**
+     * Creates cache with specified configuration in default grid.
+     *
+     * @param config Name of the cache to get.
+     */
+    @inline def createCache$[K, V](config: CacheConfiguration[K, V]): IgniteCache[K, V] = ignite$.getOrCreateCache(config)
 
     /**
      * Gets named cache from specified grid.
@@ -320,13 +333,137 @@ object scalar extends ScalarConversions {
      */
     @inline def dataStreamer$[K, V](
         @Nullable cacheName: String,
-        bufSize: Int): IgniteDataStreamer[K, V] = {
+        bufSize: Int = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE): IgniteDataStreamer[K, V] = {
         val dl = ignite$.dataStreamer[K, V](cacheName)
 
         dl.perNodeBufferSize(bufSize)
 
         dl
     }
+
+    /**
+     * Gets a new instance of Ignite set implementation with given name and parameters.
+     *
+     * @param name Name of set.
+     * @param mode Cache mode.
+     * @param atomicityMode Cache atomicity mode.
+     * @tparam T Type of stored values.
+     * @return New instance of Ignite set implementation.
+     */
+    @inline def set$[T](name: String, mode: CacheMode = PARTITIONED, atomicityMode: CacheAtomicityMode = TRANSACTIONAL) = {
+        val setCfg: CollectionConfiguration = new CollectionConfiguration
+
+        setCfg.setCacheMode(mode)
+        setCfg.setAtomicityMode(atomicityMode)
+
+        ignite$.set[T](name, setCfg)
+    }
+
+    /**
+     * Gets a new instance of Ignite atomic long implementation with given name and parameters.
+     *
+     * @param name Name of set.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @param initVal Initial value for atomic long. Ignored if create flag is false.
+     * @tparam T Type of stored values.
+     * @return New instance of Ignite set implementation.
+     */
+    @inline def long$[T](name: String, create: Boolean, initVal: Long = 0) = {
+        ignite$.atomicLong(name, initVal, create)
+    }
+
+    /**
+     * Gets a new instance of Ignite atomic reference implementation with given name and parameters.
+     *
+     * @param name Name of reference.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @param initVal Initial value for atomic reference. Ignored if create flag is false.
+     * @tparam T Type of stored values.
+     * @return New instance of Ignite set implementation.
+     */
+    @inline def reference$[T](name: String, initVal: T, create: Boolean) = {
+        ignite$.atomicReference(name, initVal, create)
+    }
+
+    /**
+     * Gets a new instance of Ignite atomic long implementation with given name and parameters.
+     *
+     * @param name Atomic stamped name.
+     * @param initVal Initial value for atomic stamped. Ignored if { @code create} flag is { @code false}.
+     * @param initStamp Initial stamp for atomic stamped. Ignored if { @code create} flag is { @code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic stamped for the given name.
+     */
+    @inline def atomicStamped$[T, S](name: String, @Nullable initVal: T, @Nullable initStamp: S, create: Boolean) =
+        ignite$.atomicStamped(name, initVal, initStamp, create)
+
+    /**
+     * Gets a new instance of Ignite atomic sequence implementation with given name and parameters.
+     *
+     * @param name Atomic sequence name.
+     * @param initVal Initial value for atomic sequence. Ignored if { @code create} flag is { @code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic sequence for the given name.
+     */
+    @inline def atomicSequence$(name: String, initVal: Long, create: Boolean): IgniteAtomicSequence =
+        ignite$.atomicSequence(name, initVal, create)
+
+    /**
+     * Gets a new instance of Ignite count down latch implementation with given name and parameters.
+     *
+     * @param name Name of the latch.
+     * @param cnt Count for new latch creation. Ignored if { @code create} flag is { @code false}.
+     * @param autoDel `true` to automatically delete latch from cache when its count reaches zero.
+     *                        Ignored if `create` flag is `false`.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+
+     * @return Ignite count down latch for the given name.
+     */
+    @inline def countDownLatch$(name: String, cnt: Int, autoDel: Boolean, create: Boolean): IgniteCountDownLatch =
+        ignite$.countDownLatch(name, cnt, autoDel, create)
+
+    /**
+     * Gets a new instance of Ignite queue implementation with given name and parameters.
+     *
+     * @param queueName Queue name.
+     * @param mode Cache mode.
+     */
+    @inline def queue$[T](queueName: String, mode: CacheMode = PARTITIONED) = {
+        val colCfg: CollectionConfiguration = new CollectionConfiguration
+
+        colCfg.setCacheMode(mode)
+
+        ignite$.queue[T](queueName, 0, colCfg)
+    }
+
+    /**
+      * Gets a new instance of Ignite semaphore implementation with given name and parameters.
+      *
+      * @param name Name of set.
+      * @param cnt Count for new semaphore creation. Ignored if create flag is false.
+      * @param failoverSafe `True` to create failover safe semaphore which means that if any node leaves topology permits already acquired by that node are silently released and become available for alive nodes to acquire. If flag is false then all threads waiting for available permits get interrupted.
+      * @param create Boolean flag indicating whether data structure should be created if does not exist.
+      * @tparam T Type of stored values.
+      * @return New instance of Ignite set implementation.
+      */
+    @inline def semaphore$[T](name: String, cnt: Int, failoverSafe: Boolean, create: Boolean) = {
+        ignite$.semaphore(name, cnt, failoverSafe, create)
+    }
+
+    /**
+     * Start new transaction with specified parameters.
+     *
+     * @param concurrency Transaction concurrency control.
+     * @param isolation transaction isolation levels.
+     */
+    @inline def transaction$(concurrency: TransactionConcurrency = DFLT_TX_CONCURRENCY,
+        isolation: TransactionIsolation = DFLT_TX_ISOLATION) = ignite$.transactions().txStart(concurrency, isolation)
+
+    /**
+     * Gets ExecutorService which will execute all submitted Callable and Runnable jobs on all cluster nodes
+     */
+    @inline def executorService$ =
+        ignite$.executorService()
 
     /**
      * Gets default grid instance.
@@ -350,6 +487,11 @@ object scalar extends ScalarConversions {
         catch {
             case _: IllegalStateException => None
         }
+
+    /**
+     * Gets an instance of [[IgniteCluster]] interface.
+     */
+    @inline def cluster$ = ignite$.cluster()
 
     /**
      * Gets grid for given node ID.

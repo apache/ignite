@@ -18,7 +18,7 @@
 package org.apache.ignite.scalar.testsuites
 
 import org.apache.ignite.IgniteSystemProperties._
-import org.apache.ignite.scalar.tests.examples.{ScalarExamplesMultiNodeSelfTest, ScalarExamplesSelfTest}
+import org.apache.ignite.scalar.tests.examples.{ScalarExamplesMultiNodeSelfTest, ScalarExamplesLgplSelfTest}
 import org.apache.ignite.testframework.GridTestUtils
 import org.junit.runner.RunWith
 import org.scalatest._
@@ -29,9 +29,9 @@ import org.scalatest.junit.JUnitRunner
  */
 @RunWith(classOf[JUnitRunner])
 class ScalarExamplesSelfTestSuite extends Suites(
-    new ScalarExamplesSelfTest,
+    new ScalarExamplesLgplSelfTest,
     new ScalarExamplesMultiNodeSelfTest
 ) {
     System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
-        GridTestUtils.getNextMulticastGroup(classOf[ScalarExamplesSelfTest]))
+        GridTestUtils.getNextMulticastGroup(classOf[ScalarExamplesLgplSelfTest]))
 }

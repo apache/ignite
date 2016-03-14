@@ -20,7 +20,7 @@ package org.apache.ignite.scalar.tests.examples
 /**
  * Scalar examples multi-node self test.
  */
-class ScalarExamplesMultiNodeSelfTest extends ScalarExamplesSelfTest {
+class ScalarExamplesMultiNodeSelfTest extends ScalarExamplesLgplSelfTest {
     /** */
     protected override def beforeTest() {
         startRemoteNodes()

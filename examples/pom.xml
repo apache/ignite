@@ -142,6 +142,10 @@
                     </plugin>
                 </plugins>
             </build>
+
+            <activation>
+                <property><name>scala-lgpl</name></property>
+            </activation>
         </profile>
 
         <profile>
@@ -209,6 +213,36 @@
             <properties>
                 <lgpl.folder>src/main/java-lgpl</lgpl.folder>
                 <lgpl.test.folder>src/test/java-lgpl</lgpl.test.folder>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>scala-lgpl</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.ignite</groupId>
+                    <artifactId>ignite-scalar</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.scalatest</groupId>
+                    <artifactId>scalatest_2.11</artifactId>
+                    <version>2.2.4</version>
+                    <scope>test</scope>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.scala-lang</groupId>
+                            <artifactId>scala-library</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
+
+            <properties>
+                <lgpl.folder>src/main/scala-lgpl</lgpl.folder>
+                <lgpl.test.folder>src/test/scala-lgpl</lgpl.test.folder>
             </properties>
         </profile>
     </profiles>
