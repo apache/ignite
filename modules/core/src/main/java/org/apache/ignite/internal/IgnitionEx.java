@@ -1912,6 +1912,8 @@ public class IgnitionEx {
 
             cacheCfgs.add(marshallerSystemCache());
 
+            // TODO: Create dotNetMarhsallerSystemCache
+
             cacheCfgs.add(utilitySystemCache());
 
             if (IgniteComponentType.HADOOP.inClassPath())

@@ -1091,10 +1091,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
 
                 // TODO: Dynamic types
-                // 1) Need to write full type name string after header
-                // 2) Write UnknownTypeId
-                unknownType = true;
+                unknownType = true;  // TODO: This is true only when we have failed to put to MarshallerCache
+
+                // TODO: Write on disc for node restart case
                 desc = Marshaller.RegisterType(type);
+
+                // TODO: Reimplement MarshallerContextImpl in .NET (cannot be reused)
             }
 
             // Writing normal object.
