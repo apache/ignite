@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [return: MarshalAs(UnmanagedType.U1)]
         public static extern bool ProcessorRegisterClass(void* ctx, void* obj, int id, sbyte* name);
 
-        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorRegisterClass")]
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetClass")]
         public static extern sbyte* ProcessorGetClass(void* ctx, void* obj, int id, int* resLen);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutLong")]

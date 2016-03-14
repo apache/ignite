@@ -1411,12 +1411,15 @@ namespace ignite
             {
                 JNIEnv* env = Attach();
 
-                jstring res = static_cast<jstring>(env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_getClass, id));
-                
+                jstring res = static_cast<jstring>(env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_getClass, id));                
 
                 ExceptionCheck(env);
 
-                return StringToChars(env, res, resLen);
+                char* resChars = StringToChars(env, res, resLen);
+
+                env->DeleteLocalRef(res);
+
+                return resChars;
             }
 
             long long JniContext::TargetInStreamOutLong(jobject obj, int opType, long long memPtr, JniErrorInfo* err) {
