@@ -17,7 +17,7 @@
 
 package org.apache.ignite.scalar.examples.datagrid.store.hibernate
 
-import java.lang.{Long => JavaLong}
+import java.lang.{Long => JavaLong, Integer => JavaInteger}
 import java.util.UUID
 import javax.cache.configuration.{Factory, FactoryBuilder}
 
@@ -47,15 +47,15 @@ import org.apache.ignite.examples.util.DbH2ServerStartup
   * Remote nodes can be started with [[ExampleNodeStartup]] in another JVM which will
   * start node with `examples/config/example-ignite.xml` configuration.
   */
-object ScalarCacheHibernateStoreExample extends App {
+class ScalarCacheHibernateStoreExample extends App {
     /** Hibernate configuration resource path. */
-    private val HIBERNATE_CFG = "/org/apache/ignite/examples/scalar/datagrid/store/hibernate/hibernate.cfg.xml"
+    private val HIBERNATE_CFG = "/org/apache/ignite/scalar/examples/datagrid/store/hibernate/hibernate.cfg.xml"
 
     /** Configuration file name. */
     private val CONFIG = "examples/config/example-ignite.xml"
 
     /** Cache name. */
-    private val CACHE_NAME = ScalarCacheHibernateStoreExample.getClass.getSimpleName
+    private val CACHE_NAME = getClass.getSimpleName
 
     /** Heap size required to run this example. */
     val MIN_MEMORY = 1024 * 1024 * 1024
@@ -81,15 +81,7 @@ object ScalarCacheHibernateStoreExample extends App {
         cacheCfg.setCacheStoreFactory(FactoryBuilder.factoryOf(classOf[ScalarCacheHibernatePersonStore]))
 
         // Configure Hibernate session listener.
-        cacheCfg.setCacheStoreSessionListenerFactories(new Factory[CacheStoreSessionListener]() {
-            def create: CacheStoreSessionListener = {
-                val lsnr: CacheHibernateStoreSessionListener = new CacheHibernateStoreSessionListener
-
-                lsnr.setHibernateConfigurationPath(HIBERNATE_CFG)
-
-                lsnr
-            }
-        })
+        cacheCfg.setCacheStoreSessionListenerFactories(new ScalarCacheStoreSessionListenerFactory(HIBERNATE_CFG))
 
         cacheCfg.setReadThrough(true)
         cacheCfg.setWriteThrough(true)
@@ -117,7 +109,7 @@ object ScalarCacheHibernateStoreExample extends App {
     private def loadCache(cache: IgniteCache[JavaLong, Person]) {
         val start = System.currentTimeMillis
 
-        cache.loadCache(null, JavaLong.valueOf(ENTRY_COUNT))
+        cache.loadCache(null, JavaInteger.valueOf(ENTRY_COUNT))
 
         val end = System.currentTimeMillis
 
@@ -154,3 +146,15 @@ object ScalarCacheHibernateStoreExample extends App {
         println("Read value after commit: " + cache.get(id))
     }
 }
+
+private class ScalarCacheStoreSessionListenerFactory(hibernateCfg: String) extends Factory[CacheStoreSessionListener] {
+    def create: CacheStoreSessionListener = {
+        val lsnr: CacheHibernateStoreSessionListener = new CacheHibernateStoreSessionListener
+
+        lsnr.setHibernateConfigurationPath(hibernateCfg)
+
+        lsnr
+    }
+}
+
+object ScalarCacheHibernateStoreExampleStartup extends ScalarCacheHibernateStoreExample

@@ -17,9 +17,10 @@
 
 package org.apache.ignite.scalar.tests.examples
 
+import org.apache.ignite.examples.util.DbH2ServerStartup
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.scalar.examples.datagrid.hibernate.ScalarHibernateL2CacheExample
-import org.apache.ignite.scalar.examples.datagrid.store.hibernate.{ScalarCacheHibernateStoreExample}
+import org.apache.ignite.scalar.examples.datagrid.store.hibernate.ScalarCacheHibernateStoreExampleStartup
 import org.apache.ignite.scalar.examples.misc.schedule.ScalarComputeScheduleExample
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest
 import org.scalatest.junit.JUnitSuiteLike
@@ -45,6 +46,19 @@ class ScalarExamplesLgplSelfTest extends GridAbstractExamplesTest with JUnitSuit
         }
     }
 
+    private def runWithDataBase(f: () => Unit) {
+        val srv = DbH2ServerStartup.startServer()
+
+        if (srv != null) {
+            try {
+                f()
+            }
+            finally {
+                srv.stop()
+            }
+        }
+    }
+
     // Compute examples
 
     /** */
@@ -61,6 +75,8 @@ class ScalarExamplesLgplSelfTest extends GridAbstractExamplesTest with JUnitSuit
 
     /** */
     def testScalarCacheHibernateStoreExample() {
-        ScalarCacheHibernateStoreExample.main(EMPTY_ARGS)
+        runWithNode(CONFIG, () => {
+            runWithDataBase(() => ScalarCacheHibernateStoreExampleStartup.main(EMPTY_ARGS))
+        })
     }
 }
