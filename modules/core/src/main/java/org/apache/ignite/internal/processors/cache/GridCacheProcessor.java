@@ -629,7 +629,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (CU.isUtilityCache(cfg.getName()))
                 cacheType = CacheType.UTILITY;
-            else if (CU.isMarshallerCache(cfg.getName()))
+            else if (CU.isMarshallerCache(cfg.getName()) || CU.isMarshallerCacheDotNet(cfg.getName()))
                 cacheType = CacheType.MARSHALLER;
             else if (internalCaches.contains(maskNull(cfg.getName())))
                 cacheType = CacheType.INTERNAL;
