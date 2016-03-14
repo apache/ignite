@@ -399,6 +399,18 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         stream.synchronize();
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean registerClass(int id, String name) {
+        // TODO
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getClass(int id) {
+        // TODO
+        return null;
+    }
+
     /**
      * Internal store initialization routine.
      *

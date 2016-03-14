@@ -317,6 +317,8 @@ namespace ignite
                 jmethodID m_PlatformProcessor_extensions;
                 jmethodID m_PlatformProcessor_atomicLong;
                 jmethodID m_PlatformProcessor_getIgniteConfiguration;
+                jmethodID m_PlatformProcessor_registerClass;
+                jmethodID m_PlatformProcessor_getClass;
                 jmethodID m_PlatformProcessor_atomicSequence;
                 jmethodID m_PlatformProcessor_atomicReference;
 
@@ -533,6 +535,8 @@ namespace ignite
                 jobject ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
 				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
+				bool ProcessorRegisterClass(jobject obj, int id, char* name);
+				char* ProcessorGetClass(jobject obj, int id);
                 
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);

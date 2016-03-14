@@ -63,23 +63,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 mem.WriteBool(clientMode);
 
-                sbyte* cfgPath0 = IgniteUtils.StringToUtf8Unmanaged(cfgPath);
-                sbyte* gridName0 = IgniteUtils.StringToUtf8Unmanaged(gridName);
+                // OnStart receives the same InteropProcessor as here (just as another GlobalRef) and stores it.
+                // Release current reference immediately.
+                void* res = JNI.IgnitionStart(ctx.NativeContext, cfgPath, gridName, InteropFactoryId,
+                    mem.SynchronizeOutput());
 
-                try
-                {
-                    // OnStart receives the same InteropProcessor as here (just as another GlobalRef) and stores it.
-                    // Release current reference immediately.
-                    void* res = JNI.IgnitionStart(ctx.NativeContext, cfgPath0, gridName0, InteropFactoryId,
-                        mem.SynchronizeOutput());
-
-                    JNI.Release(res);
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(new IntPtr(cfgPath0));
-                    Marshal.FreeHGlobal(new IntPtr(gridName0));
-                }
+                JNI.Release(res);
             }
         }
 

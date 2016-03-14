@@ -206,6 +206,8 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE = JniMethod("atomicSequence", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE = JniMethod("atomicReference", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);            
             JniMethod M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION = JniMethod("getIgniteConfiguration", "(J)V", false);
+            JniMethod M_PLATFORM_PROCESSOR_REGISTER_CLASS = JniMethod("registerClass", "(ILjava/lang/String;)Z", false);
+            JniMethod M_PLATFORM_PROCESSOR_GET_CLASS = JniMethod("getClass", "(I)Ljava/lang/String;", false);
 
             const char* C_PLATFORM_TARGET = "org/apache/ignite/internal/processors/platform/PlatformTarget";
             JniMethod M_PLATFORM_TARGET_IN_STREAM_OUT_LONG = JniMethod("inStreamOutLong", "(IJ)J", false);
@@ -675,6 +677,8 @@ namespace ignite
                 m_PlatformProcessor_atomicSequence = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE);
                 m_PlatformProcessor_atomicReference = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE);
 				m_PlatformProcessor_getIgniteConfiguration = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION);
+				m_PlatformProcessor_registerClass = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_REGISTER_CLASS);
+				m_PlatformProcessor_getClass = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_CLASS);
 
                 c_PlatformTarget = FindClass(env, C_PLATFORM_TARGET);
                 m_PlatformTarget_inStreamOutLong = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_STREAM_OUT_LONG);
@@ -1386,6 +1390,34 @@ namespace ignite
                 env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformProcessor_getIgniteConfiguration, memPtr);
 
                 ExceptionCheck(env);
+            }
+
+            bool JniContext::ProcessorRegisterClass(jobject obj, int id, char* name)
+            {
+                JNIEnv* env = Attach();
+
+                jstring name0 = env->NewStringUTF(name);
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformProcessor_registerClass, id, name0);
+
+                env->DeleteLocalRef(name0);
+
+                ExceptionCheck(env);
+
+                return res != 0;
+            }
+
+            char* JniContext::ProcessorGetClass(jobject obj, int id)
+            {
+                JNIEnv* env = Attach();
+
+                jstring res = static_cast<jstring>(env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_getClass, id));
+                
+
+                ExceptionCheck(env);
+
+                // TODO
+                return NULL;
             }
 
             long long JniContext::TargetInStreamOutLong(jobject obj, int opType, long long memPtr, JniErrorInfo* err) {
