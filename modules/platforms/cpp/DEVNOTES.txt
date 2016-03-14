@@ -1,5 +1,9 @@
 Apache Ignite C++ Build Instructions
 ====================================
+Here you can find instruction on how to build Apache Ignite C++ core library and
+stand-alone node binary. To build examples you need to build and install core Apache
+Ignite library then refer to $IGNITE_HOME/platforms/cpp/example/README.txt for 
+futher instructions.
 
 Building on Linux With Autotools
 ----------------------------------
@@ -11,7 +15,7 @@ Common Requirements:
  * JAVA_HOME environment variable must be set pointing to Java installation directory.
  * IGNITE_HOME environment variable must be set to Ignite installation directory.
 
-Building the library:
+Building the Apache Ignite C++ components:
 
  * Build Apache Ignite C++ helper "common" library:
      * Navigate to the directory $IGNITE_HOME/platforms/cpp/common
@@ -24,8 +28,40 @@ Building the library:
          * ./configure
          * make
          * make install
+ * Build Apache Ignite C++ "binary" library:
+     * Navigate to the directory $IGNITE_HOME/platforms/cpp/binary
+     * Execute the following commands one by one:
+         * libtoolize
+         * aclocal
+         * autoheader
+         * automake --add-missing
+         * autoreconf
+         * ./configure
+         * make
+         * make install
  * Build Apache Ignite C++ library:
      * Navigate to the directory $IGNITE_HOME/platforms/cpp/core
+     * Execute the following commands one by one:
+         * libtoolize
+         * aclocal
+         * autoheader
+         * automake --add-missing
+         * autoreconf
+         * ./configure
+         * make
+         * make install
+ * Build Apache Ignite C++ stand-alone node binary:
+     * Navigate to the directory $IGNITE_HOME/platforms/cpp/ignite
+     * Execute the following commands one by one:
+         * libtoolize
+         * aclocal
+         * autoheader
+         * automake --add-missing
+         * autoreconf
+         * ./configure
+         * make
+ * Build Apache Ignite ODBC driver:
+     * Navigate to the directory $IGNITE_HOME/platforms/cpp/odbc
      * Execute the following commands one by one:
          * libtoolize
          * aclocal
@@ -52,8 +88,8 @@ Common Requirements:
 
 Building binaries:
 
- * Open and build %IGNITE_HOME%\platforms\cpp\project\vs\ignite.sln (or ignite_86.sln if you are running
-   32-bit platform).
+ * Open and build %IGNITE_HOME%\platforms\cpp\project\vs\ignite.sln (or ignite_86.sln if
+   you are running 32-bit platform).
 
 Building in later versions of Visual Studio:
  * Open project\vs\ignite.sln or project\vs\ignite_86.sln in Visual Studio
