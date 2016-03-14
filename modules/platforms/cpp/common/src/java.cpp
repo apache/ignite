@@ -1407,7 +1407,7 @@ namespace ignite
                 return res != 0;
             }
 
-            char* JniContext::ProcessorGetClass(jobject obj, int id)
+            char* JniContext::ProcessorGetClass(jobject obj, int id, int* resLen)
             {
                 JNIEnv* env = Attach();
 
@@ -1416,8 +1416,7 @@ namespace ignite
 
                 ExceptionCheck(env);
 
-                // TODO
-                return NULL;
+                return StringToChars(env, res, resLen);
             }
 
             long long JniContext::TargetInStreamOutLong(jobject obj, int opType, long long memPtr, JniErrorInfo* err) {

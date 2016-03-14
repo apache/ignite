@@ -536,7 +536,7 @@ namespace ignite
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
 				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
 				bool ProcessorRegisterClass(jobject obj, int id, char* name);
-				char* ProcessorGetClass(jobject obj, int id);
+				char* ProcessorGetClass(jobject obj, int id, int* resLen);
                 
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
