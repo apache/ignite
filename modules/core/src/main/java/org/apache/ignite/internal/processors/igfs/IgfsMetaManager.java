@@ -3500,20 +3500,15 @@ public class IgfsMetaManager extends IgfsManager {
 
                         final IgniteUuid parentId = b.idList.get(b.idList.size() - 2);
 
-                        boolean require2 = false;
-
                         if (overwrite) {
                             // Lock also the TRASH directory because in case of overwrite we
                             // may need to delete the old file:
                             b.idSet.add(trashId);
-                            b.idSet.add(TRASH_ID);
                             b.idSet.add(overwriteId);
 
                             if (b.existingIdCnt == b.components.size() + 1) {
                                 // Full path exists AND overwrite => we must lock the parent also:
                                 b.idSet.add(parentId);
-
-                                require2 = true;
                             }
                         }
 
@@ -3607,9 +3602,6 @@ public class IgfsMetaManager extends IgfsManager {
 
                                             id2InfoPrj.invoke(parentId, new ListingRemove(name, deletedEntry.fileId()));
 
-                                        // Add listing entry into the destination parent listing.
-                                        id2InfoPrj.invoke(trashId,
-                                            new ListingAdd(lowermostExistingInfo.id().toString(), deletedEntry));
                                             // Add listing entry into the destination parent listing.
                                             id2InfoPrj.invoke(trashId, new ListingAdd(
                                                 lowermostExistingInfo.id().toString(), deletedEntry));
@@ -3770,7 +3762,6 @@ public class IgfsMetaManager extends IgfsManager {
             }
 
             idSet.add(lowermostExistingId);
-            assert idSet.contains(IgfsUtils.ROOT_ID);
 
             this.lowermostExistingId = lowermostExistingId;
 
