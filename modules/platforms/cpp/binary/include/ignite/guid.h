@@ -138,6 +138,35 @@ namespace ignite
 
         return os;
     }
+
+    /**
+     * Input operator.
+     *
+     * @param is Input stream.
+     * @param guid Guid to input.
+     * @return Reference to the first param.
+     */
+    template<typename C>
+    std::basic_istream<C>& operator>>(std::basic_istream<C>& is, Guid& guid)
+    {
+        uint64_t parts[5];
+
+        C delim;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            is >> std::hex >> parts[i] >> delim;
+
+            if (delim != '-')
+                return is;
+        }
+
+        is >> std::hex >> parts[5];
+
+        guid = Guid((parts[0] << 32) | (parts[1] << 16) | parts[2], (parts[3] << 48) | parts[5]);
+
+        return is;
+    }
 }
 
 #endif

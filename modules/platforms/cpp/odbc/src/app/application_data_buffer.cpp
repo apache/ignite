@@ -898,6 +898,50 @@ namespace ignite
                 return GetNum<double>();
             }
 
+            Guid ApplicationDataBuffer::GetGuid() const
+            {
+                using namespace type_traits;
+
+                Guid res;
+
+                switch (type)
+                {
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    {
+                        std::string str(reinterpret_cast<const char*>(GetData()), static_cast<size_t>(buflen));
+
+                        std::stringstream converter(str);
+
+                        converter >> res;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_GUID:
+                    {
+                        const SQLGUID* guid = reinterpret_cast<const SQLGUID*>(GetData());
+
+                        uint64_t msb = static_cast<uint64_t>(guid->Data1) << 32 |
+                                       static_cast<uint64_t>(guid->Data2) << 16 |
+                                       static_cast<uint64_t>(guid->Data3);
+
+                        uint64_t lsb = 0;
+
+                        for (size_t i = 0; i < sizeof(guid->Data4); ++i)
+                            lsb = guid->Data4[i] << (sizeof(guid->Data4) - i - 1) * 8;
+
+                        res = Guid(msb, lsb);
+
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                return res;
+            }
+
             const void* ApplicationDataBuffer::GetData() const
             {
                 return ApplyOffset(buffer);

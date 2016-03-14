@@ -147,15 +147,16 @@ namespace ignite
                         break;
                     }
 
-                    case SQL_DECIMAL:
+                    case SQL_GUID:
                     {
-                        //TODO: Add GUID type support.
+                        writer.WriteGuid(buffer.GetGuid());
+
                         break;
                     }
 
-                    case SQL_GUID:
+                    case SQL_DECIMAL:
                     {
-                        //TODO: Add GUID type support.
+                        //TODO: Add Decimal type support.
                         break;
                     }
 
