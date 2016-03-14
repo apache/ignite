@@ -1924,7 +1924,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             }
                             else {
                                 writeObj = oldVal;
-                                writeObj0 = CU.value(oldVal, cctx, false);
+                                writeObj0 = cctx.unwrapBinaryIfNeeded(oldVal, keepBinary, false);
                             }
 
                             key0 = entry.key();
@@ -1936,18 +1936,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             invokeRes = new IgniteBiTuple(null, e);
 
                             writeObj = oldVal;
-                            writeObj0 = CU.value(oldVal, cctx, false);
+                            writeObj0 = cctx.unwrapBinaryIfNeeded(oldVal, keepBinary, false);
                         }
                     }
                     else
-                        writeObj0 = CU.value((CacheObject)writeObj, cctx, false);
+                        writeObj0 = cctx.unwrapBinaryIfNeeded(writeObj, keepBinary, false);
 
                     GridTuple3<Long, Long, Boolean> expiration = ttlAndExpireTime(expiryPlc,
                         explicitTtl,
                         explicitExpireTime);
 
                     // Prepare old and new entries for conflict resolution.
-                    GridCacheVersionedEntryEx oldEntry = versionedEntry();
+                    GridCacheVersionedEntryEx oldEntry = versionedEntry(keepBinary);
                     GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry<>(
                         oldEntry.key(),
                         writeObj0,
@@ -3353,14 +3353,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized GridCacheVersionedEntryEx versionedEntry()
+    @Override public synchronized GridCacheVersionedEntryEx versionedEntry(final boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean isNew = isStartVersion();
 
         CacheObject val = isNew ? unswap(true) : rawGetOrUnmarshalUnlocked(false);
 
-        return new GridCachePlainVersionedEntry<>(keyValue(true),
-            CU.value(val, cctx, true),
+        return new GridCachePlainVersionedEntry<>(cctx.unwrapBinaryIfNeeded(key, keepBinary, true),
+            cctx.unwrapBinaryIfNeeded(val, keepBinary, true),
             ttlExtras(),
             expireTimeExtras(),
             ver.conflictVersion(),
