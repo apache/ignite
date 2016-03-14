@@ -98,28 +98,28 @@ public class IgfsUtils {
     }
 
     /**
+     * Check whether provided ID is either root ID or trash ID.
+     *
+     * @param id ID.
+     * @return {@code True} if this is root ID or trash ID.
+     */
+    public static boolean isRootOrTrashId(@Nullable IgniteUuid id) {
+        return id != null && (ROOT_ID.equals(id) || isTrashId(id));
+    }
+
+    /**
      * Check whether provided ID is trash ID.
      *
      * @param id ID.
      * @return {@code True} if this is trash ID.
      */
-    public static boolean isTrashId(IgniteUuid id) {
+    private static boolean isTrashId(IgniteUuid id) {
         assert id != null;
 
         UUID gid = id.globalId();
 
         return id.localId() == 0 && gid.getMostSignificantBits() == 0 &&
             gid.getLeastSignificantBits() > 0 && gid.getLeastSignificantBits() <= TRASH_CONCURRENCY;
-    }
-
-    /**
-     * Check whether provided ID is either root ID or trash ID.
-     *
-     * @param id ID.
-     * @return {@code True} if this is root ID or trash ID.
-     */
-    public static boolean isRootOrTrashId(IgniteUuid id) {
-        return ROOT_ID.equals(id) || isTrashId(id);
     }
 
     /**
