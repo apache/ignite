@@ -17,15 +17,6 @@
   limitations under the License.
 -->
 
-<!--
-    Ignite Spring configuration file to startup ignite cache.
-
-    When starting a standalone node, you need to execute the following command:
-    {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/example-cache.xml
-
-    When starting Ignite from Java IDE, pass path to this file to Ignition:
-    Ignition.start("examples/config/example-cache.xml");
--->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
@@ -34,6 +25,9 @@
     <import resource="example-cache-base.xml"/>
 
     <bean parent="ignite.cfg">
+        <property name="clientMode" value="true"/>
+
+        <property name="gridName" value="client"/>
     </bean>
 
 </beans>

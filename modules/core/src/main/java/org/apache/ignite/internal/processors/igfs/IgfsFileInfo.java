@@ -23,7 +23,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -40,12 +39,6 @@ import org.jetbrains.annotations.Nullable;
 public final class IgfsFileInfo implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** ID for the root directory. */
-    public static final IgniteUuid ROOT_ID = new IgniteUuid(new UUID(0, 0), 0);
-
-    /** ID of the trash directory. */
-    public static final IgniteUuid TRASH_ID = new IgniteUuid(new UUID(0, 1), 0);
 
     /** Special access time value, indicating that the modification time value should be taken. */
     private static final long ACCESS_TIME_TAKE_MODIFICATION_TIME = -1L;
@@ -94,7 +87,7 @@ public final class IgfsFileInfo implements Externalizable {
      * {@link Externalizable} support.
      */
     public IgfsFileInfo() {
-        this(ROOT_ID);
+        this(IgfsUtils.ROOT_ID);
     }
 
     /**
