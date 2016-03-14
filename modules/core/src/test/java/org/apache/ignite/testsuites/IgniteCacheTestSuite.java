@@ -107,6 +107,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheTxNearEnabledInvok
 import org.apache.ignite.internal.processors.cache.IgniteClientAffinityAssignmentSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePutAllLargeBatchSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePutAllUpdateNonPreloadedPartitionSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteTxConfigCacheSelfTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheAtomicExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheContinuousExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheIsolatedExecutionContextTest;
@@ -293,6 +294,7 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(CachePutEventListenerErrorSelfTest.class);
 
+        suite.addTestSuite(IgniteTxConfigCacheSelfTest.class);
         return suite;
     }
 }

@@ -3431,7 +3431,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        TransactionConfiguration cfg = ctx.gridConfig().getTransactionConfiguration();
+        TransactionConfiguration cfg = txCfg();
 
         return txStart(
             concurrency,
@@ -4220,7 +4220,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
 
         if (tx == null || tx.implicit()) {
-            TransactionConfiguration tCfg = ctx.gridConfig().getTransactionConfiguration();
+            TransactionConfiguration tCfg = txCfg();
 
             CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -4317,6 +4317,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
+        final TransactionConfiguration txCfg = txCfg();
+
         if (tx == null || tx.implicit()) {
             boolean skipStore = ctx.skipStore(); // Save value of thread-local flag.
 
@@ -4329,7 +4331,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     ctx.systemTx() ? ctx : null,
                     OPTIMISTIC,
                     READ_COMMITTED,
-                    ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
+                    txCfg.getDefaultTxTimeout(),
                     !skipStore,
                     0);
 
@@ -4345,6 +4347,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
         else
             return asyncOp(tx, op, opCtx);
+    }
+
+    /**
+     * @return default TX configuration if system cache used or current grid TX config otherwise.
+     */
+    private TransactionConfiguration txCfg() {
+        return ctx.systemTx()
+                ? new TransactionConfiguration()
+                : ctx.kernalContext().config().getTransactionConfiguration();
     }
 
     /**
@@ -5001,7 +5012,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.systemTx() ? ctx : null,
                 OPTIMISTIC,
                 READ_COMMITTED,
-                ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
+                txCfg().getDefaultTxTimeout(),
                 opCtx == null || !opCtx.skipStore(),
                 0);
 

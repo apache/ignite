@@ -47,7 +47,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
     /** {@inheritDoc} */
     @Override public Transaction txStart() throws IllegalStateException {
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
+        TransactionConfiguration cfg = txCfg(null);
 
         return txStart0(
             cfg.getDefaultTxConcurrency(),
@@ -63,7 +63,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
+        TransactionConfiguration cfg = txCfg(null);
 
         return txStart0(
             concurrency,
@@ -124,13 +124,20 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
         checkTransactional(ctx);
 
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
+        TransactionConfiguration cfg = txCfg(ctx);
 
         return txStart0(concurrency,
             isolation,
             cfg.getDefaultTxTimeout(),
             0,
             ctx.systemTx() ? ctx : null);
+    }
+
+    /**
+     * @return default TX configuration if system cache used or current grid TX config otherwise.
+     */
+    private TransactionConfiguration txCfg(final @Nullable GridCacheContext ctx) {
+        return ctx != null && ctx.systemTx() ? new TransactionConfiguration() : cctx.txConfig();
     }
 
     /**
