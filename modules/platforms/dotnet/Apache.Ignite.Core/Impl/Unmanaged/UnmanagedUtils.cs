@@ -320,6 +320,32 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.ProcessorGetIgniteConfiguration(target.Context, target.Target, memPtr);
         }
 
+        internal static bool ProcessorRegisterClass(IUnmanagedTarget target, int id, string name)
+        {
+            var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+            try
+            {
+                return JNI.ProcessorRegisterClass(target.Context, target.Target, id, name0);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static string ProcessorGetClass(IUnmanagedTarget target, int id)
+        {
+            int resLen;
+
+            sbyte* chars = JNI.ProcessorGetClass(target.Context, target.Target, id, &resLen);
+
+            var res = IgniteUtils.Utf8UnmanagedToString(chars, resLen);
+
+            Marshal.FreeHGlobal(new IntPtr(chars));
+
+            return res;
+        }
+
         #endregion
 
         #region NATIVE METHODS: TARGET
