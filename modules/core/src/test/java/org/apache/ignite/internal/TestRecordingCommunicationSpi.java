@@ -24,12 +24,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
@@ -54,6 +56,10 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
 
     /** */
     private IgnitePredicate<GridIoMessage> blockP;
+
+    /** */
+    @LoggerResource
+    private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
@@ -82,6 +88,8 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                 }
 
                 if (block) {
+                    log.info("Block message: " + node.id() + ", msg=" + msg0);
+
                     blockedMsgs.add(new T2<>(node, ioMsg));
 
                     return;
@@ -148,8 +156,13 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         synchronized (this) {
             blockCls.clear();
 
-            for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs)
+            blockP = null;
+
+            for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
+                log.info("Send blocked message: " + msg.get1().id() + ", msg=" + msg.get2() +']');
+
                 super.sendMessage(msg.get1(), msg.get2());
+            }
 
             blockedMsgs.clear();
         }
