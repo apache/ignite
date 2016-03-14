@@ -115,6 +115,18 @@ BOOST_AUTO_TEST_CASE(TestPutGuidToString)
     BOOST_CHECK(reslen == strlen("1da1ef8f-39ff-4d62-8b72-e8e9f3371801"));
 }
 
+BOOST_AUTO_TEST_CASE(TestGetGuidFromString)
+{
+    char buffer[] = "1da1ef8f-39ff-4d62-8b72-e8e9f3371801";
+    SqlLen reslen;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, buffer, sizeof(buffer) - 1, &reslen, 0);
+
+    ignite::Guid guid = appBuf.GetGuid();
+
+    BOOST_CHECK_EQUAL(guid, Guid(0x1da1ef8f39ff4d62ULL, 0x8b72e8e9f3371801ULL));
+}
+
 BOOST_AUTO_TEST_CASE(TestPutBinaryToString)
 {
     char buffer[1024];

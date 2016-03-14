@@ -105,7 +105,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator== (Guid& val1, Guid& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator== (const Guid& val1, const Guid& val2);
     private:
         /** Most significant bits. */
         int64_t most;  
@@ -157,13 +157,13 @@ namespace ignite
         {
             is >> std::hex >> parts[i] >> delim;
 
-            if (delim != '-')
+            if (delim != static_cast<C>('-'))
                 return is;
         }
 
-        is >> std::hex >> parts[5];
+        is >> std::hex >> parts[4];
 
-        guid = Guid((parts[0] << 32) | (parts[1] << 16) | parts[2], (parts[3] << 48) | parts[5]);
+        guid = Guid((parts[0] << 32) | (parts[1] << 16) | parts[2], (parts[3] << 48) | parts[4]);
 
         return is;
     }
