@@ -25,17 +25,41 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class BinaryDynamicRegistrationTest
     {
         [Test]
-        public void Test()
+        public void TestSingleGrid()
         {
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                var cache = ignite.CreateCache<int, Foo>("cache");
-
-                cache[1] = new Foo {Int = 1, Str = "1"};
-
-                Assert.AreEqual(1, cache[1].Int);
-                Assert.AreEqual("1", cache[1].Str);
+                Test(ignite, ignite);
             }
+        }
+
+        [Test]
+        public void TestTwoGrids()
+        {
+            using (var ignite1 = Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                GridName = "grid2"
+            }))
+            {
+                Test(ignite1, ignite2);
+            }
+        }
+
+        private static void Test(IIgnite ignite1, IIgnite ignite2)
+        {
+            const string cacheName = "cache";
+
+            // Put on one grid
+            var cache1 = ignite1.CreateCache<int, Foo>(cacheName);
+            cache1[1] = new Foo {Int = 1, Str = "1"};
+
+            // Get on another grid
+            var cache2 = ignite2.GetCache<int, Foo>(cacheName);
+            var foo = cache2[1];
+
+            Assert.AreEqual(1, foo.Int);
+            Assert.AreEqual("1", foo.Str);
         }
 
         private class Foo
