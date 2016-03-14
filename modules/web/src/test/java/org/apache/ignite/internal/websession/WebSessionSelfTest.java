@@ -37,6 +37,7 @@ import javax.servlet.http.HttpSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -80,6 +81,77 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      */
     public void testSingleRequestMetaInf() throws Exception {
         testSingleRequest("ignite-webapp-config.xml");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientReconnectRequest() throws Exception {
+        testClientReconnectRequest("/modules/core/src/test/config/websession/example-cache.xml",
+            "/modules/core/src/test/config/websession/example-cache2.xml",
+            "/modules/core/src/test/config/websession/example-cache-client.xml");
+    }
+
+    /**
+     * Tests single request to a server. Checks the presence of session in cache.
+     *
+     * @param srvCfg Server configuration.
+     * @param clientCfg Client configuration.
+     * @throws Exception If failed.
+     */
+    private void testClientReconnectRequest(String srvCfg, String srvCfg2, String clientCfg) throws Exception {
+        Server srv = null;
+
+        Ignite ignite = Ignition.start(srvCfg);
+
+        try {
+            srv = startServer(TEST_JETTY_PORT, clientCfg, "client", new SessionCreateServlet());
+
+            URL url = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/test");
+
+            URLConnection conn = url.openConnection();
+
+            conn.connect();
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String sesId = rdr.readLine();
+
+                assertNotNull(sesId);
+            }
+
+            stopGrid(ignite.name());
+
+            ignite = Ignition.start(srvCfg);
+
+            conn = url.openConnection();
+
+            conn.connect();
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String sesId = rdr.readLine();
+
+                assertNotNull(sesId);
+            }
+
+            Ignite ignite2 = Ignition.start(srvCfg2);
+
+            stopGrid(ignite.name());
+
+            conn = url.openConnection();
+
+            conn.connect();
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String sesId = rdr.readLine();
+
+                assertNotNull(sesId);
+            }
+        }
+        finally {
+            stopServer(srv);
+
+            stopAllGrids();
+        }
     }
 
     /**
