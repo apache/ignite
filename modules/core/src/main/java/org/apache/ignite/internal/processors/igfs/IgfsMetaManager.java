@@ -876,8 +876,9 @@ public class IgfsMetaManager extends IgfsManager {
                     final Map<IgniteUuid, IgfsFileInfo> allInfos = lockIds(allIds);
 
                     // 4. Verify integrity of source directory.
-                    if (!verifyExists(allInfos, victimId)
-                            || !verifyParentChild(allInfos, victimParentId, srcPath.name(), victimId)) {
+                    if (!verifyExists(allInfos, victimParentId)
+                        || !verifyExists(allInfos, victimId)
+                        || !verifyParentChild(allInfos, victimParentId, srcPath.name(), victimId)) {
                         throw new IgfsPathNotFoundException("Failed to perform move because source directory " +
                             "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
                     }
