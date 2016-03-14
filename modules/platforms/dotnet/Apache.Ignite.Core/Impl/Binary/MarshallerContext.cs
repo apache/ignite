@@ -18,22 +18,49 @@
 namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
+    using System.Diagnostics;
+    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Marshaller context, manages dynamic type registration in the marshaller cache.
     /// </summary>
     internal class MarshallerContext
     {
-        public bool RegisterType(int id, Type type)
+        /** */
+        private readonly Ignite _ignite;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MarshallerContext"/> class.
+        /// </summary>
+        /// <param name="ignite">The ignite.</param>
+        public MarshallerContext(Ignite ignite)
         {
-            // TODO: delegate to Java
-            return false;
+            Debug.Assert(_ignite != null);
+
+            _ignite = ignite;
         }
 
+        /// <summary>
+        /// Registers the type.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <param name="type">The type.</param>
+        /// <returns>True if registration succeeded; otherwise, false.</returns>
+        public bool RegisterType(int id, Type type)
+        {
+            return UnmanagedUtils.ProcessorRegisterClass(_ignite.InteropProcessor, id, type.AssemblyQualifiedName);
+        }
+
+        /// <summary>
+        /// Gets the type by id.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <returns>Type or null.</returns>
         public Type GetType(int id)
         {
-            // TODO: delegate to Java
-            return null;
+            var name = UnmanagedUtils.ProcessorGetClass(_ignite.InteropProcessor, id);
+
+            return Type.GetType(name, true);
         }
     }
 }
