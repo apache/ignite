@@ -58,6 +58,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** */
         private readonly BinaryReflectiveSerializer _defaultSerializer = new BinaryReflectiveSerializer();
 
+        /** */
+        private Ignite _ignite;
+
+        /** */
+        private MarshallerContext _ctx;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -99,7 +105,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets or sets the backing grid.
         /// </summary>
-        public Ignite Ignite { get; set; }
+        public Ignite Ignite
+        {
+            get { return _ignite; }
+            set
+            {
+                Debug.Assert(value != null);
+
+                _ignite = value;
+                _ctx = new MarshallerContext(_ignite);
+            }
+        }
 
         /// <summary>
         /// Gets the compact footer flag.
@@ -407,7 +423,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return res;
 
             // TODO: Concurrency! Need a thread-safe dictionary
-            return AddUserType(new BinaryTypeConfiguration(type), new TypeResolver());
+            res = AddUserType(new BinaryTypeConfiguration(type), new TypeResolver());
+
+            // TODO: Check success
+            _ctx.RegisterType(res.TypeId, type);
+
+            return res;
         }
 
         /// <summary>
