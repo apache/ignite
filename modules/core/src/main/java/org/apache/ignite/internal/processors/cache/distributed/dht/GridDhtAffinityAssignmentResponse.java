@@ -52,6 +52,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     private byte[] affAssignmentBytes;
 
     /** */
+    @GridDirectTransient
     private List<List<ClusterNode>> idealAffAssignment;
 
     /** Affinity assignment bytes. */
@@ -102,6 +103,13 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
         return idealAffAssignment;
     }
 
+    /**
+     * @param idealAffAssignment Ideal affinity assignment.
+     */
+    public void idealAffinityAssignment(List<List<ClusterNode>> idealAffAssignment) {
+        this.idealAffAssignment = idealAffAssignment;
+    }
+
     /** {@inheritDoc} */
     @Override public byte directType() {
         return 29;
@@ -109,7 +117,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /**
@@ -198,6 +206,12 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
                 writer.incrementState();
 
             case 4:
+                if (!writer.writeByteArray("idealAffAssignmentBytes", idealAffAssignmentBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -228,6 +242,14 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
                 reader.incrementState();
 
             case 4:
+                idealAffAssignmentBytes = reader.readByteArray("idealAffAssignmentBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())

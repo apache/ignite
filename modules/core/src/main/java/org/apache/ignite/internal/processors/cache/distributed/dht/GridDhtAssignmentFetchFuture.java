@@ -81,7 +81,7 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
         LinkedList<ClusterNode> tmp = new LinkedList<>();
 
         for (ClusterNode node : availableNodes) {
-            if (!node.isLocal())
+            if (!node.isLocal() && ctx.discovery().alive(node))
                 tmp.add(node);
         }
 

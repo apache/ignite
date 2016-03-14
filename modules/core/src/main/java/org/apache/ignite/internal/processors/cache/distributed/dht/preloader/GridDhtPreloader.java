@@ -35,6 +35,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
 import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -636,11 +637,20 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
                         ", node=" + node + ']');
 
-                List<List<ClusterNode>> assignment = cctx.affinity().assignments(topVer);
+                GridAffinityAssignment assignment = cctx.affinity().assignment(topVer);
+
+                GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
+                    topVer,
+                    assignment.assignment());
+
+                if (cctx.affinity().affinityCache().centralizedAffinityFunction()) {
+                    assert assignment.idealAssignment() != null;
+
+                    res.idealAffinityAssignment(assignment.idealAssignment());
+                }
 
                 try {
-                    cctx.io().send(node,
-                        new GridDhtAffinityAssignmentResponse(cctx.cacheId(), topVer, assignment), AFFINITY_POOL);
+                    cctx.io().send(node, res, AFFINITY_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send affinity assignment response to remote node [node=" + node + ']', e);

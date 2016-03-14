@@ -131,8 +131,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @return {@code True} if minor topology version should be increased.
      */
     public boolean onCustomEvent(CacheAffinityChangeMessage msg) {
-        boolean exchangeNeeded =
-            msg.exchangeId() == null && (lastAffVer == null || lastAffVer.equals(msg.topologyVersion()));
+        if (msg.exchangeId() != null) {
+            log.info("Need process affinity change message [lastAffVer=" + lastAffVer +
+                ", msgExchId=" + msg.exchangeId() +
+                ", msgVer=" + msg.topologyVersion() +']');
+
+            return false;
+        }
+
+        boolean exchangeNeeded = lastAffVer == null || lastAffVer.equals(msg.topologyVersion());
 
         msg.exchangeNeeded(exchangeNeeded);
 
@@ -773,6 +780,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param fut Exchange future.
+     * @param affCache Affinity.
      * @param fetchFut Affinity fetch future.
      * @throws IgniteCheckedException If failed.
      */
@@ -865,6 +873,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         return true;
     }
 
+    /**
+     * @param fut Exchange future.
+     * @throws IgniteCheckedException If failed.
+     */
     private void initCoordinatorCaches(final GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         forAllRegisteredCaches(fut.topologyVersion(), new IgniteInClosureX<DynamicCacheDescriptor>() {
             @Override public void applyx(DynamicCacheDescriptor desc) throws IgniteCheckedException {
@@ -890,14 +902,22 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     GridAffinityAssignmentCache aff = cache.affinity();
 
-                    // TODO: fetch current
+                    List<GridDhtPartitionsExchangeFuture> exchFuts = cctx.exchange().exchangeFutures();
+
+                    assert exchFuts.size() > 1;
+                    assert exchFuts.get(0) == fut;
+
+                    GridDhtPartitionsExchangeFuture prev = exchFuts.get(1);
+
+                    assert prev.topologyVersion().compareTo(fut.topologyVersion()) < 0;
+
                     GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
                         aff.cacheName(),
-                        fut.topologyVersion());
+                        prev.topologyVersion());
 
                     fetchFut.init();
 
-                    fetchAffinity(fut, aff, fetchFut);
+                    fetchAffinity(prev, aff, fetchFut);
 
                     aff.calculate(fut.topologyVersion(), fut.discoveryEvent());
                 }
@@ -1154,6 +1174,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             assert affCalcVer.equals(topVer);
 
             this.rebalancingInfo = !rebalancingInfo.empty() ? rebalancingInfo : null;
+
+            if (LOG_AFF_CHANGE) {
+                RebalancingInfo info = this.rebalancingInfo;
+
+                log.info("Computed new affinity after node left [topVer=" + topVer +
+                    ", waitCaches=" + (info != null ? info.waitCaches.keySet() : null)+ ']');
+            }
         }
 
         return assignment;

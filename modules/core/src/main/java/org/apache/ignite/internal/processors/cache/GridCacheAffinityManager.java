@@ -499,7 +499,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /**
      * @return Affinity cache.
      */
-    GridAffinityAssignmentCache affinityCache() {
+    public GridAffinityAssignmentCache affinityCache() {
         return aff;
     }
 }

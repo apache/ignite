@@ -101,6 +101,13 @@ public class GridAffinityAssignment implements Serializable {
     }
 
     /**
+     * @return Affinity assignment computed by affinity function.
+     */
+    public List<List<ClusterNode>> idealAssignment() {
+        return idealAssignment;
+    }
+
+    /**
      * @return Affinity assignment.
      */
     public List<List<ClusterNode>> assignment() {

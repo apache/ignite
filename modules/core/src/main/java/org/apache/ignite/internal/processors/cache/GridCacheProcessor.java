@@ -3142,7 +3142,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return Cache descriptors.
      */
-    Collection<DynamicCacheDescriptor> cacheDescriptors() {
+    public Collection<DynamicCacheDescriptor> cacheDescriptors() {
         return registeredCaches.values();
     }
 
@@ -3520,7 +3520,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Object copy.
      * @throws IgniteCheckedException If failed.
      */
-    <T> T clone(final T obj) throws IgniteCheckedException {
+    public <T> T clone(final T obj) throws IgniteCheckedException {
         return withBinaryContext(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
                 return marshaller.unmarshal(marshaller.marshal(obj), U.resolveClassLoader(ctx.config()));
