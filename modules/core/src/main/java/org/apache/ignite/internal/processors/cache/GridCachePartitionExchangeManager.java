@@ -250,7 +250,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
                         }
                         else
-                            exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChange(customEvt.eventNode(), msg);
+                            exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChangeMessage(customEvt.eventNode(), msg);
                     }
                 }
 

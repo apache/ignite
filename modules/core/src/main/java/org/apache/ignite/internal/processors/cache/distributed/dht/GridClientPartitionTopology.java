@@ -169,8 +169,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         U.writeLock(lock);
 
         try {
-            assert topReadyFut  == null || exchId.topologyVersion().compareTo(topVer) > 0 :
-                "Invalid topology version [topVer=" + topVer + ", exchId=" + exchId + ']';
+            assert exchId.topologyVersion().compareTo(topVer) > 0 : "Invalid topology version [topVer=" + topVer +
+                ", exchId=" + exchId + ']';
 
             this.stopping = stopping;
 

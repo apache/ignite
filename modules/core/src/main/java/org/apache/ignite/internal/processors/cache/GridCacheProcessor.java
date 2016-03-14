@@ -1545,25 +1545,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return desc != null ? desc.cacheConfiguration().getCacheMode() : null;
     }
 
-    /**
-     * @param reqs Requests to start.
-     * @param topVer Topology version.
-     * @throws IgniteCheckedException If failed to start cache.
-     */
-    @SuppressWarnings("TypeMayBeWeakened")
-    public void prepareCachesStart(
-        Collection<DynamicCacheChangeRequest> reqs,
-        AffinityTopologyVersion topVer
-    ) throws IgniteCheckedException {
-        if (ctx.isDaemon())
-            return;
-
-        for (DynamicCacheChangeRequest req : reqs)
-            prepareCacheStart(req, topVer);
-
-        startReceivedCaches(topVer);
-    }
-
     public void prepareCacheStart(DynamicCacheChangeRequest req, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         assert req.start() : req;
         assert req.cacheType() != null : req;
@@ -1590,10 +1571,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param topVer Topology version.
      * @throws IgniteCheckedException If failed.
      */
-    public void startReceivedCaches(AffinityTopologyVersion topVer) throws IgniteCheckedException {
+    public Collection<DynamicCacheDescriptor> startReceivedCaches(AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
+        List<DynamicCacheDescriptor> started = null;
+
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             if (desc.staticallyConfigured() && !desc.locallyConfigured()) {
                 if (desc.onStart()) {
+                    if (started == null)
+                        started = new ArrayList<>();
+
+                    started.add(desc);
+
                     prepareCacheStart(
                         desc.cacheConfiguration(),
                         null,
@@ -1606,6 +1595,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
         }
+
+        return started;
     }
 
     /**

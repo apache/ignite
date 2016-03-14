@@ -23,7 +23,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -158,18 +157,6 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Initializes affinity for joined node.
-     *
-     * @param topVer Topology version.
-     * @param affAssignment Affinity assignment for this topology version.
-     */
-    public void initializeAffinity(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
-        assert !cctx.isLocal();
-
-        aff.initialize(topVer, affAssignment);
-    }
-
-    /**
      * @param topVer Topology version.
      * @return Affinity assignments.
      */
@@ -181,47 +168,12 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Calculates affinity cache for given topology version.
-     *
-     * @param topVer Topology version to calculate affinity for.
-     * @param discoEvt Discovery event that causes this topology change.
-     * @return Affinity assignments.
-     */
-    public List<List<ClusterNode>> calculateAffinity(AffinityTopologyVersion topVer, DiscoveryEvent discoEvt) {
-        assert !cctx.isLocal();
-
-        return aff.calculate(topVer, discoEvt);
-    }
-
-    /**
-     * @param assignment Assignment.
-     */
-    public void idealAssignment(List<List<ClusterNode>> assignment) {
-        assert !cctx.isLocal();
-
-        aff.idealAssignment(assignment);
-    }
-
-    /**
      * @return Assignment.
      */
     public List<List<ClusterNode>> idealAssignment() {
         assert !cctx.isLocal();
 
         return aff.idealAssignment();
-    }
-
-    /**
-     * Copies previous affinity assignment when discovery event does not cause affinity assignment changes
-     * (e.g. client node joins on leaves).
-     *
-     * @param evt Event.
-     * @param topVer Topology version.
-     */
-    public void clientEventTopologyChange(DiscoveryEvent evt, AffinityTopologyVersion topVer) {
-        assert !cctx.isLocal();
-
-        aff.clientEventTopologyChange(evt, topVer);
     }
 
     /**

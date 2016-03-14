@@ -316,13 +316,20 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     protected void waitForRebalancing(int id, AffinityTopologyVersion top) throws IgniteCheckedException {
         boolean finished = false;
 
-        while (!finished) {
+        long stopTime = System.currentTimeMillis() + 60_000;
+
+        while (System.currentTimeMillis() < stopTime) {
             finished = true;
 
             for (GridCacheAdapter c : grid(id).context().cache().internalCaches()) {
                 GridDhtPartitionDemander.RebalanceFuture fut = (GridDhtPartitionDemander.RebalanceFuture)c.preloader().rebalanceFuture();
-                if (fut.topologyVersion() == null || !fut.topologyVersion().equals(top)) {
+                if (fut.topologyVersion() == null || fut.topologyVersion().compareTo(top) < 0) {
                     finished = false;
+
+                    log.info("Unexpected future version, will retry [futVer=" + fut.topologyVersion() +
+                        ", expVer=" + top + ']');
+
+                    U.sleep(100);
 
                     break;
                 }
@@ -333,6 +340,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                 }
             }
         }
+
+        assertTrue(finished);
     }
 
     /**
