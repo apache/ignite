@@ -42,6 +42,12 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(1, res.Int);
             Assert.AreEqual("2", res.Str);
+
+            // Check binary mode
+            var bin = new Marshaller(cfg).Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
+
+            Assert.AreEqual("2", bin.GetField<string>("Str"));
+            Assert.AreEqual(1, bin.GetField<int>("Int"));
         }
 
         /// <summary>
@@ -69,6 +75,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             }))
             {
                 Test(ignite1, ignite2);
+
+                // TODO: Test BinaryObject
             }
         }
 

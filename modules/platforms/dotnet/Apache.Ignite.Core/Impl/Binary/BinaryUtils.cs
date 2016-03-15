@@ -1547,7 +1547,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static int FieldId(int typeId, string fieldName, IBinaryNameMapper nameMapper,
             IBinaryIdMapper idMapper)
         {
-            Debug.Assert(typeId != 0);
             Debug.Assert(fieldName != null);
 
             fieldName = ConvertFieldName(fieldName, nameMapper);
