@@ -582,14 +582,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             var descriptor = new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, 
                 serializer, keepDeserialized, affKeyFieldName, isEnum);
 
-            // TODO: Thread safety
             if (type != null)
-                _typeToDesc[type] = descriptor;
+                _typeToDesc.GetOrAdd(type, x => descriptor);
 
             if (userType)
-                _typeNameToDesc[typeName] = descriptor;
+                _typeNameToDesc.GetOrAdd(typeName, x => descriptor);
 
-            _idToDesc[typeKey] = descriptor;
+            _idToDesc.GetOrAdd(typeKey, x => descriptor);
         }
 
         /// <summary>
