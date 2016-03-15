@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-#include "ignite/common/concurrent_os.h"
+#include "ignite/utils/concurrent_os.h"
 
 namespace ignite
 {
-    namespace common
+    namespace utils
     {
         namespace concurrent
         {

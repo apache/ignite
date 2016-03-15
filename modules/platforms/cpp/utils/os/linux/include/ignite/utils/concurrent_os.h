@@ -22,11 +22,11 @@
 #include <stdint.h>
 #include <pthread.h>
 
-#include "ignite/common/common.h"
+#include "ignite/utils/common.h"
 
 namespace ignite
 {
-    namespace common
+    namespace utils
     {
         namespace concurrent
         {

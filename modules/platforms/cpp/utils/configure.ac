@@ -19,7 +19,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([Apache Ignite JNI bridge for C++], [1.6.0.8653], [dev@ignite.apache.org], [ignite-common], [ignite.apache.org])
+AC_INIT([Apache Ignite utility for C++], [1.6.0.8653], [dev@ignite.apache.org], [ignite-utils], [ignite.apache.org])
 AC_CONFIG_SRCDIR(src)
 
 AC_CANONICAL_SYSTEM
@@ -57,6 +57,6 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_FUNC_ERROR_AT_LINE
 
-AC_CONFIG_FILES(Makefile include/Makefile os/linux/include/Makefile ignite-common.pc)
+AC_CONFIG_FILES(Makefile include/Makefile os/linux/include/Makefile ignite-utils.pc)
 
 AC_OUTPUT

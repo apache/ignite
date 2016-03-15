@@ -18,251 +18,186 @@
 #include <dirent.h>
 #include <dlfcn.h>
 
-#include <ignite/common/utils.h>
+#include <ignite/utils/utils.h>
 
 namespace ignite
 {
-    namespace common
+    namespace utils
     {
-        namespace utils
+        const char* JAVA_HOME = "JAVA_HOME";
+        const char* JAVA_DLL = "/jre/lib/amd64/server/libjvm.so";
+
+        const char* IGNITE_HOME = "IGNITE_HOME";
+
+        const char* PROBE_BIN = "/bin";
+        const char* PROBE_EXAMPLES = "/examples";
+
+        const char* IGNITE_NATIVE_TEST_CLASSPATH = "IGNITE_NATIVE_TEST_CLASSPATH";
+
+        /**
+         * Helper method to set boolean result to reference with proper NULL-check.
+         *
+         * @param res Result.
+         * @param outRes Where to set the result.
+         */
+        inline void SetBoolResult(bool res, bool* outRes)
         {
-            const char* JAVA_HOME = "JAVA_HOME";
-            const char* JAVA_DLL = "/jre/lib/amd64/server/libjvm.so";
+            if (outRes)
+                *outRes = res;
+        }
 
-            const char* IGNITE_HOME = "IGNITE_HOME";
+        /**
+         * Check if string ends with the given ending.
+         *
+         * @param str String to check.
+         * @param ending Ending.
+         * @return Result.
+         */
+        inline bool StringEndsWith(const std::string& str, const std::string& ending)
+        {
+            if (str.length() > ending.length())
+                return str.compare(str.length() - ending.length(), ending.length(), ending) == 0;
 
-            const char* PROBE_BIN = "/bin";
-            const char* PROBE_EXAMPLES = "/examples";
-
-            const char* IGNITE_NATIVE_TEST_CLASSPATH = "IGNITE_NATIVE_TEST_CLASSPATH";
-
-            /**
-             * Helper method to set boolean result to reference with proper NULL-check.
-             *
-             * @param res Result.
-             * @param outRes Where to set the result.
-             */
-            inline void SetBoolResult(bool res, bool* outRes)
+            return false;
+        }
+            
+        /**
+         * Helper function for GG home resolution. Checks whether certain folders
+         * exist in the path. Optionally goes upwards in directory hierarchy.
+         *
+         * @param path Path to evaluate.
+         * @param up Whether to go upwards.
+         * @res Resolution result.
+         * @return Resolved directory.
+         */
+        std::string ResolveIgniteHome0(const std::string& path, bool up, bool* res)
+        {
+            struct stat pathStat;
+            
+            if (stat(path.c_str(), &pathStat) != -1 && S_ISDIR(pathStat.st_mode)) 
             {
-                if (outRes)
-                    *outRes = res;
-            }
+                // Remove trailing slashes, otherwise we will have an infinite loop.
+                std::string path0 = path;
 
-            /**
-             * Check if string ends with the given ending.
-             *
-             * @param str String to check.
-             * @param ending Ending.
-             * @return Result.
-             */
-            inline bool StringEndsWith(const std::string& str, const std::string& ending)
-            {
-                if (str.length() > ending.length())
-                    return str.compare(str.length() - ending.length(), ending.length(), ending) == 0;
+                while (true) {
+                    char lastChar = *path0.rbegin();
 
-                return false;
-            }
-                
-            /**
-             * Helper function for GG home resolution. Checks whether certain folders
-             * exist in the path. Optionally goes upwards in directory hierarchy.
-             *
-             * @param path Path to evaluate.
-             * @param up Whether to go upwards.
-             * @res Resolution result.
-             * @return Resolved directory.
-             */
-            std::string ResolveIgniteHome0(const std::string& path, bool up, bool* res)
-            {
-                struct stat pathStat;
-                
-                if (stat(path.c_str(), &pathStat) != -1 && S_ISDIR(pathStat.st_mode)) 
-                {
-                    // Remove trailing slashes, otherwise we will have an infinite loop.
-                    std::string path0 = path;
+                    if (lastChar == '/' || lastChar == ' ') {
+                        size_t off = path0.find_last_of(lastChar);
 
-                    while (true) {
-                        char lastChar = *path0.rbegin();
-
-                        if (lastChar == '/' || lastChar == ' ') {
-                            size_t off = path0.find_last_of(lastChar);
-
-                            path0.erase(off, 1);
-                        }
-                        else
-                            break;
+                        path0.erase(off, 1);
                     }
-
-                    std::string binStr = path0 + PROBE_BIN;
-                    struct stat binStat;
-
-                    std::string examplesStr = path0 + PROBE_EXAMPLES;
-                    struct stat examplesStat;
-
-                    if (stat(binStr.c_str(), &binStat) != -1 && S_ISDIR(binStat.st_mode) &&
-                        stat(examplesStr.c_str(), &examplesStat) != -1 && S_ISDIR(examplesStat.st_mode))
-                    {
-                        SetBoolResult(true, res);
-
-                        return std::string(path0);
-                    }
-
-                    if (up)
-                    {
-                        // Evaluate parent directory.
-                        size_t slashPos = path0.find_last_of("/");
-
-                        if (slashPos != std::string::npos)
-                        {
-                            std::string parent = path0.substr(0, slashPos);
-
-                            return ResolveIgniteHome0(parent, true, res);
-                        }
-                    }
-
+                    else
+                        break;
                 }
 
-                SetBoolResult(false, res);
+                std::string binStr = path0 + PROBE_BIN;
+                struct stat binStat;
 
-                return std::string();
-            }
+                std::string examplesStr = path0 + PROBE_EXAMPLES;
+                struct stat examplesStat;
 
-            /**
-             * Create classpath picking JARs from the given path.
-             *
-             * @path Path.
-             * @return Classpath;
-             */
-            std::string ClasspathJars(const std::string& path)
-            {
-                std::string res = std::string();
-
-                DIR* dir = opendir(path.c_str());
-
-                if (dir)
+                if (stat(binStr.c_str(), &binStat) != -1 && S_ISDIR(binStat.st_mode) &&
+                    stat(examplesStr.c_str(), &examplesStat) != -1 && S_ISDIR(examplesStat.st_mode))
                 {
-                    struct dirent* entry;
+                    SetBoolResult(true, res);
 
-                    while ((entry = readdir(dir)) != NULL)
-                    {
-                        if (strstr(entry->d_name, ".jar"))
-                        {
-                            res.append(path);
-                            res.append("/");
-                            res.append(entry->d_name);
-                            res.append(":");
-                        }
-                    }
-
-                    closedir(dir);
+                    return std::string(path0);
                 }
 
-                return res;
-            }
-
-            /**
-             * Create classpath picking compiled classes from the given path.
-             *
-             * @path Path.
-             * @return Classpath;
-             */
-            std::string ClasspathExploded(const std::string& path, bool down)
-            {
-                std::string res;
-
-                if (FileExists(path))
+                if (up)
                 {
-                    // 1. Append "target\classes".
-                    std::string classesPath = path + "/target/classes";
+                    // Evaluate parent directory.
+                    size_t slashPos = path0.find_last_of("/");
 
-                    if (FileExists(classesPath)) {
-                        res += classesPath;
-                        res += ":";
-                    }
-
-                    // 2. Append "target\test-classes"
-                    std::string testClassesPath = path + "/target/test-classes";
-
-                    if (FileExists(testClassesPath)) {
-                        res += testClassesPath;
-                        res += ":";
-                    }
-
-                    // 3. Append "target\libs"
-                    std::string libsPath = path + "/target/libs";
-
-                    if (FileExists(libsPath)) {
-                        std::string libsCp = ClasspathJars(libsPath);
-                        res += libsCp;
-                    }
-
-                    // 4. Do the same for child if needed.
-                    if (down)
+                    if (slashPos != std::string::npos)
                     {
-                        DIR* dir = opendir(path.c_str());
+                        std::string parent = path0.substr(0, slashPos);
 
-                        if (dir)
-                        {
-                            struct dirent* entry;
-
-                            while ((entry = readdir(dir)) != NULL)
-                            {
-                                std::string entryPath = entry->d_name;
-
-                                if (entryPath.compare(".") != 0 && entryPath.compare("..") != 0)
-                                {
-                                    std::string entryFullPath = path + "/" + entryPath;
-
-                                    struct stat entryFullStat;
-
-                                    if (stat(entryFullPath.c_str(), &entryFullStat) != -1 && S_ISDIR(entryFullStat.st_mode))
-                                    {
-                                        std::string childCp = ClasspathExploded(entryFullPath, false);
-
-                                        res += childCp;
-                                    }
-                                }
-                            }
-
-                            closedir(dir);
-                        }
+                        return ResolveIgniteHome0(parent, true, res);
                     }
                 }
 
-                return res;
             }
 
-            /**
-             * Helper function to create classpath based on Ignite home directory.
-             *
-             * @param home Home directory; expected to be valid.
-             * @param forceTest Force test classpath.
-             */
-            std::string CreateIgniteHomeClasspath(const std::string& home, bool forceTest)
+            SetBoolResult(false, res);
+
+            return std::string();
+        }
+
+        /**
+         * Create classpath picking JARs from the given path.
+         *
+         * @path Path.
+         * @return Classpath;
+         */
+        std::string ClasspathJars(const std::string& path)
+        {
+            std::string res = std::string();
+
+            DIR* dir = opendir(path.c_str());
+
+            if (dir)
             {
-                std::string res = std::string();
+                struct dirent* entry;
 
-                // 1. Add exploded test directories.
-                if (forceTest)
+                while ((entry = readdir(dir)) != NULL)
                 {
-                    std::string examplesPath = home + "/examples";
-                    std::string examplesCp = ClasspathExploded(examplesPath, true);
-                    res.append(examplesCp);
-
-                    std::string modulesPath = home + "/modules";
-                    std::string modulesCp = ClasspathExploded(modulesPath, true);
-                    res.append(modulesCp);
+                    if (strstr(entry->d_name, ".jar"))
+                    {
+                        res.append(path);
+                        res.append("/");
+                        res.append(entry->d_name);
+                        res.append(":");
+                    }
                 }
 
-                // 2. Add regular jars from "libs" folder excluding "optional".
-                std::string libsPath = home + "/libs";
+                closedir(dir);
+            }
 
-                if (FileExists(libsPath))
+            return res;
+        }
+
+        /**
+         * Create classpath picking compiled classes from the given path.
+         *
+         * @path Path.
+         * @return Classpath;
+         */
+        std::string ClasspathExploded(const std::string& path, bool down)
+        {
+            std::string res;
+
+            if (FileExists(path))
+            {
+                // 1. Append "target\classes".
+                std::string classesPath = path + "/target/classes";
+
+                if (FileExists(classesPath)) {
+                    res += classesPath;
+                    res += ":";
+                }
+
+                // 2. Append "target\test-classes"
+                std::string testClassesPath = path + "/target/test-classes";
+
+                if (FileExists(testClassesPath)) {
+                    res += testClassesPath;
+                    res += ":";
+                }
+
+                // 3. Append "target\libs"
+                std::string libsPath = path + "/target/libs";
+
+                if (FileExists(libsPath)) {
+                    std::string libsCp = ClasspathJars(libsPath);
+                    res += libsCp;
+                }
+
+                // 4. Do the same for child if needed.
+                if (down)
                 {
-                    res.append(ClasspathJars(libsPath));
-
-                    // Append inner directories.
-                    DIR* dir = opendir(libsPath.c_str());
+                    DIR* dir = opendir(path.c_str());
 
                     if (dir)
                     {
@@ -272,168 +207,230 @@ namespace ignite
                         {
                             std::string entryPath = entry->d_name;
 
-                            if (entryPath.compare(".") != 0 && entryPath.compare("..") != 0 &&
-                                entryPath.compare("optional") != 0)
+                            if (entryPath.compare(".") != 0 && entryPath.compare("..") != 0)
                             {
-                                std::string entryFullPath = libsPath;
-
-                                entryFullPath.append("/");
-                                entryFullPath.append(entryPath);
+                                std::string entryFullPath = path + "/" + entryPath;
 
                                 struct stat entryFullStat;
 
-                                if (stat(entryFullPath.c_str(), &entryFullStat) != -1 && 
-                                    S_ISDIR(entryFullStat.st_mode)) 
-                                    res.append(ClasspathJars(entryFullPath));
-                            }                                                              
+                                if (stat(entryFullPath.c_str(), &entryFullStat) != -1 && S_ISDIR(entryFullStat.st_mode))
+                                {
+                                    std::string childCp = ClasspathExploded(entryFullPath, false);
+
+                                    res += childCp;
+                                }
+                            }
                         }
 
                         closedir(dir);
                     }
                 }
-
-                // 3. Return.
-                return res;
             }
 
-            char* CopyChars(const char* val)
+            return res;
+        }
+
+        /**
+         * Helper function to create classpath based on Ignite home directory.
+         *
+         * @param home Home directory; expected to be valid.
+         * @param forceTest Force test classpath.
+         */
+        std::string CreateIgniteHomeClasspath(const std::string& home, bool forceTest)
+        {
+            std::string res = std::string();
+
+            // 1. Add exploded test directories.
+            if (forceTest)
             {
-                if (val) {
-                    size_t len = strlen(val);
-                    char* dest = new char[len + 1];
-                    strcpy(dest, val);
-                    *(dest + len) = 0;
-                    return dest;
-                }
-                else
-                    return NULL;
+                std::string examplesPath = home + "/examples";
+                std::string examplesCp = ClasspathExploded(examplesPath, true);
+                res.append(examplesCp);
+
+                std::string modulesPath = home + "/modules";
+                std::string modulesCp = ClasspathExploded(modulesPath, true);
+                res.append(modulesCp);
             }
 
-            void ReleaseChars(char* val)
+            // 2. Add regular jars from "libs" folder excluding "optional".
+            std::string libsPath = home + "/libs";
+
+            if (FileExists(libsPath))
             {
-                if (val)
-                    delete[] val;
-            }
+                res.append(ClasspathJars(libsPath));
 
-            std::string GetEnv(const std::string& name, bool* found)
-            {
-                char* val = std::getenv(name.c_str());
-                
-                if (val) {
-                    SetBoolResult(true, found);
-                    
-                    return std::string(val);
-                }
-                else {
-                    SetBoolResult(false, found);
-                    
-                    return std::string();
-                }
-            }
+                // Append inner directories.
+                DIR* dir = opendir(libsPath.c_str());
 
-            bool FileExists(const std::string& path)
-            {
-                struct stat s;
-                
-                int res = stat(path.c_str(), &s);
-
-                return res != -1;
-            }
-
-            std::string FindJvmLibrary(const std::string* path, bool* found)
-            {
-                SetBoolResult(true, found); // Optimistically assume that we will find it.
-
-                if (path) {
-                    // If path is provided explicitly, then check only it.
-                    if (FileExists(*path))                            
-                        return std::string(path->data());
-                }
-                else
+                if (dir)
                 {
-                    bool javaEnvFound;
-                    std::string javaEnv = GetEnv(JAVA_HOME, &javaEnvFound);
+                    struct dirent* entry;
 
-                    if (javaEnvFound)
+                    while ((entry = readdir(dir)) != NULL)
                     {
-                        std::string javaDll = javaEnv + JAVA_DLL;
+                        std::string entryPath = entry->d_name;
 
-                        if (FileExists(javaDll))
-                            return std::string(javaDll);
+                        if (entryPath.compare(".") != 0 && entryPath.compare("..") != 0 &&
+                            entryPath.compare("optional") != 0)
+                        {
+                            std::string entryFullPath = libsPath;
+
+                            entryFullPath.append("/");
+                            entryFullPath.append(entryPath);
+
+                            struct stat entryFullStat;
+
+                            if (stat(entryFullPath.c_str(), &entryFullStat) != -1 && 
+                                S_ISDIR(entryFullStat.st_mode)) 
+                                res.append(ClasspathJars(entryFullPath));
+                        }                                                              
                     }
+
+                    closedir(dir);
                 }
-
-                SetBoolResult(false, found);
-
-                return std::string();
             }
 
-            bool LoadJvmLibrary(const std::string& path)
-            {
-                void* hnd = dlopen(path.c_str(), RTLD_LAZY);
+            // 3. Return.
+            return res;
+        }
+
+        char* CopyChars(const char* val)
+        {
+            if (val) {
+                size_t len = strlen(val);
+                char* dest = new char[len + 1];
+                strcpy(dest, val);
+                *(dest + len) = 0;
+                return dest;
+            }
+            else
+                return NULL;
+        }
+
+        void ReleaseChars(char* val)
+        {
+            if (val)
+                delete[] val;
+        }
+
+        std::string GetEnv(const std::string& name, bool* found)
+        {
+            char* val = std::getenv(name.c_str());
+            
+            if (val) {
+                SetBoolResult(true, found);
                 
-                return hnd != NULL;
-            }                
-
-            std::string ResolveIgniteHome(const std::string* path, bool* found)
-            {
-                if (path)
-                    // 1. Check passed argument.
-                    return ResolveIgniteHome0(*path, false, found);
-                else
-                {
-                    // 2. Check environment variable.
-                    bool envFound;
-                    std::string env = GetEnv(IGNITE_HOME, &envFound);
-
-                    if (envFound)
-                        return ResolveIgniteHome0(env, false, found);
-                }
-
+                return std::string(val);
+            }
+            else {
                 SetBoolResult(false, found);
-                        
+                
                 return std::string();
             }
+        }
 
-            std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home)
+        bool FileExists(const std::string& path)
+        {
+            struct stat s;
+            
+            int res = stat(path.c_str(), &s);
+
+            return res != -1;
+        }
+
+        std::string FindJvmLibrary(const std::string* path, bool* found)
+        {
+            SetBoolResult(true, found); // Optimistically assume that we will find it.
+
+            if (path) {
+                // If path is provided explicitly, then check only it.
+                if (FileExists(*path))                            
+                    return std::string(path->data());
+            }
+            else
             {
-                bool forceTest = false;
+                bool javaEnvFound;
+                std::string javaEnv = GetEnv(JAVA_HOME, &javaEnvFound);
 
-                if (home)
+                if (javaEnvFound)
                 {
-                    bool envFound;
-                    std::string env = GetEnv(IGNITE_NATIVE_TEST_CLASSPATH, &envFound);
+                    std::string javaDll = javaEnv + JAVA_DLL;
 
-                    forceTest = envFound && env.compare("true") == 0;
+                    if (FileExists(javaDll))
+                        return std::string(javaDll);
                 }
-
-                return CreateIgniteClasspath(usrCp, home, forceTest);
             }
 
-            std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home, bool forceTest)
+            SetBoolResult(false, found);
+
+            return std::string();
+        }
+
+        bool LoadJvmLibrary(const std::string& path)
+        {
+            void* hnd = dlopen(path.c_str(), RTLD_LAZY);
+            
+            return hnd != NULL;
+        }                
+
+        std::string ResolveIgniteHome(const std::string* path, bool* found)
+        {
+            if (path)
+                // 1. Check passed argument.
+                return ResolveIgniteHome0(*path, false, found);
+            else
             {
-                // 1. Append user classpath if it exists.
-                std::string cp = std::string();
+                // 2. Check environment variable.
+                bool envFound;
+                std::string env = GetEnv(IGNITE_HOME, &envFound);
 
-                if (usrCp)
-                {
-                    cp.append(*usrCp);
-
-                    if (*cp.rbegin() != ':')
-                        cp.append(":");
-                }
-
-                // 2. Append home classpath if home is defined.
-                if (home)
-                {
-                    std::string homeCp = CreateIgniteHomeClasspath(*home, forceTest);
-
-                    cp.append(homeCp);
-                }
-
-                // 3. Return.
-                return cp;
+                if (envFound)
+                    return ResolveIgniteHome0(env, false, found);
             }
+
+            SetBoolResult(false, found);
+                    
+            return std::string();
+        }
+
+        std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home)
+        {
+            bool forceTest = false;
+
+            if (home)
+            {
+                bool envFound;
+                std::string env = GetEnv(IGNITE_NATIVE_TEST_CLASSPATH, &envFound);
+
+                forceTest = envFound && env.compare("true") == 0;
+            }
+
+            return CreateIgniteClasspath(usrCp, home, forceTest);
+        }
+
+        std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home, bool forceTest)
+        {
+            // 1. Append user classpath if it exists.
+            std::string cp = std::string();
+
+            if (usrCp)
+            {
+                cp.append(*usrCp);
+
+                if (*cp.rbegin() != ':')
+                    cp.append(":");
+            }
+
+            // 2. Append home classpath if home is defined.
+            if (home)
+            {
+                std::string homeCp = CreateIgniteHomeClasspath(*home, forceTest);
+
+                cp.append(homeCp);
+            }
+
+            // 3. Return.
+            return cp;
         }
     }
 }

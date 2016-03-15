@@ -3,7 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: ignite-common
-Description: Apache Ignite JNI bridge for C++.
+Name: ignite-utils
+Description: Apache Ignite utility for C++.
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lignite-common
+Libs: -L${libdir} -lignite-utils
