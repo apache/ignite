@@ -793,7 +793,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullField();
             else
             {
-                var desc = _marsh.GetDescriptor(val.GetType());
+                var desc = _marsh.GetDescriptor(val.GetType(), false);
 
                 if (desc != null)
                 {
