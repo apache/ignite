@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfoCollectSwapListener;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -297,8 +296,8 @@ class GridDhtPartitionSupplier {
                         phase = SupplyContextPhase.ONHEAP;
 
                     if (phase == SupplyContextPhase.ONHEAP) {
-                        Iterator<GridDhtCacheEntry> entIt = sctx != null ?
-                            (Iterator<GridDhtCacheEntry>)sctx.entryIt : loc.entries().iterator();
+                        Iterator<GridCacheEntryEx> entIt = sctx != null ?
+                            (Iterator<GridCacheEntryEx>)sctx.entryIt : loc.allEntries0().iterator();
 
                         while (entIt.hasNext()) {
                             if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {

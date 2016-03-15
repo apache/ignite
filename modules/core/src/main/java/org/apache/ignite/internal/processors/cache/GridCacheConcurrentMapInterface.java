@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
 import java.util.Set;
 import javax.cache.Cache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -43,13 +42,13 @@ public interface GridCacheConcurrentMapInterface {
 
     boolean removeEntry(GridCacheEntryEx entry);
 
-    Set<GridCacheEntryEx> entries0();
+    Iterable<GridCacheEntryEx> entries0();
 
-    <K, V> Set<Cache.Entry<K, V>> entries(CacheEntryPredicate... filter);
+    <K, V> Iterable<Cache.Entry<K, V>> entries(CacheEntryPredicate... filter);
 
     @Nullable GridCacheMapEntry randomEntry();
 
-    <K, V> Collection<V> values(CacheEntryPredicate... filter);
+    <K, V> Iterable<V> values(CacheEntryPredicate... filter);
 
     void incrementSize(GridCacheMapEntry e);
 

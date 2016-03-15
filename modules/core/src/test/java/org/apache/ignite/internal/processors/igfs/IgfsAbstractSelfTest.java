@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -980,7 +979,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 }
             }
         }, 10_000)) {
-            Set<GridCacheEntryEx> set = dataCache.allEntries();
+            Iterable<GridCacheEntryEx> set = dataCache.allEntries();
 
             for (GridCacheEntryEx e: set) {
                 X.println("deleted = " + e.deleted());
@@ -3207,7 +3206,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     private static void dumpCache(String cacheName, GridCacheAdapter<?,?> cache) {
         X.println("=============================== " + cacheName + " cache dump: ");
 
-        Set<GridCacheEntryEx> set = cache.entries();
+        Iterable<GridCacheEntryEx> set = cache.entries();
 
         for (GridCacheEntryEx e: set)
             X.println("Lost " + cacheName + " entry = " + e);

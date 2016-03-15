@@ -854,7 +854,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<V> values() {
+    @Override public Iterable<V> values() {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
@@ -866,7 +866,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet() {
+    @Override public Iterable<Cache.Entry<K, V>> entrySet() {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
@@ -878,7 +878,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
+    @Override public Iterable<Cache.Entry<K, V>> entrySet(int part) {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
@@ -890,7 +890,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
+    @Override public Iterable<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {

@@ -27,28 +27,24 @@ import javax.cache.Cache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapInterface;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.lang.GridTriple;
 import org.jetbrains.annotations.Nullable;
 
-public class GridCacheDhtLocalConcurrentMap implements GridCacheConcurrentMapInterface {
+public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMapInterface {
 
-    private final GridCacheAffinityManager affMgr;
+    private final GridCacheContext ctx;
 
-    private final GridDhtPartitionTopology top;
-
-    public GridCacheDhtLocalConcurrentMap(GridCacheAffinityManager affMgr,
-        GridDhtPartitionTopology top) {
-        this.affMgr = affMgr;
-        this.top = top;
+    public GridCachePartitionedConcurrentMap(GridCacheContext ctx) {
+        this.ctx = ctx;
     }
 
     @Nullable @Override public GridCacheMapEntry getEntry(Object key) {
-        GridDhtLocalPartition part = top.localPartition(key, false);
+        GridDhtLocalPartition part = ctx.topology().localPartition(key, false);
 
         if (part == null)
             return null;
@@ -59,11 +55,11 @@ public class GridCacheDhtLocalConcurrentMap implements GridCacheConcurrentMapInt
     @Override
     public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create) {
-        return top.localPartition(key, true).putEntryIfObsoleteOrAbsent(topVer, key, val, create);
+        return ctx.topology().localPartition(key, true).putEntryIfObsoleteOrAbsent(topVer, key, val, create);
     }
 
     @Override public GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key) {
-        GridDhtLocalPartition part = top.localPartition(key, false);
+        GridDhtLocalPartition part = ctx.topology().localPartition(key, false);
 
         if (part == null)
             return null;
@@ -74,15 +70,15 @@ public class GridCacheDhtLocalConcurrentMap implements GridCacheConcurrentMapInt
     @Override public int size() {
         int size = 0;
 
-        for (GridDhtLocalPartition part : top.localPartitions()) {
-            size += part.size();
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+            size += part.publicSize();
         }
 
         return size;
     }
 
     @Override public boolean removeEntry(GridCacheEntryEx entry) {
-        GridDhtLocalPartition part = top.localPartition(entry.key(), false);
+        GridDhtLocalPartition part = ctx.topology().localPartition(entry.key(), false);
 
         if (part == null)
             return false;
@@ -97,7 +93,7 @@ public class GridCacheDhtLocalConcurrentMap implements GridCacheConcurrentMapInt
     @Override public <K, V> Set<K> keySet(CacheEntryPredicate... filter) {
         Set set = new HashSet();
 
-        for (GridDhtLocalPartition part : top.localPartitions()) {
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
             set.addAll(part.keySet(filter));
         }
 
@@ -107,7 +103,7 @@ public class GridCacheDhtLocalConcurrentMap implements GridCacheConcurrentMapInt
     @Override public Set<GridCacheEntryEx> entries0() {
         Set set = new HashSet();
 
-        for (GridDhtLocalPartition part : top.localPartitions()) {
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
             set.addAll(part.entries0());
         }
 
@@ -117,8 +113,8 @@ public class GridCacheDhtLocalConcurrentMap implements GridCacheConcurrentMapInt
     @Override public <K, V> Set<Cache.Entry<K, V>> entries(CacheEntryPredicate... filter) {
         Set set = new HashSet();
 
-        for (GridDhtLocalPartition part : top.localPartitions()) {
-            set.addAll(part.entries(filter));
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+            set.addAll(part.entriesx(filter));
         }
 
         return set;
@@ -127,7 +123,7 @@ public class GridCacheDhtLocalConcurrentMap implements GridCacheConcurrentMapInt
     @Override public <K, V> Collection<V> values(CacheEntryPredicate... filter) {
         List list = new ArrayList<>();
 
-        for (GridDhtLocalPartition part : top.localPartitions()) {
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
             list.addAll(part.values(filter));
         }
 
@@ -135,10 +131,14 @@ public class GridCacheDhtLocalConcurrentMap implements GridCacheConcurrentMapInt
     }
 
     @Override public void incrementSize(GridCacheMapEntry e) {
+        GridDhtLocalPartition part = ctx.topology().localPartition(e.key(), true);
 
+        part.incrementPublicSize();
     }
 
     @Override public void decrementSize(GridCacheMapEntry e) {
+        GridDhtLocalPartition part = ctx.topology().localPartition(e.key(), true);
 
+        part.decrementPublicSize();
     }
 }

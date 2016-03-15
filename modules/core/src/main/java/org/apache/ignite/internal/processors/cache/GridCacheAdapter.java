@@ -309,7 +309,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param map Concurrent map.
      */
     @SuppressWarnings({"OverriddenMethodCallDuringObjectConstruction", "deprecation"})
-    protected GridCacheAdapter(final GridCacheContext<K, V> ctx, @Nullable GridCacheConcurrentMap map) {
+    protected GridCacheAdapter(final GridCacheContext<K, V> ctx, @Nullable GridCacheConcurrentMapInterface map) {
         assert ctx != null;
 
         this.ctx = ctx;
@@ -1018,25 +1018,25 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * @return Set of internal cached entry representations, excluding {@link GridCacheInternal} keys.
      */
-    public Set<GridCacheEntryEx> entries() {
+    public Iterable<GridCacheEntryEx> entries() {
         return map.entries0();
     }
 
     /**
      * @return Set of internal cached entry representations, including {@link GridCacheInternal} keys.
      */
-    public Set<GridCacheEntryEx> allEntries() {
+    public Iterable<GridCacheEntryEx> allEntries() {
         return map.entries0();
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet() {
+    @Override public Iterable<Cache.Entry<K, V>> entrySet() {
         return entrySet((CacheEntryPredicate[])null);
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
-        return map.entriesx(filter);
+    @Override public Iterable<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
+        return map.entries(filter);
     }
 
     /** {@inheritDoc} */
@@ -1060,7 +1060,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<V> values() {
+    @Override public Iterable<V> values() {
         return values((CacheEntryPredicate[])null);
     }
 
@@ -1079,7 +1079,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param filter Filters.
      * @return Collection of cached values.
      */
-    public Collection<V> values(CacheEntryPredicate... filter) {
+    public Iterable<V> values(CacheEntryPredicate... filter) {
         return map.values(filter);
     }
 
@@ -4682,7 +4682,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param filter Filters to evaluate.
      * @return Entry set.
      */
-    public Set<Cache.Entry<K, V>> entrySet(@Nullable CacheEntryPredicate... filter) {
+    public Iterable<Cache.Entry<K, V>> entrySet(@Nullable CacheEntryPredicate... filter) {
         return map.entries(filter);
     }
 
@@ -4690,7 +4690,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param filter Filters to evaluate.
      * @return Primary entry set.
      */
-    public Set<Cache.Entry<K, V>> primaryEntrySet(
+    public Iterable<Cache.Entry<K, V>> primaryEntrySet(
         @Nullable CacheEntryPredicate... filter) {
         return map.entries(
             F0.and0(

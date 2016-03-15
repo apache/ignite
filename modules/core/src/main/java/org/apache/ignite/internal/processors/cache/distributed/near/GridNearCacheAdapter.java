@@ -305,12 +305,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return nearEntries().size() + dht().size();
+//        return nearEntries().size() + dht().size();
+        return -1;
     }
 
     /** {@inheritDoc} */
     @Override public long sizeLong() {
-        return nearEntries().size() + dht().sizeLong();
+//        return nearEntries().size() + dht().sizeLong();
+        return -1;
     }
 
     /** {@inheritDoc} */
@@ -325,13 +327,14 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public int nearSize() {
-        return nearEntries().size();
+//        return nearEntries().size();
+        return -1;
     }
 
     /**
      * @return Near entries.
      */
-    public Set<Cache.Entry<K, V>> nearEntries() {
+    public Iterable<Cache.Entry<K, V>> nearEntries() {
         final AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
         return super.entrySet(new CacheEntryPredicateAdapter() {
@@ -540,16 +543,16 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      */
     private class EntrySet extends AbstractSet<Cache.Entry<K, V>> {
         /** Near entry set. */
-        private Set<Cache.Entry<K, V>> nearSet;
+        private Iterable<Cache.Entry<K, V>> nearSet;
 
         /** Dht entry set. */
-        private Set<Cache.Entry<K, V>> dhtSet;
+        private Iterable<Cache.Entry<K, V>> dhtSet;
 
         /**
          * @param nearSet Near entry set.
          * @param dhtSet Dht entry set.
          */
-        private EntrySet(Set<Cache.Entry<K, V>> nearSet, Set<Cache.Entry<K, V>> dhtSet) {
+        private EntrySet(Iterable<Cache.Entry<K, V>> nearSet, Iterable<Cache.Entry<K, V>> dhtSet) {
             assert nearSet != null;
             assert dhtSet != null;
 

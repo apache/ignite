@@ -1011,7 +1011,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @param filter Filter.
      * @return Entry set.
      */
-    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
+    public Iterable<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
         GridCacheGateway<K, V> gate = this.gate;
 
         CacheOperationContext prev = onEnter(gate, opCtx);

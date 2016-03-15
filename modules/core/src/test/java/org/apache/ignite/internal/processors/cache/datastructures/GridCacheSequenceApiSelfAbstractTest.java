@@ -387,9 +387,9 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
         assert cache.keySet().isEmpty();
 
-        assert cache.values().isEmpty();
+//        assert cache.values().isEmpty();
 
-        assert cache.entrySet().isEmpty();
+//        assert cache.entrySet().isEmpty();
 
         assert cache.size() == 0;
 
