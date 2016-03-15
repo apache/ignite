@@ -20,7 +20,7 @@
 #include "ignite/impl/ignite_impl.h"
 #include "ignite/ignite.h"
 
-using namespace ignite::common::concurrent;
+using namespace ignite::utils::concurrent;
 using namespace ignite::impl;
 
 namespace ignite

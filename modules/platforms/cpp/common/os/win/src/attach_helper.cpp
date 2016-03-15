@@ -21,7 +21,7 @@
 #include "ignite/utils/concurrent.h"
 #include "ignite/common/java.h"
 
-using namespace ignite::common::concurrent;
+using namespace ignite::utils::concurrent;
 using namespace ignite::common::java;
 
 namespace ignite

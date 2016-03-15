@@ -56,7 +56,7 @@ namespace ignite
     namespace utility
     {
         /** Using common version of the util. */
-        using ignite::common::utils::IntoLower;
+        using ignite::utils::IntoLower;
 
         /**
          * Skip leading spaces.

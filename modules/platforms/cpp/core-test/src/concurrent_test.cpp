@@ -23,7 +23,7 @@
 
 #include <ignite/utils/concurrent.h>
 
-using namespace ignite::common::concurrent;
+using namespace ignite::utils::concurrent;
 
 BOOST_AUTO_TEST_SUITE(ConcurrentTestSuite)
 

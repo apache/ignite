@@ -1397,7 +1397,7 @@ namespace ignite
                 {
                     int32_t realLen = stream->ReadInt32();
 
-                    ignite::common::utils::SafeArray<char> arr(realLen + 1);
+                    ignite::utils::SafeArray<char> arr(realLen + 1);
 
                     for (int i = 0; i < realLen; i++)
                         *(arr.target + i) = static_cast<char>(stream->ReadInt8());

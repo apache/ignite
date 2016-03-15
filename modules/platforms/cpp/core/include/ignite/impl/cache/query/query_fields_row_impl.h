@@ -42,7 +42,7 @@ namespace ignite
                 class QueryFieldsRowImpl
                 {
                 public:
-                    typedef common::concurrent::SharedPointer<interop::InteropMemory> InteropMemorySharedPtr;
+                    typedef utils::concurrent::SharedPointer<interop::InteropMemory> InteropMemorySharedPtr;
 
                     /**
                      * Default constructor.

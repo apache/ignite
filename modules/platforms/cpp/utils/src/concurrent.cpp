@@ -19,7 +19,7 @@
 
 namespace ignite
 {
-    namespace common
+    namespace utils
     {
         namespace concurrent
         {

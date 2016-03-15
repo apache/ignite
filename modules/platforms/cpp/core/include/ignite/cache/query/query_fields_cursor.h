@@ -149,7 +149,7 @@ namespace ignite
 
             private:
                 /** Implementation delegate. */
-                ignite::common::concurrent::SharedPointer<impl::cache::query::QueryCursorImpl> impl;
+                ignite::utils::concurrent::SharedPointer<impl::cache::query::QueryCursorImpl> impl;
             };
         }
     }    

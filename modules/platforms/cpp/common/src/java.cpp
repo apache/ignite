@@ -59,7 +59,7 @@ namespace ignite
     {
         namespace java
         {
-            namespace gcc = ignite::common::concurrent;
+            namespace gcc = ignite::utils::concurrent;
 
             /* --- Startup exception. --- */
             class JvmException : public std::exception {

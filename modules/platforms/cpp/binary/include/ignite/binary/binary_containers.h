@@ -261,7 +261,7 @@ namespace ignite
 
                 if (len != -1)
                 {
-                    common::utils::SafeArray<char> arr(len + 1);
+                    utils::SafeArray<char> arr(len + 1);
 
                     GetNext(arr.target, len + 1);
 

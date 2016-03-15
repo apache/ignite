@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_SUITE(MemoryTestSuite)
 BOOST_AUTO_TEST_CASE(MemoryReallocationTest)
 {
     using impl::interop::InteropMemory;
-    using common::concurrent::SharedPointer;
+    using utils::concurrent::SharedPointer;
 
     IgniteEnvironment env;
 

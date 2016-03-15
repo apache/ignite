@@ -41,7 +41,7 @@ namespace ignite
                  * @param env Environment.
                  * @param javaRef Reference to Java object which is able to process type request.
                  */
-                BinaryTypeUpdaterImpl(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+                BinaryTypeUpdaterImpl(ignite::utils::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
 
                 /**
                  * Destructor.
@@ -51,7 +51,7 @@ namespace ignite
                 bool Update(Snap* snapshot, IgniteError* err);
             private:
                 /** Environment. */
-                ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
+                ignite::utils::concurrent::SharedPointer<IgniteEnvironment> env;
                 
                 /** Handle to Java object. */
                 jobject javaRef;                 

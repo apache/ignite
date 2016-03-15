@@ -150,7 +150,7 @@ namespace ignite
 
             private:
                 /** Implementation delegate. */
-                ignite::common::concurrent::SharedPointer<impl::cache::query::QueryFieldsRowImpl> impl;
+                ignite::utils::concurrent::SharedPointer<impl::cache::query::QueryFieldsRowImpl> impl;
             };
         }
     }    

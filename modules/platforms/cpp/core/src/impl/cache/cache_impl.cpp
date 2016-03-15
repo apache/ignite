@@ -24,9 +24,9 @@
 #include "ignite/impl/binary/binary_type_updater_impl.h"
 #include "ignite/binary/binary.h"
 
-using namespace ignite::common::concurrent;
+using namespace ignite::utils::concurrent;
 using namespace ignite::common::java;
-using namespace ignite::common::utils;
+using namespace ignite::utils;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
 using namespace ignite::impl;

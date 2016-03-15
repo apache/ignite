@@ -17,7 +17,7 @@
 #include <ignite/utils/ignite_error.h>
 #include <ignite/utils/utils.h>
 
-using namespace ignite::common::utils;
+using namespace ignite::utils;
 
 /* Error constants. */
 // TODO: Refactor.

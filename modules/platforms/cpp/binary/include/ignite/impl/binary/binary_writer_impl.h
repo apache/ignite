@@ -655,7 +655,7 @@ namespace ignite
                     else
                     {
                         TemplatedBinaryIdResolver<T> idRslvr(type);
-                        ignite::common::concurrent::SharedPointer<BinaryTypeHandler> metaHnd;
+                        ignite::utils::concurrent::SharedPointer<BinaryTypeHandler> metaHnd;
 
                         if (metaMgr)
                             metaHnd = metaMgr->GetHandler(idRslvr.GetTypeId());

@@ -19,7 +19,7 @@
 
 #include "ignite/impl/binary/binary_type_manager.h"
 
-using namespace ignite::common::concurrent;
+using namespace ignite::utils::concurrent;
 
 namespace ignite
 {    

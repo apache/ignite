@@ -42,7 +42,7 @@ namespace ignite
              * @param env Environment.
              * @param javaRef Reference to java object.
              */
-            IgniteImpl(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+            IgniteImpl(ignite::utils::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
             
             /**
              * Destructor.
@@ -83,7 +83,7 @@ namespace ignite
                     return NULL;
                 }
 
-                char* name0 = common::utils::CopyChars(name);
+                char* name0 = utils::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -108,7 +108,7 @@ namespace ignite
                     return NULL;
                 }
 
-                char* name0 = common::utils::CopyChars(name);
+                char* name0 = utils::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -133,7 +133,7 @@ namespace ignite
                     return NULL;
                 }
 
-                char* name0 = common::utils::CopyChars(name);
+                char* name0 = utils::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -152,7 +152,7 @@ namespace ignite
             }
         private:
             /** Environment. */
-            ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
+            ignite::utils::concurrent::SharedPointer<IgniteEnvironment> env;
             
             /** Native Java counterpart. */
             jobject javaRef;   

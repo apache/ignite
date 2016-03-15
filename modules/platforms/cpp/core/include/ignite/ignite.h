@@ -164,7 +164,7 @@ namespace ignite
 
     private:
         /** Implementation delegate. */
-        ignite::common::concurrent::SharedPointer<impl::IgniteImpl> impl;
+        ignite::utils::concurrent::SharedPointer<impl::IgniteImpl> impl;
     };
 }
 
