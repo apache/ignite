@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Datastream;
@@ -41,16 +42,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly BinaryConfiguration _cfg;
 
         /** Type to descriptor map. */
-        private readonly IDictionary<Type, IBinaryTypeDescriptor> _typeToDesc =
-            new Dictionary<Type, IBinaryTypeDescriptor>();
+        private readonly CopyOnWriteConcurrentDictionary<Type, IBinaryTypeDescriptor> _typeToDesc =
+            new CopyOnWriteConcurrentDictionary<Type, IBinaryTypeDescriptor>();
 
         /** Type name to descriptor map. */
-        private readonly IDictionary<string, IBinaryTypeDescriptor> _typeNameToDesc =
-            new Dictionary<string, IBinaryTypeDescriptor>();
+        private readonly CopyOnWriteConcurrentDictionary<string, IBinaryTypeDescriptor> _typeNameToDesc =
+            new CopyOnWriteConcurrentDictionary<string, IBinaryTypeDescriptor>();
 
         /** ID to descriptor map. */
-        private readonly IDictionary<long, IBinaryTypeDescriptor> _idToDesc = 
-            new Dictionary<long, IBinaryTypeDescriptor>();
+        private readonly CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor> _idToDesc = 
+            new CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor>();
 
         /** Cached metadatas. */
         private volatile IDictionary<int, BinaryTypeHolder> _metas = new Dictionary<int, BinaryTypeHolder>();
@@ -247,7 +248,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public T Unmarshal<T>(IBinaryStream stream, BinaryMode mode, BinaryObjectBuilder builder)
         {
-            return new BinaryReader(this, _idToDesc, stream, mode, builder).Deserialize<T>();
+            return new BinaryReader(this, stream, mode, builder).Deserialize<T>();
         }
 
         /// <summary>
@@ -260,8 +261,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public BinaryReader StartUnmarshal(IBinaryStream stream, bool keepBinary)
         {
-            return new BinaryReader(this, _idToDesc, stream,
-                keepBinary ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
+            return new BinaryReader(this, stream, keepBinary ? BinaryMode.KeepBinary : BinaryMode.Deserialize, null);
         }
 
         /// <summary>
@@ -272,7 +272,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Reader.</returns>
         public BinaryReader StartUnmarshal(IBinaryStream stream, BinaryMode mode = BinaryMode.Deserialize)
         {
-            return new BinaryReader(this, _idToDesc, stream, mode, null);
+            return new BinaryReader(this, stream, mode, null);
         }
         
         /// <summary>
@@ -558,6 +558,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var descriptor = new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, 
                 serializer, keepDeserialized, affKeyFieldName, isEnum);
 
+            // TODO: Thread safety
             if (type != null)
                 _typeToDesc[type] = descriptor;
 

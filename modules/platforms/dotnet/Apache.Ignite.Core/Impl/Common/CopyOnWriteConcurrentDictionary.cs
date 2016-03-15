@@ -69,5 +69,23 @@ namespace Apache.Ignite.Core.Impl.Common
                 return res;
             }
         }
+
+        /// <summary>
+        /// Determines whether the specified key exists in the dictionary.
+        /// </summary>
+        public bool ContainsKey(TKey key)
+        {
+            return _dict.ContainsKey(key);
+        }
+
+        /// <summary>
+        /// Gets or sets the value with the specified key.
+        /// SETTER IS NOT CONCURRENCY-SAFE.
+        /// </summary>
+        public TValue this[TKey key]
+        {
+            get { return _dict[key]; }
+            set { _dict[key] = value; }
+        }
     }
 }

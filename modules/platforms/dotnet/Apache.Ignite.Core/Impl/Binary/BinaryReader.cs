@@ -36,9 +36,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Marshaller. */
         private readonly Marshaller _marsh;
 
-        /** Type descriptors. */
-        private readonly IDictionary<long, IBinaryTypeDescriptor> _descs;
-
         /** Parent builder. */
         private readonly BinaryObjectBuilder _builder;
 
@@ -58,19 +55,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Constructor.
         /// </summary>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="descs">Descriptors.</param>
         /// <param name="stream">Input stream.</param>
         /// <param name="mode">The mode.</param>
         /// <param name="builder">Builder.</param>
         public BinaryReader
             (Marshaller marsh,
-            IDictionary<long, IBinaryTypeDescriptor> descs, 
             IBinaryStream stream, 
             BinaryMode mode,
             BinaryObjectBuilder builder)
         {
             _marsh = marsh;
-            _descs = descs;
             _mode = mode;
             _builder = builder;
 
@@ -685,10 +679,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                     IBinaryTypeDescriptor desc;
 
                     if (hdr.TypeId == BinaryUtils.TypeUnregistered)
-                        // TODO: Send meta?
                         desc = Marshaller.RegisterType(Type.GetType(ReadString(), true));
-                    else if (!_descs.TryGetValue(BinaryUtils.TypeKey(hdr.IsUserType, hdr.TypeId), out desc))
-                        throw new BinaryObjectException("Unknown type ID: " + hdr.TypeId);
+                    else
+                        desc = _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId);  // TODO: Can it be null?
 
                     // Instantiate object. 
                     if (desc.Type == null)
