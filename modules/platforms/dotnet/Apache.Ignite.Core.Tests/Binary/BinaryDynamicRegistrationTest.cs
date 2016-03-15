@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -24,6 +25,24 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// </summary>
     public class BinaryDynamicRegistrationTest
     {
+        /// <summary>
+        /// Tests the failed registration.
+        /// </summary>
+        [Test]
+        public void TestFailedRegistration()
+        {
+            // Test in local mode so that MarshallerContext can't propagate type registration.
+            var bytes = new Marshaller(null).Marshal(new Foo {Int = 1, Str = "2"});
+
+            var res = new Marshaller(null).Unmarshal<Foo>(bytes);
+
+            Assert.AreEqual(1, res.Int);
+            Assert.AreEqual("2", res.Str);
+        }
+
+        /// <summary>
+        /// Tests the single grid scenario.
+        /// </summary>
         [Test]
         public void TestSingleGrid()
         {
@@ -33,6 +52,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
+        /// <summary>
+        /// Tests the two grid scenario.
+        /// </summary>
         [Test]
         public void TestTwoGrids()
         {
