@@ -19,6 +19,7 @@
 #include <string>
 #include <exception>
 
+#include "ignite/common/attach_helper.h"
 #include "ignite/common/concurrent.h"
 #include "ignite/common/java.h"
 

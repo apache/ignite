@@ -14,26 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _IGNITE_COMMON_COMMON
-#define _IGNITE_COMMON_COMMON
 
-#define IGNITE_EXPORT __declspec(dllexport)
-#define IGNITE_IMPORT __declspec(dllimport)
-#define IGNITE_CALL __stdcall
-
-#define IGNITE_IMPORT_EXPORT IGNITE_EXPORT
-
-#include <iostream>
-
-#define IGNITE_TRACE_ALLOC(addr) \
-    std::cout << "ALLOC " << __FILE__ << "(" << __LINE__ << "): 0x" << (void*)addr << std::endl;
-
-/**
- * Common construction to disable copy constructor and assignment for class.
- */
-#define IGNITE_NO_COPY_ASSIGNMENT(cls) \
-    cls(const cls& src); \
-    cls& operator= (const cls& other); 
+#ifndef _IGNITE_COMMON_ATTACH_HELPER
+#define _IGNITE_COMMON_ATTACH_HELPER
 
 namespace ignite
 {
@@ -44,13 +27,28 @@ namespace ignite
          */
         class AttachHelper 
         {
-        public:                       
+        public:            
+            /**
+             * Destructor.
+             */
+            ~AttachHelper();
+            
             /**
              * Callback invoked on successful thread attach ot JVM.
              */
             static void OnThreadAttach();
-        };   
+        private:
+            /**
+             * Helper method to allocate attach key.
+             */
+            static void AllocateAttachKey();
+
+            /**
+             * Attach key destructor.
+             */
+            static void DestroyAttachKey(void* key);
+        };        
     }
 }
 
-#endif
+#endif //_IGNITE_COMMON_ATTACH_HELPER

@@ -14,46 +14,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <pthread.h>
 
-#include "ignite/common/common.h"
+#include <windows.h>
+
+#include "ignite/common/attach_helper.h"
+#include "ignite/common/concurrent.h"
 #include "ignite/common/java.h"
 
+using namespace ignite::common::concurrent;
 using namespace ignite::common::java;
 
 namespace ignite
 {
     namespace common
     {
-        /** Key indicating that the thread is attached. */
-        static pthread_key_t attachKey;
-
-        /** Helper to ensure that attach key is allocated only once. */
-        static pthread_once_t attachKeyInit = PTHREAD_ONCE_INIT;
-        
-        AttachHelper::~AttachHelper()
-        {
-            JniContext::Detach();
-        }
-        
         void AttachHelper::OnThreadAttach()
         {
-            pthread_once(&attachKeyInit, AllocateAttachKey);
-            
-            void* val = pthread_getspecific(attachKey);
-            
-            if (!val)
-                pthread_setspecific(attachKey, new AttachHelper());
+            // No-op.
         }
-        
-        void AttachHelper::AllocateAttachKey()
-        {
-            pthread_key_create(&attachKey, DestroyAttachKey);
-        }   
-        
-        void AttachHelper::DestroyAttachKey(void* key)
-        {
-            delete reinterpret_cast<AttachHelper*>(key);
-        }             
     }
+}
+
+BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID lpvReserved)
+{
+    switch (fdwReason)
+    {
+        case DLL_PROCESS_ATTACH:
+            if (!ThreadLocal::OnProcessAttach())
+                return FALSE;
+
+            break;
+
+        case DLL_THREAD_DETACH:
+            ThreadLocal::OnThreadDetach();
+
+            JniContext::Detach();
+
+            break;
+
+        case DLL_PROCESS_DETACH:
+            ThreadLocal::OnProcessDetach();
+
+            break;
+
+        default:
+            break;
+    }
+
+    return TRUE;
 }

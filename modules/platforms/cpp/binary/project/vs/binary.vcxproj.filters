@@ -67,9 +67,6 @@
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater.h">
       <Filter>Code\impl\binary</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater_impl.h">
-      <Filter>Code\impl\binary</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_utils.h">
       <Filter>Code\impl\binary</Filter>
     </ClInclude>
@@ -93,9 +90,6 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\guid.h">
       <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h">
-      <Filter>Code\impl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\date.h">
       <Filter>Code</Filter>
@@ -141,9 +135,6 @@
     <ClCompile Include="..\..\src\impl\binary\binary_type_updater.cpp">
       <Filter>Code\impl\binary</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\impl\binary\binary_type_updater_impl.cpp">
-      <Filter>Code\impl\binary</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\impl\binary\binary_utils.cpp">
       <Filter>Code\impl\binary</Filter>
     </ClCompile>
@@ -161,9 +152,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\guid.cpp">
       <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\impl\ignite_environment.cpp">
-      <Filter>Code\impl</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\date.cpp">
       <Filter>Code</Filter>

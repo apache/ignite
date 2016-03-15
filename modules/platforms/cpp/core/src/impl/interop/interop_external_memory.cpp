@@ -15,51 +15,31 @@
  * limitations under the License.
  */
 
-#include <windows.h>
+#include <ignite/common/ignite_error.h>
+#include <ignite/common/java.h>
 
-#include "ignite/common/common.h"
-#include "ignite/common/concurrent.h"
-#include "ignite/common/java.h"
+#include "ignite/impl/interop/interop_external_memory.h"
 
-using namespace ignite::common::concurrent;
 using namespace ignite::common::java;
 
 namespace ignite
 {
-    namespace common
+    namespace impl
     {
-        void AttachHelper::OnThreadAttach()
+        namespace interop
         {
-            // No-op.
+            InteropExternalMemory::InteropExternalMemory(int8_t* memPtr)
+            {
+                this->memPtr = memPtr;
+            }
+
+            void InteropExternalMemory::Reallocate(int32_t cap)
+            {
+                if (JniContext::Reallocate(reinterpret_cast<int64_t>(memPtr), cap) == -1) {
+                    IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_MEMORY, "Failed to reallocate external memory",
+                        "memPtr", PointerLong(), "requestedCapacity", cap)
+                }
+            }
         }
     }
-}
-
-BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID lpvReserved)
-{
-    switch (fdwReason)
-    {
-        case DLL_PROCESS_ATTACH:
-            if (!ThreadLocal::OnProcessAttach())
-                return FALSE;
-
-            break;
-
-        case DLL_THREAD_DETACH:
-            ThreadLocal::OnThreadDetach();
-
-            JniContext::Detach();
-
-            break;
-
-        case DLL_PROCESS_DETACH:
-            ThreadLocal::OnProcessDetach();
-
-            break;
-
-        default:
-            break;
-    }
-
-    return TRUE;
 }

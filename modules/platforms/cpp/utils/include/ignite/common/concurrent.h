@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_COMMON_CONCURRENT
-#define _IGNITE_COMMON_CONCURRENT
+#ifndef _IGNITE_UTILS_CONCURRENT
+#define _IGNITE_UTILS_CONCURRENT
 
 #include "ignite/common/concurrent_os.h"
 
@@ -234,4 +234,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_UTILS_CONCURRENT

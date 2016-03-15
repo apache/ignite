@@ -14,12 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <ignite/common/java.h>
 #include <ignite/common/ignite_error.h>
 #include <ignite/common/utils.h>
 
-using namespace ignite::common::java;
 using namespace ignite::common::utils;
+
+/* Error constants. */
+// TODO: Refactor.
+const int IGNITE_JNI_ERR_SUCCESS = 0;
+const int IGNITE_JNI_ERR_GENERIC = 1;
+const int IGNITE_JNI_ERR_JVM_INIT = 2;
+const int IGNITE_JNI_ERR_JVM_ATTACH = 3;
 
 namespace ignite
 {

@@ -22,7 +22,7 @@
 #include <ignite/common/java.h>
 
 #include "ignite/impl/interop/interop_memory.h"
-#include "binary/binary_type_manager.h"
+#include "ignite/impl/binary/binary_type_manager.h"
 
 namespace ignite 
 {

@@ -19,6 +19,15 @@
     <ClCompile Include="..\..\src\impl\cache\query\query_impl.cpp">
       <Filter>Code\impl\cache\query</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\ignite_environment.cpp">
+      <Filter>Code\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_external_memory.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\binary\binary_type_updater_impl.cpp">
+      <Filter>Code\impl\binary</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
@@ -84,6 +93,15 @@
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_fields_row_impl.h">
       <Filter>Code\impl\cache\query</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater_impl.h">
+      <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_external_memory.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">
@@ -103,6 +121,12 @@
     </Filter>
     <Filter Include="Code\impl\cache\query">
       <UniqueIdentifier>{b6e57294-120a-46f2-b0ad-c3595e2cf789}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\interop">
+      <UniqueIdentifier>{ef4515c8-aa3d-44d4-b53d-26d18f465903}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\binary">
+      <UniqueIdentifier>{25234d34-541b-4f6c-b42a-cc96ee33a928}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

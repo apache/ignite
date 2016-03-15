@@ -45,37 +45,4 @@
     cls(const cls& src); \
     cls& operator= (const cls& other);
 
-namespace ignite
-{
-    namespace common
-    {
-        /**
-         * Helper class to manage attached threads.
-         */
-        class AttachHelper 
-        {
-        public:            
-            /**
-             * Destructor.
-             */
-            ~AttachHelper();
-            
-            /**
-             * Callback invoked on successful thread attach ot JVM.
-             */
-            static void OnThreadAttach();
-        private:
-            /**
-             * Helper method to allocate attach key.
-             */
-            static void AllocateAttachKey();
-
-            /**
-             * Attach key destructor.
-             */
-            static void DestroyAttachKey(void* key);
-        };        
-    }
-}
-
 #endif
