@@ -1084,16 +1084,21 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return;
             }
 
-            // Maintain compatibility: write serializables with a wrapper.
-            if (type.IsSerializable)
+            var isSerializable = type.IsSerializable;
+
+            // Suppose that we faced normal object and perform descriptor lookup.
+            // Do not dynamically register serializable types for compatibility.
+            var desc = _marsh.GetDescriptor(type, !isSerializable);
+
+            if (desc == null)
             {
+                if (!isSerializable)
+                    throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
+
                 Write(new SerializableObjectHolder(obj));
 
                 return;
             }
-
-            // Suppose that we faced normal object and perform descriptor lookup.
-            var desc = _marsh.GetDescriptor(type);
 
             // Writing normal object.
             var pos = _stream.Position;

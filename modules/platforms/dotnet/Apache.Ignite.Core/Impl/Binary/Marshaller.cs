@@ -366,17 +366,20 @@ namespace Apache.Ignite.Core.Impl.Binary
                 _metas[meta.TypeId].Merge(mergeInfo);
             }
         }
-        
+
         /// <summary>
         /// Gets descriptor for type.
         /// </summary>
         /// <param name="type">Type.</param>
-        /// <returns>Descriptor.</returns>
-        public IBinaryTypeDescriptor GetDescriptor(Type type)
+        /// <param name="registerWhenMissing">if set to <c>true</c>, registers missing type.</param>
+        /// <returns>
+        /// Descriptor.
+        /// </returns>
+        public IBinaryTypeDescriptor GetDescriptor(Type type, bool registerWhenMissing = true)
         {
             IBinaryTypeDescriptor desc;
 
-            if (!_typeToDesc.TryGetValue(type, out desc))
+            if (!_typeToDesc.TryGetValue(type, out desc) && registerWhenMissing)
                 desc = RegisterType(type);
 
             return desc;
