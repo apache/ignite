@@ -715,7 +715,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteFuture<?> rebalance();
 
     /**
-     * Gets snapshot metrics (statistics) for this cache.
+     * Gets snapshot metrics (statistics) for this cache in the server cluster group.
      *
      * @return Cache metrics.
      */

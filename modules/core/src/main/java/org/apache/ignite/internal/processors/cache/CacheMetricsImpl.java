@@ -117,6 +117,8 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Write-behind store, if configured. */
     private GridCacheWriteBehindStore store;
 
+    private final boolean clientMode;
+
     /**
      * Creates cache metrics;
      *
@@ -132,6 +134,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
         if (cctx.store().store() instanceof GridCacheWriteBehindStore)
             store = (GridCacheWriteBehindStore)cctx.store().store();
+
+        clientMode = cctx.gridConfig().isClientMode() && !cctx.isLocal() && !cctx.isNear();
 
         delegate = null;
     }
@@ -696,6 +700,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     public void addGetTimeNanos(long duration) {
         getTimeNanos.addAndGet(duration);
 
+        if (clientMode)
+            onRead(false);
+
         if (delegate != null)
             delegate.addGetTimeNanos(duration);
     }
@@ -708,6 +715,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     public void addPutTimeNanos(long duration) {
         putTimeNanos.addAndGet(duration);
 
+        if (clientMode)
+            onWrite();
+
         if (delegate != null)
             delegate.addPutTimeNanos(duration);
     }
@@ -719,6 +729,9 @@ public class CacheMetricsImpl implements CacheMetrics {
      */
     public void addRemoveTimeNanos(long duration) {
         rmvTimeNanos.addAndGet(duration);
+
+        if (clientMode)
+            onRemove();
 
         if (delegate != null)
             delegate.addRemoveTimeNanos(duration);
@@ -733,6 +746,11 @@ public class CacheMetricsImpl implements CacheMetrics {
         rmvTimeNanos.addAndGet(duration);
         getTimeNanos.addAndGet(duration);
 
+        if (clientMode) {
+            onRead(false);
+            onRemove();
+        }
+
         if (delegate != null)
             delegate.addRemoveAndGetTimeNanos(duration);
     }
@@ -745,6 +763,11 @@ public class CacheMetricsImpl implements CacheMetrics {
     public void addPutAndGetTimeNanos(long duration) {
         putTimeNanos.addAndGet(duration);
         getTimeNanos.addAndGet(duration);
+
+        if (clientMode) {
+            onRead(false);
+            onWrite();
+        }
 
         if (delegate != null)
             delegate.addPutAndGetTimeNanos(duration);

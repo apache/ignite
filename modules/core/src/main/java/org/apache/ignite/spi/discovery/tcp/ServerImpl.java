@@ -68,6 +68,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.processors.cache.CacheMetricsExtendableSnapshot;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -4383,7 +4385,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                     !hasMetrics(msg, locNodeId)) && spiStateCopy() == CONNECTED) {
                     // Message is on its first ring or just created on coordinator.
                     msg.setMetrics(locNodeId, spi.metricsProvider.metrics());
-                    msg.setCacheMetrics(locNodeId, spi.metricsProvider.cacheMetrics());
+                    Map<Integer, CacheMetrics> cacheMetricsMap = spi.metricsProvider.cacheMetrics();
+
+                    if (!ring.minimumNodeVersion().greaterThanEqual(
+                        CacheMetricsExtendableSnapshot.EXTENDABLE_METRICS_VERSION_MAJOR_SINCE,
+                        CacheMetricsExtendableSnapshot.EXTENDABLE_METRICS_VERSION_MINOR_SINCE,
+                        CacheMetricsExtendableSnapshot.EXTENDABLE_METRICS_VERSION_MAINTENANCE_SINCE)) {
+                        for (Map.Entry<Integer, CacheMetrics> entry : cacheMetricsMap.entrySet())
+                            cacheMetricsMap.put(entry.getKey(), new CacheMetricsSnapshot(entry.getValue()));
+                    }
+
+                    msg.setCacheMetrics(locNodeId, cacheMetricsMap);
 
                     for (Map.Entry<UUID, ClientMessageWorker> e : clientMsgWorkers.entrySet()) {
                         UUID nodeId = e.getKey();

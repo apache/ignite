@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -205,6 +207,15 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
 
     /**
      * @param cache Cache.
+     * @param cnt Count.
+     */
+    private void removeCacheData(IgniteCache<Integer, Integer> cache, int cnt) {
+        for (int i = 0; i < cnt; i++)
+            cache.remove(i);
+    }
+
+    /**
+     * @param cache Cache.
      */
     private void assertMetrics(IgniteCache<Integer, Integer> cache) {
         CacheMetrics[] ms = new CacheMetrics[GRID_CNT];
@@ -213,7 +224,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             CacheMetrics metrics = cache.metrics(grid(i).cluster().forCacheNodes(cache.getName()));
 
             for (int j = 0; j < GRID_CNT; j++)
-                ms[j] = grid(j).cache(cache.getName()).metrics();
+                ms[j] = grid(j).cache(cache.getName()).metrics(grid(j).cluster().forLocal());
 
             // Static metrics
             for (int j = 0; j < GRID_CNT; j++)
@@ -238,6 +249,69 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
                 }
             }));
         }
+    }
+
+    /**
+     * Test cluster group metrics with client node.
+     */
+    public void testMetricsOnClient() throws Exception {
+        createCaches(true);
+
+        daemon = false;
+        IgniteConfiguration icfg = getConfiguration("clientNode");
+        icfg.setClientMode(true);
+
+        try (Ignite ignite = startGrid("clientNode", icfg)) {
+            IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cache1.getName());
+
+            populateCacheData(cache, ENTRY_CNT_CACHE1);
+            readCacheData(cache, ENTRY_CNT_CACHE1);
+            removeCacheData(cache, ENTRY_CNT_CACHE1 / 2);
+
+            awaitMetricsUpdate();
+
+            cache.size(CachePeekMode.ALL);
+            cacheFromCtx(cache).size();
+            cacheFromCtx(cache).size(CachePeekMode.values());
+
+            CacheMetrics cacheMetrics = cache.metrics(ignite.cluster().forCacheNodes(cache.getName()));
+            assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
+
+            cacheMetrics = cache.metrics(ignite.cluster());
+            assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
+
+            cacheMetrics = cache.metrics(ignite.cluster().forClients());
+            assertMetricsAreNotEmpty(cacheMetrics, 0); // no size on client node
+
+            cacheMetrics = cache.metrics();
+            // Should be fixed https://issues.apache.org/jira/browse/IGNITE-2636
+            // TODO assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
+            assertEquals(ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2), cacheMetrics.getKeySize());
+
+            cacheMetrics = cache.metrics(ignite.cluster().forServers());
+            assertEquals(ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2), cacheMetrics.getKeySize());
+            // Should be fixed https://issues.apache.org/jira/browse/IGNITE-2636
+            // TODO assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
+        }
+
+        destroyCaches();
+    }
+
+    /**
+     * Checks, that metrics are not faked.
+     *
+     * @param metrics Metrics to check.
+     * @param keyCount Size in the metrics.
+     */
+    private void assertMetricsAreNotEmpty(CacheMetrics metrics, int keyCount) {
+        assertNotNull(metrics);
+
+        assert keyCount == 0 ? metrics.isEmpty() : !metrics.isEmpty();
+
+        assert metrics.getAveragePutTime() > 1 : metrics.getAveragePutTime();
+        assert metrics.getAverageGetTime() > 1 : metrics.getAverageGetTime();
+        assert metrics.getAverageRemoveTime() > 1 : metrics.getAverageRemoveTime();
+        assertEquals(keyCount, metrics.getKeySize());
     }
 
     /**

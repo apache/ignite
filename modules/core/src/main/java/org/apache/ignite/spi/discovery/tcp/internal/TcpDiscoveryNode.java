@@ -620,7 +620,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         for (int i = 0; i < size; i++) {
             int id = in.readInt();
-            CacheMetricsSnapshot m = (CacheMetricsSnapshot) in.readObject();
+            CacheMetrics m = (CacheMetrics) in.readObject();
 
             cacheMetrics.put(id, m);
         }

@@ -3295,7 +3295,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
-        return new CacheMetricsSnapshot(metrics);
+        return new CacheMetricsExtendableSnapshot(metrics);
     }
 
     /** {@inheritDoc} */
@@ -6045,7 +6045,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * @param metrics Metrics.
-         * @param start   Start time.
+         * @param start Operation start time.
          */
         public UpdateTimeStatClosure(CacheMetricsImpl metrics, long start) {
             this.metrics = metrics;
@@ -6067,7 +6067,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /**
-         * Updates statistics.
+         * Updates statistics. Should not be called for operations processing more than one entry on a transparent
+         * client cache.
          */
         protected abstract void updateTimeStat();
     }

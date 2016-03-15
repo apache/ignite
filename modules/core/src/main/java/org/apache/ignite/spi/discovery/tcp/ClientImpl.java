@@ -2020,7 +2020,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         {
             assert nodeId != null;
             assert metrics != null;
-            assert cacheMetrics != null;
 
             TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
 

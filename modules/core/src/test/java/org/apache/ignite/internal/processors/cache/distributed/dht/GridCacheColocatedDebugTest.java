@@ -476,7 +476,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                 if (tx != null)
                     tx.commit();
 
-                System.out.println(cache.metrics());
+                System.out.println(cache.metrics(grid().cluster().forLocal()));
 
                 assertEquals("Hello", cache.get(1));
                 assertEquals("World", cache.get(2));

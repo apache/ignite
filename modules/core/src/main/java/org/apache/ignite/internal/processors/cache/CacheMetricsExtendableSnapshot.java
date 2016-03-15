@@ -17,24 +17,32 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.Serializable;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Metrics snapshot.
- * <p/>
- * Deprecated since it doesn't include cache size and could not be extended by the backward compatibility reason.
- * Use {@link CacheMetricsExtendableSnapshot} instead.
+ * Snapshot for CacheMetrics, which contains cache size.
  */
-@Deprecated
-public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
+public class CacheMetricsExtendableSnapshot implements CacheMetrics, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /**
+     * Major component of the version where CacheMetricsExtendableSnapshot was added.
+     */
+    public static final int EXTENDABLE_METRICS_VERSION_MAJOR_SINCE = 1;
+
+    /**
+     * Minor component of the version where CacheMetricsExtendableSnapshot was added.
+     */
+    public static final int EXTENDABLE_METRICS_VERSION_MINOR_SINCE = 6;
+
+    /**
+     * Maintenance component of the version where CacheMetricsExtendableSnapshot was added.
+     */
+    public static final int EXTENDABLE_METRICS_VERSION_MAINTENANCE_SINCE = 0;
 
     /** Number of reads. */
     private long reads = 0;
@@ -142,7 +150,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     private int keySize;
 
     /** Cache is empty. */
-    private boolean isEmpty;
+    private boolean isEmpty = true;
 
     /** Gets current size of evict queue used to batch up evictions. */
     private int dhtEvictQueueCurrSize;
@@ -238,18 +246,11 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     private boolean isWriteThrough;
 
     /**
-     * Default constructor.
-     */
-    public CacheMetricsSnapshot() {
-        // No-op.
-    }
-
-    /**
      * Create snapshot for given metrics.
      *
      * @param m Cache metrics.
      */
-    public CacheMetricsSnapshot(CacheMetrics m) {
+    public CacheMetricsExtendableSnapshot(CacheMetrics m) {
         reads = m.getCacheGets();
         puts = m.getCachePuts();
         hits = m.getCacheHits();
@@ -331,17 +332,14 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
      * @param loc Metrics for cache on local node.
      * @param metrics Metrics for merge.
      */
-    public CacheMetricsSnapshot(CacheMetrics loc, Collection<CacheMetrics> metrics) {
+    public CacheMetricsExtendableSnapshot(CacheMetrics loc, Collection<CacheMetrics> metrics) {
         cacheName = loc.name();
-        isEmpty = loc.isEmpty();
         isWriteBehindEnabled = loc.isWriteBehindEnabled();
         writeBehindFlushSize = loc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = loc.getWriteBehindFlushThreadCount();
         writeBehindFlushFreq = loc.getWriteBehindFlushFrequency();
         writeBehindStoreBatchSize = loc.getWriteBehindStoreBatchSize();
         writeBehindBufSize = loc.getWriteBehindBufferSize();
-        size = loc.getSize();
-        keySize = loc.getKeySize();
 
         keyType = loc.getKeyType();
         valType = loc.getValueType();
@@ -354,6 +352,10 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapMaxSize = loc.getOffHeapMaxSize();
 
         for (CacheMetrics e : metrics) {
+            size += e.getSize();
+            keySize += e.getKeySize();
+            isEmpty &= e.isEmpty();
+
             reads += e.getCacheGets();
             puts += e.getCachePuts();
             hits += e.getCacheHits();
@@ -852,122 +854,5 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheMetricsSnapshot.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(reads);
-        out.writeLong(puts);
-        out.writeLong(hits);
-        out.writeLong(misses);
-        out.writeLong(txCommits);
-        out.writeLong(txRollbacks);
-        out.writeLong(evicts);
-        out.writeLong(removes);
-
-        out.writeFloat(putAvgTimeNanos);
-        out.writeFloat(getAvgTimeNanos);
-        out.writeFloat(rmvAvgTimeNanos);
-        out.writeFloat(commitAvgTimeNanos);
-        out.writeFloat(rollbackAvgTimeNanos);
-
-        out.writeLong(overflowSize);
-        out.writeLong(offHeapGets);
-        out.writeLong(offHeapPuts);
-        out.writeLong(offHeapRemoves);
-        out.writeLong(offHeapEvicts);
-        out.writeLong(offHeapHits);
-        out.writeLong(offHeapMisses);
-        out.writeLong(offHeapEntriesCnt);
-        out.writeLong(offHeapPrimaryEntriesCnt);
-        out.writeLong(offHeapBackupEntriesCnt);
-        out.writeLong(offHeapAllocatedSize);
-        out.writeLong(offHeapMaxSize);
-
-        out.writeLong(swapGets);
-        out.writeLong(swapPuts);
-        out.writeLong(swapRemoves);
-        out.writeLong(swapHits);
-        out.writeLong(swapMisses);
-        out.writeLong(swapEntriesCnt);
-        out.writeLong(swapSize);
-
-        out.writeInt(dhtEvictQueueCurrSize);
-        out.writeInt(txThreadMapSize);
-        out.writeInt(txXidMapSize);
-        out.writeInt(txCommitQueueSize);
-        out.writeInt(txPrepareQueueSize);
-        out.writeInt(txStartVerCountsSize);
-        out.writeInt(txCommittedVersionsSize);
-        out.writeInt(txRolledbackVersionsSize);
-        out.writeInt(txDhtThreadMapSize);
-        out.writeInt(txDhtXidMapSize);
-        out.writeInt(txDhtCommitQueueSize);
-        out.writeInt(txDhtPrepareQueueSize);
-        out.writeInt(txDhtStartVerCountsSize);
-        out.writeInt(txDhtCommittedVersionsSize);
-        out.writeInt(txDhtRolledbackVersionsSize);
-        out.writeInt(writeBehindTotalCriticalOverflowCnt);
-        out.writeInt(writeBehindCriticalOverflowCnt);
-        out.writeInt(writeBehindErrorRetryCnt);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        reads = in.readLong();
-        puts = in.readLong();
-        hits = in.readLong();
-        misses = in.readLong();
-        txCommits = in.readLong();
-        txRollbacks = in.readLong();
-        evicts = in.readLong();
-        removes = in.readLong();
-
-        putAvgTimeNanos = in.readFloat();
-        getAvgTimeNanos = in.readFloat();
-        rmvAvgTimeNanos = in.readFloat();
-        commitAvgTimeNanos = in.readFloat();
-        rollbackAvgTimeNanos = in.readFloat();
-
-        overflowSize = in.readLong();
-        offHeapGets = in.readLong();
-        offHeapPuts = in.readLong();
-        offHeapRemoves = in.readLong();
-        offHeapEvicts = in.readLong();
-        offHeapHits = in.readLong();
-        offHeapMisses = in.readLong();
-        offHeapEntriesCnt = in.readLong();
-        offHeapPrimaryEntriesCnt = in.readLong();
-        offHeapBackupEntriesCnt = in.readLong();
-        offHeapAllocatedSize = in.readLong();
-        offHeapMaxSize = in.readLong();
-
-        swapGets = in.readLong();
-        swapPuts = in.readLong();
-        swapRemoves = in.readLong();
-        swapHits = in.readLong();
-        swapMisses = in.readLong();
-        swapEntriesCnt = in.readLong();
-        swapSize = in.readLong();
-
-        dhtEvictQueueCurrSize = in.readInt();
-        txThreadMapSize = in.readInt();
-        txXidMapSize = in.readInt();
-        txCommitQueueSize = in.readInt();
-        txPrepareQueueSize = in.readInt();
-        txStartVerCountsSize = in.readInt();
-        txCommittedVersionsSize = in.readInt();
-        txRolledbackVersionsSize = in.readInt();
-        txDhtThreadMapSize = in.readInt();
-        txDhtXidMapSize = in.readInt();
-        txDhtCommitQueueSize = in.readInt();
-        txDhtPrepareQueueSize = in.readInt();
-        txDhtStartVerCountsSize = in.readInt();
-        txDhtCommittedVersionsSize = in.readInt();
-        txDhtRolledbackVersionsSize = in.readInt();
-        writeBehindTotalCriticalOverflowCnt = in.readInt();
-        writeBehindCriticalOverflowCnt = in.readInt();
-        writeBehindErrorRetryCnt = in.readInt();
-    }
-}
+        return S.toString(CacheMetricsExtendableSnapshot.class, this);
+    }}
