@@ -161,7 +161,8 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
             });
 
             fail("Timeout exception must be thrown");
-        } catch (CacheException e) {
+        }
+        catch (CacheException e) {
             // OK
         }
 
@@ -175,7 +176,8 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      * @param ignite Ignite instance.
      * @throws Exception
      */
-    protected void checkExplicitTxTimeout(final IgniteCache<Object, Object> cache, final Ignite ignite) throws Exception {
+    protected void checkExplicitTxTimeout(final IgniteCache<Object, Object> cache, final Ignite ignite)
+        throws Exception {
 
         try (final Transaction tx = ignite.transactions().txStart()) {
             assert tx != null;
@@ -185,7 +187,8 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
             cache.put("key", "val");
 
             fail("Timeout exception must be thrown");
-        } catch (CacheException e) {
+        }
+        catch (CacheException e) {
             assert e.getCause() instanceof TransactionTimeoutException;
         }
 
