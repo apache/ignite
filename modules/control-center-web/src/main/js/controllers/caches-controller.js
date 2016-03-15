@@ -268,7 +268,10 @@ consoleModule.controller('cachesController', [
                     msg = form[firstError.$name].$errorMessages[actualError.$name][firstErrorKey];
                 }
                 catch(ignored) {
-                    msg = 'Invalid value';
+                    try {
+                        msg = errors[firstErrorKey][0].$errorMessages[actualError.$name][firstErrorKey];
+                    }
+                    catch (ignored) {}
                 }
 
                 return showPopoverMessage($scope.ui, firstError.$name, actualError.$name, msg);

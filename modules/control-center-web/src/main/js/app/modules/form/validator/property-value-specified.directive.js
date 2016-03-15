@@ -21,7 +21,7 @@ export default ['ignitePropertyValueSpecified', [() => {
             return;
 
         ngModel.$validators.ignitePropertyValueSpecified = (value) => {
-            return value.indexOf('=') > 0;
+            return value ? value.indexOf('=') > 0 : true;
         };
     };
 

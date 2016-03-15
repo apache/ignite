@@ -21,6 +21,9 @@ export default ['igniteFormGroup', [() => {
     const controller = [function() { }];
 
     const link = (scope, el, attrs, [ngModelCtrl, ownFormCtrl, parentFormCtrl]) => {
+        if (!ownFormCtrl)
+            return;
+
         const name = attrs.ngForm;
         ngModelCtrl.$name = name;
 
@@ -67,6 +70,6 @@ export default ['igniteFormGroup', [() => {
         controllerAs: 'group',
         replace: true,
         transclude: true,
-        require: ['ngModel', '?form', '^^form']
+        require: ['?ngModel', '?form', '^^form']
     };
 }]];
