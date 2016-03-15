@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -1343,6 +1344,10 @@ public class GridNioServer<T> {
             }
         }
 
+        private final AtomicLong wakeupsCnt = new AtomicLong();
+
+        private volatile boolean selecting;
+
         /**
          * Adds socket channel to the registration queue and wakes up reading thread.
          *
@@ -1351,7 +1356,12 @@ public class GridNioServer<T> {
         private void offer(NioOperationFuture req) {
             changeReqs.offer(req);
 
-            selector.wakeup();
+            if (selecting) {
+                selector.wakeup();
+
+                if (PRINT_COMM_CONN_STATS)
+                    wakeupsCnt.incrementAndGet();
+            }
         }
 
         /**
@@ -1436,8 +1446,20 @@ public class GridNioServer<T> {
                         }
                     }
 
+                    selecting = true;
+
+                    if (!changeReqs.isEmpty()) {
+                        selecting = false;
+
+                        continue;
+                    }
+
                     // Wake up every 2 seconds to check if closed.
-                    if (selector.select(2000) > 0) {
+                    int selectRet = selector.select(2000);
+
+                    selecting = false;
+
+                    if (selectRet > 0) {
                         // Walk through the ready keys collection and process network events.
                         if (selectedKeys == null)
                             processSelectedKeys(selector.selectedKeys());
@@ -1589,6 +1611,7 @@ public class GridNioServer<T> {
                 sb.append(U.nl())
                     .append(">> Selector info [idx=").append(idx)
                     .append(", cnt=").append(keys.size())
+                    .append(", wakeupsCnt=").append(wakeupsCnt.getAndSet(0))
                     .append("]").append(U.nl());
             }
             else
