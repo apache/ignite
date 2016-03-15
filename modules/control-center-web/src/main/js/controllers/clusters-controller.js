@@ -21,6 +21,8 @@ consoleModule.controller('clustersController', [
     function ($scope, $http, $state, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, igniteEventGroups) {
         $unsavedChangesGuard.install($scope);
 
+        var emptyCluster = {empty: true};
+
         var __original_value;
 
         var blank = {
@@ -36,7 +38,7 @@ consoleModule.controller('clustersController', [
         };
 
         // We need to initialize backupItem with empty object in order to properly used from angular directives.
-        $scope.backupItem = {};
+        $scope.backupItem = emptyCluster;
 
         $scope.ui = $common.formUI();
         $scope.ui.angularWay = true; // TODO We need to distinguish refactored UI from legacy UI.
@@ -52,7 +54,7 @@ consoleModule.controller('clustersController', [
         $scope.contentVisible = function () {
             var item = $scope.backupItem;
 
-            return !_.isEmpty(item) && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
+            return !item.empty && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
         };
 
         $scope.toggleExpanded = function () {
@@ -186,7 +188,7 @@ consoleModule.controller('clustersController', [
                 else if (item)
                     $scope.backupItem = angular.copy(item);
                 else
-                    $scope.backupItem = {};
+                    $scope.backupItem = emptyCluster ;
 
                 $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
 
@@ -258,7 +260,7 @@ consoleModule.controller('clustersController', [
                 var msg = 'Invalid value';
 
                 try {
-                    msg = form[firstError.$name].$errorMessages[actualError.$name][firstErrorKey];
+                    msg = errors[firstErrorKey][0].$errorMessages[actualError.$name][firstErrorKey];
                 }
                 catch(ignored) {
                     msg = 'Invalid value';
@@ -492,7 +494,7 @@ consoleModule.controller('clustersController', [
                                 if (clusters.length > 0)
                                     $scope.selectItem(clusters[0]);
                                 else
-                                    $scope.backupItem = {};
+                                    $scope.backupItem = emptyCluster;
                             }
                         })
                         .error(function (errMsg) {
@@ -510,7 +512,7 @@ consoleModule.controller('clustersController', [
                             $common.showInfo('All clusters have been removed');
 
                             $scope.clusters = [];
-                            $scope.backupItem = {};
+                            $scope.backupItem = emptyCluster;
                             $scope.ui.inputForm.$setPristine();
                         })
                         .error(function (errMsg) {

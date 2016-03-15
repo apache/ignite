@@ -19,14 +19,14 @@ include ../../../../../app/helpers/jade/mixins.jade
 - var model = 'backupItem'
 
 form.panel.panel-default(name='concurrency' novalidate)
-    .panel-heading(bs-collapse-toggle)
+    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Concurrency control
         ignite-form-field-tooltip.tipLabel
             | Cache concurrent usage settings
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='concurrency')
-        .panel-body
+        .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
                     +number('Max async operations:', model + '.maxConcurrentAsyncOperations', 'maxConcurrentAsyncOperations', 'true', '500', '0',

@@ -19,7 +19,7 @@ include ../../../../../app/helpers/jade/mixins.jade
 - var model = 'backupItem'
 
 form.panel.panel-default(name='server-near-cache' novalidate ng-show='#{model}.cacheMode === "PARTITIONED"')
-    .panel-heading(bs-collapse-toggle)
+    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Server near cache
         ignite-form-field-tooltip.tipLabel
@@ -28,7 +28,7 @@ form.panel.panel-default(name='server-near-cache' novalidate ng-show='#{model}.c
             | Should be used in case when it is impossible to send computations to remote nodes
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='server-near-cache')
-        .panel-body
+        .panel-body(ng-if='__show__')
             .col-sm-6
                 - var enabled = model + '.nearCacheEnabled'
                 - var nearCfg = model + '.nearConfiguration'

@@ -24,14 +24,14 @@ mixin sqlFxFeedbackUnique(field)
     +table-feedback-unique(form, field, 'SQL function with such class name already exists!')
 
 form.panel.panel-default(name='query' novalidate)
-    .panel-heading(bs-collapse-toggle)
+    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Queries & Indexing
         ignite-form-field-tooltip.tipLabel
             | Cache queries settings
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='query')
-        .panel-body
+        .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
                     +text('SQL schema name:', model + '.sqlSchema', 'sqlSchema', 'false', 'Input schema name', 'Schema name for cache according to SQL ANSI-99')

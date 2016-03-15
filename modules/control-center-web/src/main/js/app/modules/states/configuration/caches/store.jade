@@ -89,16 +89,15 @@ mixin hibernateFeedbackUnique(field)
         data-title='Property with such key already exists!'
     )
 
-
 form.panel.panel-default(name='store' novalidate)
-    .panel-heading(bs-collapse-toggle)
+    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Store
         ignite-form-field-tooltip.tipLabel
             | Cache store settings
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='store')
-        .panel-body
+        .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
                     -var storeFactory = model + '.cacheStoreFactory';

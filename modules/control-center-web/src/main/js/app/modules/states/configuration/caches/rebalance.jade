@@ -19,14 +19,14 @@ include ../../../../../app/helpers/jade/mixins.jade
 - var model = 'backupItem'
 
 form.panel.panel-default(name='rebalance' novalidate ng-hide='#{model}.cacheMode === "LOCAL"')
-    .panel-heading(bs-collapse-toggle)
+    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Rebalance
         ignite-form-field-tooltip.tipLabel
             | Cache rebalance settings
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='rebalance')
-        .panel-body
+        .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
                     +dropdown('Mode:', model + '.rebalanceMode', 'rebalanceMode', 'true', 'ASYNC',

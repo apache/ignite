@@ -21,6 +21,8 @@ consoleModule.controller('cachesController', [
     function ($scope, $http, $state, $filter, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard) {
         $unsavedChangesGuard.install($scope);
 
+        var emptyCache = {empty: true};
+
         var __original_value;
 
         var blank = {
@@ -30,7 +32,7 @@ consoleModule.controller('cachesController', [
         };
 
         // We need to initialize backupItem with empty object in order to properly used from angular directives.
-        $scope.backupItem = {};
+        $scope.backupItem = emptyCache;
 
         $scope.ui = $common.formUI();
         $scope.ui.angularWay = true; // TODO We need to distinguish refactored UI from legacy UI.
@@ -46,7 +48,7 @@ consoleModule.controller('cachesController', [
         $scope.contentVisible = function () {
             var item = $scope.backupItem;
 
-            return !_.isEmpty(item) && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
+            return !item.empty && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
         };
 
         $scope.toggleExpanded = function () {
@@ -174,7 +176,7 @@ consoleModule.controller('cachesController', [
                 else if (item)
                     $scope.backupItem = angular.copy(item);
                 else
-                    $scope.backupItem = {};
+                    $scope.backupItem = emptyCache;
 
                 $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
 
@@ -265,13 +267,10 @@ consoleModule.controller('cachesController', [
                 var msg = 'Invalid value';
 
                 try {
-                    msg = form[firstError.$name].$errorMessages[actualError.$name][firstErrorKey];
+                    msg = errors[firstErrorKey][0].$errorMessages[actualError.$name][firstErrorKey];
                 }
                 catch(ignored) {
-                    try {
-                        msg = errors[firstErrorKey][0].$errorMessages[actualError.$name][firstErrorKey];
-                    }
-                    catch (ignored) {}
+                    // No-op.
                 }
 
                 return showPopoverMessage($scope.ui, firstError.$name, actualError.$name, msg);
@@ -443,7 +442,7 @@ consoleModule.controller('cachesController', [
                                 if (caches.length > 0)
                                     $scope.selectItem(caches[0]);
                                 else
-                                    $scope.backupItem = {};
+                                    $scope.backupItem = emptyCache;
                             }
                         })
                         .error(function (errMsg) {
@@ -461,7 +460,7 @@ consoleModule.controller('cachesController', [
                             $common.showInfo('All caches have been removed');
 
                             $scope.caches = [];
-                            $scope.backupItem = {};
+                            $scope.backupItem = emptyCache;
                             $scope.ui.inputForm.$setPristine();
                         })
                         .error(function (errMsg) {
