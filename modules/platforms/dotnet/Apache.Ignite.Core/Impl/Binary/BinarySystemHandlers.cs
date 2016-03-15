@@ -266,9 +266,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // We know how to write enums.
                 return WriteEnum;
 
-            if (type.IsSerializable)
-                return WriteSerializable;
-
             return null;
         }
 
@@ -635,16 +632,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             ctx.WriteInt(binEnum.TypeId);
             ctx.WriteInt(binEnum.EnumValue);
-        }
-
-        /// <summary>
-        /// Writes serializable.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        /// <param name="o">The object.</param>
-        private static void WriteSerializable(BinaryWriter writer, object o)
-        {
-            writer.Write(new SerializableObjectHolder(o));
         }
 
         /**

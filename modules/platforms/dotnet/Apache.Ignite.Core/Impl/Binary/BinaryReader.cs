@@ -676,12 +676,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else
                 {
                     // Find descriptor.
-                    IBinaryTypeDescriptor desc;
-
-                    if (hdr.TypeId == BinaryUtils.TypeUnregistered)
-                        desc = Marshaller.RegisterType(Type.GetType(ReadString(), true));
-                    else
-                        desc = _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId);  // TODO: Can it be null?
+                    var desc = hdr.TypeId == BinaryUtils.TypeUnregistered 
+                        ? _marsh.GetDescriptor(Type.GetType(ReadString(), true)) 
+                        : _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId);
 
                     // Instantiate object. 
                     if (desc.Type == null)

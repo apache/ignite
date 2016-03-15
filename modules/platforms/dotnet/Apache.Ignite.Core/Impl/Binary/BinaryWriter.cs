@@ -1074,29 +1074,26 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (WriteBuilderSpecials(obj))
                 return;
 
-            // Suppose that we faced normal object and perform descriptor lookup.
-            IBinaryTypeDescriptor desc = _marsh.GetDescriptor(type);
-            var unknownType = false;
+            // Are we dealing with a well-known type?
+            var handler = BinarySystemHandlers.GetWriteHandler(type);
 
-            if (desc == null)
+            if (handler != null)
             {
-                // Are we dealing with a well-known type?
-                var handler = BinarySystemHandlers.GetWriteHandler(type);
+                handler(this, obj);
 
-                if (handler != null)
-                {
-                    handler(this, obj);
-
-                    return;
-                }
-
-                // TODO: Dynamic types
-                unknownType = true;  // TODO: This is true only when we have failed to put to MarshallerCache
-
-                desc = Marshaller.RegisterType(type);
-
-                // TODO: Reimplement MarshallerContextImpl in .NET (cannot be reused)
+                return;
             }
+
+            // Maintain compatibility: write serializables with a wrapper.
+            if (type.IsSerializable)
+            {
+                Write(new SerializableObjectHolder(obj));
+
+                return;
+            }
+
+            // Suppose that we faced normal object and perform descriptor lookup.
+            var desc = _marsh.GetDescriptor(type);
 
             // Writing normal object.
             var pos = _stream.Position;
@@ -1109,7 +1106,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _stream.Seek(BinaryObjectHeader.Size, SeekOrigin.Current);
 
             // Write type name for unregistered types
-            if (unknownType)
+            if (!desc.IsRegistered)
                 WriteString(type.AssemblyQualifiedName);
 
             // Preserve old frame.
@@ -1161,7 +1158,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 var len = _stream.Position - pos;
 
-                var header = new BinaryObjectHeader(unknownType ? BinaryUtils.TypeUnregistered : desc.TypeId,
+                var header = new BinaryObjectHeader(desc.IsRegistered ? desc.TypeId : BinaryUtils.TypeUnregistered,
                     obj.GetHashCode(), len, schemaId, schemaOffset, flags);
 
                 BinaryObjectHeader.Write(header, _stream, pos);
