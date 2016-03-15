@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var typeId = BinaryUtils.TypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
 
-            var type = _ctx == null ? null :_ctx.GetType(typeId);
+            var type = _ctx == null ? null : _ctx.GetType(typeId);
 
             if (type == null)
                 return new BinarySurrogateTypeDescriptor(_cfg, typeId, typeName);
