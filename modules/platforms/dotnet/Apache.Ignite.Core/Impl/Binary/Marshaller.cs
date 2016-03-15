@@ -439,13 +439,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(type != null);
 
-            if (_ctx == null)
-                return null;
-
             var typeName = BinaryUtils.GetTypeName(type);
             var typeId = BinaryUtils.TypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
 
-            var registered = _ctx.RegisterType(typeId, type);
+            var registered = _ctx != null && _ctx.RegisterType(typeId, type);
 
             return AddUserType(type, typeId, typeName, registered);
         }
