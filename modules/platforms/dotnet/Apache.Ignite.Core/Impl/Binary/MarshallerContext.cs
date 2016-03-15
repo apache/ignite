@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="ignite">The ignite.</param>
         public MarshallerContext(Ignite ignite)
         {
-            Debug.Assert(_ignite != null);
+            Debug.Assert(ignite != null);
 
             _ignite = ignite;
         }
