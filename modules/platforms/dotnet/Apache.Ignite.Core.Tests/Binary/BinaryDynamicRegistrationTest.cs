@@ -76,11 +76,12 @@ namespace Apache.Ignite.Core.Tests.Binary
             }))
             {
                 Test(ignite1, ignite2);
-
-                // TODO: Test BinaryObject
             }
         }
 
+        /// <summary>
+        /// Tests the type registration.
+        /// </summary>
         private static void Test(IIgnite ignite1, IIgnite ignite2)
         {
             const string cacheName = "cache";
