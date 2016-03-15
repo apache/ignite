@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using Apache.Ignite.Core.Binary;
@@ -85,8 +86,9 @@ namespace Apache.Ignite.Core.Tests.Binary
             const string cacheName = "cache";
 
             // Put on one grid
-            var cache1 = ignite1.CreateCache<int, Foo>(cacheName);
+            var cache1 = ignite1.CreateCache<int, object>(cacheName);
             cache1[1] = new Foo {Int = 1, Str = "1"};
+            cache1[2] = ignite1.GetBinary().GetBuilder(typeof (Bar)).SetField("Int", 5).SetField("Str", "s").Build();
 
             // Get on another grid
             var cache2 = ignite2.GetCache<int, Foo>(cacheName);
@@ -94,9 +96,25 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(1, foo.Int);
             Assert.AreEqual("1", foo.Str);
+
+            var bar = cache2.WithKeepBinary<int, IBinaryObject>()[2];
+
+            Assert.AreEqual("s", bar.GetField<string>("Str"));
+            Assert.AreEqual(5, bar.GetField<int>("Int"));
+
+            var bar0 = bar.Deserialize<Bar>();
+
+            Assert.AreEqual("s", bar0.Str);
+            Assert.AreEqual(5, bar0.Int);
         }
 
         private class Foo
+        {
+            public int Int { get; set; }
+            public string Str { get; set; }
+        }
+
+        private class Bar
         {
             public int Int { get; set; }
             public string Str { get; set; }
