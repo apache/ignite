@@ -105,7 +105,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
 
         final IgniteCache<Object, Object> cache = ignite.getOrCreateCache(CACHE_NAME);
 
-        checkImplicitTxTimeout(cache, ignite);
+        checkImplicitTxTimeout(cache);
         checkExplicitTxTimeout(cache, ignite);
     }
 
@@ -143,19 +143,19 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      * Success if implicit tx fails.
      *
      * @param cache Cache name.
-     * @param ignite Ignite instance.
      * @throws Exception
      */
-    protected void checkImplicitTxTimeout(final IgniteCache<Object, Object> cache, final Ignite ignite) throws Exception {
+    protected void checkImplicitTxTimeout(final IgniteCache<Object, Object> cache) throws Exception {
         try {
             cache.invoke("key", new EntryProcessor<Object, Object, Object>() {
-                @Override public Object process(final MutableEntry<Object, Object> entry, final Object... arguments)
+                @Override public Object process(final MutableEntry<Object, Object> entry, final Object... args)
                     throws EntryProcessorException {
                     try {
-                        Thread.sleep(TX_TIMEOUT);
+                        sleepForTxFailure();
                     } catch (InterruptedException e) {
                         throw new EntryProcessorException(e);
                     }
+
                     return null;
                 }
             });
@@ -178,11 +178,10 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      */
     protected void checkExplicitTxTimeout(final IgniteCache<Object, Object> cache, final Ignite ignite)
         throws Exception {
-
         try (final Transaction tx = ignite.transactions().txStart()) {
             assert tx != null;
 
-            Thread.sleep(TX_TIMEOUT);
+            sleepForTxFailure();
 
             cache.put("key", "val");
 
@@ -205,7 +204,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
         try (final IgniteInternalTx tx = CU.txStartInternal(cache.context(), cache, PESSIMISTIC, READ_COMMITTED)) {
             assert tx != null;
 
-            Thread.sleep(TX_TIMEOUT);
+            sleepForTxFailure();
 
             cache.put("key", "val");
 
@@ -225,10 +224,10 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      */
     protected void checkImplicitTxSuccess(final IgniteInternalCache<Object, Object> cache) throws Exception {
         cache.invoke("key", new EntryProcessor<Object, Object, Object>() {
-            @Override public Object process(final MutableEntry<Object, Object> entry, final Object... arguments)
-                    throws EntryProcessorException {
+            @Override public Object process(final MutableEntry<Object, Object> entry, final Object... args)
+                throws EntryProcessorException {
                 try {
-                    Thread.sleep(TX_TIMEOUT);
+                    sleepForTxFailure();
                 } catch (InterruptedException e) {
                     throw new EntryProcessorException(e);
                 }
@@ -237,5 +236,14 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
         });
 
         cache.clear();
+    }
+
+    /**
+     * Sleep multiple {@link #TX_TIMEOUT} times.
+     *
+     * @throws InterruptedException
+     */
+    private void sleepForTxFailure() throws InterruptedException {
+        Thread.sleep(TX_TIMEOUT * 3);
     }
 }
