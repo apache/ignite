@@ -33,13 +33,23 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestFailedRegistration()
         {
+            TestFailedRegistration<Foo>(false, false);
+            TestFailedRegistration<Bin>(true, false);
+            TestFailedRegistration<BinRaw>(true, true);
+        }
+
+        /// <summary>
+        /// Tests the failed registration.
+        /// </summary>
+        private static void TestFailedRegistration<T>(bool rawStr, bool rawInt) where T : ITest, new()
+        {
             // Disable compact footers for local mode
             var cfg = new BinaryConfiguration {CompactFooter = false};
 
             // Test in local mode so that MarshallerContext can't propagate type registration.
-            var bytes = new Marshaller(cfg).Marshal(new Foo {Int = 1, Str = "2"});
+            var bytes = new Marshaller(cfg).Marshal(new T {Int = 1, Str = "2"});
 
-            var res = new Marshaller(cfg).Unmarshal<Foo>(bytes);
+            var res = new Marshaller(cfg).Unmarshal<T>(bytes);
 
             Assert.AreEqual(1, res.Int);
             Assert.AreEqual("2", res.Str);
@@ -47,8 +57,16 @@ namespace Apache.Ignite.Core.Tests.Binary
             // Check binary mode
             var bin = new Marshaller(cfg).Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
-            Assert.AreEqual("2", bin.GetField<string>("Str"));
-            Assert.AreEqual(1, bin.GetField<int>("Int"));
+            if (!rawStr)
+                Assert.AreEqual("2", bin.GetField<string>("Str"));
+
+            if (!rawInt)
+                Assert.AreEqual(1, bin.GetField<int>("Int"));
+
+            res = bin.Deserialize<T>();
+
+            Assert.AreEqual(1, res.Int);
+            Assert.AreEqual("2", res.Str);
         }
 
         /// <summary>
@@ -109,16 +127,62 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(5, bar0.Int);
         }
 
-        private class Foo
+        private interface ITest
+        {
+            int Int { get; set; }
+            string Str { get; set; }
+        }
+
+        private class Foo : ITest
         {
             public int Int { get; set; }
             public string Str { get; set; }
         }
 
-        private class Bar
+        private class Bar : ITest
         {
             public int Int { get; set; }
             public string Str { get; set; }
+        }
+
+        private class Bin : IBinarizable, ITest
+        {
+            public int Int { get; set; }
+            public string Str { get; set; }
+
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteInt("Int", Int);
+                writer.GetRawWriter().WriteString(Str);
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                Int = reader.ReadInt("Int");
+                Str = reader.GetRawReader().ReadString();
+            }
+        }
+
+        private class BinRaw : IBinarizable, ITest
+        {
+            public int Int { get; set; }
+            public string Str { get; set; }
+
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                var w = writer.GetRawWriter();
+
+                w.WriteInt(Int);
+                w.WriteString(Str);
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                var r = reader.GetRawReader();
+
+                Int = r.ReadInt();
+                Str = r.ReadString();
+            }
         }
     }
 }
