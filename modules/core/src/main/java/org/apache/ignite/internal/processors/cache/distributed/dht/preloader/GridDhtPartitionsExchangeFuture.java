@@ -17,7 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,7 +46,12 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -420,11 +433,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 if (!F.isEmpty(reqs))
-                    exchange = onCacheChangeRequest();
+                    exchange = onCacheChangeRequest(crdNode);
                 else {
                     assert affChangeMsg != null : this;
 
-                    exchange = onAffinityChangeRequest();
+                    exchange = onAffinityChangeRequest(crdNode);
                 }
             }
             else {
@@ -435,9 +448,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
 
                 if (CU.clientNode(discoEvt.eventNode()))
-                    exchange = onClientNodeEvent();
+                    exchange = onClientNodeEvent(crdNode);
                 else
-                    exchange = onServerNodeEvent();
+                    exchange = onServerNodeEvent(crdNode);
             }
 
             updateTopologies(crdNode);
@@ -450,7 +463,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
 
                 case CLIENT: {
-                    initTopologies(receivedCaches);
+                    initTopologies();
 
                     clientOnlyExchange();
 
@@ -458,7 +471,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
 
                 case NONE: {
-                    initTopologies(receivedCaches);
+                    initTopologies();
 
                     onDone(topologyVersion());
 
@@ -484,17 +497,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
-    private void initTopologies(Collection<DynamicCacheDescriptor> receivedCaches) throws IgniteCheckedException {
-        if (receivedCaches != null) {
-            for (DynamicCacheDescriptor desc : receivedCaches) {
-                GridCacheContext cacheCtx = cctx.cacheContext(desc.cacheId());
+    /**
+      * @throws IgniteCheckedException If failed.
+     */
+    private void initTopologies() throws IgniteCheckedException {
+        if (crd != null) {
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (cacheCtx.isLocal())
+                    continue;
 
-                if (cacheCtx != null)
-                    cacheCtx.topology().beforeExchange(this, cacheCtx.affinity().idealAssignment());
+                cacheCtx.topology().beforeExchange(this, cacheCtx.affinity().idealAssignment());
             }
         }
     }
 
+    /**
+     * @param crd Coordinator flag.
+     * @throws IgniteCheckedException If failed.
+     */
     private void updateTopologies(boolean crd) throws IgniteCheckedException {
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal())
@@ -522,12 +542,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @param crd Coordinator flag.
      * @throws IgniteCheckedException If failed.
      */
-    private ExchangeType onCacheChangeRequest() throws IgniteCheckedException {
+    private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
 
-        boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd != null && crd.isLocal(), reqs);
+        boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
 
         if (clientOnly || cctx.kernalContext().clientNode()) {
             boolean clientCacheStarted = false;
@@ -550,12 +571,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @param crd Coordinator flag.
      * @throws IgniteCheckedException If failed.
      */
-    private ExchangeType onAffinityChangeRequest() throws IgniteCheckedException {
+    private ExchangeType onAffinityChangeRequest(boolean crd) throws IgniteCheckedException {
         assert affChangeMsg != null : this;
 
-        cctx.affinity().onChangeAffinityMessage(this, crd != null && crd.isLocal(), affChangeMsg);
+        cctx.affinity().onChangeAffinityMessage(this, crd, affChangeMsg);
 
         if (cctx.kernalContext().clientNode())
             return ExchangeType.CLIENT;
@@ -564,9 +586,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @param crd Coordinator flag.
      * @throws IgniteCheckedException If failed.
      */
-    private ExchangeType onClientNodeEvent() throws IgniteCheckedException {
+    private ExchangeType onClientNodeEvent(boolean crd) throws IgniteCheckedException {
         assert CU.clientNode(discoEvt.eventNode()) : this;
 
         if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED) {
@@ -577,7 +600,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         else
             assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
 
-        cctx.affinity().onClientEvent(this, crd != null && crd.isLocal());
+        cctx.affinity().onClientEvent(this, crd);
 
         if (discoEvt.eventNode().isLocal())
             return ExchangeType.CLIENT;
@@ -586,9 +609,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @param crd Coordinator flag.
      * @throws IgniteCheckedException If failed.
      */
-    private ExchangeType onServerNodeEvent() throws IgniteCheckedException {
+    private ExchangeType onServerNodeEvent(boolean crd) throws IgniteCheckedException {
         assert !CU.clientNode(discoEvt.eventNode()) : this;
 
         if (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED) {
@@ -596,12 +620,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             warnNoAffinityNodes();
 
-            centralizedAff = cctx.affinity().onServerLeft(this, crd != null && crd.isLocal());
+            centralizedAff = cctx.affinity().onServerLeft(this, crd);
         }
         else {
             assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
 
-            cctx.affinity().onServerJoin(this, crd != null && crd.isLocal());
+            cctx.affinity().onServerJoin(this, crd);
         }
 
         if (cctx.kernalContext().clientNode())

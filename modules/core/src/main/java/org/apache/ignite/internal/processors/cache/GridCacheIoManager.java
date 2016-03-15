@@ -128,16 +128,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                     AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
 
-                    assert cacheMsg.topologyVersion().compareTo(startTopVer) > 0 :
-                        "Invalid affinity request [startTopVer=" + startTopVer + ", msg=" + cacheMsg + ']';
-
                     // Need to wait for initial exchange to avoid race between cache start and affinity request.
                     fut = cctx.exchange().affinityReadyFuture(startTopVer);
 
                     if (fut != null && !fut.isDone()) {
-                        cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                            @Override public void run() {
-                                lsnr.onMessage(nodeId, cacheMsg);
+                        fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> fut) {
+                                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                                    @Override public void run() {
+                                       handleMessage(nodeId, cacheMsg);
+                                    }
+                                });
                             }
                         });
 

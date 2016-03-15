@@ -31,6 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -57,11 +58,15 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -70,6 +75,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 
 /**
@@ -81,6 +91,9 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
     /** */
     private boolean client;
+
+    /** */
+    private boolean forceSrvMode;
 
     /** */
     private static final String CACHE_NAME1 = "aff_log_cache";
@@ -109,7 +122,10 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         TestTcpDiscoverySpi discoSpi = new TestTcpDiscoverySpi();
 
+        discoSpi.setForceServerMode(forceSrvMode);
         discoSpi.setIpFinder(ipFinder);
+        discoSpi.setMaxMissedClientHeartbeats(100);
+        discoSpi.setNetworkTimeout(60_000);
 
         cfg.setDiscoverySpi(discoSpi);
 
@@ -137,6 +153,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         ccfg.setName(CACHE_NAME1);
         ccfg.setNodeFilter(cacheNodeFilter);
         ccfg.setAffinity(affinityFunction());
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setBackups(0);
 
         return ccfg;
@@ -151,9 +168,12 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
+        try {
+            checkCaches();
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /** {@inheritDoc} */
@@ -258,19 +278,17 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         };
 
-        cacheNodeFilter = new CachePredicate(F.asList(getTestGridName(0)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(0)));
 
         testAffinitySimpleSequentialStart();
 
         assertNull(((IgniteKernal)ignite(0)).context().cache().internalCache(CACHE_NAME1));
     }
 
-    // TODO: left server exchange start, coordinator fails, new coordinator has no cache.
-
     /**
      * @throws Exception If failed.
      */
-    public void testAffinitySimpleNoCacheOnCoordinator() throws Exception {
+    public void testAffinitySimpleNoCacheOnCoordinator1() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration>() {
             @Override public CacheConfiguration apply(String gridName) {
                 if (gridName.equals(getTestGridName(1)))
@@ -280,7 +298,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         };
 
-        cacheNodeFilter = new CachePredicate(F.asList(getTestGridName(1)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(1)));
 
         startServer(0, 1);
 
@@ -309,6 +327,57 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testAffinitySimpleNoCacheOnCoordinator2() throws Exception {
+        cacheC = new IgniteClosure<String, CacheConfiguration>() {
+            @Override public CacheConfiguration apply(String gridName) {
+                if (gridName.equals(getTestGridName(1)) || gridName.equals(getTestGridName(2)))
+                    return null;
+
+                return cacheConfiguration();
+            }
+        };
+
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(1), getTestGridName(2)));
+
+        startServer(0, 1);
+        startServer(1, 2);
+        startServer(2, 3);
+        startServer(3, 4);
+
+        for (int i = 0; i < 4; i++) {
+            TestRecordingCommunicationSpi spi =
+                (TestRecordingCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+
+            // Prevent exchange finish while node0 or node1 is coordinator.
+            spi.blockMessages(GridDhtPartitionsSingleMessage.class, ignite(0).name());
+            spi.blockMessages(GridDhtPartitionsSingleMessage.class, ignite(1).name());
+        }
+
+        stopGrid(0);
+        stopGrid(1);
+
+        calculateAffinity(5);
+        calculateAffinity(6);
+
+        checkAffinity(2, topVer(6, 0), true);
+
+        assertNull(((IgniteKernal)ignite(2)).context().cache().internalCache(CACHE_NAME1));
+        assertNotNull(((IgniteKernal)ignite(3)).context().cache().internalCache(CACHE_NAME1));
+
+        assertNotNull(ignite(2).cache(CACHE_NAME1));
+
+        checkAffinity(2, topVer(6, 0), true);
+
+        startServer(4, 7);
+
+        checkAffinity(3, topVer(7, 0), false);
+
+        checkAffinity(3, topVer(7, 1), true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testCreateCloseClientCacheOnCoordinator1() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration>() {
             @Override public CacheConfiguration apply(String gridName) {
@@ -316,7 +385,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         };
 
-        cacheNodeFilter = new CachePredicate(F.asList(getTestGridName(0)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(0)));
 
         Ignite ignite0 = startServer(0, 1);
 
@@ -344,7 +413,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         };
 
-        cacheNodeFilter = new CachePredicate(F.asList(getTestGridName(0)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(0)));
 
         Ignite ignite0 = startServer(0, 1);
 
@@ -688,6 +757,8 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinitySimpleStopRandomNode() throws Exception {
+        final int ITERATIONS = 3;
+
         for (int iter = 0; iter < 3; iter++) {
             log.info("Iteration: " + iter);
 
@@ -719,9 +790,11 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
                 awaitPartitionMapExchange();
             }
 
-            stopAllGrids();
+            if (iter < ITERATIONS - 1) {
+                stopAllGrids();
 
-            idealAff.clear();
+                idealAff.clear();
+            }
         }
     }
 
@@ -1037,6 +1110,406 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClientStartFirst1() throws Exception {
+        clientStartFirst(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientStartFirst2() throws Exception {
+        clientStartFirst(3);
+    }
+
+    /**
+     * @param clients Number of client nodes.
+     * @throws Exception If failed.
+     */
+    private void clientStartFirst(int clients) throws Exception {
+        forceSrvMode = true;
+
+        int topVer = 0;
+
+        for (int i = 0; i < clients; i++)
+            startClient(topVer, ++topVer);
+
+        cacheC = new IgniteClosure<String, CacheConfiguration>() {
+            @Override public CacheConfiguration apply(String nodeName) {
+                return null;
+            }
+        };
+
+        startServer(topVer, ++topVer);
+
+        checkAffinity(topVer, topVer(topVer, 0), true);
+
+        startServer(topVer, ++topVer);
+
+        checkAffinity(topVer, topVer(topVer, 0), false);
+
+        checkAffinity(topVer, topVer(topVer, 1), true);
+
+        stopNode(clients, ++topVer);
+
+        checkAffinity(clients + 1, topVer(topVer, 0), true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRandomOperations() throws Exception {
+        final int MAX_SRVS = 10;
+        final int MAX_CLIENTS = 10;
+        final int MAX_CACHES = 20;
+
+        List<String> srvs = new ArrayList<>();
+        List<String> clients = new ArrayList<>();
+
+        int srvIdx = 0;
+        int clientIdx = 0;
+        int cacheIdx = 0;
+
+        List<String> caches = new ArrayList<>();
+
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        long topVer = 0;
+
+        for (int i = 0; i < 100; i++) {
+            int op = i == 0 ? 0 : rnd.nextInt(7);
+
+            log.info("Iteration [iter=" + i + ", op=" + op + ']');
+
+            switch (op) {
+                case 0: {
+                    if (srvs.size() < MAX_SRVS) {
+                        srvIdx++;
+
+                        String srvName = "server-" + srvIdx;
+
+                        log.info("Start server: " + srvName);
+
+                        if (rnd.nextBoolean()) {
+                            cacheIdx++;
+
+                            String cacheName = "join-cache-" + cacheIdx;
+
+                            log.info("Cache for joining node: " + cacheName);
+
+                            cacheClosure(caches, cacheName, srvs, srvIdx);
+                        }
+                        else
+                            cacheClosure(caches, null, srvs, srvIdx);
+
+                        startNode(srvName, ++topVer, false);
+
+                        srvs.add(srvName);
+                    }
+                    else
+                        log.info("Skip start server.");
+
+                    break;
+                }
+
+                case 1: {
+                    if (srvs.size() > 1) {
+                        String srvName = srvs.get(rnd.nextInt(srvs.size()));
+
+                        log.info("Stop server: " + srvName);
+
+                        stopNode(srvName, ++topVer);
+
+                        srvs.remove(srvName);
+                    }
+                    else
+                        log.info("Skip stop server.");
+
+                    break;
+                }
+
+                case 2: {
+                    if (clients.size() < MAX_CLIENTS) {
+                        clientIdx++;
+
+                        String clientName = "client-" + clientIdx;
+
+                        log.info("Start client: " + clientName);
+
+                        if (rnd.nextBoolean()) {
+                            cacheIdx++;
+
+                            String cacheName = "join-cache-" + cacheIdx;
+
+                            log.info("Cache for joining node: " + cacheName);
+
+                            cacheClosure(caches, cacheName, srvs, srvIdx);
+                        }
+                        else
+                            cacheClosure(caches, null, srvs, srvIdx);
+
+                        startNode(clientName, ++topVer, true);
+
+                        clients.add(clientName);
+                    }
+                    else
+                        log.info("Skip start client.");
+
+                    break;
+                }
+
+                case 3: {
+                    if (clients.size() > 1) {
+                        String clientName = clients.get(rnd.nextInt(clients.size()));
+
+                        log.info("Stop client: " + clientName);
+
+                        stopNode(clientName, ++topVer);
+
+                        clients.remove(clientName);
+                    }
+                    else
+                        log.info("Skip stop client.");
+
+                    break;
+                }
+
+                case 4: {
+                    if (caches.size() > 0) {
+                        String cacheName = caches.get(rnd.nextInt(caches.size()));
+
+                        Ignite node = randomNode(srvs, clients);
+
+                        log.info("Destroy cache [cache=" + cacheName + ", node=" + node.name() + ']');
+
+                        node.destroyCache(cacheName);
+
+                        caches.remove(cacheName);
+                    }
+                    else
+                        log.info("Skip destroy cache.");
+
+                    break;
+                }
+
+                case 5: {
+                    if (caches.size() < MAX_CACHES) {
+                        cacheIdx++;
+
+                        String cacheName = "cache-" + cacheIdx;
+
+                        Ignite node = randomNode(srvs, clients);
+
+                        log.info("Create cache [cache=" + cacheName + ", node=" + node.name() + ']');
+
+                        node.createCache(randomCacheConfiguration(cacheName, srvs, srvIdx));
+
+                        calculateAffinity(topVer);
+
+                        caches.add(cacheName);
+                    }
+                    else
+                        log.info("Skip create cache.");
+
+                    break;
+                }
+
+                case 6: {
+                    if (caches.size() > 0) {
+                        for (int j = 0; j < 3; j++) {
+                            String cacheName = caches.get(rnd.nextInt(caches.size()));
+
+                            for (int k = 0; k < 3; k++) {
+                                Ignite node = randomNode(srvs, clients);
+
+                                log.info("Get/closes cache [cache=" + cacheName + ", node=" + node.name() + ']');
+
+                                node.cache(cacheName).close();
+                            }
+                        }
+                    }
+                    else
+                        log.info("Skip get/close cache.");
+
+                    break;
+                }
+
+                default:
+                    fail();
+            }
+
+            IgniteKernal node = (IgniteKernal)grid(srvs.get(0));
+
+            checkAffinity(srvs.size() + clients.size(),
+                node.context().cache().context().exchange().readyAffinityVersion(),
+                false);
+        }
+
+        srvIdx++;
+
+        String srvName = "server-" + srvIdx;
+
+        log.info("Start server: " + srvName);
+
+        cacheClosure(caches, null, srvs, srvIdx);
+
+        startNode(srvName, ++topVer, false);
+
+        srvs.add(srvName);
+
+        checkAffinity(srvs.size() + clients.size(), topVer(topVer, 1), true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServiceReassign() throws Exception {
+        Ignite ignite0 = startServer(0, 1);
+
+        IgniteServices svcs = ignite0.services();
+
+        for (int i = 0; i < 10; i++)
+            svcs.deployKeyAffinitySingleton("service-" + i, new TestServiceImpl(i), CACHE_NAME1, i);
+
+        startServer(1, 2);
+
+        startServer(2, 3);
+
+        Map<String, List<List<ClusterNode>>> assigments = checkAffinity(3, topVer(3, 1), true);
+
+        checkServicesDeploy(ignite(0), assigments.get(CACHE_NAME1));
+
+        stopGrid(0);
+
+        boolean primaryChanged = calculateAffinity(4, assigments);
+
+        assigments = checkAffinity(2, topVer(4, 0), !primaryChanged);
+
+        if (primaryChanged)
+            checkAffinity(2, topVer(4, 1), true);
+
+        checkServicesDeploy(ignite(1), assigments.get(CACHE_NAME1));
+    }
+
+    /**
+     * @param ignite Node.
+     * @param affinity Affinity.
+     * @throws Exception If failed.
+     */
+    private void checkServicesDeploy(Ignite ignite, final List<List<ClusterNode>> affinity) throws Exception {
+        Affinity<Object> aff = ignite.affinity(CACHE_NAME1);
+
+        for (int i = 0; i < 10; i++) {
+            final int part = aff.partition(i);
+
+            final String srvcName = "service-" + i;
+
+            final ClusterNode srvcNode = affinity.get(part).get(0);
+
+            boolean wait = GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    TestService srvc = grid(srvcNode).services().service(srvcName);
+
+                    if (srvc == null)
+                        return false;
+
+                    assertEquals(srvcNode, srvc.serviceNode());
+
+                    return true;
+                }
+            }, 5000);
+
+            assertTrue(wait);
+        }
+    }
+
+    /**
+     * @param srvs Server.
+     * @param clients Clients.
+     * @return Random node.
+     */
+    private Ignite randomNode(List<String> srvs, List<String> clients) {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        String name = null;
+
+        if (rnd.nextBoolean()) {
+            if (clients.size() > 0)
+                name = clients.get(rnd.nextInt(clients.size()));
+        }
+
+        if (name == null)
+            name = srvs.get(rnd.nextInt(srvs.size()));
+
+        Ignite node = grid(name);
+
+        assert  node != null;
+
+        return node;
+    }
+
+    /**
+     * @param caches Caches list.
+     * @param cacheName Cache name.
+     * @param srvs Server nodes.
+     * @param srvIdx Current servers index.
+     */
+    private void cacheClosure(List<String> caches, String cacheName, List<String> srvs, int srvIdx) {
+        if (cacheName != null) {
+            final CacheConfiguration ccfg = randomCacheConfiguration(cacheName, srvs, srvIdx);
+
+            cacheC = new IgniteClosure<String, CacheConfiguration>() {
+                @Override public CacheConfiguration apply(String s) {
+                    return ccfg;
+                }
+            };
+
+            caches.add(cacheName);
+        }
+        else {
+            cacheC = new IgniteClosure<String, CacheConfiguration>() {
+                @Override public CacheConfiguration apply(String s) {
+                    return null;
+                }
+            };
+        }
+    }
+
+    /**
+     * @param name Cache name.
+     * @param srvs Server nodes.
+     * @param srvIdx Current servers index.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration randomCacheConfiguration(String name, List<String> srvs, int srvIdx) {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        CacheConfiguration ccfg = cacheConfiguration();
+
+        ccfg.setAtomicityMode(rnd.nextBoolean() ? TRANSACTIONAL : ATOMIC);
+        ccfg.setBackups(rnd.nextInt(10));
+        ccfg.setRebalanceMode(rnd.nextBoolean() ? SYNC : ASYNC);
+
+        if (rnd.nextBoolean()) {
+            Set<String> exclude = new HashSet<>();
+
+            for (int i = 0; i < 10; i++) {
+                if (i % 2 == 0 && srvs.size() > 0)
+                    exclude.add(srvs.get(rnd.nextInt(srvs.size())));
+                else
+                    exclude.add("server-" + (srvIdx + rnd.nextInt(10)));
+            }
+
+            ccfg.setNodeFilter(new CacheNodeFilter(exclude));
+        }
+
+        ccfg.setName(name);
+
+        return ccfg;
+    }
+
+    /**
      * @param node Node.
      * @param topVer Topology version.
      * @param cache Cache name.
@@ -1096,23 +1569,38 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         return new AffinityTopologyVersion(major, minor);
     }
 
-    // TODO
-    private void checkAffinityApi(int expNodes) {
+    /**
+     *
+     */
+    private void checkCaches() {
         List<Ignite> nodes = G.allGrids();
 
-        assertEquals(expNodes, nodes.size());
+        assertFalse(nodes.isEmpty());
 
         for (Ignite node : nodes) {
             Collection<String> cacheNames = node.cacheNames();
 
+            assertFalse(cacheNames.isEmpty());
+
             for (String cacheName : cacheNames) {
-                Affinity<Object> aff = node.affinity(cacheName);
+                IgniteCache<Object, Object> cache = node.cache(cacheName);
 
-                assertTrue(aff.partitions() > 0);
+                assertNotNull(cache);
 
-                for (int p = 0; p < aff.partitions(); p++) {
-                    Collection<ClusterNode> partNodes = aff.mapPartitionToPrimaryAndBackups(p);
+                Long val = System.currentTimeMillis();
 
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                for (int i = 0; i < 100; i++) {
+                    int key = rnd.nextInt(100_000);
+
+                    cache.put(key, val);
+
+                    assertEquals(val, cache.get(key));
+
+                    cache.remove(key);
+
+                    assertNull(cache.get(key));
                 }
             }
         }
@@ -1158,6 +1646,9 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
                 fut.get();
 
             for (GridCacheContext cctx : node0.context().cache().context().cacheContexts()) {
+                if (cctx.startTopologyVersion() != null && cctx.startTopologyVersion().compareTo(topVer) > 0)
+                    continue;
+
                 List<List<ClusterNode>> aff1 = aff.get(cctx.name());
                 List<List<ClusterNode>> aff2 = cctx.affinity().assignments(topVer);
 
@@ -1177,15 +1668,35 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
                                 ", topVer=" + topVer +
                                 ", cache=" + cctx.name() +
                                 ", part=" + i + ']',
-                                ideal.get(i), aff2.get(i));
+                                F.nodeIds(ideal.get(i)), F.nodeIds(aff2.get(i)));
                         }
 
                         fail();
                     }
+
+                    Affinity<Object> cacheAff = node.affinity(cctx.name());
+
+                    for (int i = 0; i < 10; i++) {
+                        ClusterNode primary = cacheAff.mapKeyToNode(i);
+
+                        int part = cacheAff.partition(i);
+
+                        List<ClusterNode> partNodes = ideal.get(part);
+
+                        if (primary == null)
+                            assertTrue(partNodes.isEmpty());
+                        else
+                            assertEquals(primary, partNodes.get(0));
+                    }
+
+                    for (int p = 0; p < ideal.size(); p++) {
+                        List<ClusterNode> exp = ideal.get(p);
+                        Collection<ClusterNode> partNodes = cacheAff.mapPartitionToPrimaryAndBackups(p);
+
+                        assertEqualsCollections(exp, partNodes);
+                    }
                 }
             }
-
-            assertEquals(expNodes, node.cluster().nodes().size());
         }
 
         assertEquals(expNodes, nodes.size());
@@ -1230,14 +1741,37 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param name Node name.
+     * @param topVer Topology version.
+     * @param client Client flag.
+     * @throws Exception If failed.
+     */
+    private void startNode(String name, long topVer, boolean client) throws Exception {
+        this.client = client;
+
+        startGrid(name);
+
+        calculateAffinity(topVer);
+    }
+
+    /**
+     * @param name Node name.
+     * @param topVer Topology version.
+     * @throws Exception If failed.
+     */
+    private void stopNode(String name, long topVer) throws Exception {
+        stopGrid(name);
+
+        calculateAffinity(topVer);
+    }
+
+    /**
      * @param idx Node index.
      * @param topVer New topology version.
      * @throws Exception If failed.
      */
     private void stopNode(int idx, long topVer) throws Exception {
-        stopGrid(idx);
-
-        calculateAffinity(topVer);
+        stopNode(getTestGridName(idx), topVer);
     }
 
     /**
@@ -1409,14 +1943,62 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     /**
      *
      */
-    static class CachePredicate implements IgnitePredicate<ClusterNode> {
+    interface TestService {
+        /**
+         * @return Node.
+         */
+        ClusterNode serviceNode();
+    }
+
+    /**
+     *
+     */
+    private static class TestServiceImpl implements Service, TestService {
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /** */
-        private List<String> excludeNodes;
+        private int key;
+
+        /**
+         * @param key Key.
+         */
+        public TestServiceImpl(int key) {
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(ServiceContext ctx) throws Exception {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) throws Exception {
+            ignite.log().info("Execute service [key=" + key + ", node=" + ignite.name() + ']');
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClusterNode serviceNode() {
+            return ignite.cluster().localNode();
+        }
+    }
+
+    /**
+     *
+     */
+    static class CacheNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private Collection<String> excludeNodes;
 
         /**
          * @param excludeNodes Nodes names.
          */
-        public CachePredicate(List<String> excludeNodes) {
+        public CacheNodeFilter(Collection<String> excludeNodes) {
             this.excludeNodes = excludeNodes;
         }
 
