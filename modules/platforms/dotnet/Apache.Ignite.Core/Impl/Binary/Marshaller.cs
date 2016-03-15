@@ -426,7 +426,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             res = AddUserType(new BinaryTypeConfiguration(type), new TypeResolver());
 
             // TODO: Check success
-            _ctx.RegisterType(res.TypeId, type);
+            var registered = _ctx.RegisterType(res.TypeId, type);
 
             return res;
         }

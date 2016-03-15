@@ -107,5 +107,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the schema.
         /// </summary>
         BinaryObjectSchema Schema { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether this descriptor is registered in the cluster.
+        /// </summary>
+        /// <value>
+        /// <c>true</c> if this instance is registered; otherwise, <c>false</c>.
+        /// </value>
+        bool IsRegistered { get; }
     }
 }

@@ -164,5 +164,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             get { return _schema; }
         }
+
+        /** <inheritDoc /> */
+        public bool IsRegistered
+        {
+            get { return false; }
+        }
     }
 }
