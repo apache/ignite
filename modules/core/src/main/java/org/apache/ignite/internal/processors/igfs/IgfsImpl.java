@@ -870,9 +870,13 @@ public final class IgfsImpl implements IgfsEx {
 
                         // Perform the listing.
                         for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
-                            IgfsPath p = new IgfsPath(path, e.getKey());
+                            IgfsFileInfo childInfo = meta.info(e.getValue().fileId());
 
-                            files.add(new IgfsFileImpl(p, e.getValue(), data.groupBlockSize()));
+                            if (childInfo != null) {
+                                IgfsPath childPath = new IgfsPath(path, e.getKey());
+
+                                files.add(new IgfsFileImpl(childPath, childInfo, data.groupBlockSize()));
+                            }
                         }
                     }
                 } else if (mode == PRIMARY) {
