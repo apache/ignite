@@ -26,17 +26,17 @@ AM_CXXFLAGS = -Wall -std=c++0x
 noinst_PROGRAMS = ignite-tests
 
 ignite_tests_SOURCES = src/cache_test.cpp \
-                         src/cache_query_test.cpp \
-                         src/concurrent_test.cpp \
-                         src/ignition_test.cpp \
-                         src/interop_memory_test.cpp \
-                         src/handle_registry_test.cpp \
-                         src/binary_test_defs.cpp \
-                         src/binary_reader_writer_raw_test.cpp \
-                         src/binary_reader_writer_test.cpp \
-                         src/binary_session_test.cpp \
-                         src/teamcity_messages.cpp \
-                         src/teamcity_boost.cpp
+                       src/cache_query_test.cpp \
+                       src/concurrent_test.cpp \
+                       src/ignition_test.cpp \
+                       src/interop_memory_test.cpp \
+                       src/handle_registry_test.cpp \
+                       src/binary_test_defs.cpp \
+                       src/binary_reader_writer_raw_test.cpp \
+                       src/binary_reader_writer_test.cpp \
+                       src/binary_session_test.cpp \
+                       src/teamcity_messages.cpp \
+                       src/teamcity_boost.cpp
 
 ignite_tests_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite
 

@@ -24,18 +24,14 @@ AM_CPPFLAGS = -I$(srcdir)/include -I$(srcdir)/os/linux/include -I$(JAVA_HOME)/in
 AM_CXXFLAGS = -Wall -std=c++0x
 LIB_LDFLAGS = -no-undefined -version-info 1
 
-COMMON_SRC = os/linux/src/concurrent_os.cpp \
-             os/linux/src/common.cpp \
-             os/linux/src/utils.cpp \
-             src/ignite_error.cpp \
-             src/concurrent.cpp \
+COMMON_SRC = os/linux/src/attach_helper.cpp \
              src/java.cpp \
              src/exports.cpp
 
 lib_LTLIBRARIES = libignite-common.la
 libignite_common_la_SOURCES = $(COMMON_SRC)
 libignite_common_la_LIBADD = -L$(JAVA_HOME)/jre/lib/amd64/server
-libignite_common_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -ljvm -version-info 0:0:0 -release $(PACKAGE_VERSION)
+libignite_common_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -ljvm -lignite-utils -version-info 0:0:0 -release $(PACKAGE_VERSION)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = ignite-common.pc

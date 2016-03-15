@@ -30,13 +30,11 @@ nobase_include_HEADERS = ignite/binary/binary_raw_reader.h \
                          ignite/impl/binary/binary_type_manager.h \
                          ignite/impl/binary/binary_type_updater.h \
                          ignite/impl/binary/binary_common.h \
-                         ignite/impl/binary/binary_type_updater_impl.h \
                          ignite/impl/binary/binary_writer_impl.h \
                          ignite/impl/binary/binary_type_snapshot.h \
                          ignite/impl/binary/binary_reader_impl.h \
                          ignite/impl/binary/binary_schema.h \
                          ignite/impl/binary/binary_utils.h \
-                         ignite/impl/ignite_environment.h \
                          ignite/impl/interop/interop_memory.h \
                          ignite/impl/interop/interop.h \
                          ignite/impl/interop/interop_stream_position_guard.h \

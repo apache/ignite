@@ -17,11 +17,8 @@
 
 ACLOCAL_AMFLAGS = "-Im4"
 
-nobase_include_HEADERS = ignite/common/concurrent.h \
-                         ignite/common/java.h \
-                         ignite/common/exports.h \
-                         ignite/common/utils.h \
-                         ignite/common/ignite_error.h
+nobase_include_HEADERS = ignite/common/java.h \
+                         ignite/common/exports.h
 
 uninstall-hook:
 	find ${includedir}/ignite -type d -empty -delete

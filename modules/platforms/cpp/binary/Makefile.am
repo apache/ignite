@@ -20,7 +20,7 @@ ACLOCAL_AMFLAGS = "-Im4"
 SUBDIRS = . include
 DIST_SUBDIRS = . include
 
-AM_CPPFLAGS = -I$(srcdir)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
+AM_CPPFLAGS = -I$(srcdir)/include -DIGNITE_IMPL
 AM_CXXFLAGS = -Wall -std=c++0x
 LIB_LDFLAGS = -no-undefined -version-info 1
 
@@ -30,10 +30,8 @@ COMMON_SRC = src/binary/binary_containers.cpp \
              src/binary/binary_reader.cpp \
              src/binary/binary_type.cpp \
              src/binary/binary_raw_reader.cpp \
-             src/impl/ignite_environment.cpp \
              src/impl/binary/binary_type_manager.cpp \
              src/impl/binary/binary_utils.cpp \
-             src/impl/binary/binary_type_updater_impl.cpp \
              src/impl/binary/binary_reader_impl.cpp \
              src/impl/binary/binary_type_handler.cpp \
              src/impl/binary/binary_writer_impl.cpp \
@@ -49,8 +47,7 @@ COMMON_SRC = src/binary/binary_containers.cpp \
 
 lib_LTLIBRARIES = libignite-binary.la
 libignite_binary_la_SOURCES = $(COMMON_SRC)
-libignite_binary_la_LIBADD = -L$(JAVA_HOME)/jre/lib/amd64/server
-libignite_binary_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -lignite-common -ljvm -version-info 0:0:0 -release $(PACKAGE_VERSION)
+libignite_binary_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -lignite-utils -version-info 0:0:0 -release $(PACKAGE_VERSION)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = ignite-binary.pc

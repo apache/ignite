@@ -20,7 +20,7 @@ ACLOCAL_AMFLAGS = "-Im4"
 SUBDIRS = .
 DIST_SUBDIRS = .
 
-AM_CPPFLAGS = -I$(srcdir)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
+AM_CPPFLAGS = -I$(srcdir)/include -DIGNITE_IMPL
 AM_CXXFLAGS = -Wall -std=c++0x
 LIB_LDFLAGS = -no-undefined -version-info 1
 
@@ -55,7 +55,7 @@ COMMON_SRC = os/linux/src/system/socket_client.cpp        \
 
 lib_LTLIBRARIES = libignite-odbc.la
 libignite_odbc_la_SOURCES = $(COMMON_SRC)
-libignite_odbc_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -lignite-common -lignite-binary -ldl -version-info 0:0:0 -release $(PACKAGE_VERSION)
+libignite_odbc_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -lignite-utils -lignite-binary -ldl -version-info 0:0:0 -release $(PACKAGE_VERSION)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = ignite-odbc.pc

@@ -20,19 +20,18 @@ ACLOCAL_AMFLAGS = "-Im4"
 SUBDIRS = . include os/linux/include
 DIST_SUBDIRS = . include os/linux/include
 
-AM_CPPFLAGS = -I$(srcdir)/include -I$(srcdir)/os/linux/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
+AM_CPPFLAGS = -I$(srcdir)/include -I$(srcdir)/os/linux/include -DIGNITE_IMPL
 AM_CXXFLAGS = -Wall -std=c++0x
 LIB_LDFLAGS = -no-undefined -version-info 1
 
-UTILS_SRC = os/linux/src/concurrent_os.cpp \
-            os/linux/src/utils.cpp         \
-            src/ignite_error.cpp           \
-            src/concurrent.cpp
+COMMON_SRC = os/linux/src/concurrent_os.cpp \
+             os/linux/src/utils.cpp         \
+             src/ignite_error.cpp           \
+             src/concurrent.cpp
 
 lib_LTLIBRARIES = libignite-utils.la
-libignite_utils_la_SOURCES = $(UTILS_SRC)
-libignite_utils_la_LIBADD = -L$(JAVA_HOME)/jre/lib/amd64/server
-libignite_utils_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -ljvm -version-info 0:0:0 -release $(PACKAGE_VERSION)
+libignite_utils_la_SOURCES = $(COMMON_SRC)
+libignite_utils_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -version-info 0:0:0 -release $(PACKAGE_VERSION)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = ignite-utils.pc

@@ -26,9 +26,12 @@ LIB_LDFLAGS = -no-undefined -version-info 1
 
 COMMON_SRC = src/ignite.cpp \
              src/ignition.cpp \
+             src/impl/ignite_environment.cpp \
+             src/impl/binary/binary_type_updater_impl.cpp \
              src/impl/handle_registry.cpp \
              src/impl/cache/query/query_impl.cpp \
              src/impl/cache/cache_impl.cpp \
+             src/impl/interop/interop_external_memory.cpp \
              src/impl/ignite_impl.cpp
 
 lib_LTLIBRARIES = libignite.la
