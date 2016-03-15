@@ -297,9 +297,6 @@ public final class IgfsFileInfo implements Externalizable {
         this.props = props == null || props.isEmpty() ? null :
             cpProps ? new GridLeanMap<>(props) : props;
 
-        if (listing == null && isDir)
-            this.listing = Collections.emptyMap();
-
         this.lockId = lockId;
         this.evictExclude = evictExclude;
     }
@@ -410,13 +407,38 @@ public final class IgfsFileInfo implements Externalizable {
      * @return Directory listing.
      */
     public Map<String, IgfsListingEntry> listing() {
-        // Always wrap into unmodifiable map to be able to avoid illegal modifications in order pieces of the code.
-        if (isFile())
-            return Collections.unmodifiableMap(Collections.<String, IgfsListingEntry>emptyMap());
+        return listing != null ? listing : Collections.<String, IgfsListingEntry>emptyMap();
+    }
 
-        assert listing != null;
+    /**
+     * @return {@code True} if at least one child exists.
+     */
+    public boolean hasChildren() {
+        return !F.isEmpty(listing);
+    }
 
-        return Collections.unmodifiableMap(listing);
+    /**
+     * @param name Child name.
+     * @return {@code True} if child with such name exists.
+     */
+    public boolean hasChild(String name) {
+        return listing != null && listing.containsKey(name);
+    }
+
+    /**
+     * @param name Child name.
+     * @param expId Expected child ID.
+     * @return {@code True} if child with such name exists.
+     */
+    public boolean hasChild(String name, IgniteUuid expId) {
+        if (listing != null) {
+            IgfsListingEntry entry = listing.get(name);
+
+            if (entry != null)
+                return F.eq(expId, entry.fileId());
+        }
+
+        return false;
     }
 
     /**
