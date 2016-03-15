@@ -447,6 +447,14 @@ namespace Apache.Ignite.Core.Impl.Binary
             return AddUserType(type, typeId, typeName, registered);
         }
 
+        /// <summary>
+        /// Add user type.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="typeId">The type id.</param>
+        /// <param name="typeName">Name of the type.</param>
+        /// <param name="registered">Registered flag.</param>
+        /// <returns>Descriptor.</returns>
         private BinaryFullTypeDescriptor AddUserType(Type type, int typeId, string typeName, bool registered)
         {
             var ser = new BinaryReflectiveSerializer();
@@ -454,8 +462,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var desc = new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper,
                 _cfg.DefaultIdMapper, ser, false, null, false, registered);
-
-            // TODO: Update dictionaries
 
             return desc;
         }

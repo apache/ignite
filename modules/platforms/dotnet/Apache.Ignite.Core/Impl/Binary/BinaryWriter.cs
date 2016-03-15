@@ -1114,6 +1114,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (!desc.IsRegistered)
                 WriteString(type.AssemblyQualifiedName);
 
+            var headerSize = _stream.Position - pos;
+
             // Preserve old frame.
             var oldFrame = _frame;
 
@@ -1156,7 +1158,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
                 }
                 else
-                    schemaOffset = BinaryObjectHeader.Size;  // TODO: ???
+                    schemaOffset = headerSize;
 
                 if (_frame.RawPos > 0)
                     flags |= BinaryObjectHeader.Flag.HasRaw;
