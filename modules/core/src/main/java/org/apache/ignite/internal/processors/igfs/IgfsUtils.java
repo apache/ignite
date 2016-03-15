@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import java.lang.reflect.Constructor;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -36,6 +39,7 @@ import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,8 +51,76 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Common IGFS utility methods.
  */
 public class IgfsUtils {
+    /** ID for the root directory. */
+    public static final IgniteUuid ROOT_ID = new IgniteUuid(new UUID(0, 0), 0);
+
+    /** Lock Id used to lock files being deleted from TRASH. This is a global constant. */
+    public static final IgniteUuid DELETE_LOCK_ID = new IgniteUuid(new UUID(0, 0), 0);
+
+    /** Constant trash concurrency level. */
+    public static final int TRASH_CONCURRENCY = 16;
+
+    /** Trash directory IDs. */
+    private static final IgniteUuid[] TRASH_IDS;
+
     /** Maximum number of file unlock transaction retries when topology changes. */
     private static final int MAX_CACHE_TX_RETRIES = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
+
+    /**
+     * Static initializer.
+     */
+    static {
+        TRASH_IDS = new IgniteUuid[TRASH_CONCURRENCY];
+
+        for (int i = 0; i < TRASH_CONCURRENCY; i++)
+            TRASH_IDS[i] = new IgniteUuid(new UUID(0, i + 1), 0);
+    }
+
+    /**
+     * Get random trash ID.
+     *
+     * @return Trash ID.
+     */
+    public static IgniteUuid randomTrashId() {
+        return TRASH_IDS[ThreadLocalRandom.current().nextInt(TRASH_CONCURRENCY)];
+    }
+
+    /**
+     * Get trash ID for the given index.
+     *
+     * @param idx Index.
+     * @return Trahs ID.
+     */
+    public static IgniteUuid trashId(int idx) {
+        assert idx >= 0 && idx < TRASH_CONCURRENCY;
+
+        return TRASH_IDS[idx];
+    }
+
+    /**
+     * Check whether provided ID is either root ID or trash ID.
+     *
+     * @param id ID.
+     * @return {@code True} if this is root ID or trash ID.
+     */
+    public static boolean isRootOrTrashId(@Nullable IgniteUuid id) {
+        return id != null && (ROOT_ID.equals(id) || isTrashId(id));
+    }
+
+    /**
+     * Check whether provided ID is trash ID.
+     *
+     * @param id ID.
+     * @return {@code True} if this is trash ID.
+     */
+    private static boolean isTrashId(IgniteUuid id) {
+        assert id != null;
+
+        UUID gid = id.globalId();
+
+        return id.localId() == 0 && gid.getMostSignificantBits() == 0 &&
+            gid.getLeastSignificantBits() > 0 && gid.getLeastSignificantBits() <= TRASH_CONCURRENCY;
+    }
 
     /**
      * Converts any passed exception to IGFS exception.

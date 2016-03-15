@@ -111,7 +111,6 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
-import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.ROOT_ID;
 
 /**
  * Cache-based IGFS implementation.
@@ -1206,7 +1205,7 @@ public final class IgfsImpl implements IgfsEx {
             @Override public IgfsMetrics call() throws Exception {
                 IgfsPathSummary sum = new IgfsPathSummary();
 
-                summary0(ROOT_ID, sum);
+                summary0(IgfsUtils.ROOT_ID, sum);
 
                 long secondarySpaceSize = 0;
 
@@ -1279,7 +1278,7 @@ public final class IgfsImpl implements IgfsEx {
 
         if (info != null) {
             if (info.isDirectory()) {
-                if (!ROOT_ID.equals(info.id()))
+                if (!IgfsUtils.ROOT_ID.equals(info.id()))
                     sum.directoriesCount(sum.directoriesCount() + 1);
 
                 for (IgfsListingEntry entry : info.listing().values())
