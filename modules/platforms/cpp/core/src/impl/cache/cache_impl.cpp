@@ -26,6 +26,7 @@
 
 using namespace ignite::utils::concurrent;
 using namespace ignite::common::java;
+using namespace ignite::java;
 using namespace ignite::utils;
 using namespace ignite::cache;
 using namespace ignite::cache::query;

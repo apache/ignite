@@ -21,6 +21,7 @@
 #include <jni.h>
 
 #include "ignite/utils/common.h"
+#include "ignite/utils/ignite_error.h"
 
 namespace ignite
 {
@@ -28,12 +29,6 @@ namespace ignite
     {
         namespace java
         {
-            /* Error constants. */
-            const int IGNITE_JNI_ERR_SUCCESS = 0;
-            const int IGNITE_JNI_ERR_GENERIC = 1;
-            const int IGNITE_JNI_ERR_JVM_INIT = 2;
-            const int IGNITE_JNI_ERR_JVM_ATTACH = 3;
-
             /* Handlers for callbacks from Java. */
             typedef long long(JNICALL *CacheStoreCreateHandler)(void* target, long long memPtr);
             typedef int(JNICALL *CacheStoreInvokeHandler)(void* target, long long objPtr, long long memPtr, void* cb);

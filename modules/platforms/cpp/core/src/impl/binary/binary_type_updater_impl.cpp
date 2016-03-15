@@ -22,6 +22,7 @@
 
 using namespace ignite::utils::concurrent;
 using namespace ignite::common::java;
+using namespace ignite::java;
 using namespace ignite::impl;
 using namespace ignite::impl::interop;
 using namespace ignite::binary;

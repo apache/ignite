@@ -72,6 +72,15 @@
 
 namespace ignite
 {
+    namespace java
+    {
+        /* Error constants. */
+        const int IGNITE_JNI_ERR_SUCCESS = 0;
+        const int IGNITE_JNI_ERR_GENERIC = 1;
+        const int IGNITE_JNI_ERR_JVM_INIT = 2;
+        const int IGNITE_JNI_ERR_JVM_ATTACH = 3;
+    }
+
     /**
      * Ignite error information.
      */

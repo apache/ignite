@@ -18,13 +18,7 @@
 #include <ignite/utils/utils.h>
 
 using namespace ignite::utils;
-
-/* Error constants. */
-// TODO: Refactor.
-const int IGNITE_JNI_ERR_SUCCESS = 0;
-const int IGNITE_JNI_ERR_GENERIC = 1;
-const int IGNITE_JNI_ERR_JVM_INIT = 2;
-const int IGNITE_JNI_ERR_JVM_ATTACH = 3;
+using namespace ignite::java;
 
 namespace ignite
 {

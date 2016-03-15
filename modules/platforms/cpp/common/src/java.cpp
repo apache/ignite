@@ -53,6 +53,8 @@
     }\
 }
 
+using namespace ignite::java;
+
 namespace ignite
 {
     namespace common
