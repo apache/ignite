@@ -33,6 +33,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
     /** */
