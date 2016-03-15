@@ -74,7 +74,7 @@ div
                 data-multiple='false'
             )
     .details-row(ng-if='#{model}.retryPolicy.kind')
-        .col-sm-12.panel-details()
+        .panel-details.col-sm-12
             div(ng-switch='#{model}.retryPolicy.kind')
                 ignite-configuration-clusters-general-discovery-zookeeper-exponential(ng-switch-when='ExponentialBackoff')
                 ignite-configuration-clusters-general-discovery-zookeeper-bounded-exponential(ng-switch-when='BoundedExponentialBackoff')

@@ -159,6 +159,10 @@ $generatorCommon.builder = function (deep) {
         return this;
     };
 
+    res.softEmptyLine = function () {
+        this.needEmptyLine = this.length > 0;
+    };
+
     res.emptyLineIfNeeded = function () {
         if (this.needEmptyLine) {
             this.push('');

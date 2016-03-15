@@ -86,7 +86,7 @@ form.panel.panel-default(name='general' novalidate)
                             data-placeholder='Choose marshaller'
                         )
                 .settings-row
-                    .col-sm-12.panel-details
+                    .panel-details.col-sm-12
                         ignite-configuration-clusters-general-discovery-cloud(
                             ng-if='#{model}.discovery.kind === "Cloud"')
                         ignite-configuration-clusters-general-discovery-google(
@@ -110,6 +110,6 @@ form.panel.panel-default(name='general' novalidate)
                         | &nbsp;
                         a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
                     .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-cluster='backupItem' data-generator='clusterCaches' data-caches='caches')
+                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterCaches' data-details='caches')
                     .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-cluster='backupItem' data-generator='clusterCaches' data-caches='caches')
+                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterCaches' data-details='caches')

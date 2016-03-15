@@ -32,17 +32,22 @@ import igniteFormFieldInputText from './field/input/text.directive';
 import igniteFormFieldInputCheckbox from './field/input/checkbox.directive';
 import igniteFormFieldInputDatalist from './field/input/datalist.directive';
 
+import placeholder from './field/bs-select-placeholder.directive';
+
 // Group.
 import igniteFormGroup from './group/group.directive';
 import igniteFormGroupAdd from './group/add.directive';
 import igniteFormGroupTooltip from './group/tooltip.directive';
 
 // Validators.
+import ipaddress from './validator/ipaddress.directive';
 import javaKeywords from './validator/java-keywords.directive';
 import javaPackageSpecified from './validator/java-package-specified.directive';
 import javaBuiltInClass from './validator/java-built-in-class.directive';
 import javaIdentifier from './validator/java-identifier.directive';
 import javaPackageName from './validator/java-package-name.directive';
+import propertyValueSpecified from './validator/property-value-specified.directive';
+import propertyUnique from './validator/property-unique.directive';
 import unique from './validator/unique.directive';
 
 // Helpers.
@@ -68,16 +73,20 @@ angular
 .directive(...igniteFormFieldInputText)
 .directive(...igniteFormFieldInputCheckbox)
 .directive(...igniteFormFieldInputDatalist)
+.directive(...placeholder)
 // Group.
 .directive(...igniteFormGroup)
 .directive(...igniteFormGroupAdd)
 .directive(...igniteFormGroupTooltip)
 // Validators.
+.directive(...ipaddress)
 .directive(...javaKeywords)
 .directive(...javaPackageSpecified)
 .directive(...javaBuiltInClass)
 .directive(...javaIdentifier)
 .directive(...javaPackageName)
+.directive(...propertyValueSpecified)
+.directive(...propertyUnique)
 .directive(...unique)
 // Helpers.
 .directive(...igniteFormFieldInputAutofocus)

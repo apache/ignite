@@ -18,11 +18,14 @@
 const template = `<i class='tipField fa fa-question-circle'></i>`;
 
 export default ['igniteFormFieldTooltip', ['$tooltip', ($tooltip) => {
-    const link = ($scope, $element, $attrs, $ctrls, $transclude) => {
+    const link = ($scope, $element, $attrs, [form, field], $transclude) => {
         const content = Array.prototype.slice.apply($transclude($scope))
             .reduce((html, el) => html += el.outerHTML, '');
 
         $tooltip($element, { title: content });
+
+        if (field)
+            $element.attr('id', field.for + 'Tooltip');
 
         // TODO cleanup css styles.
         if ($element.hasClass('tipLabel'))
@@ -33,12 +36,13 @@ export default ['igniteFormFieldTooltip', ['$tooltip', ($tooltip) => {
     };
 
     return {
+        priority: 1,
         restrict: 'E',
         scope: {},
         template,
         link,
         replace: true,
         transclude: true,
-        require: '^form'
+        require: ['^form', '?^igniteFormField']
     };
 }]];

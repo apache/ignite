@@ -17,7 +17,10 @@
 .input-tip
     input.form-control(
         id='{{ id }}'
-        placeholder='{{ placeholder }}' 
+        name='{{ name }}TextInput'
+
+        placeholder='{{ placeholder }}'
+
         type='text' 
 
         data-ng-model='value'
@@ -31,7 +34,7 @@
     )
 
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-if='!ngModel.$pristine && ngModel.$error.required'
+        ng-if='!form[name+"TextInput"].$pristine && form[name+"TextInput"].$error.required'
         bs-tooltip='"{{ label.name }} could not be empty!"'
     )
 

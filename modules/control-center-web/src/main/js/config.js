@@ -25,7 +25,7 @@ System.config({
     "angular-loading": "github:darthwade/angular-loading@0.1.4",
     "angular-motion": "github:mgcrea/angular-motion@0.4.3",
     "angular-nvd3": "github:krispo/angular-nvd3@1.0.5",
-    "angular-retina": "github:jrief/angular-retina@0.3.9",
+    "angular-retina": "github:jrief/angular-retina@0.3.10",
     "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.0",
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.7",
     "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
@@ -40,12 +40,13 @@ System.config({
     "blob": "github:eligrey/Blob.js@master",
     "bootstrap": "github:twbs/bootstrap@3.3.6",
     "bootstrap-carousel": "github:twbs/bootstrap@3.3.6",
-    "clean-css": "npm:clean-css@3.4.9",
+    "clean-css": "npm:clean-css@3.4.10",
     "core-js": "npm:core-js@1.2.6",
     "css": "github:systemjs/plugin-css@0.1.20",
     "file-saver": "github:eligrey/FileSaver.js@master",
     "font-awesome": "npm:font-awesome@4.5.0",
-    "jade": "github:johnsoftek/plugin-jade@0.5.1",
+    "jade": "github:johnsoftek/plugin-jade@0.6.0",
+    "johnsoftek/plugin-jade": "github:johnsoftek/plugin-jade@include",
     "jquery": "github:components/jquery@2.2.1",
     "json": "github:systemjs/plugin-json@0.1.0",
     "jszip": "github:Stuk/jszip@2.5.0",
@@ -54,6 +55,7 @@ System.config({
     "pdfmake": "github:bpampuch/pdfmake@0.1.20",
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
     "spinjs": "github:fgnass/spin.js@2.3.2",
+    "text": "github:systemjs/plugin-text@0.0.7",
     "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
       "angular": "github:angular/bower-angular@1.5.0",
       "angular-animate": "github:angular/bower-angular-animate@1.5.0",
@@ -84,8 +86,13 @@ System.config({
     "github:eligrey/FileSaver.js@master": {
       "blob": "github:eligrey/Blob.js@master"
     },
-    "github:johnsoftek/plugin-jade@0.5.1": {
-      "jade-compiler": "npm:jade@1.11.0"
+    "github:johnsoftek/plugin-jade@0.6.0": {
+      "jade-compiler": "npm:jade@1.11.0",
+      "text": "github:systemjs/plugin-text@0.0.4"
+    },
+    "github:johnsoftek/plugin-jade@include": {
+      "jade-compiler": "npm:jade@1.11.0",
+      "text": "github:systemjs/plugin-text@0.0.4"
     },
     "github:jspm/nodelibs-assert@0.1.0": {
       "assert": "npm:assert@1.3.0"
@@ -164,7 +171,7 @@ System.config({
     "npm:align-text@0.1.4": {
       "kind-of": "npm:kind-of@3.0.2",
       "longest": "npm:longest@1.0.1",
-      "repeat-string": "npm:repeat-string@1.5.2"
+      "repeat-string": "npm:repeat-string@1.5.4"
     },
     "npm:amdefine@1.0.0": {
       "fs": "github:jspm/nodelibs-fs@0.1.2",
@@ -196,7 +203,7 @@ System.config({
       "align-text": "npm:align-text@0.1.4",
       "lazy-cache": "npm:lazy-cache@1.0.3"
     },
-    "npm:clean-css@3.4.9": {
+    "npm:clean-css@3.4.10": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "commander": "npm:commander@2.8.1",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
@@ -247,9 +254,6 @@ System.config({
       "fs": "github:jspm/nodelibs-fs@0.1.2",
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
-    "npm:decamelize@1.1.2": {
-      "escape-string-regexp": "npm:escape-string-regexp@1.0.5"
-    },
     "npm:font-awesome@4.5.0": {
       "css": "github:systemjs/plugin-css@0.1.20"
     },
@@ -262,13 +266,13 @@ System.config({
     "npm:inherits@2.0.1": {
       "util": "github:jspm/nodelibs-util@0.1.0"
     },
-    "npm:is-buffer@1.1.2": {
+    "npm:is-buffer@1.1.3": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0"
     },
     "npm:jade@1.11.0": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "character-parser": "npm:character-parser@1.2.1",
-      "clean-css": "npm:clean-css@3.4.9",
+      "clean-css": "npm:clean-css@3.4.10",
       "commander": "npm:commander@2.6.0",
       "constantinople": "npm:constantinople@3.0.2",
       "jstransformer": "npm:jstransformer@0.0.2",
@@ -289,7 +293,7 @@ System.config({
     },
     "npm:kind-of@3.0.2": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
-      "is-buffer": "npm:is-buffer@1.1.2"
+      "is-buffer": "npm:is-buffer@1.1.3"
     },
     "npm:lazy-cache@1.0.3": {
       "process": "github:jspm/nodelibs-process@0.1.2"
@@ -423,7 +427,7 @@ System.config({
       "assert": "github:jspm/nodelibs-assert@0.1.0",
       "camelcase": "npm:camelcase@1.2.1",
       "cliui": "npm:cliui@2.1.0",
-      "decamelize": "npm:decamelize@1.1.2",
+      "decamelize": "npm:decamelize@1.2.0",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
       "path": "github:jspm/nodelibs-path@0.1.0",
       "process": "github:jspm/nodelibs-process@0.1.2",

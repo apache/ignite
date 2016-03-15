@@ -16,62 +16,64 @@
  */
 
 // Controller for Profile screen.
-consoleModule.controller('profileController',
-    ['$rootScope', '$scope', '$http', '$common', '$focus', '$confirm', 'IgniteCountries', function ($rootScope, $scope, $http, $common, $focus, $confirm, countries) {
-    $scope.user = angular.copy($scope.$root.user);
+consoleModule.controller('profileController', [
+    '$rootScope', '$scope', '$http', '$common', '$focus', '$confirm', 'IgniteCountries',
+    function ($rootScope, $scope, $http, $common, $focus, $confirm, countries) {
+        $scope.user = angular.copy($scope.$root.user);
 
-    $scope.countries = countries;
+        $scope.countries = countries;
 
-    if ($scope.user && !$scope.user.token)
-        $scope.user.token = 'No security token. Regenerate please.';
+        if ($scope.user && !$scope.user.token)
+            $scope.user.token = 'No security token. Regenerate please.';
 
-    $scope.generateToken = function () {
-        $confirm.confirm('Are you sure you want to change security token?')
-            .then(function () {
-                $scope.user.token = $commonUtils.randomString(20);
-            })
-    };
+        $scope.generateToken = function () {
+            $confirm.confirm('Are you sure you want to change security token?')
+                .then(function () {
+                    $scope.user.token = $commonUtils.randomString(20);
+                })
+        };
 
-    function _profileChanged() {
-        var old = $rootScope.user;
-        var cur = $scope.user;
+        function _profileChanged() {
+            var old = $rootScope.user;
+            var cur = $scope.user;
 
-        return !_.isEqual(old, cur) || ($scope.expandedPassword && !$common.isEmptyString($scope.newPassword));
-    }
+            return !_.isEqual(old, cur) || ($scope.expandedPassword && !$common.isEmptyString($scope.newPassword));
+        }
 
-    $scope.profileCouldBeSaved = function () {
-        return _profileChanged() && $scope.profileForm && $scope.profileForm.$valid;
-    };
+        $scope.profileCouldBeSaved = function () {
+            return _profileChanged() && $scope.profileForm && $scope.profileForm.$valid;
+        };
 
-    $scope.saveBtnTipText = function () {
-        if (!_profileChanged())
-            return 'Nothing to save';
+        $scope.saveBtnTipText = function () {
+            if (!_profileChanged())
+                return 'Nothing to save';
 
-        return $scope.profileForm && $scope.profileForm.$valid ? 'Save profile' : 'Invalid profile settings';
-    };
+            return $scope.profileForm && $scope.profileForm.$valid ? 'Save profile' : 'Invalid profile settings';
+        };
 
-    $scope.saveUser = function () {
-        var _user = angular.copy($scope.user);
+        $scope.saveUser = function () {
+            var _user = angular.copy($scope.user);
 
-        if ($scope.expandedPassword)
-            _user.password = $scope.newPassword;
+            if ($scope.expandedPassword)
+                _user.password = $scope.newPassword;
 
-        $http.post('/api/v1/profile/save', _user)
-            .success(function () {
-                $scope.expandedToken = false;
+            $http.post('/api/v1/profile/save', _user)
+                .success(function () {
+                    $scope.expandedToken = false;
 
-                $scope.expandedToken = false;
-                $scope.newPassword = '';
-                $scope.confirmPassword = '';
+                    $scope.expandedToken = false;
+                    $scope.newPassword = '';
+                    $scope.confirmPassword = '';
 
-                $rootScope.user = angular.copy($scope.user);
+                    $rootScope.user = angular.copy($scope.user);
 
-                $common.showInfo('Profile saved.');
+                    $common.showInfo('Profile saved.');
 
-                $focus('profile-username');
-            })
-            .error(function (err) {
-                $common.showError('Failed to save profile: ' + $common.errorMessage(err));
-            });
-    };
-}]);
+                    $focus('profile-username');
+                })
+                .error(function (err) {
+                    $common.showError('Failed to save profile: ' + $common.errorMessage(err));
+                });
+        };
+    }]
+);

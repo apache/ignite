@@ -17,10 +17,11 @@
 div
     div(ng-if='field.type == "external"')
         label.col-xs-4.col-sm-4.col-md-4(
+            id='{{::field.for}}Label'
             for='{{::field.for}}'
             class='{{ field.required ? "required" : "" }}'
-        ) 
+        )
             span(ng-if='field.label') {{::field.label}}:
         .col-xs-8.col-sm-8.col-md-8(ng-transclude='')
     div(ng-if='field.type == "internal"')
-        label.col-xs-12.col-sm-12.col-md-12(ng-transclude)       
+        label.col-xs-12.col-sm-12.col-md-12(ng-transclude id='{{::field.for}}Label')

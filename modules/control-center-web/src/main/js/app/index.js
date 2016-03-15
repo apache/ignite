@@ -81,6 +81,7 @@ import './modules/ace.module';
 // endignite
 
 // Directives.
+import igniteAdvancedOptionsToggle from './directives/advanced-options/advanced-options-toggle.directive';
 import igniteLoading from './directives/loading/loading.directive';
 import igniteInformation from './directives/information/information.directive';
 import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
@@ -132,6 +133,7 @@ angular
     'ignite-console.version'
 ])
 // Directives.
+.directive(...igniteAdvancedOptionsToggle)
 .directive(...igniteLoading)
 .directive(...igniteInformation)
 .directive(...igniteUiAceTabs)

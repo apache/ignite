@@ -28,13 +28,23 @@ include ../includes/infos
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new cache')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cache
-                +save-remove-buttons('cache')
+                +save-remove-buttons-new('cache')
                 hr
             .bs-affix-fix
-            form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate)
-                .panel-group(bs-collapse ng-model='ui.activePanels' data-allow-multiple='true')
-                    +groups('general', 'backupItem')
-                    div(ng-show='ui.expanded')
-                        +advanced-options
-                        +groups('advanced', 'backupItem')
-                +advanced-options
+            div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
+                form.form-horizontal(name='ui.inputForm' ng-show='contentVisible()' novalidate)
+                    .panel-group
+                        ignite-configuration-caches-general
+                        ignite-configuration-caches-memory
+                        ignite-configuration-caches-query
+                        ignite-configuration-caches-store
+
+                        ignite-advanced-options-toggle
+
+                        div(ng-show='ui.expanded')
+                            ignite-configuration-caches-concurrency
+                            ignite-configuration-caches-rebalance
+                            ignite-configuration-caches-server-near-cache
+                            ignite-configuration-caches-statistics
+
+                            ignite-advanced-options-toggle

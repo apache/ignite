@@ -31,7 +31,8 @@ export default ['igniteFormField', [() => {
         bindToController: {
             for: '@',
             label: '@',
-            type: '@'
+            type: '@',
+            name: '@'
         },
         template,
         controller,

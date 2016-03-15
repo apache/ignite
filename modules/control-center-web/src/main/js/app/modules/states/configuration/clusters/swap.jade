@@ -50,7 +50,7 @@ form.panel.panel-default(name='swapSpaceSpi' novalidate)
                     ) {{ #{model}.expanded ? "Hide settings" : "Show settings"}}
 
                 .settings-row
-                    .col-sm-12.panel-details(ng-if='#{model}.expanded && #{model}.kind')
+                    .panel-details.col-sm-12(ng-if='#{model}.expanded && #{model}.kind')
                         .details-row
                             ignite-form-field
                                 ignite-form-field-label
@@ -125,8 +125,8 @@ form.panel.panel-default(name='swapSpaceSpi' novalidate)
                         | &nbsp;
                         a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
                     .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-cluster='backupItem' data-generator='clusterSwap' ng-model='$parent.data')
+                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterSwap' ng-model='$parent.data')
                     .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-cluster='backupItem' data-generator='clusterSwap' ng-model='$parent.data')
+                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterSwap' ng-model='$parent.data')
                     .preview-content-empty(ng-if='!data')
                         label All Defaults

@@ -1841,26 +1841,6 @@ consoleModule.filter('domainsValidation', ['$common', function ($common) {
     };
 }]);
 
-// Directive to enable validation for IP addresses.
-consoleModule.directive('ipaddress', function () {
-    const ip = '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])';
-    const port = '([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])';
-    const portRange = '(:' + port + '(..' + port + ')?)?';
-    const host = '(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])';
-
-    return {
-        require: 'ngModel',
-        link: function (scope, elem, attrs, ctrl) {
-            ctrl.$validators.ipaddress = function (modelValue, viewValue) {
-                if (ctrl.$isEmpty(modelValue) || !attrs.ipaddress)
-                    return true;
-
-                return viewValue.match(new RegExp('(^' + ip + portRange + '$)|(^' + host + portRange + '$)')) != null;
-            };
-        }
-    };
-});
-
 // Directive to enable validation to match specified value.
 consoleModule.directive('match', function ($parse) {
     return {
@@ -2312,9 +2292,4 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
     };
 
     $scope.$root.reloadNotebooks();
-}]);
-
-// Navigation bar controller.
-consoleModule.controller('save-remove', ['$scope', function ($scope) {
-    $scope.removeDropdown = [{ 'text': 'Remove All', 'click': 'removeAllItems()'}];
 }]);

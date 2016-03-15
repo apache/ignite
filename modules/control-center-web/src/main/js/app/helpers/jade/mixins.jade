@@ -1,0 +1,210 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+//- Mixin for checkbox.
+mixin checkbox(lbl, model, name, tip)
+    ignite-form-field.checkbox
+        ignite-form-field-input-checkbox(
+            data-id=name
+            data-name=name
+            data-ng-model=model
+        )
+        | #{lbl}
+        ignite-form-field-tooltip
+            | !{tip}
+
+//- Mixin for text field.
+mixin text(lbl, model, name, required, placeholder, tip)
+    ignite-form-field
+        ignite-form-field-label
+            | #{lbl}
+        ignite-form-field-tooltip
+            | !{tip}
+        ignite-form-field-input-text(
+            data-id=name
+            data-name=name
+            data-ng-model=model
+            data-placeholder=placeholder
+            data-ng-required=required
+        )
+
+//- Mixin for required numeric field.
+mixin number-requited(lbl, model, name, required, enabled, placeholder, min, tip)
+    ignite-form-field
+        ignite-form-field-label
+            | #{lbl}
+        ignite-form-field-tooltip
+            | !{tip}
+        ignite-form-field-input-number(
+            data-id=name
+            data-name=name
+            data-ng-model=model
+            data-ng-required=required
+            data-ng-disabled='!#{enabled}'
+            data-placeholder=placeholder
+            data-min=min
+        )
+
+//- Mixin for numeric field.
+mixin number(lbl, model, name, enabled, placeholder, min, tip)
+    +number-requited(lbl, model, name, 'false', enabled, placeholder, min, tip)
+
+//- Mixin for required dropdown field.
+mixin dropdown-required(lbl, model, name, required, enabled, placeholder, options, tip)
+    ignite-form-field
+        ignite-form-field-label
+            | #{lbl}
+        ignite-form-field-tooltip
+            | !{tip}
+        ignite-form-field-dropdown(
+            data-id=name
+            data-name=name
+            data-options=options
+            data-ng-model=model
+            data-ng-required=required
+            data-ng-disabled='!#{enabled}'
+            data-placeholder=placeholder
+        )
+
+//- Mixin for dropdown field.
+mixin dropdown(lbl, model, name, enabled, placeholder, options, tip)
+    +dropdown-required(lbl, model, name, 'false', enabled, placeholder, options, tip)
+
+
+//- Mixin for dropdown-multiple field.
+mixin dropdown-multiple(lbl, model, name, placeholder, placeholderEmpty, options, tip)
+    ignite-form-field
+        ignite-form-field-label
+            | !{lbl}
+        ignite-form-field-tooltip
+            | !{tip}
+        ignite-form-field-dropdown(
+            data-id=name
+            data-name=name
+            data-multiple='true'
+            data-options=options
+            data-ng-model=model
+            data-placeholder='{{ #{options}.length > 0 ? "#{placeholder}" : "#{placeholderEmpty}" }}'
+        )
+
+//- Mixin for table java class field.
+mixin table-java-class-field(field, items, save, newItem)
+    - var reset = (newItem ? 'group.add = []' : 'field.edit = false')
+
+    - var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    - var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+
+    - var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    - var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+
+    ignite-form-field-java-class(
+        data-name=field
+        data-ng-model=field
+        data-ng-required='true'
+        data-ignite-unique=items
+        data-ignite-form-field-input-autofocus='true'
+        on-enter=onEnter
+        ng-blur=onBlur
+        on-escape=reset
+    )
+        block
+
+//- Mixin for table save button.
+mixin table-save-button(valid, save, newItem)
+    - var reset = (newItem ? 'group.add = []' : 'field.edit = false')
+    - var onClick = valid + ' && ' + save + '; ' + valid  + '&& (' + reset + ');'
+
+    i.fa.fa-floppy-o(
+        ng-show=valid
+        ng-click=onClick
+        bs-tooltip
+        data-title='Click icon or press [Enter] to save item'
+    )
+
+//- Mixin for table remove button.
+mixin table-remove-button(items, tip)
+    i.tipField.fa.fa-remove(
+        ng-hide='field.edit'
+        bs-tooltip='"#{tip}"'
+        ng-click='#{items}.splice(#{items}.indexOf(model), 1)'
+    )
+
+//- Mixin for table feedback for unique validator.
+mixin table-feedback-unique(from, field, tip)
+    - var formField = form + '.' + field
+
+    i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-show='!' + formField + '.$pristine && ' + formField + '.$error.igniteUnique'
+        bs-tooltip
+        data-title=tip
+    )
+
+//- Mixin for cache mode.
+mixin cacheMode(lbl, model, name, placeholder)
+    +dropdown(lbl, model, name, 'true', placeholder,
+        '[\
+            {value: "LOCAL", label: "LOCAL"},\
+            {value: "REPLICATED", label: "REPLICATED"},\
+            {value: "PARTITIONED", label: "PARTITIONED"}\
+        ]',
+        'Cache modes:\
+        <ul>\
+            <li>Partitioned - in this mode the overall key set will be divided into partitions and all partitions will be split equally between participating nodes</li>\
+            <li>Replicated - in this mode all the keys are distributed to all participating nodes</li>\
+            <li>Local - in this mode caches residing on different grid nodes will not know about each other</li>\
+        </ul>'
+    )
+
+//- Mixin for eviction policy.
+mixin evictionPolicy(model, name, required, enabled, tip)
+    - var kind = model + '.kind'
+    - var policy = model + '[' + kind + ']'
+
+    +dropdown-required('Eviction policy:', kind, name + 'Kind', required, enabled, 'Not set',
+        '[\
+            {value: "LRU", label: "LRU"},\
+            {value: "FIFO", label: "FIFO"},\
+            {value: "SORTED", label: "Sorted"},\
+            {value: undefined, label: "Not set"}\
+        ]', tip)
+    span(ng-if=kind)
+        a.customize(ng-show='__.expanded' ng-click='__.expanded = false') Hide settings
+        a.customize(ng-hide='__.expanded' ng-click='__.expanded = true') Show settings
+        .panel-details.col-sm-12(ng-if='__.expanded')
+            .details-row
+                +number('Batch size', policy + '.batchSize', name + 'batchSize', enabled, '1', '0',
+                    'Number of entries to remove on shrink')
+            .details-row
+                +number('Max memory size', policy + '.maxMemorySize', name + 'maxMemorySize', enabled, '0', '0',
+                    'Maximum allowed cache size in bytes')
+            .details-row
+                +number('Max size', policy + '.maxSize', name + 'maxSize', enabled, '100000', '0',
+                    'Maximum allowed size of cache before entry will start getting evicted')
+
+//- Mixin for XML and Java preview.
+mixin preview-xml-java(master, generator, detail)
+    ignite-ui-ace-tabs
+        .preview-panel(ng-init='mode = false')
+            .preview-legend
+                a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
+                | &nbsp;
+                a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
+            .preview-content(ng-if='mode')
+                ignite-ui-ace-java(data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+            .preview-content(ng-if='!mode')
+                ignite-ui-ace-xml(data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
+            .preview-content-empty(ng-if='!data')
+                label All Defaults

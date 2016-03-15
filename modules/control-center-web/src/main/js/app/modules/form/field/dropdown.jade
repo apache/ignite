@@ -19,15 +19,16 @@
         ng-if='dropdown.multiple'
         id='{{ id }}'
         name='{{ name }}'
-        data-placeholder='{{ dropdown.placeholder }}' 
+        data-placeholder='{{ dropdown.placeholder }}'
 
         bs-select 
         bs-options='item.value as item.label for item in dropdown.options' 
         data-multiple='1'
 
         ng-model='dropdown.value'
-        ng-class='{ placeholder: value === undefined || value === null || !value.length }'
         ng-disabled='dropdown.ngDisabled'
+
+        data-ng-required='required || false'
 
         tabindex='0'
     )
@@ -36,14 +37,15 @@
         ng-if='!dropdown.multiple'
         id='{{ id }}'
         name='{{ name }}'
-        data-placeholder='{{ dropdown.placeholder }}' 
+        data-placeholder='{{ dropdown.placeholder }}'
 
-        bs-select 
+        bs-select
         bs-options='item.value as item.label for item in dropdown.options' 
 
         ng-model='dropdown.value'
-        ng-class='{ placeholder: value === undefined || value === null || !value.length }'
         ng-disabled='dropdown.ngDisabled'
+
+        data-ng-required='required || false'
 
         tabindex='0'
     )

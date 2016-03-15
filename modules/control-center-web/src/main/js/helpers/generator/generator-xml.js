@@ -727,11 +727,10 @@ $generatorXml.clusterMarshaller = function (cluster, res) {
 
     var marshaller = cluster.marshaller;
 
-    if (marshaller && marshaller.kind) {
+    if (marshaller && marshaller.kind)
         $generatorXml.beanProperty(res, marshaller[marshaller.kind], 'marshaller', $generatorCommon.MARSHALLERS[marshaller.kind], true);
 
-        res.needEmptyLine = true;
-    }
+    res.softEmptyLine();
 
     $generatorXml.property(res, cluster, 'marshalLocalJobs', null, false);
     $generatorXml.property(res, cluster, 'marshallerCacheKeepAliveTime', null, 10000);
@@ -875,14 +874,14 @@ $generatorXml.cacheMemory = function(cache, res) {
     $generatorXml.property(res, cache, 'memoryMode', null, 'ONHEAP_TIERED');
     $generatorXml.property(res, cache, 'offHeapMaxMemory', null, -1);
 
-    res.needEmptyLine = true;
+    res.softEmptyLine();
 
     $generatorXml.evictionPolicy(res, cache.evictionPolicy, 'evictionPolicy');
 
-    res.needEmptyLine = true;
+    res.softEmptyLine();
 
-    $generatorXml.property(res, cache, 'swapEnabled', null, false);
     $generatorXml.property(res, cache, 'startSize', null, 1500000);
+    $generatorXml.property(res, cache, 'swapEnabled', null, false);
 
     res.needEmptyLine = true;
 
@@ -897,7 +896,6 @@ $generatorXml.cacheQuery = function(cache, res) {
     $generatorXml.property(res, cache, 'sqlSchema');
     $generatorXml.property(res, cache, 'sqlOnheapRowCacheSize', null, 10240);
     $generatorXml.property(res, cache, 'longQueryWarningTimeout', null, 3000);
-    $generatorXml.property(res, cache, 'snapshotableIndex', null, false);
 
     var indexedTypes = _.filter(cache.domains, function (domain) {
         return domain.queryMetadata === 'Annotations'
@@ -914,12 +912,15 @@ $generatorXml.cacheQuery = function(cache, res) {
 
         res.endBlock('</list>');
         res.endBlock('</property>');
-
-        res.needEmptyLine = true;
     }
+
+    res.softEmptyLine();
 
     $generatorXml.listProperty(res, cache, 'sqlFunctionClasses');
 
+    res.softEmptyLine();
+
+    $generatorXml.property(res, cache, 'snapshotableIndex', null, false);
     $generatorXml.property(res, cache, 'sqlEscapeAll', null, false);
 
     res.needEmptyLine = true;
@@ -1012,17 +1013,17 @@ $generatorXml.cacheStore = function(cache, domains, res) {
                     });
                 }
             }
-
-            res.needEmptyLine = true;
         }
     }
+
+    res.softEmptyLine();
 
     $generatorXml.property(res, cache, 'storeKeepBinary', null, false);
     $generatorXml.property(res, cache, 'loadPreviousValue', null, false);
     $generatorXml.property(res, cache, 'readThrough', null, false);
     $generatorXml.property(res, cache, 'writeThrough', null, false);
 
-    res.needEmptyLine = true;
+    res.softEmptyLine();
 
     if (cache.writeBehindEnabled) {
         $generatorXml.property(res, cache, 'writeBehindEnabled', null, false);
@@ -1066,9 +1067,9 @@ $generatorXml.cacheRebalance = function(cache, res) {
         $generatorXml.property(res, cache, 'rebalanceDelay', null, 0);
         $generatorXml.property(res, cache, 'rebalanceTimeout', null, 10000);
         $generatorXml.property(res, cache, 'rebalanceThrottle', null, 0);
-
-        res.needEmptyLine = true;
     }
+
+    res.softEmptyLine();
 
     if (cache.igfsAffinnityGroupSize) {
         res.startBlock('<property name="affinityMapper">');
@@ -1300,7 +1301,7 @@ $generatorXml.domainStore = function(domain, res) {
     $generatorXml.property(res, domain, 'databaseSchema');
     $generatorXml.property(res, domain, 'databaseTable');
 
-    res.needEmptyLine = true;
+    res.softEmptyLine();
 
     $generatorXml.domainModelDatabaseFields(res, domain, 'keyFields');
     $generatorXml.domainModelDatabaseFields(res, domain, 'valueFields');
@@ -1572,7 +1573,7 @@ $generatorXml.igfsMisc = function(igfs, res) {
     $generatorXml.property(res, igfs, 'maximumTaskRangeLength', undefined, 0);
     $generatorXml.property(res, igfs, 'managementPort', undefined, 11400);
 
-    res.needEmptyLine = true;
+    res.softEmptyLine();
 
     if (igfs.pathModes && igfs.pathModes.length > 0) {
         res.startBlock('<property name="pathModes">');
@@ -1584,9 +1585,9 @@ $generatorXml.igfsMisc = function(igfs, res) {
 
         res.endBlock('</map>');
         res.endBlock('</property>');
-
-        res.needEmptyLine = true;
     }
+
+    res.softEmptyLine();
 
     $generatorXml.property(res, igfs, 'perNodeBatchSize', undefined, 100);
     $generatorXml.property(res, igfs, 'perNodeParallelBatchCount', undefined, 8);

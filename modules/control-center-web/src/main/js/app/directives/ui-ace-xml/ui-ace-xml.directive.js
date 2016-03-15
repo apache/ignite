@@ -27,7 +27,7 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
             scope.onLoad = (editor) => {
                 igniteUiAceTabs.onLoad(editor);
 
-                scope.$watch('cluster', () => editor.attractAttention = false);
+                scope.$watch('master', () => editor.attractAttention = false);
             };
         }
 
@@ -40,7 +40,7 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
             if (!data)
                 return;
 
-            return ctrl.generator(scope.cluster);
+            return ctrl.generator(scope.master);
         };
 
         // Setup generator.
@@ -52,7 +52,7 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
                     ctrl.generator = (cluster) => {
                         let caches;
 
-                        caches = _.reduce(scope.caches, function(acc, cache) {
+                        caches = _.reduce(scope.detail, (acc, cache) => {
                             if (_.contains(cluster.caches, cache.value))
                                 acc.push(cache.cache);
 
@@ -71,9 +71,7 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
 
                 case 'igfss':
                     ctrl.generator = (cluster) => {
-                        let igfss;
-
-                        igfss = _.reduce(scope.igfss, (acc, igfs) => {
+                        const igfss = _.reduce(scope.detail, (acc, igfs) => {
                             if (_.contains(cluster.igfss, igfs.value))
                                 acc.push(igfs.igfs);
 
@@ -85,8 +83,22 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
 
                     break;
 
+                case 'cacheStore':
+                    ctrl.generator = (cache) => {
+                        const domains = _.reduce(scope.detail, (acc, domain) => {
+                            if (_.contains(cache.domains, domain.value))
+                                acc.push(domain.meta);
+
+                            return acc;
+                        }, []);
+
+                        return generator.cacheStore(cache, domains).asString();
+                    };
+
+                    break;
+
                 default:
-                    ctrl.generator = (cluster) => generator[method](cluster).asString();
+                    ctrl.generator = (data) => generator[method](data).asString();
             }
         }
 
@@ -104,17 +116,16 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
         const noDeepWatch = !(typeof attrs.noDeepWatch !== 'undefined');
 
         // Setup watchers.
-        scope.$watch('cluster', (data) => ctrl.data = render(data), noDeepWatch);
+        scope.$watch('master', (data) => ctrl.data = render(data), noDeepWatch);
     };
 
     return {
+        priority: 1,
         restrict: 'E',
         scope: {
-            caches: '=',
-            igfss: '=',
-
+            master: '=',
+            detail: '=',
             generator: '@',
-            cluster: '=',
             cfg: '=?clusterCfg'
         },
         bindToController: {

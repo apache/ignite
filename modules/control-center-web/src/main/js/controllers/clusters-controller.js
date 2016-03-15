@@ -16,8 +16,9 @@
  */
 
 // Controller for Clusters screen.
-consoleModule.controller('clustersController', function ($http, $timeout, $scope, $state, $controller,
-    $common, $focus, $confirm, $clone, $loading, $unsavedChangesGuard, $cleanup, igniteEventGroups) {
+consoleModule.controller('clustersController', [
+    '$scope', '$http', '$state', '$timeout', '$common', '$confirm', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'igniteEventGroups',
+    function ($scope, $http, $state, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, igniteEventGroups) {
         $unsavedChangesGuard.install($scope);
 
         var __original_value;
@@ -34,32 +35,31 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             transactionConfiguration: {}
         };
 
-        // Initialize the super class and extend it.
-        angular.extend(this, $controller('save-remove', {$scope: $scope}));
+        // We need to initialize backupItem with empty object in order to properly used from angular directives.
+        $scope.backupItem = {};
 
         $scope.ui = $common.formUI();
         $scope.ui.angularWay = true; // TODO We need to distinguish refactored UI from legacy UI.
         $scope.ui.activePanels = [0];
         $scope.ui.topPanels = [0];
 
-        $scope.compactJavaName = $common.compactJavaName;
-        $scope.widthIsSufficient = $common.widthIsSufficient;
+        $scope.hidePopover = $common.hidePopover;
         $scope.saveBtnTipText = $common.saveBtnTipText;
+        $scope.widthIsSufficient = $common.widthIsSufficient;
+
+        var showPopoverMessage = $common.showPopoverMessage;
 
         $scope.contentVisible = function () {
             var item = $scope.backupItem;
 
-            return item && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
+            return !_.isEmpty(item) && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
         };
 
-        $scope.trustManagersConfigured = function() {
-            return $scope.backupItem.sslEnabled && $common.isDefined($scope.backupItem.sslContextFactory) &&
-                !$common.isEmptyArray($scope.backupItem.sslContextFactory.trustManagers);
+        $scope.toggleExpanded = function () {
+            $scope.ui.expanded = !$scope.ui.expanded;
+
+            $common.hidePopover();
         };
-
-        $scope.hidePopover = $common.hidePopover;
-
-        var showPopoverMessage = $common.showPopoverMessage;
 
         $scope.discoveries = [
             {value: 'Vm', label: 'Static IPs'},
@@ -78,12 +78,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         ];
 
         $scope.eventGroups = igniteEventGroups;
-
-        $scope.toggleExpanded = function () {
-            $scope.ui.expanded = !$scope.ui.expanded;
-
-            $common.hidePopover();
-        };
 
         $scope.clusters = [];
 
@@ -127,7 +121,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                     return {value: igfs._id, label: igfs.name, igfs: igfs};
                 });
 
-                // Load page descriptor.
                 if ($state.params.id)
                     $scope.createItem($state.params.id);
                 else {
@@ -184,14 +177,16 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                     else
                         sessionStorage.removeItem('lastSelectedCluster');
                 }
-                catch (error) { }
+                catch (ignored) {
+                    // No-op.
+                }
 
                 if (backup)
                     $scope.backupItem = backup;
                 else if (item)
                     $scope.backupItem = angular.copy(item);
                 else
-                    $scope.backupItem = undefined;
+                    $scope.backupItem = {};
 
                 $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
 
@@ -459,7 +454,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             });
         }
 
-        // Copy cluster with new name.
+        // Clone cluster with new name.
         $scope.cloneItem = function () {
             if (validate($scope.backupItem)) {
                 $clone.confirm($scope.backupItem.name, _clusterNames()).then(function (newName) {
@@ -479,30 +474,30 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
             $confirm.confirm('Are you sure you want to remove cluster: "' + selectedItem.name + '"?')
                 .then(function () {
-                        var _id = selectedItem._id;
+                    var _id = selectedItem._id;
 
-                        $http.post('/api/v1/configuration/clusters/remove', {_id: _id})
-                            .success(function () {
-                                $common.showInfo('Cluster has been removed: ' + selectedItem.name);
+                    $http.post('/api/v1/configuration/clusters/remove', {_id: _id})
+                        .success(function () {
+                            $common.showInfo('Cluster has been removed: ' + selectedItem.name);
 
-                                var clusters = $scope.clusters;
+                            var clusters = $scope.clusters;
 
-                                var idx = _.findIndex(clusters, function (cluster) {
-                                    return cluster._id === _id;
-                                });
-
-                                if (idx >= 0) {
-                                    clusters.splice(idx, 1);
-
-                                    if (clusters.length > 0)
-                                        $scope.selectItem(clusters[0]);
-                                    else
-                                        $scope.backupItem = undefined;
-                                }
-                            })
-                            .error(function (errMsg) {
-                                $common.showError(errMsg);
+                            var idx = _.findIndex(clusters, function (cluster) {
+                                return cluster._id === _id;
                             });
+
+                            if (idx >= 0) {
+                                clusters.splice(idx, 1);
+
+                                if (clusters.length > 0)
+                                    $scope.selectItem(clusters[0]);
+                                else
+                                    $scope.backupItem = {};
+                            }
+                        })
+                        .error(function (errMsg) {
+                            $common.showError(errMsg);
+                        });
                 });
         };
 
@@ -510,17 +505,17 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         $scope.removeAllItems = function () {
             $confirm.confirm('Are you sure you want to remove all clusters?')
                 .then(function () {
-                        $http.post('/api/v1/configuration/clusters/remove/all')
-                            .success(function () {
-                                $common.showInfo('All clusters have been removed');
+                    $http.post('/api/v1/configuration/clusters/remove/all')
+                        .success(function () {
+                            $common.showInfo('All clusters have been removed');
 
-                                $scope.clusters = [];
-                                $scope.backupItem = undefined;
-                                $scope.ui.inputForm.$setPristine();
-                            })
-                            .error(function (errMsg) {
-                                $common.showError(errMsg);
-                            });
+                            $scope.clusters = [];
+                            $scope.backupItem = {};
+                            $scope.ui.inputForm.$setPristine();
+                        })
+                        .error(function (errMsg) {
+                            $common.showError(errMsg);
+                        });
                 });
         };
 
@@ -541,5 +536,5 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                     $scope.ui.inputForm.$setPristine();
                 });
         };
-    }
+    }]
 );

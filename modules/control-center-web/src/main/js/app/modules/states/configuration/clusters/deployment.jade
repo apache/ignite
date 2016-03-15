@@ -189,8 +189,8 @@ form.panel.panel-default(name='#{form}' novalidate)
                         | &nbsp;
                         a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
                     .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-cluster='backupItem' data-generator='clusterDeployment' ng-model='$parent.data')
+                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterDeployment' ng-model='$parent.data')
                     .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-cluster='backupItem' data-generator='clusterDeployment' ng-model='$parent.data')
+                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterDeployment' ng-model='$parent.data')
                     .preview-content-empty(ng-if='!data')
                         label All Defaults

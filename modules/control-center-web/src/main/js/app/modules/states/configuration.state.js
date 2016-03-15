@@ -17,50 +17,64 @@
 
 import angular from 'angular';
 
+// Clusters screen.
+import previewPanel from './configuration/clusters/preview-panel.directive';
+
+import clustersGeneral from './configuration/clusters/general.directive';
+
+import clustersGeneralDiscoveryCloud from './configuration/clusters/general/discovery/cloud.directive';
+import clustersGeneralDiscoveryGoogle from './configuration/clusters/general/discovery/google.directive';
+import clustersGeneralDiscoveryJdbc from './configuration/clusters/general/discovery/jdbc.directive';
+import clustersGeneralDiscoveryMulticast from './configuration/clusters/general/discovery/multicast.directive';
+import clustersGeneralDiscoveryS3 from './configuration/clusters/general/discovery/s3.directive';
+import clustersGeneralDiscoveryShared from './configuration/clusters/general/discovery/shared.directive';
+import clustersGeneralDiscoveryVm from './configuration/clusters/general/discovery/vm.directive';
+
+import clustersGeneralDiscoveryZookeeper from './configuration/clusters/general/discovery/zookeeper.directive';
+import clustersGeneralDiscoveryZookeeperRetryExponential from './configuration/clusters/general/discovery/zookeeper/retrypolicy/exponential-backoff.directive';
+import clustersGeneralDiscoveryZookeeperRetryBoundedExponential from './configuration/clusters/general/discovery/zookeeper/retrypolicy/bounded-exponential-backoff.directive';
+import clustersGeneralDiscoveryZookeeperRetryUntilElapsed from './configuration/clusters/general/discovery/zookeeper/retrypolicy/until-elapsed.directive';
+import clustersGeneralDiscoveryZookeeperRetryNTimes from './configuration/clusters/general/discovery/zookeeper/retrypolicy/n-times.directive';
+import clustersGeneralDiscoveryZookeeperRetryOneTime from './configuration/clusters/general/discovery/zookeeper/retrypolicy/one-time.directive';
+import clustersGeneralDiscoveryZookeeperRetryForever from './configuration/clusters/general/discovery/zookeeper/retrypolicy/forever.directive';
+import clustersGeneralDiscoveryZookeeperRetryCustom from './configuration/clusters/general/discovery/zookeeper/retrypolicy/custom.directive';
+
+import clustersAtomic from './configuration/clusters/atomic.directive';
+import clustersBinary from './configuration/clusters/binary.directive';
+import clustersCommunication from './configuration/clusters/communication.directive';
+import clustersConnector from './configuration/clusters/connector.directive';
+import clustersDeployment from './configuration/clusters/deployment.directive';
+import clustersDiscovery from './configuration/clusters/discovery.directive';
+import clustersEvents from './configuration/clusters/events.directive';
+import clustersIgfs from './configuration/clusters/igfs.directive';
+import clustersMarshaller from './configuration/clusters/marshaller.directive';
+import clustersMetrics from './configuration/clusters/metrics.directive';
+import clustersSsl from './configuration/clusters/ssl.directive';
+import clustersSwap from './configuration/clusters/swap.directive';
+import clustersTime from './configuration/clusters/time.directive';
+import clustersThread from './configuration/clusters/thread.directive';
+import clustersTransactions from './configuration/clusters/transactions.directive';
+
+// Caches screen.
+import cachesGeneral from './configuration/caches/general.directive';
+import cachesMemory from './configuration/caches/memory.directive';
+import cachesQuery from './configuration/caches/query.directive';
+import cachesStore from './configuration/caches/store.directive';
+import cachesConcurrency from './configuration/caches/concurrency.directive';
+import cachesRebalance from './configuration/caches/rebalance.directive';
+import cachesServerNearCache from './configuration/caches/server-near-cache.directive';
+import cachesStatistics from './configuration/caches/statistics.directive';
+
+// Summary screen.
 import ConfigurationSummaryCtrl from './configuration/summary/summary.controller';
 import ConfigurationSummaryResource from './configuration/summary/summary.resource';
 import summaryTabs from './configuration/summary/summary-tabs.directive';
-import previewPanel from './configuration/clusters/preview-panel.directive';
-
-import clustersTransactions from './configuration/clusters/transactions.directive';
-import clustersThread from './configuration/clusters/thread.directive';
-import clustersTime from './configuration/clusters/time.directive';
-import clustersSwap from './configuration/clusters/swap.directive';
-import clustersSsl from './configuration/clusters/ssl.directive';
-import clustersMetrics from './configuration/clusters/metrics.directive';
-import clustersMarshaller from './configuration/clusters/marshaller.directive';
-import clustersIgfs from './configuration/clusters/igfs.directive';
-import clustersEvents from './configuration/clusters/events.directive';
-import clustersDiscovery from './configuration/clusters/discovery.directive';
-import clustersDeployment from './configuration/clusters/deployment.directive';
-import clustersConnector from './configuration/clusters/connector.directive';
-import clustersCommunication from './configuration/clusters/communication.directive';
-import clustersBinary from './configuration/clusters/binary.directive';
-import clustersAtomic from './configuration/clusters/atomic.directive';
-
-import clustersGeneral from './configuration/clusters/general.directive';
-import generalDiscoveryCloud from './configuration/clusters/general/discovery/cloud.directive';
-import generalDiscoveryGoogle from './configuration/clusters/general/discovery/google.directive';
-import generalDiscoveryJdbc from './configuration/clusters/general/discovery/jdbc.directive';
-import generalDiscoveryMulticast from './configuration/clusters/general/discovery/multicast.directive';
-import generalDiscoveryS3 from './configuration/clusters/general/discovery/s3.directive';
-import generalDiscoveryShared from './configuration/clusters/general/discovery/shared.directive';
-import generalDiscoveryVm from './configuration/clusters/general/discovery/vm.directive';
-import generalDiscoveryZookeeper from './configuration/clusters/general/discovery/zookeeper.directive';
-
-import generalDiscoveryZookeeperRetryExponential from './configuration/clusters/general/discovery/zookeeper/retrypolicy/exponential-backoff.directive';
-import generalDiscoveryZookeeperRetryBoundedExponential from './configuration/clusters/general/discovery/zookeeper/retrypolicy/bounded-exponential-backoff.directive';
-import generalDiscoveryZookeeperRetryUntilElapsed from './configuration/clusters/general/discovery/zookeeper/retrypolicy/until-elapsed.directive';
-import generalDiscoveryZookeeperRetryNTimes from './configuration/clusters/general/discovery/zookeeper/retrypolicy/n-times.directive';
-import generalDiscoveryZookeeperRetryOneTime from './configuration/clusters/general/discovery/zookeeper/retrypolicy/one-time.directive';
-import generalDiscoveryZookeeperRetryForever from './configuration/clusters/general/discovery/zookeeper/retrypolicy/forever.directive';
-import generalDiscoveryZookeeperRetryCustom from './configuration/clusters/general/discovery/zookeeper/retrypolicy/custom.directive';
 
 angular
 .module('ignite-console.states.configuration', [
     'ui.router'
 ])
-.directive(...summaryTabs)
+// Clusters screen.
 .directive(...previewPanel)
 .directive(...clustersTransactions)
 .directive(...clustersThread)
@@ -78,21 +92,32 @@ angular
 .directive(...clustersBinary)
 .directive(...clustersAtomic)
 .directive(...clustersGeneral)
-.directive(...generalDiscoveryCloud)
-.directive(...generalDiscoveryGoogle)
-.directive(...generalDiscoveryJdbc)
-.directive(...generalDiscoveryMulticast)
-.directive(...generalDiscoveryS3)
-.directive(...generalDiscoveryShared)
-.directive(...generalDiscoveryVm)
-.directive(...generalDiscoveryZookeeper)
-.directive(...generalDiscoveryZookeeperRetryExponential)
-.directive(...generalDiscoveryZookeeperRetryBoundedExponential)
-.directive(...generalDiscoveryZookeeperRetryUntilElapsed)
-.directive(...generalDiscoveryZookeeperRetryNTimes)
-.directive(...generalDiscoveryZookeeperRetryOneTime)
-.directive(...generalDiscoveryZookeeperRetryForever)
-.directive(...generalDiscoveryZookeeperRetryCustom)
+.directive(...clustersGeneralDiscoveryCloud)
+.directive(...clustersGeneralDiscoveryGoogle)
+.directive(...clustersGeneralDiscoveryJdbc)
+.directive(...clustersGeneralDiscoveryMulticast)
+.directive(...clustersGeneralDiscoveryS3)
+.directive(...clustersGeneralDiscoveryShared)
+.directive(...clustersGeneralDiscoveryVm)
+.directive(...clustersGeneralDiscoveryZookeeper)
+.directive(...clustersGeneralDiscoveryZookeeperRetryExponential)
+.directive(...clustersGeneralDiscoveryZookeeperRetryBoundedExponential)
+.directive(...clustersGeneralDiscoveryZookeeperRetryUntilElapsed)
+.directive(...clustersGeneralDiscoveryZookeeperRetryNTimes)
+.directive(...clustersGeneralDiscoveryZookeeperRetryOneTime)
+.directive(...clustersGeneralDiscoveryZookeeperRetryForever)
+.directive(...clustersGeneralDiscoveryZookeeperRetryCustom)
+// Caches screen
+.directive(...cachesGeneral)
+.directive(...cachesMemory)
+.directive(...cachesQuery)
+.directive(...cachesStore)
+.directive(...cachesConcurrency)
+.directive(...cachesRebalance)
+.directive(...cachesServerNearCache)
+.directive(...cachesStatistics)
+// Summary screen
+.directive(...summaryTabs)
 // Services.
 .service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {

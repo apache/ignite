@@ -16,12 +16,10 @@
  */
 
 // Controller for Domain model screen.
-consoleModule.controller('domainsController', function ($filter, $http, $timeout, $state, $scope, $controller, $modal,
-    $common, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard, $agentDownload) {
+consoleModule.controller('domainsController', [
+    '$scope', '$http', '$state', '$filter', '$timeout', '$modal', '$common', '$focus', '$confirm', '$confirmBatch', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard', '$agentDownload',
+    function ($scope, $http, $state, $filter, $timeout, $modal, $common, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard, $agentDownload) {
         $unsavedChangesGuard.install($scope);
-
-        // Initialize the super class and extend it.
-        angular.extend(this, $controller('save-remove', {$scope: $scope}));
 
         $scope.ui = $common.formUI();
         $scope.ui.activePanels = [0, 1];
@@ -1840,5 +1838,5 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                     $scope.ui.markPristine();
                 });
         };
-    }
+    }]
 );

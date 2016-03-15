@@ -20,11 +20,36 @@
 - var trust = model + '.trustManagers'
 - var form = 'trustManagers'
 
-mixin feedback(field, error, message)
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='!#{form}.$pristine && #{form}.#{field}.$error.#{error}'
+mixin trstMgrField(field, save, newItem)
+    - var reset = (newItem ? 'group.add = []' : 'field.edit = false')
+    - var resetOnEnter = (newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)')
+    - var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+
+    ignite-form-field-java-class(
+        data-name='#{field}'
+        data-ng-model='#{field}'
+        data-ng-required='true'
+        data-ignite-unique='#{trust}'
+        data-ignite-form-field-input-autofocus='true'
+        on-enter='#{valid} && (#{save}); #{valid} && #{resetOnEnter};'
+        on-escape='#{reset}'
+        ng-blur='#{valid} && (#{save}); #{resetOnBlur};'
+    )
+        block
+
+mixin trstMgrSaveBtn(valid, save, reset)
+    i.fa.fa-floppy-o(
+        ng-show='#{valid}'
+        ng-click='#{valid} && (#{save}); #{valid} && (#{reset});'
         bs-tooltip
-        data-title='#{message}'
+        data-title='Click icon or press [Enter] to save item'
+    )
+
+mixin trstMgrFeedbackUnique(field)
+    i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-show='!#{form}.#{field}.$pristine && #{form}.#{field}.$error.igniteUnique'
+        bs-tooltip
+        data-title='Such trust manager already exists!'
     )
 
 form.panel.panel-default(name='#{form}' novalidate)
@@ -119,12 +144,13 @@ form.panel.panel-default(name='#{form}' novalidate)
                         ignite-form-group-add(ng-show='#{enabled}' ng-click='(group.add = [{}])')
                             | Add new trust manager.
 
-                        - var field = 'edit'
-                        - var valid = form + '.' + field + '.$valid'
-                        - var save = trust + '[$index] = ' + field
-
                         .group-content(ng-if='#{trust}.length')
-                            ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal')
+                            - var field = 'edit'
+                            - var valid = form + '.' + field + '.$valid'
+                            - var save = trust + '[$index] = ' + field
+                            - var reset = 'field.edit = false'
+
+                            ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal' name='Trust manager')
                                 .indexField
                                     | {{ $index+1 }}) 
                                 i.tipField.fa.fa-remove(
@@ -136,57 +162,20 @@ form.panel.panel-default(name='#{form}' novalidate)
                                 span(ng-hide='field.edit')
                                     a.labelFormField(ng-click='#{enabled} && (field.edit = true)') {{ model }}
                                 span(ng-if='field.edit' ng-init='#{field} = model')
-                                    ignite-form-field-java-class(
-                                        data-name='#{field}'
-                                        data-ng-model='#{field}'
-                                        data-ng-required='true'
-                                        data-ignite-unique='#{trust}'
-                                        data-ignite-form-field-input-autofocus='true'
-                                        on-enter='#{valid} && (#{save}); #{valid} && (field.edit = false);'
-                                        on-escape='field.edit = false'
-                                        ng-blur='#{valid} && (#{save}); (field.edit = false)'
-                                    )
-                                        i.fa.fa-floppy-o(
-                                            ng-show='#{valid}'
-                                            ng-click='#{valid} && (#{save}); #{valid} && (field.edit = false);'
-                                            bs-tooltip 
-                                            data-title='Click icon or press [Enter] to save item' 
-                                        )
-
-                                        i.fa.fa-exclamation-triangle.form-control-feedback(
-                                            ng-show='!#{form}.#{field}.$pristine && #{form}.#{field}.$error.igniteUnique'
-                                            bs-tooltip
-                                            data-title='Such trust manager already exists!'
-                                        )
-
-                        - var field = 'new'
-                        - var valid = form + '.' + field + '.$valid'
-                        - var push = trust + '.push(' + field + ')'
+                                    +trstMgrField(field, save, false)
+                                        +trstMgrSaveBtn(valid, save, reset)
+                                        +trstMgrFeedbackUnique(field)
 
                         .group-content(ng-repeat='field in group.add')
-                            ignite-form-field(type='internal')
-                                ignite-form-field-java-class(
-                                    data-name='#{field}'
-                                    data-ng-model='#{field}'
-                                    data-ng-required='true'
-                                    data-ignite-unique='#{trust}'
-                                    data-ignite-form-field-input-autofocus='true'
-                                    on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (group.add = [{}])'
-                                    on-escape='group.add = []'
-                                    ng-blur='#{valid} && #{push}; !stopblur && (group.add = [])'
-                                )
-                                    i.fa.fa-floppy-o(
-                                        ng-show='#{valid}'
-                                        ng-click='#{valid} && #{push}; #{valid} && (group.add = [])'
-                                        bs-tooltip 
-                                        data-title='Click icon or press [Enter] to save item' 
-                                    )
+                            - var field = 'new'
+                            - var valid = form + '.' + field + '.$valid'
+                            - var save = trust + '.push(' + field + ')'
+                            - var reset = 'group.add = []'
 
-                                    i.fa.fa-exclamation-triangle.form-control-feedback(
-                                        ng-show='!#{form}.#{field}.$pristine && #{form}.#{field}.$error.igniteUnique'
-                                        bs-tooltip
-                                        data-title='Such trust manager already exists!'
-                                    )
+                            ignite-form-field(type='internal' name='Trust manager')
+                                +trstMgrField(field, save, true)
+                                    +trstMgrSaveBtn(valid, save, reset)
+                                    +trstMgrFeedbackUnique(field)
 
                         .group-content-empty(ng-if='!(#{trust}.length) && !group.add.length')
                             | Not defined
@@ -227,8 +216,8 @@ form.panel.panel-default(name='#{form}' novalidate)
                         | &nbsp;
                         a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
                     .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-cluster='backupItem' data-generator='clusterSsl' ng-model='$parent.data')
+                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterSsl' ng-model='$parent.data')
                     .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-cluster='backupItem' data-generator='clusterSsl' ng-model='$parent.data')
+                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterSsl' ng-model='$parent.data')
                     .preview-content-empty(ng-if='!data')
                         label All Defaults

@@ -64,7 +64,7 @@ $generatorJava.setterName = function (propName, setterName) {
 
 // Add constructor argument
 $generatorJava.constructorArg = function (obj, propName, dflt, notFirst, opt) {
-    var v = (obj ? obj[propName] : undefined) || dflt;
+    var v = (obj ? obj[propName] : null) || dflt;
 
     if ($commonUtils.isDefinedAndNotEmpty(v))
         return (notFirst ? ', ' : '') + $generatorJava.toJavaCode(v);
@@ -557,7 +557,7 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
                                 res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.ExponentialBackoffRetry') + '(' +
                                     $generatorJava.constructorArg(retryPolicy, 'baseSleepTimeMs', 1000) +
                                     $generatorJava.constructorArg(retryPolicy, 'maxRetries', 10, true) +
-                                    $generatorJava.constructorArg(retryPolicy, 'maxSleepMs', undefined, true, true) + '));');
+                                    $generatorJava.constructorArg(retryPolicy, 'maxSleepMs', null, true, true) + '));');
 
                                 break;
 
@@ -759,7 +759,7 @@ $generatorJava.binaryTypeConfiguration = function (type, res) {
     if ($commonUtils.isDefinedAndNotEmpty(type.serializer))
         res.line(typeVar + '.setSerializer(new ' + res.importClass(type.serializer) + '());');
 
-    $generatorJava.property(res, typeVar, type, 'enum', undefined, undefined, false);
+    $generatorJava.property(res, typeVar, type, 'enum', null, null, false);
 
     res.needEmptyLine = true;
 
@@ -836,7 +836,7 @@ $generatorJava.clusterDeployment = function (cluster, res) {
 
     $generatorJava.enumProperty(res, 'cfg', cluster, 'deploymentMode', 'org.apache.ignite.configuration.DeploymentMode', null, 'SHARED');
 
-    res.needEmptyLine = true;
+    res.softEmptyLine();
 
     var p2pEnabled = cluster.peerClassLoadingEnabled;
 
@@ -1075,6 +1075,9 @@ $generatorJava.cacheGeneral = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    if (!varName)
+        varName = $generatorJava.cacheVariableName(cache, []);
+
     $generatorJava.property(res, varName, cache, 'name');
 
     $generatorJava.enumProperty(res, varName, cache, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
@@ -1097,15 +1100,18 @@ $generatorJava.cacheMemory = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    if (!varName)
+        varName = $generatorJava.cacheVariableName(cache, []);
+
     $generatorJava.enumProperty(res, varName, cache, 'memoryMode', 'org.apache.ignite.cache.CacheMemoryMode', null, 'ONHEAP_TIERED');
     $generatorJava.property(res, varName, cache, 'offHeapMaxMemory', null, null, -1);
 
-    res.needEmptyLine = true;
+    res.softEmptyLine();
 
     $generatorJava.evictionPolicy(res, varName, cache.evictionPolicy, 'evictionPolicy');
 
-    $generatorJava.property(res, varName, cache, 'swapEnabled', null, null, false);
     $generatorJava.property(res, varName, cache, 'startSize', null, null, 1500000);
+    $generatorJava.property(res, varName, cache, 'swapEnabled', null, null, false);
 
     res.needEmptyLine = true;
 
@@ -1117,34 +1123,20 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    if (!varName)
+        varName = $generatorJava.cacheVariableName(cache, []);
+
     $generatorJava.property(res, varName, cache, 'sqlSchema');
     $generatorJava.property(res, varName, cache, 'sqlOnheapRowCacheSize', null, null, 10240);
     $generatorJava.property(res, varName, cache, 'longQueryWarningTimeout', null, null, 3000);
-    $generatorJava.property(res, varName, cache, 'snapshotableIndex', null, null, false);
 
-    var indexedTypes = _.filter(cache.domains, function (domain) {
-        return domain.queryMetadata === 'Annotations'
-    });
-
-    if ($commonUtils.isDefinedAndNotEmpty(indexedTypes)) {
-        res.emptyLineIfNeeded();
-
-        res.startBlock(varName + '.setIndexedTypes(');
-
-        var len = indexedTypes.length - 1;
-
-        _.forEach(indexedTypes, function(domain, ix) {
-            res.line($generatorJava.toJavaCode(res.importClass(domain.keyType), 'class') + ', ' +
-                $generatorJava.toJavaCode(res.importClass(domain.valueType), 'class') + (ix < len ? ',' : ''));
-        });
-
-        res.endBlock(');');
-
-        res.needEmptyLine = true;
-    }
+    res.softEmptyLine();
 
     $generatorJava.multiparamProperty(res, varName, cache, 'sqlFunctionClasses', 'class');
 
+    res.softEmptyLine();
+
+    $generatorJava.property(res, varName, cache, 'snapshotableIndex', null, null, false);
     $generatorJava.property(res, varName, cache, 'sqlEscapeAll', null, null, false);
 
     res.needEmptyLine = true;
@@ -1159,7 +1151,7 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
  * @param res Resulting output with generated code.
  */
 $generatorJava.cacheStoreDataSource = function (storeFactory, res) {
-    var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined) : storeFactory.dialect;
+    var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect;
 
     if (dialect) {
         var varName = 'dataSource';
@@ -1282,6 +1274,9 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    if (!cacheVarName)
+        cacheVarName = $generatorJava.cacheVariableName(cache, []);
+
     if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
         var factoryKind = cache.cacheStoreFactory.kind;
 
@@ -1385,16 +1380,16 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
 
             res.needEmptyLine = true;
         }
-
-        res.needEmptyLine = true;
     }
+
+    res.softEmptyLine();
 
     $generatorJava.property(res, cacheVarName, cache, 'storeKeepBinary', null, null, false);
     $generatorJava.property(res, cacheVarName, cache, 'loadPreviousValue', null, null, false);
     $generatorJava.property(res, cacheVarName, cache, 'readThrough', null, null, false);
     $generatorJava.property(res, cacheVarName, cache, 'writeThrough', null, null, false);
 
-    res.needEmptyLine = true;
+    res.softEmptyLine();
 
     if (cache.writeBehindEnabled) {
         $generatorJava.property(res, cacheVarName, cache, 'writeBehindEnabled', null, null, false);
@@ -1414,6 +1409,9 @@ $generatorJava.cacheConcurrency = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    if (!varName)
+        varName = $generatorJava.cacheVariableName(cache, []);
+
     $generatorJava.property(res, varName, cache, 'maxConcurrentAsyncOperations', null, null, 500);
     $generatorJava.property(res, varName, cache, 'defaultLockTimeout', null, null, 0);
     $generatorJava.enumProperty(res, varName, cache, 'atomicWriteOrderMode', 'org.apache.ignite.cache.CacheAtomicWriteOrderMode');
@@ -1429,6 +1427,9 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    if (!varName)
+        varName = $generatorJava.cacheVariableName(cache, []);
+
     if (cache.cacheMode !== 'LOCAL') {
         $generatorJava.enumProperty(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode', null, 'ASYNC');
         $generatorJava.property(res, varName, cache, 'rebalanceThreadPoolSize', null, null, 1);
@@ -1438,9 +1439,9 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
         $generatorJava.property(res, varName, cache, 'rebalanceDelay', null, null, 0);
         $generatorJava.property(res, varName, cache, 'rebalanceTimeout', null, null, 10000);
         $generatorJava.property(res, varName, cache, 'rebalanceThrottle', null, null, 0);
-
-        res.needEmptyLine = true;
     }
+
+    res.softEmptyLine();
 
     if (cache.igfsAffinnityGroupSize) {
         res.line(varName + '.setAffinityMapper(new ' + res.importClass('org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper') + '(' + cache.igfsAffinnityGroupSize + '));');
@@ -1455,6 +1456,9 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
 $generatorJava.cacheServerNearCache = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
+
+    if (!varName)
+        varName = $generatorJava.cacheVariableName(cache, []);
 
     if (cache.cacheMode === 'PARTITIONED' && cache.nearCacheEnabled) {
         res.needEmptyLine = true;
@@ -1489,6 +1493,9 @@ $generatorJava.cacheServerNearCache = function (cache, varName, res) {
 $generatorJava.cacheStatistics = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
+
+    if (!varName)
+        varName = $generatorJava.cacheVariableName(cache, []);
 
     $generatorJava.property(res, varName, cache, 'statisticsEnabled', null, null, false);
     $generatorJava.property(res, varName, cache, 'managementEnabled', null, null, false);
@@ -2237,10 +2244,10 @@ $generatorJava.clusterSsl = function(cluster, res) {
     if (cluster.sslEnabled && $commonUtils.isDefined(cluster.sslContextFactory)) {
 
         cluster.sslContextFactory.keyStorePassword = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath) ?
-            'props.getProperty("ssl.key.storage.password").toCharArray()' : undefined;
+            'props.getProperty("ssl.key.storage.password").toCharArray()' : null;
 
         cluster.sslContextFactory.trustStorePassword = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath) ?
-            'props.getProperty("ssl.trust.storage.password").toCharArray()' : undefined;
+            'props.getProperty("ssl.trust.storage.password").toCharArray()' : null;
 
         var propsDesc = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
             $generatorCommon.SSL_CONFIGURATION_TRUST_MANAGER_FACTORY.fields :
@@ -2383,9 +2390,9 @@ $generatorJava.igfsSecondFS = function(igfs, varName, res) {
 
         res.line(varName + '.setSecondaryFileSystem(new ' +
             res.importClass('org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem') + '(' +
-                $generatorJava.constructorArg(secondFs, 'uri', undefined) +
-                (cfgDefined || nameDefined ? $generatorJava.constructorArg(secondFs, 'cfgPath', undefined, true) : '') +
-                $generatorJava.constructorArg(secondFs, 'userName', undefined, true, true) +
+                $generatorJava.constructorArg(secondFs, 'uri', null) +
+                (cfgDefined || nameDefined ? $generatorJava.constructorArg(secondFs, 'cfgPath', null, true) : '') +
+                $generatorJava.constructorArg(secondFs, 'userName', null, true, true) +
             '));');
 
         res.needEmptyLine = true;
@@ -2413,7 +2420,7 @@ $generatorJava.igfsGeneral = function(igfs, varName, res) {
         $generatorJava.property(res, varName, igfs, 'name');
         $generatorJava.property(res, varName, igfs, 'dataCacheName');
         $generatorJava.property(res, varName, igfs, 'metaCacheName');
-        $generatorJava.enumProperty(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', undefined, "DUAL_ASYNC");
+        $generatorJava.enumProperty(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', null, "DUAL_ASYNC");
 
         res.needEmptyLine = true;
     }
@@ -2620,7 +2627,7 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
  * @returns {*} Data source class name.
  */
 $generatorJava.dataSourceClassName = function (res, storeFactory) {
-    var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined) : storeFactory.dialect;
+    var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect;
 
     if (dialect) {
         var dataSourceBean = storeFactory.dataSourceBean;
@@ -2632,7 +2639,7 @@ $generatorJava.dataSourceClassName = function (res, storeFactory) {
         return $commonUtils.toJavaName(varType, dataSourceBean);
     }
 
-    return undefined;
+    return null;
 };
 
 // Descriptors for generation of demo data.
@@ -2843,7 +2850,7 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
         if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
             var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
 
-            return storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined) : storeFactory.dialect;
+            return storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect;
         }
 
         return false;

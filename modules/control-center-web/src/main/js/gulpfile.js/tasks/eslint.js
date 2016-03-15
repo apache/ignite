@@ -16,6 +16,7 @@
  */
 
 var gulp = require('gulp');
+var cache = require('gulp-cached');
 var sequence = require('gulp-sequence');
 
 var eslint = require('gulp-eslint');
@@ -32,6 +33,7 @@ gulp.task('eslint:node', function() {
 
 gulp.task('eslint:browser', function() {
 	return gulp.src(paths)
+        .pipe(cache('eslint:browser'))
 		.pipe(eslint({envs: ['browser']}))
 		.pipe(eslint.format());
 });

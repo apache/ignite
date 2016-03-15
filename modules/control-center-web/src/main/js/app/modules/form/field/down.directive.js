@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-
-
 const template = `<i class='tipField fa fa-arrow-down ng-scope' ng-click='down()'></i>`;
 
 export default ['igniteFormFieldDown', ['$tooltip', ($tooltip) => {

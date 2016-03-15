@@ -24,8 +24,10 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
 
         label.for = scope.id = id || guid();
 
-        scope.label = label;
         scope.ngModel = ngModel;
+        scope.form = form;
+        scope.label = label;
+
         scope.$watch('required', (required) => {
             label.required = required || false;
         });
