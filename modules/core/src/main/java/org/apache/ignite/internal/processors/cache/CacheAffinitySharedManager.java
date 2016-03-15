@@ -934,7 +934,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             affCache.initialize(topVer, aff);
         }
         else {
-            List<List<ClusterNode>> idealAff = res.idealAffinityAssignment();
+            List<List<ClusterNode>> idealAff = res.idealAffinityAssignment(cctx.discovery());
 
             if (idealAff != null)
                 affCache.idealAssignment(idealAff);
@@ -944,7 +944,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 affCache.calculate(topVer, fut.discoveryEvent());
             }
 
-            List<List<ClusterNode>> aff = res.affinityAssignment();
+            List<List<ClusterNode>> aff = res.affinityAssignment(cctx.discovery());
 
             assert aff != null;
 

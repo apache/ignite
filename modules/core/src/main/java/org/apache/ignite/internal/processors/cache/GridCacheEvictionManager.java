@@ -1476,7 +1476,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
                 // Initialize.
                 primaryParts.addAll(cctx.affinity().primaryPartitions(cctx.localNodeId(),
-                    cctx.affinity().affinityTopologyVersion()));
+                    new AffinityTopologyVersion(cctx.discovery().localJoinEvent().topologyVersion(), 0)));
 
                 while (!isCancelled()) {
                     DiscoveryEvent evt = evts.take();
@@ -1484,12 +1484,14 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                     if (log.isDebugEnabled())
                         log.debug("Processing event: " + evt);
 
+                    AffinityTopologyVersion topVer = new AffinityTopologyVersion(evt.topologyVersion());
+
                     // Remove partitions that are no longer primary.
                     for (Iterator<Integer> it = primaryParts.iterator(); it.hasNext();) {
                         if (!evts.isEmpty())
                             break;
 
-                        if (!cctx.affinity().primary(loc, it.next(), new AffinityTopologyVersion(evt.topologyVersion())))
+                        if (!cctx.affinity().primary(loc, it.next(), topVer))
                             it.remove();
                     }
 
@@ -1501,8 +1503,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                         if (!evts.isEmpty())
                             break;
 
-                        if (part.primary(new AffinityTopologyVersion(evt.topologyVersion()))
-                            && primaryParts.add(part.id())) {
+                        if (part.primary(topVer) && primaryParts.add(part.id())) {
                             if (log.isDebugEnabled())
                                 log.debug("Touching partition entries: " + part);
 

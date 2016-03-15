@@ -73,10 +73,12 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -586,27 +588,42 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is primary.
      */
     @SuppressWarnings("unchecked")
-    protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
+    protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom) {
         assert cnt > 0 : cnt;
 
-        List<Integer> found = new ArrayList<>(cnt);
+        final List<Integer> found = new ArrayList<>(cnt);
 
-        ClusterNode locNode = localNode(cache);
+        final ClusterNode locNode = localNode(cache);
 
-        Affinity<Integer> aff = (Affinity<Integer>)affinity(cache);
+        final Affinity<Integer> aff = (Affinity<Integer>)affinity(cache);
 
-        for (int i = startFrom; i < startFrom + 100_000; i++) {
-            Integer key = i;
+        try {
+            GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    for (int i = startFrom; i < startFrom + 100_000; i++) {
+                        Integer key = i;
 
-            if (aff.isPrimary(locNode, key)) {
-                found.add(key);
+                        if (aff.isPrimary(locNode, key)) {
+                            if (!found.contains(key))
+                                found.add(key);
 
-                if (found.size() == cnt)
-                    return found;
-            }
+                            if (found.size() == cnt)
+                                return true;
+                        }
+                    }
+
+                    return false;
+                }
+            }, 5000);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
 
-        throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
+        if (found.size() != cnt)
+            throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
+
+        return found;
     }
 
     /**

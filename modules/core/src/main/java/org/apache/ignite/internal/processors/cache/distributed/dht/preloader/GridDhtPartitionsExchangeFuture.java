@@ -930,7 +930,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
 
-        cctx.io().send(node, m, SYSTEM_POOL);
+        try {
+            cctx.io().send(node, m, SYSTEM_POOL);
+        }
+        catch (ClusterTopologyCheckedException e) {
+            if (log.isDebugEnabled())
+                log.debug("Node left during partition exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']');
+        }
     }
 
     private GridDhtPartitionsFullMessage createPartitionsMessage(Collection<ClusterNode> nodes, GridDhtPartitionExchangeId id) {

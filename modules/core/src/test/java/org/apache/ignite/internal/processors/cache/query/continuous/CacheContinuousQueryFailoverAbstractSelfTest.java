@@ -260,8 +260,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         Ignite ignite1 = startGrid(1);
         GridDhtPartitionTopology top1 = ((IgniteKernal)ignite1).context().cache().context().cacheContext(1).topology();
 
-        waitRebalanceFinished(ignite0, 2);
-        waitRebalanceFinished(ignite1, 2);
+        waitRebalanceFinished(ignite0, 2, 1);
+        waitRebalanceFinished(ignite1, 2, 1);
 
         assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(3)));
         assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(3)));
@@ -269,9 +269,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         Ignite ignite2 = startGrid(2);
         GridDhtPartitionTopology top2 = ((IgniteKernal)ignite2).context().cache().context().cacheContext(1).topology();
 
-        waitRebalanceFinished(ignite0, 3);
-        waitRebalanceFinished(ignite1, 3);
-        waitRebalanceFinished(ignite2, 3);
+        waitRebalanceFinished(ignite0, 3, 1);
+        waitRebalanceFinished(ignite1, 3, 1);
+        waitRebalanceFinished(ignite2, 3, 1);
 
         assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(4)));
         assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(4)));
@@ -289,9 +289,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         stopGrid(1);
 
-        waitRebalanceFinished(ignite0, 5);
-        waitRebalanceFinished(ignite2, 5);
-        waitRebalanceFinished(ignite3, 5);
+        waitRebalanceFinished(ignite0, 5, 0);
+        waitRebalanceFinished(ignite2, 5, 0);
+        waitRebalanceFinished(ignite3, 5, 0);
     }
 
     /**
@@ -299,8 +299,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @param topVer Topology version.
      * @throws Exception If failed.
      */
-    private void waitRebalanceFinished(Ignite ignite, long topVer) throws Exception {
-        final AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer);
+    private void waitRebalanceFinished(Ignite ignite, long topVer, int minorVer) throws Exception {
+        final AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer, minorVer);
 
         final GridDhtPartitionTopology top =
             ((IgniteKernal)ignite).context().cache().context().cacheContext(1).topology();
