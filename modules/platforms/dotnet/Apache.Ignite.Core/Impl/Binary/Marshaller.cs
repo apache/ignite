@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var type = _ctx.GetType(typeId);
 
             if (type == null)
-                return new BinarySurrogateTypeDescriptor(_cfg, typeId);
+                return new BinarySurrogateTypeDescriptor(_cfg, typeId, typeName);
 
             return AddUserType(type, typeId, typeName, true);
         }
@@ -423,7 +423,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             var type = _ctx.GetType(typeId);
 
             if (type == null)
-                return new BinarySurrogateTypeDescriptor(_cfg, typeId);
+                return new BinarySurrogateTypeDescriptor(_cfg, typeId, null);
 
             return AddUserType(type, typeId, BinaryUtils.GetTypeName(type), true);
         }
