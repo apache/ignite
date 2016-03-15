@@ -390,8 +390,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IBinaryTypeDescriptor desc;
 
-            return _typeNameToDesc.TryGetValue(typeName, out desc) ? desc : 
-                new BinarySurrogateTypeDescriptor(_cfg, typeName);
+            return _typeNameToDesc.TryGetValue(typeName, out desc)
+                ? desc
+                : new BinarySurrogateTypeDescriptor(_cfg,
+                    BinaryUtils.TypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper));
         }
 
         /// <summary>

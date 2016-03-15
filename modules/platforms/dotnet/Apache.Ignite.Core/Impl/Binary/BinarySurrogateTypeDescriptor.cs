@@ -57,19 +57,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             _id = id;
         }
 
-        /// <summary>
-        /// Constrcutor.
-        /// </summary>
-        /// <param name="cfg">Configuration.</param>
-        /// <param name="name">Type name.</param>
-        public BinarySurrogateTypeDescriptor(BinaryConfiguration cfg, string name)
-        {
-            _cfg = cfg;
-            _name = name;
-
-            _id = BinaryUtils.TypeId(name, cfg.DefaultNameMapper, cfg.DefaultIdMapper);
-        }
-
         /** <inheritDoc /> */
         public Type Type
         {
