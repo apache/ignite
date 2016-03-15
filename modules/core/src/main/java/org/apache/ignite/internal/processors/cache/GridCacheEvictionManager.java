@@ -1474,9 +1474,16 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
                 ClusterNode loc = cctx.localNode();
 
+                AffinityTopologyVersion initTopVer =
+                    new AffinityTopologyVersion(cctx.discovery().localJoinEvent().topologyVersion(), 0);
+
+                AffinityTopologyVersion cacheStartVer = cctx.startTopologyVersion();
+
+                if (cacheStartVer != null && cacheStartVer.compareTo(initTopVer) > 0)
+                    initTopVer = cacheStartVer;
+
                 // Initialize.
-                primaryParts.addAll(cctx.affinity().primaryPartitions(cctx.localNodeId(),
-                    new AffinityTopologyVersion(cctx.discovery().localJoinEvent().topologyVersion(), 0)));
+                primaryParts.addAll(cctx.affinity().primaryPartitions(cctx.localNodeId(), initTopVer));
 
                 while (!isCancelled()) {
                     DiscoveryEvent evt = evts.take();

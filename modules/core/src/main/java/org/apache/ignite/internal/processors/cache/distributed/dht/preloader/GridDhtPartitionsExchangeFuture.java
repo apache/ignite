@@ -679,6 +679,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 return;
             }
         }
+        else if (centralizedAff) {
+            for (GridCacheContext cacheCtx : cctx.cacheContexts())
+                cacheCtx.affinity().affinityCache().initialize(topologyVersion(), cacheCtx.affinity().affinityCache().idealAssignment());
+        }
 
         onDone(topologyVersion());
     }

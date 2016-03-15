@@ -43,11 +43,11 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
 
         startGrid(3);
 
-        //GridDhtPartitionSupplyMessage unmarshalling failed but ioManager does not hangs up.
+        // GridDhtPartitionSupplyMessage unmarshalling failed but ioManager does not hangs up.
 
         Thread.sleep(1000);
 
-        //GridDhtForceKeysRequest unmarshalling failed test.
+        // GridDhtForceKeysRequest unmarshalling failed test.
         stopGrid(3);
 
         readCnt.set(Integer.MAX_VALUE);
@@ -55,7 +55,7 @@ public class IgniteCacheP2pUnmarshallingRebalanceErrorTest extends IgniteCacheP2
         for (int i = 0; i <= 100; i++)
             jcache(0).put(new TestKey(String.valueOf(++key)), "");
 
-        startGrid(10); //custom rebalanceDelay set at cfg.
+        startGrid(10); // Custom rebalanceDelay set at cfg.
 
         Affinity<Object> aff = affinity(grid(10).cache(null));
 
