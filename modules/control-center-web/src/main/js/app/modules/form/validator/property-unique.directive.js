@@ -24,18 +24,16 @@ export default ['ignitePropertyUnique', ['$parse', ($parse) => {
             const arr = $parse(attrs.ignitePropertyUnique)(scope);
 
             // Return true in case if array not exist, array empty.
-            if (!arr || !arr.length)
+            if (!value || !arr || !arr.length)
                 return true;
 
+            const key = value.split('=')[0];
             const name = attrs.name;
-            const idx = arr.indexOf(value);
-
-            // In case of new element check all items.
-            if (name === 'new')
-                return idx < 0;
 
             // Check for $index in case of editing in-place.
-            return (_.isNumber(scope.$index) && (idx < 0 || scope.$index === idx));
+            return _.isNumber(scope.$index) && !_.find(arr, function(checkedVal, ix) {
+                return (name === 'new' || scope.$index !== ix) && checkedVal.split('=')[0] === key;
+            });
         };
     };
 
