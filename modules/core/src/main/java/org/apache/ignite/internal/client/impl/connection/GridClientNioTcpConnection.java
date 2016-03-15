@@ -39,7 +39,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.client.GridClientCacheMode;
@@ -56,11 +55,11 @@ import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller;
 import org.apache.ignite.internal.client.marshaller.optimized.GridClientOptimizedMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientAuthenticationRequest;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeRequest;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
-import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeMetricsBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientPingPacket;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientResponse;
@@ -75,7 +74,6 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -469,33 +467,33 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             assert old == null;
 
-            GridNioFuture<?> sndFut = ses.send(msg);
+            ses.send(msg);
 
             lastMsgSndTime = U.currentTimeMillis();
 
-            if (routeMode) {
-                sndFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> sndFut) {
-                        try {
-                            sndFut.get();
-                        }
-                        catch (Exception e) {
-                            close(FAILED, false, e);
-
-                            fut.onDone(getCloseReasonAsException(FAILED, e));
-                        }
-                    }
-                });
-            }
-            else {
-                try {
-                    sndFut.get();
-                }
-                catch (Exception e) {
-                    throw new GridClientConnectionResetException("Failed to send message over connection " +
-                        "(will try to reconnect): " + serverAddress(), e);
-                }
-            }
+//            if (routeMode) {
+//                sndFut.listen(new CI1<IgniteInternalFuture<?>>() {
+//                    @Override public void apply(IgniteInternalFuture<?> sndFut) {
+//                        try {
+//                            sndFut.get();
+//                        }
+//                        catch (Exception e) {
+//                            close(FAILED, false, e);
+//
+//                            fut.onDone(getCloseReasonAsException(FAILED, e));
+//                        }
+//                    }
+//                });
+//            }
+//            else {
+//                try {
+//                    sndFut.get();
+//                }
+//                catch (Exception e) {
+//                    throw new GridClientConnectionResetException("Failed to send message over connection " +
+//                        "(will try to reconnect): " + serverAddress(), e);
+//                }
+//            }
         }
 
         return fut;

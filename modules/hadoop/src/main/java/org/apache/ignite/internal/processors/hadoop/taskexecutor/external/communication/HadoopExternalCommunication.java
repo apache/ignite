@@ -35,7 +35,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessDescriptor;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
@@ -56,7 +55,6 @@ import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
-import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -1272,19 +1270,19 @@ public class HadoopExternalCommunication {
                     log.debug("Accepted connection, initiating handshake: " + ses);
 
                 // Server initiates handshake.
-                ses.send(locIdMsg).listen(new CI1<IgniteInternalFuture<?>>() {
-                    @Override public void apply(IgniteInternalFuture<?> fut) {
-                        try {
-                            // Make sure there were no errors.
-                            fut.get();
-                        }
-                        catch (IgniteCheckedException e) {
-                            log.warning("Failed to send handshake message, will close session: " + ses, e);
-
-                            ses.close();
-                        }
-                    }
-                });
+//                ses.send(locIdMsg).listen(new CI1<IgniteInternalFuture<?>>() {
+//                    @Override public void apply(IgniteInternalFuture<?> fut) {
+//                        try {
+//                            // Make sure there were no errors.
+//                            fut.get();
+//                        }
+//                        catch (IgniteCheckedException e) {
+//                            log.warning("Failed to send handshake message, will close session: " + ses, e);
+//
+//                            ses.close();
+//                        }
+//                    }
+//                });
             }
         }
 
@@ -1299,11 +1297,11 @@ public class HadoopExternalCommunication {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
+        @Override public void onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
             if (ses.meta(PROCESS_META) == null && !(msg instanceof ProcessHandshakeMessage))
                 log.warning("Writing message before handshake has finished [ses=" + ses + ", msg=" + msg + ']');
 
-            return proceedSessionWrite(ses, msg);
+            proceedSessionWrite(ses, msg);
         }
 
         /** {@inheritDoc} */

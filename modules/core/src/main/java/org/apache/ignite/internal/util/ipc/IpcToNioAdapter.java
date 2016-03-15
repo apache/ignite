@@ -201,10 +201,10 @@ public class IpcToNioAdapter<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) {
+        @Override public void onSessionWrite(GridNioSession ses, Object msg) {
             assert ses == IpcToNioAdapter.this.ses;
 
-            return send((Message)msg);
+            send((Message)msg);
         }
 
         /** {@inheritDoc} */

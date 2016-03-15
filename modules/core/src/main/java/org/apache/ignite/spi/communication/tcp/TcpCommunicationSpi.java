@@ -340,6 +340,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 ses.close();
             }
 
+            @Override public void onSessionIdleTimeout(GridNioSession ses) {
+                super.onSessionIdleTimeout(ses);
+            }
+
             @Override public void onConnected(GridNioSession ses) {
                 if (ses.accepted()) {
                     if (log.isDebugEnabled())

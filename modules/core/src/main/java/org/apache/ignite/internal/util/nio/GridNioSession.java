@@ -100,9 +100,8 @@ public interface GridNioSession {
      *
      * @param msg Message to be sent. This message will be eventually passed in to a parser plugged
      *            to the nio server.
-     * @return Future representing result.
      */
-    public GridNioFuture<?> send(Object msg);
+    public void send(Object msg);
 
     /**
      * Gets metadata associated with specified key.

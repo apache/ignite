@@ -108,10 +108,10 @@ public abstract class GridNioFilterAdapter implements GridNioFilter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> proceedSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
+    @Override public void proceedSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
         checkNext();
 
-        return nextFilter.onSessionWrite(ses, msg);
+        nextFilter.onSessionWrite(ses, msg);
     }
 
     /** {@inheritDoc} */

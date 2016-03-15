@@ -385,7 +385,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(ses.close().get());
 
-                ses.send(new byte[2]).get();
+                ses.send(new byte[2]);
 
                 fail("Exception must be thrown");
             }

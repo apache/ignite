@@ -44,16 +44,6 @@ public class GridNioFinishedFuture<R> extends GridFinishedFuture<R> implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void messageThread(boolean msgThread) {
-        this.msgThread = msgThread;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean messageThread() {
-        return msgThread;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean skipRecovery() {
         return true;
     }

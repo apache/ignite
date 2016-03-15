@@ -106,8 +106,8 @@ public class MockNioSession extends GridMetadataAwareAdapter implements GridNioS
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> send(Object msg) {
-        return new GridNioFinishedFuture<>(true);
+    @Override public void send(Object msg) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

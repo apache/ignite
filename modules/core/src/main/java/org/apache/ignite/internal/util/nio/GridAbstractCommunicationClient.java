@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -29,11 +28,11 @@ public abstract class GridAbstractCommunicationClient implements GridCommunicati
     /** Time when this client was last used. */
     private volatile long lastUsed = U.currentTimeMillis();
 
-    /** Reservations. */
-    private final AtomicInteger reserves = new AtomicInteger();
-
     /** Metrics listener. */
     protected final GridNioMetricsListener metricsLsnr;
+
+    /** */
+    protected volatile boolean closed;
 
     /**
      * @param metricsLsnr Metrics listener.
@@ -44,48 +43,27 @@ public abstract class GridAbstractCommunicationClient implements GridCommunicati
 
     /** {@inheritDoc} */
     @Override public boolean close() {
-        return reserves.compareAndSet(0, -1);
+        return (closed = true);
     }
 
     /** {@inheritDoc} */
     @Override public void forceClose() {
-        reserves.set(-1);
+        closed = true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean closed() {
-        return reserves.get() == -1;
+        return closed;
     }
 
     /** {@inheritDoc} */
     @Override public boolean reserve() {
-        while (true) {
-            int r = reserves.get();
-
-            if (r == -1)
-                return false;
-
-            if (reserves.compareAndSet(r, r + 1))
-                return true;
-        }
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public void release() {
-        while (true) {
-            int r = reserves.get();
-
-            if (r == -1)
-                return;
-
-            if (reserves.compareAndSet(r, r - 1))
-                return;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean reserved() {
-        return reserves.get() > 0;
+        // No-op.
     }
 
     /** {@inheritDoc} */

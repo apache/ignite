@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.nio.ssl;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import javax.net.ssl.SSLContext;
@@ -28,7 +27,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
-import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -249,14 +247,19 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
-        if (directMode)
-            return proceedSessionWrite(ses, msg);
+    @Override public void onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
+        if (directMode) {
+            proceedSessionWrite(
+                ses,
+                msg);
+
+            return;
+        }
 
         ByteBuffer input = checkMessage(ses, msg);
 
         if (!input.hasRemaining())
-            return new GridNioFinishedFuture<Object>(null);
+            return;
 
         GridNioSslHandler hnd = sslHandler(ses);
 
@@ -264,19 +267,18 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
         try {
             if (hnd.isOutboundDone())
-                return new GridNioFinishedFuture<Object>(new IOException("Failed to send data (secure session was " +
-                    "already closed): " + ses));
+                return;
 
             if (hnd.isHandshakeFinished()) {
                 hnd.encrypt(input);
 
-                return hnd.writeNetBuffer();
+                hnd.writeNetBuffer();
             }
             else {
                 if (log.isDebugEnabled())
                     log.debug("Write request received during handshake, scheduling deferred write: " + ses);
 
-                return hnd.deferredWrite(input);
+                hnd.deferredWrite(input);
             }
         }
         catch (SSLException e) {

@@ -36,16 +36,6 @@ public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNi
     protected IgniteInClosure<IgniteException> ackClosure;
 
     /** {@inheritDoc} */
-    @Override public void messageThread(boolean msgThread) {
-        this.msgThread = msgThread;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean messageThread() {
-        return msgThread;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean skipRecovery() {
         return false;
     }

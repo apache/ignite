@@ -76,15 +76,20 @@ public class GridNioCodecFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
+    @Override public void onSessionWrite(GridNioSession ses, Object msg) throws IgniteCheckedException {
         // No encoding needed in direct mode.
-        if (directMode)
-            return proceedSessionWrite(ses, msg);
+        if (directMode) {
+            proceedSessionWrite(
+                ses,
+                msg);
+
+            return;
+        }
 
         try {
             ByteBuffer res = parser.encode(ses, msg);
 
-            return proceedSessionWrite(ses, res);
+            proceedSessionWrite(ses, res);
         }
         catch (IOException e) {
             throw new GridNioException(e);

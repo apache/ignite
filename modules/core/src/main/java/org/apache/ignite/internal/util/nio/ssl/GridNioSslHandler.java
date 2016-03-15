@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.nio.GridNioEmbeddedFuture;
 import org.apache.ignite.internal.util.nio.GridNioException;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -405,18 +404,15 @@ class GridNioSslHandler extends ReentrantLock {
      * Adds write request to the queue.
      *
      * @param buf Buffer to write.
-     * @return Write future.
      */
-    GridNioFuture<?> deferredWrite(ByteBuffer buf) {
+    void deferredWrite(ByteBuffer buf) {
         assert isHeldByCurrentThread();
 
         GridNioEmbeddedFuture<Object> fut = new GridNioEmbeddedFuture<>();
 
         ByteBuffer cp = copy(buf);
 
-        deferredWriteQueue.offer(new WriteRequest(fut, cp));
-
-        return fut;
+        //deferredWriteQueue.offer(new WriteRequest(fut, cp));
     }
 
     /**
@@ -430,7 +426,7 @@ class GridNioSslHandler extends ReentrantLock {
         while (!deferredWriteQueue.isEmpty()) {
             WriteRequest req = deferredWriteQueue.poll();
 
-            req.future().onDone((GridNioFuture<Object>)parent.proceedSessionWrite(ses, req.buffer()));
+            //req.future().onDone((GridNioFuture<Object>)parent.proceedSessionWrite(ses, req.buffer()));
         }
     }
 
@@ -467,15 +463,14 @@ class GridNioSslHandler extends ReentrantLock {
     /**
      * Copies data from out net buffer and passes it to the underlying chain.
      *
-     * @return Write future.
      * @throws GridNioException If send failed.
      */
-    GridNioFuture<?> writeNetBuffer() throws IgniteCheckedException {
+    void writeNetBuffer() throws IgniteCheckedException {
         assert isHeldByCurrentThread();
 
         ByteBuffer cp = copy(outNetBuf);
 
-        return parent.proceedSessionWrite(ses, cp);
+        parent.proceedSessionWrite(ses, cp);
     }
 
     /**

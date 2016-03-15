@@ -95,16 +95,14 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> send(Object msg) {
+    @Override public void send(Object msg) {
         try {
             resetSendScheduleTime();
 
-            return chain().onSessionWrite(this, msg);
+            chain().onSessionWrite(this, msg);
         }
         catch (IgniteCheckedException e) {
             close();
-
-            return new GridNioFinishedFuture<Object>(e);
         }
     }
 

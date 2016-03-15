@@ -247,17 +247,17 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                                 res.errorMessage("Failed to process client request: " + e.getMessage());
                             }
 
-                            GridNioFuture<?> sf = ses.send(res);
+                            ses.send(res);
 
-                            // Check if send failed.
-                            if (sf.isDone())
-                                try {
-                                    sf.get();
-                                }
-                                catch (Exception e) {
-                                    U.error(log, "Failed to process client request [ses=" + ses + ", msg=" + msg + ']',
-                                        e);
-                                }
+//                            // Check if send failed.
+//                            if (sf.isDone())
+//                                try {
+//                                    sf.get();
+//                                }
+//                                catch (Exception e) {
+//                                    U.error(log, "Failed to process client request [ses=" + ses + ", msg=" + msg + ']',
+//                                        e);
+//                                }
                         }
                     });
                 else

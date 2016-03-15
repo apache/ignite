@@ -37,7 +37,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
  */
 class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /** Pending write requests. */
-    private final ConcurrentLinkedDeque8<GridNioFuture<?>> queue = new ConcurrentLinkedDeque8<>();
+    private final ConcurrentLinkedDeque8<Object> queue = new ConcurrentLinkedDeque8<>();
 
     /** Selection key associated with this session. */
     @GridToStringExclude
@@ -163,12 +163,8 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param writeFut Write request.
      * @return Updated size of the queue.
      */
-    int offerSystemFuture(GridNioFuture<?> writeFut) {
-        writeFut.messageThread(true);
-
-        boolean res = queue.offerFirst(writeFut);
-
-        assert res : "Future was not added to queue";
+    <T> int offerSystemFuture(T writeFut) {
+        queue.offerFirst(writeFut);
 
         return queueSize.incrementAndGet();
     }
@@ -183,13 +179,11 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param writeFut Write request to add.
      * @return Updated size of the queue.
      */
-    int offerFuture(GridNioFuture<?> writeFut) {
+    <T> int offerFuture(T writeFut) {
         boolean msgThread = GridNioBackPressureControl.threadProcessingMessage();
 
         if (sem != null && !msgThread)
             sem.acquireUninterruptibly();
-
-        writeFut.messageThread(msgThread);
 
         boolean res = queue.offer(writeFut);
 
@@ -216,29 +210,29 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /**
      * @return Message that is in the head of the queue, {@code null} if queue is empty.
      */
-    @Nullable GridNioFuture<?> pollFuture() {
-        GridNioFuture<?> last = queue.poll();
+    @Nullable <T> T pollFuture() {
+        T last = (T)queue.poll();
 
         if (last != null) {
             queueSize.decrementAndGet();
 
-            if (sem != null && !last.messageThread())
+            if (sem != null)
                 sem.release();
 
             if (recovery != null) {
-                if (!recovery.add(last)) {
-                    LT.warn(log, null, "Unacknowledged messages queue size overflow, will attempt to reconnect " +
-                        "[remoteAddr=" + remoteAddress() +
-                        ", queueLimit=" + recovery.queueLimit() + ']');
-
-                    if (log.isDebugEnabled())
-                        log.debug("Unacknowledged messages queue size overflow, will attempt to reconnect " +
-                            "[remoteAddr=" + remoteAddress() +
-                            ", queueSize=" + recovery.messagesFutures().size() +
-                            ", queueLimit=" + recovery.queueLimit() + ']');
-
-                    close();
-                }
+//                if (!recovery.add(last)) {
+//                    LT.warn(log, null, "Unacknowledged messages queue size overflow, will attempt to reconnect " +
+//                        "[remoteAddr=" + remoteAddress() +
+//                        ", queueLimit=" + recovery.queueLimit() + ']');
+//
+//                    if (log.isDebugEnabled())
+//                        log.debug("Unacknowledged messages queue size overflow, will attempt to reconnect " +
+//                            "[remoteAddr=" + remoteAddress() +
+//                            ", queueSize=" + recovery.messagesFutures().size() +
+//                            ", queueLimit=" + recovery.queueLimit() + ']');
+//
+//                    close();
+//                }
             }
         }
 

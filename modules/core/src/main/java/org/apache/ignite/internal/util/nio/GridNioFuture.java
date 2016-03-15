@@ -26,18 +26,6 @@ import org.apache.ignite.lang.IgniteInClosure;
  */
 public interface GridNioFuture<R> extends IgniteInternalFuture<R> {
     /**
-     * Sets flag indicating that message send future was created in thread that was processing a message.
-     *
-     * @param msgThread {@code True} if future was created in thread that is processing message.
-     */
-    public void messageThread(boolean msgThread);
-
-    /**
-     * @return {@code True} if future was created in thread that was processing message.
-     */
-    public boolean messageThread();
-
-    /**
      * @return {@code True} if skip recovery for this operation.
      */
     public boolean skipRecovery();

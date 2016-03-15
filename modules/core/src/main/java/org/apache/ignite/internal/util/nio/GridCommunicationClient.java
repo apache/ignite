@@ -69,11 +69,6 @@ public interface GridCommunicationClient {
     public void release();
 
     /**
-     * @return {@code True} if client was reserved.
-     */
-    public boolean reserved();
-
-    /**
      * Gets idle time of this client.
      *
      * @return Idle time of this client.

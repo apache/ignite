@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.commu
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessDescriptor;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -71,10 +70,7 @@ public class HadoopTcpNioCommunicationClient extends HadoopAbstractCommunication
         if (closed())
             throw new IgniteCheckedException("Client was closed: " + this);
 
-        GridNioFuture<?> fut = ses.send(msg);
-
-        if (fut.isDone())
-            fut.get();
+        ses.send(msg);
     }
 
     /** {@inheritDoc} */

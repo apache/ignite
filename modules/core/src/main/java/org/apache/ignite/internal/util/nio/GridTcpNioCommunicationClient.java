@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -97,10 +96,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
         if (closed())
             throw new IgniteCheckedException("Client was closed: " + this);
 
-        GridNioFuture<?> fut = ses.send(data);
-
-        if (fut.isDone())
-            fut.get();
+        ses.send(data);
     }
 
     /** {@inheritDoc} */
@@ -112,25 +108,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
         if (closure != null)
             ses.addMeta(ACK_CLOSURE.ordinal(), closure);
 
-        GridNioFuture<?> fut = ses.send(msg);
-
-        if (fut.isDone()) {
-            try {
-                fut.get();
-            }
-            catch (IgniteCheckedException e) {
-                if (closure != null)
-                    ses.removeMeta(ACK_CLOSURE.ordinal());
-
-                if (log.isDebugEnabled())
-                    log.debug("Failed to send message [client=" + this + ", err=" + e + ']');
-
-                if (e.getCause() instanceof IOException)
-                    return true;
-                else
-                    throw new IgniteCheckedException("Failed to send message [client=" + this + ']', e);
-            }
-        }
+        ses.send(msg);
 
         if (closure != null)
             ses.removeMeta(ACK_CLOSURE.ordinal());

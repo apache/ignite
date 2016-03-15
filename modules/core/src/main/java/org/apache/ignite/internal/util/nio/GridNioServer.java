@@ -402,36 +402,39 @@ public class GridNioServer<T> {
     /**
      * @param ses Session.
      * @param msg Message.
-     * @return Future for operation.
      */
-    GridNioFuture<?> send(GridNioSession ses, ByteBuffer msg) {
+    void send(GridNioSession ses, ByteBuffer msg) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
-        NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg);
+        int msgCnt = impl.offerFuture(msg);
 
-        send0(impl, fut, false);
+        if (msgCnt == 1)
+            // Change from 0 to 1 means that worker thread should be waken up.
+            clientWorkers.get(impl.selectorIndex()).offer(new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE));
 
-        return fut;
+        if (msgQueueLsnr != null)
+            msgQueueLsnr.apply(ses, msgCnt);
     }
 
     /**
      * @param ses Session.
      * @param msg Message.
-     * @return Future for operation.
      */
-    GridNioFuture<?> send(GridNioSession ses, Message msg) {
+    void send(GridNioSession ses, Message msg) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
-        NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg,
-            skipRecoveryPred.apply(msg));
+        int msgCnt = impl.offerFuture(msg);
 
-        send0(impl, fut, false);
+        if (msgCnt == 1)
+            // Change from 0 to 1 means that worker thread should be waken up.
+            clientWorkers.get(impl.selectorIndex()).offer(new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE));
 
-        return fut;
+        if (msgQueueLsnr != null)
+            msgQueueLsnr.apply(ses, msgCnt);
     }
 
     /**
@@ -469,8 +472,8 @@ public class GridNioServer<T> {
      * @param msg Message.
      * @return Future.
      */
-    public GridNioFuture<?> sendSystem(GridNioSession ses, Message msg) {
-        return sendSystem(ses, msg, null);
+    public void sendSystem(GridNioSession ses, Message msg) {
+        sendSystem(ses, msg, null);
     }
 
     /**
@@ -479,27 +482,24 @@ public class GridNioServer<T> {
      * @param ses Session.
      * @param msg Message.
      * @param lsnr Future listener notified from the session thread.
-     * @return Future.
      */
-    public GridNioFuture<?> sendSystem(GridNioSession ses,
+    public void sendSystem(
+        GridNioSession ses,
         Message msg,
-        @Nullable IgniteInClosure<? super IgniteInternalFuture<?>> lsnr) {
+        @Nullable IgniteInClosure<? super IgniteInternalFuture<?>> lsnr
+    ) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
-        NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE, msg,
-            skipRecoveryPred.apply(msg));
+        int msgCnt = impl.offerFuture(msg);
 
-        if (lsnr != null) {
-            fut.listen(lsnr);
+        if (msgCnt == 1)
+            // Change from 0 to 1 means that worker thread should be waken up.
+            clientWorkers.get(impl.selectorIndex()).offer(new NioOperationFuture<Void>(impl, NioOperation.REQUIRE_WRITE));
 
-            assert !fut.isDone();
-        }
-
-        send0(impl, fut, true);
-
-        return fut;
+        if (msgQueueLsnr != null)
+            msgQueueLsnr.apply(ses, msgCnt);
     }
 
     /**
@@ -520,11 +520,8 @@ public class GridNioServer<T> {
 
             GridNioFuture<?> fut0 = futs.iterator().next();
 
-            for (GridNioFuture<?> fut : futs) {
-                fut.messageThread(true);
-
+            for (GridNioFuture<?> fut : futs)
                 ((NioOperationFuture)fut).resetSession(ses0);
-            }
 
             ses0.resend(futs);
 
@@ -1143,7 +1140,7 @@ public class GridNioServer<T> {
 
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
             ByteBuffer buf = ses.writeBuffer();
-            NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
+            Message req = ses.removeMeta(NIO_OPERATION.ordinal());
 
             MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
 
@@ -1157,7 +1154,7 @@ public class GridNioServer<T> {
             }
 
             if (req == null) {
-                req = (NioOperationFuture<?>)ses.pollFuture();
+                req = ses.pollFuture();
 
                 if (req == null && buf.position() == 0) {
                     key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
@@ -1170,7 +1167,7 @@ public class GridNioServer<T> {
             boolean finished = false;
 
             if (req != null) {
-                msg = req.directMessage();
+                msg = req;
 
                 assert msg != null;
 
@@ -1185,14 +1182,12 @@ public class GridNioServer<T> {
 
             // Fill up as many messages as possible to write buffer.
             while (finished) {
-                req.onDone();
-
-                req = (NioOperationFuture<?>)ses.pollFuture();
+                req = ses.pollFuture();
 
                 if (req == null)
                     break;
 
-                msg = req.directMessage();
+                msg = req;
 
                 assert msg != null;
 
@@ -2250,7 +2245,7 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) {
+        @Override public void onSessionWrite(GridNioSession ses, Object msg) {
             if (directMode) {
                 boolean sslSys = sslFilter != null && msg instanceof ByteBuffer;
 
@@ -2265,14 +2260,12 @@ public class GridNioServer<T> {
 
                     if (key.isValid())
                         key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
-
-                    return null;
                 }
                 else
-                    return send(ses, (Message)msg);
+                    send(ses, (Message)msg);
             }
             else
-                return send(ses, (ByteBuffer)msg);
+                send(ses, (ByteBuffer)msg);
         }
 
         /** {@inheritDoc} */
