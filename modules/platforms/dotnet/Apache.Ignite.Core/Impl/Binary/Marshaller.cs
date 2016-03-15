@@ -418,19 +418,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(type != null);
 
-            IBinaryTypeDescriptor res;
+            var typeName = BinaryUtils.GetTypeName(type);
+            var typeId = BinaryUtils.TypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
 
-            // Already registered
-            if (_typeToDesc.TryGetValue(type, out res))
-                return res;
+            var registered = _ctx.RegisterType(typeId, type);
 
-            // TODO: Concurrency! Need a thread-safe dictionary
-            res = AddUserType(new BinaryTypeConfiguration(type), new TypeResolver());
+            var ser = new BinaryReflectiveSerializer();
+            ser.Register(type, typeId, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
 
-            // TODO: Check success
-            var registered = _ctx.RegisterType(res.TypeId, type);
+            var desc = new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper, 
+                _cfg.DefaultIdMapper, ser, false, null, false, registered);
 
-            return res;
+            return desc;
         }
 
         /// <summary>
@@ -438,7 +437,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="typeCfg">Type configuration.</param>
         /// <param name="typeResolver">The type resolver.</param>
-        private IBinaryTypeDescriptor AddUserType(BinaryTypeConfiguration typeCfg, TypeResolver typeResolver)
+        private void AddUserType(BinaryTypeConfiguration typeCfg, TypeResolver typeResolver)
         {
             // Get converter/mapper/serializer.
             IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.DefaultNameMapper;
@@ -474,7 +473,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
 
-                return AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
+                AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
                     affKeyFld, type.IsEnum);
             }
             else
@@ -484,7 +483,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
-                return AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
+                AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
                     typeCfg.AffinityKeyFieldName, typeCfg.IsEnum);
             }
         }
@@ -532,7 +531,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="serializer">Serializer.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
         /// <param name="isEnum">Enum flag.</param>
-        private IBinaryTypeDescriptor AddType(Type type, int typeId, string typeName, bool userType, 
+        private void AddType(Type type, int typeId, string typeName, bool userType, 
             bool keepDeserialized, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper,
             IBinarySerializer serializer, string affKeyFieldName, bool isEnum)
         {
@@ -566,8 +565,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                 _typeNameToDesc[typeName] = descriptor;
 
             _idToDesc[typeKey] = descriptor;
-
-            return descriptor;
         }
 
         /// <summary>
