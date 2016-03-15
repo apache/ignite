@@ -18,7 +18,7 @@
 #ifndef _IGNITE_IMPL_BINARY_TYPE_HANDLER
 #define _IGNITE_IMPL_BINARY_TYPE_HANDLER
 
-#include <ignite/common/concurrent.h>
+#include <ignite/utils/concurrent.h>
 
 #include "ignite/impl/binary/binary_type_snapshot.h"
 

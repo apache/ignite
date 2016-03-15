@@ -17,7 +17,7 @@
 
 #include <windows.h>
 
-#include <ignite/common/utils.h>
+#include <ignite/utils/utils.h>
 
 namespace ignite
 {

@@ -22,7 +22,7 @@
 #include <sstream>
 #include <algorithm>
 
-#include <ignite/common/common.h>
+#include <ignite/utils/common.h>
 
 #ifdef IGNITE_FRIEND
 #   define IGNITE_FRIEND_EXPORT IGNITE_EXPORT

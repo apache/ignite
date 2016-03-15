@@ -23,7 +23,7 @@
 
 #include "ignite/ignite_configuration.h"
 #include "ignite/ignition.h"
-#include "ignite/common/utils.h"
+#include "ignite/utils/utils.h"
 
 typedef std::list<std::string> StringList;
 typedef std::set<std::string> StringSet;

@@ -21,7 +21,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <ignite/common/concurrent.h>
+#include <ignite/utils/concurrent.h>
 
 using namespace ignite::common::concurrent;
 

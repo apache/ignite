@@ -18,7 +18,7 @@
 #ifndef _IGNITE_UTILS_CONCURRENT
 #define _IGNITE_UTILS_CONCURRENT
 
-#include "ignite/common/concurrent_os.h"
+#include "ignite/utils/concurrent_os.h"
 
 namespace ignite
 {

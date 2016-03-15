@@ -22,7 +22,7 @@
 
 #include <vector>
 
-#include <ignite/common/common.h>
+#include <ignite/utils/common.h>
 #include "ignite/odbc/common_types.h"
 #include "ignite/odbc/app/application_data_buffer.h"
 

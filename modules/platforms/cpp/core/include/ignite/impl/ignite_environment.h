@@ -18,7 +18,7 @@
 #ifndef _IGNITE_ENVIRONMENT
 #define _IGNITE_ENVIRONMENT
 
-#include <ignite/common/concurrent.h>
+#include <ignite/utils/concurrent.h>
 #include <ignite/common/java.h>
 
 #include "ignite/impl/interop/interop_memory.h"

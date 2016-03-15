@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include <ignite/common/utils.h>
+#include <ignite/utils/utils.h>
 
 #include "ignite/cache/cache_peek_mode.h"
 #include "ignite/impl/cache/cache_impl.h"

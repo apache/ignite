@@ -165,11 +165,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\ignite\common\concurrent.h" />
-    <ClInclude Include="..\..\include\ignite\common\ignite_error.h" />
-    <ClInclude Include="..\..\include\ignite\common\utils.h" />
-    <ClInclude Include="..\..\os\win\include\ignite\common\common.h" />
-    <ClInclude Include="..\..\os\win\include\ignite\common\concurrent_os.h" />
+    <ClInclude Include="..\..\include\ignite\utils\concurrent.h" />
+    <ClInclude Include="..\..\include\ignite\utils\ignite_error.h" />
+    <ClInclude Include="..\..\include\ignite\utils\utils.h" />
+    <ClInclude Include="..\..\os\win\include\ignite\utils\common.h" />
+    <ClInclude Include="..\..\os\win\include\ignite\utils\concurrent_os.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>

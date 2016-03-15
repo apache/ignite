@@ -20,13 +20,13 @@
 
 #include <stdint.h>
 
-#include <ignite/common/common.h>
+#include <ignite/utils/common.h>
 
 #include "ignite/impl/interop/interop_input_stream.h"
 #include "ignite/impl/binary/binary_common.h"
 #include "ignite/impl/binary/binary_id_resolver.h"
 #include "ignite/impl/binary/binary_schema.h"
-#include "ignite/common/utils.h"
+#include "ignite/utils/utils.h"
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
 #include "ignite/guid.h"

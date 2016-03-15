@@ -22,8 +22,8 @@
 #include <string>
 #include <stdint.h>
 
-#include <ignite/common/common.h>
-#include <ignite/common/concurrent.h>
+#include <ignite/utils/common.h>
+#include <ignite/utils/concurrent.h>
 
 #include "ignite/impl/interop/interop_output_stream.h"
 #include "ignite/impl/binary/binary_common.h"

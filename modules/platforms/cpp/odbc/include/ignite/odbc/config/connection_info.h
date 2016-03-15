@@ -22,7 +22,7 @@
 
 #include <map>
 
-#include <ignite/common/common.h>
+#include <ignite/utils/common.h>
 #include <ignite/odbc/common_types.h>
 
 namespace ignite

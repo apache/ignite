@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "ignite/common/concurrent_os.h"
+#include "ignite/utils/concurrent_os.h"
 
 #pragma intrinsic(_InterlockedCompareExchange64)
 

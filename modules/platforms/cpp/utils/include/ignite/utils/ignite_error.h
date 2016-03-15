@@ -26,7 +26,7 @@
 #include <sstream>
 #include <stdint.h>
 
-#include <ignite/common/common.h>
+#include <ignite/utils/common.h>
 
 #define IGNITE_ERROR_1(code, part1) { \
     std::stringstream stream; \

@@ -10,36 +10,36 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\os\win\include\ignite\common\common.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\os\win\include\ignite\common\concurrent_os.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\common\concurrent.h">
-      <Filter>Code</Filter>
-    </ClInclude>
     <ClInclude Include="targetver.h">
       <Filter>Misc</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\common\utils.h">
+    <ClInclude Include="..\..\include\ignite\utils\ignite_error.h">
       <Filter>Code</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\common\ignite_error.h">
+    <ClInclude Include="..\..\include\ignite\utils\utils.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\utils\concurrent_os.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\utils\common.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\utils\concurrent.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\concurrent.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\os\win\src\concurrent_os.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\ignite_error.cpp">
+    <ClCompile Include="..\..\os\win\src\utils.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\os\win\src\utils.cpp">
+    <ClCompile Include="..\..\src\concurrent.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ignite_error.cpp">
       <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>

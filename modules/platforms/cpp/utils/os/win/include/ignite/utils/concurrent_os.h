@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <windows.h>
 
-#include "ignite/common/common.h"
+#include "ignite/utils/common.h"
 
 namespace ignite
 {

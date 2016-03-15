@@ -17,11 +17,11 @@
 
 #include <sstream>
 
-#include <ignite/common/common.h>
-#include <ignite/common/concurrent.h>
+#include <ignite/utils/common.h>
+#include <ignite/utils/concurrent.h>
 #include <ignite/common/exports.h>
 #include <ignite/common/java.h>
-#include <ignite/common/utils.h>
+#include <ignite/utils/utils.h>
 
 #include "ignite/ignition.h"
 #include "ignite/impl/ignite_environment.h"

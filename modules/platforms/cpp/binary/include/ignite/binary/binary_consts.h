@@ -23,7 +23,7 @@
 #ifndef _IGNITE_BINARY_CONSTS
 #define _IGNITE_BINARY_CONSTS
 
-#include <ignite/common/common.h>
+#include <ignite/utils/common.h>
 
 namespace ignite 
 {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "ignite/common/concurrent.h"
+#include "ignite/utils/concurrent.h"
 
 namespace ignite
 {

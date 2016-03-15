@@ -20,7 +20,7 @@
 #include <exception>
 
 #include "ignite/common/attach_helper.h"
-#include "ignite/common/concurrent.h"
+#include "ignite/utils/concurrent.h"
 #include "ignite/common/java.h"
 
 #define IGNITE_SAFE_PROC_NO_ARG(jniEnv, envPtr, type, field) { \

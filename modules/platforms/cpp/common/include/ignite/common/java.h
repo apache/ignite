@@ -20,7 +20,7 @@
 
 #include <jni.h>
 
-#include "ignite/common/common.h"
+#include "ignite/utils/common.h"
 
 namespace ignite
 {

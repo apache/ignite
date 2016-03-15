@@ -18,9 +18,9 @@
 #ifndef _IGNITE_IMPL
 #define _IGNITE_IMPL
 
-#include <ignite/common/concurrent.h>
+#include <ignite/utils/concurrent.h>
 #include <ignite/common/java.h>
-#include <ignite/common/utils.h>
+#include <ignite/utils/utils.h>
 
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/ignite_environment.h"

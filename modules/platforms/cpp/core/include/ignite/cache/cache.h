@@ -26,9 +26,9 @@
 #include <map>
 #include <set>
 
-#include <ignite/common/common.h>
-#include <ignite/common/concurrent.h>
-#include <ignite/common/ignite_error.h>
+#include <ignite/utils/common.h>
+#include <ignite/utils/concurrent.h>
+#include <ignite/utils/ignite_error.h>
 
 #include "ignite/cache/cache_peek_mode.h"
 #include "ignite/cache/query/query_cursor.h"

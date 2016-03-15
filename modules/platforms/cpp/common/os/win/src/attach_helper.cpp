@@ -18,7 +18,7 @@
 #include <windows.h>
 
 #include "ignite/common/attach_helper.h"
-#include "ignite/common/concurrent.h"
+#include "ignite/utils/concurrent.h"
 #include "ignite/common/java.h"
 
 using namespace ignite::common::concurrent;

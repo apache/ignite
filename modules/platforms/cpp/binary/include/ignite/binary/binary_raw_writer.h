@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-#include <ignite/common/common.h>
+#include <ignite/utils/common.h>
 
 #include "ignite/impl/binary/binary_writer_impl.h"
 #include "ignite/binary/binary_consts.h"

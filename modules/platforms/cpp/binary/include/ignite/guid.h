@@ -26,7 +26,7 @@
 #include <stdint.h>
 #include <iomanip>
 
-#include <ignite/common/common.h>
+#include <ignite/utils/common.h>
 
 namespace ignite
 {
