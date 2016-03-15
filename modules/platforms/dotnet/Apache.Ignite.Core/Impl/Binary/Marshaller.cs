@@ -396,7 +396,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var typeId = BinaryUtils.TypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
 
-            var type = _ctx.GetType(typeId);
+            var type = _ctx == null ? null :_ctx.GetType(typeId);
 
             if (type == null)
                 return new BinarySurrogateTypeDescriptor(_cfg, typeId, typeName);
@@ -420,7 +420,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (!userType)
                 return null;
 
-            var type = _ctx.GetType(typeId);
+            var type = _ctx == null ? null : _ctx.GetType(typeId);
 
             if (type == null)
                 return new BinarySurrogateTypeDescriptor(_cfg, typeId, null);
@@ -435,6 +435,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         private IBinaryTypeDescriptor RegisterType(Type type)
         {
             Debug.Assert(type != null);
+
+            if (_ctx == null)
+                return null;
 
             var typeName = BinaryUtils.GetTypeName(type);
             var typeId = BinaryUtils.TypeId(typeName, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
