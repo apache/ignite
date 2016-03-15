@@ -15,19 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem;
+package org.apache.ignite.internal.pagemem.store;
 
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 
 /**
  * Persistent store of pages.
  */
 public interface PageStore extends PageIdAllocator {
-
+    /**
+     * Reads a page.
+     *
+     * @param page Page to read into.
+     * @throws IgniteCheckedException If reading failed (IO error occurred).
+     */
     public void read(Page page) throws IgniteCheckedException;
 
+    /**
+     * Writes a page.
+     *
+     * @param page Page to write.
+     * @throws IgniteCheckedException If page writing failed (IO error occurred).
+     */
     public void write(Page page) throws IgniteCheckedException;
 
-    public void sync(Iterable<Page> pages) throws IgniteCheckedException;
+    /**
+     * Sync method used to ensure that the given pages are guaranteed to be written to the store.
+     *
+     * @throws IgniteCheckedException If sync failed (IO error occurred).
+     */
+    public void sync() throws IgniteCheckedException;
 }

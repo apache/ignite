@@ -31,5 +31,5 @@ public interface PageIdAllocator {
      * @param pageId Page ID.
      * @return
      */
-    public boolean freePage(long pageId) throws IgniteCheckedException;
+    public boolean freePage(int cacheId, long pageId) throws IgniteCheckedException;
 }

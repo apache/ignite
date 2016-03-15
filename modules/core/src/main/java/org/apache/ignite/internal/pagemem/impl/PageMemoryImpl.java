@@ -19,8 +19,6 @@ package org.apache.ignite.internal.pagemem.impl;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -28,8 +26,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -42,11 +38,13 @@ import org.apache.ignite.internal.mem.OutOfMemoryException;
 import org.apache.ignite.internal.pagemem.DirectMemoryUtils;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.PageStore;
+import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import sun.misc.JavaNioAccess;
+import sun.misc.SharedSecrets;
 
 /**
  *
@@ -89,8 +87,8 @@ public class PageMemoryImpl implements PageMemory {
     /** File store. */
     private PageStore fileStore;
 
-    /** Direct byte buffer ctor. */
-    private Constructor<? extends ByteBuffer> directByteBufCtor;
+    /** Direct byte buffer factory. */
+    private JavaNioAccess nioAccess;
 
     // TODO mem should be replaced with platform-aware memory util.
     /** */
@@ -160,19 +158,14 @@ public class PageMemoryImpl implements PageMemory {
         try {
             DirectMemory memory = directMemoryProvider.memory();
 
-            Class<? extends ByteBuffer> directByteBufCls = (Class<? extends ByteBuffer>)
-                Class.forName("java.nio.DirectByteBuffer");
-
-            directByteBufCtor = directByteBufCls.getDeclaredConstructor(long.class, int.class, Object.class);
-
-            directByteBufCtor.setAccessible(true);
+            nioAccess = SharedSecrets.getJavaNioAccess();
 
             if (memory.restored())
                 initExisting(memory);
             else
                 initNew(memory);
         }
-        catch (ClassNotFoundException | IgniteCheckedException | NoSuchMethodException e) {
+        catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to initialize DirectBuffer class internals.", e);
         }
     }
@@ -242,11 +235,9 @@ public class PageMemoryImpl implements PageMemory {
         return pageId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean freePage(long pageId) throws IgniteCheckedException {
-        if (fileStore != null)
-            return fileStore.freePage(pageId);
 
+    /** {@inheritDoc} */
+    @Override public boolean freePage(int cacheId, long pageId) throws IgniteCheckedException {
         Segment seg = segment(pageId);
 
         seg.writeLock().lock();
@@ -395,19 +386,8 @@ public class PageMemoryImpl implements PageMemory {
      * @return Wrapped buffer.
      */
     ByteBuffer wrapPointer(long ptr, int len) {
-        ByteBuffer buf;
+        ByteBuffer buf = nioAccess.newDirectByteBuffer(ptr, len, null);
 
-        try {
-            buf = directByteBufCtor.newInstance(ptr, len, null);
-        }
-        catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-        catch (InvocationTargetException e) {
-            throw new RuntimeException(e.getTargetException());
-        }
-
-        // Use Unsafe to read/write data.
         buf.order(ByteOrder.nativeOrder());
 
         return buf;

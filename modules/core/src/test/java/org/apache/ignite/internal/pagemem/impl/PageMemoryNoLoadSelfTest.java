@@ -188,7 +188,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
                 handles.add(allocatePage(mem));
 
             for (Long handle : handles)
-                mem.freePage(handle);
+                mem.freePage(0, handle);
 
             for (int i = 0; i < pages; i++)
                 assertFalse(handles.add(allocatePage(mem)));

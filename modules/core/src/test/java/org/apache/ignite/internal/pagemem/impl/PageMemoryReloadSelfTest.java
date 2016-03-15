@@ -157,7 +157,7 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
                 pages.add(allocatePage(mem));
 
             for (Long pageId : pages)
-                mem.freePage(pageId);
+                mem.freePage(0, pageId);
         }
         finally {
             mem.stop();
