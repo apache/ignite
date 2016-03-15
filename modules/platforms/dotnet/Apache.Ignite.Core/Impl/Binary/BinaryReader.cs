@@ -783,6 +783,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return schema;
             }
 
+            var pos = Stream.Position;
+
             Stream.Seek(_frame.Pos + _frame.Hdr.SchemaOffset, SeekOrigin.Begin);
 
             var count = _frame.Hdr.SchemaFieldCount;
@@ -796,6 +798,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 res[i] = Stream.ReadInt();
                 Stream.Seek(offsetSize, SeekOrigin.Current);
             }
+
+            Stream.Seek(pos, SeekOrigin.Begin);
 
             return res;
         }

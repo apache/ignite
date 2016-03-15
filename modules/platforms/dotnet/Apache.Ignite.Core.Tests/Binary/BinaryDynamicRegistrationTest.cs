@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -31,10 +32,13 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestFailedRegistration()
         {
-            // Test in local mode so that MarshallerContext can't propagate type registration.
-            var bytes = new Marshaller(null).Marshal(new Foo {Int = 1, Str = "2"});
+            // Disable compact footers for local mode
+            var cfg = new BinaryConfiguration {CompactFooter = false};
 
-            var res = new Marshaller(null).Unmarshal<Foo>(bytes);
+            // Test in local mode so that MarshallerContext can't propagate type registration.
+            var bytes = new Marshaller(cfg).Marshal(new Foo {Int = 1, Str = "2"});
+
+            var res = new Marshaller(cfg).Unmarshal<Foo>(bytes);
 
             Assert.AreEqual(1, res.Int);
             Assert.AreEqual("2", res.Str);
