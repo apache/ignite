@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var name = UnmanagedUtils.ProcessorGetClass(_ignite.InteropProcessor, id);
 
-            return Type.GetType(name, true);
+            return name == null ? null : Type.GetType(name, true);
         }
     }
 }
