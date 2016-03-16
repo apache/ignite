@@ -48,6 +48,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>True if registration succeeded; otherwise, false.</returns>
         public bool RegisterType(int id, Type type)
         {
+            Debug.Assert(type != null);
+            Debug.Assert(id != BinaryUtils.TypeUnregistered);
+
             return UnmanagedUtils.ProcessorRegisterClass(_ignite.InteropProcessor, id, type.AssemblyQualifiedName);
         }
 
