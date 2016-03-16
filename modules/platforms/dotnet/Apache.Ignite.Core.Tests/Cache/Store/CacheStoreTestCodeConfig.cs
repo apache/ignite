@@ -18,6 +18,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Store
 {
+    using System;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
@@ -92,6 +93,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Ignition.Start(cfg);
         }
 
+        [Serializable]
         private class StoreFactory : IFactory<ICacheStore>
         {
             public ICacheStore CreateInstance()
@@ -99,6 +101,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 return new CacheTestStore();
             }
         }
+
+        [Serializable]
         private class CustomStoreFactory : IFactory<ICacheStore>
         {
             public ICacheStore CreateInstance()
