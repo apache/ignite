@@ -60,16 +60,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                     }, 
                     new CacheConfiguration
                     {
-                        Name = "binary_store",
-                        CacheMode = CacheMode.Local,
-                        AtomicityMode = CacheAtomicityMode.Transactional,
-                        WriteThrough = true,
-                        ReadThrough = true,
-                        KeepBinaryInStore = true,
-                        CacheStoreFactory = new StoreFactory()
-                    }, 
-                    new CacheConfiguration
-                    {
                         Name = "template_store*",
                         CacheMode = CacheMode.Local,
                         AtomicityMode = CacheAtomicityMode.Transactional,
