@@ -104,14 +104,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     }
 
     /// <summary>
-    /// Filter that can't be serialized.
-    /// </summary>
-    public class InvalidCacheEntryFilter : CacheEntryFilter
-    {
-        // No-op.
-    }
-
-    /// <summary>
     ///
     /// </summary>
     public class CacheStoreTest
@@ -203,9 +195,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             for (int i = 105; i < 110; i++)
                 Assert.AreEqual("val_" + i, cache.Get(i));
-
-            // Test invalid filter
-            Assert.Throws<BinaryObjectException>(() => cache.LoadCache(new InvalidCacheEntryFilter(), 100, 10));
 
             // Test exception in filter
             Assert.Throws<CacheStoreException>(() => cache.LoadCache(new ExceptionalEntryFilter(), 100, 10));
