@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridLongList;
@@ -97,6 +98,12 @@ public class GridCacheSharedContext<K, V> {
     /** Store session listeners. */
     private Collection<CacheStoreSessionListener> storeSesLsnrs;
 
+    /** */
+    private boolean delayAffAssign = true;
+
+    /** */
+    private final CacheAtomicVersionComparator atomicVerCmp;
+
     /**
      * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
@@ -130,6 +137,22 @@ public class GridCacheSharedContext<K, V> {
         txMetrics = new TransactionMetricsAdapter();
 
         ctxMap = new ConcurrentHashMap<>();
+
+        atomicVerCmp = delayAffAssign ? new NodeOrderFirstComparator() : new LocalOrderFirstComparator();
+    }
+
+    /**
+     * @return Comparator.
+     */
+    public CacheAtomicVersionComparator atomicVersionComparator() {
+        return atomicVerCmp;
+    }
+
+    /**
+     * @return {@code True} if delayed affinity assignment should be used.
+     */
+    public boolean delayAffinityAssignment() {
+        return delayAffAssign;
     }
 
     /**
@@ -670,5 +693,73 @@ public class GridCacheSharedContext<K, V> {
      */
     public void txContextReset() {
         mvccMgr.contextReset();
+    }
+
+    /**
+     *
+     */
+    static class LocalOrderFirstComparator implements CacheAtomicVersionComparator {
+        /** {@inheritDoc} */
+        @Override public int compare(GridCacheVersion one, GridCacheVersion other, boolean ignoreTime) {
+            int topVer = one.topologyVersion();
+            int otherTopVer = other.topologyVersion();
+
+            if (topVer == otherTopVer) {
+                long globalTime = one.globalTime();
+                long otherGlobalTime = other.globalTime();
+
+                if (globalTime == otherGlobalTime || ignoreTime) {
+                    long locOrder = one.order();
+                    long otherLocOrder = other.order();
+
+                    if (locOrder == otherLocOrder) {
+                        int nodeOrder = one.nodeOrder();
+                        int otherNodeOrder = other.nodeOrder();
+
+                        return nodeOrder == otherNodeOrder ? 0 : nodeOrder < otherNodeOrder ? -1 : 1;
+                    }
+                    else
+                        return locOrder > otherLocOrder ? 1 : -1;
+                }
+                else
+                    return globalTime > otherGlobalTime ? 1 : -1;
+            }
+            else
+                return topVer > otherTopVer ? 1 : -1;
+        }
+    }
+
+    /**
+     *
+     */
+    static class NodeOrderFirstComparator implements CacheAtomicVersionComparator {
+        /** {@inheritDoc} */
+        @Override public int compare(GridCacheVersion one, GridCacheVersion other, boolean ignoreTime) {
+            int topVer = one.topologyVersion();
+            int otherTopVer = other.topologyVersion();
+
+            if (topVer == otherTopVer) {
+                long globalTime = one.globalTime();
+                long otherGlobalTime = other.globalTime();
+
+                if (globalTime == otherGlobalTime || ignoreTime) {
+                    int nodeOrder = one.nodeOrder();
+                    int otherNodeOrder = other.nodeOrder();
+
+                    if (nodeOrder == otherNodeOrder) {
+                        long locOrder = one.order();
+                        long otherLocOrder = other.order();
+
+                        return locOrder == otherLocOrder ? 0 : locOrder < otherLocOrder ? -1 : 1;
+                    }
+                    else
+                        return nodeOrder > otherNodeOrder ? 1 : -1;
+                }
+                else
+                    return globalTime > otherGlobalTime ? 1 : -1;
+            }
+            else
+                return topVer > otherTopVer ? 1 : -1;
+        }
     }
 }

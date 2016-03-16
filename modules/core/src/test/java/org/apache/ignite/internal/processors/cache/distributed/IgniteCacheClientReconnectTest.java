@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -36,6 +37,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test for customer scenario.
@@ -74,6 +76,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
                 ccfg.setAtomicityMode(TRANSACTIONAL);
                 ccfg.setBackups(1);
                 ccfg.setName("cache-" + i);
+                ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
                 ccfgs[i] = ccfg;
             }

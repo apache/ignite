@@ -246,6 +246,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     private boolean deferredDel;
 
+    /** */
+    private CacheAtomicVersionComparator atomicVerCmp;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -363,6 +366,15 @@ public class GridCacheContext<K, V> implements Externalizable {
             expiryPlc = null;
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
+
+        atomicVerCmp = sharedCtx.atomicVersionComparator();
+    }
+
+    /**
+     * @return Comparator.
+     */
+    public CacheAtomicVersionComparator atomicVersionComparator() {
+        return atomicVerCmp;
     }
 
     /**

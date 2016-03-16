@@ -180,7 +180,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         evts = new ConcurrentHashSet<>();
 
-        startGrids(GRID_CNT);
+        startGridsMultiThreaded(GRID_CNT);
 
         if (cacheMode == REPLICATED)
             awaitPartitionMapExchange();

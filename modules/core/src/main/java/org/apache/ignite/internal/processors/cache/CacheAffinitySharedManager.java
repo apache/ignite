@@ -54,6 +54,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -432,7 +433,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (!crd) {
                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                    if (cacheCtx != null) {
+                    if (cacheCtx != null && !cacheCtx.isLocal()) {
                         boolean clientCacheStarted =
                             req.clientStartOnly() && req.initiatingNodeId().equals(cctx.localNodeId());
 
@@ -462,29 +463,28 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     boolean rmvCache = req.stop() || (req.close() &&
                         req.initiatingNodeId().equals(cctx.localNodeId()) &&
                         !cctx.discovery().cacheAffinityNode(cctx.localNode(), req.cacheName()));
-
                     if (rmvCache) {
                         CacheHolder cache = caches.remove(cacheId);
 
-                        assert cache != null;
+                        if (cache != null) {
+                            if (!req.stop()) {
+                                assert !cache.client();
 
-                        if (!req.stop()) {
-                            assert !cache.client();
+                                cache = CacheHolder2.create(cctx,
+                                    cctx.cache().cacheDescriptor(cacheId),
+                                    fut,
+                                    cache.affinity());
 
-                            cache = CacheHolder2.create(cctx,
-                                cctx.cache().cacheDescriptor(cacheId),
-                                fut,
-                                cache.affinity());
+                                caches.put(cacheId, cache);
+                            }
+                            else {
+                                if (stoppedCaches == null)
+                                    stoppedCaches = new HashSet<>();
 
-                            caches.put(cacheId, cache);
-                        }
-                        else {
-                            if (stoppedCaches == null)
-                                stoppedCaches = new HashSet<>();
+                                stoppedCaches.add(cache.cacheId());
 
-                            stoppedCaches.add(cache.cacheId());
-
-                            cctx.io().removeHandler(cacheId, GridDhtAffinityAssignmentResponse.class);
+                                cctx.io().removeHandler(cacheId, GridDhtAffinityAssignmentResponse.class);
+                            }
                         }
                     }
                 }
@@ -748,6 +748,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if (cache == null) {
             DynamicCacheDescriptor desc = cctx.cache().cacheDescriptor(cacheId);
 
+            assert desc != null : cacheId;
+
+            if (desc.cacheConfiguration().getCacheMode() == LOCAL)
+                return;
+
             cache = cacheCtx != null ? new CacheHolder1(cacheCtx, null) : CacheHolder2.create(cctx, desc, fut, null);
 
             CacheHolder old = caches.put(cacheId, cache);
@@ -872,7 +877,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 fetchAffinity(fut);
         }
         else
-            rebalancingInfo = initAffinityDelayNewPrimary(fut, crd);
+            rebalancingInfo = initAffinityOnNodeJoin(fut, crd);
 
         synchronized (mux) {
             affCalcVer = fut.topologyVersion();
@@ -1125,13 +1130,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed.
      * @return
      */
-    @Nullable private RebalancingInfo initAffinityDelayNewPrimary(final GridDhtPartitionsExchangeFuture fut, boolean crd)
+    @Nullable private RebalancingInfo initAffinityOnNodeJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd)
         throws IgniteCheckedException {
         AffinityTopologyVersion topVer = fut.topologyVersion();
 
         if (!crd) {
-            for (GridCacheContext cacheCtx : cctx.cacheContexts())
-                initAffinityDelayNewPrimary(fut, cacheCtx.affinity().affinityCache(), null);
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                boolean delay = cacheCtx.rebalanceEnabled();
+
+                initAffinityOnNodeJoin(fut, cacheCtx.affinity().affinityCache(), null, delay);
+            }
 
             return null;
         }
@@ -1142,7 +1150,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 @Override public void applyx(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
                     CacheHolder cache = cache(fut, cacheDesc);
 
-                    initAffinityDelayNewPrimary(fut, cache.affinity(), rebalancingInfo);
+                    boolean delay = cache.rebalanceEnabled;
+
+                    initAffinityOnNodeJoin(fut, cache.affinity(), rebalancingInfo, delay);
                 }
             });
 
@@ -1150,9 +1160,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
     }
 
-    void initAffinityDelayNewPrimary(GridDhtPartitionsExchangeFuture fut,
+    void initAffinityOnNodeJoin(GridDhtPartitionsExchangeFuture fut,
         GridAffinityAssignmentCache aff,
-        RebalancingInfo rebalanceInfo)
+        RebalancingInfo rebalanceInfo,
+        boolean delayNewPrimary)
         throws IgniteCheckedException
     {
         AffinityTopologyVersion topVer = fut.topologyVersion();
@@ -1175,7 +1186,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             ClusterNode curPrimary = curNodes.size() > 0 ? curNodes.get(0) : null;
             ClusterNode newPrimary = newNodes.size() > 0 ? newNodes.get(0) : null;
 
-            if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
+            if (delayNewPrimary && curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
                 assert cctx.discovery().node(topVer, curPrimary.id()) != null : curPrimary;
 
                 List<ClusterNode> nodes0 = delayedPrimaryAssignment(aff,
@@ -1310,6 +1321,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                                     if (!owners.isEmpty()) {
                                         ClusterNode primary = owners.get(0);
 
+                                        assert aliveNodes.contains(primary) : primary;
+
                                         newNodes0 = delayedPrimaryAssignment(cache.affinity(),
                                             p,
                                             primary,
@@ -1357,11 +1370,22 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         /** */
         private final GridAffinityAssignmentCache aff;
 
-        public CacheHolder(GridAffinityAssignmentCache aff, @Nullable GridAffinityAssignmentCache initAff) {
+        /** */
+        private final boolean rebalanceEnabled;
+
+        /**
+         *
+         * @param rebalanceEnabled
+         * @param aff
+         * @param initAff
+         */
+        public CacheHolder(boolean rebalanceEnabled, GridAffinityAssignmentCache aff, @Nullable GridAffinityAssignmentCache initAff) {
             this.aff = aff;
 
             if (initAff != null)
                 aff.init(initAff);
+
+            this.rebalanceEnabled = rebalanceEnabled;
         }
 
         abstract boolean client();
@@ -1413,7 +1437,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          * @param initAff Current affinity.
          */
         public CacheHolder1(GridCacheContext cctx, @Nullable GridAffinityAssignmentCache initAff) {
-            super(cctx.affinity().affinityCache(), initAff);
+            super(cctx.rebalanceEnabled(), cctx.affinity().affinityCache(), initAff);
+
+            assert !cctx.isLocal() : cctx.name();
 
             this.cctx = cctx;
         }
@@ -1470,6 +1496,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
 
             assert ccfg != null : cacheDesc;
+            assert ccfg.getCacheMode() != LOCAL : ccfg.getName();
 
             assert !cctx.discovery().cacheAffinityNodes(ccfg.getName(), fut.topologyVersion()).contains(cctx.localNode());
 
@@ -1485,18 +1512,21 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 ccfg.getBackups(),
                 ccfg.getCacheMode() == LOCAL);
 
-            return new CacheHolder2(cctx, aff, initAff);
+            return new CacheHolder2(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
         }
 
         /**
+         * @param rebalanceEnabled Rebalance flag.
          * @param cctx Context.
          * @param aff Affinity.
          * @param initAff Current affinity.
          */
-        public CacheHolder2(GridCacheSharedContext cctx,
+        public CacheHolder2(
+            boolean rebalanceEnabled,
+            GridCacheSharedContext cctx,
             GridAffinityAssignmentCache aff,
             @Nullable GridAffinityAssignmentCache initAff) {
-            super(aff, initAff);
+            super(rebalanceEnabled, aff, initAff);
 
             this.cctx = cctx;
         }
