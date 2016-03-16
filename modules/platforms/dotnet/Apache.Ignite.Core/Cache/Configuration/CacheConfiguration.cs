@@ -135,6 +135,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for 'copyOnRead' flag. </summary>
         public const bool DefaultCopyOnRead = true;
 
+        /// <summary> Default value for read-through behavior. </summary>
+        public const bool DefaultReadThrough = false;
+
+        /// <summary> Default value for write-through behavior. </summary>
+        public const bool DefaultWriteThrough = false;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -255,6 +261,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushSize = reader.ReadInt();
             WriteBehindFlushThreadCount = reader.ReadInt();
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
+            ReadThrough = reader.ReadBoolean();
+            WriteThrough = reader.ReadBoolean();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
@@ -303,6 +311,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt(WriteBehindFlushSize);
             writer.WriteInt(WriteBehindFlushThreadCount);
             writer.WriteInt((int) WriteSynchronizationMode);
+            writer.WriteBoolean(ReadThrough);
+            writer.WriteBoolean(WriteThrough);
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
@@ -605,6 +615,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// as a result of performing a "get" operations will appropriately cause the 
         /// configured <see cref="ICacheStore"/> (see <see cref="CacheStoreFactory"/>) to be invoked.
         /// </summary>
+        [DefaultValue(DefaultReadThrough)]
         public bool ReadThrough { get; set; }
 
         /// <summary>
@@ -614,6 +625,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// will appropriately cause the configured 
         /// <see cref="ICacheStore"/> (see <see cref="CacheStoreFactory"/>) to be invoked.
         /// </summary>
+        [DefaultValue(DefaultWriteThrough)]
         public bool WriteThrough { get; set; }
 
         /// <summary>
