@@ -1,0 +1,282 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.stream.kafka.connect;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.source.SourceRecord;
+import org.apache.kafka.connect.source.SourceTask;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+
+/**
+ * Task to consume remote cluster cache events from the grid and inject them into Kafka.
+ *
+ * Note that a task will create a bounded queue in the grid for more reliable data transfer.
+ */
+public class IgniteSourceTask extends SourceTask {
+    /** Logger. */
+    private static final Logger log = LoggerFactory.getLogger(IgniteSourceTask.class);
+
+    /** Event buffer. */
+    private static IgniteQueue<CacheEvent> evtBuf;
+
+    /** Event buffer size. */
+    private static int evtBufSize = 100000;
+
+    /** Max number of events taken from the buffer at once. */
+    private static int evtBatchSize = 100;
+
+    /** Flag for stopped state. */
+    private static volatile boolean stopped = true;
+
+    /** Ignite grid configuration file. */
+    private static String igniteConfigFile;
+
+    /** Cache name. */
+    private static String cacheName;
+
+    /** Listener id. */
+    private static UUID rmtLsnrId;
+
+    /** Topic. */
+    private static String topic;
+
+    /** Offset. */
+    private static final Map<String, Long> offset = Collections.singletonMap("offset", 0L);
+
+    private static final Map<String, String> srcPartition = Collections.singletonMap("cache", null);
+
+    /** {@inheritDoc} */
+    @Override public String version() {
+        return new IgniteSinkConnector().version();
+    }
+
+    /**
+     * Filtering is done remotely. Local listener buffers data for injection into Kafka.
+     *
+     * @param props Task properties.
+     */
+    @Override public void start(Map<String, String> props) {
+        // Each task has the same parameters -- avoid setting more than once.
+        if (cacheName != null)
+            return;
+
+        cacheName = props.get(IgniteSourceConstants.CACHE_NAME);
+        igniteConfigFile = props.get(IgniteSourceConstants.CACHE_CFG_PATH);
+        topic = props.get(IgniteSourceConstants.TOPIC_NAME);
+
+        if (props.containsKey(IgniteSourceConstants.INTL_BUF_SIZE))
+            evtBufSize = Integer.parseInt(props.get(IgniteSourceConstants.INTL_BUF_SIZE));
+
+        if (props.containsKey(IgniteSourceConstants.INTL_BATCH_SIZE))
+            evtBatchSize = Integer.parseInt(props.get(IgniteSourceConstants.INTL_BATCH_SIZE));
+
+        try {
+            evtBuf = makeBuffer();
+        }
+        catch (IgniteException e) {
+            log.error("Failed to create an event buffer", e);
+
+            throw new ConnectException(e);
+        }
+
+        IgnitePredicate<CacheEvent> rmtLsnr = new IgnitePredicate<CacheEvent>() {
+            @Override public boolean apply(CacheEvent evt) {
+                System.out.println("Cache event: " + evt);
+
+                if (!evtBuf.offer(evt, 10, TimeUnit.MILLISECONDS))
+                    log.error("Failed to buffer event {}", evt.name());
+
+                return true;
+            }
+        };
+
+        try {
+            int[] evts = cacheEvents(props.get(IgniteSourceConstants.CACHE_EVENTS));
+
+            rmtLsnrId = IgniteGrid.getIgnite().events(IgniteGrid.getIgnite().cluster().forCacheNodes(cacheName))
+                .remoteListen(null, rmtLsnr, evts);
+        }
+        catch (Exception e) {
+            log.error("Failed to register event listener!", e);
+
+            throw new ConnectException(e);
+        }
+
+        stopped = false;
+    }
+
+    @Override public List<SourceRecord> poll() throws InterruptedException {
+        ArrayList<SourceRecord> records = new ArrayList<>(evtBatchSize);
+        ArrayList<CacheEvent> evts = new ArrayList<>(evtBatchSize);
+
+        if (stopped)
+            return records;
+
+        try {
+            if (evtBuf.drainTo(evts, evtBatchSize) > 0) {
+                for (CacheEvent evt : evts) {
+                    // schema and keys are ignored.
+                    records.add(new SourceRecord(srcPartition, offset, topic, null, evt));
+                }
+
+                return records;
+            }
+        }
+        catch (IgniteException e) {
+            log.error("Error when polling event queue!", e);
+        }
+
+        // for shutdown.
+        return null;
+    }
+
+    /**
+     * Converts comma-delimited cache events strings to Ignite internal representation.
+     *
+     * @param evtPropsStr Comma-delimited cache event names.
+     * @return Ignite internal representation of cache events to be registered with the remote listener.
+     * @throws Exception If error.
+     */
+    private int[] cacheEvents(String evtPropsStr) throws Exception {
+        String[] evtStr = evtPropsStr.split("\\s*,\\s*");
+
+        if (evtStr.length == 0)
+            return EventType.EVTS_CACHE;
+
+        int[] evts = new int[evtStr.length];
+
+        try {
+            for (int i = 0; i < evtStr.length; i++)
+                evts[i] = CacheEvt.valueOf(evtStr[i].toUpperCase()).getId();
+        }
+        catch (Exception e) {
+            log.error("Failed to recognize the provided cache event!", e);
+
+            throw new Exception(e);
+        }
+        return evts;
+    }
+
+    /**
+     * Stops the grid client.
+     */
+    @Override public void stop() {
+        if (stopped)
+            return;
+
+        stopped = true;
+
+        if (evtBuf != null)
+            evtBuf.close();
+
+        if (rmtLsnrId != null)
+            IgniteGrid.getIgnite().events(IgniteGrid.getIgnite().cluster().forCacheNodes(cacheName))
+                .stopRemoteListen(rmtLsnrId);
+
+        IgniteGrid.getIgnite().close();
+    }
+
+    /**
+     * Buffer as an unbounded queue with a random name.
+     *
+     * @return
+     * @throws IgniteException
+     */
+    private static IgniteQueue<CacheEvent> makeBuffer() throws IgniteException {
+        CollectionConfiguration colCfg = new CollectionConfiguration();
+
+        colCfg.setCacheMode(PARTITIONED);
+
+        return IgniteGrid.getIgnite().queue(UUID.randomUUID().toString(), evtBufSize, colCfg);
+    }
+
+    /**
+     * Grid instance initialized on demand.
+     */
+    private static class IgniteGrid {
+        /** Constructor. */
+        private IgniteGrid() {
+        }
+
+        /** Instance holder. */
+        private static class Holder {
+            private static final Ignite IGNITE = Ignition.start(igniteConfigFile);
+        }
+
+        /**
+         * Obtains grid instance.
+         *
+         * @return Grid instance.
+         */
+        private static Ignite getIgnite() {
+            return Holder.IGNITE;
+        }
+    }
+
+    /** Cache events available for listening. */
+    private enum CacheEvt {
+        CREATED(EventType.EVT_CACHE_ENTRY_CREATED),
+        DESTROYED(EventType.EVT_CACHE_ENTRY_DESTROYED),
+        PUT(EventType.EVT_CACHE_OBJECT_PUT),
+        READ(EventType.EVT_CACHE_OBJECT_READ),
+        REMOVED(EventType.EVT_CACHE_OBJECT_REMOVED),
+        LOCKED(EventType.EVT_CACHE_OBJECT_LOCKED),
+        UNLOCKED(EventType.EVT_CACHE_OBJECT_UNLOCKED),
+        SWAPPED(EventType.EVT_CACHE_OBJECT_SWAPPED),
+        UNSWAPPED(EventType.EVT_CACHE_OBJECT_UNSWAPPED),
+        EXPIRED(EventType.EVT_CACHE_OBJECT_EXPIRED);
+
+        /** Internal Ignite event id. */
+        private final int id;
+
+        /**
+         * Constructor.
+         *
+         * @param id Internal Ignite event id.
+         */
+        CacheEvt(int id) {
+            this.id = id;
+        }
+
+        /**
+         * Gets Ignite event id.
+         *
+         * @return Ignite event id.
+         */
+        int getId() {
+            return id;
+        }
+    }
+}
