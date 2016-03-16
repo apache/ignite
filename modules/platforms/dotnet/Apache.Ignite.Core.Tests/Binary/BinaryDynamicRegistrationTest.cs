@@ -103,25 +103,25 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }
             };
 
-            try
+            using (var ignite = Ignition.Start(cfg))
             {
-                using (var ignite = Ignition.Start(cfg))
-                {
-                    ignite.GetCache<int, Foo>(null)[1] = new Foo {Str = "test", Int = 2};
-                }
-
-                using (var ignite = Ignition.Start(cfg))
-                {
-                    var foo = ignite.GetCache<int, Foo>(null)[1];
-
-                    Assert.AreEqual("test", foo.Str);
-                    Assert.AreEqual(2, foo.Int);
-                }
+                ignite.GetCache<int, Foo>(null)[1] = new Foo {Str = "test", Int = 2};
             }
-            finally 
+
+            using (var ignite = Ignition.Start(cfg))
             {
-                // Cleanup
-                Directory.Delete(workDir, true);
+                var foo = ignite.GetCache<int, Foo>(null)[1];
+
+                Assert.AreEqual("test", foo.Str);
+                Assert.AreEqual(2, foo.Int);
+            }
+
+            // Delete directory and check that store no longer works
+            Directory.Delete(workDir, true);
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                Assert.Throws<BinaryObjectException>(() => ignite.GetCache<int, Foo>(null).Get(1));
             }
         }
 

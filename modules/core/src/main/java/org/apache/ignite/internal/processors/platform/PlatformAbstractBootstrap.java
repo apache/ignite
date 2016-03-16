@@ -21,6 +21,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformExternalMemory;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 
 /**
@@ -32,6 +33,9 @@ public abstract class PlatformAbstractBootstrap implements PlatformBootstrap {
         Ignition.setClientMode(new PlatformExternalMemory(null, dataPtr).input().readBoolean());
 
         IgniteConfiguration cfg0 = closure(envPtr).apply(cfg);
+
+        // Reset work dir that was set by a temporary marshaller
+        U.nullifyWorkDirectory();
 
         IgniteEx node = (IgniteEx) Ignition.start(cfg0);
 
