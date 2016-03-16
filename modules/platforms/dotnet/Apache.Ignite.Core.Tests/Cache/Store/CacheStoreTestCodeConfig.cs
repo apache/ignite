@@ -30,6 +30,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     /// </summary>
     public class CacheStoreTestCodeConfig : CacheStoreTest
     {
+        /// <summary>
+        /// Fixture setup.
+        /// </summary>
         [TestFixtureSetUp]
         public override void BeforeTests()
         {
