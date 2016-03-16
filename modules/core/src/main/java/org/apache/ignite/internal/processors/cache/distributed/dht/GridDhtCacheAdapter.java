@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -934,7 +935,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     Map<ClusterNode, GridCacheTtlUpdateRequest> reqMap = new HashMap<>();
 
-                    AffinityTopologyVersion topVer = new AffinityTopologyVersion(ctx.discovery().topologyVersion());
+                    AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
 
                     for (Map.Entry<KeyCacheObject, GridCacheVersion> e : entries.entrySet()) {
                         List<ClusterNode> nodes = ctx.affinity().nodes(e.getKey(), topVer);
@@ -984,7 +985,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             ctx.io().send(req.getKey(), req.getValue(), ctx.ioPolicy());
                         }
                         catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to send TTL update request.", e);
+                            if (e instanceof ClusterTopologyCheckedException) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to send TTC update request, node left: " + req.getKey());
+                            }
+                            else
+                                U.error(log, "Failed to send TTL update request.", e);
                         }
                     }
                 }
@@ -1049,6 +1055,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             // Retry
                             if (log.isDebugEnabled())
                                 log.debug("Got removed entry: " + entry);
+                        }
+                        catch (GridDhtInvalidPartitionException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Got GridDhtInvalidPartitionException: " + e);
+
+                            break;
                         }
                     }
                 }
