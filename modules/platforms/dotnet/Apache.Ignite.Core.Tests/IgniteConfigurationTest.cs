@@ -22,9 +22,9 @@ namespace Apache.Ignite.Core.Tests
     using System.ComponentModel;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
@@ -61,6 +61,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestDefaultValueAttributes()
         {
             CheckDefaultValueAttributes(new IgniteConfiguration());
+            CheckDefaultValueAttributes(new BinaryConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoverySpi());
             CheckDefaultValueAttributes(new CacheConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
@@ -138,12 +139,12 @@ namespace Apache.Ignite.Core.Tests
             using (var ignite = Ignition.Start(new IgniteConfiguration
             {
                 Localhost = "127.0.0.1",
-                DiscoverySpi = GetStaticDiscovery()
+                DiscoverySpi = TestUtils.GetStaticDiscovery()
             }))
             using (var ignite2 = Ignition.Start(new IgniteConfiguration
             {
                 Localhost = "127.0.0.1",
-                DiscoverySpi = GetStaticDiscovery(),
+                DiscoverySpi = TestUtils.GetStaticDiscovery(),
                 GridName = "client",
                 ClientMode = true
             }))
@@ -349,18 +350,6 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 Localhost = "127.0.0.1"
-            };
-        }
-
-        /// <summary>
-        /// Gets the static discovery.
-        /// </summary>
-        /// <returns></returns>
-        private static IDiscoverySpi GetStaticDiscovery()
-        {
-            return new TcpDiscoverySpi
-            {
-                IpFinder = new TcpDiscoveryStaticIpFinder {Endpoints = new[] {"127.0.0.1:47500", "127.0.0.1:47501"}}
             };
         }
     }

@@ -44,14 +44,23 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /** Node IDs with cache metrics. */
     private final Map<UUID, VisorCacheMetrics> metrics = new HashMap<>();
 
-    /** Minimum number of elements in the cache. */
-    private transient Integer minSize;
+    /** Minimum number of elements in heap. */
+    private transient Long minHeapSize;
 
-    /** Average number of elements in the cache. */
-    private transient Double avgSize;
+    /** Average number of elements in heap. */
+    private transient Double avgHeapSize;
 
-    /** Maximum number of elements in the cache. */
-    private transient Integer maxSize;
+    /** Maximum number of elements in heap. */
+    private transient Long maxHeapSize;
+
+    /** Minimum number of elements in off heap. */
+    private transient Long minOffHeapSize;
+
+    /** Average number of elements in off heap. */
+    private transient Double avgOffHeapSize;
+
+    /** Maximum number of elements in off heap. */
+    private transient Long maxOffHeapSize;
 
     /** Minimum hits of the owning cache. */
     private transient Long minHits;
@@ -148,47 +157,99 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     }
 
     /**
-     * @return Minimum number of elements in the cache.
+     * @return Minimum number of elements in heap.
      */
-    public int minimumSize() {
-        if (minSize == null) {
-            minSize = Integer.MAX_VALUE;
+    public long minimumHeapSize() {
+        if (minHeapSize == null) {
+            minHeapSize = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                minSize = Math.min(minSize, metric.keySize());
+                minHeapSize = Math.min(minHeapSize, metric.keySize());
         }
 
-        return minSize;
+        return minHeapSize;
     }
 
     /**
-     * @return Average number of elements in the cache.
+     * @return Average number of elements in heap.
      */
-    public double averageSize() {
-        if (avgSize == null) {
-            avgSize = 0.0d;
+    public double averageHeapSize() {
+        if (avgHeapSize == null) {
+            avgHeapSize = 0.0d;
 
             for (VisorCacheMetrics metric : metrics.values())
-                avgSize += metric.keySize();
+                avgHeapSize += metric.keySize();
 
-            avgSize /= metrics.size();
+            avgHeapSize /= metrics.size();
         }
 
-        return avgSize;
+        return avgHeapSize;
     }
 
     /**
-     * @return Maximum number of elements in the cache.
+     * @return Maximum number of elements in heap.
      */
-    public int maximumSize() {
-        if (maxSize == null) {
-            maxSize = Integer.MIN_VALUE;
+    public long maximumHeapSize() {
+        if (maxHeapSize == null) {
+            maxHeapSize = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                maxSize = Math.max(maxSize, metric.keySize());
+                maxHeapSize = Math.max(maxHeapSize, metric.keySize());
         }
 
-        return maxSize;
+        return maxHeapSize;
+    }
+
+    /**
+     * @param metric Metrics to process.
+     * @return Off heap entries count.
+     */
+    private long offHeapEntriesCount(VisorCacheMetrics metric) {
+        return metric instanceof VisorCacheMetricsV2 ? ((VisorCacheMetricsV2) metric).offHeapEntriesCount() : 0;
+    }
+
+    /**
+     * @return Minimum number of elements in off heap.
+     */
+    public long minimumOffHeapSize() {
+        if (minOffHeapSize == null) {
+            minOffHeapSize = Long.MAX_VALUE;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                minOffHeapSize = Math.min(minOffHeapSize, offHeapEntriesCount(metric));
+        }
+
+        return minOffHeapSize;
+    }
+
+    /**
+     * @return Average number of elements in off heap.
+     */
+    public double averageOffHeapSize() {
+        if (avgOffHeapSize == null) {
+            avgOffHeapSize = 0.0d;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                avgOffHeapSize += offHeapEntriesCount(metric);
+
+            avgOffHeapSize /= metrics.size();
+        }
+
+        return avgOffHeapSize;
+    }
+
+    /**
+     * @return Maximum number of elements in off heap in the cache.
+     */
+    public long maximumOffHeapSize() {
+        if (maxOffHeapSize == null) {
+            maxOffHeapSize = Long.MIN_VALUE;
+
+            for (VisorCacheMetrics metric : metrics.values())
+                maxOffHeapSize = Math.max(maxOffHeapSize, offHeapEntriesCount(metric));
+        }
+
+        return maxOffHeapSize;
     }
 
     /**

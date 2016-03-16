@@ -549,6 +549,8 @@ public class GridDhtPartitionDemander {
 
                     assert part != null;
 
+                    boolean last = supply.last().contains(p);
+
                     if (part.state() == MOVING) {
                         boolean reserved = part.reserve();
 
@@ -578,8 +580,6 @@ public class GridDhtPartitionDemander {
                                 }
                             }
 
-                            boolean last = supply.last().contains(p);
-
                             // If message was last for this partition,
                             // then we take ownership.
                             if (last) {
@@ -597,7 +597,9 @@ public class GridDhtPartitionDemander {
                         }
                     }
                     else {
-                        fut.partitionDone(id, p);
+                        if (last) {
+                            fut.partitionDone(id, p);
+                        }
 
                         if (log.isDebugEnabled())
                             log.debug("Skipping rebalancing partition (state is not MOVING): " + part);

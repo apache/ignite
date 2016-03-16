@@ -26,11 +26,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
@@ -122,7 +120,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                 U.warn(log, w);
         }
 
-        platformCtx = new PlatformContextImpl(ctx, interopCfg.gate(), interopCfg.memory());
+        platformCtx = new PlatformContextImpl(ctx, interopCfg.gate(), interopCfg.memory(), interopCfg.platform());
     }
 
     /** {@inheritDoc} */
@@ -209,12 +207,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    public void releaseStart() {
+    @Override public void releaseStart() {
         startLatch.countDown();
     }
 
     /** {@inheritDoc} */
-    public void awaitStart() throws IgniteCheckedException {
+    @Override public void awaitStart() throws IgniteCheckedException {
         U.await(startLatch);
     }
 
@@ -305,9 +303,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public PlatformTarget compute(PlatformTarget grp) {
         PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
 
-        assert grp0.projection() instanceof ClusterGroupAdapter; // Safety for very complex ClusterGroup hierarchy.
-
-        return new PlatformCompute(platformCtx, (IgniteComputeImpl)((ClusterGroupAdapter)grp0.projection()).compute());
+        return new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM);
     }
 
     /** {@inheritDoc} */
@@ -343,7 +339,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         try {
             if (stopped)
-                throw new IgniteCheckedException("Failed to initialize interop store becuase node is stopping: " +
+                throw new IgniteCheckedException("Failed to initialize interop store because node is stopping: " +
                     store);
 
             if (started)

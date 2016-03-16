@@ -29,8 +29,8 @@ Creating NuGet package:
 
 <package >
     <metadata>
-        <id>Apache.Ignite.NET</id>
-        <title>Apache Ignite.NET x64</title>
+        <id>Apache.Ignite</id>
+        <title>Apache Ignite x64</title>
         <!-- -->
         <version>$version$</version>
         <authors>Apache Ignite</authors>
@@ -40,7 +40,7 @@ Creating NuGet package:
         <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
-Apache Ignite.NET In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.
+Apache Ignite In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.
             
 More info: https://apacheignite-net.readme.io/
             

@@ -1,5 +1,5 @@
 <Query Kind="Program">
-    <NuGetReference>Apache.Ignite.NET</NuGetReference>
+    <NuGetReference>Apache.Ignite</NuGetReference>
     <Namespace>Apache.Ignite.Core</Namespace>
     <Namespace>Apache.Ignite.Core.Binary</Namespace>
 </Query>

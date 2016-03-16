@@ -2271,6 +2271,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.startCacheConfiguration(ccfg);
         }
 
+        // Fail cache with swap enabled creation on grid without swap space SPI.
+        if (ccfg.isSwapEnabled())
+            for (ClusterNode n : ctx.discovery().allNodes())
+                if (!GridCacheUtils.clientNode(n) && !GridCacheUtils.isSwapEnabled(n))
+                    return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start cache " +
+                        cacheName + " with swap enabled: Remote Node with ID " + n.id().toString().toUpperCase() +
+                        " has not swap SPI configured"));
+
         if (nearCfg != null)
             req.nearCacheConfiguration(nearCfg);
 
@@ -3309,6 +3317,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Starts client caches that do not exist yet.
+     *
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void createMissingCaches() throws IgniteCheckedException {
+        for (String cacheName : registeredCaches.keySet()) {
+            if (!CU.isSystemCache(cacheName) && !caches.containsKey(cacheName))
+                dynamicStartCache(null, cacheName, null, false, true, true).get();
+        }
+    }
+
+    /**
      * Registers MBean for cache components.
      *
      * @param o Cache component.
@@ -3434,7 +3454,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (ldr == null)
                         ldr = val.getCacheStoreFactory().getClass().getClassLoader();
 
-                    marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()), ldr);
+                    marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
+                        U.resolveClassLoader(ldr, ctx.config()));
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteCheckedException("Failed to validate cache configuration. " +
@@ -3443,7 +3464,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             try {
-                return marshaller.unmarshal(marshaller.marshal(val), U.resolveClassLoader(ctx.config().getClassLoader()));
+                return marshaller.unmarshal(marshaller.marshal(val), U.resolveClassLoader(ctx.config()));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteCheckedException("Failed to validate cache configuration " +
