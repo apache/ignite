@@ -18,11 +18,8 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
-    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
-    using System.Xml.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
@@ -91,8 +88,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Directory.CreateDirectory(workDir);
 
-            var storeFile = Path.GetTempFileName();
-
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration {CompactFooter = false},
@@ -101,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     new CacheConfiguration
                     {
-                        CacheStoreFactory = new StoreFactory(storeFile),
+                        CacheStoreFactory = new StoreFactory(),
                         ReadThrough = true,
                         WriteThrough = true
                     }
@@ -126,7 +121,6 @@ namespace Apache.Ignite.Core.Tests.Binary
             finally 
             {
                 // Cleanup
-                File.Delete(storeFile);
                 Directory.Delete(workDir, true);
             }
         }
@@ -251,71 +245,30 @@ namespace Apache.Ignite.Core.Tests.Binary
 
         private class StoreFactory : IFactory<ICacheStore>
         {
-            private readonly string _filePath;
-
-            public StoreFactory(string filePath)
-            {
-                _filePath = filePath;
-            }
-
             public ICacheStore CreateInstance()
             {
-                return new CacheStore(_filePath);
+                return new CacheStore();
             }
         }
 
         private class CacheStore : CacheStoreAdapter
         {
-            private readonly string _filePath;
-
-            public CacheStore(string filePath)
-            {
-                _filePath = filePath;
-            }
+            private static readonly Dictionary<object, object>  Dict = new Dictionary<object, object>();
 
             public override object Load(object key)
             {
                 object res;
-                return LoadDict().TryGetValue(key, out res) ? res : null;
+                return Dict.TryGetValue(key, out res) ? res : null;
             }
 
             public override void Write(object key, object val)
             {
-                var d = LoadDict();
-
-                d[key] = val;
-
-                SaveDict(d);
+                Dict[key] = val;
             }
 
             public override void Delete(object key)
             {
-                var d = LoadDict();
-
-                d.Remove(key);
-
-                SaveDict(d);
-            }
-
-            private Dictionary<object, object> LoadDict()
-            {
-                if (!File.Exists(_filePath))
-                    return new Dictionary<object, object>();
-
-                using (var fs = File.OpenRead(_filePath))
-                {
-                    return ((DictionaryEntry[]) new XmlSerializer(typeof (DictionaryEntry[])).Deserialize(fs))
-                        .ToDictionary(x => x.Key, x => x.Value);
-                }
-            }
-
-            private void SaveDict(Dictionary<object, object> dict)
-            {
-                using (var fs = File.OpenWrite(_filePath))
-                {
-                    new XmlSerializer(typeof (DictionaryEntry[])).Serialize(fs,
-                        dict.Select(x => new DictionaryEntry(x.Key, x.Value)).ToArray());
-                }
+                Dict.Remove(key);
             }
         }
     }
