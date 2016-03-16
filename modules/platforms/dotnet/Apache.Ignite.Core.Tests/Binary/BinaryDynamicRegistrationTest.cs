@@ -69,6 +69,14 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("2", res.Str);
         }
 
+        [Test]
+        public void TestStore()
+        {
+            // TODO: Clear work dir
+            // Start a node with store, write value (without compact footers)
+            // Restart node, read value
+        }
+
         /// <summary>
         /// Tests the single grid scenario.
         /// </summary>
@@ -88,12 +96,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         public void TestTwoGrids()
         {
             using (var ignite1 = Ignition.Start(TestUtils.GetTestConfiguration()))
-            using (var ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = "grid2"
-            }))
-            {
-                Test(ignite1, ignite2);
+                using (var ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    GridName = "grid2"
+                }))
+                {
+                    Test(ignite1, ignite2);
+                }
             }
         }
 
