@@ -120,8 +120,7 @@ std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle)
 /**
  * Fetch cache data using ODBC interface.
  */
-void GetDataWithOdbc(const std::string& cacheName, const std::string& hostName,
-    const std::string& port, const std::string& query)
+void GetDataWithOdbc(const std::string& query)
 {
     SQLHENV env;
 
@@ -137,10 +136,7 @@ void GetDataWithOdbc(const std::string& cacheName, const std::string& hostName,
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
     // Combining connect string
-    std::string connectStr = "DRIVER={Apache Ignite};"
-        "SERVER=" + hostName + ";"
-        "PORT=" + port + ";"
-        "CACHE=" + cacheName;
+    std::string connectStr = "DRIVER={Apache Ignite};SERVER=localhost;PORT=11443;CACHE=Person;";
 
     SQLCHAR outstr[ODBC_BUFFER_SIZE];
     SQLSMALLINT outstrlen;
@@ -231,7 +227,7 @@ int main()
     cfg.jvmInitMem = 512;
     cfg.jvmMaxMem = 512;
 
-    cfg.springCfgPath = "platforms/cpp/examples/odbc-example/config/example-cache.xml";
+    cfg.springCfgPath = "platforms/cpp/examples/odbc-example/config/example-odbc.xml";
 
     try
     {
@@ -259,20 +255,17 @@ int main()
         std::cout << std::endl;
         std::cout << ">>> Getting list of persons:" << std::endl;
 
-        GetDataWithOdbc("Person", "localhost", "11443",
-            "SELECT firstName, lastName, resume, salary FROM Person");
+        GetDataWithOdbc("SELECT firstName, lastName, resume, salary FROM Person");
 
         std::cout << std::endl;
         std::cout << ">>> Getting average salary by degree:" << std::endl;
 
-        GetDataWithOdbc("Person", "localhost", "11443",
-            "SELECT resume, AVG(salary) FROM Person GROUP BY resume");
+        GetDataWithOdbc("SELECT resume, AVG(salary) FROM Person GROUP BY resume");
 
         std::cout << std::endl;
         std::cout << ">>> Getting people with organizations:" << std::endl;
 
-        GetDataWithOdbc("Person", "localhost", "11443",
-            "SELECT firstName, lastName, Organization.name FROM Person "
+        GetDataWithOdbc("SELECT firstName, lastName, Organization.name FROM Person "
             "INNER JOIN \"Organization\".Organization ON Person.orgId = Organization._KEY");
 
         // Stop node.

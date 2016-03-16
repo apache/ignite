@@ -37,6 +37,7 @@ import javax.servlet.http.HttpSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -80,6 +81,77 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      */
     public void testSingleRequestMetaInf() throws Exception {
         testSingleRequest("ignite-webapp-config.xml");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientReconnectRequest() throws Exception {
+        testClientReconnectRequest("/modules/core/src/test/config/websession/example-cache.xml",
+            "/modules/core/src/test/config/websession/example-cache2.xml",
+            "/modules/core/src/test/config/websession/example-cache-client.xml");
+    }
+
+    /**
+     * Tests single request to a server. Checks the presence of session in cache.
+     *
+     * @param srvCfg Server configuration.
+     * @param clientCfg Client configuration.
+     * @throws Exception If failed.
+     */
+    private void testClientReconnectRequest(String srvCfg, String srvCfg2, String clientCfg) throws Exception {
+        Server srv = null;
+
+        Ignite ignite = Ignition.start(srvCfg);
+
+        try {
+            srv = startServer(TEST_JETTY_PORT, clientCfg, "client", new SessionCreateServlet());
+
+            URL url = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/test");
+
+            URLConnection conn = url.openConnection();
+
+            conn.connect();
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String sesId = rdr.readLine();
+
+                assertNotNull(sesId);
+            }
+
+            stopGrid(ignite.name());
+
+            ignite = Ignition.start(srvCfg);
+
+            conn = url.openConnection();
+
+            conn.connect();
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String sesId = rdr.readLine();
+
+                assertNotNull(sesId);
+            }
+
+            Ignite ignite2 = Ignition.start(srvCfg2);
+
+            stopGrid(ignite.name());
+
+            conn = url.openConnection();
+
+            conn.connect();
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                String sesId = rdr.readLine();
+
+                assertNotNull(sesId);
+            }
+        }
+        finally {
+            stopServer(srv);
+
+            stopAllGrids();
+        }
     }
 
     /**
@@ -194,6 +266,88 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 assertNotNull(ses);
 
                 assertEquals("val10", ses.getAttribute("key10"));
+            }
+        }
+        finally {
+            stopServer(srv);
+        }
+    }
+
+    /**
+     * Tests session id change.
+     *
+     * @throws Exception Exception If failed.
+     */
+    public void testChangeSessionId() throws Exception {
+        String newWebSesId;
+        Server srv = null;
+
+        try {
+            srv = startServer(TEST_JETTY_PORT, "/modules/core/src/test/config/websession/example-cache.xml",
+                null, new SessionIdChangeServlet());
+
+            Ignite ignite = G.ignite();
+
+            URLConnection conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/chngsesid").openConnection();
+
+            conn.connect();
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+
+                // checks if the old session object is invalidated.
+                String oldId = rdr.readLine();
+
+                assertNotNull(oldId);
+
+                // id from genuine session
+                String newGenSesId = rdr.readLine();
+
+                assertNotNull(newGenSesId);
+
+                assertFalse(newGenSesId.equals(oldId));
+
+                // id from replicated session
+                newWebSesId = rdr.readLine();
+
+                assertNotNull(newWebSesId);
+
+                assertTrue(newGenSesId.equals(newWebSesId));
+
+                IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
+
+                assertNotNull(cache);
+
+                Thread.sleep(1000);
+
+                HttpSession ses = cache.get(newWebSesId);
+
+                assertNotNull(ses);
+
+                assertEquals("val1", ses.getAttribute("key1"));
+            }
+
+            conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/simple").openConnection();
+
+            conn.addRequestProperty("Cookie", "JSESSIONID=" + newWebSesId);
+
+            conn.connect();
+
+            try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+
+                // checks if it can be handled with the subsequent request.
+                String sesId = rdr.readLine();
+
+                assertTrue(newWebSesId.equals(sesId));
+
+                String attr = rdr.readLine();
+
+                assertEquals("val1", attr);
+
+                String reqSesValid = rdr.readLine();
+
+                assertEquals("true", reqSesValid);
+
+                assertEquals("invalidated", rdr.readLine());
             }
         }
         finally {
@@ -404,6 +558,9 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 ses.invalidate();
 
                 res.getWriter().println(ses.getId());
+
+                // invalidates again.
+                req.getSession().invalidate();
             }
             else if (req.getPathInfo().equals("/valid")) {
                 X.println(">>>", "Created session: " + ses.getId(), ">>>");
@@ -414,6 +571,57 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             res.getWriter().println((req.getSession(false) == null) ? "null" : ses.getId());
 
             res.getWriter().flush();
+        }
+    }
+
+    /**
+     * Test session behavior on id change.
+     */
+    private static class SessionIdChangeServlet extends HttpServlet {
+        /** {@inheritDoc} */
+        @Override protected void doGet(HttpServletRequest req, HttpServletResponse res)
+            throws ServletException, IOException {
+            HttpSession ses = req.getSession();
+
+            assertNotNull(ses);
+
+            if (req.getPathInfo().equals("/chngsesid")) {
+
+                ses.setAttribute("key1", "val1");
+
+                X.println(">>>", "Created session: " + ses.getId(), ">>>");
+
+                res.getWriter().println(req.getSession().getId());
+
+                String newId = req.changeSessionId();
+
+                // new id from genuine session.
+                res.getWriter().println(newId);
+
+                // new id from WebSession.
+                res.getWriter().println(req.getSession().getId());
+
+                res.getWriter().flush();
+            }
+            else if (req.getPathInfo().equals("/simple")) {
+                res.getWriter().println(req.getSession().getId());
+
+                res.getWriter().println(req.getSession().getAttribute("key1"));
+
+                res.getWriter().println(req.isRequestedSessionIdValid());
+
+                try {
+                    req.getSession().invalidate();
+                    res.getWriter().println("invalidated");
+                }
+                catch (Exception e) {
+                    res.getWriter().println("failed");
+                }
+
+                res.getWriter().flush();
+            }
+            else
+                throw new ServletException("Nonexisting path: " + req.getPathInfo());
         }
     }
 

@@ -454,6 +454,50 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    public void testSemaphoreSingleNodeFailure() throws Exception {
+        final Ignite i1 = grid(0);
+
+        IgniteSemaphore sem1 = i1.semaphore(STRUCTURE_NAME, 1, false, true);
+
+        sem1.acquire();
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                boolean failed = true;
+
+                IgniteSemaphore sem2 = i1.semaphore(STRUCTURE_NAME, 1, false, true);
+
+                try {
+                    sem2.acquire();
+                }
+                catch (Exception e){
+                    failed = false;
+                }
+                finally {
+                    assertFalse(failed);
+
+                    sem2.release();
+                }
+                return null;
+            }
+        });
+
+        while(!sem1.hasQueuedThreads()){
+            try {
+                Thread.sleep(1);
+            } catch (InterruptedException e) {
+                fail();
+            }
+        }
+
+        i1.close();
+
+        fut.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testSemaphoreConstantTopologyChangeFailoverSafe() throws Exception {
         doTestSemaphore(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true);
     }
