@@ -31,7 +31,23 @@
 
                     <property name="atomicityMode" value="ATOMIC"/>
                 </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="tx"/>
+
+                    <property name="cacheMode" value="PARTITIONED"/>
+
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                </bean>
             </list>
+        </property>
+
+        <property name="transactionConfiguration">
+            <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+                <property name="txManagerFactory">
+                    <bean class="org.apache.ignite.webtest.WebSphereTmFactory"/>
+                </property>
+            </bean>
         </property>
     </bean>
 </beans>
