@@ -53,6 +53,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -699,8 +700,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @throws IgniteCheckedException If failed
      */
     private void forAllRegisteredCaches(IgniteInClosureX<DynamicCacheDescriptor> c) throws IgniteCheckedException {
-        for (DynamicCacheDescriptor cacheDesc : registeredCaches.values())
+        for (DynamicCacheDescriptor cacheDesc : registeredCaches.values()) {
+            if (cacheDesc.cacheConfiguration().getCacheMode() == LOCAL)
+                continue;
+
             c.applyx(cacheDesc);
+        }
     }
 
     /**
@@ -713,8 +718,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 c.apply(cache.affinity());
         }
         else {
-            for (GridCacheContext cacheCtx : cctx.cacheContexts())
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (cacheCtx.isLocal())
+                    continue;
+
                 c.apply(cacheCtx.affinity().affinityCache());
+            }
         }
     }
 
@@ -894,6 +903,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         List<GridDhtAssignmentFetchFuture> fetchFuts = new ArrayList<>();
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (cacheCtx.isLocal())
+                continue;
+
             GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
                 cacheCtx.name(),
                 topVer);
@@ -1463,7 +1475,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             GridAffinityAssignmentCache aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
                 ccfg.getName(),
                 affFunc,
-                ccfg.getBackups());
+                ccfg.getBackups(),
+                ccfg.getCacheMode() == LOCAL);
 
             return new CacheHolder2(cctx, aff, initAff);
         }

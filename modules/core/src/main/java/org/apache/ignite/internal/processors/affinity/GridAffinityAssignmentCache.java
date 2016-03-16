@@ -83,6 +83,9 @@ public class GridAffinityAssignmentCache {
     /** */
     private final GridKernalContext ctx;
 
+    /** */
+    private final boolean locCache;
+
     /** Node stop flag. */
     private volatile IgniteCheckedException stopErr;
 
@@ -98,7 +101,8 @@ public class GridAffinityAssignmentCache {
     public GridAffinityAssignmentCache(GridKernalContext ctx,
         String cacheName,
         AffinityFunction aff,
-        int backups)
+        int backups,
+        boolean locCache)
     {
         assert ctx != null;
         assert aff != null;
@@ -107,6 +111,7 @@ public class GridAffinityAssignmentCache {
         this.aff = aff;
         this.cacheName = cacheName;
         this.backups = backups;
+        this.locCache = locCache;
 
         cacheId = CU.cacheId(cacheName);
 
@@ -216,9 +221,15 @@ public class GridAffinityAssignmentCache {
         List<List<ClusterNode>> prevAssignment = idealAssignment;
 
         // Resolve nodes snapshot for specified topology version.
-        List<ClusterNode> sorted = new ArrayList<>(ctx.discovery().cacheAffinityNodes(cacheName, topVer));
+        List<ClusterNode> sorted;
 
-        Collections.sort(sorted, GridNodeOrderComparator.INSTANCE);
+        if (!locCache) {
+            sorted = new ArrayList<>(ctx.discovery().cacheAffinityNodes(cacheName, topVer));
+
+            Collections.sort(sorted, GridNodeOrderComparator.INSTANCE);
+        }
+        else
+            sorted = Collections.singletonList(ctx.discovery().localNode());
 
         List<List<ClusterNode>> assignment;
 
@@ -238,6 +249,9 @@ public class GridAffinityAssignmentCache {
         assert assignment != null;
 
         idealAssignment = assignment;
+
+        if (locCache)
+            initialize(topVer, assignment);
 
         return assignment;
     }

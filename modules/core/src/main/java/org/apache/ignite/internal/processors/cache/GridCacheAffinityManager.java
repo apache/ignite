@@ -68,7 +68,8 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
             cctx.namex(),
             affFunction,
-            cctx.config().getBackups());
+            cctx.config().getBackups(),
+            cctx.isLocal());
     }
 
     /** {@inheritDoc} */
