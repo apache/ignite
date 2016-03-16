@@ -24,13 +24,12 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Grid transactions implementation.
@@ -48,7 +47,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
     /** {@inheritDoc} */
     @Override public Transaction txStart() throws IllegalStateException {
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
+        TransactionConfiguration cfg = CU.transactionConfiguration(null, cctx.kernalContext().config());
 
         return txStart0(
             cfg.getDefaultTxConcurrency(),
@@ -64,7 +63,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
+        TransactionConfiguration cfg = CU.transactionConfiguration(null, cctx.kernalContext().config());
 
         return txStart0(
             concurrency,
@@ -125,7 +124,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
         checkTransactional(ctx);
 
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
+        TransactionConfiguration cfg = CU.transactionConfiguration(ctx, cctx.kernalContext().config());
 
         IgniteInternalTx tx = txStart0(concurrency,
             isolation,

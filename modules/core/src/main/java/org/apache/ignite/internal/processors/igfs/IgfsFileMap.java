@@ -128,12 +128,11 @@ public class IgfsFileMap implements Externalizable {
      *
      * @param range Range to update status.
      * @param status New range status.
-     * @throws IgniteCheckedException If range was not found.
      */
-    public void updateRangeStatus(IgfsFileAffinityRange range, int status) throws IgniteCheckedException {
+    public void updateRangeStatus(IgfsFileAffinityRange range, int status) {
         if (ranges == null)
             throw new IgfsInvalidRangeException("Failed to update range status (file map is empty) " +
-                "[range=" + range + ", ranges=" + ranges + ']');
+                "[range=" + range + ", ranges=null]");
 
         assert !ranges.isEmpty();
 
@@ -190,10 +189,10 @@ public class IgfsFileMap implements Externalizable {
      *
      * @param range Range to delete.
      */
-    public void deleteRange(IgfsFileAffinityRange range) throws IgniteCheckedException {
+    public void deleteRange(IgfsFileAffinityRange range) {
         if (ranges == null)
             throw new IgfsInvalidRangeException("Failed to remove range (file map is empty) " +
-                "[range=" + range + ", ranges=" + ranges + ']');
+                "[range=" + range + ", ranges=null]");
 
         assert !ranges.isEmpty();
 

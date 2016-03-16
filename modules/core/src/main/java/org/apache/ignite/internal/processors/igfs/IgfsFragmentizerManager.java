@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -41,18 +45,21 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
-import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -286,7 +293,8 @@ public class IgfsFragmentizerManager extends IgfsManager {
                 switch (range.status()) {
                     case RANGE_STATUS_INITIAL: {
                         // Mark range as moving.
-                        updated = igfsCtx.meta().updateInfo(fileId, updateRange(range, RANGE_STATUS_MOVING));
+                        updated = igfsCtx.meta().updateInfo(
+                            fileId, new RangeUpdateProcessor(range, RANGE_STATUS_MOVING));
 
                         if (updated == null) {
                             igfsCtx.data().cleanBlocks(fileInfo, range, true);
@@ -302,7 +310,8 @@ public class IgfsFragmentizerManager extends IgfsManager {
                         igfsCtx.data().spreadBlocks(fileInfo, range);
 
                         // Mark range as moved.
-                        updated = igfsCtx.meta().updateInfo(fileId, updateRange(range, RANGE_STATUS_MOVED));
+                        updated = igfsCtx.meta().updateInfo(
+                            fileId, new RangeUpdateProcessor(range, RANGE_STATUS_MOVED));
 
                         if (updated == null) {
                             igfsCtx.data().cleanBlocks(fileInfo, range, true);
@@ -318,7 +327,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                         igfsCtx.data().cleanBlocks(fileInfo, range, false);
 
                         // Remove range from map.
-                        updated = igfsCtx.meta().updateInfo(fileId, deleteRange(range));
+                        updated = igfsCtx.meta().updateInfo(fileId, new RangeDeleteProcessor(range));
 
                         if (updated == null)
                             igfsCtx.data().cleanBlocks(fileInfo, range, true);
@@ -334,57 +343,132 @@ public class IgfsFragmentizerManager extends IgfsManager {
     }
 
     /**
-     * Creates update info closure that will mark given range as moving.
-     *
-     * @param range Range to mark as moving.
-     * @param status Status.
-     * @return Update closure.
+     * Update range processor.
      */
-    private IgniteClosure<IgfsFileInfo, IgfsFileInfo> updateRange(final IgfsFileAffinityRange range,
-        final int status) {
-        return new CX1<IgfsFileInfo, IgfsFileInfo>() {
-            @Override public IgfsFileInfo applyx(IgfsFileInfo info) throws IgniteCheckedException {
-                IgfsFileMap map = new IgfsFileMap(info.fileMap());
+    private static class RangeUpdateProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
+        Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
 
-                map.updateRangeStatus(range, status);
+        /** Range. */
+        private IgfsFileAffinityRange range;
 
-                if (log.isDebugEnabled())
-                    log.debug("Updated file map for range [fileId=" + info.id() + ", range=" + range +
-                        ", status=" + status + ", oldMap=" + info.fileMap() + ", newMap=" + map + ']');
+        /** Status. */
+        private int status;
 
-                IgfsFileInfo updated = new IgfsFileInfo(info, info.length());
+        /**
+         * Constructor.
+         */
+        public RangeUpdateProcessor() {
+            // No-op.
+        }
 
-                updated.fileMap(map);
+        /**
+         * Constructor.
+         *
+         * @param range Range.
+         * @param status Status.
+         */
+        public RangeUpdateProcessor(IgfsFileAffinityRange range, int status) {
+            this.range = range;
+            this.status = status;
+        }
 
-                return updated;
-            }
-        };
+        /** {@inheritDoc} */
+        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
+            throws EntryProcessorException {
+            IgfsFileInfo oldInfo = entry.getValue();
+
+            IgfsFileMap newMap = new IgfsFileMap(oldInfo.fileMap());
+
+            newMap.updateRangeStatus(range, status);
+
+            IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, oldInfo.length());
+
+            newInfo.fileMap(newMap);
+
+            entry.setValue(newInfo);
+
+            return newInfo;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(range);
+            out.writeInt(status);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            range = (IgfsFileAffinityRange)in.readObject();
+            status = in.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(RangeUpdateProcessor.class, this);
+        }
     }
 
     /**
-     * Creates update info closure that will mark given range as moving.
-     *
-     * @param range Range to mark as moving.
-     * @return Update closure.
+     * Delete range processor.
      */
-    private IgniteClosure<IgfsFileInfo, IgfsFileInfo> deleteRange(final IgfsFileAffinityRange range) {
-        return new CX1<IgfsFileInfo, IgfsFileInfo>() {
-            @Override public IgfsFileInfo applyx(IgfsFileInfo info) throws IgniteCheckedException {
-                IgfsFileMap map = new IgfsFileMap(info.fileMap());
+    private static class RangeDeleteProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
+        Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
 
-                map.deleteRange(range);
+        /** Range. */
+        private IgfsFileAffinityRange range;
 
-                if (log.isDebugEnabled())
-                    log.debug("Deleted range from file map [fileId=" + info.id() + ", range=" + range +
-                        ", oldMap=" + info.fileMap() + ", newMap=" + map + ']');
+        /**
+         * Constructor.
+         */
+        public RangeDeleteProcessor() {
+            // No-op.
+        }
 
-                IgfsFileInfo updated = new IgfsFileInfo(info, info.length());
+        /**
+         * Constructor.
+         *
+         * @param range Range.
+         */
+        public RangeDeleteProcessor(IgfsFileAffinityRange range) {
+            this.range = range;
+        }
 
-                updated.fileMap(map);
+        /** {@inheritDoc} */
+        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
+            throws EntryProcessorException {
+            IgfsFileInfo oldInfo = entry.getValue();
 
-                return updated;
-            }
-        };
+            IgfsFileMap newMap = new IgfsFileMap(oldInfo.fileMap());
+
+            newMap.deleteRange(range);
+
+            IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, oldInfo.length());
+
+            newInfo.fileMap(newMap);
+
+            entry.setValue(newInfo);
+
+            return newInfo;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(range);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            range = (IgfsFileAffinityRange)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(RangeDeleteProcessor.class, this);
+        }
     }
 
     /**

@@ -863,6 +863,8 @@ public class GridDhtPartitionDemander {
          */
         private void appendPartitions(UUID nodeId, Collection<Integer> parts) {
             synchronized (this) {
+                assert parts != null : "Partitions are null [cache=" + cctx.name() + ", fromNode=" + nodeId + "]";
+
                 remaining.put(nodeId, new T2<>(U.currentTimeMillis(), parts));
             }
         }
@@ -994,22 +996,25 @@ public class GridDhtPartitionDemander {
                     preloadEvent(p, EVT_CACHE_REBALANCE_PART_LOADED,
                         exchFut.discoveryEvent());
 
-                Collection<Integer> parts = remaining.get(nodeId).get2();
+                T2<Long, Collection<Integer>> t = remaining.get(nodeId);
 
-                if (parts != null) {
-                    boolean rmvd = parts.remove(p);
+                assert t != null : "Remaining not found [cache=" + cctx.name() + ", fromNode=" + nodeId +
+                    ", part=" + p + "]";
 
-                    assert rmvd : "Partition already done [cache=" + cctx.name() + ", fromNode=" + nodeId +
-                        ", part=" + p + ", left=" + parts + "]";
+                Collection<Integer> parts = t.get2();
 
-                    if (parts.isEmpty()) {
-                        U.log(log, "Completed " + ((remaining.size() == 1 ? "(final) " : "") +
-                            "rebalancing [cache=" + cctx.name() +
-                            ", fromNode=" + nodeId + ", topology=" + topologyVersion() +
-                            ", time=" + (U.currentTimeMillis() - remaining.get(nodeId).get1()) + " ms]"));
+                boolean rmvd = parts.remove(p);
 
-                        remaining.remove(nodeId);
-                    }
+                assert rmvd : "Partition already done [cache=" + cctx.name() + ", fromNode=" + nodeId +
+                    ", part=" + p + ", left=" + parts + "]";
+
+                if (parts.isEmpty()) {
+                    U.log(log, "Completed " + ((remaining.size() == 1 ? "(final) " : "") +
+                        "rebalancing [cache=" + cctx.name() +
+                        ", fromNode=" + nodeId + ", topology=" + topologyVersion() +
+                        ", time=" + (U.currentTimeMillis() - t.get1()) + " ms]"));
+
+                    remaining.remove(nodeId);
                 }
 
                 checkIsDone();
