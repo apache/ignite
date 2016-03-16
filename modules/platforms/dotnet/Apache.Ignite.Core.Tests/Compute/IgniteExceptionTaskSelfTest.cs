@@ -88,9 +88,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Mode = ErrorMode.MapJobNotMarshalable;
 
-            var e = ExecuteWithError() as BinaryObjectException;
-
-            Assert.IsNotNull(e);
+            Assert.IsInstanceOf<BinaryObjectException>(ExecuteWithError());
         }
 
         /// <summary>
@@ -573,7 +571,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// 
         /// </summary>
-        public class BadJob : IComputeJob<object>
+        public class BadJob : IComputeJob<object>, IBinarizable
         {
             [InstanceResource]
 
@@ -587,6 +585,18 @@ namespace Apache.Ignite.Core.Tests.Compute
             public void Cancel()
             {
                 // No-op.
+            }
+
+            /** <inheritDoc /> */
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                throw new BinaryObjectException("Expected");
+            }
+
+            /** <inheritDoc /> */
+            public void ReadBinary(IBinaryReader reader)
+            {
+                throw new BinaryObjectException("Expected");
             }
         }
 
@@ -628,7 +638,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// 
         /// </summary>
-        public class BadJobResult
+        public class BadJobResult : IBinarizable
         {
             /** */
             public bool Rmt;
@@ -640,6 +650,18 @@ namespace Apache.Ignite.Core.Tests.Compute
             public BadJobResult(bool rmt)
             {
                 Rmt = rmt;
+            }
+
+            /** <inheritDoc /> */
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                throw new BinaryObjectException("Expected");
+            }
+
+            /** <inheritDoc /> */
+            public void ReadBinary(IBinaryReader reader)
+            {
+                throw new BinaryObjectException("Expected");
             }
         }
 
