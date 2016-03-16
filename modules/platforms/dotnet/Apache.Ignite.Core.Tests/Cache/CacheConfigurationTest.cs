@@ -434,6 +434,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 WriteBehindBatchSize = 18,
                 WriteBehindEnabled = false,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync,
+                CacheStoreFactory = new CacheStoreFactoryTest(),
                 ReadThrough = true,
                 WriteThrough = true,
                 QueryEntities = new[]
