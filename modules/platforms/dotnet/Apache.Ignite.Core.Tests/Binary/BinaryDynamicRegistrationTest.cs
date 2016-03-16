@@ -77,13 +77,12 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual("2", res.Str);
         }
 
+        /// <summary>
+        /// Tests the store with node restart to make sure type names are persisted to disk properly.
+        /// </summary>
         [Test]
         public void TestStore()
         {
-            // TODO: Clear work dir
-            // Start a node with store, write value (without compact footers)
-            // Restart node, read value
-
             // Make sure work dir is empty
             var workDir = Path.GetFullPath("ignite_work");
 
@@ -103,6 +102,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                     new CacheConfiguration
                     {
                         CacheStoreFactory = new StoreFactory(storeFile),
+                        ReadThrough = true,
+                        WriteThrough = true
                     }
                 }
             };
@@ -116,11 +117,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 using (var ignite = Ignition.Start(cfg))
                 {
-                    var cache = ignite.GetCache<int, Foo>(null);
-
-                    cache.LoadCache(null);  // TODO: ???
-
-                    var foo = cache[1];
+                    var foo = ignite.GetCache<int, Foo>(null)[1];
 
                     Assert.AreEqual("test", foo.Str);
                     Assert.AreEqual(2, foo.Int);
