@@ -299,10 +299,13 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             private Dictionary<object, object> LoadDict()
             {
+                if (!File.Exists(_filePath))
+                    return new Dictionary<object, object>();
+
                 using (var fs = File.OpenRead(_filePath))
                 {
-                    return ((DictionaryEntry[]) new XmlSerializer(typeof (DictionaryEntry[])).Deserialize(fs)).ToDictionary
-                            (x => x.Key, x => x.Value);
+                    return ((DictionaryEntry[]) new XmlSerializer(typeof (DictionaryEntry[])).Deserialize(fs))
+                        .ToDictionary(x => x.Key, x => x.Value);
                 }
             }
 
