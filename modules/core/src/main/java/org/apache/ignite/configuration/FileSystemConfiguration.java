@@ -22,7 +22,6 @@ import java.util.concurrent.ExecutorService;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
-import org.apache.ignite.internal.processors.igfs.IgfsMetaManager;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -836,16 +835,16 @@ public class FileSystemConfiguration {
         return S.toString(FileSystemConfiguration.class, this);
     }
 
-    // TODO
-    public void isRelaxedMetaManager(IgfsMetaManager metaManager) {
-        this.metaMgr = metaManager;
+    // TODO: comments
+    public void setRelaxedMetaManager(boolean relaxed) {
+        this.relaxedMetaMgr = relaxed;
     }
 
-    private static final boolean DFLT_RELAXED_META_MGR = true;
+    private static final boolean DFLT_RELAXED_META_MGR = true; // TODO: should be true
 
     private boolean relaxedMetaMgr = DFLT_RELAXED_META_MGR;
 
-    public boolean getMetaManager() {
-        return metaManager;
+    public boolean isRelaxedMetaManager() {
+        return relaxedMetaMgr;
     }
 }

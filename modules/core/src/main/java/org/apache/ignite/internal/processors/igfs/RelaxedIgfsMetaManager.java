@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import javax.cache.processor.EntryProcessorResult;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.EventType;
@@ -61,7 +60,7 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
     @Override  public IgfsFileInfo move(IgfsPath srcPath, IgfsPath dstPath) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
-                assert validTxState(false);
+                validTxState(false);
 
                 // 1. First get source and destination path IDs.
                 List<IgniteUuid> srcPathIds = fileIds(srcPath);
@@ -165,8 +164,7 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                     // 8. Actual move: remove from source parent and add to destination target.
                     IgfsListingEntry entry = srcTargetInfo.listing().get(srcName);
 
-                    id2InfoPrj.invoke(srcTargetId, new ListingRemove(srcName, entry.fileId()));
-                    id2InfoPrj.invoke(dstTargetId, new ListingAdd(dstName, entry));
+                    transferEntry(entry, srcTargetId, srcName, dstTargetId, dstName);
 
                     tx.commit();
 
@@ -198,7 +196,7 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
      * @return If the file exists.
      */
     private boolean verifyExists(Map<IgniteUuid, IgfsFileInfo> infos, IgniteUuid id) {
-        assert validTxState(true);
+        validTxState(true);
 
         return infos.get(id) != null;
     }
@@ -215,7 +213,7 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
     private boolean verifyParentChild(Map<IgniteUuid, IgfsFileInfo> infos, IgniteUuid parent,
                                       String childName, IgniteUuid ch) {
         assert ch != null;
-        assert validTxState(true);
+        validTxState(true);
 
         IgfsFileInfo p = infos.get(parent);
 
@@ -240,7 +238,7 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
     @Override IgniteUuid softDelete(final IgfsPath path, final boolean recursive) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
-                assert validTxState(false);
+                validTxState(false);
 
                 final SortedSet<IgniteUuid> allIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
@@ -307,15 +305,12 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
 
                     assert victimId.equals(srcEntry.fileId());
 
-                    id2InfoPrj.invoke(srcParentId, new ListingRemove(srcFileName, srcEntry.fileId()));
-
-                    // Add listing entry into the destination parent listing.
-                    id2InfoPrj.invoke(trashId, new ListingAdd(destFileName, srcEntry));
+                    transferEntry(srcEntry, srcParentId, srcFileName, trashId, destFileName);
 
                     if (victimInfo.isFile())
                         // Update a file info of the removed file with a file path,
                         // which will be used by delete worker for event notifications.
-                        id2InfoPrj.invoke(victimId, new UpdatePath(path));
+                        invokeUpdatePath(victimId, path);
 
                     tx.commit();
 
@@ -346,14 +341,14 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
      */
     @Override boolean mkdirs(final IgfsPath path, final Map<String, String> props) throws IgniteCheckedException {
         assert props != null;
-        assert validTxState(false);
+        validTxState(false);
 
-        DirectoryChainBuilder b = null;
+        RelaxedDirectoryChainBuilder b = null;
 
         while (true) {
             if (busyLock.enterBusy()) {
                 try {
-                    b = new DirectoryChainBuilder(path, props, props);
+                    b = new RelaxedDirectoryChainBuilder(path, props);
 
                     // Start TX.
                     IgniteInternalTx tx = startTx();
@@ -449,28 +444,20 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
         final @Nullable IgniteUuid affKey,
         final boolean evictExclude,
         @Nullable Map<String, String> fileProps) throws IgniteCheckedException {
-        assert validTxState(false);
+        validTxState(false);
         assert path != null;
         assert !(append && overwrite); // both append & overwrite must not be true.
 
         final String name = path.name();
 
-        DirectoryChainBuilder b = null;
+        RelaxedDirectoryChainBuilder b = null;
 
         IgniteUuid trashId = IgfsUtils.randomTrashId();
 
         while (true) {
             if (busyLock.enterBusy()) {
                 try {
-                    b = new DirectoryChainBuilder(path, dirProps, fileProps) {
-                        /** {@inheritDoc} */
-                        @Override protected IgfsFileInfo buildLeaf() {
-                            long t = System.currentTimeMillis();
-
-                            return new IgfsFileInfo(blockSize, 0L, affKey, createFileLockId(false),
-                                 evictExclude, leafProps, t, t);
-                        }
-                    };
+                    b = new RelaxedDirectoryChainBuilder(path, dirProps, fileProps, blockSize, affKey, evictExclude);
 
                     final IgniteUuid overwriteId = IgniteUuid.randomUuid();
 
@@ -538,18 +525,7 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                                                 + "[fileName=" + name + ", fileId=" + lowermostExistingInfo.id()
                                                 + ", lockId=" + lockId + ']');
 
-                                        IgniteUuid newLockId = createFileLockId(false);
-
-                                        EntryProcessorResult<IgfsFileInfo> result
-                                            = id2InfoPrj.invoke(lowermostExistingInfo.id(),
-                                                new LockFileProcessor(newLockId));
-
-                                        IgfsFileInfo lockedInfo = result.get();
-
-                                        assert lockedInfo != null; // we already checked lock above.
-                                        assert lockedInfo.lockId() != null;
-                                        assert lockedInfo.lockId().equals(newLockId);
-                                        assert lockedInfo.id().equals(lowermostExistingInfo.id());
+                                        IgfsFileInfo lockedInfo = invokeLock(lowermostExistingInfo.id(), false);
 
                                         IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(lockedInfo, parentId);
 
@@ -577,20 +553,17 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                                         // so we delete it only if it is in the expected place.
                                         if (lowermostExistingInfo != null && verifyParentChild(lockedInfos, parentId,
                                                 name, lowermostExistingInfo.id())) {
-                                            final IgfsListingEntry deletedEntry = parentInfo.listing()
+                                            final IgfsListingEntry deletedEntry = lockedInfos.get(parentId).listing()
                                                 .get(name);
 
                                             assert deletedEntry != null;
 
-                                            id2InfoPrj.invoke(parentId, new ListingRemove(name, deletedEntry.fileId()));
-
-                                            // Add listing entry into the destination parent listing.
-                                            id2InfoPrj.invoke(trashId, new ListingAdd(
-                                                lowermostExistingInfo.id().toString(), deletedEntry));
+                                            transferEntry(deletedEntry, parentId, name, trashId,
+                                                lowermostExistingInfo.id().toString());
 
                                             // Update a file info of the removed file with a file path,
                                             // which will be used by delete worker for event notifications.
-                                            id2InfoPrj.invoke(lowermostExistingInfo.id(), new UpdatePath(path));
+                                            invokeUpdatePath(lowermostExistingInfo.id(), path);
                                         }
 
                                         // Make a new locked info:
@@ -601,12 +574,7 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
 
                                         assert newFileInfo.lockId() != null; // locked info should be created.
 
-                                        boolean put = id2InfoPrj.putIfAbsent(newFileInfo.id(), newFileInfo);
-
-                                        assert put;
-
-                                        id2InfoPrj.invoke(parentId,
-                                                new ListingAdd(name, new IgfsListingEntry(newFileInfo)));
+                                        createNewEntry(newFileInfo, parentId, name);
 
                                         IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(newFileInfo, parentId);
 
@@ -673,16 +641,37 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
     /** File chain builder. */
     private class RelaxedDirectoryChainBuilder extends IgfsMetaManager.DirectoryChainBuilder {
         /**
-         * Creates the builder and performa all the initial calculations.
+         * Constructor for directories.
+         *
+         * @param path Path.
+         * @param props Properties.
+         * @throws IgniteCheckedException If failed.
          */
-        protected RelaxedDirectoryChainBuilder(IgfsPath path,
-                 Map<String,String> middleProps,
-                 Map<String,String> leafProps) throws IgniteCheckedException {
-            super(path, middleProps, leafProps);
+        protected RelaxedDirectoryChainBuilder(IgfsPath path, Map<String, String> props) throws IgniteCheckedException {
+            super(path, props, props, true, 0, null, false);
+        }
+
+        /**
+         * Constructor for files.
+         *
+         * @param path Path.
+         * @param dirProps Directory properties.
+         * @param fileProps File properties.
+         * @param blockSize Block size.
+         * @param affKey Affinity key (optional).
+         * @param evictExclude Evict exclude flag.
+         * @throws IgniteCheckedException If failed.
+         */
+        protected RelaxedDirectoryChainBuilder(IgfsPath path, Map<String, String> dirProps, Map<String, String> fileProps,
+                                        int blockSize, @Nullable IgniteUuid affKey, boolean evictExclude)
+            throws IgniteCheckedException {
+            super(path, dirProps, fileProps, false, blockSize, affKey, evictExclude);
         }
 
         /** {@inheritDoc} */
         @Override protected void initIdSets() {
+            IgfsPath existingPath = path.root();
+
             // Find the lowermost existing id:
             IgniteUuid lowermostExistingId = null;
 

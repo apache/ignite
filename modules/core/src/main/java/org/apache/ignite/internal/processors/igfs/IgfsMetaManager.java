@@ -40,32 +40,7 @@ package org.apache.ignite.internal.processors.igfs;
     import java.util.concurrent.CountDownLatch;
     import javax.cache.processor.EntryProcessor;
     import javax.cache.processor.EntryProcessorException;
-    import javax.cache.processor.EntryProcessorResult;
     import javax.cache.processor.MutableEntry;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.concurrent.CountDownLatch;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 
     import org.apache.ignite.IgniteCheckedException;
     import org.apache.ignite.IgniteException;
@@ -660,7 +635,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Map with lock info.
      * @throws IgniteCheckedException If failed.
      */
-    private Map<IgniteUuid, IgfsFileInfo> lockIds(Collection<IgniteUuid> fileIds) throws IgniteCheckedException {
+    protected final Map<IgniteUuid, IgfsFileInfo> lockIds(Collection<IgniteUuid> fileIds) throws IgniteCheckedException {
         assert isSorted(fileIds);
         validTxState(true);
 
@@ -1572,7 +1547,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param affRange Affinity range.
      * @return New file info.
      */
-    public IgfsFileInfo reserveSpace(IgfsPath path, IgniteUuid fileId, long space, IgfsFileAffinityRange affRange)
+    public final IgfsFileInfo reserveSpace(IgfsPath path, IgniteUuid fileId, long space, IgfsFileAffinityRange affRange)
         throws IgniteCheckedException {
         validTxState(false);
 
@@ -1832,7 +1807,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param name Name in parent.
      * @throws IgniteCheckedException If failed.
      */
-    private void createNewEntry(IgfsFileInfo info, IgniteUuid parentId, String name) throws IgniteCheckedException {
+    protected final void createNewEntry(IgfsFileInfo info, IgniteUuid parentId, String name) throws IgniteCheckedException {
         validTxState(true);
 
         if (!id2InfoPrj.putIfAbsent(info.id(), info))
@@ -1852,7 +1827,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param destName Destination name.
      * @throws IgniteCheckedException If failed.
      */
-    private void transferEntry(IgfsListingEntry entry, IgniteUuid srcId, String srcName,
+    protected final void transferEntry(IgfsListingEntry entry, IgniteUuid srcId, String srcName,
         IgniteUuid destId, String destName) throws IgniteCheckedException {
         validTxState(true);
 
@@ -1868,7 +1843,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Resulting file info.
      * @throws IgniteCheckedException If failed.
      */
-    private IgfsFileInfo invokeLock(IgniteUuid id, boolean delete) throws IgniteCheckedException {
+    protected final IgfsFileInfo invokeLock(IgniteUuid id, boolean delete) throws IgniteCheckedException {
         return invokeAndGet(id, new FileLockProcessor(createFileLockId(delete)));
     }
 
@@ -1879,7 +1854,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param path Path to be updated.
      * @throws IgniteCheckedException If failed.
      */
-    private void invokeUpdatePath(IgniteUuid id, IgfsPath path) throws IgniteCheckedException {
+    protected final void invokeUpdatePath(IgniteUuid id, IgfsPath path) throws IgniteCheckedException {
         validTxState(true);
 
         id2InfoPrj.invoke(id, new UpdatePathProcessor(path));
@@ -2917,7 +2892,7 @@ public class IgfsMetaManager extends IgfsManager {
      *
      * @param inTx Expected transaction state.
      */
-    private void validTxState(boolean inTx) {
+    protected final void validTxState(boolean inTx) {
         assert (inTx && id2InfoPrj.tx() != null) || (!inTx && id2InfoPrj.tx() == null) :
             "Invalid TX state [expected=" + inTx + ", actual=" + (id2InfoPrj.tx() != null) + ']';
     }
@@ -2927,7 +2902,7 @@ public class IgfsMetaManager extends IgfsManager {
      *
      * @return Transaction.
      */
-    private IgniteInternalTx startTx() {
+    protected final IgniteInternalTx startTx() {
         return metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
     }
 
@@ -2996,7 +2971,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param msg Error message.
      * @return Checked exception.
      */
-    private static IgniteCheckedException fsException(String msg) {
+    protected static final IgniteCheckedException fsException(String msg) {
         return new IgniteCheckedException(new IgfsException(msg));
     }
 
@@ -3513,7 +3488,7 @@ public class IgfsMetaManager extends IgfsManager {
         protected final List<IgniteUuid> idList;
 
         /** The set of ids. */
-        protected final SortedSet<IgniteUuid> idSet;
+        protected final SortedSet<IgniteUuid> idSet = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
         /** The middle node properties. */
         protected final Map<String, String> middleProps;
@@ -3522,10 +3497,10 @@ public class IgfsMetaManager extends IgfsManager {
         protected final Map<String, String> leafProps;
 
         /** The lowermost exsiting path id. */
-        protected final IgniteUuid lowermostExistingId;
+        protected IgniteUuid lowermostExistingId;
 
         /** The existing path. */
-        protected final IgfsPath existingPath;
+        protected IgfsPath existingPath;
 
         /** The created leaf info. */
         protected IgfsFileInfo leafInfo;
@@ -3534,7 +3509,7 @@ public class IgfsMetaManager extends IgfsManager {
         protected IgniteUuid leafParentId;
 
         /** The number of existing ids. */
-        protected final int existingIdCnt;
+        protected int existingIdCnt;
 
         /** Whether laef is directory. */
         private final boolean leafDir;
@@ -3579,7 +3554,7 @@ public class IgfsMetaManager extends IgfsManager {
         /**
          * Constructor.
          *
-         * @param path Path.
+         * @param path Path to build.
          * @param props Middle properties.
          * @param leafProps Leaf properties.
          * @param leafDir Whether leaf is directory or file.
@@ -3588,21 +3563,18 @@ public class IgfsMetaManager extends IgfsManager {
          * @param evictExclude Evict exclude flag.
          * @throws IgniteCheckedException If failed.
          */
-        private DirectoryChainBuilder(IgfsPath path, Map<String,String> props, Map<String,String> leafProps,
+        protected DirectoryChainBuilder(IgfsPath path, Map<String,String> props, Map<String,String> leafProps,
             boolean leafDir, int blockSize, @Nullable IgniteUuid affKey, boolean evictExclude)
             throws IgniteCheckedException {
             this.path = path;
             this.components = path.components();
             this.idList = fileIds(path);
-            this.props = props;
+            this.middleProps = props;
             this.leafProps = leafProps;
             this.leafDir = leafDir;
             this.blockSize = blockSize;
             this.affKey = affKey;
             this.evictExclude = evictExclude;
-
-            // Store all the non-null ids in the set & construct existing path in one loop:
-            IgfsPath existingPath = path.root();
 
             assert idList.size() == components.size() + 1;
 
@@ -3613,6 +3585,9 @@ public class IgfsMetaManager extends IgfsManager {
          * Initializes the sets of ids.
          */
         protected void initIdSets() {
+            // Store all the non-null ids in the set & construct existing path in one loop:
+            IgfsPath existingPath = path.root();
+
             // Find the lowermost existing id:
             IgniteUuid lowermostExistingId = null;
 
@@ -3680,7 +3655,8 @@ public class IgfsMetaManager extends IgfsManager {
 
                     childDir = true;
 
-                    id2InfoPrj.invoke(childId, new DirectoryCreateProcessor(createTime, props, childName, childInfo));
+                    id2InfoPrj.invoke(childId, new DirectoryCreateProcessor(createTime, middleProps, childName,
+                        childInfo));
 
                     if (parentId == null)
                         parentId = childId;

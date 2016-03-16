@@ -960,16 +960,22 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
+        final int chunkSize = 10 * 1024 * 1024;
+
+        final byte[] bigChunk = createChunk(chunkSize);
+
         try (IgfsOutputStream os = igfs.append(FILE, false)) {
-            os.write(new byte[10 * 1024 * 1024]);
+            os.write(bigChunk);
         }
+
+        checkFile(igfs, igfsSecondary, FILE, bigChunk);
 
         if (dual)
             checkExist(igfsSecondary, DIR, SUBDIR, FILE, DIR_NEW, SUBDIR_NEW, FILE_NEW);
 
         checkExist(igfs, DIR, SUBDIR, FILE);
 
-        assert igfs.info(FILE).length() == 10 * 1024 * 1024;
+        assert igfs.info(FILE).length() == chunkSize;
 
         assert dataCache.size(new CachePeekMode[] {CachePeekMode.ALL}) > 0;
 
@@ -1438,7 +1444,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testCreateConsistencyMultithreaded() throws Exception {
+    // TODO: repair for relaxed mode
+    public void testCreateConsistencyMultithreaded() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
         final AtomicInteger createCtr = new AtomicInteger(); // How many times the file was re-created.
@@ -1446,7 +1453,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         igfs.create(FILE, false).close();
 
-        int threadCnt = 50;
+        final int threadCnt = 50;
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
@@ -1878,7 +1885,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testAppendConsistency() throws Exception {
+    public void testAppendConsistency() throws Exception {
         final AtomicInteger ctr = new AtomicInteger();
         final AtomicReference<Exception> err = new AtomicReference<>();
 
@@ -1927,7 +1934,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testAppendConsistencyMultithreaded() throws Exception {
+    public void testAppendConsistencyMultithreaded() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
         final AtomicInteger chunksCtr = new AtomicInteger(); // How many chunks were written.
