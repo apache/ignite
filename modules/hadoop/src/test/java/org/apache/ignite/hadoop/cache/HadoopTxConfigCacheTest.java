@@ -15,29 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs;
+package org.apache.ignite.hadoop.cache;
 
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.IgniteTxConfigCacheSelfTest;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
- * Internal exception thrown when attempted to update range that is no longer present
- * in file affinity map.
+ * Test checks whether hadoop system cache doesn't use user defined TX config.
  */
-public class IgfsInvalidRangeException extends IgniteException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class HadoopTxConfigCacheTest  extends IgniteTxConfigCacheSelfTest {
     /**
-     * @param msg Error message.
+     * Success if system caches weren't timed out.
+     *
+     * @throws Exception
      */
-    public IgfsInvalidRangeException(String msg) {
-        super(msg);
-    }
+    public void testSystemCacheTx() throws Exception {
+        final Ignite ignite = grid(0);
 
-    /**
-     * @param cause Error cause.
-     */
-    public IgfsInvalidRangeException(Throwable cause) {
-        super(cause);
+        final IgniteInternalCache<Object, Object> hadoopCache = getSystemCache(ignite, CU.SYS_CACHE_HADOOP_MR);
+
+        checkImplicitTxSuccess(hadoopCache);
+        checkStartTxSuccess(hadoopCache);
     }
 }
