@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -128,6 +129,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** */
     private GridFutureAdapter<Boolean> initFut;
+
+    /** */
+    private final List<IgniteRunnable> discoEvts = new ArrayList<>();
+
+    /** */
+    private boolean init;
 
     /** Topology snapshot. */
     private AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot = new AtomicReference<>();
@@ -429,7 +436,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             ExchangeType exchange;
 
-            Collection<DynamicCacheDescriptor> receivedCaches = null;
+            Collection<DynamicCacheDescriptor> receivedCaches;
 
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 if (!F.isEmpty(reqs))
@@ -544,6 +551,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /**
      * @param crd Coordinator flag.
      * @throws IgniteCheckedException If failed.
+     * @return Exchange type.
      */
     private ExchangeType onCacheChangeRequest(boolean crd) throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : this;
@@ -573,6 +581,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /**
      * @param crd Coordinator flag.
      * @throws IgniteCheckedException If failed.
+     * @return Exchange type.
      */
     private ExchangeType onAffinityChangeRequest(boolean crd) throws IgniteCheckedException {
         assert affChangeMsg != null : this;
@@ -588,6 +597,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /**
      * @param crd Coordinator flag.
      * @throws IgniteCheckedException If failed.
+     * @return Exchange type.
      */
     private ExchangeType onClientNodeEvent(boolean crd) throws IgniteCheckedException {
         assert CU.clientNode(discoEvt.eventNode()) : this;
@@ -611,6 +621,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /**
      * @param crd Coordinator flag.
      * @throws IgniteCheckedException If failed.
+     * @return Exchange type.
      */
     private ExchangeType onServerNodeEvent(boolean crd) throws IgniteCheckedException {
         assert !CU.clientNode(discoEvt.eventNode()) : this;
@@ -674,7 +685,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             else {
                 sendLocalPartitions(crd, exchId);
 
-                initFut.onDone(true);
+                initDone();
 
                 return;
             }
@@ -730,7 +741,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         else
             sendPartitions(crd);
 
-        initFut.onDone(true);
+        initDone();
     }
 
     /**
@@ -1158,6 +1169,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
+    /**
+     * @param node Sender node.
+     * @param msg Message.
+     */
     private void processMessage(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
         boolean allReceived = false;
 
@@ -1298,6 +1313,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         });
     }
 
+    /**
+     * @param node Sender node.
+     * @param msg Message.
+     */
     private void processMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
         assert exchId.topologyVersion().equals(msg.topologyVersion()) : msg;
 
@@ -1377,8 +1396,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     public void onAffinityChangeMessage(final ClusterNode node, final CacheAffinityChangeMessage msg) {
         assert exchId.equals(msg.exchangeId()) : msg;
 
-        initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-            @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+        onDiscoveryEvent(new IgniteRunnable() {
+            @Override public void run() {
                 if (isDone() || !enterBusy())
                     return;
 
@@ -1408,6 +1427,49 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
+     * @param c Closure.
+     */
+    private void onDiscoveryEvent(IgniteRunnable c) {
+        synchronized (discoEvts) {
+            if (!init) {
+                discoEvts.add(c);
+
+                return;
+            }
+
+            assert discoEvts.isEmpty() : discoEvts;
+        }
+
+        c.run();
+    }
+
+    /**
+     *
+     */
+    private void initDone() {
+        while (!isDone()) {
+            List<IgniteRunnable> evts;
+
+            synchronized (discoEvts) {
+                if (discoEvts.isEmpty()) {
+                    init = true;
+
+                    break;
+                }
+
+                evts = new ArrayList<>(discoEvts);
+
+                discoEvts.clear();
+            }
+
+            for (IgniteRunnable c : evts)
+                c.run();
+        }
+
+        initFut.onDone(true);
+    }
+
+    /**
      * Node left callback, processed from the same thread as {@link #onAffinityChangeMessage}.
      *
      * @param node Left node.
@@ -1417,8 +1479,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             return;
 
         try {
-            initFut.listen(new CI1<IgniteInternalFuture<Boolean>>() {
-                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+            onDiscoveryEvent(new IgniteRunnable() {
+                @Override public void run() {
                     if (isDone() || !enterBusy())
                         return;
 

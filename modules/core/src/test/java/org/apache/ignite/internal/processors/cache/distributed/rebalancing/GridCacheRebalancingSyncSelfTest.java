@@ -318,7 +318,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         long stopTime = System.currentTimeMillis() + 60_000;
 
-        while (System.currentTimeMillis() < stopTime) {
+        while (!finished && (System.currentTimeMillis() < stopTime)) {
             finished = true;
 
             for (GridCacheAdapter c : grid(id).context().cache().internalCaches()) {
@@ -333,10 +333,16 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
                     break;
                 }
-                else if (!fut.get()) {
-                    finished = false;
+                else {
+                    finished = fut.get();
 
-                    log.warning("Rebalancing finished with missed partitions.");
+                    if (!finished) {
+                        log.warning("Rebalancing finished with missed partitions: " + fut.topologyVersion());
+
+                        U.sleep(100);
+                    }
+                    else
+                        break;
                 }
             }
         }
@@ -357,7 +363,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                 Map map = U.field(supplier, "scMap");
 
                 synchronized (map) {
-                    assert map.isEmpty();
+                    assert map.isEmpty() : map;
                 }
             }
         }

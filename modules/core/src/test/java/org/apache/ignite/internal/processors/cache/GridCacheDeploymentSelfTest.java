@@ -302,6 +302,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
+            awaitPartitionMapExchange();
+
             info(">>>>>>> Grid 0: " + g0.cluster().localNode().id());
             info(">>>>>>> Grid 1: " + g1.cluster().localNode().id());
             info(">>>>>>> Grid 2: " + g2.cluster().localNode().id());

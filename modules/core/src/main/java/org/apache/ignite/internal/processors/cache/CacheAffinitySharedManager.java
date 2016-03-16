@@ -122,6 +122,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     public void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer) {
         if (type == EVT_NODE_JOINED && node.isLocal()) {
+            // Clean-up in case of client reconnect.
+            registeredCaches.clear();
+
+            affCalcVer = null;
+
+            lastAffVer = null;
+
             for (DynamicCacheDescriptor desc : cctx.cache().cacheDescriptors())
                 registeredCaches.put(desc.cacheId(), desc);
         }
