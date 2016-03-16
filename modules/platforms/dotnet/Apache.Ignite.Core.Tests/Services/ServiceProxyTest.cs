@@ -191,8 +191,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var err = Assert.Throws<ServiceInvocationException>(prx.ExceptionMethod);
             Assert.AreEqual("Expected exception", err.InnerException.Message);
 
-            var ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionMethod());
-            Assert.IsTrue(ex.ToString().Contains("+CustomException"));
+            Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionMethod());
         }
 
         [Test]
@@ -587,9 +586,19 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Custom non-serializable exception.
         /// </summary>
-        private class CustomException : Exception
+        private class CustomException : Exception, IBinarizable
         {
-            
+            /** <inheritDoc /> */
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                throw new BinaryObjectException("Expected");
+            }
+
+            /** <inheritDoc /> */
+            public void ReadBinary(IBinaryReader reader)
+            {
+                throw new BinaryObjectException("Expected");
+            }
         }
 
         /// <summary>
