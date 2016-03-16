@@ -34,11 +34,11 @@ import java.util.Collection;
  * ODBC message parser.
  */
 public class OdbcMessageParser {
+    /** Current ODBC communication protocol version */
+    public static final long PROTOCOL_VERSION = 1;
+
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
-
-    /** Current ODBC communication protocol version */
-    private static final long PROTOCOL_VERSION = 1;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -82,11 +82,8 @@ public class OdbcMessageParser {
             if (cmd == OdbcRequest.HANDSHAKE) {
                 long version = reader.readLong();
 
-                if (version != PROTOCOL_VERSION)
-                    throw new IgniteException("Unsupported ODBC communication protocol version: " +
-                            "[ver=" + version + ", current_ver=" + PROTOCOL_VERSION + ']');
-
-                versionConfirmed = true;
+                if (version == PROTOCOL_VERSION)
+                    versionConfirmed = true;
 
                 return new OdbcHandshakeRequest(version);
             }

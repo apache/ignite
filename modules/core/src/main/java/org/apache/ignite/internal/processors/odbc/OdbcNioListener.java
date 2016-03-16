@@ -86,10 +86,23 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
 
         OdbcMessageParser parser = connData.getParser();
 
+        OdbcRequest req;
+
+        try {
+            req = parser.decode(msg);
+        }
+        catch (Exception e) {
+            log.error("Failed to parse message [id=" + reqId + ", err=" + e + ']');
+
+            ses.close();
+
+            return;
+        }
+
+        assert req != null;
+
         try {
             long startTime = 0;
-
-            OdbcRequest req = parser.decode(msg);
 
             if (log.isDebugEnabled()) {
                 startTime = System.nanoTime();

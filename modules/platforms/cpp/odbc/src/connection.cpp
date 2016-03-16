@@ -86,7 +86,7 @@ namespace ignite
 
             if (server != config.GetDsn())
             {
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Unknown DNS.");
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Unknown server.");
 
                 return SQL_RESULT_ERROR;
             }
@@ -313,7 +313,9 @@ namespace ignite
             {
                 LOG_MSG("Error: %s\n", rsp.GetError().c_str());
 
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, rsp.GetError());
+                AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, rsp.GetError());
+
+                InternalRelease();
 
                 return SQL_RESULT_ERROR;
             }

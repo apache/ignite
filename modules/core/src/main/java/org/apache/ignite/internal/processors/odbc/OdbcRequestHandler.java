@@ -78,7 +78,7 @@ public class OdbcRequestHandler {
         try {
             switch (req.command()) {
                 case HANDSHAKE:
-                    return performHandshake();
+                    return performHandshake((OdbcHandshakeRequest) req);
 
                 case EXECUTE_SQL_QUERY:
                     return executeQuery((OdbcQueryExecuteRequest) req);
@@ -106,9 +106,14 @@ public class OdbcRequestHandler {
     /**
      * {@link OdbcHandshakeRequest} command handler.
      *
+     * @param req Handshake request.
      * @return Response.
      */
-    private OdbcResponse performHandshake() {
+    private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
+        if (req.version() != OdbcMessageParser.PROTOCOL_VERSION)
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC communication protocol version: " +
+                    "[ver=" + req.version() + ", current_ver=" + OdbcMessageParser.PROTOCOL_VERSION + ']');
+
         return new OdbcResponse(null);
     }
 
