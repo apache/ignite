@@ -132,6 +132,18 @@
             <outputDirectory>/platforms/cpp/examples</outputDirectory>
         </fileSet>
 
+        <!-- Move CPP "odbc" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/odbc</directory>
+            <outputDirectory>/platforms/cpp/odbc</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "binary" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/binary</directory>
+            <outputDirectory>/platforms/cpp/binary</outputDirectory>
+        </fileSet>
+
         <!-- Move CPP licenses. -->
         <fileSet>
             <directory>modules/platforms/licenses</directory>
