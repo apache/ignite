@@ -55,7 +55,12 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     @Override
     public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create) {
-        return ctx.topology().localPartition(key, true).putEntryIfObsoleteOrAbsent(topVer, key, val, create);
+        GridDhtLocalPartition part = ctx.topology().localPartition(key, create);
+
+        if (part == null)
+            return new GridTriple<>(null, null, null);
+
+        return part.putEntryIfObsoleteOrAbsent(topVer, key, val, create);
     }
 
     @Override public GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key) {
