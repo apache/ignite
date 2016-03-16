@@ -48,7 +48,7 @@ public class TestJtaTxServlet extends HttpServlet {
 
         try {
             final Ignite ignite = Ignition.ignite();
-            final IgniteCache<Integer, String> cache = ignite.cache("tx");
+            final IgniteCache<Integer, String> cache = ignite.cache("atomic");
 
             TransactionManager tmMgr = com.ibm.tx.jta.TransactionManagerFactory.getTransactionManager();
 
