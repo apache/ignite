@@ -112,10 +112,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     /** Error. */
     private volatile Throwable err;
 
-    /** Timeout object. */
-    @GridToStringExclude
-    private LockTimeoutObject timeoutObj;
-
     /** Lock timeout. */
     private final long timeout;
 
@@ -194,12 +190,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridDhtColocatedLockFuture.class);
-
-        if (timeout > 0) {
-            timeoutObj = new LockTimeoutObject();
-
-            cctx.time().addTimeoutObject(timeoutObj);
-        }
 
         valMap = new ConcurrentHashMap8<>();
     }
@@ -538,9 +528,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
             // Clean up.
             cctx.mvcc().removeMvccFuture(this);
-
-            if (timeoutObj != null)
-                cctx.time().removeTimeoutObject(timeoutObj);
 
             return true;
         }

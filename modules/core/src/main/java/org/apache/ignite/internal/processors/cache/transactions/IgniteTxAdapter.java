@@ -715,9 +715,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @return Lock timeout.
      */
     protected long lockTimeout() {
-        long timeout = remainingTime();
-
-        return timeout < 0 ? 0 : timeout == 0 ? -1 : timeout;
+        return remainingTime();
     }
 
     /** {@inheritDoc} */

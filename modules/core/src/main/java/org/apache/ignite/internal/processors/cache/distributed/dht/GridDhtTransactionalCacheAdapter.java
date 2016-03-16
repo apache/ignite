@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -641,6 +642,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(true);
 
+        if (timeout == 0)
+            return new GridDhtFinishedFuture<>(
+                new IgniteTxTimeoutCheckedException("Failed get locks for keys due to an transaction timeout: " + txx)
+            );
+
         GridDhtTxLocalAdapter tx = (GridDhtTxLocalAdapter)txx;
 
         assert tx != null;
@@ -937,7 +943,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (e != null)
                                 e = U.unwrap(e);
 
-                            assert !t.empty();
+                            assert !t.empty() || e != null;
 
                             // Create response while holding locks.
                             final GridNearLockResponse resp = createLockReply(nearNode,
