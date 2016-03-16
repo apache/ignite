@@ -18,7 +18,15 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Xml.Serialization;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -75,6 +83,51 @@ namespace Apache.Ignite.Core.Tests.Binary
             // TODO: Clear work dir
             // Start a node with store, write value (without compact footers)
             // Restart node, read value
+
+            // Make sure work dir is empty
+            var workDir = Path.GetFullPath("ignite_work");
+
+            if (Directory.Exists(workDir))
+                Directory.Delete(workDir, true);
+
+            Directory.CreateDirectory(workDir);
+
+            var storeFile = Path.GetTempFileName();
+
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                BinaryConfiguration = new BinaryConfiguration {CompactFooter = false},
+                WorkDirectory = workDir,
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration
+                    {
+                        CacheStoreFactory = new StoreFactory(storeFile)
+                    }
+                }
+            };
+
+            try
+            {
+                using (var ignite = Ignition.Start(cfg))
+                {
+                    ignite.GetCache<int, Foo>(null)[1] = new Foo {Str = "test", Int = 2};
+                }
+
+                using (var ignite = Ignition.Start(cfg))
+                {
+                    var foo = ignite.GetCache<int, Foo>(null)[1];
+
+                    Assert.AreEqual("test", foo.Str);
+                    Assert.AreEqual(2, foo.Int);
+                }
+            }
+            finally 
+            {
+                // Cleanup
+                File.Delete(storeFile);
+                Directory.Delete(workDir, true);
+            }
         }
 
         /// <summary>
@@ -192,6 +245,73 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 Int = r.ReadInt();
                 Str = r.ReadString();
+            }
+        }
+
+        private class StoreFactory : IFactory<ICacheStore>
+        {
+            private readonly string _filePath;
+
+            public StoreFactory(string filePath)
+            {
+                _filePath = filePath;
+            }
+
+            public ICacheStore CreateInstance()
+            {
+                return new CacheStore(_filePath);
+            }
+        }
+
+        private class CacheStore : CacheStoreAdapter
+        {
+            private readonly string _filePath;
+
+            public CacheStore(string filePath)
+            {
+                _filePath = filePath;
+            }
+
+            public override object Load(object key)
+            {
+                object res;
+                return LoadDict().TryGetValue(key, out res) ? res : null;
+            }
+
+            public override void Write(object key, object val)
+            {
+                var d = LoadDict();
+
+                d[key] = val;
+
+                SaveDict(d);
+            }
+
+            public override void Delete(object key)
+            {
+                var d = LoadDict();
+
+                d.Remove(key);
+
+                SaveDict(d);
+            }
+
+            private Dictionary<object, object> LoadDict()
+            {
+                using (var fs = File.OpenRead(_filePath))
+                {
+                    return ((DictionaryEntry[]) new XmlSerializer(typeof (DictionaryEntry[])).Deserialize(fs)).ToDictionary
+                            (x => x.Key, x => x.Value);
+                }
+            }
+
+            private void SaveDict(Dictionary<object, object> dict)
+            {
+                using (var fs = File.OpenWrite(_filePath))
+                {
+                    new XmlSerializer(typeof (DictionaryEntry[])).Serialize(fs,
+                        dict.Select(x => new DictionaryEntry(x.Key, x.Value)).ToArray());
+                }
             }
         }
     }
