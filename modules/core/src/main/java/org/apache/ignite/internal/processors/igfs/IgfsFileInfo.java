@@ -345,6 +345,19 @@ public final class IgfsFileInfo implements Externalizable {
     }
 
     /**
+     * Temporal hack to change ID before saving entry to cache. Currently we have too much constructors and adding
+     * more will make things even worse. Instead, we use this method until directories and files are split into
+     * separate entities.
+     *
+     * @param id ID.
+     * @deprecated Use only on not-yet-saved entries.
+     */
+    @Deprecated
+    public void id(IgniteUuid id) {
+        this.id = id;
+    }
+
+    /**
      * @return {@code True} if this is a file.
      */
     public boolean isFile() {

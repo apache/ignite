@@ -34,7 +34,7 @@ public class IgfsListingEntry implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** File id. */
+    /** ID. */
     private IgniteUuid id;
 
     /** Directory marker. */
@@ -48,11 +48,24 @@ public class IgfsListingEntry implements Externalizable {
     }
 
     /**
+     * Constructor.
+     *
      * @param fileInfo File info to construct listing entry from.
      */
     public IgfsListingEntry(IgfsFileInfo fileInfo) {
         id = fileInfo.id();
         dir = fileInfo.isDirectory();
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param id File ID.
+     * @param dir Directory marker.
+     */
+    public IgfsListingEntry(IgniteUuid id, boolean dir) {
+        this.id = id;
+        this.dir = dir;
     }
 
     /**
