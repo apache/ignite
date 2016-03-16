@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     new CacheConfiguration
                     {
-                        CacheStoreFactory = new StoreFactory(storeFile)
+                        CacheStoreFactory = new StoreFactory(storeFile),
                     }
                 }
             };
@@ -116,7 +116,11 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 using (var ignite = Ignition.Start(cfg))
                 {
-                    var foo = ignite.GetCache<int, Foo>(null)[1];
+                    var cache = ignite.GetCache<int, Foo>(null);
+
+                    cache.LoadCache(null);  // TODO: ???
+
+                    var foo = cache[1];
 
                     Assert.AreEqual("test", foo.Str);
                     Assert.AreEqual(2, foo.Int);
