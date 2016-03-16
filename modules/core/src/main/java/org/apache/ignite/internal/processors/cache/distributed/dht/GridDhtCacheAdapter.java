@@ -1105,7 +1105,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             final GridDhtLocalPartition part = ctx.topology().localPartition(partId,
                 ctx.discovery().topologyVersionEx(), false);
 
-            Iterator<GridDhtCacheEntry> partIt = part == null ? null : part.entries().iterator();
+            Iterator<? extends GridCacheEntryEx> partIt = part == null ? null : part.entries().iterator();
 
             return new PartitionEntryIterator(partIt);
         }
@@ -1234,7 +1234,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             Iterator<GridCacheEntryEx> it = new Iterator<GridCacheEntryEx>() {
                 private GridCacheEntryEx next;
 
-                private Iterator<GridDhtCacheEntry> curIt;
+                private Iterator<? extends GridCacheEntryEx> curIt;
 
                 {
                     advance();
@@ -1307,12 +1307,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         private Cache.Entry<K, V> last;
 
         /** Partition iterator. */
-        private final Iterator<GridDhtCacheEntry> partIt;
+        private final Iterator<? extends GridCacheEntryEx> partIt;
 
         /**
          * @param partIt Partition iterator.
          */
-        private PartitionEntryIterator(@Nullable Iterator<GridDhtCacheEntry> partIt) {
+        private PartitionEntryIterator(@Nullable Iterator<? extends GridCacheEntryEx> partIt) {
             this.partIt = partIt;
 
             advance();
@@ -1349,7 +1349,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         private void advance() {
             if (partIt != null) {
                 while (partIt.hasNext()) {
-                    GridDhtCacheEntry next = partIt.next();
+                    GridDhtCacheEntry next = (GridDhtCacheEntry) partIt.next();
 
                     if (next.isInternal() || !next.visitable(CU.empty0()))
                         continue;

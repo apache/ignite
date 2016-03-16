@@ -19,11 +19,10 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import javax.cache.Cache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -33,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.lang.GridTriple;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMapInterface {
@@ -95,44 +95,28 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         return null;
     }
 
-    @Override public <K, V> Set<K> keySet(CacheEntryPredicate... filter) {
-        Set set = new HashSet();
+    @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
+        Set<KeyCacheObject> set = new HashSet<>();
 
-        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
-            set.addAll(part.keySet(filter));
+        for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
+            set.addAll(partition.keySet(filter));
         }
 
         return set;
     }
 
-    @Override public Set<GridCacheEntryEx> entries0() {
-        Set set = new HashSet();
+    @Override public Iterable<? extends GridCacheEntryEx> entries(CacheEntryPredicate... filter) {
+        final List<Iterator<GridCacheEntryEx>> iterators = new ArrayList<>();
 
-        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
-            set.addAll(part.entries0());
+        for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
+            iterators.add((Iterator<GridCacheEntryEx>) partition.entries(filter).iterator());
         }
 
-        return set;
-    }
-
-    @Override public <K, V> Set<Cache.Entry<K, V>> entries(CacheEntryPredicate... filter) {
-        Set set = new HashSet();
-
-        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
-            set.addAll(part.entriesx(filter));
-        }
-
-        return set;
-    }
-
-    @Override public <K, V> Collection<V> values(CacheEntryPredicate... filter) {
-        List list = new ArrayList<>();
-
-        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
-            list.addAll(part.values(filter));
-        }
-
-        return list;
+        return new Iterable<GridCacheEntryEx>() {
+            @Override public Iterator<GridCacheEntryEx> iterator() {
+                return F.flatIterators(iterators);
+            }
+        };
     }
 
     @Override public void incrementSize(GridCacheMapEntry e) {

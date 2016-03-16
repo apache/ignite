@@ -979,7 +979,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 }
             }
         }, 10_000)) {
-            Iterable<GridCacheEntryEx> set = dataCache.allEntries();
+            Iterable<? extends GridCacheEntryEx> set = dataCache.allEntries();
 
             for (GridCacheEntryEx e: set) {
                 X.println("deleted = " + e.deleted());
@@ -3206,7 +3206,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     private static void dumpCache(String cacheName, GridCacheAdapter<?,?> cache) {
         X.println("=============================== " + cacheName + " cache dump: ");
 
-        Iterable<GridCacheEntryEx> set = cache.entries();
+        Iterable<? extends GridCacheEntryEx> set = cache.entries();
 
         for (GridCacheEntryEx e: set)
             X.println("Lost " + cacheName + " entry = " + e);

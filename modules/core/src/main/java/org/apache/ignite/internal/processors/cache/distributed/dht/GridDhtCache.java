@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.io.Externalizable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
+import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapInterface;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -54,7 +54,7 @@ public class GridDhtCache<K, V> extends GridDhtTransactionalCacheAdapter<K, V> {
      * @param ctx Cache context.
      * @param map Cache map.
      */
-    public GridDhtCache(GridCacheContext<K, V> ctx, GridCacheConcurrentMap map) {
+    public GridDhtCache(GridCacheContext<K, V> ctx, GridCacheConcurrentMapInterface map) {
         super(ctx, map);
     }
 

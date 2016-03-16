@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheClearAllRunnable;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheEntrySet;
 import org.apache.ignite.internal.processors.cache.GridCacheKeySet;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
@@ -53,13 +52,10 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -360,44 +356,46 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> primaryEntrySet(
         @Nullable final CacheEntryPredicate... filter) {
-        final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
+        throw new UnsupportedOperationException("Not implemented");
 
-        Collection<Cache.Entry<K, V>> entries =
-            F.flatCollections(
-                F.viewReadOnly(
-                    dht().topology().currentLocalPartitions(),
-                    new C1<GridDhtLocalPartition, Collection<Cache.Entry<K, V>>>() {
-                        @Override public Collection<Cache.Entry<K, V>> apply(GridDhtLocalPartition p) {
-                            Collection<GridDhtCacheEntry> entries0 = p.entries();
-
-                            if (!F.isEmpty(filter))
-                                entries0 = F.view(entries0, new CacheEntryPredicateAdapter() {
-                                    @Override public boolean apply(GridCacheEntryEx e) {
-                                        return F.isAll(e, filter);
-                                    }
-                                });
-
-                            return F.viewReadOnly(
-                                entries0,
-                                new C1<GridDhtCacheEntry, Cache.Entry<K, V>>() {
-                                    @Override public Cache.Entry<K, V> apply(GridDhtCacheEntry e) {
-                                        return e.wrapLazyValue();
-                                    }
-                                },
-                                new P1<GridDhtCacheEntry>() {
-                                    @Override public boolean apply(GridDhtCacheEntry e) {
-                                        return !e.obsoleteOrDeleted();
-                                    }
-                                });
-                        }
-                    },
-                    new P1<GridDhtLocalPartition>() {
-                        @Override public boolean apply(GridDhtLocalPartition p) {
-                            return p.primary(topVer);
-                        }
-                    }));
-
-        return new GridCacheEntrySet<>(ctx, entries, null);
+//        final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
+//
+//        Collection<Cache.Entry<K, V>> entries =
+//            F.flatCollections(
+//                F.viewReadOnly(
+//                    dht().topology().currentLocalPartitions(),
+//                    new C1<GridDhtLocalPartition, Collection<Cache.Entry<K, V>>>() {
+//                        @Override public Collection<Cache.Entry<K, V>> apply(GridDhtLocalPartition p) {
+//                            Iterable<GridDhtCacheEntry> entries0 = p.entries();
+//
+//                            if (!F.isEmpty(filter))
+//                                entries0 = F.view(entries0, new CacheEntryPredicateAdapter() {
+//                                    @Override public boolean apply(GridCacheEntryEx e) {
+//                                        return F.isAll(e, filter);
+//                                    }
+//                                });
+//
+//                            return F.viewReadOnly(
+//                                entries0,
+//                                new C1<GridDhtCacheEntry, Cache.Entry<K, V>>() {
+//                                    @Override public Cache.Entry<K, V> apply(GridDhtCacheEntry e) {
+//                                        return e.wrapLazyValue();
+//                                    }
+//                                },
+//                                new P1<GridDhtCacheEntry>() {
+//                                    @Override public boolean apply(GridDhtCacheEntry e) {
+//                                        return !e.obsoleteOrDeleted();
+//                                    }
+//                                });
+//                        }
+//                    },
+//                    new P1<GridDhtLocalPartition>() {
+//                        @Override public boolean apply(GridDhtLocalPartition p) {
+//                            return p.primary(topVer);
+//                        }
+//                    }));
+//
+//        return new GridCacheEntrySet<>(ctx, entries, null);
     }
 
     /** {@inheritDoc} */

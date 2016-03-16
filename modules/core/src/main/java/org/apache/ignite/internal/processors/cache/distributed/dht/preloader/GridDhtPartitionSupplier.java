@@ -296,8 +296,8 @@ class GridDhtPartitionSupplier {
                         phase = SupplyContextPhase.ONHEAP;
 
                     if (phase == SupplyContextPhase.ONHEAP) {
-                        Iterator<GridCacheEntryEx> entIt = sctx != null ?
-                            (Iterator<GridCacheEntryEx>)sctx.entryIt : loc.allEntries0().iterator();
+                        Iterator<? extends GridCacheEntryEx> entIt = sctx != null ?
+                            (Iterator<GridCacheEntryEx>)sctx.entryIt : loc.entries().iterator();
 
                         while (entIt.hasNext()) {
                             if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {

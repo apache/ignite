@@ -103,6 +103,7 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.GridSerializableSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -548,7 +549,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     protected void init() {
         if (map == null)
-            map = new GridCacheConcurrentMap(ctx, ctx.config().getStartSize(), entryFactory());
+            map = new GridCacheConcurrentMapV2(ctx, entryFactory());
     }
 
     protected abstract GridCacheMapEntryFactory entryFactory();
@@ -700,7 +701,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             modes.backup = true;
 
             if (modes.heap)
-                its.add(iterator(map.entries0().iterator(), !ctx.keepBinary()));
+                its.add(iterator(map.entries().iterator(), !ctx.keepBinary()));
         }
         else if (modes.heap) {
             if (modes.near && ctx.isNear())
@@ -1018,15 +1019,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * @return Set of internal cached entry representations, excluding {@link GridCacheInternal} keys.
      */
-    public Iterable<GridCacheEntryEx> entries() {
-        return map.entries0();
+    public Iterable<? extends GridCacheEntryEx> entries() {
+        return map.entries();
     }
 
     /**
      * @return Set of internal cached entry representations, including {@link GridCacheInternal} keys.
      */
-    public Iterable<GridCacheEntryEx> allEntries() {
-        return map.entries0();
+    public Iterable<? extends GridCacheEntryEx> allEntries() {
+        return map.entries();
     }
 
     /** {@inheritDoc} */
@@ -1035,8 +1036,20 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
-        return map.entries(filter);
+    @Override public Iterable<Cache.Entry<K, V>> entrySetx(final CacheEntryPredicate... filter) {
+        return new GridSerializableSet<Cache.Entry<K, V>>() {
+            @Override public Iterator<Cache.Entry<K, V>> iterator() {
+                return F.iterator(map.entries(), new IgniteClosure<GridCacheEntryEx, Cache.Entry<K, V>>() {
+                    @Override public Cache.Entry apply(GridCacheEntryEx entry) {
+                        return entry.wrap();
+                    }
+                }, true, filter);
+            }
+
+            @Override public int size() {
+                return map.size();
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -1080,7 +1093,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Collection of cached values.
      */
     public Iterable<V> values(CacheEntryPredicate... filter) {
-        return map.values(filter);
+        return F.map(map.entries(filter), new IgniteClosure<GridCacheEntryEx, V>() {
+            @Override public V apply(GridCacheEntryEx o) {
+                return (V)o.wrap().getValue();
+            }
+        });
     }
 
     /**
@@ -4683,7 +4700,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Entry set.
      */
     public Iterable<Cache.Entry<K, V>> entrySet(@Nullable CacheEntryPredicate... filter) {
-        return map.entries(filter);
+        return F.map(map.entries(filter), new IgniteClosure<GridCacheEntryEx, Cache.Entry<K, V>>() {
+            @Override public Cache.Entry<K, V> apply(GridCacheEntryEx entry) {
+                return entry.wrap();
+            }
+        });
     }
 
     /**
@@ -4692,7 +4713,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     public Iterable<Cache.Entry<K, V>> primaryEntrySet(
         @Nullable CacheEntryPredicate... filter) {
-        return map.entries(
+        return entrySet(
             F0.and0(
                 filter,
                 CU.cachePrimary(ctx.grid().affinity(ctx.name()), ctx.localNode())));
@@ -4703,7 +4724,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Key set.
      */
     public Set<K> keySet(@Nullable CacheEntryPredicate... filter) {
-        return map.keySet(filter);
+        Set<KeyCacheObject> set = map.keySet(filter);
+
+        Set<K> result = new HashSet<>();
+
+        for (KeyCacheObject key : set) {
+            result.add((K)ctx.unwrapBinaryIfNeeded(key, false, false));
+        }
+
+        return result;
     }
 
     /**
@@ -4711,7 +4740,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Key set including internal keys.
      */
     public Set<K> keySetx(@Nullable CacheEntryPredicate... filter) {
-        return map.keySet(filter);
+        return keySet(filter);
     }
 
     /**
@@ -4719,7 +4748,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Primary key set.
      */
     public Set<K> primaryKeySet(@Nullable CacheEntryPredicate... filter) {
-        return map.keySet(
+        return keySet(
             F0.and0(
                 filter,
                 CU.cachePrimary(ctx.grid().affinity(ctx.name()), ctx.localNode())));
@@ -4882,7 +4911,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param deserializeBinary Deserialize binary flag.
      * @return Public API iterator.
      */
-    protected Iterator<Cache.Entry<K, V>> iterator(final Iterator<GridCacheEntryEx> it,
+    protected Iterator<Cache.Entry<K, V>> iterator(final Iterator<? extends GridCacheEntryEx> it,
         final boolean deserializeBinary) {
         return new Iterator<Cache.Entry<K, V>>() {
             {

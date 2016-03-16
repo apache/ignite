@@ -34,7 +34,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
+import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapInterface;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -65,14 +65,14 @@ public class GridCacheDhtTestUtils {
     static void prepareKeys(GridDhtCache<Integer, String> dht, int keyCnt) throws IgniteCheckedException {
         AffinityFunction aff = dht.context().config().getAffinity();
 
-        GridCacheConcurrentMap cacheMap;
+        GridCacheConcurrentMapInterface cacheMap;
 
         try {
             Field field = GridCacheAdapter.class.getDeclaredField("map");
 
             field.setAccessible(true);
 
-            cacheMap = (GridCacheConcurrentMap)field.get(dht);
+            cacheMap = (GridCacheConcurrentMapInterface)field.get(dht);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to get cache map.", e);
@@ -85,7 +85,7 @@ public class GridCacheDhtTestUtils {
         for (int i = 0; i < keyCnt; i++) {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(i);
 
-            cacheMap.putEntry(AffinityTopologyVersion.NONE, cacheKey, ctx.toCacheKeyObject("value" + i));
+//            cacheMap.putEntry(AffinityTopologyVersion.NONE, cacheKey, ctx.toCacheKeyObject("value" + i));
 
             dht.preloader().request(Collections.singleton(cacheKey), AffinityTopologyVersion.NONE);
 
