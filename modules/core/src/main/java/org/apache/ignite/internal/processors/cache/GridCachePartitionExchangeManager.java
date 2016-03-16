@@ -188,8 +188,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {
                         assert cctx.discovery().node(n.id()) == null;
 
-                        for (GridDhtPartitionsExchangeFuture f : exchFuts.values())
-                            f.onNodeLeft(n);
+                        // Avoid race b/w initial future add and discovery event.
+                        GridDhtPartitionsExchangeFuture initFut = null;
+
+                        if (readyTopVer.get().equals(AffinityTopologyVersion.NONE)) {
+                            initFut = exchangeFuture(initExchangeId(), null, null, null);
+
+                            initFut.onNodeLeft(n);
+                        }
+
+                        for (GridDhtPartitionsExchangeFuture f : exchFuts.values()) {
+                            if (f != initFut)
+                                f.onNodeLeft(n);
+                        }
                     }
 
                     assert
@@ -313,6 +324,21 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         return reconnectExchangeFut;
     }
 
+    /**
+     * @return Initial exchange ID.
+     */
+    private GridDhtPartitionExchangeId initExchangeId() {
+        DiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
+
+        assert discoEvt != null;
+
+        final AffinityTopologyVersion startTopVer = affinityTopologyVersion(discoEvt);
+
+        assert discoEvt.topologyVersion() == startTopVer.topologyVersion();
+
+        return exchangeId(cctx.localNode().id(), startTopVer, EVT_NODE_JOINED);
+    }
+
     /** {@inheritDoc} */
     @Override protected void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
         super.onKernalStart0(reconnect);
@@ -326,13 +352,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         // Generate dummy discovery event for local node joining.
         DiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
 
-        final AffinityTopologyVersion startTopVer = affinityTopologyVersion(discoEvt);
-
-        GridDhtPartitionExchangeId exchId = exchangeId(loc.id(), startTopVer, EVT_NODE_JOINED);
-
-        assert discoEvt != null;
-
-        assert discoEvt.topologyVersion() == startTopVer.topologyVersion();
+        GridDhtPartitionExchangeId exchId = initExchangeId();
 
         GridDhtPartitionsExchangeFuture fut = exchangeFuture(exchId, discoEvt, null, null);
 
