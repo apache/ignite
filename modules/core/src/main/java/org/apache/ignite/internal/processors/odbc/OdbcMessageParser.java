@@ -200,7 +200,7 @@ public class OdbcMessageParser {
             writer.writeInt(metas.size());
 
             for (OdbcColumnMeta meta : metas)
-                meta.writeBinary(writer, marsh.context());
+                meta.write(writer);
         }
         else if (res0 instanceof OdbcQueryFetchResult) {
             OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;
@@ -247,7 +247,7 @@ public class OdbcMessageParser {
             writer.writeInt(columnsMeta.size());
 
             for (OdbcColumnMeta columnMeta : columnsMeta)
-                columnMeta.writeBinary(writer, marsh.context());
+                columnMeta.write(writer);
         }
         else if (res0 instanceof OdbcQueryGetTablesMetaResult) {
             OdbcQueryGetTablesMetaResult res = (OdbcQueryGetTablesMetaResult) res0;

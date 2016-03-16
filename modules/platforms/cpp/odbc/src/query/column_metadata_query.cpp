@@ -92,18 +92,18 @@ namespace ignite
                 const std::string sch("");
                 const std::string tbl("");
 
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",      SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM",    SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_NAME",     SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "COLUMN_NAME",    SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "DATA_TYPE",      SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TYPE_NAME",      SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "COLUMN_SIZE",    SqlTypeName::INTEGER,  IGNITE_TYPE_INT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "BUFFER_LENGTH",  SqlTypeName::INTEGER,  IGNITE_TYPE_INT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "DECIMAL_DIGITS", SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "NUM_PREC_RADIX", SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "NULLABLE",       SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "REMARKS",        SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",      IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM",    IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_NAME",     IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "COLUMN_NAME",    IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "DATA_TYPE",      IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TYPE_NAME",      IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "COLUMN_SIZE",    IGNITE_TYPE_INT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "BUFFER_LENGTH",  IGNITE_TYPE_INT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "DECIMAL_DIGITS", IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "NUM_PREC_RADIX", IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "NULLABLE",       IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "REMARKS",        IGNITE_TYPE_STRING));
             }
 
             ColumnMetadataQuery::~ColumnMetadataQuery()
@@ -204,7 +204,7 @@ namespace ignite
 
                     case TYPE_NAME:
                     {
-                        buffer.PutString(currentColumn.GetColumnTypeName());
+                        buffer.PutString(type_traits::BinaryTypeToSqlTypeName(currentColumn.GetDataType()));
                         break;
                     }
 
@@ -306,7 +306,6 @@ namespace ignite
                     LOG_MSG("[%d] SchemaName:     %s\n", i, meta[i].GetSchemaName().c_str());
                     LOG_MSG("[%d] TableName:      %s\n", i, meta[i].GetTableName().c_str());
                     LOG_MSG("[%d] ColumnName:     %s\n", i, meta[i].GetColumnName().c_str());
-                    LOG_MSG("[%d] ColumnTypeName: %s\n", i, meta[i].GetColumnTypeName().c_str());
                     LOG_MSG("[%d] ColumnType:     %d\n", i, meta[i].GetDataType());
                     LOG_MSG("\n");
                 }
