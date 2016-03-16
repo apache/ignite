@@ -69,6 +69,7 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgniteTransactionsEx;
+import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -106,7 +107,6 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -801,8 +801,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             PlatformProcessor proc = ctx.platform();
 
-            if (proc != null)
-                proc.platformMarshallerContext().onMarshallerCacheStarted(ctx);
+            if (proc != null) {
+                MarshallerContextImpl mctx = proc.platformMarshallerContext();
+
+                if (mctx != null)
+                    mctx.onMarshallerCacheStarted(ctx);
+            }
         }
 
         // Must call onKernalStart on shared managers after creation of fetched caches.
