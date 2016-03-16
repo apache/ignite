@@ -93,7 +93,7 @@ namespace ignite
             {
                 case IGNITE_SQL_ENV_ATTR_ODBC_VERSION:
                 {
-                    int32_t version = reinterpret_cast<int32_t>(value);
+                    int32_t version = static_cast<int32_t>(reinterpret_cast<intptr_t>(value));
 
                     if (version != odbcVersion)
                     {
@@ -108,7 +108,7 @@ namespace ignite
 
                 case IGNITE_SQL_ENV_ATTR_OUTPUT_NTS:
                 {
-                    int32_t nts = reinterpret_cast<int32_t>(value);
+                    int32_t nts = static_cast<int32_t>(reinterpret_cast<intptr_t>(value));
 
                     if (nts != odbcNts)
                     {

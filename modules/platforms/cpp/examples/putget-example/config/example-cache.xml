@@ -33,7 +33,6 @@
             <list>
                 <!--
                     Partitioned cache example configuration with binary objects enabled.
-                    Used in .NET example that is available only in enterprise edition.
                 -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="atomicityMode" value="ATOMIC"/>
@@ -42,7 +41,6 @@
 
                 <!--
                     Partitioned cache example configuration.
-                    Used in .NET cache store example that is available only in enterprise edition.
                 -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="tx"/>

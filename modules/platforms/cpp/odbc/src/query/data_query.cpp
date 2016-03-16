@@ -96,16 +96,16 @@ namespace ignite
                 {
                     app::ColumnBindingMap::iterator it = columnBindings.find(i);
 
-                    if (it != columnBindings.end())
+                    if (it == columnBindings.end())
+                        continue;
+
+                    SqlResult result = row->ReadColumnToBuffer(i, it->second);
+
+                    if (result == SQL_RESULT_ERROR)
                     {
-                        SqlResult result = row->ReadColumnToBuffer(i, it->second);
+                        diag.AddStatusRecord(SQL_STATE_01S01_ERROR_IN_ROW, "Can not retrieve row column.", 0, i);
 
-                        if (result == SQL_RESULT_ERROR)
-                        {
-                            diag.AddStatusRecord(SQL_STATE_01S01_ERROR_IN_ROW, "Can not retrieve row column.", 0, i);
-
-                            return SQL_RESULT_ERROR;
-                        }
+                        return SQL_RESULT_ERROR;
                     }
                 }
 
