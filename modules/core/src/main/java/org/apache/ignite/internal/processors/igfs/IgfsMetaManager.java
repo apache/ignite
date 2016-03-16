@@ -1868,13 +1868,11 @@ public class IgfsMetaManager extends IgfsManager {
      * @return New file info.
      * @throws IgniteCheckedException If failed.
      */
-    private IgfsFileInfo invokeAndGet(IgniteUuid id, EntryProcessor<IgniteUuid, IgfsFileInfo, Void> proc)
+    private IgfsFileInfo invokeAndGet(IgniteUuid id, EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo> proc)
         throws IgniteCheckedException {
         validTxState(true);
 
-        id2InfoPrj.invoke(id, proc);
-
-        return getInfo(id);
+        return id2InfoPrj.invoke(id, proc).get();
     }
 
     /**
@@ -3493,7 +3491,7 @@ public class IgfsMetaManager extends IgfsManager {
         private final SortedSet<IgniteUuid> idSet = new TreeSet<IgniteUuid>(PATH_ID_SORTING_COMPARATOR);
 
         /** The middle node properties. */
-        private final Map<String, String> middleProps;
+        private final Map<String, String> props;
 
         /** The leaf node properties. */
         private final Map<String, String> leafProps;
@@ -3557,7 +3555,7 @@ public class IgfsMetaManager extends IgfsManager {
          * Constructor.
          *
          * @param path Path.
-         * @param middleProps Middle properties.
+         * @param props Middle properties.
          * @param leafProps Leaf properties.
          * @param leafDir Whether leaf is directory or file.
          * @param blockSize Block size.
@@ -3565,13 +3563,13 @@ public class IgfsMetaManager extends IgfsManager {
          * @param evictExclude Evict exclude flag.
          * @throws IgniteCheckedException If failed.
          */
-        private DirectoryChainBuilder(IgfsPath path, Map<String,String> middleProps, Map<String,String> leafProps,
+        private DirectoryChainBuilder(IgfsPath path, Map<String,String> props, Map<String,String> leafProps,
             boolean leafDir, int blockSize, @Nullable IgniteUuid affKey, boolean evictExclude)
             throws IgniteCheckedException {
             this.path = path;
             this.components = path.components();
             this.idList = fileIds(path);
-            this.middleProps = middleProps;
+            this.props = props;
             this.leafProps = leafProps;
             this.leafDir = leafDir;
             this.blockSize = blockSize;
@@ -3617,44 +3615,46 @@ public class IgfsMetaManager extends IgfsManager {
          * Does the main portion of job building the renmaining path.
          */
         public final void doBuild() throws IgniteCheckedException {
-            IgfsFileInfo childInfo = null;
+            // Fix current time. It will be used in all created entities.
+            long createTime = System.currentTimeMillis();
 
+            IgfsListingEntry childInfo = null;
             String childName = null;
-
-            IgfsFileInfo newInfo;
 
             IgniteUuid parentId = null;
 
             // This loop creates the missing directory chain from the bottom to the top:
             for (int i = components.size() - 1; i >= existingIdCnt - 1; i--) {
-                // Required entry does not exist.
-                // Create new directory info:
+                IgniteUuid childId = IgniteUuid.randomUuid();
+                boolean childDir;
+
                 if (childName == null) {
                     assert childInfo == null;
 
-                    long t = System.currentTimeMillis();
+                    if (leafDir) {
+                        childDir = true;
 
-                    if (leafDir)
-                        newInfo = new IgfsFileInfo(true, leafProps, t, t);
-                    else
-                        newInfo = new IgfsFileInfo(blockSize, 0L, affKey, createFileLockId(false), evictExclude,
-                            leafProps, t, t);
+                        leafInfo = invokeAndGet(childId, new DirectoryCreateProcessor(createTime, leafProps));
+                    }
+                    else {
+                        childDir = false;
 
-                    leafInfo = newInfo;
+                        leafInfo = invokeAndGet(childId, new FileCreateProcessor(createTime, leafProps, blockSize,
+                            affKey, createFileLockId(false), evictExclude));
+                    }
                 }
                 else {
                     assert childInfo != null;
 
-                    newInfo = new IgfsFileInfo(Collections.singletonMap(childName,
-                        new IgfsListingEntry(childInfo)), middleProps);
+                    childDir = true;
+
+                    id2InfoPrj.invoke(childId, new DirectoryCreateProcessor(createTime, props, childName, childInfo));
 
                     if (parentId == null)
-                        parentId = newInfo.id();
+                        parentId = childId;
                 }
 
-                id2InfoPrj.put(newInfo.id(), newInfo);
-
-                childInfo = newInfo;
+                childInfo = new IgfsListingEntry(childId, childDir);
 
                 childName = components.get(i);
             }
@@ -3665,7 +3665,7 @@ public class IgfsMetaManager extends IgfsManager {
             leafParentId = parentId;
 
             // Now link the newly created directory chain to the lowermost existing parent:
-            id2InfoPrj.invoke(lowermostExistingId, new ListingAdd(childName, new IgfsListingEntry(childInfo)));
+            id2InfoPrj.invoke(lowermostExistingId, new ListingAdd(childName, childInfo));
         }
 
         /**
@@ -3692,9 +3692,193 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
+     * File create processor.
+     */
+    private static class FileCreateProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
+        Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Create time. */
+        private long createTime;
+
+        /** Properties. */
+        private Map<String, String> props;
+
+        /** Block size. */
+        private int blockSize;
+
+        /** Affintiy key. */
+        private IgniteUuid affKey;
+
+        /** Lcok ID. */
+        private IgniteUuid lockId;
+
+        /** Evict exclude flag. */
+        private boolean evictExclude;
+
+        /**
+         * Constructor.
+         */
+        public FileCreateProcessor() {
+            // No-op.
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param createTime Create time.
+         * @param props Properties.
+         * @param blockSize Block size.
+         * @param affKey Affinity key.
+         * @param lockId Lock ID.
+         * @param evictExclude Evict exclude flag.
+         */
+        public FileCreateProcessor(long createTime, Map<String, String> props, int blockSize,
+            @Nullable IgniteUuid affKey, IgniteUuid lockId, boolean evictExclude) {
+            this.createTime = createTime;
+            this.props = props;
+            this.blockSize = blockSize;
+            this.affKey = affKey;
+            this.lockId = lockId;
+            this.evictExclude = evictExclude;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
+            throws EntryProcessorException {
+            IgfsFileInfo info = new IgfsFileInfo(blockSize, 0L, affKey, lockId, evictExclude, props,
+                createTime, createTime);
+
+            info.id(entry.getKey());
+
+            entry.setValue(info);
+
+            return info;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeLong(createTime);
+            U.writeStringMap(out, props);
+            out.writeInt(blockSize);
+            out.writeObject(affKey);
+            out.writeObject(lockId);
+            out.writeBoolean(evictExclude);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            createTime = in.readLong();
+            props = U.readStringMap(in);
+            blockSize = in.readInt();
+            affKey = (IgniteUuid)in.readObject();
+            lockId = (IgniteUuid)in.readObject();
+            evictExclude = in.readBoolean();
+        }
+    }
+
+    /**
+     * Directory create processor.
+     */
+    private static class DirectoryCreateProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
+        Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Create time. */
+        private long createTime;
+
+        /** Properties. */
+        private Map<String, String> props;
+
+        /** Child name (optional). */
+        private String childName;
+
+        /** Child entry (optional. */
+        private IgfsListingEntry childEntry;
+
+        /**
+         * Constructor.
+         */
+        public DirectoryCreateProcessor() {
+            // No-op.
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param createTime Create time.
+         * @param props Properties.
+         */
+        public DirectoryCreateProcessor(long createTime, Map<String, String> props) {
+            this(createTime, props, null, null);
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param createTime Create time.
+         * @param props Properties.
+         * @param childName Child name.
+         * @param childEntry Child entry.
+         */
+        public DirectoryCreateProcessor(long createTime, Map<String, String> props, String childName,
+            IgfsListingEntry childEntry) {
+            this.createTime = createTime;
+            this.props = props;
+            this.childName = childName;
+            this.childEntry = childEntry;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
+            throws EntryProcessorException {
+
+            IgfsFileInfo info = new IgfsFileInfo(true, props, createTime, createTime);
+
+            if (childName != null)
+                info = new IgfsFileInfo(Collections.singletonMap(childName, childEntry), info);
+
+            info.id(entry.getKey());
+
+            entry.setValue(info);
+
+            return info;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeLong(createTime);
+            U.writeStringMap(out, props);
+
+            if (childName != null) {
+                out.writeBoolean(true);
+
+                U.writeString(out, childName);
+                out.writeObject(childEntry);
+            }
+            else
+                out.writeBoolean(false);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            createTime = in.readLong();
+            props = U.readStringMap(in);
+
+            if (in.readBoolean()) {
+                childName = U.readString(in);
+                childEntry = (IgfsListingEntry)in.readObject();
+            }
+        }
+    }
+
+    /**
      * File lock entry processor.
      */
-    private static class FileLockProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>, Externalizable {
+    private static class FileLockProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
+        Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3718,13 +3902,15 @@ public class IgfsMetaManager extends IgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
+        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
             throws EntryProcessorException {
-            IgfsFileInfo old = entry.getValue();
+            IgfsFileInfo oldInfo = entry.getValue();
 
-            entry.setValue(new IgfsFileInfo(old, lockId, old.modificationTime()));
+            IgfsFileInfo newInfo =  new IgfsFileInfo(oldInfo, lockId, oldInfo.modificationTime());
 
-            return null;
+            entry.setValue(newInfo);
+
+            return newInfo;
         }
 
         /** {@inheritDoc} */
@@ -3789,7 +3975,7 @@ public class IgfsMetaManager extends IgfsManager {
     /**
      * File reserve space entry processor.
      */
-    private static class FileReserveSpaceProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
+    private static class FileReserveSpaceProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -3819,7 +4005,7 @@ public class IgfsMetaManager extends IgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
+        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
             throws EntryProcessorException {
             IgfsFileInfo oldInfo = entry.getValue();
 
@@ -3833,7 +4019,7 @@ public class IgfsMetaManager extends IgfsManager {
 
             entry.setValue(newInfo);
 
-            return null;
+            return newInfo;
         }
 
         /** {@inheritDoc} */
@@ -3852,7 +4038,7 @@ public class IgfsMetaManager extends IgfsManager {
     /**
      * Update properties processor.
      */
-    private static class UpdatePropertiesProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
+    private static class UpdatePropertiesProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -3877,7 +4063,7 @@ public class IgfsMetaManager extends IgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
+        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
             throws EntryProcessorException {
             IgfsFileInfo oldInfo = entry.getValue();
 
@@ -3898,7 +4084,7 @@ public class IgfsMetaManager extends IgfsManager {
 
             entry.setValue(newInfo);
 
-            return null;
+            return newInfo;
         }
 
         /** {@inheritDoc} */
