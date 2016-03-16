@@ -24,8 +24,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using NUnit.Framework;
 
     /// <summary>
@@ -436,6 +434,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 WriteBehindBatchSize = 18,
                 WriteBehindEnabled = false,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync,
+                ReadThrough = true,
+                WriteThrough = true,
                 QueryEntities = new[]
                 {
                     new QueryEntity

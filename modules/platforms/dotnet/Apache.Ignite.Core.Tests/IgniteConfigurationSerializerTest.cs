@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Tests
                                 <iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean, Apache.Ignite.Core.Tests' foo='15' />
                             </lifecycleBeans>
                             <cacheConfiguration>
-                                <cacheConfiguration cacheMode='Replicated'>
+                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true'>
                                     <queryEntities>    
                                         <queryEntity keyType='System.Int32' valueType='System.String'>    
                                             <fields>
@@ -120,6 +120,8 @@ namespace Apache.Ignite.Core.Tests
             var cacheCfg = cfg.CacheConfiguration.First();
 
             Assert.AreEqual(CacheMode.Replicated, cacheCfg.CacheMode);
+            Assert.IsTrue(cacheCfg.ReadThrough);
+            Assert.IsTrue(cacheCfg.WriteThrough);
 
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
