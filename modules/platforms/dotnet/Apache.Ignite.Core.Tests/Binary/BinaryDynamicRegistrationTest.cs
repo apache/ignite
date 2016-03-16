@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Tests the failed registration.
+        /// Tests the failed registration, when we write type name after the header.
         /// </summary>
         private static void TestFailedRegistration<T>(bool rawStr, bool rawInt) where T : ITest, new()
         {
