@@ -53,10 +53,12 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
             else
                 ngModel.$setPristine();
 
-            if (ngModel.$valid)
-                el.find('input').addClass('ng-valid').removeClass('ng-invalid');
-            else
-                el.find('input').removeClass('ng-valid').addClass('ng-invalid');
+            setTimeout(() => {
+                if (ngModel.$valid)
+                    el.find('input').addClass('ng-valid').removeClass('ng-invalid');
+                else
+                    el.find('input').removeClass('ng-valid').addClass('ng-invalid');
+            }, 100); // Use setTimeout() workaround of problem of two controllers.
         };
 
         ngModel.$render = function() {
