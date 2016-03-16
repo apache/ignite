@@ -1171,7 +1171,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        dumpPendingObjects();
+        dumpPendingObjects(null);
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts())
             cacheCtx.preloader().dumpDebugInfo();
@@ -1180,16 +1180,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     *
+     * @param topVer Exchange topology version.
      */
-    public void dumpPendingObjects() {
+    public void dumpPendingObjects(@Nullable AffinityTopologyVersion topVer) {
         IgniteTxManager tm = cctx.tm();
 
         if (tm != null) {
             U.warn(log, "Pending transactions:");
 
-            for (IgniteInternalTx tx : tm.activeTransactions())
-                U.warn(log, ">>> " + tx);
+            for (IgniteInternalTx tx : tm.activeTransactions()) {
+                if (topVer != null && tm.needWaitTransaction(tx, topVer))
+                    U.warn(log, ">>> [txVer=" + tx.topologyVersion() + ", exchWait=true, tx=" + tx + ']');
+                else
+                    U.warn(log, ">>> [txVer=" + tx.topologyVersion() + ", tx=" + tx + ']');
+            }
         }
 
         GridCacheMvccManager mvcc = cctx.mvcc();

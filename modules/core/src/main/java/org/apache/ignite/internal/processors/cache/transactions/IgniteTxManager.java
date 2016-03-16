@@ -484,31 +484,37 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : txs()) {
-            // Must wait for all transactions, even for DHT local and DHT remote since preloading may acquire
-            // values pending to be overwritten by prepared transaction.
-
-            if (tx.concurrency() == PESSIMISTIC) {
-                if (tx.topologyVersion().compareTo(AffinityTopologyVersion.ZERO) > 0
-                    && tx.topologyVersion().compareTo(topVer) < 0)
-                    // For PESSIMISTIC mode we must wait for all uncompleted txs
-                    // as we do not know in advance which keys will participate in tx.
-                    res.add(tx.finishFuture());
-            }
-            else if (tx.concurrency() == OPTIMISTIC) {
-                // For OPTIMISTIC mode we wait only for txs in PREPARING state that
-                // have keys for given partitions.
-                TransactionState state = tx.state();
-                AffinityTopologyVersion txTopVer = tx.topologyVersion();
-
-                if ((state != ACTIVE && state != COMMITTED && state != ROLLED_BACK && state != UNKNOWN)
-                    && txTopVer.compareTo(AffinityTopologyVersion.ZERO) > 0 && txTopVer.compareTo(topVer) < 0)
-                    res.add(tx.finishFuture());
-            }
+            if (needWaitTransaction(tx, topVer))
+                res.add(tx.finishFuture());
         }
 
         res.markInitialized();
 
         return res;
+    }
+
+    public boolean needWaitTransaction(IgniteInternalTx tx, AffinityTopologyVersion topVer) {
+        // Must wait for all transactions, even for DHT local and DHT remote since preloading may acquire
+        // values pending to be overwritten by prepared transaction.
+
+        if (tx.concurrency() == PESSIMISTIC) {
+            if (tx.topologyVersion().compareTo(AffinityTopologyVersion.ZERO) > 0 && tx.topologyVersion().compareTo(topVer) < 0)
+                // For PESSIMISTIC mode we must wait for all uncompleted txs
+                // as we do not know in advance which keys will participate in tx.
+                return true;
+        }
+        else if (tx.concurrency() == OPTIMISTIC) {
+            // For OPTIMISTIC mode we wait only for txs in PREPARING state that
+            // have keys for given partitions.
+            TransactionState state = tx.state();
+            AffinityTopologyVersion txTopVer = tx.topologyVersion();
+
+            if ((state != ACTIVE && state != COMMITTED && state != ROLLED_BACK && state != UNKNOWN)
+                    && txTopVer.compareTo(AffinityTopologyVersion.ZERO) > 0 && txTopVer.compareTo(topVer) < 0)
+                return true;
+        }
+
+        return false;
     }
 
     /**

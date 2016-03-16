@@ -676,7 +676,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     public void addDhtAssignmentFetchFuture(GridDhtAssignmentFetchFuture fut) {
         GridDhtAssignmentFetchFuture old = pendingAssignmentFetchFuts.putIfAbsent(fut.key(), fut);
 
-        assert old == null : "More than one thread is trying to fetch partition assignments: " + fut.key();
+        assert old == null : "More than one thread is trying to fetch partition assignments [fut=" + fut +
+            ", allFuts=" + pendingAssignmentFetchFuts + ']';
     }
 
     /**

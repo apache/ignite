@@ -513,7 +513,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (cacheCtx.isLocal())
                     continue;
 
-                cacheCtx.topology().beforeExchange(this, cacheCtx.affinity().idealAssignment());
+                cacheCtx.topology().beforeExchange(this);
             }
         }
     }
@@ -727,11 +727,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             // Partition release future is done so we can flush the write-behind store.
             cacheCtx.store().forceFlush();
 
-            List<List<ClusterNode>> aff = cacheCtx.affinity().idealAssignment();
-
-            assert aff != null : cacheCtx.name();
-
-            cacheCtx.topology().beforeExchange(this, aff);
+            cacheCtx.topology().beforeExchange(this);
         }
 
         if (crd.isLocal()) {
@@ -895,7 +891,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         U.warn(log, "Failed to wait for partition release future [topVer=" + topologyVersion() +
             ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
 
-        cctx.exchange().dumpPendingObjects();
+        cctx.exchange().dumpPendingObjects(topologyVersion());
     }
 
     /**
@@ -1033,18 +1029,28 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** {@inheritDoc} */
     @Override public boolean onDone(AffinityTopologyVersion res, Throwable err) {
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (cacheCtx.isLocal())
-                continue;
+        if (err == null) {
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (cacheCtx.isLocal())
+                    continue;
 
-            GridCacheContext drCacheCtx = cacheCtx.isNear() ? cacheCtx.near().dht().context() : cacheCtx;
-
-            if (drCacheCtx.isDrEnabled()) {
                 try {
-                    drCacheCtx.dr().beforeExchange(topologyVersion(), exchId.isLeft());
+                    if (crd != null)
+                        cacheCtx.topology().initPartitions(this);
                 }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to notify DR: " + e, e);
+                catch (IgniteInterruptedCheckedException e) {
+                    U.error(log, "", e);
+                }
+
+                GridCacheContext drCacheCtx = cacheCtx.isNear() ? cacheCtx.near().dht().context() : cacheCtx;
+
+                if (drCacheCtx.isDrEnabled()) {
+                    try {
+                        drCacheCtx.dr().beforeExchange(topologyVersion(), exchId.isLeft());
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to notify DR: " + e, e);
+                    }
                 }
             }
         }
@@ -1204,8 +1210,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (!crd.equals(cctx.discovery().serverNodes(topologyVersion()).get(0))) {
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                     if (!cacheCtx.isLocal())
-                        cacheCtx.topology().beforeExchange(GridDhtPartitionsExchangeFuture.this,
-                            cacheCtx.affinity().idealAssignment());
+                        cacheCtx.topology().beforeExchange(GridDhtPartitionsExchangeFuture.this);
                 }
             }
 
@@ -1407,8 +1412,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     if (crd.equals(node)) {
                         cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this, crd.isLocal(), msg);
 
-                        if (!crd.isLocal())
-                            processMessage(crd, msg.partitionsMessage());
+                        if (!crd.isLocal()) {
+                            GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage();
+
+                            if (partsMsg.lastVersion() != null)
+                                cctx.versions().onReceived(node.id(), partsMsg.lastVersion());
+
+                            updatePartitionFullMap(partsMsg);
+                        }
 
                         onDone(exchId.topologyVersion());
                     }

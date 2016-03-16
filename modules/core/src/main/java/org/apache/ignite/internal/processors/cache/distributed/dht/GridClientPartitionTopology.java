@@ -218,8 +218,12 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         return stopping;
     }
 
+    @Override public void initPartitions(GridDhtPartitionsExchangeFuture exchFut) throws IgniteInterruptedCheckedException {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
-    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, List<List<ClusterNode>> aff)
+    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut)
         throws IgniteCheckedException {
         ClusterNode loc = cctx.localNode();
 

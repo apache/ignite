@@ -90,8 +90,10 @@ public interface GridDhtPartitionTopology {
      * @param aff Affinity assignments.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, List<List<ClusterNode>> aff)
+    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut)
         throws IgniteCheckedException;
+
+    public void initPartitions(GridDhtPartitionsExchangeFuture exchFut) throws IgniteInterruptedCheckedException ;
 
     /**
      * Post-initializes this topology.

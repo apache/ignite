@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteTransactionsEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -126,11 +127,18 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
         TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
-        return txStart0(concurrency,
+        IgniteInternalTx tx = txStart0(concurrency,
             isolation,
             cfg.getDefaultTxTimeout(),
             0,
             ctx.systemTx() ? ctx : null);
+
+        AffinityTopologyVersion topVer = ctx.shared().lockedTopologyVersion(null);
+
+        if (topVer != null)
+            tx.topologyVersion(topVer);
+
+        return tx;
     }
 
     /**

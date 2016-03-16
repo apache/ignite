@@ -949,11 +949,11 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         }, "stop-thread");
 
-        startServer(NODES, ++topVer);
+        startGrid(NODES);
 
         stopFut.get();
 
-        for (int i = 0; i < NODES; i++)
+        for (int i = 0; i < NODES + 1; i++)
             calculateAffinity(++topVer);
 
         checkAffinity(1, topVer(topVer, 0), true);

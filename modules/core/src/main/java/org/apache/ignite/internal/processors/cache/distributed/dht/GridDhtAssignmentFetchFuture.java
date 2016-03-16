@@ -31,8 +31,10 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,12 +57,14 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
     private final GridCacheSharedContext ctx;
 
     /** List of available nodes this future can fetch data from. */
+    @GridToStringInclude
     private Queue<ClusterNode> availableNodes;
 
     /** Pending node from which response is being awaited. */
     private ClusterNode pendingNode;
 
     /** */
+    @GridToStringInclude
     private final T2<Integer, AffinityTopologyVersion> key;
 
     /**
@@ -209,5 +213,10 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
         // Affinity should be calculated from scratch.
         if (complete)
             onDone((GridDhtAffinityAssignmentResponse)null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtAssignmentFetchFuture.class, this);
     }
 }
