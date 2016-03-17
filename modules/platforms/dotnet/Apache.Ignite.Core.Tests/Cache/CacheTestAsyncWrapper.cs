@@ -119,6 +119,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public Task LoadAllAsync(IEnumerable<TK> keys, bool replaceExistingValues)
+        {
+            return _cache.LoadAllAsync(keys, replaceExistingValues);
+        }
+
+        /** <inheritDoc /> */
         public bool ContainsKey(TK key)
         {
             return GetResult(_cache.ContainsKeyAsync(key));

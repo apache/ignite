@@ -44,16 +44,20 @@ import org.apache.ignite.internal.processors.platform.cache.query.PlatformFields
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformQueryCursor;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
+import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CompletionListener;
+import javax.cache.integration.CompletionListenerFuture;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import java.util.Iterator;
@@ -373,10 +377,14 @@ public class PlatformCache extends PlatformAbstractTarget {
                 return cache.isLocalLocked(reader.readObjectDetached(), reader.readBoolean()) ? TRUE : FALSE;
 
             case OP_LOAD_ALL: {
+                long futId = reader.readLong();
                 boolean replaceExisting = reader.readBoolean();
 
-                // TODO: Listener
-                cache.loadAll(PlatformUtils.readSet(reader), replaceExisting, null);
+                CompletionListenable fut = new CompletionListenable();
+
+                PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, null, this);
+
+                cache.loadAll(PlatformUtils.readSet(reader), replaceExisting, fut);
             }
 
             default:
@@ -1109,6 +1117,41 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 return new Duration(TimeUnit.MILLISECONDS, dur);
             }
+        }
+    }
+
+    /**
+     * Listenable around CompletionListener.
+     */
+    private static class CompletionListenable implements PlatformListenable, CompletionListener {
+        /** */
+        private IgniteBiInClosure<Object, Throwable> lsnr;
+
+        /** {@inheritDoc} */
+        @Override public void onCompletion() {
+            assert lsnr != null;
+
+            lsnr.apply(null, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onException(Exception e) {
+            lsnr.apply(null, e);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void listen(IgniteBiInClosure<Object, Throwable> lsnr) {
+            this.lsnr = lsnr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cancel() throws IgniteCheckedException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isCancelled() {
+            return false;
         }
     }
 }
