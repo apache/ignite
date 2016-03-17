@@ -52,7 +52,6 @@
             <list>
                 <!-- Cache events. -->
                 <util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT"/>
-                <!--<util:constant static-field="org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED"/>-->
             </list>
         </property>
 
