@@ -81,13 +81,8 @@ public class OdbcMessageParser {
             if (cmd == OdbcRequest.HANDSHAKE) {
                 long version = reader.readLong();
 
-                if (version == PROTOCOL_VERSION)
-                    versionConfirmed = true;
-
-                // Pass handshake message further to the handler even if the version
-                // check has failed so we can answer to the client. If we'd throw an
-                // exception here that would result in silent session termination with
-                // no messages sent to the client.
+                if (log.isDebugEnabled())
+                    log.debug("ODBC Driver communication protocol version: " + version);
 
                 return new OdbcHandshakeRequest(version);
             }
@@ -183,11 +178,14 @@ public class OdbcMessageParser {
 
         Object res0 = msg.response();
 
-        if (res0 == null) {
+        if (res0 instanceof OdbcHandshakeResult) {
+            OdbcHandshakeResult res = (OdbcHandshakeResult) res0;
             if (log.isDebugEnabled())
-                log.debug("Sending general success response");
+                log.debug("Handshake result: " + (res.accepted() ? "accepted" : "rejected"));
 
-            // Write nothing. Just send response with success status.
+            versionConfirmed = res.accepted();
+
+            writer.writeBoolean(res.accepted());
         }
         else if (res0 instanceof OdbcQueryExecuteResult) {
             OdbcQueryExecuteResult res = (OdbcQueryExecuteResult) res0;

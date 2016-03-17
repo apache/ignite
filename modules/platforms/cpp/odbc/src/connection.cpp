@@ -296,7 +296,7 @@ namespace ignite
         SqlResult Connection::MakeRequestHandshake()
         {
             HandshakeRequest req(Parser::PROTOCOL_VERSION);
-            QueryResponse rsp;
+            HandshakeResponse rsp;
 
             try
             {
@@ -314,6 +314,18 @@ namespace ignite
                 LOG_MSG("Error: %s\n", rsp.GetError().c_str());
 
                 AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, rsp.GetError());
+
+                InternalRelease();
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (!rsp.IsAccepted())
+            {
+                LOG_MSG("Hanshake message has been rejected.");
+
+                AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, 
+                    "Node rejected handshake message (Unsupported protocol version?)");
 
                 InternalRelease();
 

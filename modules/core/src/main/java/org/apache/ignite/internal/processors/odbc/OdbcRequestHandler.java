@@ -110,11 +110,9 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
-        if (req.version() != OdbcMessageParser.PROTOCOL_VERSION)
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC communication protocol version: " +
-                    "[ver=" + req.version() + ", current_ver=" + OdbcMessageParser.PROTOCOL_VERSION + ']');
+        boolean accepted = req.version() == OdbcMessageParser.PROTOCOL_VERSION;
 
-        return new OdbcResponse(null);
+        return new OdbcResponse(accepted);
     }
 
     /**

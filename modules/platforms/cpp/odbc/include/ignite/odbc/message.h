@@ -423,6 +423,50 @@ namespace ignite
             std::string error;
         };
 
+        /**
+         * Handshake response.
+         */
+        class HandshakeResponse : public QueryResponse
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            HandshakeResponse() : accepted(false)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~HandshakeResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Check if the handshake has been accepted.
+             * @return True if the handshake has been accepted.
+             */
+            bool IsAccepted() const
+            {
+                return accepted;
+            }
+
+        private:
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                accepted = reader.ReadBool();
+            }
+
+            /** Handshake accepted. */
+            bool accepted;
+        };
 
         /**
          * Query close response.
