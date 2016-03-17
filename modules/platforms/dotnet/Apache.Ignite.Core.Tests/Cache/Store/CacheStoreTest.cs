@@ -492,11 +492,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             // Test overwrite
             cache[105] = "42";
 
+            cache.LocalEvict(new[] { 105 });
             cache.LoadAllAsync(new[] {105}, false).Wait();
             Assert.AreEqual("42", cache[105]);
 
-            cache.LoadAllAsync(new[] {105}, true).Wait();
+            cache.LoadAllAsync(new[] {105, 106}, true).Wait();
             Assert.AreEqual("val_105", cache[105]);
+            Assert.AreEqual("val_165", cache[106]);
         }
 
         /// <summary>
