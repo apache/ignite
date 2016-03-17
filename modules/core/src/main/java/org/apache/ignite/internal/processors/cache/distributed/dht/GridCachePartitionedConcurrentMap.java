@@ -19,6 +19,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.PartitionedReadOnlySet;
 import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
@@ -105,11 +107,11 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         return set;
     }
 
-    @Override public Iterable<? extends GridCacheEntryEx> entries(CacheEntryPredicate... filter) {
+    @Override public Iterable<GridCacheEntryEx> entries(CacheEntryPredicate... filter) {
         final List<Iterator<GridCacheEntryEx>> iterators = new ArrayList<>();
 
         for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
-            iterators.add((Iterator<GridCacheEntryEx>) partition.entries(filter).iterator());
+            iterators.add(partition.entries(filter).iterator());
         }
 
         return new Iterable<GridCacheEntryEx>() {
@@ -117,5 +119,15 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
                 return F.flatIterators(iterators);
             }
         };
+    }
+
+    @Override public Set<GridCacheEntryEx> entrySet(CacheEntryPredicate... filter) {
+        Collection<Set<GridCacheEntryEx>> sets = new ArrayList<>();
+
+        for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
+            sets.add(partition.entrySet(filter));
+        }
+
+        return new PartitionedReadOnlySet<>(sets);
     }
 }

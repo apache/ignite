@@ -102,7 +102,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridSerializableSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -532,7 +531,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     protected void init() {
         if (map == null)
-            map = new GridCacheConcurrentMapV2(ctx, entryFactory(), ctx.config().getStartSize());
+            map = new GridCacheConcurrentMapV2(ctx, entryFactory(), ctx.config().getStartSize() / ctx.affinity().partitions());
     }
 
     protected abstract GridCacheMapEntryFactory entryFactory();
@@ -1014,25 +1013,19 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<Cache.Entry<K, V>> entrySet() {
+    @Override public Set<Cache.Entry<K, V>> entrySet() {
         return entrySet((CacheEntryPredicate[])null);
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<Cache.Entry<K, V>> entrySetx(final CacheEntryPredicate... filter) {
-        return new GridSerializableSet<Cache.Entry<K, V>>() {
-            @Override public Iterator<Cache.Entry<K, V>> iterator() {
-                return F.iterator(map.entries(), new IgniteClosure<GridCacheEntryEx, Cache.Entry<K, V>>() {
-                    @Override public Cache.Entry apply(GridCacheEntryEx entry) {
-                        return entry.wrap();
-                    }
-                }, true, filter);
-            }
+    @Override public Set<Cache.Entry<K, V>> entrySetx(final CacheEntryPredicate... filter) {
+        Set<Cache.Entry<K, V>> entrySet = new HashSet<>();
 
-            @Override public int size() {
-                return map.size();
-            }
-        };
+        for (GridCacheEntryEx entryEx : map.entrySet(filter)) {
+            entrySet.add(entryEx.<K, V>wrap());
+        }
+
+        return entrySet;
     }
 
     /** {@inheritDoc} */
@@ -4684,12 +4677,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param filter Filters to evaluate.
      * @return Entry set.
      */
-    public Iterable<Cache.Entry<K, V>> entrySet(@Nullable CacheEntryPredicate... filter) {
-        return F.map(map.entries(filter), new IgniteClosure<GridCacheEntryEx, Cache.Entry<K, V>>() {
-            @Override public Cache.Entry<K, V> apply(GridCacheEntryEx entry) {
-                return entry.wrap();
-            }
-        });
+    public Set<Cache.Entry<K, V>> entrySet(@Nullable CacheEntryPredicate... filter) {
+        return entrySetx(filter);
     }
 
     /**

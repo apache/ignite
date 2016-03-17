@@ -18,6 +18,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.AbstractSet;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
@@ -142,12 +144,29 @@ public class GridCacheConcurrentMapV2 implements GridCacheConcurrentMapInterface
         return map.remove(entry.key(), entry);
     }
 
-    @Override public Iterable<? extends GridCacheEntryEx> entries(CacheEntryPredicate... filter) {
-        return F.viewReadOnly(map.values(), F.<GridCacheMapEntry>identity(), filter);
+    @Override public Collection<GridCacheEntryEx> entries(CacheEntryPredicate... filter) {
+        return F.viewReadOnly(map.values(), F.<GridCacheEntryEx>identity(), filter);
     }
 
     @Nullable @Override public GridCacheMapEntry randomEntry() {
         // TODO
         return map.values().iterator().next();
+    }
+
+    @Override public Set<GridCacheEntryEx> entrySet(final CacheEntryPredicate... filter) {
+        return new AbstractSet<GridCacheEntryEx>() {
+            @Override public Iterator<GridCacheEntryEx> iterator() {
+                return F.<GridCacheEntryEx>iterator0(map.values(), true, filter);
+            }
+
+            @Override public int size() {
+                return map.size();
+            }
+
+            @Override public boolean contains(Object o) {
+                return o instanceof GridCacheEntryEx && map.containsKey(((GridCacheEntryEx)o).key());
+
+            }
+        };
     }
 }

@@ -233,9 +233,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return map.removeEntry(entry);
     }
 
-    public Iterable<? extends GridCacheEntryEx> entries(
+    public Iterable<GridCacheEntryEx> entries(
         CacheEntryPredicate... filter) {
         return map.entries(filter);
+    }
+
+    public Set<GridCacheEntryEx> entrySet(CacheEntryPredicate... filter) {
+        return map.entrySet(filter);
     }
 
     public GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key) {

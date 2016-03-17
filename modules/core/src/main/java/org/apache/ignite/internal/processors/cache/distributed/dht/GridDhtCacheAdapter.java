@@ -159,9 +159,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected GridDhtCacheAdapter(GridCacheContext<K, V> ctx) {
         this(ctx, new GridCachePartitionedConcurrentMap(ctx));
     }
-//    protected GridDhtCacheAdapter(GridCacheContext<K, V> ctx) {
-//        super(ctx, ctx.config().getStartSize());
-//    }
 
     /**
      * Constructor used for near-only cache.

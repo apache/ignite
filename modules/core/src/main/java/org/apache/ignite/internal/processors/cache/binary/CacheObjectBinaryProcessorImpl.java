@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -85,6 +86,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -633,15 +635,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             });
         else {
-            throw new RuntimeException("Not implemented");
-//            return F.viewReadOnly(metaDataCache.entrySetx(metaPred),
-//                new C1<Cache.Entry<BinaryMetadataKey, BinaryMetadata>, BinaryType>() {
-//                    private static final long serialVersionUID = 0L;
-//
-//                    @Override public BinaryType apply(Cache.Entry<BinaryMetadataKey, BinaryMetadata> e) {
-//                        return e.getValue().wrap(binaryCtx);
-//                    }
-//                });
+            C1<Cache.Entry<BinaryMetadataKey, BinaryMetadata>, BinaryType> c1 = new C1<Cache.Entry<BinaryMetadataKey, BinaryMetadata>, BinaryType>() {
+                private static final long serialVersionUID = 0L;
+
+                @Override public BinaryType apply(Cache.Entry<BinaryMetadataKey, BinaryMetadata> e) {
+                    return e.getValue().wrap(binaryCtx);
+                }
+            };
+            return F.viewReadOnly(metaDataCache.entrySetx(metaPred), c1);
         }
     }
 

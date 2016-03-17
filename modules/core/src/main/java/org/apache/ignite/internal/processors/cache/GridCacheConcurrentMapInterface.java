@@ -33,15 +33,17 @@ public interface GridCacheConcurrentMapInterface {
         @Nullable CacheObject val,
         boolean create);
 
+    boolean removeEntry(GridCacheEntryEx entry);
+
     GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key);
 
     int size();
 
+    @Nullable GridCacheMapEntry randomEntry();
+
     Set<KeyCacheObject> keySet(CacheEntryPredicate... filter);
 
-    boolean removeEntry(GridCacheEntryEx entry);
+    Iterable<GridCacheEntryEx> entries(CacheEntryPredicate... filter);
 
-    Iterable<? extends GridCacheEntryEx> entries(CacheEntryPredicate... filter);
-
-    @Nullable GridCacheMapEntry randomEntry();
+    Set<GridCacheEntryEx> entrySet(CacheEntryPredicate... filter);
 }

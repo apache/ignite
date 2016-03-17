@@ -921,7 +921,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      *
      * @return Entries that pass through key filter.
      */
-    public Iterable<Cache.Entry<K, V>> entrySet();
+    public Set<Cache.Entry<K, V>> entrySet();
 
     /**
      * Gets set containing cache entries that belong to provided partition or {@code null}
@@ -933,7 +933,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Set containing partition's entries or {@code null} if partition is
      *      not found locally.
      */
-    @Nullable public Iterable<Cache.Entry<K, V>> entrySet(int part);
+    @Nullable public Set<Cache.Entry<K, V>> entrySet(int part);
 
     /**
      * Starts new transaction with the specified concurrency and isolation.
@@ -1815,7 +1815,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param filter Filter.
      * @return Entry set.
      */
-    public Iterable<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter);
+    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter);
 
     /**
      * @return {@link javax.cache.expiry.ExpiryPolicy} associated with this projection.
