@@ -482,7 +482,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.AreEqual(0, cache.GetSize());
 
-            cache.LoadAllAsync(Enumerable.Range(105, 5), true);
+            cache.LoadAllAsync(Enumerable.Range(105, 5), true).Wait();
 
             Assert.AreEqual(5, cache.GetSize());
 
