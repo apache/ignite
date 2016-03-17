@@ -104,7 +104,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
 
                     account.save()
                         .then(() => mail.send(account, `Thanks for signing up for ${settings.smtp.username}.`,
-                            `Hello ${account.username}!<br><br>` +
+                            `Hello ${account.firstName} ${account.lastName}!<br><br>` +
                             `You are receiving this email because you have signed up to use <a href="http://${req.headers.host}">${settings.smtp.username}</a>.<br><br>` +
                             'If you have not done the sign up and do not know what this email is about, please ignore it.<br>' +
                             'You may reset the password by clicking on the following link, or paste this into your browser:<br><br>' +
@@ -158,7 +158,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
                     return user.save();
                 })
                 .then((user) => mail.send(user, 'Password Reset',
-                        `Hello ${user.username}!<br><br>` +
+                        `Hello ${user.firstName} ${user.lastName}!<br><br>` +
                         'You are receiving this because you (or someone else) have requested the reset of the password for your account.<br><br>' +
                         'Please click on the following link, or paste this into your browser to complete the process:<br><br>' +
                         'http://' + req.headers.host + '/password/reset?token=' + user.resetPasswordToken + '<br><br>' +
@@ -194,7 +194,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
                 })
                 .then((user) => {
                     return mail.send(user, 'Your password has been changed',
-                        `Hello ${user.username}!<br><br>` +
+                        `Hello ${user.firstName} ${user.lastName}!<br><br>` +
                         `This is a confirmation that the password for your account on <a href="http://${req.headers.host}">${settings.smtp.username}</a> has just been changed.<br><br>`,
                         'Password was changed, but failed to send confirmation email!');
                 })

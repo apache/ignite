@@ -17,16 +17,16 @@ System.config({
     "Blob": "github:eligrey/Blob.js@master",
     "FileSaver": "github:eligrey/FileSaver.js@master",
     "ace": "github:ajaxorg/ace-builds@1.2.3",
-    "angular": "github:angular/bower-angular@1.5.0",
+    "angular": "github:angular/bower-angular@1.5.1",
     "angular-ag-grid": "github:ceolter/ag-grid@2.3.5",
-    "angular-animate": "github:angular/bower-angular-animate@1.5.0",
+    "angular-animate": "github:angular/bower-angular-animate@1.5.1",
     "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@1.4.0",
     "angular-grid": "github:ceolter/ag-grid@2.3.5",
     "angular-loading": "github:darthwade/angular-loading@0.1.4",
     "angular-motion": "github:mgcrea/angular-motion@0.4.3",
     "angular-nvd3": "github:krispo/angular-nvd3@1.0.5",
-    "angular-retina": "github:jrief/angular-retina@0.3.10",
-    "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.0",
+    "angular-retina": "github:jrief/angular-retina@0.3.11",
+    "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.1",
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.7",
     "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
     "angular-tree-control": "github:wix/angular-tree-control@0.2.23",
@@ -57,10 +57,10 @@ System.config({
     "spinjs": "github:fgnass/spin.js@2.3.2",
     "text": "github:systemjs/plugin-text@0.0.7",
     "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
-      "angular": "github:angular/bower-angular@1.5.0",
-      "angular-animate": "github:angular/bower-angular-animate@1.5.0",
+      "angular": "github:angular/bower-angular@1.5.1",
+      "angular-animate": "github:angular/bower-angular-animate@1.5.1",
       "angular-motion": "github:mgcrea/angular-motion@0.4.3",
-      "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.0"
+      "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.1"
     },
     "github:angular-ui/bower-ui-grid@3.1.1": {
       "pdfmake": "github:bpampuch/pdfmake@0.1.20"
@@ -69,15 +69,15 @@ System.config({
       "ace": "github:ajaxorg/ace-builds@1.2.3"
     },
     "github:angular-ui/ui-router@0.2.18": {
-      "angular": "github:angular/bower-angular@1.5.0"
+      "angular": "github:angular/bower-angular@1.5.1"
     },
-    "github:angular/bower-angular-animate@1.5.0": {
-      "angular": "github:angular/bower-angular@1.5.0"
+    "github:angular/bower-angular-animate@1.5.1": {
+      "angular": "github:angular/bower-angular@1.5.1"
     },
-    "github:angular/bower-angular-sanitize@1.5.0": {
-      "angular": "github:angular/bower-angular@1.5.0"
+    "github:angular/bower-angular-sanitize@1.5.1": {
+      "angular": "github:angular/bower-angular@1.5.1"
     },
-    "github:angular/bower-angular@1.5.0": {
+    "github:angular/bower-angular@1.5.1": {
       "jquery": "github:components/jquery@2.2.1"
     },
     "github:darthwade/angular-loading@0.1.4": {
@@ -139,19 +139,19 @@ System.config({
       "vm-browserify": "npm:vm-browserify@0.0.4"
     },
     "github:krispo/angular-nvd3@1.0.5": {
-      "angular": "github:angular/bower-angular@1.5.0",
+      "angular": "github:angular/bower-angular@1.5.1",
       "d3": "npm:d3@3.5.14",
       "nvd3": "npm:nvd3@1.8.1"
     },
     "github:mgcrea/angular-motion@0.4.3": {
-      "angular": "github:angular/bower-angular@1.5.0",
+      "angular": "github:angular/bower-angular@1.5.1",
       "css": "github:systemjs/plugin-css@0.1.20"
     },
     "github:twbs/bootstrap@3.3.6": {
       "jquery": "github:components/jquery@2.2.1"
     },
     "github:wix/angular-tree-control@0.2.23": {
-      "angular": "github:angular/bower-angular@1.5.0"
+      "angular": "github:angular/bower-angular@1.5.1"
     },
     "npm:acorn-globals@1.0.9": {
       "acorn": "npm:acorn@2.7.0"
