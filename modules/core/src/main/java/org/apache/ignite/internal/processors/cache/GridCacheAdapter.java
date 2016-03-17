@@ -4707,15 +4707,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Key set.
      */
     public Set<K> keySet(@Nullable CacheEntryPredicate... filter) {
-        Set<KeyCacheObject> set = map.keySet(filter);
-
-        Set<K> result = new HashSet<>();
-
-        for (KeyCacheObject key : set) {
-            result.add((K)ctx.unwrapBinaryIfNeeded(key, false, false));
-        }
-
-        return result;
+        return (Set<K>) map.keySet(filter);
     }
 
     /**

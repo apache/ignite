@@ -137,7 +137,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             }
         };
 
-        map = new GridCacheConcurrentMapV2(cctx, entryFactory, cctx.config().getStartSize());
+        map = new GridCacheConcurrentMapV2(cctx, entryFactory, cctx.config().getStartSize() / cctx.affinity().partitions());
 
         int delQueueSize = CU.isSystemCache(cctx.name()) ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
