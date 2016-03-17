@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
@@ -472,6 +473,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual(cache.Name, CacheTestStore.Map[1]);
 
             _storeCount++;
+        }
+
+        [Test]
+        public void TestLoadAll()
+        {
+            var cache = GetCache();
+
+            Assert.AreEqual(0, cache.GetSize());
+
+            cache.LoadAllAsync(Enumerable.Range(105, 5), true);
+
+            Assert.AreEqual(5, cache.GetSize());
+
+            for (int i = 105; i < 110; i++)
+                Assert.AreEqual("val_" + i, cache.Get(i));
+
+            // TODO: Test flag
         }
 
         /// <summary>
