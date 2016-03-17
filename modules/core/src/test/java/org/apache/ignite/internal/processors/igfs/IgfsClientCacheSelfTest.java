@@ -105,6 +105,7 @@ public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
         igfsCfg.setMetaCacheName(META_CACHE_NAME);
         igfsCfg.setDataCacheName(DATA_CACHE_NAME);
         igfsCfg.setName("igfs");
+        igfsCfg.setRelaxedConsistency(relaxedConsistency);
 
         cfg.setFileSystemConfiguration(igfsCfg);
 

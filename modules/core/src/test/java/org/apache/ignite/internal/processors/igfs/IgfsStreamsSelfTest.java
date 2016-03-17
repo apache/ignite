@@ -29,6 +29,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -171,7 +172,9 @@ public class IgfsStreamsSelfTest extends IgfsCommonAbstractTest {
      * @throws IgniteCheckedException In case of exception.
      */
     public void testConfiguration() throws IgniteCheckedException {
-        IgniteInternalCache metaCache = getFieldValue(fs, "meta", "metaCache");
+        IgfsMetaManager metaMgr = getFieldValue(fs, "meta");
+        IgniteInternalCache metaCache = getFieldValue(metaMgr, IgfsMetaManager.class, "metaCache");
+
         IgniteInternalCache dataCache = getFieldValue(fs, "data", "dataCache");
 
         assertNotNull(metaCache);

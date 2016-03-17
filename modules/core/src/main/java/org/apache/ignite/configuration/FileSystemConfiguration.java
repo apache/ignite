@@ -83,8 +83,8 @@ public class FileSystemConfiguration {
     /** Default value of whether to initialize default path modes. */
     public static final boolean DFLT_INIT_DFLT_PATH_MODES = true;
 
-    /** Defaulty value of the relaxed meta manager use flag. */
-    public static final boolean DFLT_RELAXED_META_MGR = true;
+    /** Default value of the relaxed consistency use flag. */
+    public static final boolean DFLT_RELAXED_CONSISTENCY = true;
 
     /** IGFS instance name. */
     private String name;
@@ -167,8 +167,8 @@ public class FileSystemConfiguration {
     /** Whether to initialize default path modes. */
     private boolean initDfltPathModes = DFLT_INIT_DFLT_PATH_MODES;
 
-    /** Flag instructing to use relaxed meta manager. */
-    private boolean relaxedMetaMgr = DFLT_RELAXED_META_MGR;
+    /** Relaxed consistency flag. */
+    private boolean relaxedConsistency = DFLT_RELAXED_CONSISTENCY;
 
     /**
      * Constructs default configuration.
@@ -213,6 +213,7 @@ public class FileSystemConfiguration {
         perNodeBatchSize = cfg.getPerNodeBatchSize();
         perNodeParallelBatchCnt = cfg.getPerNodeParallelBatchCount();
         prefetchBlocks = cfg.getPrefetchBlocks();
+        relaxedConsistency = cfg.isRelaxedConsistency();
         seqReadsBeforePrefetch = cfg.getSequentialReadsBeforePrefetch();
         trashPurgeTimeout = cfg.getTrashPurgeTimeout();
     }
@@ -842,20 +843,23 @@ public class FileSystemConfiguration {
     }
 
     /**
-     * Sets the relaxed meta manager flag value.
+     * Sets the relaxed consistency flag value.
      *
      * @param relaxed The value to set.
      */
-    public void setRelaxedMetaManager(boolean relaxed) {
-        this.relaxedMetaMgr = relaxed;
+    public void setRelaxedConsistency(boolean relaxed) {
+        this.relaxedConsistency = relaxed;
     }
 
     /**
-     * Gets the relaxed meta manager flag value.
+     * Gets the relaxed consistency flag value.
+     * When set to {@code true}, this flag makes IGFS operations less consistent, but faster.
+     * In contrast, when set to {@code false}, this flag makes IGFS operations strictly consistent, but slower.
+     * Defaults to {@link #DFLT_RELAXED_CONSISTENCY}.
      *
-     * @return The relaxed meta manager flag value.
+     * @return The relaxed consistency flag value.
      */
-    public boolean isRelaxedMetaManager() {
-        return relaxedMetaMgr;
+    public boolean isRelaxedConsistency() {
+        return relaxedConsistency;
     }
 }

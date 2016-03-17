@@ -107,7 +107,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             IgfsContext igfsCtx = new IgfsContext(
                 ctx,
                 new FileSystemConfiguration(cfg),
-                cfg.isRelaxedMetaManager() ? new RelaxedIgfsMetaManager() : new IgfsMetaManager(),
+                cfg.isRelaxedConsistency() ? new IgfsRelaxedMetaManager() : new IgfsMetaManager(),
                 new IgfsDataManager(),
                 new IgfsServerManager(),
                 new IgfsFragmentizerManager());

@@ -190,8 +190,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** Memory mode. */
     protected final CacheMemoryMode memoryMode;
 
-    /** If to use relaxed constistency mode. */
-    protected boolean relaxedMetaMgr;
+    /** If to use relaxed consistency mode in Meta Manager. */
+    protected boolean relaxedConsistency;
 
     static {
         PRIMARY_REST_CFG = new IgfsIpcEndpointConfiguration();
@@ -248,7 +248,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         igfsSecondaryFileSystem = createSecondaryFileSystemStack();
 
-        Ignite ignite = startGridWithIgfs("ignite", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG);
+        Ignite ignite = startGridWithIgfs("ignite", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG,
+            relaxedConsistency);
 
         igfs = (IgfsImpl) ignite.fileSystem("igfs");
     }
@@ -261,7 +262,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
         Ignite igniteSecondary = startGridWithIgfs("ignite-secondary", "igfs-secondary", PRIMARY, null,
-            SECONDARY_REST_CFG);
+            SECONDARY_REST_CFG, false/*relaxed consistency never used for secondary Fs for reliability reasons.*/);
 
         IgfsEx secondaryIgfsImpl = (IgfsEx) igniteSecondary.fileSystem("igfs-secondary");
 
@@ -295,7 +296,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
-        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
+        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg,
+        boolean isRelaxedConsistencyMode) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
         igfsCfg.setDataCacheName("dataCache");
@@ -307,7 +309,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setSecondaryFileSystem(secondaryFs);
         igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
-        igfsCfg.setRelaxedMetaManager(relaxedMetaMgr);
+        igfsCfg.setRelaxedConsistency(isRelaxedConsistencyMode);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -2390,7 +2392,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     private void checkDeadlocksRepeat(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
         int primaryLvlCnt, int renCnt, int delCnt,
         int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
-        if (relaxedMetaMgr)
+        if (relaxedConsistency)
             return;
 
         for (int i = 0; i < REPEAT_CNT; i++) {
@@ -3221,19 +3223,25 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 IgniteUuid id = e.key().value(null, false);
 
                 if (IgfsUtils.isRootOrTrashId(id)) {
-                    IgfsFileInfo i = e.valueBytes().value(null, false);
+                    IgfsFileInfo i = igfs.context().meta().info(id);
 
-                    if (i.listing() != null) {
-                        System.out.println(id + " - listing: " + i.listing());
-                    }
+                    if (i != null && i.listing() != null)
+                        X.println(id + " - listing: " + i.listing());
                 }
                 else
-                    System.out.println("id = " + id);
+                    X.println("id = " + id);
             }
         }
         else {
-            for (GridCacheEntryEx e : set)
-                X.println("Lost entry = " + e);
+            for (GridCacheEntryEx e : set) {
+                IgfsBlockKey key = e.key().value(null, false);
+
+                byte[] bb = e.valueBytes().value(null, false);
+
+                int len = (bb == null) ? 0 : bb.length;
+
+                X.println("Lost data block: key = " + key + ", length = " + len);
+            }
         }
     }
 

@@ -17,19 +17,17 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
-
 /**
  * Tests for PRIMARY mode.
  */
-public class RelaxedMetaManagerIgfsPrimarySelfTest extends IgfsPrimarySelfTest {
+public class IgfsRelaxedPrimarySelfTest extends IgfsPrimarySelfTest {
     /**
      * Constructor.
      */
-    public RelaxedMetaManagerIgfsPrimarySelfTest() {
+    public IgfsRelaxedPrimarySelfTest() {
         super();
 
-        // Relaxed mode of IfgsMetaManager:
-        relaxedMetaMgr = true;
+        // Use relaxed mode of IfgsMetaManager:
+        relaxedConsistency = true;
     }
 }

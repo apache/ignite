@@ -41,7 +41,7 @@ import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_WRITE;
 /**
  * Version of Meta Manager implementation with relaxed synchronization.
  */
-public class RelaxedIgfsMetaManager extends IgfsMetaManager {
+public class IgfsRelaxedMetaManager extends IgfsMetaManager {
     /**
      * Move routine.
      *
@@ -84,9 +84,7 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                 }
 
                 // 2. Start transaction.
-                IgniteInternalTx tx = startTx();
-
-                try {
+                try (IgniteInternalTx tx = startTx()) {
                     // 3. Obtain the locks.
                     final Map<IgniteUuid, IgfsFileInfo> allInfos = lockIds(allIds);
 
@@ -167,9 +165,6 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                     // Set the new path to the info to simplify event creation:
                     return IgfsFileInfo.builder(moved).path(realNewPath).build();
                 }
-                finally {
-                    tx.close();
-                }
             }
             finally {
                 busyLock.leaveBusy();
@@ -196,11 +191,11 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
     /**
      * Verifies parent - child relationship in a transaction.
      *
-     * @param infos
-     * @param parent
-     * @param childName
-     * @param ch
-     * @return
+     * @param infos The locked infos map.
+     * @param parent The parent id.
+     * @param childName The expected name of the child.
+     * @param ch The expected child id.
+     * @return {@code true} if the parent-child relationship met.
      */
     private boolean verifyParentChild(Map<IgniteUuid, IgfsFileInfo> infos, IgniteUuid parent,
                                       String childName, IgniteUuid ch) {
@@ -418,12 +413,13 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                 try {
                     b = new RelaxedDirectoryChainBuilder(path, dirProps, fileProps, blockSize, affKey, evictExclude);
 
-                    // Start Tx:
-                    IgniteInternalTx tx = startTx();
+                    if (b.components.size() == 0)
+                        // Root is a directory and cannot be created:
+                        throwExists(append, path);
 
-                    try {
-                        assert b.idList.size() >= 2;
+                    assert b.idList.size() >= 2;
 
+                    try (IgniteInternalTx tx = startTx()) {
                         final IgniteUuid parentId = b.idList.get(b.idList.size() - 2);
 
                         if (overwrite) {
@@ -462,11 +458,8 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                                 // Full requestd path exists.
                                 assert b.existingPath.equals(path);
 
-                                if (lowermostExistingInfo != null && lowermostExistingInfo.isDirectory()) {
-                                    throw new IgfsPathAlreadyExistsException("Failed to "
-                                            + (append ? "open" : "create") + " file (path points to an " +
-                                        "existing directory): " + path);
-                                }
+                                if (lowermostExistingInfo != null && lowermostExistingInfo.isDirectory())
+                                    throwExists(append, path);
                                 else {
                                     // This is a file.
                                     assert lowermostExistingInfo == null || lowermostExistingInfo.isFile();
@@ -589,9 +582,6 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                             // the name we need.
                         }
                     }
-                    finally {
-                        tx.close();
-                    }
                 }
                 finally {
                     busyLock.leaveBusy();
@@ -659,22 +649,5 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
 
             this.existingIdCnt = idIdx;
         }
-
-//        /**
-//         * Builds middle nodes.
-//         */
-//        protected IgfsFileInfo buildMiddleNode(String childName, IgfsFileInfo childInfo) {
-//            return new IgfsFileInfo(Collections.singletonMap(childName,
-//                    new IgfsListingEntry(childInfo)), middleProps);
-//        }
-//
-//        /**
-//         * Builds leaf.
-//         */
-//        protected IgfsFileInfo buildLeaf()  {
-//            long t = System.currentTimeMillis();
-//
-//            return new IgfsFileInfo(true, leafProps, t, t);
-//        }
     }
 }
