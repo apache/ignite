@@ -18,6 +18,7 @@
 package org.apache.ignite.stream.kafka.connect;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -116,6 +117,12 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         kafkaBroker.shutdown();
 
         grid.cache(CACHE_NAME).clear();
+
+        // reset cache name to overwrite task configurations.
+        Field field = IgniteSourceTask.class.getDeclaredField("cacheName");
+
+        field.setAccessible(true);
+        field.set(IgniteSourceTask.class, null);
     }
 
     /**
@@ -124,7 +131,6 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      *
      * @throws Exception Thrown in case of the failure.
      */
-
     public void testEventsInjectedIntoKafkaWithoutFilter() throws Exception {
         Map<String, String> srcProps = makeSourceProps(Utils.join(TOPICS, ","));
 
@@ -240,7 +246,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-grp");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.FETCH_MIN_BYTES_CONFIG, 1);
-        props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 20000);
+        props.put(ConsumerConfig.HEARTBEAT_INTERVAL_MS_CONFIG, 10000);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
             "org.apache.kafka.common.serialization.StringDeserializer");
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
@@ -254,7 +260,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         long start = System.currentTimeMillis();
 
         try {
-            while (false || (System.currentTimeMillis() - start) < 100000) {
+            while (false || (System.currentTimeMillis() - start) < 20000) {
                 ConsumerRecords<String, CacheEvent> records = consumer.poll(100);
                 for (ConsumerRecord<String, CacheEvent> record : records) {
                     System.out.println("Event: offset = " + record.offset() + ", key = " + record.key()
@@ -295,7 +301,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     private Map<String, String> makeSourceProps(String topics) {
         Map<String, String> props = new HashMap<>();
 
-        props.put(ConnectorConfig.TASKS_MAX_CONFIG, "1");
+        props.put(ConnectorConfig.TASKS_MAX_CONFIG, "2");
         props.put(ConnectorConfig.NAME_CONFIG, "test-src-connector");
         props.put(ConnectorConfig.CONNECTOR_CLASS_CONFIG, IgniteSourceConnectorMock.class.getName());
         props.put(IgniteSourceConstants.CACHE_NAME, "testCache");

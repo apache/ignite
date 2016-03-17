@@ -154,8 +154,9 @@ public class IgniteSourceTask extends SourceTask {
 
             throw new ConnectException(e);
         }
-
-        stopped = false;
+        finally {
+            stopped = false;
+        }
     }
 
     @Override public List<SourceRecord> poll() throws InterruptedException {
