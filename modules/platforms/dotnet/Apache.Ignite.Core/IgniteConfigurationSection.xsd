@@ -190,6 +190,8 @@
                                     <xs:attribute name="longQueryWarningTimeout" type="xs:string" />
                                     <xs:attribute name="sqlEscapeAll" type="xs:boolean" />
                                     <xs:attribute name="sqlOnheapRowCacheSize" type="xs:int" />
+                                    <xs:attribute name="readThrough" type="xs:boolean" />
+                                    <xs:attribute name="writeThrough" type="xs:boolean" />
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>

@@ -168,7 +168,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             long t = System.currentTimeMillis();
 
-            IgfsFileInfo info = new IgfsFileInfo(200, 0L, null, IgfsMetaManager.DELETE_LOCK_ID,
+            IgfsFileInfo info = new IgfsFileInfo(200, 0L, null, IgfsUtils.DELETE_LOCK_ID,
                     false, null, t, t);
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
@@ -253,7 +253,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             long t = System.currentTimeMillis();
 
-            IgfsFileInfo info = new IgfsFileInfo(blockSize, 0L, null, IgfsMetaManager.DELETE_LOCK_ID,
+            IgfsFileInfo info = new IgfsFileInfo(blockSize, 0L, null, IgfsUtils.DELETE_LOCK_ID,
                 false, null, t, t);
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
@@ -345,7 +345,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             long t = System.currentTimeMillis();
 
             IgfsFileInfo info =
-                new IgfsFileInfo(blockSize, 0L, null, IgfsMetaManager.DELETE_LOCK_ID,
+                new IgfsFileInfo(blockSize, 0L, null, IgfsUtils.DELETE_LOCK_ID,
                     false, null, t, t);
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
