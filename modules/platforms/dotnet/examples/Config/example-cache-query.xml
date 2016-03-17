@@ -60,41 +60,73 @@
                     <property name="atomicityMode" value="ATOMIC"/>
                     <property name="backups" value="1"/>
 
-                    <!-- Configure type metadata to enable queries. -->
-                    <property name="typeMetadata">
+                    <!-- Configure query entities to enable queries. -->
+                    <property name="queryEntities">
                         <list>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="keyType" value="java.lang.Integer"/>
                                 <property name="valueType" value="Organization"/>
-                                <property name="ascendingFields">
-                                    <map>
+                                <property name="fields">
+                                    <util:map map-class="java.util.LinkedHashMap">
                                         <entry key="name" value="java.lang.String"/>
-                                    </map>
+                                    </util:map>
+                                </property>
+                                <property name="indexes">
+                                    <list>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="indexType">
+                                                <util:constant static-field="org.apache.ignite.cache.QueryIndexType.SORTED"/>
+                                            </property>
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="name" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                    </list>
                                 </property>
                             </bean>
-                            <bean class="org.apache.ignite.cache.CacheTypeMetadata">
+                            <bean class="org.apache.ignite.cache.QueryEntity">
                                 <property name="keyType" value="EmployeeKey"/>
                                 <property name="valueType" value="Employee"/>
-                                <property name="ascendingFields">
-                                    <map>
-                                        <entry key="organizationId" value="java.lang.Integer"/>
-                                        <entry key="address.zip" value="java.lang.Integer"/>
-                                    </map>
-                                </property>
-                                <property name="queryFields">
-                                    <map>
+                                <property name="fields">
+                                    <util:map map-class="java.util.LinkedHashMap">
                                         <entry key="name" value="java.lang.String"/>
                                         <entry key="salary" value="java.lang.Long"/>
-                                    </map>
+                                        <entry key="organizationId" value="java.lang.Integer"/>
+                                        <entry key="address.zip" value="java.lang.Integer"/>
+                                        <entry key="address.street" value="java.lang.String"/>
+                                    </util:map>
                                 </property>
-                                <property name="textFields">
+                                <property name="indexes">
                                     <list>
-                                        <value>address.street</value>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="indexType">
+                                                <util:constant static-field="org.apache.ignite.cache.QueryIndexType.SORTED"/>
+                                            </property>
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="organizationId" value="true"/>
+                                                    <entry key="zip" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
+                                        <bean class="org.apache.ignite.cache.QueryIndex">
+                                            <property name="indexType">
+                                                <util:constant static-field="org.apache.ignite.cache.QueryIndexType.FULLTEXT"/>
+                                            </property>
+                                            <property name="fields">
+                                                <map>
+                                                    <entry key="street" value="true"/>
+                                                </map>
+                                            </property>
+                                        </bean>
                                     </list>
                                 </property>
                             </bean>
                         </list>
                     </property>
+                    
                 </bean>
             </list>
         </property>
