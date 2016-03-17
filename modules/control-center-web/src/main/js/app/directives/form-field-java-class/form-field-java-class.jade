@@ -16,7 +16,7 @@
 
 mixin feedback(error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-if='!form[name+"JavaClass"].$pristine && form[name+"JavaClass"].$error.#{error}'
+        ng-if='!form[name].$pristine && form[name].$error.#{error}'
         bs-tooltip='"{{ label.name }} #{message}"'
         ignite-error='#{error}'
         ignite-error-message='{{ label.name }} #{message}'
@@ -24,8 +24,8 @@ mixin feedback(error, message)
 
 .input-tip
     input.form-control(
-        id='{{ id }}'
-        name='{{ name }}JavaClass'
+        id='{{ id }}JavaClass'
+        name='{{ name }}'
         placeholder='Enter fully qualified class name'
         type='text'
 

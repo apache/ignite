@@ -34,7 +34,7 @@ export default ['igniteFormGroup', [() => {
         parentFormCtrl.$defaults = parentFormCtrl.$defaults || {};
 
         if (parentFormCtrl.$pristine) {
-            if (!(_.isNull(parentFormCtrl.$defaults[name]) || _.isUndefined(parentFormCtrl.$defaults[name]))) 
+            if (!(_.isNull(parentFormCtrl.$defaults[name]) || _.isUndefined(parentFormCtrl.$defaults[name])))
                 scope.ngModel = parentFormCtrl.$defaults[name];
             else
                 parentFormCtrl.$defaults[name] = _.cloneDeep(scope.ngModel);
@@ -50,11 +50,10 @@ export default ['igniteFormGroup', [() => {
         };
 
         const setAsDirty = () => {
-            if (JSON.stringify(scope.ngModel) !== JSON.stringify(parentFormCtrl.$defaults[name])){
+            if (JSON.stringify(scope.ngModel) !== JSON.stringify(parentFormCtrl.$defaults[name]))
                 ngModelCtrl.$setDirty();
-            }else{
+            else
                 ngModelCtrl.$setPristine();
-            }
         };
 
         scope.$watch(() => parentFormCtrl.$pristine, setAsDefault);

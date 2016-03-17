@@ -26,6 +26,7 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
         scope.ngModel = ngModel;
         scope.form = form;
         scope.label = label;
+        scope.name = scope.ngModelName + 'JavaClass';
 
         scope.$watch('required', (required) => {
             label.required = required || false;
@@ -62,7 +63,7 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
         restrict: 'E',
         scope: {
             id: '@',
-            name: '@',
+            ngModelName: '@name',
             placeholder: '@',
             required: '=ngRequired',
             disabled: '=ngDisabled',
