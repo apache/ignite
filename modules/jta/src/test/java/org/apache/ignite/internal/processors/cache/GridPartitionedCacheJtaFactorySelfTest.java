@@ -25,7 +25,7 @@ import org.objectweb.transaction.jta.TransactionManager;
 /**
  * Factory JTA integration test using PARTITIONED cache.
  */
-public class GridPartitionedCacheJtaFactorySelfTest extends AbstarctCacheJtaSelfTest {
+public class GridPartitionedCacheJtaFactorySelfTest extends AbstractCacheJtaSelfTest {
     /** {@inheritDoc} */
     @Override protected void configureJta(IgniteConfiguration cfg) {
         TransactionConfiguration txCfg = cfg.getTransactionConfiguration();

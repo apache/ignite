@@ -25,8 +25,10 @@ namespace Apache.Ignite.Core.Tests.Services
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
+    using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -587,6 +589,19 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
+        /// Tests the footer setting.
+        /// </summary>
+        [Test]
+        public void TestFooterSetting()
+        {
+            foreach (var grid in Grids)
+            {
+                Assert.AreEqual(CompactFooter, ((Ignite)grid).Marshaller.CompactFooter);
+                Assert.AreEqual(CompactFooter, grid.GetConfiguration().BinaryConfiguration.CompactFooter);
+            }
+        }
+
+        /// <summary>
         /// Starts the grids.
         /// </summary>
         private void StartGrids()
@@ -638,8 +653,11 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private static IgniteConfiguration GetConfiguration(string springConfigUrl)
+        private IgniteConfiguration Configuration(string springConfigUrl)
         {
+            if (!CompactFooter)
+                springConfigUrl = ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
+
             return new IgniteConfiguration
             {
                 SpringConfigUrl = springConfigUrl,
@@ -672,6 +690,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             get { return Grid1.GetServices(); }
         }
+
+        /// <summary>
+        /// Gets a value indicating whether compact footers should be used.
+        /// </summary>
+        protected virtual bool CompactFooter { get { return true; } }
 
         /// <summary>
         /// Test service interface for proxying.
@@ -1004,7 +1027,7 @@ namespace Apache.Ignite.Core.Tests.Services
             int test(int x, string y);
             /** */
             int test(string x, int y);
-            
+
             /** */
             int? testNull(int? x);
 
