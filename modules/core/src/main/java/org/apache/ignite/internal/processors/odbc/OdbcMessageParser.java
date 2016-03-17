@@ -75,15 +75,19 @@ public class OdbcMessageParser {
 
         byte cmd = reader.readByte();
 
-        // This is a special case because we can not decode
-        // protocol messages until we has not confirmed that
-        // the remote client uses the same protocol version.
+        // This is a special case because we can not decode protocol messages until
+        // we has not confirmed that the remote client uses the same protocol version.
         if (!versionConfirmed) {
             if (cmd == OdbcRequest.HANDSHAKE) {
                 long version = reader.readLong();
 
                 if (version == PROTOCOL_VERSION)
                     versionConfirmed = true;
+
+                // Pass handshake message further to the handler even if the version
+                // check has failed so we can answer to the client. If we'd throw an
+                // exception here that would result in silent session termination with
+                // no messages sent to the client.
 
                 return new OdbcHandshakeRequest(version);
             }
@@ -179,9 +183,9 @@ public class OdbcMessageParser {
 
         Object res0 = msg.response();
 
-        if (res0 instanceof OdbcHandshakeRequest) {
+        if (res0 == null) {
             if (log.isDebugEnabled())
-                log.debug("Responding to handshake");
+                log.debug("Sending general success response");
 
             // Write nothing. Just send response with success status.
         }
