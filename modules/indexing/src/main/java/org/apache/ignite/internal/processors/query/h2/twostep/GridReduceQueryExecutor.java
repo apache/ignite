@@ -389,7 +389,7 @@ public class GridReduceQueryExecutor {
     ) {
         String space = cctx.name();
 
-        Set<ClusterNode> nodes = new HashSet<>(dataNodes(space, topVer));
+        Set<ClusterNode> nodes = new HashSet<>(cctx.affinity().assignment(topVer).primaryPartitionNodes());
 
         if (F.isEmpty(nodes))
             throw new CacheException("Failed to find data nodes for cache: " + space);

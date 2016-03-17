@@ -51,6 +51,9 @@ public class GridAffinityAssignment implements Serializable {
     /** Assignment node IDs */
     private transient volatile List<HashSet<UUID>> assignmentIds;
 
+    /** Nodes having primary partitions assignments. */
+    private transient volatile Set<ClusterNode> primaryPartsNodes;
+
     /** */
     private transient List<List<ClusterNode>> idealAssignment;
 
@@ -162,6 +165,31 @@ public class GridAffinityAssignment implements Serializable {
         }
 
         return assignmentIds0.get(part);
+    }
+
+    /**
+     * @return Nodes having primary partitions assignments.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public Set<ClusterNode> primaryPartitionNodes() {
+        Set<ClusterNode> primaryPartsNodes0 = primaryPartsNodes;
+
+        if (primaryPartsNodes0 == null) {
+            int parts = assignment.size();
+
+            primaryPartsNodes0 = new HashSet<>();
+
+            for (int p = 0; p < parts; p++) {
+                List<ClusterNode> nodes = assignment.get(p);
+
+                if (nodes.size() > 0)
+                    primaryPartsNodes0.add(nodes.get(0));
+            }
+
+            primaryPartsNodes = primaryPartsNodes0;
+        }
+
+        return primaryPartsNodes0;
     }
 
     /**
