@@ -83,7 +83,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator==(Date& val1, Date& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator==(const Date& val1, const Date& val2);
 
         /**
          * Comparison operator override.
@@ -92,7 +92,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if not equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator!=(Date& val1, Date& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator!=(const Date& val1, const Date& val2);
 
         /**
          * Comparison operator override.
@@ -101,7 +101,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if less.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator<(Date& val1, Date& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator<(const Date& val1, const Date& val2);
 
         /**
          * Comparison operator override.
@@ -110,7 +110,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if less or equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator<=(Date& val1, Date& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator<=(const Date& val1, const Date& val2);
 
         /**
          * Comparison operator override.
@@ -119,7 +119,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if gretter.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator>(Date& val1, Date& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator>(const Date& val1, const Date& val2);
 
         /**
          * Comparison operator override.
@@ -128,7 +128,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if gretter or equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator>=(Date& val1, Date& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator>=(const Date& val1, const Date& val2);
     private:
         /** Number of milliseconds since 00:00 hours, Jan 1, 1970 UTC. */
         int64_t milliseconds;  

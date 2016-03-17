@@ -18,6 +18,8 @@
 #include <cstring>
 #include <utility>
 
+#include "ignite/utils/utils.h"
+
 #include "ignite/odbc/decimal.h"
 
 namespace ignite
@@ -63,19 +65,11 @@ namespace ignite
     {
         double res = 0;
 
-        int32_t localScale = GetScale();
-        
         for (int32_t i = 0; i < len; ++i)
-        {
-            res = (res * 256) + magnitude[i];
+            res = (res * 256) + static_cast<uint8_t>(magnitude[i]);
 
-            while (localScale && res > 10.0)
-            {
-                res /= 10.0;
-
-                --localScale;
-            }
-        }
+        for (int32_t i = 0; i < GetScale(); ++i)
+            res /= 10.0;
 
         return res * GetSign();
     }
@@ -97,7 +91,31 @@ namespace ignite
 
     int32_t Decimal::GetLength() const
     {
-        return scale;
+        return len;
+    }
+
+    int32_t Decimal::BitLength() const
+    {
+        using namespace utils;
+
+        if (len == 0)
+            return 0;
+
+        int32_t bitsLen = (len - 1) * 8 +
+            BitLengthForOctet(magnitude[len - 1]);
+
+        if (IsNegative()) {
+
+            // Check if magnitude is a power of two
+            bool pow2 = PowerOfTwo(magnitude[len - 1]);
+            for (int i = 0; i < len - 1 && pow2; ++i)
+                pow2 = (magnitude[i] == 0);
+
+            if (pow2)
+                --bitsLen;
+        }
+
+        return bitsLen;
     }
 
     const int8_t* Decimal::GetMagnitude() const

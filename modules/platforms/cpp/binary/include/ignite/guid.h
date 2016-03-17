@@ -105,7 +105,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator== (Guid& val1, Guid& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator== (const Guid& val1, const Guid& val2);
     private:
         /** Most significant bits. */
         int64_t most;  
@@ -137,6 +137,35 @@ namespace ignite
             << std::setfill<C>('0') << std::setw(12) << std::hex << part5;
 
         return os;
+    }
+
+    /**
+     * Input operator.
+     *
+     * @param is Input stream.
+     * @param guid Guid to input.
+     * @return Reference to the first param.
+     */
+    template<typename C>
+    std::basic_istream<C>& operator>>(std::basic_istream<C>& is, Guid& guid)
+    {
+        uint64_t parts[5];
+
+        C delim;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            is >> std::hex >> parts[i] >> delim;
+
+            if (delim != static_cast<C>('-'))
+                return is;
+        }
+
+        is >> std::hex >> parts[4];
+
+        guid = Guid((parts[0] << 32) | (parts[1] << 16) | parts[2], (parts[3] << 48) | parts[4]);
+
+        return is;
     }
 }
 

@@ -381,8 +381,6 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                     throw new IOException("File to read file metadata: " + fileInfo.path(), e);
                 }
 
-                meta.updateParentListingAsync(parentId, fileInfo.id(), fileName, bytes, modificationTime);
-
                 if (err != null)
                     throw err;
             }
