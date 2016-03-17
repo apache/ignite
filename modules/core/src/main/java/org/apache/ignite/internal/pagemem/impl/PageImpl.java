@@ -235,4 +235,9 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
         return refs == 0;
     }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        pageMem.releasePage(this);
+    }
 }

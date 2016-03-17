@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 /**
  *
  */
-public interface Page {
+public interface Page extends AutoCloseable {
     /**
      * Gets the page ID. Page ID is a unique page identifier that does not change when partitions migrate
      * from one node to another. Links (which is a page ID and 8-byte offset within a page) must be used
@@ -76,4 +76,9 @@ public interface Page {
     public void releaseWrite(boolean markDirty);
 
     public boolean isDirty();
+
+    /**
+     * Release page.
+     */
+    @Override public void close();
 }

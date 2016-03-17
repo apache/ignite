@@ -125,4 +125,9 @@ public abstract class PageIO {
         setVersion(buf, getVersion());
         setPageId(buf, pageId);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return getClass().getSimpleName() + "[ver=" + getVersion() + "]";
+    }
 }
