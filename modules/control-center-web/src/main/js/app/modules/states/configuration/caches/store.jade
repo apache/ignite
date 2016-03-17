@@ -121,7 +121,7 @@ form.panel.panel-default(name='store' novalidate)
 
                                 .details-row
                                     +text('Data source bean name:', pojoStoreFactory + '.dataSourceBean',
-                                        'dataSourceBean', 'true', 'Input bean name',
+                                        'pojoDataSourceBean', 'true', 'Input bean name',
                                         'Name of the data source bean in Spring context')
                                 .details-row
                                     +dialect('Dialect:', pojoStoreFactory + '.dialect', 'pojoDialect',
@@ -152,7 +152,7 @@ form.panel.panel-default(name='store' novalidate)
                                         label Note, password will be generated as stub
                                 div(ng-if='#{blobStoreFactoryVia} !== "URL"')
                                     .details-row
-                                        +text('Data source bean name:', blobStoreFactory + '.dataSourceBean', 'dataSourceBean', 'true', 'Input bean name',
+                                        +text('Data source bean name:', blobStoreFactory + '.dataSourceBean', 'blobDataSourceBean', 'true', 'Input bean name',
                                             'Name of the data source bean in Spring context')
                                     .details-row
                                         +dialect('Database:', blobStoreFactory + '.dialect', 'blobDialect', 'Supported databases:', 'Generic database', 'Choose database')

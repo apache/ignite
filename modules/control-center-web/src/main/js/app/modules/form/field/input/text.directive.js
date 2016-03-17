@@ -33,7 +33,14 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
         });
 
         form.$defaults = form.$defaults || {};
-        form.$defaults[name] = _.cloneDeep(scope.value);
+
+        if (form.$pristine) {
+            if (!(_.isNull(form.$defaults[name]) || _.isUndefined(form.$defaults[name]))) {
+                scope.value = form.$defaults[name];
+                ngModel.$setViewValue(scope.value);
+            } else
+                form.$defaults[name] = _.cloneDeep(scope.value);
+        }
 
         const setAsDefault = () => {
             if (!form.$pristine) return;
