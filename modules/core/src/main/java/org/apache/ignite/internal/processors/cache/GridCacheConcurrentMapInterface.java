@@ -44,8 +44,4 @@ public interface GridCacheConcurrentMapInterface {
     Iterable<? extends GridCacheEntryEx> entries(CacheEntryPredicate... filter);
 
     @Nullable GridCacheMapEntry randomEntry();
-
-    void incrementSize(GridCacheMapEntry e);
-
-    void decrementSize(GridCacheMapEntry e);
 }

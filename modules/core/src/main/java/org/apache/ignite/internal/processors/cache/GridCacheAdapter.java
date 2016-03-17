@@ -85,7 +85,6 @@ import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImp
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -390,25 +389,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     public void incrementSize(GridCacheMapEntry e) {
-        map.incrementSize(e);
-
-        if (isDht() || isColocated() || isDhtAtomic()) {
-            GridDhtLocalPartition part = ctx.topology().localPartition(e.partition(), AffinityTopologyVersion.NONE, false);
-
-            if (part != null)
-                part.incrementPublicSize();
-        }
     }
 
     public void decrementSize(GridCacheMapEntry e) {
-        map().decrementSize(e);
-
-        if (isDht() || isColocated() || isDhtAtomic()) {
-            GridDhtLocalPartition part = ctx.topology().localPartition(e.partition(), AffinityTopologyVersion.NONE, false);
-
-            if (part != null)
-                part.decrementPublicSize();
-        }
     }
 
     /**
@@ -549,7 +532,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     protected void init() {
         if (map == null)
-            map = new GridCacheConcurrentMapV2(ctx, entryFactory());
+            map = new GridCacheConcurrentMapV2(ctx, entryFactory(), ctx.config().getStartSize());
     }
 
     protected abstract GridCacheMapEntryFactory entryFactory();

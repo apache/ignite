@@ -31,15 +31,25 @@ import org.jsr166.ConcurrentHashMap8;
 
 public class GridCacheConcurrentMapV2 implements GridCacheConcurrentMapInterface {
 
-    private final ConcurrentHashMap8<KeyCacheObject, GridCacheMapEntry> map = new ConcurrentHashMap8<>();
+    private static final float DFLT_LOAD_FACTOR = 0.75f;
+
+    private static final int DFLT_CONCUR_LEVEL = Runtime.getRuntime().availableProcessors() * 2;
+
+    private final ConcurrentHashMap8<KeyCacheObject, GridCacheMapEntry> map;
 
     private final GridCacheMapEntryFactory factory;
 
     private final GridCacheContext ctx;
 
-    public GridCacheConcurrentMapV2(GridCacheContext ctx, GridCacheMapEntryFactory factory) {
+    public GridCacheConcurrentMapV2(GridCacheContext ctx, GridCacheMapEntryFactory factory, int initialCapacity) {
+        this(ctx, factory, initialCapacity, DFLT_LOAD_FACTOR, DFLT_CONCUR_LEVEL);
+    }
+
+    public GridCacheConcurrentMapV2(GridCacheContext ctx, GridCacheMapEntryFactory factory, int initialCapacity,
+        float loadFactor, int concurrencyLevel) {
         this.ctx = ctx;
         this.factory = factory;
+        map = new ConcurrentHashMap8<>(initialCapacity, loadFactor, concurrencyLevel);
     }
 
     @Nullable @Override public GridCacheMapEntry getEntry(Object key) {
@@ -139,13 +149,5 @@ public class GridCacheConcurrentMapV2 implements GridCacheConcurrentMapInterface
     @Nullable @Override public GridCacheMapEntry randomEntry() {
         // TODO
         return map.values().iterator().next();
-    }
-
-    @Override public void incrementSize(GridCacheMapEntry e) {
-
-    }
-
-    @Override public void decrementSize(GridCacheMapEntry e) {
-
     }
 }

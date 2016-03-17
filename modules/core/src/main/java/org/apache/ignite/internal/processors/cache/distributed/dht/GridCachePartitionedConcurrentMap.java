@@ -76,7 +76,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         int size = 0;
 
         for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
-            size += part.publicSize();
+            size += part.size();
         }
 
         return size;
@@ -117,17 +117,5 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
                 return F.flatIterators(iterators);
             }
         };
-    }
-
-    @Override public void incrementSize(GridCacheMapEntry e) {
-        GridDhtLocalPartition part = ctx.topology().localPartition(e.key(), true);
-
-        part.incrementPublicSize();
-    }
-
-    @Override public void decrementSize(GridCacheMapEntry e) {
-        GridDhtLocalPartition part = ctx.topology().localPartition(e.key(), true);
-
-        part.decrementPublicSize();
     }
 }

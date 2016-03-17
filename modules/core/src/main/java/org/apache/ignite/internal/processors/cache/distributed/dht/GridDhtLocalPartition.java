@@ -60,7 +60,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
@@ -110,9 +109,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Lock. */
     private final ReentrantLock lock = new ReentrantLock();
 
-    /** Public size counter. */
-    private final LongAdder8 mapPubSize = new LongAdder8();
-
     /** Remove queue. */
     private final GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
 
@@ -141,8 +137,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             }
         };
 
-//        map = new GridCacheConcurrentMap(cctx, cctx.config().getStartSize() / cctx.affinity().partitions(), null);
-        map = new GridCacheConcurrentMapV2(cctx, entryFactory);
+        map = new GridCacheConcurrentMapV2(cctx, entryFactory, cctx.config().getStartSize());
 
         int delQueueSize = CU.isSystemCache(cctx.name()) ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
@@ -222,27 +217,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
-     * Increments public size of the map.
-     */
-    public void incrementPublicSize() {
-        mapPubSize.increment();
-    }
-
-    /**
-     * Decrements public size of the map.
-     */
-    public void decrementPublicSize() {
-        mapPubSize.decrement();
-    }
-
-    /**
-     * @return Number of public (non-internal) entries in this partition.
-     */
-    public int publicSize() {
-        return mapPubSize.intValue();
-    }
-
-    /**
      * @return If partition is moving or owning or renting.
      */
     public boolean valid() {
@@ -253,10 +227,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
     @Nullable public GridCacheMapEntry getEntry(Object key) {
         return map.getEntry(key);
-    }
-
-    public void decrementSize(GridCacheMapEntry e) {
-        map.decrementSize(e);
     }
 
     public boolean removeEntry(GridCacheEntryEx entry) {
@@ -280,10 +250,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create) {
         return map.putEntryIfObsoleteOrAbsent(topVer, key, val, create);
-    }
-
-    public void incrementSize(GridCacheMapEntry e) {
-        map.incrementSize(e);
     }
 
     public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
@@ -310,8 +276,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         if (!entry.isInternal()) {
             assert !entry.deleted() : entry;
-
-            mapPubSize.increment();
         }
     }
 
@@ -324,9 +288,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         // Make sure to remove exactly this entry.
         synchronized (entry) {
             map.removeEntry(entry);
-
-            if (!entry.isInternal() && !entry.deleted())
-                mapPubSize.decrement();
         }
 
         // Attempt to evict.
@@ -733,7 +694,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                         map.removeEntry(cached);
 
                         if (!cached.isInternal()) {
-                            mapPubSize.decrement();
 
                             if (rec) {
                                 cctx.events().addEvent(cached.partition(),
@@ -876,7 +836,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             "state", state(),
             "reservations", reservations(),
             "empty", isEmpty(),
-            "createTime", U.format(createTime),
-            "mapPubSize", mapPubSize);
+            "createTime", U.format(createTime));
     }
 }

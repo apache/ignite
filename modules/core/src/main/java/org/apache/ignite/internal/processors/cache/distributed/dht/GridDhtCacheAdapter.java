@@ -611,7 +611,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         for (GridDhtLocalPartition p : topology().currentLocalPartitions()) {
             if (p.primary(topVer))
-                sum += p.publicSize();
+                sum += p.size();
         }
 
         return sum;
@@ -1163,7 +1163,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             GridDhtLocalPartition part = ctx.topology().localPartition(partId,
                 new AffinityTopologyVersion(ctx.discovery().topologyVersion()), false);
 
-            return part != null ? part.publicSize() : 0;
+            return part != null ? part.size() : 0;
         }
 
         /** {@inheritDoc} */

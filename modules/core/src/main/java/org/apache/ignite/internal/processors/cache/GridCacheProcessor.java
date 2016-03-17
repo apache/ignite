@@ -1360,14 +1360,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         case TRANSACTIONAL: {
                             cache = cacheCtx.affinityNode() ?
                                 new GridDhtColocatedCache(cacheCtx) :
-                                new GridDhtColocatedCache(cacheCtx, new GridCacheConcurrentMapV2(cacheCtx, null));
+                                new GridDhtColocatedCache(cacheCtx, new GridCacheConcurrentMapV2(cacheCtx, null, 0));
 
                             break;
                         }
                         case ATOMIC: {
                             cache = cacheCtx.affinityNode() ?
                                 new GridDhtAtomicCache(cacheCtx) :
-                                new GridDhtAtomicCache(cacheCtx, new GridCacheConcurrentMapV2(cacheCtx, null));
+                                new GridDhtAtomicCache(cacheCtx, new GridCacheConcurrentMapV2(cacheCtx, null, 0));
 
                             break;
                         }
@@ -1451,7 +1451,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     GridDhtCache dhtCache = cacheCtx.affinityNode() ?
                         new GridDhtCache(cacheCtx) :
-                        new GridDhtCache(cacheCtx, new GridCacheConcurrentMapV2(cacheCtx, null));
+                        new GridDhtCache(cacheCtx, new GridCacheConcurrentMapV2(cacheCtx, null, 0));
 
                     dhtCache.near(near);
 
@@ -1468,7 +1468,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     GridDhtAtomicCache dhtCache = cacheCtx.affinityNode() ?
                         new GridDhtAtomicCache(cacheCtx) :
-                        new GridDhtAtomicCache(cacheCtx, new GridCacheConcurrentMapV2(cacheCtx, null));
+                        new GridDhtAtomicCache(cacheCtx, new GridCacheConcurrentMapV2(cacheCtx, null, 0));
 
                     dhtCache.near(near);
 
