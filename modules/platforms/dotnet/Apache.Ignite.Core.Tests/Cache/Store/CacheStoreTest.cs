@@ -482,14 +482,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.AreEqual(0, cache.GetSize());
 
-            cache.LoadAllAsync(Enumerable.Range(105, 5), true).Wait();
+            cache.LoadAllAsync(Enumerable.Range(105, 5), false).Wait();
 
             Assert.AreEqual(5, cache.GetSize());
 
             for (int i = 105; i < 110; i++)
-                Assert.AreEqual("val_" + i, cache.Get(i));
+                Assert.AreEqual("val_" + i, cache[i]);
 
-            // TODO: Test flag
+            // Test overwrite
+            cache[105] = "42";
+
+            cache.LoadAllAsync(new[] {105}, false).Wait();
+            Assert.AreEqual(cache[105], "val_105");
+
+            cache.LoadAllAsync(new[] {105}, true).Wait();
+            Assert.AreEqual(cache[105], "42");
         }
 
         /// <summary>
