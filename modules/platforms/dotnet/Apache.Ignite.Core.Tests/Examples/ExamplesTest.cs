@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618  // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Examples
 {
     using System;
@@ -71,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             // Exclude LifecycleExample
             if (string.IsNullOrEmpty(example.SpringConfigUrl))
             {
-                Assert.AreEqual("LifecycleExample", example.Name);
+                Assert.IsTrue(new[] {"LifecycleExample", "LinqCodeConfigurationExample"}.Contains(example.Name));
 
                 return;
             }
@@ -104,7 +105,7 @@ namespace Apache.Ignite.Core.Tests.Examples
 
                     var proc = new IgniteProcess(args.ToArray());
 
-                    Assert.IsTrue(ignite.WaitTopology(i + 2, 30000));
+                    Assert.IsTrue(ignite.WaitTopology(i + 2));
                     Assert.IsTrue(proc.Alive);
                 }
 
