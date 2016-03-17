@@ -385,6 +385,8 @@ public class PlatformCache extends PlatformAbstractTarget {
                 PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, null, this);
 
                 cache.loadAll(PlatformUtils.readSet(reader), replaceExisting, fut);
+
+                return TRUE;
             }
 
             default:
