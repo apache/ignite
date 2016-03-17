@@ -530,8 +530,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * Post constructor initialization for subclasses.
      */
     protected void init() {
-        if (map == null)
-            map = new GridCacheConcurrentMapV2(ctx, entryFactory(), ctx.config().getStartSize() / ctx.affinity().partitions());
+        if (map == null) {
+            int initSize = ctx.config().getStartSize();
+
+            if (!isLocal())
+                initSize /= ctx.affinity().partitions();
+
+            map = new GridCacheConcurrentMapV2(ctx, entryFactory(), initSize);
+        }
+
     }
 
     protected abstract GridCacheMapEntryFactory entryFactory();
@@ -4698,7 +4705,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Key set.
      */
     public Set<K> keySet(@Nullable CacheEntryPredicate... filter) {
-        return (Set<K>) map.keySet(filter);
+        return (Set<K>)map.keySet(filter);
     }
 
     /**
