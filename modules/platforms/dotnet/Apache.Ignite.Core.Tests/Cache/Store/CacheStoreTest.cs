@@ -493,10 +493,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             cache[105] = "42";
 
             cache.LoadAllAsync(new[] {105}, false).Wait();
-            Assert.AreEqual(cache[105], "val_105");
+            Assert.AreEqual("42", cache[105]);
 
             cache.LoadAllAsync(new[] {105}, true).Wait();
-            Assert.AreEqual(cache[105], "42");
+            Assert.AreEqual("val_105", cache[105]);
         }
 
         /// <summary>
