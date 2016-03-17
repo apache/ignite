@@ -98,9 +98,6 @@ public class GridCacheSharedContext<K, V> {
     /** Store session listeners. */
     private Collection<CacheStoreSessionListener> storeSesLsnrs;
 
-    /** */
-    private boolean delayAffAssign = true;
-
     /**
      * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
@@ -134,13 +131,6 @@ public class GridCacheSharedContext<K, V> {
         txMetrics = new TransactionMetricsAdapter();
 
         ctxMap = new ConcurrentHashMap<>();
-    }
-
-    /**
-     * @return {@code True} if delayed affinity assignment should be used.
-     */
-    public boolean delayAffinityAssignment() {
-        return delayAffAssign;
     }
 
     /**

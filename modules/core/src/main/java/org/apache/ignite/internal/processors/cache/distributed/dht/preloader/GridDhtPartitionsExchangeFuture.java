@@ -513,7 +513,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (cacheCtx.isLocal())
                     continue;
 
-                cacheCtx.topology().beforeExchange(this);
+                cacheCtx.topology().beforeExchange(this, !centralizedAff);
             }
         }
     }
@@ -727,7 +727,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             // Partition release future is done so we can flush the write-behind store.
             cacheCtx.store().forceFlush();
 
-            cacheCtx.topology().beforeExchange(this);
+            cacheCtx.topology().beforeExchange(this, !centralizedAff);
         }
 
         if (crd.isLocal()) {
@@ -1035,7 +1035,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     continue;
 
                 try {
-                    if (crd != null)
+                    if (crd != null && centralizedAff)
                         cacheCtx.topology().initPartitions(this);
                 }
                 catch (IgniteInterruptedCheckedException e) {
@@ -1210,13 +1210,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (!crd.equals(cctx.discovery().serverNodes(topologyVersion()).get(0))) {
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                     if (!cacheCtx.isLocal())
-                        cacheCtx.topology().beforeExchange(GridDhtPartitionsExchangeFuture.this);
+                        cacheCtx.topology().beforeExchange(GridDhtPartitionsExchangeFuture.this, !centralizedAff);
                 }
             }
 
             if (centralizedAff) {
                 Map<Integer, Map<Integer, List<UUID>>> assignmentChange =
-                    cctx.affinity().initAffinityConsiderState(this);
+                    cctx.affinity().initAffinityOnNodeLeft(this);
 
                 GridDhtPartitionsFullMessage m = createPartitionsMessage(null, exchId);
 

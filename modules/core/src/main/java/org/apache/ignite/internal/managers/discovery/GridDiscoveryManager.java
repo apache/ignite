@@ -74,6 +74,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -124,6 +125,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DELAY_AFFINITY_ASSIGN;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
@@ -1002,6 +1004,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         Boolean locMarshUseDfltSuid = locNode.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
         boolean locMarshUseDfltSuidBool = locMarshUseDfltSuid == null ? true : locMarshUseDfltSuid;
 
+        boolean locDelayAssign = locNode.attribute(ATTR_DELAY_AFFINITY_ASSIGN);
+
         for (ClusterNode n : nodes) {
             int rmtJvmMajVer = nodeJavaMajorVersion(n);
 
@@ -1059,6 +1063,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", locNodeAddrs=" + U.addressesAsString(locNode) +
                     ", rmtNodeAddrs=" + U.addressesAsString(n) +
                     ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ']');
+            }
+
+            boolean rmtDelayAssign;
+
+            if (n.version().compareTo(CacheAffinitySharedManager.DELAY_AFF_ASSIGN_SINCE) >= 0)
+                rmtDelayAssign = n.attribute(ATTR_DELAY_AFFINITY_ASSIGN);
+            else
+                rmtDelayAssign = false;
+
+            if (locDelayAssign != rmtDelayAssign) {
+                throw new IgniteCheckedException("Remote node has cache affinity assignment mode different from local " +
+                    "[locId8=" +  U.id8(locNode.id()) +
+                    ", locDelayAssign=" + locDelayAssign +
+                    ", rmtId8=" + U.id8(n.id()) +
+                    ", rmtDelayAssign=" + rmtDelayAssign +
+                    ", rmtAddrs=" + U.addressesAsString(n) + ']');
             }
         }
 

@@ -68,6 +68,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -136,6 +137,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DELAY_AFFINITY_ASSIGN;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
@@ -3177,6 +3179,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 Boolean rmtMarshUseDfltSuid = node.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
                 boolean rmtMarshUseDfltSuidBool = rmtMarshUseDfltSuid == null ? true : rmtMarshUseDfltSuid;
 
+                boolean locDelayAssign = locNode.attribute(ATTR_DELAY_AFFINITY_ASSIGN);
+
                 if (locMarshUseDfltSuidBool != rmtMarshUseDfltSuidBool) {
                     String errMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
                         " property value differs from remote node's value " +
@@ -3187,34 +3191,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                         ", rmtNodeAddrs=" + U.addressesAsString(node) +
                         ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    LT.warn(log, null, errMsg);
+                    String sndMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
+                        " property value differs from remote node's value " +
+                        "(to make sure all nodes in topology have identical marshaller settings, " +
+                        "configure system property explicitly) " +
+                        "[locMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
+                        ", rmtMarshUseDfltSuid=" + locMarshUseDfltSuid +
+                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                        ", rmtNodeId=" + locNode.id() + ']';
 
-                    // Always output in debug.
-                    if (log.isDebugEnabled())
-                        log.debug(errMsg);
-
-                    try {
-                        String sndMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
-                            " property value differs from remote node's value " +
-                            "(to make sure all nodes in topology have identical marshaller settings, " +
-                            "configure system property explicitly) " +
-                            "[locMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
-                            ", rmtMarshUseDfltSuid=" + locMarshUseDfltSuid +
-                            ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                            ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                            ", rmtNodeId=" + locNode.id() + ']';
-
-                        trySendMessageDirectly(node,
-                            new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
-                    }
-                    catch (IgniteSpiException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send marshaller check failed message to node " +
-                                "[node=" + node + ", err=" + e.getMessage() + ']');
-
-                        onException("Failed to send marshaller check failed message to node " +
-                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                    }
+                    nodeCheckError(node, errMsg, sndMsg);
 
                     // Ignore join request.
                     return;
@@ -3236,31 +3223,45 @@ class ServerImpl extends TcpDiscoveryImpl {
                         ", rmtNodeAddrs=" + U.addressesAsString(node) +
                         ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    LT.warn(log, null, errMsg);
+                    String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
+                        "the same property on remote node (make sure all nodes in topology have the same value " +
+                        "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
+                        ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
+                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                        ", rmtNodeId=" + locNode.id() + ']';
 
-                    // Always output in debug.
-                    if (log.isDebugEnabled())
-                        log.debug(errMsg);
+                    nodeCheckError(node, errMsg, sndMsg);
 
-                    try {
-                        String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
-                            "the same property on remote node (make sure all nodes in topology have the same value " +
-                            "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
-                            ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
-                            ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                            ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                            ", rmtNodeId=" + locNode.id() + ']';
+                    // Ignore join request.
+                    return;
+                }
 
-                        trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
-                    }
-                    catch (IgniteSpiException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send marshaller check failed message to node " +
-                                "[node=" + node + ", err=" + e.getMessage() + ']');
+                boolean rmtDelayAssign;
 
-                        onException("Failed to send marshaller check failed message to node " +
-                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                    }
+                if (node.version().compareTo(CacheAffinitySharedManager.DELAY_AFF_ASSIGN_SINCE) >= 0)
+                    rmtDelayAssign = node.attribute(ATTR_DELAY_AFFINITY_ASSIGN);
+                else
+                    rmtDelayAssign = false;
+
+                if (locDelayAssign != rmtDelayAssign) {
+                    String errMsg = "Local node's cache affinity assignment mode differs from " +
+                        "the same property on remote node (make sure all nodes in topology have the same " +
+                        "cache affinity assignment mode) [locDelayAssign=" + locDelayAssign +
+                        ", rmtDelayAssign=" + rmtDelayAssign +
+                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                    String sndMsg = "Local node's cache affinity assignment mode differs from " +
+                        "the same property on remote node (make sure all nodes in topology have the same " +
+                        "cache affinity assignment mode) [locDelayAssign=" + rmtDelayAssign +
+                        ", rmtDelayAssign=" + locDelayAssign +
+                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                        ", rmtNodeId=" + locNode.id() + ']';
+
+                    nodeCheckError(node, errMsg, sndMsg);
 
                     // Ignore join request.
                     return;
@@ -3284,6 +3285,31 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             else if (sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
+        }
+
+        /**
+         * @param node Joining node.
+         * @param errMsg Message to log.
+         * @param sndMsg Message to send.
+         */
+        private void nodeCheckError(TcpDiscoveryNode node, String errMsg, String sndMsg) {
+            LT.warn(log, null, errMsg);
+
+            // Always output in debug.
+            if (log.isDebugEnabled())
+                log.debug(errMsg);
+
+            try {
+                trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNode.id(), sndMsg));
+            }
+            catch (IgniteSpiException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send marshaller check failed message to node " +
+                        "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                onException("Failed to send marshaller check failed message to node " +
+                    "[node=" + node + ", err=" + e.getMessage() + ']', e);
+            }
         }
 
         /**

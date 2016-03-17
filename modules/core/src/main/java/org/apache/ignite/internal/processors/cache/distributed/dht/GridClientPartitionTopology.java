@@ -223,7 +223,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut)
+    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean initParts)
         throws IgniteCheckedException {
         ClusterNode loc = cctx.localNode();
 

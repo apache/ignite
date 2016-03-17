@@ -89,7 +89,7 @@ public interface GridDhtPartitionTopology {
      * @param exchFut Exchange future.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut)
+    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean initParts)
         throws IgniteCheckedException;
 
     public void initPartitions(GridDhtPartitionsExchangeFuture exchFut)
