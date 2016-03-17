@@ -653,7 +653,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private IgniteConfiguration Configuration(string springConfigUrl)
+        private IgniteConfiguration GetConfiguration(string springConfigUrl)
         {
             if (!CompactFooter)
                 springConfigUrl = ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
