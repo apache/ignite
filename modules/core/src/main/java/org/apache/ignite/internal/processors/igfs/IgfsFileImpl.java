@@ -70,6 +70,29 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
     }
 
     /**
+     * A copy constructor. All the fields are copied from the copied {@code igfsFile}, but the {@code groupBlockSize}
+     * which is specified separately.
+     *
+     * @param igfsFile The file to copy.
+     */
+    public IgfsFileImpl(IgfsFile igfsFile, long grpBlockSize) {
+        A.notNull(igfsFile, "igfsFile");
+
+        this.path = igfsFile.path();
+        this.fileId = igfsFile instanceof IgfsFileImpl ? ((IgfsFileImpl)igfsFile).fileId : IgniteUuid.randomUuid();
+
+        this.blockSize = igfsFile.blockSize();
+        this.len = igfsFile.length();
+
+        this.grpBlockSize = igfsFile.isFile() ? grpBlockSize : 0L;
+
+        this.props = igfsFile.properties();
+
+        this.accessTime = igfsFile.accessTime();
+        this.modificationTime = igfsFile.modificationTime();
+    }
+
+    /**
      * Constructs directory info.
      *
      * @param path Path.
@@ -99,35 +122,6 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
 
         accessTime = info.accessTime();
         modificationTime = info.modificationTime();
-    }
-
-    /**
-     * Constructs file instance.
-     *
-     * @param path Path.
-     * @param entry Listing entry.
-     */
-    public IgfsFileImpl(IgfsPath path, IgfsListingEntry entry, long globalGrpSize) {
-        A.notNull(path, "path");
-        A.notNull(entry, "entry");
-
-        this.path = path;
-        fileId = entry.fileId();
-
-        blockSize = entry.blockSize();
-
-        // By contract file must have blockSize > 0, while directory's blockSize == 0:
-        assert entry.isFile() == (blockSize > 0);
-        assert entry.isDirectory() == (blockSize == 0);
-
-        grpBlockSize = entry.affinityKey() == null ? globalGrpSize :
-            entry.length() == 0 ? globalGrpSize : entry.length();
-
-        len = entry.length();
-        props = entry.properties();
-
-        accessTime = entry.accessTime();
-        modificationTime = entry.modificationTime();
     }
 
     /** {@inheritDoc} */

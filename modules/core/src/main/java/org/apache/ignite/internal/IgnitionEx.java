@@ -1949,6 +1949,15 @@ public class IgnitionEx {
             }
 
             cfg.setCacheConfiguration(cacheCfgs.toArray(new CacheConfiguration[cacheCfgs.size()]));
+
+            // Iterate over IGFS caches and set "copyOnRead" flag to "false". Note that we do this after cloning
+            // to leave user object unchanged.
+            assert cfg.getCacheConfiguration() != null;
+
+            for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
+                if (CU.isIgfsCache(cfg, ccfg.getName()))
+                    ccfg.setCopyOnRead(false);
+            }
         }
 
         /**

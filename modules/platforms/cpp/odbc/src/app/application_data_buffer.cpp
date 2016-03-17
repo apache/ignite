@@ -154,13 +154,12 @@ namespace ignite
                             SQL_NUMERIC_STRUCT* out =
                                 reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
 
-                            out->precision = 0;
+                            out->precision = 20; // Max int64_t precision
                             out->scale = 0;
-                            out->sign = value > 0 ? 1 : 0;
+                            out->sign = value < 0 ? 2 : 1;
 
                             memset(out->val, 0, SQL_MAX_NUMERIC_LEN);
 
-                            // TODO: implement propper conversation to numeric type.
                             int64_t intVal = static_cast<int64_t>(std::abs(value));
 
                             memcpy(out->val, &intVal, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(intVal)));
@@ -551,24 +550,9 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_DOUBLE:
                     case IGNITE_ODBC_C_TYPE_CHAR:
                     case IGNITE_ODBC_C_TYPE_WCHAR:
-                    {
-                        PutNum<double>(static_cast<double>(value));
-
-                        break;
-                    }
-
                     case IGNITE_ODBC_C_TYPE_NUMERIC:
                     {
-                        if (GetData())
-                        {
-                            SQL_NUMERIC_STRUCT* numeric =
-                                reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
-
-                            numeric->sign = value.IsNegative() ? 1 : 0;
-                            numeric->precision = 0;
-                            numeric->scale = value.GetScale();
-                            memcpy(numeric->val, value.GetMagnitude(), std::min<size_t>(SQL_MAX_NUMERIC_LEN, value.GetLength()));
-                        }
+                        PutNum<double>(static_cast<double>(value));
 
                         break;
                     }
@@ -918,6 +902,50 @@ namespace ignite
                 return GetNum<double>();
             }
 
+            Guid ApplicationDataBuffer::GetGuid() const
+            {
+                using namespace type_traits;
+
+                Guid res;
+
+                switch (type)
+                {
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    {
+                        std::string str(reinterpret_cast<const char*>(GetData()), static_cast<size_t>(buflen));
+
+                        std::stringstream converter(str);
+
+                        converter >> res;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_GUID:
+                    {
+                        const SQLGUID* guid = reinterpret_cast<const SQLGUID*>(GetData());
+
+                        uint64_t msb = static_cast<uint64_t>(guid->Data1) << 32 |
+                                       static_cast<uint64_t>(guid->Data2) << 16 |
+                                       static_cast<uint64_t>(guid->Data3);
+
+                        uint64_t lsb = 0;
+
+                        for (size_t i = 0; i < sizeof(guid->Data4); ++i)
+                            lsb = guid->Data4[i] << (sizeof(guid->Data4) - i - 1) * 8;
+
+                        res = Guid(msb, lsb);
+
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                return res;
+            }
+
             const void* ApplicationDataBuffer::GetData() const
             {
                 return ApplyOffset(buffer);
@@ -1040,7 +1068,7 @@ namespace ignite
                         // TODO: implement propper conversation from numeric type.
                         memcpy(&resInt, numeric->val, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(resInt)));
 
-                        if (numeric->sign)
+                        if (numeric->sign == 2)
                             resInt *= -1;
 
                         double resDouble = static_cast<double>(resInt);

@@ -111,7 +111,6 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
-import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.ROOT_ID;
 
 /**
  * Cache-based IGFS implementation.
@@ -576,12 +575,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                IgfsFileInfo info = resolveFileInfo(path, mode);
-
-                if (info == null)
-                    return null;
-
-                return new IgfsFileImpl(path, info, data.groupBlockSize());
+                return resolveFileInfo(path, mode);
             }
         });
     }
@@ -642,9 +636,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (fileId == null)
                     return null;
 
-                IgniteUuid parentId = fileIds.size() > 1 ? fileIds.get(fileIds.size() - 2) : null;
-
-                IgfsFileInfo info = meta.updateProperties(parentId, fileId, path.name(), props);
+                IgfsFileInfo info = meta.updateProperties(fileId, props);
 
                 if (info != null) {
                     if (evts.isRecordable(EVT_IGFS_META_UPDATED))
@@ -856,10 +848,9 @@ public final class IgfsImpl implements IgfsEx {
                     Collection<IgfsFile> children = secondaryFs.listFiles(path);
 
                     for (IgfsFile child : children) {
-                        IgfsFileInfo fsInfo = new IgfsFileInfo(
-                            child.blockSize(), child.length(), evictExclude(path, false), child.properties());
+                        IgfsFileImpl impl = new IgfsFileImpl(child, data.groupBlockSize());
 
-                        files.add(new IgfsFileImpl(child.path(), fsInfo, data.groupBlockSize()));
+                        files.add(impl);
                     }
                 }
 
@@ -877,9 +868,13 @@ public final class IgfsImpl implements IgfsEx {
 
                         // Perform the listing.
                         for (Map.Entry<String, IgfsListingEntry> e : info.listing().entrySet()) {
-                            IgfsPath p = new IgfsPath(path, e.getKey());
+                            IgfsFileInfo childInfo = meta.info(e.getValue().fileId());
 
-                            files.add(new IgfsFileImpl(p, e.getValue(), data.groupBlockSize()));
+                            if (childInfo != null) {
+                                IgfsPath childPath = new IgfsPath(path, e.getKey());
+
+                                files.add(new IgfsFileImpl(childPath, childInfo, data.groupBlockSize()));
+                            }
                         }
                     }
                 } else if (mode == PRIMARY) {
@@ -1212,7 +1207,7 @@ public final class IgfsImpl implements IgfsEx {
             @Override public IgfsMetrics call() throws Exception {
                 IgfsPathSummary sum = new IgfsPathSummary();
 
-                summary0(ROOT_ID, sum);
+                summary0(IgfsUtils.ROOT_ID, sum);
 
                 long secondarySpaceSize = 0;
 
@@ -1285,7 +1280,7 @@ public final class IgfsImpl implements IgfsEx {
 
         if (info != null) {
             if (info.isDirectory()) {
-                if (!ROOT_ID.equals(info.id()))
+                if (!IgfsUtils.ROOT_ID.equals(info.id()))
                     sum.directoriesCount(sum.directoriesCount() + 1);
 
                 for (IgfsListingEntry entry : info.listing().values())
@@ -1557,7 +1552,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return File info or {@code null} in case file is not found.
      * @throws IgniteCheckedException If failed.
      */
-    private IgfsFileInfo resolveFileInfo(IgfsPath path, IgfsMode mode) throws IgniteCheckedException {
+    private IgfsFileImpl resolveFileInfo(IgfsPath path, IgfsMode mode) throws IgniteCheckedException {
         assert path != null;
         assert mode != null;
 
@@ -1577,9 +1572,7 @@ public final class IgfsImpl implements IgfsEx {
                     IgfsFile status = secondaryFs.info(path);
 
                     if (status != null)
-                        info = status.isDirectory() ? new IgfsFileInfo(true, status.properties()) :
-                            new IgfsFileInfo(status.blockSize(), status.length(), null, null, false,
-                            status.properties());
+                        return new IgfsFileImpl(status, data.groupBlockSize());
                 }
 
                 break;
@@ -1588,7 +1581,10 @@ public final class IgfsImpl implements IgfsEx {
                 assert false : "Unknown mode: " + mode;
         }
 
-        return info;
+        if (info == null)
+            return null;
+
+        return new IgfsFileImpl(path, info, data.groupBlockSize());
     }
 
     /** {@inheritDoc} */

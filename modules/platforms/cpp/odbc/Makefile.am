@@ -47,6 +47,7 @@ COMMON_SRC = os/linux/src/system/socket_client.cpp        \
              src/query/primary_keys_query.cpp             \
              src/query/table_metadata_query.cpp           \
              src/query/type_info_query.cpp                \
+             src/query/special_columns_query.cpp          \
              src/result_page.cpp                          \
              src/row.cpp                                  \
              src/column.cpp                               \

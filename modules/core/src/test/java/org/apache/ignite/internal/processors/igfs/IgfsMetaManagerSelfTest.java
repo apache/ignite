@@ -42,7 +42,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.ROOT_ID;
+import static org.apache.ignite.internal.processors.igfs.IgfsUtils.ROOT_ID;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsInherited;
 
@@ -171,33 +171,30 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             assertNull("Unexpected stored properties: " + info, info.properties().get(key1));
             assertNull("Unexpected stored properties: " + info, info.properties().get(key2));
 
-            info = mgr.updateProperties(ROOT_ID, fileId, fileName, F.asMap(key1, "1"));
+            info = mgr.updateProperties(fileId, F.asMap(key1, "1"));
 
             assertEquals("Unexpected stored properties: " + info, "1", info.properties().get(key1));
 
-            info = mgr.updateProperties(ROOT_ID, fileId, fileName, F.asMap(key2, "2"));
+            info = mgr.updateProperties(fileId, F.asMap(key2, "2"));
 
            // assertEquals("Unexpected stored properties: " + info, F.asMap(key1, "1", key2, "2"), info.properties());
             assertEquals("Unexpected stored properties: " + info, "1", info.properties().get(key1));
             assertEquals("Unexpected stored properties: " + info, "2", info.properties().get(key2));
 
-            info = mgr.updateProperties(ROOT_ID, fileId, fileName, F.<String, String>asMap(key1, null));
+            info = mgr.updateProperties(fileId, F.<String, String>asMap(key1, null));
 
             assertEquals("Unexpected stored properties: " + info, "2", info.properties().get(key2));
 
-            info = mgr.updateProperties(ROOT_ID, fileId, fileName, F.<String, String>asMap(key2, null));
+            info = mgr.updateProperties(fileId, F.<String, String>asMap(key2, null));
 
             assertNull("Unexpected stored properties: " + info, info.properties().get(key1));
             assertNull("Unexpected stored properties: " + info, info.properties().get(key2));
-
-            assertNull(mgr.updateProperties(ROOT_ID, fileId, "not_exists", F.<String, String>asMap(key2, null)));
         }
 
         mgr.softDelete(new IgfsPath("/dir"), true);
         mgr.softDelete(new IgfsPath("/file"), false);
 
-        assertNull(mgr.updateProperties(ROOT_ID, dir.id(), "dir", F.asMap("p", "7")));
-        assertNull(mgr.updateProperties(ROOT_ID, file.id(), "file", F.asMap("q", "8")));
+        assertNull(mgr.updateProperties(dir.id(), F.asMap("p", "7")));
     }
 
     private IgfsFileInfo mkdirsAndGetInfo(String path) throws IgniteCheckedException {
@@ -309,8 +306,8 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         expectsRenameFail("/a/k", "/a/b/", "Failed to perform move because destination already " +
             "contains entry with the same name existing file");
 
-        mgr.delete(a.id(), "k", k.id());
-        mgr.delete(b.id(), "k", z.id());
+        mgr.delete(a.id(), "k", z.id());
+        mgr.delete(b.id(), "k", k.id());
 
         System.out.println("/: " + mgr.directoryListing(ROOT_ID));
         System.out.println("a: " + mgr.directoryListing(a.id()));
@@ -339,9 +336,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
                 mgr.directoryListing(ROOT_ID));
 
-        assertEquals(
-            F.asMap("b", new IgfsListingEntry(b),
-                "f2", new IgfsListingEntry(f2)),
+        assertEquals(F.asMap("b", new IgfsListingEntry(b), "f2", new IgfsListingEntry(f2)),
             mgr.directoryListing(a.id()));
 
         assertEmpty(mgr.directoryListing(b.id()));
@@ -356,17 +351,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(F.asMap("f2", new IgfsListingEntry(f2)), mgr.directoryListing(a.id()));
 
         assertEmpty(mgr.directoryListing(b.id()));
-
-        // Validate last actual data received from 'remove' operation.
-        IgfsFileInfo newF2 = mgr.updateInfo(f2.id(), new C1<IgfsFileInfo, IgfsFileInfo>() {
-            @Override public IgfsFileInfo apply(IgfsFileInfo e) {
-                return new IgfsFileInfo(e, e.length() + 20);
-            }
-        });
-
-        assertNotNull(newF2);
-        assertEquals(f2.id(), newF2.id());
-        assertNotSame(f2, newF2);
 
         del = mgr.softDelete(path("/a/f2"), false);
         assertEquals(f2.id(), del);
@@ -423,7 +407,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         Class<? extends Throwable> cls, @Nullable String msg) {
         assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
-                return mgr.updateProperties(null, fileId, "file", props);
+                return mgr.updateProperties(fileId, props);
             }
         }, cls, msg);
     }

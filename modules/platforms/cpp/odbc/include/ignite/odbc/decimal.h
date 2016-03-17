@@ -22,7 +22,11 @@
 
 namespace ignite
 {
-    //TODO: move to binary or common library.
+    
+    /**
+     * Big decimal number implementation.
+     * @todo Move to binary or common library.
+     */
     class Decimal
     {
         friend void swap(Decimal& first, Decimal& second);
@@ -88,11 +92,18 @@ namespace ignite
         bool IsNegative() const;
 
         /**
-         * Get magnitude length.
+         * Get magnitude length in bytes.
          *
-         * @return Magnitude length.
+         * @return Magnitude length in bytes.
          */
         int32_t GetLength() const;
+
+        /**
+         * Get number of significant bits of the magnitude.
+         *
+         * @return Number of significant bits of the magnitude.
+         */
+        int32_t BitLength() const;
 
         /**
          * Get magnitude pointer.

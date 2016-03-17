@@ -30,6 +30,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
+import org.apache.ignite.spi.IgniteSpiConsistencyChecked;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.IgniteSpiNoop;
@@ -44,6 +45,7 @@ import org.jetbrains.annotations.Nullable;
  */
 @IgniteSpiNoop
 @IgniteSpiMultipleInstancesSupport(true)
+@IgniteSpiConsistencyChecked(optional = false, checkClient = false)
 public class NoopSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     /** Logger. */
     @LoggerResource

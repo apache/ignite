@@ -57,6 +57,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -90,6 +91,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -154,6 +157,9 @@ public class GridCacheUtils {
 
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
+
+    /** Default transaction config. */
+    private static final TransactionConfiguration DEFAULT_TX_CFG = new TransactionConfiguration();
 
     /** Partition to state transformer. */
     private static final IgniteClosure PART2STATE =
@@ -282,6 +288,10 @@ public class GridCacheUtils {
             return "Cache extended entry to key converter.";
         }
     };
+
+    /** NoopSwapSpaceSpi used attribute. */
+    private static final String NOOP_SWAP_SPACE_SPI_ATTR_NAME = U.spiAttribute(new NoopSwapSpaceSpi(),
+        IgniteNodeAttributes.ATTR_SPI_CLASS);
 
     /**
      * Ensure singleton.
@@ -1644,6 +1654,18 @@ public class GridCacheUtils {
      * @return {@code True} if given node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
      */
     public static boolean clientNode(ClusterNode node) {
+        if (node instanceof TcpDiscoveryNode)
+            return ((TcpDiscoveryNode)node).isCacheClient();
+        else
+            return clientNodeDirect(node);
+    }
+
+    /**
+     * @param node Node.
+     * @return {@code True} if given node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
+     */
+    @SuppressWarnings("ConstantConditions")
+    public static boolean clientNodeDirect(ClusterNode node) {
         Boolean clientModeAttr = node.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
 
         assert clientModeAttr != null : node;
@@ -1835,5 +1857,25 @@ public class GridCacheUtils {
         }
 
         return res;
+    }
+
+    /**
+     * Checks if swap is enabled on node.
+     *
+     * @param node Node
+     * @return {@code true} if swap is enabled, {@code false} otherwise.
+     */
+    public static boolean isSwapEnabled(ClusterNode node) {
+        return !node.attributes().containsKey(NOOP_SWAP_SPACE_SPI_ATTR_NAME);
+    }
+
+    /**
+     * @return default TX configuration if system cache is used or current grid TX config otherwise.
+     */
+    public static TransactionConfiguration transactionConfiguration(final @Nullable GridCacheContext sysCacheCtx,
+        final IgniteConfiguration cfg) {
+        return sysCacheCtx != null && sysCacheCtx.systemTx()
+            ? DEFAULT_TX_CFG
+            : cfg.getTransactionConfiguration();
     }
 }
