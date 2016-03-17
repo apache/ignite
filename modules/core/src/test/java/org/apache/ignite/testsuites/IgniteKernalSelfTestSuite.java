@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.ComputeJobCancelWithServiceSelfTest;
 import org.apache.ignite.internal.GridCommunicationSelfTest;
 import org.apache.ignite.internal.GridDiscoveryEventSelfTest;
 import org.apache.ignite.internal.GridDiscoverySelfTest;
@@ -114,6 +115,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(IgniteUpdateNotifierPerClusterSettingSelfTest.class);
         suite.addTestSuite(GridLocalEventListenerSelfTest.class);
         suite.addTestSuite(IgniteTopologyPrintFormatSelfTest.class);
+        suite.addTestSuite(ComputeJobCancelWithServiceSelfTest.class);
 
         // Managed Services.
         suite.addTestSuite(GridServiceProcessorSingleNodeSelfTest.class);
