@@ -27,7 +27,7 @@ mixin checkbox(lbl, model, name, tip)
             | !{tip}
 
 //- Mixin for text field.
-mixin text(lbl, model, name, required, placeholder, tip)
+mixin text-enabled(lbl, model, name, enabled, required, placeholder, tip)
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
@@ -38,8 +38,13 @@ mixin text(lbl, model, name, required, placeholder, tip)
             data-name=name
             data-ng-model=model
             data-placeholder=placeholder
+            data-ng-disabled='!#{enabled}'
             data-ng-required=required
         )
+
+//- Mixin for text field.
+mixin text(lbl, model, name, required, placeholder, tip)
+    +text-enabled(lbl, model, name, 'true', required, placeholder, tip)
 
 //- Mixin for required numeric field.
 mixin number-requited(lbl, model, name, required, enabled, placeholder, min, tip)
@@ -58,6 +63,22 @@ mixin number-requited(lbl, model, name, required, enabled, placeholder, min, tip
             data-min=min
         )
 
+//- Mixin for required numeric field with maximum and minimum limit.
+mixin number-min-max(lbl, model, name, enabled, placeholder, min, max, tip)
+    ignite-form-field
+        ignite-form-field-label
+            | #{lbl}
+        ignite-form-field-tooltip
+            | !{tip}
+        ignite-form-field-input-number(
+            data-id=name
+            data-name=name
+            data-ng-model=model
+            data-ng-disabled='!(#{enabled})'
+            data-placeholder=placeholder
+            data-min=min
+            data-max=max
+        )
 //- Mixin for numeric field.
 mixin number(lbl, model, name, enabled, placeholder, min, tip)
     +number-requited(lbl, model, name, 'false', enabled, placeholder, min, tip)
@@ -193,6 +214,11 @@ mixin evictionPolicy(model, name, required, enabled, tip)
             .details-row
                 +number('Max size', policy + '.maxSize', name + 'maxSize', enabled, '100000', '0',
                     'Maximum allowed size of cache before entry will start getting evicted')
+
+//- Mixin for clusters dropdown.
+mixin clusters(model, tip)
+    +dropdown-multiple('<span>Clusters:</span>' + '<a ui-sref="base.configuration.clusters({id: ' + model + '._id})"> (add)</a>',
+        model + '.clusters', 'clusters', 'Choose clusters', 'No clusters configured', 'clusters', tip)
 
 //- Mixin for XML and Java preview.
 mixin preview-xml-java(master, generator, detail)
