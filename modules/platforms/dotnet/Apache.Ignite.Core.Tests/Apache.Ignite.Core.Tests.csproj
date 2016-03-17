@@ -91,6 +91,7 @@
     <Compile Include="Cache\Store\CacheParallelLoadStoreTest.cs" />
     <Compile Include="Cache\Store\CacheStoreSessionTest.cs" />
     <Compile Include="Cache\Store\CacheStoreTest.cs" />
+    <Compile Include="Cache\Store\CacheStoreTestCodeConfig.cs" />
     <Compile Include="Cache\Store\CacheTestParallelLoadStore.cs" />
     <Compile Include="Cache\Store\CacheTestStore.cs" />
     <Compile Include="Compute\CancellationTest.cs" />

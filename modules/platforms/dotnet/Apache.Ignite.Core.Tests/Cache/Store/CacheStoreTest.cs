@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests.Cache.Store
 {
     using System;
@@ -134,7 +135,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         ///
         /// </summary>
         [TestFixtureSetUp]
-        public void BeforeTests()
+        public virtual void BeforeTests()
         {
             TestUtils.KillProcesses();
 
@@ -156,7 +157,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         ///
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void AfterTests()
+        public void AfterTests()
         {
             Ignition.StopAll(true);
         }
