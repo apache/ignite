@@ -17,28 +17,15 @@
 
 package org.apache.ignite.stream.kafka.connect;
 
+import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.lang.IgnitePredicate;
+
 /**
- * Sink configuration strings.
+ * Test user-defined filter.
  */
-public class IgniteSourceConstants {
-    /** Ignite configuration file path. */
-    public static final String CACHE_CFG_PATH = "igniteCfg";
+class TestCacheEventFilter implements IgnitePredicate<CacheEvent> {
 
-    /** Cache name. */
-    public static final String CACHE_NAME = "cacheName";
-
-    /** Events to be listened to. Names corresponds to {@link IgniteSourceTask.CacheEvt}. */
-    public static final String CACHE_EVENTS = "cacheEvts";
-
-    /** Internal buffer size. */
-    public static final String INTL_BUF_SIZE = "evtBufferSize";
-
-    /** Size of one chunk drained from the internal buffer. */
-    public static final String INTL_BATCH_SIZE = "evtBatchSize";
-
-    /** User-defined filter class. */
-    public static final String CACHE_FILTER_CLASS = "cacheFilterCls";
-
-    /** Kafka topic. */
-    public static final String TOPIC_NAME = "topicName";
+    @Override public boolean apply(CacheEvent event) {
+        return ((String)event.key()).startsWith("conditioned_");
+    }
 }

@@ -31,7 +31,6 @@ import org.apache.kafka.connect.source.SourceConnector;
  * Source connector to manage source tasks that listens to registered Ignite grid events and forward them to Kafka.
  *
  * Note that only cache events are enabled for streaming.
- * //TODO: Generalize in abstract class?
  */
 public class IgniteSourceConnector extends SourceConnector {
     /** Source properties. */
@@ -67,7 +66,7 @@ public class IgniteSourceConnector extends SourceConnector {
         List<Map<String, String>> taskConfigs = new ArrayList<>();
         Map<String, String> taskProps = new HashMap<>();
 
-        // 1 cache -> 1 topic for now...
+        // 1 cache -> 1 topic.
         taskProps.putAll(configProps);
 
         for (int i = 0; i < maxTasks; i++)

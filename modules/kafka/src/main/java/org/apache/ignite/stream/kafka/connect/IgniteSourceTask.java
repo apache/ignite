@@ -41,8 +41,9 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Task to consume remote cluster cache events from the grid and inject them into Kafka.
- *
+ * <p>
  * Note that a task will create a bounded queue in the grid for more reliable data transfer.
+ * Queue size can be changed by {@link IgniteSourceConstants#INTL_BUF_SIZE}.
  */
 public class IgniteSourceTask extends SourceTask {
     /** Logger. */
@@ -68,6 +69,8 @@ public class IgniteSourceTask extends SourceTask {
 
     /** Listener id. */
     private static UUID rmtLsnrId;
+
+    private static IgnitePredicate<CacheEvent> filter;
 
     /** Topic. */
     private static String topic;
@@ -102,6 +105,22 @@ public class IgniteSourceTask extends SourceTask {
         if (props.containsKey(IgniteSourceConstants.INTL_BATCH_SIZE))
             evtBatchSize = Integer.parseInt(props.get(IgniteSourceConstants.INTL_BATCH_SIZE));
 
+        if (props.containsKey(IgniteSourceConstants.CACHE_FILTER_CLASS)) {
+            String filterCls = props.get(IgniteSourceConstants.CACHE_FILTER_CLASS);
+            if (filterCls != null && !filterCls.isEmpty()) {
+                try {
+                    Class<? extends IgnitePredicate<CacheEvent>> clazz =
+                        (Class<? extends IgnitePredicate<CacheEvent>>)Class.forName(filterCls);
+
+                    filter = clazz.newInstance();
+                }
+                catch (Exception e) {
+                    log.error("Failed to instantiate the provided filter! " +
+                        "User-enabled filtering is ignored!", e);
+                }
+            }
+        }
+
         try {
             evtBuf = makeBuffer();
         }
@@ -113,7 +132,9 @@ public class IgniteSourceTask extends SourceTask {
 
         IgnitePredicate<CacheEvent> rmtLsnr = new IgnitePredicate<CacheEvent>() {
             @Override public boolean apply(CacheEvent evt) {
-                System.out.println("Cache event: " + evt);
+
+                if (filter != null && !filter.apply(evt))
+                    return true;
 
                 if (!evtBuf.offer(evt, 10, TimeUnit.MILLISECONDS))
                     log.error("Failed to buffer event {}", evt.name());

@@ -18,27 +18,12 @@
 package org.apache.ignite.stream.kafka.connect;
 
 /**
- * Sink configuration strings.
+ * Source task mock for tests. It avoids closing the grid from test to test.
  */
-public class IgniteSourceConstants {
-    /** Ignite configuration file path. */
-    public static final String CACHE_CFG_PATH = "igniteCfg";
+public class IgniteSourceTaskMock extends IgniteSourceTask {
 
-    /** Cache name. */
-    public static final String CACHE_NAME = "cacheName";
-
-    /** Events to be listened to. Names corresponds to {@link IgniteSourceTask.CacheEvt}. */
-    public static final String CACHE_EVENTS = "cacheEvts";
-
-    /** Internal buffer size. */
-    public static final String INTL_BUF_SIZE = "evtBufferSize";
-
-    /** Size of one chunk drained from the internal buffer. */
-    public static final String INTL_BATCH_SIZE = "evtBatchSize";
-
-    /** User-defined filter class. */
-    public static final String CACHE_FILTER_CLASS = "cacheFilterCls";
-
-    /** Kafka topic. */
-    public static final String TOPIC_NAME = "topicName";
+    /** {@inheritDoc} */
+    @Override public void stop() {
+        // don't stop for tests.
+    }
 }

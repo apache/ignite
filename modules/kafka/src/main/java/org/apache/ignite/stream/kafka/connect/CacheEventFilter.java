@@ -17,28 +17,20 @@
 
 package org.apache.ignite.stream.kafka.connect;
 
+import java.io.Serializable;
+import org.apache.ignite.events.CacheEvent;
+
 /**
- * Sink configuration strings.
+ * Filter for {@link IgniteSourceTask}.
+ * Enables filtering out cache events that do not match user-specified match conditions.
  */
-public class IgniteSourceConstants {
-    /** Ignite configuration file path. */
-    public static final String CACHE_CFG_PATH = "igniteCfg";
+public interface CacheEventFilter extends Serializable {
 
-    /** Cache name. */
-    public static final String CACHE_NAME = "cacheName";
-
-    /** Events to be listened to. Names corresponds to {@link IgniteSourceTask.CacheEvt}. */
-    public static final String CACHE_EVENTS = "cacheEvts";
-
-    /** Internal buffer size. */
-    public static final String INTL_BUF_SIZE = "evtBufferSize";
-
-    /** Size of one chunk drained from the internal buffer. */
-    public static final String INTL_BATCH_SIZE = "evtBatchSize";
-
-    /** User-defined filter class. */
-    public static final String CACHE_FILTER_CLASS = "cacheFilterCls";
-
-    /** Kafka topic. */
-    public static final String TOPIC_NAME = "topicName";
+    /**
+     * Applies the filtering logic.
+     *
+     * @param evt {@link CacheEvent}
+     * @return True when evt can be further processed
+     */
+    boolean apply(CacheEvent evt);
 }

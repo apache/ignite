@@ -73,18 +73,26 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     /** Workers' herder. */
     private Herder herder;
 
-    /** Ignite server node. */
-    private Ignite grid;
+    /** Ignite server node shared among tests. */
+    private static Ignite grid;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
         IgniteConfiguration cfg = loadConfiguration("modules/kafka/src/test/resources/example-ignite.xml");
 
         cfg.setClientMode(false);
 
         grid = startGrid("igniteServerNode", cfg);
+    }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
         kafkaBroker = new TestKafkaBroker();
 
         WorkerConfig workerConfig = new StandaloneConfig(makeWorkerProps());
@@ -107,7 +115,22 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
 
         kafkaBroker.shutdown();
 
-        stopAllGrids();
+        grid.cache(CACHE_NAME).clear();
+    }
+
+    /**
+     * Tests data flow from injecting data into grid and transferring it to Kafka cluster
+     * without user-specified filter.
+     *
+     * @throws Exception Thrown in case of the failure.
+     */
+
+    public void testEventsInjectedIntoKafkaWithoutFilter() throws Exception {
+        Map<String, String> srcProps = makeSourceProps(Utils.join(TOPICS, ","));
+
+        srcProps.remove(IgniteSourceConstants.CACHE_FILTER_CLASS);
+
+        doTest(srcProps, false);
     }
 
     /**
@@ -116,8 +139,17 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      * @throws Exception Thrown in case of the failure.
      */
     public void testEventsInjectedIntoKafka() throws Exception {
-        Map<String, String> srcProps = makeSourceProps(Utils.join(TOPICS, ","));
+        doTest(makeSourceProps(Utils.join(TOPICS, ",")), true);
+    }
 
+    /**
+     * Tests the source with the specified source configurations.
+     *
+     * @param srcProps Source properties.
+     * @param conditioned Flag indicating whether filtering is enabled.
+     * @throws Exception Fails if error.
+     */
+    private void doTest(Map<String, String> srcProps, boolean conditioned) throws Exception {
         FutureCallback<Herder.Created<ConnectorInfo>> cb = new FutureCallback<>(new Callback<Herder.Created<ConnectorInfo>>() {
             @Override
             public void onCompletion(Throwable error, Herder.Created<ConnectorInfo> info) {
@@ -128,12 +160,12 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
 
         herder.putConnectorConfig(
             srcProps.get(ConnectorConfig.NAME_CONFIG),
-            srcProps, false, cb);
+            srcProps, true, cb);
 
         cb.get();
 
         // Ugh! To be sure Kafka Connect's worker thread is properly started...
-        Thread.sleep(1000);
+        Thread.sleep(5000);
 
         final CountDownLatch latch = new CountDownLatch(EVENT_CNT * TOPICS.length);
 
@@ -167,7 +199,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         assertEquals(EVENT_CNT, cache.size(CachePeekMode.PRIMARY));
 
         // Checks the events are transferred to Kafka broker.
-        checkDataDelivered();
+        checkDataDelivered(conditioned);
     }
 
     /**
@@ -185,6 +217,9 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
             String key = topic + "_" + String.valueOf(evt);
             String msg = runtime + String.valueOf(evt);
 
+            if (evt >= EVENT_CNT / 2)
+                key = "conditioned_" + key;
+
             grid.cache(CACHE_NAME).put(key, msg);
 
             keyValMap.put(key, msg);
@@ -195,8 +230,10 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
 
     /**
      * Checks if events were delivered to Kafka server.
+     *
+     * @param conditioned Flag indicating whether filtering is enabled.
      */
-    private void checkDataDelivered() {
+    private void checkDataDelivered(boolean conditioned) {
         Properties props = new Properties();
 
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBroker.getBrokerAddress());
@@ -223,8 +260,15 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
                     System.out.println("Event: offset = " + record.offset() + ", key = " + record.key()
                         + ", value = " + record.value().toString());
 
-                    if (++evtCnt == EVENT_CNT) {
-                        return;
+                    if (conditioned) {
+                        if (++evtCnt == EVENT_CNT / 2) {
+                            return;
+                        }
+                    }
+                    else {
+                        if (++evtCnt == EVENT_CNT) {
+                            return;
+                        }
                     }
                 }
             }
@@ -235,11 +279,12 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         finally {
             consumer.close();
 
-            assertTrue(evtCnt == EVENT_CNT);
+            if (conditioned)
+                assertTrue(evtCnt == EVENT_CNT / 2);
+            else
+                assertTrue(evtCnt == EVENT_CNT);
         }
     }
-
-    // TODO: put code below to some static class.
 
     /**
      * Creates properties for test source connector.
@@ -252,11 +297,12 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
 
         props.put(ConnectorConfig.TASKS_MAX_CONFIG, "1");
         props.put(ConnectorConfig.NAME_CONFIG, "test-src-connector");
-        props.put(ConnectorConfig.CONNECTOR_CLASS_CONFIG, IgniteSourceConnector.class.getName());
+        props.put(ConnectorConfig.CONNECTOR_CLASS_CONFIG, IgniteSourceConnectorMock.class.getName());
         props.put(IgniteSourceConstants.CACHE_NAME, "testCache");
         props.put(IgniteSourceConstants.CACHE_CFG_PATH, "example-ignite.xml");
         props.put(IgniteSourceConstants.TOPIC_NAME, "test1");
         props.put(IgniteSourceConstants.CACHE_EVENTS, "put");
+        props.put(IgniteSourceConstants.CACHE_FILTER_CLASS, TestCacheEventFilter.class.getName());
         props.put(IgniteSourceConstants.INTL_BUF_SIZE, "1000000");
 
         return props;
