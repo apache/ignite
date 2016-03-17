@@ -183,6 +183,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_GET_CONFIG = 39;
 
+    /** */
+    public static final int OP_LOAD_ALL = 40;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
@@ -368,6 +371,13 @@ public class PlatformCache extends PlatformAbstractTarget {
 
             case OP_IS_LOCAL_LOCKED:
                 return cache.isLocalLocked(reader.readObjectDetached(), reader.readBoolean()) ? TRUE : FALSE;
+
+            case OP_LOAD_ALL: {
+                boolean replaceExisting = reader.readBoolean();
+
+                // TODO: Listener
+                cache.loadAll(PlatformUtils.readSet(reader), replaceExisting, null);
+            }
 
             default:
                 return super.processInStreamOutLong(type, reader);
