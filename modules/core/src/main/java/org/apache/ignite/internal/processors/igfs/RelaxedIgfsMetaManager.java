@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,13 +41,7 @@ import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_WRITE;
 /**
  * Version of Meta Manager implementation with relaxed synchronization.
  */
-@SuppressWarnings("all")
 public class RelaxedIgfsMetaManager extends IgfsMetaManager {
-
-    public RelaxedIgfsMetaManager() {
-        // noop
-    }
-
     /**
      * Move routine.
      *
@@ -76,9 +69,8 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
 
                     allIds.add(dstPathIds.get(dstPathIds.size() - 1));
                 }
-                else {
+                else
                     allIds.add(dstLeafId);
-                }
 
                 final IgniteUuid victimId = srcPathIds.get(srcPathIds.size() - 1);
                 final IgniteUuid victimParentId = srcPathIds.get(srcPathIds.size() - 2);
@@ -217,21 +209,12 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
 
         IgfsFileInfo p = infos.get(parent);
 
-        IgfsListingEntry e = p.listing().get(childName);
-
-        if (e == null) {
-            return false;
-        }
-
-        return ch.equals(e.fileId());
+        return p.hasChild(childName, ch);
     }
 
     /**
      * Move path to the trash directory.
      *
-     * @param parentId Parent ID.
-     * @param pathName Path name.
-     * @param pathId Path ID.
      * @return ID of an entry located directly under the trash directory.
      * @throws IgniteCheckedException If failed.
      */
@@ -262,9 +245,7 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                 boolean added = allIds.add(trashId);
                 assert added;
 
-                final IgniteInternalTx tx = startTx();
-
-                try {
+                try (IgniteInternalTx tx = startTx()) {
                     final Map<IgniteUuid, IgfsFileInfo> infoMap = lockIds(allIds);
 
                     // Directory stucture was changed concurrently, so the original path no longer exists:
@@ -275,7 +256,7 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
 
                     final IgfsFileInfo victimInfo = infoMap.get(victimId);
 
-                    if (!recursive && victimInfo.isDirectory() && !victimInfo.listing().isEmpty())
+                    if (!recursive && victimInfo.isDirectory() && victimInfo.hasChildren())
                         // Throw exception if not empty and not recursive.
                         throw new IgfsDirectoryNotEmptyException("Failed to remove directory (directory is not " +
                             "empty and recursive flag is not set).");
@@ -293,17 +274,9 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
 
                     IgfsFileInfo srcParentInfo = infoMap.get(parentId);
 
-                    assert srcParentInfo != null;
-
                     IgniteUuid srcParentId = srcParentInfo.id();
-                    assert srcParentId.equals(parentId);
 
                     IgfsListingEntry srcEntry = srcParentInfo.listing().get(srcFileName);
-
-                    assert srcEntry != null : "Deletion victim not found in parent listing [path=" + path +
-                        ", name=" + srcFileName + ", listing=" + srcParentInfo.listing() + ']';
-
-                    assert victimId.equals(srcEntry.fileId());
 
                     transferEntry(srcEntry, srcParentId, srcFileName, trashId, destFileName);
 
@@ -317,9 +290,6 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                     delWorker.signal();
 
                     return victimId;
-                }
-                finally {
-                    tx.close();
                 }
             }
             finally {
@@ -343,17 +313,15 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
         assert props != null;
         validTxState(false);
 
-        RelaxedDirectoryChainBuilder b = null;
+        RelaxedDirectoryChainBuilder b;
 
         while (true) {
             if (busyLock.enterBusy()) {
                 try {
                     b = new RelaxedDirectoryChainBuilder(path, props);
 
-                    // Start TX.
-                    IgniteInternalTx tx = startTx();
-
-                    try {
+                    // Start TX:
+                    try (IgniteInternalTx tx = startTx()) {
                         final Map<IgniteUuid, IgfsFileInfo> lockedInfos = lockIds(b.idSet);
 
                         // If the path was changed, we close the current Tx and repeat the procedure again
@@ -404,9 +372,6 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                             }
                         }
                     }
-                    finally {
-                        tx.close();
-                    }
                 }
                 finally {
                     busyLock.leaveBusy();
@@ -415,8 +380,6 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
             else
                 throw new IllegalStateException("Failed to mkdir because Grid is stopping. [path=" + path + ']');
         }
-
-        assert b != null;
 
         b.sendEvents();
 
@@ -427,12 +390,8 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
      * Create a new file.
      *
      * @param path Path.
-     * @param bufSize Buffer size.
      * @param overwrite Overwrite flag.
      * @param affKey Affinity key.
-     * @param replication Replication factor.
-     * @param props Properties.
-     * @param simpleCreate Whether new file should be created in secondary FS using create(Path, boolean) method.
      * @return Tuple containing the created file info and its parent id.
      */
     @Override IgniteBiTuple<IgfsFileInfo, IgniteUuid> create(
@@ -450,7 +409,7 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
 
         final String name = path.name();
 
-        RelaxedDirectoryChainBuilder b = null;
+        RelaxedDirectoryChainBuilder b;
 
         final IgniteUuid trashId = IgfsUtils.randomTrashId();
 
@@ -458,8 +417,6 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
             if (busyLock.enterBusy()) {
                 try {
                     b = new RelaxedDirectoryChainBuilder(path, dirProps, fileProps, blockSize, affKey, evictExclude);
-
-                    final IgniteUuid overwriteId = IgniteUuid.randomUuid();
 
                     // Start Tx:
                     IgniteInternalTx tx = startTx();
@@ -473,7 +430,6 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                             // Lock also the TRASH directory because in case of overwrite we
                             // may need to delete the old file:
                             b.idSet.add(trashId);
-                            b.idSet.add(overwriteId);
 
                             if (b.existingIdCnt == b.components.size() + 1) {
                                 assert parentId != null;
@@ -491,23 +447,12 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                         // starting from taking the path ids.
                         final boolean pathVerified;
 
-//                        // TODO: Problematic version:
-//
-//                        if (overwrite && (b.existingIdCnt == b.components.size() + 1)) {
-//                            pathVerified = verifyExists(lockedInfos, parentId);
-//                        }
-//                        else {
-//                            pathVerified = verifyExists(lockedInfos, b.lowermostExistingId);
-//                        }
-
-                        // TODO: workable version:
                         if (overwrite && (b.existingIdCnt == b.components.size() + 1)) {
                             pathVerified = verifyExists(lockedInfos, parentId)
                                 && verifyExists(lockedInfos, b.lowermostExistingId)
                                 && verifyParentChild(lockedInfos, parentId, name, b.lowermostExistingId);
-                        } else {
+                        } else
                             pathVerified = verifyExists(lockedInfos, b.lowermostExistingId);
-                        }
 
                         if (pathVerified) {
                             // Locked path okay, trying to proceed with the remainder creation.
@@ -715,21 +660,21 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
             this.existingIdCnt = idIdx;
         }
 
-        /**
-         * Builds middle nodes.
-         */
-        protected IgfsFileInfo buildMiddleNode(String childName, IgfsFileInfo childInfo) {
-            return new IgfsFileInfo(Collections.singletonMap(childName,
-                    new IgfsListingEntry(childInfo)), middleProps);
-        }
-
-        /**
-         * Builds leaf.
-         */
-        protected IgfsFileInfo buildLeaf()  {
-            long t = System.currentTimeMillis();
-
-            return new IgfsFileInfo(true, leafProps, t, t);
-        }
+//        /**
+//         * Builds middle nodes.
+//         */
+//        protected IgfsFileInfo buildMiddleNode(String childName, IgfsFileInfo childInfo) {
+//            return new IgfsFileInfo(Collections.singletonMap(childName,
+//                    new IgfsListingEntry(childInfo)), middleProps);
+//        }
+//
+//        /**
+//         * Builds leaf.
+//         */
+//        protected IgfsFileInfo buildLeaf()  {
+//            long t = System.currentTimeMillis();
+//
+//            return new IgfsFileInfo(true, leafProps, t, t);
+//        }
     }
 }

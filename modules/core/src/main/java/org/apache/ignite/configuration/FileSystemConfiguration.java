@@ -84,7 +84,7 @@ public class FileSystemConfiguration {
     public static final boolean DFLT_INIT_DFLT_PATH_MODES = true;
 
     /** Defaulty value of the relaxed meta manager use flag. */
-    private static final boolean DFLT_RELAXED_META_MGR = true;
+    public static final boolean DFLT_RELAXED_META_MGR = true;
 
     /** IGFS instance name. */
     private String name;

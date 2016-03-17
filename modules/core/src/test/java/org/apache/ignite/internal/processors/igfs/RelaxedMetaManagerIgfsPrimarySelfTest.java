@@ -22,12 +22,12 @@ import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 /**
  * Tests for PRIMARY mode.
  */
-public class RelaxedMetaManagerIgfsPrimarySelfTest extends IgfsAbstractSelfTest {
+public class RelaxedMetaManagerIgfsPrimarySelfTest extends IgfsPrimarySelfTest {
     /**
      * Constructor.
      */
     public RelaxedMetaManagerIgfsPrimarySelfTest() {
-        super(PRIMARY);
+        super();
 
         // Relaxed mode of IfgsMetaManager:
         relaxedMetaMgr = true;

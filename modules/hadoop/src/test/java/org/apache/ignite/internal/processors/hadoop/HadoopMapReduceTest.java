@@ -406,12 +406,4 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
 
         return fsCfg;
     }
-
-    @Override protected CacheConfiguration dataCacheConfiguration() {
-        CacheConfiguration dataCacheCfg = super.dataCacheConfiguration();
-
-        dataCacheCfg.setBackups(1);
-
-        return dataCacheCfg;
-    }
 }

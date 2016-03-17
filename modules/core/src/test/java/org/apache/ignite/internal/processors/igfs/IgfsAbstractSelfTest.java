@@ -74,7 +74,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -170,12 +169,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** Other file. */
     protected static final IgfsPath FILE_NEW = new IgfsPath(SUBDIR_NEW, "fileNew");
 
-    /** Ip finder to use in multinode mode. */
-    private static final TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder(true);
-
-    /** Number of nodes (grids) to use. */
-    protected int nodeCnt = 1;
-
     /** Default data chunk (128 bytes). */
     protected static final byte[] chunk = createChunk(128);
 
@@ -197,8 +190,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** Memory mode. */
     protected final CacheMemoryMode memoryMode;
 
-    /** If to use relaxed meta manager and avoid complex concurrency tests. */
-    protected boolean relaxedMetaMgr = false;
+    /** If to use relaxed constistency mode. */
+    protected boolean relaxedMetaMgr;
 
     static {
         PRIMARY_REST_CFG = new IgfsIpcEndpointConfiguration();
@@ -253,20 +246,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        igfsSecondaryFileSystem = dual ? createSecondaryFileSystemStack() : null;
+        igfsSecondaryFileSystem = createSecondaryFileSystemStack();
 
-        assert nodeCnt >= 1;
-
-        Ignite ignite = null;
-
-        for (int i=1; i<=nodeCnt; i++) {
-            if (nodeCnt == 1)
-                ignite = startGridWithIgfs("ignite", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG, false);
-            else
-                startGridWithIgfs("ignite" + i, "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG, false);
-        }
-
-        assert ignite != null;
+        Ignite ignite = startGridWithIgfs("ignite", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG);
 
         igfs = (IgfsImpl) ignite.fileSystem("igfs");
     }
@@ -279,7 +261,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
         Ignite igniteSecondary = startGridWithIgfs("ignite-secondary", "igfs-secondary", PRIMARY, null,
-            SECONDARY_REST_CFG, true);
+            SECONDARY_REST_CFG);
 
         IgfsEx secondaryIgfsImpl = (IgfsEx) igniteSecondary.fileSystem("igfs-secondary");
 
@@ -313,12 +295,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
-        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg, boolean sec) throws Exception {
+        @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName(sec ? "dataCache-sec" : "dataCache");
-        igfsCfg.setMetaCacheName(sec ? "metaCache-sec" : "metaCache");
-
+        igfsCfg.setDataCacheName("dataCache");
+        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(igfsName);
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setDefaultMode(mode);
@@ -330,7 +311,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName(sec ? "dataCache-sec" : "dataCache");
+        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -342,13 +323,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName(sec ? "metaCache-sec" : "metaCache");
+        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
-
-        // performance optimization:
-        metaCacheCfg.setCopyOnRead(false);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -356,8 +334,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        if (nodeCnt > 1)
-            discoSpi.setIpFinder(finder);
+        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         prepareCacheConfigurations(dataCacheCfg, metaCacheCfg);
 
@@ -367,11 +344,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
-
-        // Performance optimization:
-        OptimizedMarshaller m = new OptimizedMarshaller();
-        m.setRequireSerializable(false);
-        cfg.setMarshaller(m);
 
         return G.start(cfg);
     }
@@ -965,7 +937,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("ConstantConditions")
-    public void _testFormat() throws Exception {
+    public void testFormat() throws Exception {
         final GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = getDataCache(igfs);
 
         assert dataCache != null;
@@ -978,22 +950,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         create(igfs, paths(DIR, SUBDIR), paths(FILE));
 
-        final int chunkSize = 10 * 1024 * 1024;
-
-        final byte[] bigChunk = createChunk(chunkSize);
-
         try (IgfsOutputStream os = igfs.append(FILE, false)) {
-            os.write(bigChunk);
+            os.write(new byte[10 * 1024 * 1024]);
         }
-
-        checkFile(igfs, igfsSecondary, FILE, bigChunk);
 
         if (dual)
             checkExist(igfsSecondary, DIR, SUBDIR, FILE, DIR_NEW, SUBDIR_NEW, FILE_NEW);
 
         checkExist(igfs, DIR, SUBDIR, FILE);
 
-        assert igfs.info(FILE).length() == chunkSize;
+        assert igfs.info(FILE).length() == 10 * 1024 * 1024;
 
         assert dataCache.size(new CachePeekMode[] {CachePeekMode.ALL}) > 0;
 
@@ -1069,8 +1035,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOpenDoesNotExist() throws Exception {
-        if (igfsSecondary != null)
-            igfsSecondary.delete(FILE.toString(), false);
+        igfsSecondary.delete(FILE.toString(), false);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -1463,7 +1428,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    // TODO: repair for relaxed mode
     public void testCreateConsistencyMultithreaded() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -1472,7 +1436,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         igfs.create(FILE, false).close();
 
-        final int threadCnt = 50;
+        int threadCnt = 50;
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
@@ -2054,9 +2018,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentMkdirsDelete() throws Exception {
-        if (relaxedMetaMgr)
-            return;
-
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -2105,9 +2066,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentRenameDeleteSource() throws Exception {
-        if (relaxedMetaMgr)
-            return;
-
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -2228,9 +2186,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentRenames() throws Exception {
-        if (relaxedMetaMgr)
-            return;
-
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -3243,9 +3198,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
             totalCnt++;
         }
 
-        dumpCache("MetaCache" , getMetaCache(igfs));
+        dumpCache(true , getMetaCache(igfs));
 
-        dumpCache("DataCache" , getDataCache(igfs));
+        dumpCache(false , getDataCache(igfs));
 
         fail("Caches are not empty.");
     }
@@ -3253,15 +3208,15 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Dumps given cache for diagnostic purposes.
      *
-     * @param cacheName Name.
+     * @param isMeta if this is a meta cache.
      * @param cache The cache.
      */
-    private static void dumpCache(String cacheName, GridCacheAdapter<?,?> cache) throws Exception {
-        X.println("=============================== " + cacheName + " cache dump: ");
+    private static void dumpCache(boolean isMeta, GridCacheAdapter<?,?> cache) throws Exception {
+        X.println("=============================== " + (isMeta ? "Meta" : "Data") + " cache dump: ");
 
         Set<GridCacheEntryEx> set = cache.entries();
 
-        if (cacheName.indexOf("Meta") >= 0) {
+        if (isMeta) {
             for (GridCacheEntryEx e : set) {
                 IgniteUuid id = e.key().value(null, false);
 
@@ -3278,7 +3233,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         }
         else {
             for (GridCacheEntryEx e : set)
-                X.println("Lost " + cacheName + " entry = " + e);
+                X.println("Lost entry = " + e);
         }
     }
 

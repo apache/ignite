@@ -17,81 +17,81 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-    import java.io.Externalizable;
-    import java.io.IOException;
-    import java.io.ObjectInput;
-    import java.io.ObjectOutput;
-    import java.io.OutputStream;
-    import java.util.ArrayList;
-    import java.util.Arrays;
-    import java.util.Collection;
-    import java.util.Collections;
-    import java.util.Comparator;
-    import java.util.Deque;
-    import java.util.HashMap;
-    import java.util.HashSet;
-    import java.util.LinkedList;
-    import java.util.List;
-    import java.util.Map;
-    import java.util.Set;
-    import java.util.SortedSet;
-    import java.util.TreeMap;
-    import java.util.TreeSet;
-    import java.util.concurrent.CountDownLatch;
-    import javax.cache.processor.EntryProcessor;
-    import javax.cache.processor.EntryProcessorException;
-    import javax.cache.processor.MutableEntry;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 
-    import org.apache.ignite.IgniteCheckedException;
-    import org.apache.ignite.IgniteException;
-    import org.apache.ignite.IgniteInterruptedException;
-    import org.apache.ignite.IgniteLogger;
-    import org.apache.ignite.cluster.ClusterNode;
-    import org.apache.ignite.configuration.FileSystemConfiguration;
-    import org.apache.ignite.events.EventType;
-    import org.apache.ignite.events.IgfsEvent;
-    import org.apache.ignite.igfs.IgfsConcurrentModificationException;
-    import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
-    import org.apache.ignite.igfs.IgfsException;
-    import org.apache.ignite.igfs.IgfsFile;
-    import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
-    import org.apache.ignite.igfs.IgfsPath;
-    import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
-    import org.apache.ignite.igfs.IgfsPathIsDirectoryException;
-    import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
-    import org.apache.ignite.igfs.IgfsPathNotFoundException;
-    import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
-    import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-    import org.apache.ignite.internal.IgniteInternalFuture;
-    import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-    import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
-    import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-    import org.apache.ignite.internal.processors.cache.GridCacheInternal;
-    import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-    import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-    import org.apache.ignite.internal.processors.task.GridInternal;
-    import org.apache.ignite.internal.util.GridLeanMap;
-    import org.apache.ignite.internal.util.GridSpinBusyLock;
-    import org.apache.ignite.internal.util.lang.GridClosureException;
-    import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
-    import org.apache.ignite.internal.util.typedef.CI1;
-    import org.apache.ignite.internal.util.typedef.F;
-    import org.apache.ignite.internal.util.typedef.T2;
-    import org.apache.ignite.internal.util.typedef.internal.S;
-    import org.apache.ignite.internal.util.typedef.internal.U;
-    import org.apache.ignite.lang.IgniteBiTuple;
-    import org.apache.ignite.lang.IgniteClosure;
-    import org.apache.ignite.lang.IgniteUuid;
-    import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.events.IgfsEvent;
+import org.apache.ignite.igfs.IgfsConcurrentModificationException;
+import org.apache.ignite.igfs.IgfsDirectoryNotEmptyException;
+import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsFile;
+import org.apache.ignite.igfs.IgfsParentNotDirectoryException;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.IgfsPathAlreadyExistsException;
+import org.apache.ignite.igfs.IgfsPathIsDirectoryException;
+import org.apache.ignite.igfs.IgfsPathIsNotDirectoryException;
+import org.apache.ignite.igfs.IgfsPathNotFoundException;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheInternal;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.GridLeanMap;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.lang.GridClosureException;
+import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
+import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
-    import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_CREATED;
-    import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_RENAMED;
-    import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_CREATED;
-    import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_RENAMED;
-    import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_WRITE;
-    import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.builder;
-    import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-    import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_CREATED;
+import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_RENAMED;
+import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_CREATED;
+import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_RENAMED;
+import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_WRITE;
+import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.builder;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Cache based structure (meta data) manager.
@@ -141,13 +141,6 @@ public class IgfsMetaManager extends IgfsManager {
 
     /** Busy lock. */
     protected final GridSpinBusyLock busyLock = new GridSpinBusyLock();
-
-    /**
-     * Constructor.
-     */
-    public IgfsMetaManager() {
-        // noop
-    }
 
     /**
      *
@@ -3491,7 +3484,7 @@ public class IgfsMetaManager extends IgfsManager {
         protected final SortedSet<IgniteUuid> idSet = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
         /** The middle node properties. */
-        protected final Map<String, String> middleProps;
+        protected final Map<String, String> props;
 
         /** The leaf node properties. */
         protected final Map<String, String> leafProps;
@@ -3569,7 +3562,7 @@ public class IgfsMetaManager extends IgfsManager {
             this.path = path;
             this.components = path.components();
             this.idList = fileIds(path);
-            this.middleProps = props;
+            this.props = props;
             this.leafProps = leafProps;
             this.leafDir = leafDir;
             this.blockSize = blockSize;
@@ -3593,7 +3586,7 @@ public class IgfsMetaManager extends IgfsManager {
 
             int idIdx = 0;
 
-            for (IgniteUuid id: idList) {
+            for (IgniteUuid id : idList) {
                 if (id == null)
                     break;
 
@@ -3655,8 +3648,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     childDir = true;
 
-                    id2InfoPrj.invoke(childId, new DirectoryCreateProcessor(createTime, middleProps, childName,
-                        childInfo));
+                    id2InfoPrj.invoke(childId, new DirectoryCreateProcessor(createTime, props, childName, childInfo));
 
                     if (parentId == null)
                         parentId = childId;
