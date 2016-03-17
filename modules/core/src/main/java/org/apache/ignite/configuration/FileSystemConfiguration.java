@@ -83,6 +83,9 @@ public class FileSystemConfiguration {
     /** Default value of whether to initialize default path modes. */
     public static final boolean DFLT_INIT_DFLT_PATH_MODES = true;
 
+    /** Defaulty value of the relaxed meta manager use flag. */
+    private static final boolean DFLT_RELAXED_META_MGR = true;
+
     /** IGFS instance name. */
     private String name;
 
@@ -163,6 +166,9 @@ public class FileSystemConfiguration {
 
     /** Whether to initialize default path modes. */
     private boolean initDfltPathModes = DFLT_INIT_DFLT_PATH_MODES;
+
+    /** Flag instructing to use relaxed meta manager. */
+    private boolean relaxedMetaMgr = DFLT_RELAXED_META_MGR;
 
     /**
      * Constructs default configuration.
@@ -835,15 +841,20 @@ public class FileSystemConfiguration {
         return S.toString(FileSystemConfiguration.class, this);
     }
 
-    // TODO: comments
+    /**
+     * Sets the relaxed meta manager flag value.
+     *
+     * @param relaxed The value to set.
+     */
     public void setRelaxedMetaManager(boolean relaxed) {
         this.relaxedMetaMgr = relaxed;
     }
 
-    private static final boolean DFLT_RELAXED_META_MGR = true; // TODO: should be true
-
-    private boolean relaxedMetaMgr = DFLT_RELAXED_META_MGR;
-
+    /**
+     * Gets the relaxed meta manager flag value.
+     *
+     * @return The relaxed meta manager flag value.
+     */
     public boolean isRelaxedMetaManager() {
         return relaxedMetaMgr;
     }

@@ -452,7 +452,7 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
 
         RelaxedDirectoryChainBuilder b = null;
 
-        IgniteUuid trashId = IgfsUtils.randomTrashId();
+        final IgniteUuid trashId = IgfsUtils.randomTrashId();
 
         while (true) {
             if (busyLock.enterBusy()) {
@@ -476,6 +476,8 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                             b.idSet.add(overwriteId);
 
                             if (b.existingIdCnt == b.components.size() + 1) {
+                                assert parentId != null;
+
                                 // Full path exists AND overwrite => we must lock the parent also:
                                 b.idSet.add(parentId);
                             }
@@ -489,10 +491,21 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                         // starting from taking the path ids.
                         final boolean pathVerified;
 
+//                        // TODO: Problematic version:
+//
+//                        if (overwrite && (b.existingIdCnt == b.components.size() + 1)) {
+//                            pathVerified = verifyExists(lockedInfos, parentId);
+//                        }
+//                        else {
+//                            pathVerified = verifyExists(lockedInfos, b.lowermostExistingId);
+//                        }
+
+                        // TODO: workable version:
                         if (overwrite && (b.existingIdCnt == b.components.size() + 1)) {
-                            pathVerified = verifyExists(lockedInfos, parentId);
-                        }
-                        else {
+                            pathVerified = verifyExists(lockedInfos, parentId)
+                                && verifyExists(lockedInfos, b.lowermostExistingId)
+                                && verifyParentChild(lockedInfos, parentId, name, b.lowermostExistingId);
+                        } else {
                             pathVerified = verifyExists(lockedInfos, b.lowermostExistingId);
                         }
 
@@ -502,7 +515,6 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
 
                             if (b.existingIdCnt == b.components.size() + 1) {
                                 // Full requestd path exists.
-
                                 assert b.existingPath.equals(path);
 
                                 if (lowermostExistingInfo != null && lowermostExistingInfo.isDirectory()) {
@@ -549,9 +561,12 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                                         assert parentId != null;
                                         assert parentInfo != null;
 
+                                        boolean deleted = false;
+
                                         // The overwrite victim may not exist and may have been moved somewhere,
                                         // so we delete it only if it is in the expected place.
-                                        if (lowermostExistingInfo != null && verifyParentChild(lockedInfos, parentId,
+                                        if (lowermostExistingInfo != null
+                                            && verifyParentChild(lockedInfos, parentId,
                                                 name, lowermostExistingInfo.id())) {
                                             final IgfsListingEntry deletedEntry = lockedInfos.get(parentId).listing()
                                                 .get(name);
@@ -564,6 +579,8 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
                                             // Update a file info of the removed file with a file path,
                                             // which will be used by delete worker for event notifications.
                                             invokeUpdatePath(lowermostExistingInfo.id(), path);
+
+                                            deleted = true;
                                         }
 
                                         // Make a new locked info:
@@ -580,7 +597,8 @@ public class RelaxedIgfsMetaManager extends IgfsMetaManager {
 
                                         tx.commit();
 
-                                        delWorker.signal();
+                                        if (deleted)
+                                            delWorker.signal();
 
                                         IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_WRITE);
 

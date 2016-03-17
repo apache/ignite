@@ -3181,7 +3181,7 @@ public class IgfsMetaManager extends IgfsManager {
         /** File name to add into parent listing. */
         private String fileName;
 
-        /** File ID.*/
+        /** File listing entry. */
         private IgfsListingEntry entry;
 
         /**

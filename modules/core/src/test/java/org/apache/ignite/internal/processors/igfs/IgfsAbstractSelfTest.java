@@ -170,6 +170,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /** Other file. */
     protected static final IgfsPath FILE_NEW = new IgfsPath(SUBDIR_NEW, "fileNew");
 
+    /** Ip finder to use in multinode mode. */
+    private static final TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder(true);
+
+    /** Number of nodes (grids) to use. */
+    protected int nodeCnt = 1;
+
     /** Default data chunk (128 bytes). */
     protected static final byte[] chunk = createChunk(128);
 
@@ -190,6 +196,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /** Memory mode. */
     protected final CacheMemoryMode memoryMode;
+
+    /** If to use relaxed meta manager and avoid complex concurrency tests. */
+    protected boolean relaxedMetaMgr = false;
 
     static {
         PRIMARY_REST_CFG = new IgfsIpcEndpointConfiguration();
@@ -244,11 +253,20 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        igfsSecondaryFileSystem = createSecondaryFileSystemStack();
+        igfsSecondaryFileSystem = dual ? createSecondaryFileSystemStack() : null;
 
-        Ignite ignite = startGridWithIgfs("ignite", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG, false);
-        Ignite ignite2 = startGridWithIgfs("ignite2", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG, false);
-        Ignite ignite3 = startGridWithIgfs("ignite3", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG, false);
+        assert nodeCnt >= 1;
+
+        Ignite ignite = null;
+
+        for (int i=1; i<=nodeCnt; i++) {
+            if (nodeCnt == 1)
+                ignite = startGridWithIgfs("ignite", "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG, false);
+            else
+                startGridWithIgfs("ignite" + i, "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG, false);
+        }
+
+        assert ignite != null;
 
         igfs = (IgfsImpl) ignite.fileSystem("igfs");
     }
@@ -282,8 +300,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         G.stopAll(true);
     }
 
-    private static final TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder(true);
-
     /**
      * Start grid with IGFS.
      *
@@ -310,6 +326,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setSecondaryFileSystem(secondaryFs);
         igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
+        igfsCfg.setRelaxedMetaManager(relaxedMetaMgr);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -339,7 +356,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        discoSpi.setIpFinder(finder);
+        if (nodeCnt > 1)
+            discoSpi.setIpFinder(finder);
 
         prepareCacheConfigurations(dataCacheCfg, metaCacheCfg);
 
@@ -1051,7 +1069,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOpenDoesNotExist() throws Exception {
-        igfsSecondary.delete(FILE.toString(), false);
+        if (igfsSecondary != null)
+            igfsSecondary.delete(FILE.toString(), false);
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -2034,7 +2053,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testConcurrentMkdirsDelete() throws Exception {
+    public void testConcurrentMkdirsDelete() throws Exception {
+        if (relaxedMetaMgr)
+            return;
+
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -2082,7 +2104,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testConcurrentRenameDeleteSource() throws Exception {
+    public void testConcurrentRenameDeleteSource() throws Exception {
+        if (relaxedMetaMgr)
+            return;
+
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -2202,7 +2227,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testConcurrentRenames() throws Exception {
+    public void testConcurrentRenames() throws Exception {
+        if (relaxedMetaMgr)
+            return;
+
         for (int i = 0; i < REPEAT_CNT; i++) {
             final CyclicBarrier barrier = new CyclicBarrier(2);
 
@@ -2313,7 +2341,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDeadlocksRename() throws Exception {
+    public void testDeadlocksRename() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, 0, 0, 0, 0);
     }
 
@@ -2322,7 +2350,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDeadlocksDelete() throws Exception {
+    public void testDeadlocksDelete() throws Exception {
          checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, 0, 0);
     }
 
@@ -2331,7 +2359,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDeadlocksUpdate() throws Exception {
+    public void testDeadlocksUpdate() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2, 0, 0, UPDATE_CNT, 0, 0);
     }
 
@@ -2340,7 +2368,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDeadlocksMkdirs() throws Exception {
+    public void testDeadlocksMkdirs() throws Exception {
          checkDeadlocksRepeat(5, 2, 2, 2,  0, 0, 0, MKDIRS_CNT, 0);
     }
 
@@ -2349,7 +2377,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDeadlocksDeleteRename() throws Exception {
+    public void testDeadlocksDeleteRename() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, 0, 0);
     }
 
@@ -2358,7 +2386,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDeadlocksDeleteMkdirsRename() throws Exception {
+    public void testDeadlocksDeleteMkdirsRename() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
 
@@ -2367,7 +2395,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDeadlocksDeleteMkdirs() throws Exception {
+    public void testDeadlocksDeleteMkdirs() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  0, DELETE_CNT, 0, MKDIRS_CNT, 0);
     }
 
@@ -2376,7 +2404,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDeadlocksCreate() throws Exception {
+    public void testDeadlocksCreate() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2, 0, 0, 0, 0, CREATE_CNT);
     }
 
@@ -2385,7 +2413,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDeadlocks() throws Exception {
+    public void testDeadlocks() throws Exception {
         checkDeadlocksRepeat(5, 2, 2, 2,  RENAME_CNT, DELETE_CNT, UPDATE_CNT, MKDIRS_CNT, CREATE_CNT);
     }
 
@@ -2407,6 +2435,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     private void checkDeadlocksRepeat(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
         int primaryLvlCnt, int renCnt, int delCnt,
         int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
+        if (relaxedMetaMgr)
+            return;
+
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
                 checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
@@ -3176,10 +3207,10 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
             int size = metaSize + dataSize;
 
-            if (size <= 2)
-                return; // Caches are cleared, we're done. (2 because ROOT & TRASH always exist).
+            if (size == 0)
+                return; // Caches are cleared, we're done.
 
-            X.println("Sum size: " + size);
+            X.println("meta + data caches size: " + size);
 
             if (size > prevDifferentSize) {
                 X.println("Summary cache size has grown unexpectedly: size=" + size + ", prevSize=" + prevDifferentSize);
@@ -3225,13 +3256,30 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param cacheName Name.
      * @param cache The cache.
      */
-    private static void dumpCache(String cacheName, GridCacheAdapter<?,?> cache) {
+    private static void dumpCache(String cacheName, GridCacheAdapter<?,?> cache) throws Exception {
         X.println("=============================== " + cacheName + " cache dump: ");
 
         Set<GridCacheEntryEx> set = cache.entries();
 
-        for (GridCacheEntryEx e: set)
-            X.println("Lost " + cacheName + " entry = " + e);
+        if (cacheName.indexOf("Meta") >= 0) {
+            for (GridCacheEntryEx e : set) {
+                IgniteUuid id = e.key().value(null, false);
+
+                if (IgfsUtils.isRootOrTrashId(id)) {
+                    IgfsFileInfo i = e.valueBytes().value(null, false);
+
+                    if (i.listing() != null) {
+                        System.out.println(id + " - listing: " + i.listing());
+                    }
+                }
+                else
+                    System.out.println("id = " + id);
+            }
+        }
+        else {
+            for (GridCacheEntryEx e : set)
+                X.println("Lost " + cacheName + " entry = " + e);
+        }
     }
 
     /**
