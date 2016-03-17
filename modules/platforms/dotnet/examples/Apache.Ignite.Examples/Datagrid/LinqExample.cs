@@ -26,6 +26,7 @@ using Apache.Ignite.ExamplesDll.Binary;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using Apache.Ignite.Core.Cache.Query;
 
     /// <summary>
     /// This example populates cache with sample data and runs several LINQ queries over this data.
@@ -72,6 +73,9 @@ namespace Apache.Ignite.Examples.Datagrid
                 // Run SQL query example.
                 QueryExample(employeeCache);
 
+                // Run compiled SQL query example.
+                CompiledQueryExample(employeeCache);
+
                 // Run SQL query with join example.
                 JoinQueryExample(employeeCache, organizationCache);
 
@@ -101,6 +105,25 @@ namespace Apache.Ignite.Examples.Datagrid
             Console.WriteLine(">>> Employees with zipcode " + zip + ":");
 
             foreach (ICacheEntry<EmployeeKey, Employee> entry in qry)
+                Console.WriteLine(">>>    " + entry.Value);
+        }
+
+        /// <summary>
+        /// Queries employees that have provided ZIP code in address with a compiled query.
+        /// </summary>
+        /// <param name="cache">Cache.</param>
+        private static void CompiledQueryExample(ICache<EmployeeKey, Employee> cache)
+        {
+            const int zip = 94109;
+
+            // Compile cache query to eliminate LINQ overhead on multiple runs.
+            Func<int, IQueryCursor<ICacheEntry<EmployeeKey, Employee>>> qry = 
+                CompiledQuery.Compile((int z) => cache.AsCacheQueryable().Where(emp => emp.Value.Address.Zip == z));
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Employees with zipcode using compiled query " + zip + ":");
+
+            foreach (ICacheEntry<EmployeeKey, Employee> entry in qry(zip))
                 Console.WriteLine(">>>    " + entry.Value);
         }
 
