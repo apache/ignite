@@ -798,14 +798,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
-        PlatformProcessor proc = ctx.platform();
-
-        if (proc != null) {
-            MarshallerContextImpl mctx = proc.platformMarshallerContext();
-
-            if (mctx != null)
-                mctx.onMarshallerCacheStarted(ctx);
-        }
+        if (ctx.platform() != null && ctx.platform().platformMarshallerContext() != null)
+            ctx.platform().platformMarshallerContext().onMarshallerCacheStarted(ctx);
 
         // Must call onKernalStart on shared managers after creation of fetched caches.
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
