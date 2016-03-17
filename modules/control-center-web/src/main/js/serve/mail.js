@@ -53,7 +53,7 @@ module.exports.factory = function(nodemailer, settings) {
 
             const mail = {
                 from: settings.smtp.address(settings.smtp.username, settings.smtp.email),
-                to: settings.smtp.address(user.username, user.email),
+                to: settings.smtp.address(`${user.firstName} ${user.lastName}`, user.email),
                 subject,
                 html: html + sign
             };

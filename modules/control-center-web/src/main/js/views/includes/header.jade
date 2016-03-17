@@ -16,7 +16,7 @@
 
 header#header.header
     .viewedUser(ng-show='$root.user.becomeUsed')
-        | Currently assuming #[strong {{$root.user.username}}], #[a(ng-click='$root.revertIdentity()') revert to your identity].
+        | Currently assuming #[strong {{$root.user.firstName}} {{$root.user.lastName}}], #[a(ng-click='$root.revertIdentity()') revert to your identity].
     table.container
         tr
             td.col-xs-3.col-sm-3.col-md-2
@@ -36,5 +36,5 @@ header#header.header
 
                 ul.nav.navbar-nav.pull-right(ignite-userbar)
                     li(ng-class='{active: $state.includes("settings")}')
-                        a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='userbar.items' data-placement='bottom-right') {{user.username}}
+                        a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='userbar.items' data-placement='bottom-right') {{user.firstName}} {{user.lastName}}
                             span.caret

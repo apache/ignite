@@ -27,8 +27,10 @@ consoleModule.controller('adminController', [
                     $scope.users = data;
 
                     _.forEach($scope.users, function(user) {
-                        user.label = user.username + ' ' + user.email + ' ' +
-                            (user.company || '') + ' ' + (user.country || '') + ' ' + user.lastLogin;
+                        user.userName = user.firstName + ' ' + user.lastName;
+
+                        user.label = user.userName + ' ' + user.email + ' ' +
+                            (user.company || '') + ' ' + (user.country || '');
                     })
                 })
                 .error(function (errMsg) {
@@ -53,7 +55,7 @@ consoleModule.controller('adminController', [
         };
 
         $scope.removeUser = function (user) {
-            $confirm.confirm('Are you sure you want to remove user: "' + user.username + '"?')
+            $confirm.confirm('Are you sure you want to remove user: "' + user.userName + '"?')
                 .then(function () {
                     $http.post('/api/v1/admin/remove', {userId: user._id}).success(
                         function () {
@@ -64,7 +66,7 @@ consoleModule.controller('adminController', [
                             if (i >= 0)
                                 $scope.users.splice(i, 1);
 
-                            $common.showInfo('User has been removed: "' + user.username + '"');
+                            $common.showInfo('User has been removed: "' + user.userName + '"');
                         }).error(function (errMsg, status) {
                         if (status == 503)
                             $common.showInfo(errMsg);
@@ -82,7 +84,7 @@ consoleModule.controller('adminController', [
 
             $http.post('/api/v1/admin/save', {userId: user._id, adminFlag: user.admin}).success(
                 function () {
-                    $common.showInfo('Admin right was successfully toggled for user: "' + user.username + '"');
+                    $common.showInfo('Admin right was successfully toggled for user: "' + user.userName + '"');
 
                     user.adminChanging = false;
                 }).error(function (errMsg) {

@@ -28,7 +28,7 @@
                                 .col-xs-2.pull-right
                                     input.form-control(type='text' st-search='label' placeholder='Filter users...')
                         tr
-                            th(st-sort='username') User name
+                            th(st-sort='userName') User name
                             th(st-sort='email') Email
                             th(st-sort='company') Company
                             th(st-sort='country') Country
@@ -37,7 +37,7 @@
                             th(width='1%') Actions
                     tbody
                         tr(ng-repeat='row in displayedUsers')
-                            td {{row.username}}
+                            td {{row.userName}}
                             td
                                 a(ng-href='mailto:{{row.email}}') {{row.email}}
                             td {{row.company}}
