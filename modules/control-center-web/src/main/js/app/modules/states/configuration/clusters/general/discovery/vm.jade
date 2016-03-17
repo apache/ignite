@@ -54,7 +54,7 @@ mixin addressFeedbackUnique(field)
 
 mixin addressFeedbackValid(field)
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='#{form}.#{field}.$error.ipadress'
+        ng-show='#{form}.#{field}.$error.ipaddress'
         bs-tooltip
         data-title='Invalid IP address!'
     )

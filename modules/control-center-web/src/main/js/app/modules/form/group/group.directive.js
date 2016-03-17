@@ -30,36 +30,43 @@ export default ['igniteFormGroup', [() => {
         parentFormCtrl.$addControl(ngModelCtrl);
         parentFormCtrl.$removeControl(ownFormCtrl);
 
-        scope.value = scope.value || [];
+        scope.ngModel = scope.ngModel || [];
         parentFormCtrl.$defaults = parentFormCtrl.$defaults || {};
-        parentFormCtrl.$defaults[name] = _.cloneDeep(scope.value);
+
+        if (parentFormCtrl.$pristine) {
+            if (!(_.isNull(parentFormCtrl.$defaults[name]) || _.isUndefined(parentFormCtrl.$defaults[name]))) 
+                scope.ngModel = parentFormCtrl.$defaults[name];
+            else
+                parentFormCtrl.$defaults[name] = _.cloneDeep(scope.ngModel);
+        }
 
         const setAsDefault = () => {
             if (!parentFormCtrl.$pristine)
                 return;
 
-            scope.value = scope.value || [];
+            scope.ngModel = scope.ngModel || [];
             parentFormCtrl.$defaults = parentFormCtrl.$defaults || {};
-            parentFormCtrl.$defaults[name] = _.cloneDeep(scope.value);
+            parentFormCtrl.$defaults[name] = _.cloneDeep(scope.ngModel);
         };
 
         const setAsDirty = () => {
-            if (JSON.stringify(scope.value) !== JSON.stringify(parentFormCtrl.$defaults[name]))
+            if (JSON.stringify(scope.ngModel) !== JSON.stringify(parentFormCtrl.$defaults[name])){
                 ngModelCtrl.$setDirty();
-            else
+            }else{
                 ngModelCtrl.$setPristine();
+            }
         };
 
         scope.$watch(() => parentFormCtrl.$pristine, setAsDefault);
 
-        scope.$watch('value', setAsDefault);
-        scope.$watch('value', setAsDirty, true);
+        scope.$watch('ngModel', setAsDefault);
+        scope.$watch('ngModel', setAsDirty, true);
     };
 
     return {
         restrict: 'E',
         scope: {
-            value: '=ngModel'
+            ngModel: '=ngModel'
         },
         bindToController: {
             label: '@'

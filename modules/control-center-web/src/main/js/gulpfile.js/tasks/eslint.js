@@ -27,6 +27,7 @@ var paths = [
 
 gulp.task('eslint:node', function() {
 	return gulp.src('./serve/**/*.js')
+        .pipe(cache('eslint:node'))
 		.pipe(eslint({envs: ['node']}))
 		.pipe(eslint.format());
 });
