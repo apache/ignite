@@ -778,14 +778,28 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assert !igfs.exists(path(dirPath));
         assert !igfs.exists(path(filePath));
 
-        int metaSize = 0;
 
-        for (Object metaId : grid(0).cachex(igfs.configuration().getMetaCacheName()).keySet()) {
-            if (!IgfsUtils.isRootOrTrashId((IgniteUuid)metaId))
-                metaSize++;
+        int cnt = 0;
+
+        int metaSize;
+
+        while (true) {
+            metaSize = 0;
+
+            for (Object metaId : grid(0).cachex(igfs.configuration().getMetaCacheName()).keySet()) {
+                if (!IgfsUtils.isRootOrTrashId((IgniteUuid) metaId))
+                    metaSize++;
+            }
+
+            cnt++;
+
+            if (metaSize == 0 || cnt > 10)
+                break;
+
+            Thread.sleep(50);
         }
 
-        assert metaSize == 0;
+        assert metaSize == 0 : "Meta cache size: " + metaSize;
     }
 
     /**
