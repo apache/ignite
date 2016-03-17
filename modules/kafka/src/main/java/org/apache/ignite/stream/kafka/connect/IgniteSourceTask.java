@@ -73,7 +73,7 @@ public class IgniteSourceTask extends SourceTask {
     private static IgnitePredicate<CacheEvent> filter;
 
     /** Topic. */
-    private static String topic;
+    private static String topics[];
 
     /** Offset. */
     private static final Map<String, Long> offset = Collections.singletonMap("offset", 0L);
@@ -97,7 +97,7 @@ public class IgniteSourceTask extends SourceTask {
 
         cacheName = props.get(IgniteSourceConstants.CACHE_NAME);
         igniteConfigFile = props.get(IgniteSourceConstants.CACHE_CFG_PATH);
-        topic = props.get(IgniteSourceConstants.TOPIC_NAME);
+        topics = props.get(IgniteSourceConstants.TOPIC_NAMES).split("\\s*,\\s*");
 
         if (props.containsKey(IgniteSourceConstants.INTL_BUF_SIZE))
             evtBufSize = Integer.parseInt(props.get(IgniteSourceConstants.INTL_BUF_SIZE));
@@ -169,7 +169,8 @@ public class IgniteSourceTask extends SourceTask {
             if (evtBuf.drainTo(evts, evtBatchSize) > 0) {
                 for (CacheEvent evt : evts) {
                     // schema and keys are ignored.
-                    records.add(new SourceRecord(srcPartition, offset, topic, null, evt));
+                    for (String topic : topics)
+                        records.add(new SourceRecord(srcPartition, offset, topic, null, evt));
                 }
 
                 return records;

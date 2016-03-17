@@ -40,5 +40,5 @@ public class IgniteSourceConstants {
     public static final String CACHE_FILTER_CLASS = "cacheFilterCls";
 
     /** Kafka topic. */
-    public static final String TOPIC_NAME = "topicName";
+    public static final String TOPIC_NAMES = "topicNames";
 }

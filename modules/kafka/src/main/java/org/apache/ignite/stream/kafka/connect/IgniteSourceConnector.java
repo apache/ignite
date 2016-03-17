@@ -47,7 +47,7 @@ public class IgniteSourceConnector extends SourceConnector {
             A.notNullOrEmpty(props.get(IgniteSourceConstants.CACHE_NAME), "cache name");
             A.notNullOrEmpty(props.get(IgniteSourceConstants.CACHE_CFG_PATH), "path to cache config file");
             A.notNullOrEmpty(props.get(IgniteSourceConstants.CACHE_EVENTS), "Registered cache events");
-            A.notNullOrEmpty(props.get(IgniteSourceConstants.TOPIC_NAME), "Kafka topic");
+            A.notNullOrEmpty(props.get(IgniteSourceConstants.TOPIC_NAMES), "Kafka topics");
         }
         catch (IllegalArgumentException e) {
             throw new ConnectException("Cannot start IgniteSourceConnector due to configuration error", e);
@@ -66,7 +66,6 @@ public class IgniteSourceConnector extends SourceConnector {
         List<Map<String, String>> taskConfigs = new ArrayList<>();
         Map<String, String> taskProps = new HashMap<>();
 
-        // 1 cache -> 1 topic.
         taskProps.putAll(configProps);
 
         for (int i = 0; i < maxTasks; i++)

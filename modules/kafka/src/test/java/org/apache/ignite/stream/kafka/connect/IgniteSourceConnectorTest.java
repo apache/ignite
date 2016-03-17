@@ -62,7 +62,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "testCache";
 
     /** Test topics created by connector. */
-    private static final String[] TOPICS = {"test1"};
+    private static final String[] TOPICS = {"test1", "test2"};
 
     /** Test Kafka broker. */
     private TestKafkaBroker kafkaBroker;
@@ -196,7 +196,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
 
         grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).stopLocalListen(locLsnr);
 
-        assertEquals(EVENT_CNT, cache.size(CachePeekMode.PRIMARY));
+        assertEquals(EVENT_CNT * TOPICS.length, cache.size(CachePeekMode.PRIMARY));
 
         // Checks the events are transferred to Kafka broker.
         checkDataDelivered(conditioned);
@@ -261,12 +261,12 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
                         + ", value = " + record.value().toString());
 
                     if (conditioned) {
-                        if (++evtCnt == EVENT_CNT / 2) {
+                        if (++evtCnt == (EVENT_CNT * TOPICS.length) / 2) {
                             return;
                         }
                     }
                     else {
-                        if (++evtCnt == EVENT_CNT) {
+                        if (++evtCnt == EVENT_CNT * TOPICS.length) {
                             return;
                         }
                     }
@@ -280,9 +280,9 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
             consumer.close();
 
             if (conditioned)
-                assertTrue(evtCnt == EVENT_CNT / 2);
+                assertTrue(evtCnt == (EVENT_CNT * TOPICS.length) / 2);
             else
-                assertTrue(evtCnt == EVENT_CNT);
+                assertTrue(evtCnt == EVENT_CNT * TOPICS.length);
         }
     }
 
@@ -300,7 +300,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         props.put(ConnectorConfig.CONNECTOR_CLASS_CONFIG, IgniteSourceConnectorMock.class.getName());
         props.put(IgniteSourceConstants.CACHE_NAME, "testCache");
         props.put(IgniteSourceConstants.CACHE_CFG_PATH, "example-ignite.xml");
-        props.put(IgniteSourceConstants.TOPIC_NAME, "test1");
+        props.put(IgniteSourceConstants.TOPIC_NAMES, topics);
         props.put(IgniteSourceConstants.CACHE_EVENTS, "put");
         props.put(IgniteSourceConstants.CACHE_FILTER_CLASS, TestCacheEventFilter.class.getName());
         props.put(IgniteSourceConstants.INTL_BUF_SIZE, "1000000");
