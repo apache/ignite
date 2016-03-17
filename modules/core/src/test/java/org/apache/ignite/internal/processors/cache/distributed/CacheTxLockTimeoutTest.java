@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -49,6 +50,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -56,6 +58,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
@@ -708,5 +711,42 @@ public class CacheTxLockTimeoutTest extends GridCommonAbstractTest {
                 return null;
             }
         }, "tx-thread").get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOptimisticNoLockConflicts() throws Exception {
+        final IgniteCache<Object, Object> cache = ignite(SRVS).cache(CACHE1);
+
+        final long stopTime = System.currentTimeMillis() + 30_000;
+
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                Ignite ignite = cache.unwrap(Ignite.class);
+
+                int i = 0;
+
+                while (System.currentTimeMillis() < stopTime) {
+                    if ((i % 1000) == 0)
+                        log.info("Iteration: " + i);
+
+                    i++;
+
+                    try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 3000, 0)) {
+                        cache.put(0, 0);
+
+                        tx.commit();
+                    }
+                    catch (Exception e) {
+                        if (X.hasCause(e, TransactionOptimisticException.class)) {
+                            e.printStackTrace();
+
+                            fail();
+                        }
+                    }
+                }
+            }
+        }, 4, "opt-tx-thread");
     }
 }
