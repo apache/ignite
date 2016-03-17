@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -67,7 +69,7 @@ public class GridAffinityAssignmentCache {
     private final int partsCnt;
 
     /** Affinity calculation results cache: topology version => partition => nodes. */
-    private final ConcurrentLinkedHashMap<AffinityTopologyVersion, GridAffinityAssignment> affCache;
+    private final ConcurrentNavigableMap<AffinityTopologyVersion, GridAffinityAssignment> affCache;
 
     /** */
     private List<List<ClusterNode>> idealAssignment;
@@ -119,7 +121,7 @@ public class GridAffinityAssignmentCache {
         log = ctx.log(GridAffinityAssignmentCache.class);
 
         partsCnt = aff.partitions();
-        affCache = new ConcurrentLinkedHashMap<>();
+        affCache = new ConcurrentSkipListMap<>();
         head = new AtomicReference<>(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
     }
 
@@ -403,7 +405,7 @@ public class GridAffinityAssignmentCache {
      */
     public void dumpDebugInfo() {
         if (!readyFuts.isEmpty()) {
-            U.warn(log, "Pending affinity ready futures [cache=" + cacheName + "]:");
+            U.warn(log, "Pending affinity ready futures [cache=" + cacheName + ", lastVer=" + lastVersion() + "]:");
 
             for (AffinityReadyFuture fut : readyFuts.values())
                 U.warn(log, ">>> " + fut);
@@ -443,6 +445,41 @@ public class GridAffinityAssignmentCache {
         assert cache.topologyVersion().equals(topVer) : "Invalid cached affinity: " + cache;
 
         return cache;
+    }
+
+    /**
+     * @param part Partition.
+     * @param startVer Start version.
+     * @param endVer End version.
+     * @return {@code True} if primary changed or required affinity version not found in history.
+     */
+    public boolean primaryChanged(int part, AffinityTopologyVersion startVer, AffinityTopologyVersion endVer) {
+        GridAffinityAssignment aff = affCache.get(startVer);
+
+        if (aff == null)
+            return false;
+
+        List<ClusterNode> nodes = aff.get(part);
+
+        if (nodes.isEmpty())
+            return true;
+
+        ClusterNode primary = nodes.get(0);
+
+        for (GridAffinityAssignment assignment : affCache.tailMap(startVer, false).values()) {
+            List<ClusterNode> nodes0 = assignment.assignment().get(part);
+
+            if (nodes0.isEmpty())
+                return true;
+
+            if (!nodes0.get(0).equals(primary))
+                return true;
+
+            if (assignment.topologyVersion().equals(endVer))
+                return false;
+        }
+
+        return true;
     }
 
     public void init(GridAffinityAssignmentCache aff) {

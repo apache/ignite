@@ -3406,7 +3406,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            GridCacheEntryEx e = entry0(cacheKey, new AffinityTopologyVersion(ctx.discovery().topologyVersion()),
+            GridCacheEntryEx e = entry0(cacheKey, ctx.discovery().topologyVersionEx(),
                 false, false);
 
             if (e == null)

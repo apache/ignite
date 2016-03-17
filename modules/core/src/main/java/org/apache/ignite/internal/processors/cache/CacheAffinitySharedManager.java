@@ -1275,6 +1275,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             @Override public void applyx(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
                 CacheHolder cache = cache(fut, cacheDesc);
 
+                if (!cache.rebalanceEnabled)
+                    return;
+
                 AffinityTopologyVersion affTopVer = cache.affinity().lastVersion();
 
                 assert affTopVer.topologyVersion() > 0 : affTopVer;
@@ -1375,10 +1378,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         private final boolean rebalanceEnabled;
 
         /**
-         *
-         * @param rebalanceEnabled
-         * @param aff
-         * @param initAff
+         * @param rebalanceEnabled Cache rebalance flag.
+         * @param aff Affinity cache.
+         * @param initAff Existing affinity cache.
          */
         public CacheHolder(boolean rebalanceEnabled, GridAffinityAssignmentCache aff, @Nullable GridAffinityAssignmentCache initAff) {
             this.aff = aff;

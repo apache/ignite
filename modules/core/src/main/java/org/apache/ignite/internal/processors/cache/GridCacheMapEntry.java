@@ -98,6 +98,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** */
     private static final byte IS_SWAPPING_REQUIRED = 0x08;
 
+    /** */
+    public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
+
     /**
      * NOTE
      * ====
@@ -1717,7 +1720,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().put(null, key, updated, ver);
 
-
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
                 updateIndex(updated, expireTime, ver, old);
@@ -1961,15 +1963,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     // Use old value?
                     if (conflictCtx.isUseOld()) {
-                        CacheAtomicVersionComparator comp = cctx.atomicVersionComparator();
-
                         GridCacheVersion newConflictVer = conflictVer != null ? conflictVer : newVer;
 
                         // Handle special case with atomic comparator.
                         if (!isNew() &&                                                                       // Not initial value,
                             verCheck &&                                                                       // and atomic version check,
                             oldConflictVer.dataCenterId() == newConflictVer.dataCenterId() &&                 // and data centers are equal,
-                            comp.compare(oldConflictVer, newConflictVer, ignoreTime) == 0 && // and both versions are equal,
+                            ATOMIC_VER_COMPARATOR.compare(oldConflictVer, newConflictVer, ignoreTime) == 0 && // and both versions are equal,
                             cctx.writeThrough() &&                                                            // and store is enabled,
                             primary)                                                                          // and we are primary.
                         {
@@ -2020,10 +2020,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             // Perform version check only in case there was no explicit conflict resolution.
             if (conflictCtx == null) {
                 if (verCheck) {
-                    CacheAtomicVersionComparator comp = cctx.atomicVersionComparator();
-
-                    if (!isNew() && comp.compare(ver, newVer, ignoreTime) >= 0) {
-                        if (comp.compare(ver, newVer, ignoreTime) == 0 && cctx.writeThrough() && primary) {
+                    if (!isNew() && ATOMIC_VER_COMPARATOR.compare(ver, newVer, ignoreTime) >= 0) {
+                        if (ATOMIC_VER_COMPARATOR.compare(ver, newVer, ignoreTime) == 0 && cctx.writeThrough() && primary) {
                             if (log.isDebugEnabled())
                                 log.debug("Received entry update with same version as current (will update store) " +
                                     "[entry=" + this + ", newVer=" + newVer + ']');
@@ -2097,7 +2095,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
                 }
                 else
-                    assert isNew() || cctx.atomicVersionComparator().compare(ver, newVer, ignoreTime) <= 0 :
+                    assert isNew() || ATOMIC_VER_COMPARATOR.compare(ver, newVer, ignoreTime) <= 0 :
                         "Invalid version for inner update [entry=" + this + ", newVer=" + newVer + ']';
             }
 

@@ -87,13 +87,13 @@ public interface GridDhtPartitionTopology {
      * Pre-initializes this topology.
      *
      * @param exchFut Exchange future.
-     * @param aff Affinity assignments.
      * @throws IgniteCheckedException If failed.
      */
     public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut)
         throws IgniteCheckedException;
 
-    public void initPartitions(GridDhtPartitionsExchangeFuture exchFut) throws IgniteInterruptedCheckedException ;
+    public void initPartitions(GridDhtPartitionsExchangeFuture exchFut)
+        throws IgniteInterruptedCheckedException ;
 
     /**
      * Post-initializes this topology.
@@ -151,7 +151,7 @@ public interface GridDhtPartitionTopology {
      * @param part Partition.
      * @return Partition state.
      */
-    public GridDhtPartitionState partitionState(UUID nodeId, int part);
+    @Nullable public GridDhtPartitionState partitionState(UUID nodeId, int part);
 
     /**
      * @return Current update sequence.

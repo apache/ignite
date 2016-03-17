@@ -558,7 +558,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         boolean clientOnly = cctx.affinity().onCacheChangeRequest(this, crd, reqs);
 
-        if (clientOnly || cctx.kernalContext().clientNode()) {
+        if (clientOnly) {
             boolean clientCacheStarted = false;
 
             for (DynamicCacheChangeRequest req : reqs) {
@@ -575,7 +575,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 return ExchangeType.NONE;
         }
         else
-            return ExchangeType.ALL;
+            return cctx.kernalContext().clientNode() ? ExchangeType.CLIENT : ExchangeType.ALL;
     }
 
     /**

@@ -455,4 +455,20 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     public GridAffinityAssignmentCache affinityCache() {
         return aff;
     }
+    /**
+     * @param part Partition.
+     * @param startVer Start version.
+     * @param endVer End version.
+     * @return {@code True} if primary changed or required affinity version not found in history.
+     */
+    public boolean primaryChanged(int part, AffinityTopologyVersion startVer, AffinityTopologyVersion endVer) {
+        assert !cctx.isLocal() : cctx.name();
+
+        GridAffinityAssignmentCache aff0 = aff;
+
+        if (aff0 == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return aff0.primaryChanged(part, startVer, endVer);
+    }
 }

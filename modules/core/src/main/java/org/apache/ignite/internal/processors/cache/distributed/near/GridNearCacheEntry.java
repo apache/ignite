@@ -48,7 +48,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     private static final int NEAR_SIZE_OVERHEAD = 36 + 16;
 
     /** Topology version at the moment when value was initialized from primary node. */
-    private volatile long topVer = -1L;
+    private volatile AffinityTopologyVersion topVer = AffinityTopologyVersion.NONE;
 
     /** DHT version which caused the last update. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -96,50 +96,34 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     @Override public boolean valid(AffinityTopologyVersion topVer) {
         assert topVer.topologyVersion() > 0 : "Topology version is invalid: " + topVer;
 
-        long topVer0 = this.topVer;
+        AffinityTopologyVersion topVer0 = this.topVer;
 
-        if (topVer0 == topVer.topologyVersion())
+        if (topVer0.equals(topVer))
             return true;
 
-        if (topVer0 == -1L || topVer.topologyVersion() < topVer0)
+        if (topVer0.equals(AffinityTopologyVersion.NONE) || topVer.compareTo(topVer0) < 0)
             return false;
 
         try {
-            ClusterNode primary = null;
-
-            for (long ver = topVer0; ver <= topVer.topologyVersion(); ver++) {
-                ClusterNode primary0 = cctx.affinity().primary(part, new AffinityTopologyVersion(ver));
-
-                if (primary0 == null) {
-                    this.topVer = -1L;
-
-                    return false;
-                }
-
-                if (primary == null)
-                    primary = primary0;
-                else {
-                    if (!primary.equals(primary0)) {
-                        this.topVer = -1L;
-
-                        return false;
-                    }
-                }
-            }
-
-            if (cctx.affinity().backup(cctx.localNode(), part, topVer)) {
-                this.topVer = -1L;
+            if (cctx.affinity().primaryChanged(partition(), topVer0, topVer)) {
+                this.topVer = AffinityTopologyVersion.NONE;
 
                 return false;
             }
 
-            this.topVer = topVer.topologyVersion();
+            if (cctx.affinity().backup(cctx.localNode(), part, topVer)) {
+                this.topVer = AffinityTopologyVersion.NONE;
+
+                return false;
+            }
+
+            this.topVer = topVer;
 
             return true;
         }
         catch (IllegalStateException ignore) {
             // Do not have affinity history.
-            this.topVer = -1L;
+            this.topVer = AffinityTopologyVersion.NONE;
 
             return false;
         }
@@ -182,7 +166,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                                 ClusterNode primaryNode = cctx.affinity().primary(key, topVer);
 
                                 if (primaryNode == null)
-                                    this.topVer = -1L;
+                                    this.topVer = AffinityTopologyVersion.NONE;
                                 else
                                     recordNodeId(primaryNode.id(), topVer);
 
@@ -321,7 +305,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         primaryNode(primaryNodeId, topVer);
     }
 
-    /*
+    /**
      * @param dhtVer DHT version to record.
      * @return {@code False} if given version is lower then existing version.
      */
@@ -661,7 +645,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void onInvalidate() {
-        topVer = -1L;
+        topVer = AffinityTopologyVersion.NONE;
         dhtVer = null;
     }
 
@@ -709,13 +693,13 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         }
 
         if (primary == null || !nodeId.equals(primary.id())) {
-            this.topVer = -1L;
+            this.topVer = AffinityTopologyVersion.NONE;
 
             return;
         }
 
-        if (topVer.topologyVersion() > this.topVer)
-            this.topVer = topVer.topologyVersion();
+        if (topVer.compareTo(this.topVer) > 0)
+            this.topVer = topVer;
     }
 
     /** {@inheritDoc} */

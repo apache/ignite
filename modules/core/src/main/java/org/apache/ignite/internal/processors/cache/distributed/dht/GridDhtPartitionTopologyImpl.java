@@ -736,13 +736,10 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             GridDhtPartitionMap2 partMap = node2part.get(nodeId);
 
-            if (partMap != null) {
-                GridDhtPartitionState state = partMap.get(part);
+            if (partMap != null)
+                return partMap.get(part);
 
-                return state == null ? EVICTED : state;
-            }
-
-            return EVICTED;
+            return null;
         }
         finally {
             lock.readLock().unlock();
