@@ -3452,7 +3452,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        TransactionConfiguration cfg = ctx.gridConfig().getTransactionConfiguration();
+        TransactionConfiguration cfg = CU.transactionConfiguration(ctx, ctx.kernalContext().config());
 
         return txStart(
             concurrency,
@@ -4239,7 +4239,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteTxLocalAdapter tx = ctx.tm().threadLocalTx(ctx);
 
         if (tx == null || tx.implicit()) {
-            TransactionConfiguration tCfg = ctx.gridConfig().getTransactionConfiguration();
+            TransactionConfiguration tCfg = CU.transactionConfiguration(ctx, ctx.kernalContext().config());
 
             CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -4336,6 +4336,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
+        final TransactionConfiguration txCfg = CU.transactionConfiguration(ctx, ctx.kernalContext().config());
+
         if (tx == null || tx.implicit()) {
             boolean skipStore = ctx.skipStore(); // Save value of thread-local flag.
 
@@ -4348,7 +4350,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     ctx.systemTx() ? ctx : null,
                     OPTIMISTIC,
                     READ_COMMITTED,
-                    ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
+                    txCfg.getDefaultTxTimeout(),
                     !skipStore,
                     0);
 
@@ -5024,7 +5026,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.systemTx() ? ctx : null,
                 OPTIMISTIC,
                 READ_COMMITTED,
-                ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
+                CU.transactionConfiguration(ctx, ctx.kernalContext().config()).getDefaultTxTimeout(),
                 opCtx == null || !opCtx.skipStore(),
                 0);
 
