@@ -28,7 +28,7 @@ bool underTeamcity();
 
 class TeamcityMessages {
     std::ostream *m_out;
-    
+
 protected:
     std::string escape(std::string s);
 
@@ -38,12 +38,12 @@ protected:
 
 public:
     TeamcityMessages();
-    
+
     void setOutput(std::ostream &);
-    
+
     void suiteStarted(std::string name, std::string flowid = "");
     void suiteFinished(std::string name, std::string flowid = "");
-    
+
     void testStarted(std::string name, std::string flowid = "");
     void testFailed(std::string name, std::string message, std::string details, std::string flowid = "");
     void testIgnored(std::string name, std::string message, std::string flowid = "");

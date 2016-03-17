@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <sstream>
 
-#include "teamcity_messages.h"
+#include "teamcity/teamcity_messages.h"
 
 using namespace std;
 
@@ -43,7 +43,7 @@ void TeamcityMessages::setOutput(ostream &out) {
 
 string TeamcityMessages::escape(string s) {
     string result;
-    
+
     for (size_t i = 0; i < s.length(); i++) {
         char c = s[i];
         
@@ -53,10 +53,10 @@ string TeamcityMessages::escape(string s) {
         case '\'': result.append("|'"); break;
         case '|':  result.append("||"); break;
         case ']':  result.append("|]"); break;
-        default:   result.append(&c, 1);
+        default:   result.append(1, c);
         }
     }
-    
+
     return result;
 }
 
@@ -82,7 +82,7 @@ void TeamcityMessages::suiteStarted(string name, string flowid) {
     if(flowid.length() > 0) {
         writeProperty("flowId", flowid);
     }
-    
+
     closeMsg();
 }
 
@@ -92,7 +92,7 @@ void TeamcityMessages::suiteFinished(string name, string flowid) {
     if(flowid.length() > 0) {
         writeProperty("flowId", flowid);
     }
-    
+
     closeMsg();
 }
 
@@ -102,7 +102,7 @@ void TeamcityMessages::testStarted(string name, string flowid) {
     if(flowid.length() > 0) {
         writeProperty("flowId", flowid);
     }
-    
+
     closeMsg();
 }
 
@@ -120,7 +120,7 @@ void TeamcityMessages::testFinished(string name, int durationMs, string flowid) 
         out << durationMs;
         writeProperty("duration", out.str());
     }
-    
+
     closeMsg();
 }
 
@@ -132,7 +132,7 @@ void TeamcityMessages::testFailed(string name, string message, string details, s
     if(flowid.length() > 0) {
         writeProperty("flowId", flowid);
     }
-    
+
     closeMsg();
 }
 
@@ -143,7 +143,7 @@ void TeamcityMessages::testIgnored(std::string name, std::string message, string
     if(flowid.length() > 0) {
         writeProperty("flowId", flowid);
     }
-    
+
     closeMsg();
 }
 

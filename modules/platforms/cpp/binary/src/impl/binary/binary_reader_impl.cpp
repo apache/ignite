@@ -744,6 +744,8 @@ namespace ignite
 
                 if (typeId == IGNITE_TYPE_DATE)
                     return BinaryUtils::ReadDate(stream);
+                else if (typeId == IGNITE_TYPE_TIMESTAMP)
+                    return Date(BinaryUtils::ReadTimestamp(stream).GetMilliseconds());
                 else if (typeId == IGNITE_HDR_NULL)
                     return Date();
                 else {

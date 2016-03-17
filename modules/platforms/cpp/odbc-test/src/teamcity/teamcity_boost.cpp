@@ -15,7 +15,7 @@
  * $Revision: 88625 $
 */
 
-#define BOOST_TEST_MODULE IgniteCoreTest
+#define BOOST_TEST_MODULE IgniteOdbcTest
 
 #include <sstream>
 
@@ -25,7 +25,7 @@
 #include <boost/test/unit_test_log.hpp>
 #include <boost/test/included/unit_test.hpp>
 
-#include "teamcity_messages.h"
+#include "teamcity/teamcity_messages.h"
 
 using namespace boost::unit_test;
 using namespace std;
@@ -41,7 +41,7 @@ class TeamcityBoostLogFormatter: public boost::unit_test::unit_test_log_formatte
 public:
     TeamcityBoostLogFormatter(const std::string &_flowId);
     TeamcityBoostLogFormatter();
-    
+
     void log_start(std::ostream&, boost::unit_test::counter_t test_cases_amount);
     void log_finish(std::ostream&);
     void log_build_info(std::ostream&);
@@ -77,9 +77,9 @@ BOOST_GLOBAL_FIXTURE(TeamcityFormatterRegistrar);
 // Formatter implementation
 string toString(const_string bstr) {
     stringstream ss;
-    
+
     ss << bstr;
-    
+
     return ss.str();
 }
 
@@ -108,7 +108,7 @@ void TeamcityBoostLogFormatter::test_unit_start(ostream &out, test_unit const& t
     } else {
         messages.suiteStarted(tu.p_name, flowId);
     }
-    
+
     currentDetails.clear();
 }
 
@@ -126,7 +126,7 @@ void TeamcityBoostLogFormatter::test_unit_finish(ostream &out, test_unit const& 
                 messages.testFailed(tu.p_name, "failed", currentDetails, flowId);
             }
         }
-        
+
         messages.testFinished(tu.p_name, elapsed / 1000, flowId);
     } else {
         messages.suiteFinished(tu.p_name, flowId);
@@ -138,7 +138,7 @@ void TeamcityBoostLogFormatter::test_unit_skipped(ostream &out, test_unit const&
 
 void TeamcityBoostLogFormatter::log_exception(ostream &out, log_checkpoint_data const&, const_string explanation) {
     string what = toString(explanation);
-    
+
     out << what << endl;
     currentDetails += what + "\n";
 }
