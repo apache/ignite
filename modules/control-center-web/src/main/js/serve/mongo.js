@@ -43,7 +43,8 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
 
     // Define Account schema.
     const AccountSchema = new Schema({
-        username: String,
+        firstName: String,
+        lastName: String,
         email: String,
         company: String,
         country: String,
@@ -65,7 +66,8 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
             return {
                 _id: ret._id,
                 email: ret.email,
-                username: ret.username,
+                firstName: ret.firstName,
+                lastName: ret.lastName,
                 company: ret.company,
                 country: ret.country,
                 admin: ret.admin,

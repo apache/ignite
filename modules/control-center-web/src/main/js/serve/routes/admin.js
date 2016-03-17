@@ -32,7 +32,7 @@ module.exports.factory = function(_, express, nodemailer, settings, mail, mongo)
          * Get list of user accounts.
          */
         router.post('/list', (req, res) => {
-            mongo.Account.find({}).sort('username').lean().exec()
+            mongo.Account.find({}).sort('firstName lastName').lean().exec()
                 .then((users) => res.json(users))
                 .catch((err) => mongo.handleError(res, err));
         });
@@ -58,7 +58,7 @@ module.exports.factory = function(_, express, nodemailer, settings, mail, mongo)
                 })
                 .then((user) =>
                     mail.send(user, 'Your account was deleted',
-                        `Hello ${user.username}!<br><br>` +
+                        `Hello ${user.firstName} ${user.lastName}!<br><br>` +
                         `You are receiving this email because your account for <a href="http://${req.headers.host}">${settings.smtp.username}</a> was removed.`,
                         'Account was removed, but failed to send email notification to user!')
                 )

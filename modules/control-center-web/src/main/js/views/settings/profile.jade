@@ -26,21 +26,25 @@ mixin lbl(txt)
             form.form-horizontal(name='profileForm' novalidate)
                 .col-sm-10(style='padding: 0')
                     .details-row
-                        +lbl('User name:')
+                        +lbl('First name:')
                         .col-xs-5.col-sm-4
-                            input#profile-username.form-control(type='text' ng-model='user.username' placeholder='Input name' required auto-focus)
+                            input#profile-firstname.form-control(type='text' ng-model='user.firstName' placeholder='Input first name' required auto-focus)
+                    .details-row
+                        +lbl('Last name:')
+                        .col-xs-5.col-sm-4
+                            input#profile-lastname.form-control(type='text' ng-model='user.lastName' placeholder='Input last name' required)
                     .details-row
                         +lbl('Email:')
                         .col-xs-5.col-sm-4
-                            input#profile-email.form-control(type='email' ng-model='user.email' placeholder='you@domain.com' required)
+                            input#profile-email.form-control(type='email' ng-model='user.email' placeholder='Input email' required)
                     .details-row
-                        label.col-sm-2.labelFormField Company:
+                        +lbl('Company:')
                         .col-xs-5.col-sm-4
-                            input#profile-company.form-control(type='text' ng-model='user.company' placeholder='Your company name')
+                            input#profile-company.form-control(type='text' ng-model='user.company' placeholder='Input company name' required)
                     .details-row
-                        label.col-sm-2.labelFormField Country:
+                        +lbl('Country:')
                         .col-xs-5.col-sm-4
-                            button#profile-country.select-toggle.form-control(bs-select bs-options='item for item in countries' type='text' ng-model='user.country' placeholder='Choose your country')
+                            button#profile-country.select-toggle.form-control(bs-select bs-options='item for item in countries' type='text' ng-model='user.country' placeholder='Choose your country' required)
                     .details-row
                         .advanced-options
                             i.fa(
