@@ -1257,7 +1257,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 // Remove listing entries from root.
                 for (Map.Entry<String, IgfsListingEntry> entry : transferListing.entrySet())
-                    id2InfoPrj.invoke(IgfsUtils.ROOT_ID, new ListingRemove(entry.getKey(), entry.getValue().fileId()));
+                    id2InfoPrj.invoke(IgfsUtils.ROOT_ID, new ListingRemoveProcessor(entry.getKey(), entry.getValue().fileId()));
 
                 resId = newInfo.id();
             }
@@ -1408,7 +1408,7 @@ public class IgfsMetaManager extends IgfsManager {
                         IgfsListingEntry childEntry = parentInfo.listing().get(name);
 
                         if (childEntry != null)
-                            id2InfoPrj.invoke(parentId, new ListingRemove(name, id));
+                            id2InfoPrj.invoke(parentId, new ListingRemoveProcessor(name, id));
 
                         id2InfoPrj.remove(id);
 
@@ -1584,20 +1584,20 @@ public class IgfsMetaManager extends IgfsManager {
      * Update file info in cache.
      *
      * @param fileId File ID to update information for.
-     * @param c Closure to update file's info inside transaction.
+     * @param proc Entry processor to invoke.
      * @return Updated file info or {@code null} if such file ID not found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgfsFileInfo updateInfo(IgniteUuid fileId, IgniteClosure<IgfsFileInfo, IgfsFileInfo> c)
-        throws IgniteCheckedException {
+    @Nullable public IgfsFileInfo updateInfo(IgniteUuid fileId,
+        EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo> proc) throws IgniteCheckedException {
         validTxState(false);
         assert fileId != null;
-        assert c != null;
+        assert proc != null;
 
         if (busyLock.enterBusy()) {
             try {
                 if (log.isDebugEnabled())
-                    log.debug("Update file info [fileId=" + fileId + ", c=" + c + ']');
+                    log.debug("Update file info [fileId=" + fileId + ", proc=" + proc + ']');
 
                 IgniteInternalTx tx = startTx();
 
@@ -1608,27 +1608,21 @@ public class IgfsMetaManager extends IgfsManager {
                     if (oldInfo == null)
                         return null; // File not found.
 
-                    IgfsFileInfo newInfo = c.apply(oldInfo);
+                    IgfsFileInfo newInfo = invokeAndGet(fileId, proc);
 
                     if (newInfo == null)
                         throw fsException("Failed to update file info with null value" +
-                            " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
+                            " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", proc=" + proc + ']');
 
                     if (!oldInfo.id().equals(newInfo.id()))
                         throw fsException("Failed to update file info (file IDs differ)" +
-                            " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
+                            " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", proc=" + proc + ']');
 
                     if (oldInfo.isDirectory() != newInfo.isDirectory())
                         throw fsException("Failed to update file info (file types differ)" +
-                            " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
+                            " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", proc=" + proc + ']');
 
-                    boolean b = id2InfoPrj.replace(fileId, oldInfo, newInfo);
-
-                    assert b : "Inconsistent transaction state [oldInfo=" + oldInfo + ", newInfo=" + newInfo +
-                        ", c=" + c + ']';
-
-                    if (tx != null)
-                        tx.commit();
+                    tx.commit();
 
                     return newInfo;
                 }
@@ -1636,8 +1630,7 @@ public class IgfsMetaManager extends IgfsManager {
                     throw U.cast(e);
                 }
                 finally {
-                    if (tx != null)
-                        tx.close();
+                    tx.close();
                 }
             }
             finally {
@@ -1814,7 +1807,7 @@ public class IgfsMetaManager extends IgfsManager {
             throw fsException("Failed to create new metadata entry due to ID conflict: " + info.id());
 
         if (parentId != null)
-            id2InfoPrj.invoke(parentId, new ListingAdd(name, new IgfsListingEntry(info)));
+            id2InfoPrj.invoke(parentId, new ListingAddProcessor(name, new IgfsListingEntry(info)));
     }
 
     /**
@@ -1831,8 +1824,8 @@ public class IgfsMetaManager extends IgfsManager {
         IgniteUuid destId, String destName) throws IgniteCheckedException {
         validTxState(true);
 
-        id2InfoPrj.invoke(srcId, new ListingRemove(srcName, entry.fileId()));
-        id2InfoPrj.invoke(destId, new ListingAdd(destName, entry));
+        id2InfoPrj.invoke(srcId, new ListingRemoveProcessor(srcName, entry.fileId()));
+        id2InfoPrj.invoke(destId, new ListingAddProcessor(destName, entry));
     }
 
     /**
@@ -1857,7 +1850,7 @@ public class IgfsMetaManager extends IgfsManager {
     private void invokeUpdatePath(IgniteUuid id, IgfsPath path) throws IgniteCheckedException {
         validTxState(true);
 
-        id2InfoPrj.invoke(id, new UpdatePath(path));
+        id2InfoPrj.invoke(id, new UpdatePathProcessor(path));
     }
 
     /**
@@ -2009,7 +2002,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                                 id2InfoPrj.remove(oldId); // Remove the old one.
                                 id2InfoPrj.invoke(parentInfo.id(),
-                                    new ListingRemove(path.name(), parentInfo.listing().get(path.name()).fileId()));
+                                    new ListingRemoveProcessor(path.name(), parentInfo.listing().get(path.name()).fileId()));
 
                                 createNewEntry(newInfo, parentInfo.id(), path.name()); // Put new one.
 
@@ -3101,7 +3094,7 @@ public class IgfsMetaManager extends IgfsManager {
      * Remove entry from directory listing.
      */
     @GridInternal
-    private static final class ListingRemove implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
+    private static final class ListingRemoveProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -3115,7 +3108,7 @@ public class IgfsMetaManager extends IgfsManager {
         /**
          * Default constructor.
          */
-        public ListingRemove() {
+        public ListingRemoveProcessor() {
             // No-op.
         }
 
@@ -3125,7 +3118,7 @@ public class IgfsMetaManager extends IgfsManager {
          * @param fileName File name.
          * @param fileId File ID.
          */
-        public ListingRemove(String fileName, IgniteUuid fileId) {
+        public ListingRemoveProcessor(String fileName, IgniteUuid fileId) {
             this.fileName = fileName;
             this.fileId = fileId;
         }
@@ -3173,7 +3166,7 @@ public class IgfsMetaManager extends IgfsManager {
      * Update directory listing closure.
      */
     @GridInternal
-    private static final class ListingAdd implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
+    private static final class ListingAddProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -3190,7 +3183,7 @@ public class IgfsMetaManager extends IgfsManager {
          * @param fileName File name to add into parent listing.
          * @param entry Listing entry to add or remove.
          */
-        private ListingAdd(String fileName, IgfsListingEntry entry) {
+        private ListingAddProcessor(String fileName, IgfsListingEntry entry) {
             assert fileName != null;
             assert entry != null;
 
@@ -3202,7 +3195,7 @@ public class IgfsMetaManager extends IgfsManager {
          * Empty constructor required for {@link Externalizable}.
          *
          */
-        public ListingAdd() {
+        public ListingAddProcessor() {
             // No-op.
         }
 
@@ -3242,7 +3235,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(ListingAdd.class, this);
+            return S.toString(ListingAddProcessor.class, this);
         }
     }
 
@@ -3250,7 +3243,7 @@ public class IgfsMetaManager extends IgfsManager {
      * Update path closure.
      */
     @GridInternal
-    private static final class UpdatePath implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
+    private static final class UpdatePathProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -3261,14 +3254,14 @@ public class IgfsMetaManager extends IgfsManager {
         /**
          * @param path Path.
          */
-        private UpdatePath(IgfsPath path) {
+        private UpdatePathProcessor(IgfsPath path) {
             this.path = path;
         }
 
         /**
          * Default constructor (required by Externalizable).
          */
-        public UpdatePath() {
+        public UpdatePathProcessor() {
             // No-op.
         }
 
@@ -3293,7 +3286,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(UpdatePath.class, this);
+            return S.toString(UpdatePathProcessor.class, this);
         }
     }
 
@@ -3665,7 +3658,7 @@ public class IgfsMetaManager extends IgfsManager {
             leafParentId = parentId;
 
             // Now link the newly created directory chain to the lowermost existing parent:
-            id2InfoPrj.invoke(lowermostExistingId, new ListingAdd(childName, childInfo));
+            id2InfoPrj.invoke(lowermostExistingId, new ListingAddProcessor(childName, childInfo));
         }
 
         /**

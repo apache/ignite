@@ -352,17 +352,6 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
         assertEmpty(mgr.directoryListing(b.id()));
 
-        // Validate last actual data received from 'remove' operation.
-        IgfsFileInfo newF2 = mgr.updateInfo(f2.id(), new C1<IgfsFileInfo, IgfsFileInfo>() {
-            @Override public IgfsFileInfo apply(IgfsFileInfo e) {
-                return new IgfsFileInfo(e, e.length() + 20);
-            }
-        });
-
-        assertNotNull(newF2);
-        assertEquals(f2.id(), newF2.id());
-        assertNotSame(f2, newF2);
-
         del = mgr.softDelete(path("/a/f2"), false);
         assertEquals(f2.id(), del);
 
