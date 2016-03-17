@@ -26,6 +26,7 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
         scope.ngModel = ngModel;
         scope.form = form;
         scope.label = label;
+        scope.name = scope.ngModelName + 'JavaClass';
 
         scope.$watch('required', (required) => {
             label.required = required || false;
@@ -51,13 +52,6 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
                 ngModel.$setDirty();
             else
                 ngModel.$setPristine();
-
-            setTimeout(() => {
-                if (ngModel.$valid)
-                    el.find('input').addClass('ng-valid').removeClass('ng-invalid');
-                else
-                    el.find('input').removeClass('ng-valid').addClass('ng-invalid');
-            }, 100); // Use setTimeout() workaround of problem of two controllers.
         };
 
         ngModel.$render = function() {
@@ -69,7 +63,7 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
         restrict: 'E',
         scope: {
             id: '@',
-            name: '@',
+            ngModelName: '@name',
             placeholder: '@',
             required: '=ngRequired',
             disabled: '=ngDisabled',

@@ -18,14 +18,14 @@ include ../../../../../app/helpers/jade/mixins.jade
 
 - var model = 'backupItem'
 
-form.panel.panel-default(name='store' novalidate)
+form.panel.panel-default(name='statistics' novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Statistics
         ignite-form-field-tooltip.tipLabel
             | Cache statistics and management settings
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='store')
+    .panel-collapse(role='tabpanel' bs-collapse-target id='statistics')
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row

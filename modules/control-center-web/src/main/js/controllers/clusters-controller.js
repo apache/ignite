@@ -520,5 +520,13 @@ consoleModule.controller('clustersController', [
                         });
                 });
         };
+
+        $scope.resetAll = function() {
+            $confirm.confirm('Are you sure you want to undo all changes for current cluster?')
+                .then(function() {
+                    $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
+                    $scope.ui.inputForm.$setPristine();
+                });
+        };
     }]
 );
