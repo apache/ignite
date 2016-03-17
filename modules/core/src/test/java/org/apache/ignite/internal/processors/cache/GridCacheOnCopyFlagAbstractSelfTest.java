@@ -25,6 +25,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
@@ -180,10 +181,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
                     ((GridCacheAdapter)((IgniteCacheProxy)cache).delegate()).peekEx(key).peekVisibleValue();
 
                 // Check thar internal entry wasn't changed.
-                if (storeValue(cache))
-                    assertEquals(i, ((TestValue)U.field(obj, "val")).val());
-                else
-                    assertEquals(i, CU.<TestValue>value(obj, ((IgniteCacheProxy)cache).context(), false).val());
+                assertEquals(i, getValue(obj, cache));
 
                 final TestValue newTestVal = new TestValue(-i);
 
@@ -216,10 +214,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
                 obj = ((GridCacheAdapter)((IgniteCacheProxy)cache).delegate()).peekEx(key).peekVisibleValue();
 
                 // Check thar internal entry wasn't changed.
-                if (storeValue(cache))
-                    assertEquals(-i, ((TestValue)U.field(obj, "val")).val());
-                else
-                    assertEquals(-i, CU.<TestValue>value(obj, ((IgniteCacheProxy)cache).context(), false).val());
+                assertEquals(-i, getValue(obj, cache));
 
                 interceptor.delegate(new CacheInterceptorAdapter<TestKey, TestValue>() {
                     @Override public IgniteBiTuple onBeforeRemove(Cache.Entry<TestKey, TestValue> entry) {
@@ -297,11 +292,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
                 CacheObject obj =
                     ((GridCacheAdapter)((IgniteCacheProxy)cache).delegate()).peekEx(key).peekVisibleValue();
 
-                if (storeValue(cache))
-                    assertNotEquals(WRONG_VALUE, ((TestValue)U.field(obj, "val")).val());
-                else
-                    assertNotEquals(WRONG_VALUE,
-                        CU.<TestValue>value(obj, ((IgniteCacheProxy)cache).context(), false).val());
+                assertNotEquals(WRONG_VALUE, getValue(obj, cache));
             }
         }
         finally {
@@ -553,6 +544,21 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
      */
     private static boolean storeValue(IgniteCache cache) {
         return ((IgniteCacheProxy)cache).context().cacheObjectContext().storeValue();
+    }
+
+    /**
+     * @param obj Object.
+     * @param cache Cache.
+     */
+    private static Object getValue(CacheObject obj, IgniteCache cache) {
+        if (obj instanceof BinaryObject)
+            return ((BinaryObject)obj).field("val");
+        else {
+            if (storeValue(cache))
+                return ((TestValue)U.field(obj, "val")).val();
+            else
+                return CU.<TestValue>value(obj, ((IgniteCacheProxy)cache).context(), false).val();
+        }
     }
 
     /**
