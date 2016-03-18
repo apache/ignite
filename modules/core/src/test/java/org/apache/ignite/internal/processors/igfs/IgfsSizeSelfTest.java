@@ -59,8 +59,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.ROOT_ID;
-import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.TRASH_ID;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -538,26 +536,27 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             }).start();
 
             // Now add file ID to trash listing so that delete worker could "see" it.
+            IgniteUuid trashId = IgfsUtils.randomTrashId();
 
             try (Transaction tx = metaCache.unwrap(Ignite.class).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 Map<String, IgfsListingEntry> listing = Collections.singletonMap(path.name(),
                     new IgfsListingEntry(info));
 
                 // Clear root listing.
-                metaCache.put(ROOT_ID, new IgfsFileInfo(ROOT_ID));
+                metaCache.put(IgfsUtils.ROOT_ID, new IgfsFileInfo(IgfsUtils.ROOT_ID));
 
                 // Add file to trash listing.
-                IgfsFileInfo trashInfo = metaCache.get(TRASH_ID);
+                IgfsFileInfo trashInfo = metaCache.get(trashId);
 
                 if (trashInfo == null)
-                    metaCache.put(TRASH_ID, new IgfsFileInfo(listing, new IgfsFileInfo(TRASH_ID)));
+                    metaCache.put(trashId, new IgfsFileInfo(listing, new IgfsFileInfo(trashId)));
                 else
-                    metaCache.put(TRASH_ID, new IgfsFileInfo(listing, trashInfo));
+                    metaCache.put(trashId, new IgfsFileInfo(listing, trashInfo));
 
                 tx.commit();
             }
 
-            assert metaCache.get(TRASH_ID) != null;
+            assert metaCache.get(trashId) != null;
 
             // Now the file is locked and is located in trash, try adding some more data.
             os = igfs.create(otherPath, false);

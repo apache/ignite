@@ -66,6 +66,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (cfg == null)
                 cfg = new BinaryConfiguration();
 
+            CompactFooter = cfg.CompactFooter;
+
             if (cfg.TypeConfigurations == null)
                 cfg.TypeConfigurations = new List<BinaryTypeConfiguration>();
 
@@ -105,6 +107,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets or sets the backing grid.
         /// </summary>
         public Ignite Ignite { get; set; }
+
+        /// <summary>
+        /// Gets the compact footer flag.
+        /// </summary>
+        public bool CompactFooter { get; set; }
 
         /// <summary>
         /// Marshal object.
@@ -281,15 +288,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Puts the binary type metadata to Ignite.
         /// </summary>
         /// <param name="desc">Descriptor.</param>
-        /// <param name="fields">Fields.</param>
-        public void PutBinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields = null)
+        public void PutBinaryType(IBinaryTypeDescriptor desc)
         {
             Debug.Assert(desc != null);
 
             GetBinaryTypeHandler(desc);  // ensure that handler exists
 
             if (Ignite != null)
-                Ignite.PutBinaryTypes(new[] {new BinaryType(desc, fields)});
+                Ignite.PutBinaryTypes(new[] {new BinaryType(desc)});
         }
 
         /// <summary>

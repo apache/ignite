@@ -90,12 +90,6 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgfsModesSelfTest.class));
         suite.addTest(new TestSuite(IgfsMetricsSelfTest.class));
 
-        suite.addTest(new TestSuite(IgfsPrimarySelfTest.class));
-        suite.addTest(new TestSuite(IgfsPrimaryOffheapTieredSelfTest.class));
-        suite.addTest(new TestSuite(IgfsPrimaryOffheapValuesSelfTest.class));
-        suite.addTest(new TestSuite(IgfsDualSyncSelfTest.class));
-        suite.addTest(new TestSuite(IgfsDualAsyncSelfTest.class));
-
         suite.addTest(new TestSuite(IgfsClientCacheSelfTest.class));
         suite.addTest(new TestSuite(IgfsOneClientNodeTest.class));
 

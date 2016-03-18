@@ -159,6 +159,15 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
     }
 
     /**
+     * Get components in array form.
+     *
+     * @return Components array.
+     */
+    public String[] componentsArray() {
+        return path.length() == 1 ? new String[0] : path.substring(1).split(SLASH);
+    }
+
+    /**
      * Returns the parent of a path or {@code null} if at root.
      *
      * @return The parent of a path or {@code null} if at root.

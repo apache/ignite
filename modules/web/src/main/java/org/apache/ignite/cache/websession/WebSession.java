@@ -90,7 +90,7 @@ class WebSession implements HttpSession, Externalizable {
     private transient Collection<T2<String, Object>> updates;
 
     /** Genuine http session. */
-    private transient HttpSession genuineSession;
+    private transient HttpSession genSes;
 
     /**
      * Required by {@link Externalizable}.
@@ -100,12 +100,15 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /**
+     * @param id Session ID.
      * @param ses Session.
      */
-    WebSession(HttpSession ses) {
+    WebSession(String id, HttpSession ses) {
+        assert id != null;
         assert ses != null;
 
-        id = ses.getId();
+        this.id = id;
+
         createTime = ses.getCreationTime();
         accessTime = ses.getLastAccessedTime();
         maxInactiveInterval = ses.getMaxInactiveInterval();
@@ -120,25 +123,26 @@ class WebSession implements HttpSession, Externalizable {
 
             attrs.put(name, ses.getAttribute(name));
         }
-
-        genuineSession = ses;
     }
 
     /**
+     * @param id Session ID.
      * @param ses Session.
      * @param isNew Is new flag.
      */
-    WebSession(HttpSession ses, boolean isNew) {
-        this(ses);
+    WebSession(String id, HttpSession ses, boolean isNew) {
+        this(id, ses);
 
         this.isNew = isNew;
     }
 
     /**
-     * @param accessTime Last access time.
+     * Sets the genuine http session.
+     *
+     * @param genSes Genuine http session.
      */
-    void accessTime(long accessTime) {
-        this.accessTime = accessTime;
+    protected void genSes(HttpSession genSes) {
+        this.genSes = genSes;
     }
 
     /**
@@ -189,6 +193,15 @@ class WebSession implements HttpSession, Externalizable {
     /** {@inheritDoc} */
     @Override public String getId() {
         return id;
+    }
+
+    /**
+     * Sets a session id.
+     *
+     * @param id Session id.
+     */
+    protected void setId(String id) {
+        this.id = id;
     }
 
     /** {@inheritDoc} */
@@ -294,16 +307,9 @@ class WebSession implements HttpSession, Externalizable {
 
         lsnr.destroySession(id);
 
-        genuineSession.invalidate();
+        genSes.invalidate();
 
         isValid = false;
-    }
-
-    /**
-     * @param isNew New session flag.
-     */
-    void setNew(boolean isNew) {
-        this.isNew = isNew;
     }
 
     /** {@inheritDoc} */

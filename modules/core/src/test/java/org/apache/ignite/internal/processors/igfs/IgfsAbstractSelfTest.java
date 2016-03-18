@@ -17,27 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -78,6 +57,28 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
@@ -1449,19 +1450,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                         createCtr.incrementAndGet();
                     }
                     catch (IgniteException e) {
-                        Throwable[] chain = X.getThrowables(e);
-
-                        Throwable cause = chain[chain.length - 1];
-
-                        if (!e.getMessage().startsWith("Failed to overwrite file (file is opened for writing)")
-                                && (cause == null
-                                    || !cause.getMessage().startsWith("Failed to overwrite file (file is opened for writing)"))) {
-
-                            System.out.println("Failed due to IgniteException exception. Cause:");
-                            cause.printStackTrace(System.out);
-
-                            err.compareAndSet(null, e);
-                        }
+                        // No-op.
                     }
                     catch (IOException e) {
                         err.compareAndSet(null, e);
@@ -1937,15 +1926,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                         chunksCtr.incrementAndGet();
                     }
-                    catch (IgniteException e) {
-                        Throwable[] chain = X.getThrowables(e);
-
-                        Throwable cause = chain[chain.length - 1];
-
-                        if (!e.getMessage().startsWith("Failed to open file (file is opened for writing)")
-                                && (cause == null
-                                || !cause.getMessage().startsWith("Failed to open file (file is opened for writing)")))
-                            err.compareAndSet(null, e);
+                    catch (IgniteException ignore) {
+                        // No-op.
                     }
                     catch (IOException e) {
                         err.compareAndSet(null, e);
@@ -3138,14 +3120,22 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         igfs.format();
 
         int prevDifferentSize = Integer.MAX_VALUE; // Previous different size.
-        int size;
         int constCnt = 0, totalCnt = 0;
         final int constThreshold = 20;
         final long sleepPeriod = 500L;
         final long totalThreshold = CACHE_EMPTY_TIMEOUT / sleepPeriod;
 
         while (true) {
-            size = sumCacheSize(igfs);
+            int metaSize = 0;
+
+            for (IgniteUuid metaId : getMetaCache(igfs).keySet()) {
+                if (!IgfsUtils.isRootOrTrashId(metaId))
+                    metaSize++;
+            }
+
+            int dataSize = getDataCache(igfs).size();
+
+            int size = metaSize + dataSize;
 
             if (size <= 2)
                 return; // Caches are cleared, we're done. (2 because ROOT & TRASH always exist).
@@ -3203,15 +3193,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         for (GridCacheEntryEx e: set)
             X.println("Lost " + cacheName + " entry = " + e);
-    }
-
-    /**
-     * Gets summary IGFS cache size.
-     * @param igfs The IGFS to measure.
-     * @return data cache size + meta cache size.
-     */
-    private static int sumCacheSize(IgniteFileSystem igfs) {
-        return getMetaCache(igfs).size() + getDataCache(igfs).size();
     }
 
     /**

@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10'>
                             <localhost>127.1.1.1</localhost>
-                            <binaryConfiguration>
+                            <binaryConfiguration compactFooter='false'>
                                 <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' bar='testBar' />
                                 <types>
                                     <string>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</string>
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Tests
                                 <iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean, Apache.Ignite.Core.Tests' foo='15' />
                             </lifecycleBeans>
                             <cacheConfiguration>
-                                <cacheConfiguration cacheMode='Replicated'>
+                                <cacheConfiguration cacheMode='Replicated' readThrough='true' writeThrough='true'>
                                     <queryEntities>    
                                         <queryEntity keyType='System.Int32' valueType='System.String'>    
                                             <fields>
@@ -112,6 +112,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(
                 "Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests",
                 cfg.BinaryConfiguration.Types.Single());
+            Assert.IsFalse(cfg.BinaryConfiguration.CompactFooter);
             Assert.AreEqual(new[] {42, EventType.TaskFailed, EventType.JobFinished}, cfg.IncludedEventTypes);
 
             Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
@@ -119,6 +120,8 @@ namespace Apache.Ignite.Core.Tests
             var cacheCfg = cfg.CacheConfiguration.First();
 
             Assert.AreEqual(CacheMode.Replicated, cacheCfg.CacheMode);
+            Assert.IsTrue(cacheCfg.ReadThrough);
+            Assert.IsTrue(cacheCfg.WriteThrough);
 
             var queryEntity = cacheCfg.QueryEntities.Single();
             Assert.AreEqual(typeof(int), queryEntity.KeyType);
