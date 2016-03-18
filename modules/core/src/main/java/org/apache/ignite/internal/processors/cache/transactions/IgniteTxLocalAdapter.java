@@ -116,7 +116,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  * Transaction adapter for cache transactions.
  */
-public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
+    public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     implements IgniteTxLocalEx {
     /** */
     private static final long serialVersionUID = 0L;
@@ -1825,7 +1825,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : CU.TTL_NOT_CHANGED;
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
-                    lockTimeout(),
+                    remainingTime(),
                     this,
                     true,
                     true,
@@ -3078,14 +3078,24 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for put on key: " + enlisted);
 
-                IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
-                    lockTimeout(),
-                    this,
-                    false,
-                    retval,
-                    isolation,
-                    isInvalidate(),
-                    -1L);
+                IgniteInternalFuture<Boolean> fut;
+
+                long timeout = remainingTime();
+
+                if (timeout != 0) {
+                    fut = cacheCtx.cache().txLockAsync(enlisted,
+                        timeout,
+                        this,
+                        false,
+                        retval,
+                        isolation,
+                        isInvalidate(),
+                        -1L);
+                }
+                else
+                    fut = new GridFinishedFuture<>(
+                        new IgniteTxTimeoutCheckedException("Transaction timed out: " + this)
+                    );
 
                 PLC1<GridCacheReturn> plc1 = new PLC1<GridCacheReturn>(ret) {
                     @Override public GridCacheReturn postLock(GridCacheReturn ret)
@@ -3254,7 +3264,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     log.debug("Before acquiring transaction lock for put on keys: " + enlisted);
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
-                    lockTimeout(),
+                    remainingTime(),
                     this,
                     false,
                     retval,
@@ -3536,7 +3546,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 log.debug("Before acquiring transaction lock for remove on keys: " + enlisted);
 
             IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
-                lockTimeout(),
+                remainingTime(),
                 this,
                 false,
                 retval,

@@ -700,22 +700,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @return Remaining transaction time.
      */
     @Override public long remainingTime() {
-        if (timeout() <= 0)
-            return -1;
+        assert timeout() >= 0;
 
-        long timeLeft = timeout() - (U.currentTimeMillis() - startTime());
+        if (timeout() == 0)
+            return Long.MAX_VALUE;
 
-        if (timeLeft < 0)
-            return 0;
+        long timeLeft = endTime() - U.currentTimeMillis();
 
-        return timeLeft;
-    }
-
-    /**
-     * @return Lock timeout.
-     */
-    protected long lockTimeout() {
-        return remainingTime();
+        return timeLeft < 0 ? 0 : timeLeft;
     }
 
     /** {@inheritDoc} */

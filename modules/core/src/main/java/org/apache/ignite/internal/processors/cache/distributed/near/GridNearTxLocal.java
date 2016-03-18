@@ -1140,7 +1140,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             log.debug("Before acquiring transaction lock on keys: " + keys);
 
         IgniteInternalFuture<Boolean> fut = cacheCtx.colocated().lockAllAsyncInternal(keys,
-            lockTimeout(),
+            remainingTime(),
             this,
             isInvalidate(),
             read,
