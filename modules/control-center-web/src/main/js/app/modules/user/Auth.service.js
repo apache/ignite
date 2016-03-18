@@ -56,7 +56,7 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$common', 'IgniteGett
                         } else
                             $state.go('password.send');
                     })
-                    .catch((errMsg) => $common.showPopoverMessage(null, null, 'user_email', errMsg.data));
+                    .catch((errMsg) => $common.showPopoverMessage(null, null, 'email', errMsg.data));
             },
             logout() {
                 $http.post('/api/v1/logout')
