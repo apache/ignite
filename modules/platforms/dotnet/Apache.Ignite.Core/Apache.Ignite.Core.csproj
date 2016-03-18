@@ -428,12 +428,13 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>echo JHOME: %25JAVA_HOME%25
+    <PreBuildEvent>
+	set JAVA_HOME=%25JAVA_HOME64%25
+	echo JHOME: %25JAVA_HOME%25
 "$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Release
 "$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Debug
 set JAVA_HOME=%25JAVA_HOME32%25
 echo JHOME: %25JAVA_HOME%25
-echo JHOME32: %25JAVA_HOME32%25
 "$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Release
 "$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Debug</PreBuildEvent>
   </PropertyGroup>
