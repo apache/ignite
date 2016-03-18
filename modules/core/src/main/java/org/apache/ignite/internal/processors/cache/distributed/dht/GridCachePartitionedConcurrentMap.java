@@ -27,7 +27,7 @@ import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapInterface;
+import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
-public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMapInterface {
+public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap {
 
     private final GridCacheContext ctx;
 

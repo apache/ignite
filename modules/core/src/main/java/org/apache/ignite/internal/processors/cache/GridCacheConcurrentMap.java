@@ -23,27 +23,76 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.lang.GridTriple;
 import org.jetbrains.annotations.Nullable;
 
-public interface GridCacheConcurrentMapInterface {
+/**
+ * Concurrent cache map.
+ */
+public interface GridCacheConcurrentMap {
 
+    /**
+     * Returns the entry associated with the specified key in the
+     * HashMap.  Returns null if the HashMap contains no mapping
+     * for this key.
+     *
+     * @param key Key.
+     * @return Entry.
+     */
     @Nullable GridCacheMapEntry getEntry(Object key);
 
+    /**
+     * @param topVer Topology version.
+     * @param key Key.
+     * @param val Value.
+     * @param create Create flag.
+     * @return Triple where the first element is current entry associated with the key,
+     *      the second is created entry and the third is doomed (all may be null).
+     */
     GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable CacheObject val,
         boolean create);
 
+    /**
+     * Removes passed in entry if it presents in the map.
+     *
+     * @param entry Entry to remove.
+     * @return {@code True} if remove happened.
+     */
     boolean removeEntry(GridCacheEntryEx entry);
 
+    /**
+     * Removes and returns the entry associated with the specified key
+     * in the HashMap if entry is obsolete. Returns null if the HashMap
+     * contains no mapping for this key.
+     *
+     * @param key Key.
+     * @return Removed entry, possibly {@code null}.
+     */
     GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key);
 
+    /**
+     * Returns the number of key-value mappings in this map.
+     *
+     * @return the number of key-value mappings in this map.
+     */
     int size();
 
     @Nullable GridCacheMapEntry randomEntry();
 
+    /**
+     * @return Random entry out of hash map.
+     */
     Set<KeyCacheObject> keySet(CacheEntryPredicate... filter);
 
+    /**
+     * @param filter Filter.
+     * @return Iterable of the mappings contained in this map.
+     */
     Iterable<GridCacheEntryEx> entries(CacheEntryPredicate... filter);
 
+    /**
+     * @param filter Filter.
+     * @return Set of the mappings contained in this map.
+     */
     Set<GridCacheEntryEx> entrySet(CacheEntryPredicate... filter);
 }

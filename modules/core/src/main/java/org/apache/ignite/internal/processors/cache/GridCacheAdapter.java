@@ -236,7 +236,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** Local map. */
     @GridToStringExclude
-    protected GridCacheConcurrentMapInterface map;
+    protected GridCacheConcurrentMap map;
 
     /** Local node ID. */
     @GridToStringExclude
@@ -308,7 +308,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param map Concurrent map.
      */
     @SuppressWarnings({"OverriddenMethodCallDuringObjectConstruction", "deprecation"})
-    protected GridCacheAdapter(final GridCacheContext<K, V> ctx, @Nullable GridCacheConcurrentMapInterface map) {
+    protected GridCacheAdapter(final GridCacheContext<K, V> ctx, @Nullable GridCacheConcurrentMap map) {
         assert ctx != null;
 
         this.ctx = ctx;
@@ -383,7 +383,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * @return Base map.
      */
-    public GridCacheConcurrentMapInterface map() {
+    public GridCacheConcurrentMap map() {
         return map;
     }
 
@@ -548,7 +548,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (!isLocal())
                 initSize /= ctx.affinity().partitions();
 
-            map = new GridCacheConcurrentMapV2(ctx, entryFactory(), initSize);
+            map = new GridCacheConcurrentMapImpl(ctx, entryFactory(), initSize);
         }
     }
 
