@@ -1380,6 +1380,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public void dumpStats() {
+        GridNioServer<Message> nioSrvr1 = nioSrvr;
+
+        if (nioSrvr1 != null)
+            nioSrvr1.dumpStats();
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         initFailureDetectionTimeout();
 

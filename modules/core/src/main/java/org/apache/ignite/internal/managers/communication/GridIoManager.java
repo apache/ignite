@@ -1782,6 +1782,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         return getSpi().getOutboundMessagesQueueSize();
     }
 
+    /**
+     * Dumps SPI stats to logs in case TcpCommunicationSpi is used, no-op otherwise.
+     */
+    public void dumpStats() {
+        CommunicationSpi spi = getSpi();
+
+        if (spi instanceof TcpCommunicationSpi)
+            ((TcpCommunicationSpi)spi).dumpStats();
+    }
+
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
