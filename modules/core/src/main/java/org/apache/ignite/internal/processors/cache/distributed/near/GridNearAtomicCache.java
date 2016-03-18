@@ -682,17 +682,6 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     @Override public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
         assert entry.isNear();
 
-        try {
-            T2<KeyCacheObject, GridCacheVersion> evicted = rmvQueue.add(new T2<>(entry.key(), ver));
-
-            if (evicted != null)
-                removeVersionedEntry(evicted.get1(), evicted.get2());
-        }
-        catch (InterruptedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to enqueue deleted entry [key=" + entry.key() + ", ver=" + ver + ']');
-
-            Thread.currentThread().interrupt();
-        }
+        removeVersionedEntry(entry.key(), ver);
     }
 }
