@@ -1655,24 +1655,12 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
                 if (aff1 == null)
                     aff.put(cctx.name(), aff2);
                 else
-                    assertEquals(aff1, aff2);
+                    assertAffinity(aff1, aff2, node, cctx.name(), topVer);
 
                 if (expIdeal) {
                     List<List<ClusterNode>> ideal = idealAssignment(topVer, cctx.cacheId());
 
-                    assertEquals(ideal.size(), aff2.size());
-
-                    if (!ideal.equals(aff2)) {
-                        for (int i = 0; i < ideal.size(); i++) {
-                            assertEquals("Wrong affinity [node=" + node.name() +
-                                ", topVer=" + topVer +
-                                ", cache=" + cctx.name() +
-                                ", part=" + i + ']',
-                                F.nodeIds(ideal.get(i)), F.nodeIds(aff2.get(i)));
-                        }
-
-                        fail();
-                    }
+                    assertAffinity(ideal, aff2, node, cctx.name(), topVer);
 
                     Affinity<Object> cacheAff = node.affinity(cctx.name());
 
@@ -1702,6 +1690,26 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         assertEquals(expNodes, nodes.size());
 
         return aff;
+    }
+
+    private void assertAffinity(List<List<ClusterNode>> aff1,
+        List<List<ClusterNode>> aff2,
+        Ignite node,
+        String cacheName,
+        AffinityTopologyVersion topVer) {
+        assertEquals(aff1.size(), aff2.size());
+
+        if (!aff1.equals(aff2)) {
+            for (int i = 0; i < aff1.size(); i++) {
+                assertEquals("Wrong affinity [node=" + node.name() +
+                    ", topVer=" + topVer +
+                    ", cache=" + cacheName +
+                    ", part=" + i + ']',
+                    F.nodeIds(aff1.get(i)), F.nodeIds(aff2.get(i)));
+            }
+
+            fail();
+        }
     }
 
     /**

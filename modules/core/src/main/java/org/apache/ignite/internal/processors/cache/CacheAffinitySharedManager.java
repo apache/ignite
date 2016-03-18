@@ -37,7 +37,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAssignmentFetchFuture;
@@ -667,7 +666,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 });
             }
             else
-                fetchAffinity(fut);
+                fetchAffinityOnJoin(fut);
         }
         else {
             if (!locJoin) {
@@ -864,8 +863,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         Collection<ClusterNode> affNodes = cctx.discovery().cacheAffinityNodes(aff.cacheName(), fut.topologyVersion());
 
         return fut.cacheStarted(aff.cacheId()) ||
-                !fut.exchangeId().nodeId().equals(cctx.localNodeId()) ||
-                (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
+            !fut.exchangeId().nodeId().equals(cctx.localNodeId()) ||
+            (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
     }
 
     /**
@@ -896,7 +895,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     });
                 }
                 else
-                    fetchAffinity(fut);
+                    fetchAffinityOnJoin(fut);
             }
             else
                 rebalancingInfo = initAffinityOnNodeJoin(fut, crd);
@@ -934,7 +933,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param fut Exchange future.
      * @throws IgniteCheckedException If failed.
      */
-    private void fetchAffinity(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+    private void fetchAffinityOnJoin(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         AffinityTopologyVersion topVer = fut.topologyVersion();
 
         List<GridDhtAssignmentFetchFuture> fetchFuts = new ArrayList<>();

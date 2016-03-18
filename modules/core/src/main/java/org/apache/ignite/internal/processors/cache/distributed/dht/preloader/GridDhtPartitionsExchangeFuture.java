@@ -451,7 +451,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (discoEvt.type() == EVT_NODE_JOINED) {
                     receivedCaches = cctx.cache().startReceivedCaches(topologyVersion());
 
-                    cctx.affinity().initStartedCaches(crdNode, this, receivedCaches);
+                    if (!discoEvt.eventNode().isLocal())
+                        cctx.affinity().initStartedCaches(crdNode, this, receivedCaches);
                 }
 
                 if (CU.clientNode(discoEvt.eventNode()))
