@@ -1514,8 +1514,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppend() throws Exception {
-        if (dual)
-            fail("Test fails in DUAL modes, see https://issues.apache.org/jira/browse/IGNITE-1631");
+//        if (dual)
+//            fail("Test fails in DUAL modes, see https://issues.apache.org/jira/browse/IGNITE-1631");
 
         create(igfs, paths(DIR, SUBDIR), null);
 

@@ -1070,7 +1070,8 @@ public final class IgfsImpl implements IgfsEx {
 
                     await(path);
 
-                    IgfsSecondaryOutputStreamDescriptor desc = meta.appendDual(secondaryFs, path, bufSize);
+                    IgfsSecondaryOutputStreamDescriptor desc = meta.appendDual(secondaryFs, path, bufSize, create,
+                        null /*TODO: affKey*/);
 
                     batch = newBatch(path, desc.out());
 

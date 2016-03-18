@@ -1933,9 +1933,9 @@ public class IgfsMetaManager extends IgfsManager {
                             IgfsFileInfo> infos) throws Exception {
                             validTxState(true);
 
-                            assert !infos.isEmpty();
+                            assert !infos.isEmpty(); // At least root must exist there.
 
-                            // Determine the first existing parent.
+                            // Determine the deepest existing path from the 'infos':
                             IgfsPath parentPath = null;
 
                             for (IgfsPath curPath : infos.keySet()) {
@@ -1943,9 +1943,9 @@ public class IgfsMetaManager extends IgfsManager {
                                     parentPath = curPath;
                             }
 
-                            assert parentPath != null;
+                            assert parentPath != null; // At least root must exist. (?)
 
-                            IgfsFileInfo parentInfo = infos.get(parentPath);
+                            IgfsFileInfo parentInfo = infos.get(parentPath); // Lowermost existing info, at least root.
 
                             // Delegate to the secondary file system.
                             out = simpleCreate ? fs.create(path, overwrite) :
@@ -2054,8 +2054,8 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Output stream descriptor.
      * @throws IgniteCheckedException If output stream open for append has failed.
      */
-    public IgfsSecondaryOutputStreamDescriptor appendDual(final IgfsSecondaryFileSystem fs, final IgfsPath path,
-        final int bufSize) throws IgniteCheckedException {
+    IgfsSecondaryOutputStreamDescriptor appendDual(final IgfsSecondaryFileSystem fs, final IgfsPath path,
+        final int bufSize, final boolean create, @Nullable final IgniteUuid affKey) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
@@ -2072,41 +2072,131 @@ public class IgfsMetaManager extends IgfsManager {
 
                             final IgfsFileInfo info = infos.get(path);
 
-                            if (info.isDirectory())
-                                throw fsException("Failed to open output stream to the file in the " +
-                                    "secondary file system because the path points to a directory: " + path);
+                            if (info == null) {
+                                // Should create the file.
+                                // NB: this code is from #createDual..#onSucess():
+                                assert !infos.isEmpty(); // At least root must exist there.
 
-                            out = fs.append(path, bufSize, false, null);
+                                // Determine the deepest existing path from the 'infos':
+                                IgfsPath parentPath = null;
 
-                            // Synchronize file ending.
-                            long len = info.length();
-                            int blockSize = info.blockSize();
-
-                            int remainder = (int)(len % blockSize);
-
-                            if (remainder > 0) {
-                                int blockIdx = (int)(len / blockSize);
-
-                                IgfsSecondaryFileSystemPositionedReadable reader = fs.open(path, bufSize);
-
-                                try {
-                                    igfsCtx.data().dataBlock(info, path, blockIdx, reader).get();
+                                for (IgfsPath curPath : infos.keySet()) {
+                                    if (parentPath == null || curPath.isSubDirectoryOf(parentPath))
+                                        parentPath = curPath;
                                 }
-                                finally {
-                                    reader.close();
+
+                                assert parentPath != null; // At least root must exist. (?)
+
+                                IgfsFileInfo parentInfo = infos.get(parentPath); // Lowermost existing info, at least root.
+
+                                // Delegate to the secondary file system.
+                                out = fs.create(path, false);
+                                    // TODO: set these paramaters (?)
+                                    //fs.create(path, bufSize, overwrite, replication, blockSize, props);
+
+                                IgfsPath parent0 = path.parent();
+
+                                assert parent0 != null : "path.parent() is null (are we creating ROOT?): " + path;
+
+                                // If some of the parent directories were missing, synchronize again.
+                                if (!parentPath.equals(parent0)) {
+                                    parentInfo = synchronize(fs, parentPath, parentInfo, parent0, true, null);
+
+                                    // Fire notification about missing directories creation.
+                                    if (evts.isRecordable(EVT_IGFS_DIR_CREATED)) {
+                                        IgfsPath evtPath = parent0;
+
+                                        while (!parentPath.equals(evtPath)) {
+                                            // TODO:
+                                            //pendingEvts.addFirst(new IgfsEvent(evtPath, locNode, EVT_IGFS_DIR_CREATED));
+
+                                            evtPath = evtPath.parent();
+
+                                            assert evtPath != null; // If this fails, then ROOT does not exist.
+                                        }
+                                    }
                                 }
+
+                                // Get created file info.
+                                IgfsFile status = fs.info(path);
+
+                                if (status == null)
+                                    throw fsException("Failed to open output stream to the file created in " +
+                                        "the secondary file system because it no longer exists: " + path);
+                                else if (status.isDirectory())
+                                    throw fsException("Failed to open output stream to the file created in " +
+                                        "the secondary file system because the path points to a directory: " + path);
+
+                                IgfsFileInfo newInfo = new IgfsFileInfo(status.blockSize(), status.length(), affKey,
+                                    createFileLockId(false), igfsCtx.igfs().evictExclude(path, false), status.properties(),
+                                    status.accessTime(), status.modificationTime());
+
+                                // Add new file info to the listing optionally removing the previous one.
+                                IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
+
+//                                if (oldId != null) {
+//                                    IgfsFileInfo oldInfo = info(oldId);
+//
+//                                    assert oldInfo != null; // Otherwise cache is in inconsistent state.
+//
+//                                    // The contact is that we cannot overwrite a file locked for writing:
+//                                    if (oldInfo.lockId() != null)
+//                                        throw fsException("Failed to overwrite file (file is opened for writing) [path=" +
+//                                            path + ", fileId=" + oldId + ", lockId=" + oldInfo.lockId() + ']');
+//
+//                                    id2InfoPrj.remove(oldId); // Remove the old one.
+//                                    id2InfoPrj.invoke(parentInfo.id(),
+//                                        new ListingRemoveProcessor(path.name(), parentInfo.listing().get(path.name()).fileId()));
+//
+//                                    createNewEntry(newInfo, parentInfo.id(), path.name()); // Put new one.
+//
+//                                    IgniteInternalFuture<?> delFut = igfsCtx.data().delete(oldInfo);
+//                                }
+
+                                // Record CREATE event if needed.
+                                // TODO:
+//                                if (evts.isRecordable(EVT_IGFS_FILE_CREATED))
+//                                    pendingEvts.add(new IgfsEvent(path, locNode, EVT_IGFS_FILE_CREATED));
+
+                                return new IgfsSecondaryOutputStreamDescriptor(parentInfo.id(), newInfo, out);
                             }
+                            else {
+                                if (info.isDirectory())
+                                    throw fsException("Failed to open output stream to the file in the " +
+                                        "secondary file system because the path points to a directory: " + path);
 
-                            if (info.lockId() != null) {
-                                throw fsException("Failed to open file (file is opened for writing) [path=" +
-                                    path + ", fileId=" + info.id() + ", lockId=" + info.lockId() + ']');
+                                out = fs.append(path, bufSize, create, null);
+
+                                // Synchronize file ending.
+                                long len = info.length();
+                                int blockSize = info.blockSize();
+
+                                int remainder = (int) (len % blockSize);
+
+                                if (remainder > 0) {
+                                    int blockIdx = (int) (len / blockSize);
+
+                                    IgfsSecondaryFileSystemPositionedReadable reader = fs.open(path, bufSize);
+
+                                    try {
+                                        igfsCtx.data().dataBlock(info, path, blockIdx, reader).get();
+                                    }
+                                    finally {
+                                        reader.close();
+                                    }
+                                }
+
+                                if (info.lockId() != null) {
+                                    throw fsException("Failed to open file (file is opened for writing) [path=" +
+                                        path + ", fileId=" + info.id() + ", lockId=" + info.lockId() + ']');
+                                }
+
+                                // Set lock and return.
+                                IgfsFileInfo lockedInfo = invokeLock(info.id(), false);
+
+                                return new IgfsSecondaryOutputStreamDescriptor(infos.get(path.parent()).id(),
+                                    lockedInfo, out);
                             }
-
-                            // Set lock and return.
-                            IgfsFileInfo lockedInfo = invokeLock(info.id(), false);
-
-                            return new IgfsSecondaryOutputStreamDescriptor(infos.get(path.parent()).id(),
-                                lockedInfo, out);
                         }
 
                         @Override public IgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
@@ -2121,7 +2211,7 @@ public class IgfsMetaManager extends IgfsManager {
                         }
                     };
 
-                return synchronizeAndExecute(task, fs, true, path);
+                return synchronizeAndExecute(task, fs, !create/*strict*/, path);
             }
             finally {
                 busyLock.leaveBusy();
