@@ -3138,14 +3138,22 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         igfs.format();
 
         int prevDifferentSize = Integer.MAX_VALUE; // Previous different size.
-        int size;
         int constCnt = 0, totalCnt = 0;
         final int constThreshold = 20;
         final long sleepPeriod = 500L;
         final long totalThreshold = CACHE_EMPTY_TIMEOUT / sleepPeriod;
 
         while (true) {
-            size = sumCacheSize(igfs);
+            int metaSize = 0;
+
+            for (IgniteUuid metaId : getMetaCache(igfs).keySet()) {
+                if (!IgfsUtils.isRootOrTrashId(metaId))
+                    metaSize++;
+            }
+
+            int dataSize = getDataCache(igfs).size();
+
+            int size = metaSize + dataSize;
 
             if (size <= 2)
                 return; // Caches are cleared, we're done. (2 because ROOT & TRASH always exist).
@@ -3203,15 +3211,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         for (GridCacheEntryEx e: set)
             X.println("Lost " + cacheName + " entry = " + e);
-    }
-
-    /**
-     * Gets summary IGFS cache size.
-     * @param igfs The IGFS to measure.
-     * @return data cache size + meta cache size.
-     */
-    private static int sumCacheSize(IgniteFileSystem igfs) {
-        return getMetaCache(igfs).size() + getDataCache(igfs).size();
     }
 
     /**

@@ -57,6 +57,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -156,6 +157,9 @@ public class GridCacheUtils {
 
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
+
+    /** Default transaction config. */
+    private static final TransactionConfiguration DEFAULT_TX_CFG = new TransactionConfiguration();
 
     /** Partition to state transformer. */
     private static final IgniteClosure PART2STATE =
@@ -1863,5 +1867,15 @@ public class GridCacheUtils {
      */
     public static boolean isSwapEnabled(ClusterNode node) {
         return !node.attributes().containsKey(NOOP_SWAP_SPACE_SPI_ATTR_NAME);
+    }
+
+    /**
+     * @return default TX configuration if system cache is used or current grid TX config otherwise.
+     */
+    public static TransactionConfiguration transactionConfiguration(final @Nullable GridCacheContext sysCacheCtx,
+        final IgniteConfiguration cfg) {
+        return sysCacheCtx != null && sysCacheCtx.systemTx()
+            ? DEFAULT_TX_CFG
+            : cfg.getTransactionConfiguration();
     }
 }

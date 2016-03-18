@@ -589,6 +589,7 @@ public abstract class IgniteUtils {
         primitiveMap.put("double", double.class);
         primitiveMap.put("char", char.class);
         primitiveMap.put("boolean", boolean.class);
+        primitiveMap.put("void", void.class);
 
         boxedClsMap.put(byte.class, Byte.class);
         boxedClsMap.put(short.class, Short.class);
@@ -598,6 +599,7 @@ public abstract class IgniteUtils {
         boxedClsMap.put(double.class, Double.class);
         boxedClsMap.put(char.class, Character.class);
         boxedClsMap.put(boolean.class, Boolean.class);
+        boxedClsMap.put(void.class, Void.class);
 
         try {
             OBJECT_CTOR = Object.class.getConstructor();
