@@ -4613,6 +4613,10 @@ public class GridFunc {
                     @Override public T2 next() {
                         return cl.apply(it0.next());
                     }
+
+                    @Override public void remove() {
+                        throw new UnsupportedOperationException("remove");
+                    }
                 };
             }
         };
