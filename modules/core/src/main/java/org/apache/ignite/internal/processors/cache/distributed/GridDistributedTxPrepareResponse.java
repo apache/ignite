@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -55,7 +56,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
      * @param xid Transaction ID.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedTxPrepareResponse(GridCacheVersion xid, boolean addDepInfo) {
+    public GridDistributedTxPrepareResponse(CacheVersion xid, boolean addDepInfo) {
         super(xid, 0, addDepInfo);
     }
 
@@ -64,7 +65,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
      * @param err Error.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedTxPrepareResponse(GridCacheVersion xid, Throwable err, boolean addDepInfo) {
+    public GridDistributedTxPrepareResponse(CacheVersion xid, Throwable err, boolean addDepInfo) {
         super(xid, 0, addDepInfo);
 
         this.err = err;

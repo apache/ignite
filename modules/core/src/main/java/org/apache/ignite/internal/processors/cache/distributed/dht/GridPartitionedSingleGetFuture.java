@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -370,10 +371,10 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     boolean isNew = entry.isNewLocked();
 
                     CacheObject v = null;
-                    GridCacheVersion ver = null;
+                    CacheVersion ver = null;
 
                     if (needVer) {
-                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                        T2<CacheObject, CacheVersion> res = entry.innerGetVersioned(
                             null,
                             /*swap*/true,
                             /*unmarshal*/true,
@@ -604,7 +605,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param res Result.
      * @param ver Version.
      */
-    private void setSkipValueResult(boolean res, @Nullable GridCacheVersion ver) {
+    private void setSkipValueResult(boolean res, @Nullable CacheVersion ver) {
         assert skipVals;
 
         if (needVer) {
@@ -620,7 +621,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param val Value.
      * @param ver Version.
      */
-    private void setResult(@Nullable CacheObject val, @Nullable GridCacheVersion ver) {
+    private void setResult(@Nullable CacheObject val, @Nullable CacheVersion ver) {
         try {
             assert !skipVals;
 

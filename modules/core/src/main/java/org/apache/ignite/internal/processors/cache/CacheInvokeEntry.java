@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.cache.CacheEntry;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +38,7 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     private V oldVal;
 
     /** Entry version. */
-    private GridCacheVersion ver;
+    private CacheVersion ver;
 
     /**
      * @param cctx Cache context.
@@ -49,7 +49,7 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     public CacheInvokeEntry(GridCacheContext cctx,
         KeyCacheObject keyObj,
         @Nullable CacheObject valObj,
-        GridCacheVersion ver,
+        CacheVersion ver,
         boolean keepBinary
     ) {
         super(cctx, keyObj, valObj, keepBinary);
@@ -71,7 +71,7 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         @Nullable K key,
         @Nullable CacheObject valObj,
         @Nullable V val,
-        GridCacheVersion ver,
+        CacheVersion ver,
         boolean keepBinary
     ) {
         super(ctx, keyObj, key, valObj, val, keepBinary);

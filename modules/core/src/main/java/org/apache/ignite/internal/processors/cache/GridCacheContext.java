@@ -75,11 +75,7 @@ import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
-import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
@@ -1497,7 +1493,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         UUID nearNodeId,
         AffinityTopologyVersion topVer,
         GridDhtCacheEntry entry,
-        GridCacheVersion explicitLockVer,
+        CacheVersion explicitLockVer,
         IgniteLogger log,
         Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap,
         @Nullable Map<ClusterNode, List<GridDhtCacheEntry>> nearMap
@@ -1553,7 +1549,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void dhtMap(
         GridDhtCacheEntry entry,
-        GridCacheVersion explicitLockVer,
+        CacheVersion explicitLockVer,
         IgniteLogger log,
         Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap,
         Map<ClusterNode, List<GridDhtCacheEntry>> nearMap
@@ -1654,7 +1650,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param entry Entry.
      * @param ver Version.
      */
-    public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
+    public void onDeferredDelete(GridCacheEntryEx entry, CacheVersion ver) {
         assert entry != null;
         assert !Thread.holdsLock(entry) : entry;
         assert ver != null;
@@ -1893,7 +1889,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean keepCacheObjects,
         boolean deserializeBinary,
         boolean cpy,
-        final GridCacheVersion ver) {
+        final CacheVersion ver) {
         assert key != null;
         assert val != null || skipVals;
 

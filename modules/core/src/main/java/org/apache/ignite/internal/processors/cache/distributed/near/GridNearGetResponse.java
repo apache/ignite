@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -57,7 +57,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
     private IgniteUuid miniId;
 
     /** Version. */
-    private GridCacheVersion ver;
+    private CacheVersion ver;
 
     /** Result. */
     @GridToStringInclude
@@ -97,7 +97,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        GridCacheVersion ver,
+        CacheVersion ver,
         boolean addDepInfo
     ) {
         assert futId != null;
@@ -124,7 +124,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
+    @Override public CacheVersion version() {
         return ver;
     }
 

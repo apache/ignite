@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.extras;
 
 import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -29,7 +29,7 @@ public class GridCacheMvccObsoleteEntryExtras extends GridCacheEntryExtrasAdapte
     private GridCacheMvcc mvcc;
 
     /** Obsolete version. */
-    private GridCacheVersion obsoleteVer;
+    private CacheVersion obsoleteVer;
 
     /**
      * Constructor.
@@ -37,7 +37,7 @@ public class GridCacheMvccObsoleteEntryExtras extends GridCacheEntryExtrasAdapte
      * @param mvcc MVCC.
      * @param obsoleteVer Obsolete version.
      */
-    public GridCacheMvccObsoleteEntryExtras(GridCacheMvcc mvcc, GridCacheVersion obsoleteVer) {
+    public GridCacheMvccObsoleteEntryExtras(GridCacheMvcc mvcc, CacheVersion obsoleteVer) {
         assert mvcc != null;
         assert obsoleteVer != null;
 
@@ -62,12 +62,12 @@ public class GridCacheMvccObsoleteEntryExtras extends GridCacheEntryExtrasAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion obsoleteVersion() {
+    @Override public CacheVersion obsoleteVersion() {
         return obsoleteVer;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras obsoleteVersion(GridCacheVersion obsoleteVer) {
+    @Override public GridCacheEntryExtras obsoleteVersion(CacheVersion obsoleteVer) {
         if (obsoleteVer != null) {
             this.obsoleteVer = obsoleteVer;
 

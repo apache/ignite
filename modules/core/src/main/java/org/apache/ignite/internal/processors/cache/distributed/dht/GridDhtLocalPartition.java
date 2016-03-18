@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCircularBuffer;
@@ -100,7 +101,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private final long createTime = U.currentTimeMillis();
 
     /** Eviction history. */
-    private volatile Map<KeyCacheObject, GridCacheVersion> evictHist = new HashMap<>();
+    private volatile Map<KeyCacheObject, CacheVersion> evictHist = new HashMap<>();
 
     /** Lock. */
     private final ReentrantLock lock = new ReentrantLock();
@@ -109,7 +110,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private final LongAdder8 mapPubSize = new LongAdder8();
 
     /** Remove queue. */
-    private final GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
+    private final GridCircularBuffer<T2<KeyCacheObject, CacheVersion>> rmvQueue;
 
     /** Group reservations. */
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
@@ -302,9 +303,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param ver Removed version.
      * @throws IgniteCheckedException If failed.
      */
-    public void onDeferredDelete(KeyCacheObject key, GridCacheVersion ver) throws IgniteCheckedException {
+    public void onDeferredDelete(KeyCacheObject key, CacheVersion ver) throws IgniteCheckedException {
         try {
-            T2<KeyCacheObject, GridCacheVersion> evicted = rmvQueue.add(new T2<>(key, ver));
+            T2<KeyCacheObject, CacheVersion> evicted = rmvQueue.add(new T2<>(key, ver));
 
             if (evicted != null)
                 cctx.dht().removeVersionedEntry(evicted.get1(), evicted.get2());
@@ -335,7 +336,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param key Key.
      * @param ver Version.
      */
-    public void onEntryEvicted(KeyCacheObject key, GridCacheVersion ver) {
+    public void onEntryEvicted(KeyCacheObject key, CacheVersion ver) {
         assert key != null;
         assert ver != null;
         assert lock.isHeldByCurrentThread(); // Only one thread can enter this method at a time.
@@ -343,13 +344,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         if (state() != MOVING)
             return;
 
-        Map<KeyCacheObject, GridCacheVersion> evictHist0 = evictHist;
+        Map<KeyCacheObject, CacheVersion> evictHist0 = evictHist;
 
         if (evictHist0 != null ) {
-            GridCacheVersion ver0 = evictHist0.get(key);
+            CacheVersion ver0 = evictHist0.get(key);
 
-            if (ver0 == null || ver0.isLess(ver)) {
-                GridCacheVersion ver1  = evictHist0.put(key, ver);
+            if (ver0 == null || ver0.compareTo(ver) < 0) {
+                CacheVersion ver1  = evictHist0.put(key, ver);
 
                 assert ver1 == ver0;
             }
@@ -363,7 +364,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param ver Version.
      * @return {@code True} if preloading is permitted.
      */
-    public boolean preloadingPermitted(KeyCacheObject key, GridCacheVersion ver) {
+    public boolean preloadingPermitted(KeyCacheObject key, CacheVersion ver) {
         assert key != null;
         assert ver != null;
         assert lock.isHeldByCurrentThread(); // Only one thread can enter this method at a time.
@@ -371,14 +372,14 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         if (state() != MOVING)
             return false;
 
-        Map<KeyCacheObject, GridCacheVersion> evictHist0 = evictHist;
+        Map<KeyCacheObject, CacheVersion> evictHist0 = evictHist;
 
         if (evictHist0 != null)  {
-            GridCacheVersion ver0 = evictHist0.get(key);
+            CacheVersion ver0 = evictHist0.get(key);
 
             // Permit preloading if version in history
             // is missing or less than passed in.
-            return ver0 == null || ver0.isLess(ver);
+            return ver0 == null || ver0.compareTo(ver) < 0;
         }
 
         return false;
@@ -674,7 +675,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * Clears values for this partition.
      */
     private void clearAll() {
-        GridCacheVersion clearVer = cctx.versions().next();
+        CacheVersion clearVer = cctx.versions().next();
 
         boolean swap = cctx.isSwapOrOffheapEnabled();
 
@@ -823,8 +824,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     private void clearDeferredDeletes() {
-        rmvQueue.forEach(new CI1<T2<KeyCacheObject, GridCacheVersion>>() {
-            @Override public void apply(T2<KeyCacheObject, GridCacheVersion> t) {
+        rmvQueue.forEach(new CI1<T2<KeyCacheObject, CacheVersion>>() {
+            @Override public void apply(T2<KeyCacheObject, CacheVersion> t) {
                 cctx.dht().removeVersionedEntry(t.get1(), t.get2());
             }
         });

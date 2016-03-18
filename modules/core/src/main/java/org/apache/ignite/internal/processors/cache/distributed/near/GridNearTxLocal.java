@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -201,7 +202,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion nearXidVersion() {
+    @Override public CacheVersion nearXidVersion() {
         return xidVer;
     }
 
@@ -350,7 +351,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         final boolean skipVals,
         final boolean needVer,
         boolean keepBinary,
-        final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
+        final GridInClosure3<KeyCacheObject, Object, CacheVersion> c
     ) {
         if (cacheCtx.isNear()) {
             return cacheCtx.nearTx().txLoadAsync(this,
@@ -459,7 +460,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         Map<Object, Object> map,
         final Collection<KeyCacheObject> keys,
         boolean needVer,
-        GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c) {
+        GridInClosure3<KeyCacheObject, Object, CacheVersion> c) {
         for (KeyCacheObject key : keys)
             processLoaded(key, map.get(key), needVer, false, c);
     }
@@ -476,13 +477,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         @Nullable Object val,
         boolean needVer,
         boolean skipVals,
-        GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c) {
+        GridInClosure3<KeyCacheObject, Object, CacheVersion> c) {
         if (val != null) {
             Object v;
-            GridCacheVersion ver;
+            CacheVersion ver;
 
             if (needVer) {
-                T2<Object, GridCacheVersion> t = (T2)val;
+                T2<Object, CacheVersion> t = (T2)val;
 
                 v = t.get1();
                 ver = t.get2();
@@ -508,11 +509,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             GridCacheMvccCandidate cand = cctx.mvcc().explicitLock(threadId(), entry.txKey());
 
             if (cand != null && !xidVersion().equals(cand.version())) {
-                GridCacheVersion candVer = cand.version();
+                CacheVersion candVer = cand.version();
 
                 txEntry.explicitVersion(candVer);
 
-                if (candVer.isLess(minVer))
+                if (candVer.compareTo(minVer) < 0)
                     minVer = candVer;
             }
         }
@@ -657,9 +658,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param rolledbackVers Rolled back versions.
      */
     void readyNearLocks(GridDistributedTxMapping mapping,
-        Collection<GridCacheVersion> pendingVers,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers)
+        Collection<CacheVersion> pendingVers,
+        Collection<CacheVersion> committedVers,
+        Collection<CacheVersion> rolledbackVers)
     {
         // Process writes, then reads.
         for (IgniteTxEntry txEntry : mapping.entries()) {
@@ -681,10 +682,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      * @param rolledbackVers Rolled back versions.
      */
     void readyNearLock(IgniteTxEntry txEntry,
-        GridCacheVersion dhtVer,
-        Collection<GridCacheVersion> pendingVers,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers)
+        CacheVersion dhtVer,
+        Collection<CacheVersion> pendingVers,
+        Collection<CacheVersion> committedVers,
+        Collection<CacheVersion> rolledbackVers)
     {
         while (true) {
             GridCacheContext cacheCtx = txEntry.cached().context();
@@ -695,7 +696,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
             try {
                 // Handle explicit locks.
-                GridCacheVersion explicit = txEntry.explicitVersion();
+                CacheVersion explicit = txEntry.explicitVersion();
 
                 if (explicit == null) {
                     entry.readyNearLock(xidVer,
@@ -962,7 +963,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             cctx,
             this,
             IgniteUuid.randomUuid(),
-            Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
+            Collections.<IgniteTxKey, CacheVersion>emptyMap(),
             last,
             needReturnValue() && implicit());
 

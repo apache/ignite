@@ -27,7 +27,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -51,7 +51,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     private UUID nodeId;
 
     /** Near transaction version. */
-    private GridCacheVersion nearXidVer;
+    private CacheVersion nearXidVer;
 
     /** Thread ID. */
     private long threadId;
@@ -122,10 +122,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     public GridDistributedLockRequest(
         int cacheId,
         UUID nodeId,
-        @Nullable GridCacheVersion nearXidVer,
+        @Nullable CacheVersion nearXidVer,
         long threadId,
         IgniteUuid futId,
-        GridCacheVersion lockVer,
+        CacheVersion lockVer,
         boolean isInTx,
         boolean isRead,
         TransactionIsolation isolation,
@@ -172,7 +172,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /**
      * @return Near transaction ID.
      */
-    public GridCacheVersion nearXidVersion() {
+    public CacheVersion nearXidVersion() {
         return nearXidVer;
     }
 

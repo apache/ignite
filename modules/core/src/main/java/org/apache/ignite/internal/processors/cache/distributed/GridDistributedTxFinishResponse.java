@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -34,7 +34,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private GridCacheVersion txId;
+    private CacheVersion txId;
 
     /** Future ID. */
     private IgniteUuid futId;
@@ -50,7 +50,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
      * @param txId Transaction id.
      * @param futId Future ID.
      */
-    public GridDistributedTxFinishResponse(GridCacheVersion txId, IgniteUuid futId) {
+    public GridDistributedTxFinishResponse(CacheVersion txId, IgniteUuid futId) {
         assert txId != null;
         assert futId != null;
 
@@ -62,7 +62,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
      *
      * @return Transaction id.
      */
-    public GridCacheVersion xid() {
+    public CacheVersion xid() {
         return txId;
     }
 

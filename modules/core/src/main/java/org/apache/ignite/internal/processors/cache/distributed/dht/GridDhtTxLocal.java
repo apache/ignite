@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -82,7 +82,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     private IgniteUuid nearFinMiniId;
 
     /** Near XID. */
-    private GridCacheVersion nearXidVer;
+    private CacheVersion nearXidVer;
 
     /** Future updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxLocal, GridDhtTxPrepareFuture> PREP_FUT_UPD =
@@ -119,7 +119,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     public GridDhtTxLocal(
         GridCacheSharedContext cctx,
         UUID nearNodeId,
-        GridCacheVersion nearXidVer,
+        CacheVersion nearXidVer,
         IgniteUuid nearFutId,
         IgniteUuid nearMiniId,
         long nearThreadId,
@@ -206,12 +206,12 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion nearXidVersion() {
+    @Override public CacheVersion nearXidVersion() {
         return nearXidVer;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion mappedVersion() {
+    @Override public CacheVersion mappedVersion() {
         return nearXidVer;
     }
 
@@ -303,7 +303,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             return prepareAsync(
                 null,
                 null,
-                Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
+                Collections.<IgniteTxKey, CacheVersion>emptyMap(),
                 0,
                 nearMiniId,
                 null,
@@ -319,7 +319,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 cctx,
                 this,
                 nearMiniId,
-                Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
+                Collections.<IgniteTxKey, CacheVersion>emptyMap(),
                 true,
                 needReturnValue())))
                 return prepFut;
@@ -381,7 +381,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     public IgniteInternalFuture<GridNearTxPrepareResponse> prepareAsync(
         @Nullable Collection<IgniteTxEntry> reads,
         @Nullable Collection<IgniteTxEntry> writes,
-        Map<IgniteTxKey, GridCacheVersion> verMap,
+        Map<IgniteTxKey, CacheVersion> verMap,
         long msgId,
         IgniteUuid nearMiniId,
         Map<UUID, Collection<UUID>> txNodes,

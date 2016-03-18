@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -75,7 +76,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
-        GridCacheVersion lockVer,
+        CacheVersion lockVer,
         IgniteUuid futId,
         int cnt,
         boolean addDepInfo) {
@@ -97,7 +98,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
-        GridCacheVersion lockVer,
+        CacheVersion lockVer,
         IgniteUuid futId,
         Throwable err,
         boolean addDepInfo) {
@@ -119,7 +120,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
-        GridCacheVersion lockVer,
+        CacheVersion lockVer,
         IgniteUuid futId,
         int cnt,
         Throwable err,
@@ -159,7 +160,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param committedVers Committed versions relative to lock version.
      * @param rolledbackVers Rolled back versions relative to lock version.
      */
-    public void setCandidates(Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
+    public void setCandidates(Collection<CacheVersion> committedVers, Collection<CacheVersion> rolledbackVers) {
         completedVersions(committedVers, rolledbackVers);
     }
 

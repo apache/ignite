@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPar
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -140,7 +141,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private AtomicReference<GridDiscoveryTopologySnapshot> topSnapshot = new AtomicReference<>();
 
     /** Last committed cache version before next topology version use. */
-    private AtomicReference<GridCacheVersion> lastVer = new AtomicReference<>();
+    private AtomicReference<CacheVersion> lastVer = new AtomicReference<>();
 
     /**
      * Messages received on non-coordinator are stored in case if this node
@@ -1139,7 +1140,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         // Update last seen version.
         while (true) {
-            GridCacheVersion old = lastVer.get();
+            CacheVersion old = lastVer.get();
 
             if (old == null || old.compareTo(msg.lastVersion()) < 0) {
                 if (lastVer.compareAndSet(old, msg.lastVersion()))

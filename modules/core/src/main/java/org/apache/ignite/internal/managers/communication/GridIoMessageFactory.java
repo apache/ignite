@@ -99,9 +99,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder;
-import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.clock.GridClockDeltaSnapshotMessage;
 import org.apache.ignite.internal.processors.clock.GridClockDeltaVersion;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
@@ -144,11 +142,15 @@ public class GridIoMessageFactory implements MessageFactory {
     /** Extensions. */
     private final MessageFactory[] ext;
 
+    /** */
+    private final boolean newVer;
+
     /**
      * @param ext Extensions.
      */
-    public GridIoMessageFactory(MessageFactory[] ext) {
+    public GridIoMessageFactory(MessageFactory[] ext, boolean newVer) {
         this.ext = ext;
+        this.newVer = newVer;
     }
 
     /** {@inheritDoc} */
@@ -552,7 +554,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 86:
-                msg = new GridCacheVersion();
+                msg = newVer ? new CacheVersionImpl() : new GridCacheVersion();
 
                 break;
 
@@ -642,7 +644,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 104:
-                msg = new GridCacheVersionEx();
+                msg = newVer ? new CacheVersionImplEx() : new GridCacheVersionEx();
 
                 break;
 

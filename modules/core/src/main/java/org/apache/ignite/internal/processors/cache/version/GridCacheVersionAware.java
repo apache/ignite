@@ -26,5 +26,5 @@ public interface GridCacheVersionAware {
      *
      * @return Cache entry version.
      */
-    public GridCacheVersion version();
+    public CacheVersion version();
 }

@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
@@ -99,7 +100,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     private final IgniteUuid futId;
 
     /** Lock version. */
-    private final GridCacheVersion lockVer;
+    private final CacheVersion lockVer;
 
     /** Read flag. */
     private boolean read;
@@ -131,7 +132,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     private volatile AffinityTopologyVersion topVer;
 
     /** Map of current values. */
-    private final Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
+    private final Map<KeyCacheObject, IgniteBiTuple<CacheVersion, CacheObject>> valMap;
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -215,7 +216,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
+    @Override public CacheVersion version() {
         return lockVer;
     }
 
@@ -956,7 +957,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                             cand,
                                             topVer);
 
-                                    IgniteBiTuple<GridCacheVersion, CacheObject> val = entry.versionedValue();
+                                    IgniteBiTuple<CacheVersion, CacheObject> val = entry.versionedValue();
 
                                     if (val == null) {
                                         GridDhtCacheEntry dhtEntry = dht().peekExx(key);
@@ -974,7 +975,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                         }
                                     }
 
-                                    GridCacheVersion dhtVer = null;
+                                    CacheVersion dhtVer = null;
 
                                     if (val != null) {
                                         dhtVer = val.get1();
@@ -1176,15 +1177,15 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                     GridNearCacheEntry entry = cctx.near().entryExx(k, req.topologyVersion());
 
                                     try {
-                                        IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup =
+                                        IgniteBiTuple<CacheVersion, CacheObject> oldValTup =
                                             valMap.get(entry.key());
 
                                         boolean hasBytes = entry.hasValue();
                                         CacheObject oldVal = entry.rawGet();
                                         CacheObject newVal = res.value(i);
 
-                                        GridCacheVersion dhtVer = res.dhtVersion(i);
-                                        GridCacheVersion mappedVer = res.mappedVersion(i);
+                                        CacheVersion dhtVer = res.dhtVersion(i);
+                                        CacheVersion mappedVer = res.mappedVersion(i);
 
                                         // On local node don't record twice if DHT cache already recorded.
                                         boolean record = retval && oldValTup != null && oldValTup.get1().equals(dhtVer);
@@ -1544,7 +1545,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                 return;
                             }
 
-                            IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup = valMap.get(entry.key());
+                            IgniteBiTuple<CacheVersion, CacheObject> oldValTup = valMap.get(entry.key());
 
                             CacheObject oldVal = entry.rawGet();
                             boolean hasOldVal = false;
@@ -1559,8 +1560,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                     hasOldVal = entry.hasValue();
                             }
 
-                            GridCacheVersion dhtVer = res.dhtVersion(i);
-                            GridCacheVersion mappedVer = res.mappedVersion(i);
+                            CacheVersion dhtVer = res.dhtVersion(i);
+                            CacheVersion mappedVer = res.mappedVersion(i);
 
                             if (newVal == null) {
                                 if (oldValTup != null) {

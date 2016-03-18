@@ -24,6 +24,7 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.internal.processors.cache.GridCacheManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -131,7 +132,7 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
      * @return {@code true} If there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean put(@Nullable IgniteInternalTx tx, Object key, Object val, GridCacheVersion ver)
+    public boolean put(@Nullable IgniteInternalTx tx, Object key, Object val, CacheVersion ver)
         throws IgniteCheckedException;
 
     /**
@@ -142,7 +143,7 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
      * @return {@code True} if there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean putAll(@Nullable IgniteInternalTx tx, Map<Object, IgniteBiTuple<Object, GridCacheVersion>> map)
+    public boolean putAll(@Nullable IgniteInternalTx tx, Map<Object, IgniteBiTuple<Object, CacheVersion>> map)
         throws IgniteCheckedException;
 
     /**

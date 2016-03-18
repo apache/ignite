@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
@@ -101,7 +102,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     private final IgniteUuid futId;
 
     /** Lock version. */
-    private final GridCacheVersion lockVer;
+    private final CacheVersion lockVer;
 
     /** Read flag. */
     private final boolean read;
@@ -130,7 +131,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     private volatile AffinityTopologyVersion topVer;
 
     /** Map of current values. */
-    private final Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
+    private final Map<KeyCacheObject, IgniteBiTuple<CacheVersion, CacheObject>> valMap;
 
     /** Trackable flag (here may be non-volatile). */
     private boolean trackable;
@@ -205,7 +206,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
+    @Override public CacheVersion version() {
         return lockVer;
     }
 
@@ -857,10 +858,10 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                         GridCacheMvccCandidate cand = addEntry(entry);
 
                         // Will either return value from dht cache or null if this is a miss.
-                        IgniteBiTuple<GridCacheVersion, CacheObject> val = entry.detached() ? null :
+                        IgniteBiTuple<CacheVersion, CacheObject> val = entry.detached() ? null :
                             ((GridDhtCacheEntry)entry).versionedValue(topVer);
 
-                        GridCacheVersion dhtVer = null;
+                        CacheVersion dhtVer = null;
 
                         if (val != null) {
                             dhtVer = val.get1();
@@ -1433,11 +1434,11 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 int i = 0;
 
                 for (KeyCacheObject k : keys) {
-                    IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup = valMap.get(k);
+                    IgniteBiTuple<CacheVersion, CacheObject> oldValTup = valMap.get(k);
 
                     CacheObject newVal = res.value(i);
 
-                    GridCacheVersion dhtVer = res.dhtVersion(i);
+                    CacheVersion dhtVer = res.dhtVersion(i);
 
                     if (newVal == null) {
                         if (oldValTup != null) {

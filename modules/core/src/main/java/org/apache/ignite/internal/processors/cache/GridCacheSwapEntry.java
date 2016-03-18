@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -53,7 +54,7 @@ public interface GridCacheSwapEntry {
     /**
      * @return Version.
      */
-    public GridCacheVersion version();
+    public CacheVersion version();
 
     /**
      * @return Time to live.

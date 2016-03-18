@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -86,7 +86,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      */
     public GridNearTxFinishRequest(
         IgniteUuid futId,
-        GridCacheVersion xidVer,
+        CacheVersion xidVer,
         long threadId,
         boolean commit,
         boolean invalidate,
@@ -97,9 +97,9 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean explicitLock,
         boolean storeEnabled,
         @NotNull AffinityTopologyVersion topVer,
-        GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
+        CacheVersion baseVer,
+        Collection<CacheVersion> committedVers,
+        Collection<CacheVersion> rolledbackVers,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,

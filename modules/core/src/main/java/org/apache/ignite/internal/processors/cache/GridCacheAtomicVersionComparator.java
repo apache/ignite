@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -31,7 +32,7 @@ public class GridCacheAtomicVersionComparator {
      * @param ignoreTime {@code True} if global time should be ignored.
      * @return Comparison value.
      */
-    public int compare(GridCacheVersion one, GridCacheVersion other, boolean ignoreTime) {
+    public int compare(CacheVersion one, CacheVersion other, boolean ignoreTime) {
         int topVer = one.topologyVersion();
         int otherTopVer = other.topologyVersion();
 

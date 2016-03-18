@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -59,7 +59,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     private UUID nodeId;
 
     /** Future version. */
-    private GridCacheVersion futVer;
+    private CacheVersion futVer;
 
     /** Update error. */
     @GridDirectTransient
@@ -96,7 +96,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     private List<CacheObject> nearVals;
 
     /** Version generated on primary node to be used for originating node's near cache update. */
-    private GridCacheVersion nearVer;
+    private CacheVersion nearVer;
 
     /** Near TTLs. */
     private GridLongList nearTtls;
@@ -117,7 +117,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param futVer Future version.
      * @param addDepInfo Deployment info flag.
      */
-    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer, boolean addDepInfo) {
+    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, CacheVersion futVer, boolean addDepInfo) {
         assert futVer != null;
 
         this.cacheId = cacheId;
@@ -148,7 +148,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /**
      * @return Future version.
      */
-    public GridCacheVersion futureVersion() {
+    public CacheVersion futureVersion() {
         return futVer;
     }
 
@@ -288,14 +288,14 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /**
      * @param nearVer Version generated on primary node to be used for originating node's near cache update.
      */
-    public void nearVersion(GridCacheVersion nearVer) {
+    public void nearVersion(CacheVersion nearVer) {
         this.nearVer = nearVer;
     }
 
     /**
      * @return Version generated on primary node to be used for originating node's near cache update.
      */
-    public GridCacheVersion nearVersion() {
+    public CacheVersion nearVersion() {
         return nearVer;
     }
 

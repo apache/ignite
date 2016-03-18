@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -54,8 +55,8 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** Collection of versions that are pending and less than lock version. */
     @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> pending;
+    @GridDirectCollection(CacheVersion.class)
+    private Collection<CacheVersion> pending;
 
     /** Future ID.  */
     private IgniteUuid futId;
@@ -64,10 +65,10 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     private IgniteUuid miniId;
 
     /** DHT version. */
-    private GridCacheVersion dhtVer;
+    private CacheVersion dhtVer;
 
     /** Write version. */
-    private GridCacheVersion writeVer;
+    private CacheVersion writeVer;
 
     /** */
     @GridToStringInclude
@@ -118,11 +119,11 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param addDepInfo Deployment info flag.
      */
     public GridNearTxPrepareResponse(
-        GridCacheVersion xid,
+        CacheVersion xid,
         IgniteUuid futId,
         IgniteUuid miniId,
-        GridCacheVersion dhtVer,
-        GridCacheVersion writeVer,
+        CacheVersion dhtVer,
+        CacheVersion writeVer,
         GridCacheReturn retVal,
         Throwable err,
         AffinityTopologyVersion clientRemapVer,
@@ -154,8 +155,8 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      *
      * @return Pending versions.
      */
-    public Collection<GridCacheVersion> pending() {
-        return pending == null ? Collections.<GridCacheVersion>emptyList() : pending;
+    public Collection<CacheVersion> pending() {
+        return pending == null ? Collections.<CacheVersion>emptyList() : pending;
     }
 
     /**
@@ -163,7 +164,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      *
      * @param pending Pending versions.
      */
-    public void pending(Collection<GridCacheVersion> pending) {
+    public void pending(Collection<CacheVersion> pending) {
         this.pending = pending;
     }
 
@@ -184,14 +185,14 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /**
      * @return DHT version.
      */
-    public GridCacheVersion dhtVersion() {
+    public CacheVersion dhtVersion() {
         return dhtVer;
     }
 
     /**
      * @return Write version.
      */
-    public GridCacheVersion writeVersion() {
+    public CacheVersion writeVersion() {
         return writeVer;
     }
 
@@ -202,7 +203,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param ver DHT version.
      * @param val Value.
      */
-    public void addOwnedValue(IgniteTxKey key, GridCacheVersion ver, CacheObject val) {
+    public void addOwnedValue(IgniteTxKey key, CacheVersion ver, CacheObject val) {
         if (val == null)
             return;
 

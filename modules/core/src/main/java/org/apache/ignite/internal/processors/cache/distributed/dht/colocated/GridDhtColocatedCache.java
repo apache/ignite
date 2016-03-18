@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -480,10 +481,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             boolean isNew = entry.isNewLocked();
 
                             CacheObject v = null;
-                            GridCacheVersion ver = null;
+                            CacheVersion ver = null;
 
                             if (needVer) {
-                                T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                                T2<CacheObject, CacheVersion> res = entry.innerGetVersioned(
                                     null,
                                     /*swap*/true,
                                     /*unmarshal*/true,
@@ -518,7 +519,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                             // Entry was not in memory or in swap, so we remove it from cache.
                             if (v == null) {
-                                GridCacheVersion obsoleteVer = context().versions().next();
+                                CacheVersion obsoleteVer = context().versions().next();
 
                                 if (isNew && entry.markObsoleteIfEmpty(obsoleteVer))
                                     removeIfObsolete(key);
@@ -649,7 +650,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             return;
 
         try {
-            GridCacheVersion ver = null;
+            CacheVersion ver = null;
 
             int keyCnt = -1;
 
@@ -765,7 +766,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param ver Lock version.
      * @param keys Keys.
      */
-    public void removeLocks(long threadId, GridCacheVersion ver, Collection<KeyCacheObject> keys) {
+    public void removeLocks(long threadId, CacheVersion ver, Collection<KeyCacheObject> keys) {
         if (keys.isEmpty())
             return;
 
@@ -829,10 +830,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             if (map == null || map.isEmpty())
                 return;
 
-            IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(ver);
+            IgnitePair<Collection<CacheVersion>> versPair = ctx.tm().versions(ver);
 
-            Collection<GridCacheVersion> committed = versPair.get1();
-            Collection<GridCacheVersion> rolledback = versPair.get2();
+            Collection<CacheVersion> committed = versPair.get1();
+            Collection<CacheVersion> rolledback = versPair.get2();
 
             for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
@@ -881,7 +882,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final GridCacheContext<?, ?> cacheCtx,
         @Nullable final GridNearTxLocal tx,
         final long threadId,
-        final GridCacheVersion ver,
+        final CacheVersion ver,
         final AffinityTopologyVersion topVer,
         final Collection<KeyCacheObject> keys,
         final boolean txRead,
@@ -961,7 +962,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         GridCacheContext<?, ?> cacheCtx,
         @Nullable final GridNearTxLocal tx,
         long threadId,
-        final GridCacheVersion ver,
+        final CacheVersion ver,
         AffinityTopologyVersion topVer,
         final Collection<KeyCacheObject> keys,
         final boolean txRead,

@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -49,7 +49,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** Future version. */
-    private GridCacheVersion futVer;
+    private CacheVersion futVer;
 
     /** Failed keys. */
     @GridToStringInclude
@@ -80,7 +80,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
      * @param futVer Future version.
      * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicUpdateResponse(int cacheId, GridCacheVersion futVer, boolean addDepInfo) {
+    public GridDhtAtomicUpdateResponse(int cacheId, CacheVersion futVer, boolean addDepInfo) {
         this.cacheId = cacheId;
         this.futVer = futVer;
         this.addDepInfo = addDepInfo;
@@ -94,7 +94,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     /**
      * @return Future version.
      */
-    public GridCacheVersion futureVersion() {
+    public CacheVersion futureVersion() {
         return futVer;
     }
 

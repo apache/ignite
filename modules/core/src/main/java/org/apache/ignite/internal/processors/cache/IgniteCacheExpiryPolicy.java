@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
+
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -53,7 +55,7 @@ public interface IgniteCacheExpiryPolicy {
      * @param rdrs Entry readers.
      */
     public void ttlUpdated(KeyCacheObject key,
-       GridCacheVersion ver,
+       CacheVersion ver,
        @Nullable Collection<UUID> rdrs);
 
     /**
@@ -70,10 +72,10 @@ public interface IgniteCacheExpiryPolicy {
     /**
      * @return Entries with TTL updated on access.
      */
-    @Nullable public Map<KeyCacheObject, GridCacheVersion> entries();
+    @Nullable public Map<KeyCacheObject, CacheVersion> entries();
 
     /**
      * @return Readers for updated entries.
      */
-    @Nullable Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> readers();
+    @Nullable Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, CacheVersion>>> readers();
 }

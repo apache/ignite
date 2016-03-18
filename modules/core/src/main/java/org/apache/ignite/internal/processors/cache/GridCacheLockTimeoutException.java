@@ -29,7 +29,7 @@ public class GridCacheLockTimeoutException extends Exception {
     /**
      * @param ver Lock version.
      */
-    public GridCacheLockTimeoutException(GridCacheVersion ver) {
+    public GridCacheLockTimeoutException(CacheVersion ver) {
         super("Lock acquisition timed out: " + ver);
     }
 }

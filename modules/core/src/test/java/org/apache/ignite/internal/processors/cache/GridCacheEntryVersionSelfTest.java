@@ -22,7 +22,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -112,7 +112,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
                     GridCacheEntryEx entry = cache.peekEx(key);
 
                     if (entry != null) {
-                        GridCacheVersion ver = entry.version();
+                        CacheVersion ver = entry.version();
 
                         long order = grid.affinity(null).mapKeyToNode(key).order();
 
@@ -139,7 +139,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
                     GridCacheEntryEx entry = cache.peekEx(key);
 
                     if (entry != null) {
-                        GridCacheVersion ver = entry.version();
+                        CacheVersion ver = entry.version();
 
                         long order = grid.affinity(null).mapKeyToNode(key).order();
 

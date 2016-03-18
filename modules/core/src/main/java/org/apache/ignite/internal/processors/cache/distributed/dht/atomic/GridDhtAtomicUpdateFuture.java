@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -69,10 +69,10 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     private final GridCacheContext cctx;
 
     /** Future version. */
-    private final GridCacheVersion futVer;
+    private final CacheVersion futVer;
 
     /** Write version. */
-    private final GridCacheVersion writeVer;
+    private final CacheVersion writeVer;
 
     /** Force transform backup flag. */
     private boolean forceTransformBackups;
@@ -117,7 +117,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         GridCacheContext cctx,
         CI2<GridNearAtomicUpdateRequest,
         GridNearAtomicUpdateResponse> completionCb,
-        GridCacheVersion writeVer,
+        CacheVersion writeVer,
         GridNearAtomicUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes
     ) {
@@ -153,7 +153,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
+    @Override public CacheVersion version() {
         return futVer;
     }
 
@@ -235,7 +235,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer,
+        @Nullable CacheVersion conflictVer,
         boolean addPrevVal,
         @Nullable CacheObject prevVal,
         long updateCntr) {

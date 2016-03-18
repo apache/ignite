@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -67,7 +67,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     /** Owner mapped version, if any. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<KeyCacheObject, GridCacheVersion> owned;
+    private Map<KeyCacheObject, CacheVersion> owned;
 
     /** Array of keys from {@link #owned}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
@@ -75,7 +75,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
     /** Array of values from {@link #owned}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
-    private GridCacheVersion[] ownedValues;
+    private CacheVersion[] ownedValues;
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
@@ -126,11 +126,11 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     public GridDhtLockRequest(
         int cacheId,
         UUID nodeId,
-        GridCacheVersion nearXidVer,
+        CacheVersion nearXidVer,
         long threadId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        GridCacheVersion lockVer,
+        CacheVersion lockVer,
         @NotNull AffinityTopologyVersion topVer,
         boolean isInTx,
         boolean isRead,
@@ -268,7 +268,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param key Key.
      * @param ownerMapped Owner mapped version.
      */
-    public void owned(KeyCacheObject key, GridCacheVersion ownerMapped) {
+    public void owned(KeyCacheObject key, CacheVersion ownerMapped) {
         if (owned == null)
             owned = new GridLeanMap<>(3);
 
@@ -279,7 +279,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param key Key.
      * @return Owner and its mapped versions.
      */
-    @Nullable public GridCacheVersion owned(KeyCacheObject key) {
+    @Nullable public CacheVersion owned(KeyCacheObject key) {
         return owned == null ? null : owned.get(key);
     }
 
@@ -313,11 +313,11 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         if (owned != null && ownedKeys == null) {
             ownedKeys = new KeyCacheObject[owned.size()];
-            ownedValues = new GridCacheVersion[ownedKeys.length];
+            ownedValues = new CacheVersion[ownedKeys.length];
 
             int i = 0;
 
-            for (Map.Entry<KeyCacheObject, GridCacheVersion> entry : owned.entrySet()) {
+            for (Map.Entry<KeyCacheObject, CacheVersion> entry : owned.entrySet()) {
                 ownedKeys[i] = entry.getKey();
                 ownedValues[i] = entry.getValue();
                 i++;
@@ -476,7 +476,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 25:
-                ownedValues = reader.readObjectArray("ownedValues", MessageCollectionItemType.MSG, GridCacheVersion.class);
+                ownedValues = reader.readObjectArray("ownedValues", MessageCollectionItemType.MSG, CacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;

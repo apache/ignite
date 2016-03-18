@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlock
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -215,7 +216,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     public void clearLocks(UUID nodeId, GridDhtUnlockRequest req) {
         assert nodeId != null;
 
-        GridCacheVersion obsoleteVer = ctx.versions().next();
+        CacheVersion obsoleteVer = ctx.versions().next();
 
         List<KeyCacheObject> keys = req.nearKeys();
 
@@ -482,7 +483,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param topVer Topology version.
      * @return {@code True} if attempt was made to evict the entry.
      */
-    protected boolean evictNearEntry(GridCacheEntryEx e, GridCacheVersion obsoleteVer, AffinityTopologyVersion topVer) {
+    protected boolean evictNearEntry(GridCacheEntryEx e, CacheVersion obsoleteVer, AffinityTopologyVersion topVer) {
         assert e != null;
         assert obsoleteVer != null;
 
@@ -503,7 +504,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             return;
 
         try {
-            GridCacheVersion ver = null;
+            CacheVersion ver = null;
 
             int keyCnt = -1;
 
@@ -634,7 +635,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param keys Keys.
      */
     @SuppressWarnings({"unchecked"})
-    public void removeLocks(GridCacheVersion ver, Collection<KeyCacheObject> keys) {
+    public void removeLocks(CacheVersion ver, Collection<KeyCacheObject> keys) {
         if (keys.isEmpty())
             return;
 
@@ -714,10 +715,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (map == null || map.isEmpty())
                 return;
 
-            IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(ver);
+            IgnitePair<Collection<CacheVersion>> versPair = ctx.tm().versions(ver);
 
-            Collection<GridCacheVersion> committed = versPair.get1();
-            Collection<GridCacheVersion> rolledback = versPair.get2();
+            Collection<CacheVersion> committed = versPair.get1();
+            Collection<CacheVersion> rolledback = versPair.get2();
 
             for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
@@ -738,7 +739,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
+    @Override public void onDeferredDelete(GridCacheEntryEx entry, CacheVersion ver) {
         assert false : "Should not be called";
     }
 

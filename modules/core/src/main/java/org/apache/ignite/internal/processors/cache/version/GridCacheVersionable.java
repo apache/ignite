@@ -24,5 +24,5 @@ public interface GridCacheVersionable {
     /**
      * @return Version.
      */
-    public GridCacheVersion version();
+    public CacheVersion version();
 }

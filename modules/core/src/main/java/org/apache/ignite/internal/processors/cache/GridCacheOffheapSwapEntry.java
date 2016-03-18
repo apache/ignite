@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -46,7 +47,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
     private final long valPtr;
 
     /** */
-    private final GridCacheVersion ver;
+    private final CacheVersion ver;
 
     /** */
     private CacheObject val;
@@ -58,7 +59,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
      * @param ptr Value pointer.
      * @param size Value size.
      */
-    public GridCacheOffheapSwapEntry(long ptr, int size) {
+    public GridCacheOffheapSwapEntry(long ptr, int size, GridCacheSharedContext cctx) {
         assert ptr > 0 : ptr;
         assert size > 40 : size;
 
@@ -68,7 +69,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
 
         boolean verEx = GridUnsafe.getByte(readPtr++) != 0;
 
-        ver = U.readVersion(readPtr, verEx);
+        ver = cctx.versions().readVersion(readPtr, verEx);
 
         readPtr += verEx ? GridCacheSwapEntryImpl.VERSION_EX_SIZE : GridCacheSwapEntryImpl.VERSION_SIZE;
 
@@ -119,14 +120,14 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
      * @param ptr Marshaled swap entry address.
      * @return Version.
      */
-    public static GridCacheVersion version(long ptr) {
+    public static CacheVersion version(long ptr, GridCacheSharedContext cctx) {
         long addr = ptr + GridCacheSwapEntryImpl.VERSION_OFFSET;
 
         boolean verEx = GridUnsafe.getByte(addr) != 0;
 
         addr++;
 
-        return U.readVersion(addr, verEx);
+        return cctx.versions().readVersion(addr, verEx);
     }
 
     /** {@inheritDoc} */
@@ -155,7 +156,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
+    @Override public CacheVersion version() {
         return ver;
     }
 

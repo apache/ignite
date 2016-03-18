@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -76,9 +77,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
      */
     @Nullable public GridCacheMvccCandidate addLocal(
         long threadId,
-        GridCacheVersion ver,
-        @Nullable GridCacheVersion serOrder,
-        @Nullable GridCacheVersion serReadVer,
+        CacheVersion ver,
+        @Nullable CacheVersion serOrder,
+        @Nullable CacheVersion serReadVer,
         long timeout,
         boolean reenter,
         boolean tx,
@@ -181,7 +182,7 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
      * @param ver Candidate version.
      * @return Current owner.
      */
-    @Nullable public GridCacheMvccCandidate readyLocal(GridCacheVersion ver) {
+    @Nullable public GridCacheMvccCandidate readyLocal(CacheVersion ver) {
         GridCacheMvccCandidate prev = null;
         GridCacheMvccCandidate owner = null;
 
@@ -206,8 +207,8 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
     /** {@inheritDoc} */
     @Override public boolean tmLock(IgniteInternalTx tx,
         long timeout,
-        @Nullable GridCacheVersion serOrder,
-        GridCacheVersion serReadVer,
+        @Nullable CacheVersion serOrder,
+        CacheVersion serReadVer,
         boolean keepBinary)
         throws GridCacheEntryRemovedException {
         GridCacheMvccCandidate cand = addLocal(
@@ -372,7 +373,7 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeLock(GridCacheVersion ver) throws GridCacheEntryRemovedException {
+    @Override public boolean removeLock(CacheVersion ver) throws GridCacheEntryRemovedException {
         GridCacheMvccCandidate prev = null;
         GridCacheMvccCandidate owner = null;
 
@@ -382,7 +383,7 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         boolean hasVal;
 
         synchronized (this) {
-            GridCacheVersion obsoleteVer = obsoleteVersionExtras();
+            CacheVersion obsoleteVer = obsoleteVersionExtras();
 
             if (obsoleteVer != null && !obsoleteVer.equals(ver))
                 checkObsolete();

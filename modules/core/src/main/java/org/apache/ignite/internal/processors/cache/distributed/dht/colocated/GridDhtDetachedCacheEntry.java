@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -50,7 +51,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
      * @param val Value.
      * @param ver Version.
      */
-    public void resetFromPrimary(CacheObject val, GridCacheVersion ver) {
+    public void resetFromPrimary(CacheObject val, CacheVersion ver) {
         value(val);
 
         this.ver = ver;
@@ -73,7 +74,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void updateIndex(CacheObject val, long expireTime,
-        GridCacheVersion ver, CacheObject old) throws IgniteCheckedException {
+        CacheVersion ver, CacheObject old) throws IgniteCheckedException {
         // No-op for detached entries, index is updated on primary nodes.
     }
 
@@ -93,7 +94,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean addRemoved(GridCacheVersion ver) {
+    @Override public boolean addRemoved(CacheVersion ver) {
         // No-op for detached cache entry.
         return true;
     }

@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -81,7 +82,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     private IgniteTxLocalEx tx;
 
     /** */
-    private GridCacheVersion ver;
+    private CacheVersion ver;
 
     /**
      * @param cctx Context.
@@ -272,7 +273,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             finally {
                 // Exception has been thrown, must release reserved near entries.
                 if (!success) {
-                    GridCacheVersion obsolete = cctx.versions().next(topVer);
+                    CacheVersion obsolete = cctx.versions().next(topVer);
 
                     if (savedEntries != null) {
                         for (GridNearCacheEntry reserved : savedEntries.values()) {
@@ -426,14 +427,14 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
             try {
                 CacheObject v = null;
-                GridCacheVersion ver = null;
+                CacheVersion ver = null;
 
                 boolean isNear = entry != null;
 
                 // First we peek into near cache.
                 if (isNear) {
                     if (needVer) {
-                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                        T2<CacheObject, CacheVersion> res = entry.innerGetVersioned(
                             null,
                             /*swap*/true,
                             /*unmarshal*/true,
@@ -572,7 +573,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     boolean isNew = dhtEntry.isNewLocked() || !dhtEntry.valid(topVer);
 
                     if (needVer) {
-                        T2<CacheObject, GridCacheVersion> res = dhtEntry.innerGetVersioned(
+                        T2<CacheObject, CacheVersion> res = dhtEntry.innerGetVersioned(
                             null,
                             /*swap*/true,
                             /*unmarshal*/true,
@@ -644,39 +645,39 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     }
 
     /**
+     * @return Near cache.
+     */
+    private GridNearCacheAdapter<K, V> cache() {
+        return (GridNearCacheAdapter<K, V>)cctx.cache();
+    }
+
+    /**
      * @param key Key.
      * @param v Value.
      * @param ver Version.
      */
     @SuppressWarnings("unchecked")
-    private void addResult(KeyCacheObject key, CacheObject v, GridCacheVersion ver) {
+    private void addResult(KeyCacheObject key, CacheObject v, CacheVersion ver) {
         if (keepCacheObjects) {
             K key0 = (K)key;
             V val0 = needVer ?
-                (V)new T2<>(skipVals ? true : v, ver) :
-                (V)(skipVals ? true : v);
+                    (V)new T2<>(skipVals ? true : v, ver) :
+                    (V)(skipVals ? true : v);
 
             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
         }
         else {
             K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false);
             V val0 = needVer ?
-                (V)new T2<>(!skipVals ?
-                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
-                    (V)Boolean.TRUE, ver) :
-                !skipVals ?
-                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
-                    (V)Boolean.TRUE;
+                    (V)new T2<>(!skipVals ?
+                            (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
+                            (V)Boolean.TRUE, ver) :
+                    !skipVals ?
+                            (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
+                            (V)Boolean.TRUE;
 
             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
         }
-    }
-
-    /**
-     * @return Near cache.
-     */
-    private GridNearCacheAdapter<K, V> cache() {
-        return (GridNearCacheAdapter<K, V>)cctx.cache();
     }
 
     /**
@@ -708,7 +709,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         if (!empty) {
             boolean atomic = cctx.atomic();
 
-            GridCacheVersion ver = atomic ? null : F.isEmpty(infos) ? null : cctx.versions().next();
+            CacheVersion ver = atomic ? null : F.isEmpty(infos) ? null : cctx.versions().next();
 
             for (GridCacheEntryInfo info : infos) {
                 try {

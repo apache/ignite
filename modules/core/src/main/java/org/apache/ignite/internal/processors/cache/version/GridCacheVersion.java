@@ -32,18 +32,18 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Grid unique version.
  */
-public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, Externalizable {
+public class GridCacheVersion implements CacheVersion, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Node order mask. */
-    private static final int NODE_ORDER_MASK = 0x07_FF_FF_FF;
+    public static final int NODE_ORDER_MASK = 0x07_FF_FF_FF;
 
     /** DR center ID shift. */
-    private static final int DR_ID_SHIFT = 27;
+    public static final int DR_ID_SHIFT = 27;
 
     /** DR center ID mask. */
-    private static final int DR_ID_MASK = 0x1F;
+    public static final int DR_ID_MASK = 0x1F;
 
     /** Topology version. */
     private int topVer;
@@ -145,10 +145,15 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
         return (byte)((nodeOrderDrId >> DR_ID_SHIFT) & DR_ID_MASK);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean hasConflictVersion() {
+        return true;
+    }
+
     /**
      * @return Conflict version.
      */
-    public GridCacheVersion conflictVersion() {
+    public CacheVersion conflictVersion() {
         return this; // Use current version.
     }
 
@@ -187,7 +192,7 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
     /**
      * @return Version represented as {@code GridUuid}
      */
-    public IgniteUuid asGridUuid() {
+    @Override public IgniteUuid asGridUuid() {
         return new IgniteUuid(new UUID(((long)topVer << 32) | nodeOrderDrId, globalTime), order);
     }
 
@@ -238,13 +243,15 @@ public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, 
 
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
-    @Override public int compareTo(GridCacheVersion other) {
+    @Override public int compareTo(CacheVersion other) {
+        assert other instanceof GridCacheVersion : other;
+
         int res = Integer.compare(topologyVersion(), other.topologyVersion());
 
         if (res != 0)
             return res;
 
-        res = Long.compare(order, other.order);
+        res = Long.compare(order, other.order());
 
         if (res != 0)
             return res;

@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -470,7 +471,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
 
         // Version for all loaded entries.
-        final GridCacheVersion ver0 = ctx.shared().versions().nextForLoad(topology().topologyVersion());
+        final CacheVersion ver0 = ctx.shared().versions().nextForLoad(topology().topologyVersion());
 
         final boolean replicate = ctx.isDrEnabled();
 
@@ -496,7 +497,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         }
 
         // Version for all loaded entries.
-        final GridCacheVersion ver0 = ctx.shared().versions().nextForLoad(topology().topologyVersion());
+        final CacheVersion ver0 = ctx.shared().versions().nextForLoad(topology().topologyVersion());
 
         final boolean replicate = ctx.isDrEnabled();
 
@@ -538,7 +539,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     private void loadEntry(KeyCacheObject key,
         Object val,
-        GridCacheVersion ver,
+        CacheVersion ver,
         @Nullable IgniteBiPredicate<K, V> p,
         AffinityTopologyVersion topVer,
         boolean replicate,
@@ -929,7 +930,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             ctx.closures().runLocalSafe(new Runnable() {
                 @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
                 @Override public void run() {
-                    Map<KeyCacheObject, GridCacheVersion> entries = expiryPlc.entries();
+                    Map<KeyCacheObject, CacheVersion> entries = expiryPlc.entries();
 
                     assert entries != null && !entries.isEmpty();
 
@@ -937,7 +938,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
 
-                    for (Map.Entry<KeyCacheObject, GridCacheVersion> e : entries.entrySet()) {
+                    for (Map.Entry<KeyCacheObject, CacheVersion> e : entries.entrySet()) {
                         List<ClusterNode> nodes = ctx.affinity().nodes(e.getKey(), topVer);
 
                         for (int i = 0; i < nodes.size(); i++) {
@@ -957,12 +958,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         }
                     }
 
-                    Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> rdrs = expiryPlc.readers();
+                    Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, CacheVersion>>> rdrs = expiryPlc.readers();
 
                     if (rdrs != null) {
                         assert !rdrs.isEmpty();
 
-                        for (Map.Entry<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> e : rdrs.entrySet()) {
+                        for (Map.Entry<UUID, Collection<IgniteBiTuple<KeyCacheObject, CacheVersion>>> e : rdrs.entrySet()) {
                             ClusterNode node = ctx.node(e.getKey());
 
                             if (node != null) {
@@ -974,7 +975,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                                         expiryPlc.forAccess()));
                                 }
 
-                                for (IgniteBiTuple<KeyCacheObject, GridCacheVersion> t : e.getValue())
+                                for (IgniteBiTuple<KeyCacheObject, CacheVersion> t : e.getValue())
                                     req.addNearEntry(t.get1(), t.get2());
                             }
                         }
@@ -1022,7 +1023,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     private void updateTtl(GridCacheAdapter<K, V> cache,
         List<KeyCacheObject> keys,
-        List<GridCacheVersion> vers,
+        List<CacheVersion> vers,
         long ttl) {
         assert !F.isEmpty(keys);
         assert keys.size() == vers.size();
@@ -1183,7 +1184,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
+    @Override public void onDeferredDelete(GridCacheEntryEx entry, CacheVersion ver) {
         assert entry.isDht();
 
         GridDhtLocalPartition part = topology().localPartition(entry.partition(), AffinityTopologyVersion.NONE,

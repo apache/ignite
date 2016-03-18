@@ -24,6 +24,7 @@ import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -141,7 +142,7 @@ public class GridCacheEvictionRequest extends GridCacheMessage implements GridCa
      * @param ver Entry version.
      * @param near {@code true} if key should be evicted from near cache.
      */
-    void addKey(KeyCacheObject key, GridCacheVersion ver, boolean near) {
+    void addKey(KeyCacheObject key, CacheVersion ver, boolean near) {
         assert key != null;
         assert ver != null;
 

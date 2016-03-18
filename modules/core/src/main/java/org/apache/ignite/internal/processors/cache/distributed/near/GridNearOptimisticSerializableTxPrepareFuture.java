@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -107,7 +108,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
             if (txEntry != null) {
                 if (entry.context().isLocal()) {
-                    GridCacheVersion serReadVer = txEntry.entryReadVersion();
+                    CacheVersion serReadVer = txEntry.entryReadVersion();
 
                     if (serReadVer != null) {
                         GridCacheContext ctx = entry.context();

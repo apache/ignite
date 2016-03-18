@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -38,7 +39,7 @@ public class CacheEvictionEntry implements Message {
 
     /** */
     @GridToStringInclude
-    private GridCacheVersion ver;
+    private CacheVersion ver;
 
     /** */
     private boolean near;
@@ -55,7 +56,7 @@ public class CacheEvictionEntry implements Message {
      * @param ver Version.
      * @param near {@code true} if key should be evicted from near cache.
      */
-    public CacheEvictionEntry(KeyCacheObject key, GridCacheVersion ver, boolean near) {
+    public CacheEvictionEntry(KeyCacheObject key, CacheVersion ver, boolean near) {
         this.key = key;
         this.ver = ver;
         this.near = near;
@@ -71,7 +72,7 @@ public class CacheEvictionEntry implements Message {
     /**
      * @return Version.
      */
-    public GridCacheVersion version() {
+    public CacheVersion version() {
         return ver;
     }
 

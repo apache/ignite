@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheClearAllRunnable;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -37,7 +37,7 @@ public class GridNearCacheClearAllRunnable<K, V> extends GridCacheClearAllRunnab
      * @param obsoleteVer Obsolete version.
      * @param dhtJob Linked DHT job.
      */
-    public GridNearCacheClearAllRunnable(GridCacheAdapter<K, V> cache, GridCacheVersion obsoleteVer,
+    public GridNearCacheClearAllRunnable(GridCacheAdapter<K, V> cache, CacheVersion obsoleteVer,
         GridCacheClearAllRunnable<K, V> dhtJob) {
         super(cache, obsoleteVer, dhtJob.id(), dhtJob.totalCount(), dhtJob.readers());
 

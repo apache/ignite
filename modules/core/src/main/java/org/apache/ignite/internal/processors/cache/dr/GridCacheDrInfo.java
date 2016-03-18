@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,7 +42,7 @@ public class GridCacheDrInfo implements Externalizable {
     private EntryProcessor proc;
 
     /** DR version. */
-    private GridCacheVersion ver;
+    private CacheVersion ver;
 
     /**
      * {@link Externalizable} support.
@@ -56,7 +57,7 @@ public class GridCacheDrInfo implements Externalizable {
      * @param val Value.
      * @param ver Version.
      */
-    public GridCacheDrInfo(CacheObject val, GridCacheVersion ver) {
+    public GridCacheDrInfo(CacheObject val, CacheVersion ver) {
         assert val != null;
         assert ver != null;
 
@@ -69,7 +70,7 @@ public class GridCacheDrInfo implements Externalizable {
      *
      * @param ver Version.
      */
-    public GridCacheDrInfo(GridCacheVersion ver) {
+    public GridCacheDrInfo(CacheVersion ver) {
         this.ver = ver;
     }
 
@@ -79,7 +80,7 @@ public class GridCacheDrInfo implements Externalizable {
      * @param proc Entry processor.
      * @param ver Version.
      */
-    public GridCacheDrInfo(EntryProcessor proc, GridCacheVersion ver) {
+    public GridCacheDrInfo(EntryProcessor proc, CacheVersion ver) {
         assert proc != null;
         assert ver != null;
 
@@ -111,7 +112,7 @@ public class GridCacheDrInfo implements Externalizable {
     /**
      * @return Version.
      */
-    public GridCacheVersion version() {
+    public CacheVersion version() {
         return ver;
     }
 

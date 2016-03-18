@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -587,10 +588,10 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                     if (entry != null) {
                         CacheObject v ;
-                        GridCacheVersion ver;
+                        CacheVersion ver;
 
                         if (needVer) {
-                            T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                            T2<CacheObject, CacheVersion> res = entry.innerGetVersioned(
                                 null,
                                 /*swap*/swapOrOffheap,
                                 /*unmarshal*/true,
@@ -978,7 +979,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        GridCacheVersion ver = ctx.versions().next();
+        CacheVersion ver = ctx.versions().next();
 
         UUID subjId = ctx.subjectIdPerCall(null);
 
@@ -1117,7 +1118,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable Iterable<?> vals,
         @Nullable Object[] invokeArgs,
         @Nullable ExpiryPolicy expiryPlc,
-        GridCacheVersion ver,
+        CacheVersion ver,
         @Nullable CacheEntryPredicate[] filter,
         boolean keepBinary,
         UUID subjId,
@@ -1415,7 +1416,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @SuppressWarnings({"unchecked", "ConstantConditions", "ForLoopReplaceableByForEach"})
     @Nullable private CachePartialUpdateCheckedException updatePartialBatch(
         List<GridCacheEntryEx> entries,
-        final GridCacheVersion ver,
+        final CacheVersion ver,
         @Nullable List<CacheObject> writeVals,
         @Nullable Map<Object, Object> putMap,
         @Nullable Collection<Object> rmvKeys,
@@ -1433,8 +1434,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         try {
             if (putMap != null) {
                 try {
-                    ctx.store().putAll(null, F.viewReadOnly(putMap, new C1<Object, IgniteBiTuple<Object, GridCacheVersion>>() {
-                        @Override public IgniteBiTuple<Object, GridCacheVersion> apply(Object v) {
+                    ctx.store().putAll(null, F.viewReadOnly(putMap, new C1<Object, IgniteBiTuple<Object, CacheVersion>>() {
+                        @Override public IgniteBiTuple<Object, CacheVersion> apply(Object v) {
                             return F.t(v, ver);
                         }
                     }));
@@ -1686,7 +1687,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
+    @Override public void onDeferredDelete(GridCacheEntryEx entry, CacheVersion ver) {
         assert false : "Should not be called";
     }
 }

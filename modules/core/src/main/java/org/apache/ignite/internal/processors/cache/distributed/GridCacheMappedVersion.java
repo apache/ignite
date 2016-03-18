@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -29,5 +29,5 @@ public interface GridCacheMappedVersion {
      * 
      * @return Mapped version.
      */
-    @Nullable public GridCacheVersion mappedVersion();
+    @Nullable public CacheVersion mappedVersion();
 }

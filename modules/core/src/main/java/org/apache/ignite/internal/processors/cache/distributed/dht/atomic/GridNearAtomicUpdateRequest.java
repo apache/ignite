@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -70,13 +70,13 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     private UUID nodeId;
 
     /** Future version. */
-    private GridCacheVersion futVer;
+    private CacheVersion futVer;
 
     /** Fast map flag. */
     private boolean fastMap;
 
     /** Update version. Set to non-null if fastMap is {@code true}. */
-    private GridCacheVersion updateVer;
+    private CacheVersion updateVer;
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
@@ -115,8 +115,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     private byte[][] invokeArgsBytes;
 
     /** Conflict versions. */
-    @GridDirectCollection(GridCacheVersion.class)
-    private List<GridCacheVersion> conflictVers;
+    @GridDirectCollection(CacheVersion.class)
+    private List<CacheVersion> conflictVers;
 
     /** Conflict TTLs. */
     private GridLongList conflictTtls;
@@ -197,9 +197,9 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     public GridNearAtomicUpdateRequest(
         int cacheId,
         UUID nodeId,
-        GridCacheVersion futVer,
+        CacheVersion futVer,
         boolean fastMap,
-        @Nullable GridCacheVersion updateVer,
+        @Nullable CacheVersion updateVer,
         @NotNull AffinityTopologyVersion topVer,
         boolean topLocked,
         CacheWriteSynchronizationMode syncMode,
@@ -284,7 +284,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /**
      * @return Future version.
      */
-    public GridCacheVersion futureVersion() {
+    public CacheVersion futureVersion() {
         return futVer;
     }
 
@@ -298,7 +298,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /**
      * @return Update version for fast-map request.
      */
-    public GridCacheVersion updateVersion() {
+    public CacheVersion updateVersion() {
         return updateVer;
     }
 
@@ -377,7 +377,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         @Nullable Object val,
         long conflictTtl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer,
+        @Nullable CacheVersion conflictVer,
         boolean primary) {
         EntryProcessor<Object, Object, Object> entryProcessor = null;
 
@@ -509,7 +509,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /**
      * @return Conflict versions.
      */
-    @Nullable public List<GridCacheVersion> conflictVersions() {
+    @Nullable public List<CacheVersion> conflictVersions() {
         return conflictVers;
     }
 
@@ -517,7 +517,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      * @param idx Index.
      * @return Conflict version.
      */
-    @Nullable public GridCacheVersion conflictVersion(int idx) {
+    @Nullable public CacheVersion conflictVersion(int idx) {
         if (conflictVers != null) {
             assert idx >= 0 && idx < conflictVers.size();
 

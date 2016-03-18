@@ -48,7 +48,8 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteEx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -94,7 +95,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
     /** Explicit versions. */
     @GridToStringInclude
-    private List<GridCacheVersion> explicitVers;
+    private List<CacheVersion> explicitVers;
 
     /** Started flag. */
     @GridToStringInclude
@@ -134,8 +135,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     public GridDistributedTxRemoteAdapter(
         GridCacheSharedContext<?, ?> ctx,
         UUID nodeId,
-        GridCacheVersion xidVer,
-        GridCacheVersion commitVer,
+        CacheVersion xidVer,
+        CacheVersion commitVer,
         boolean sys,
         byte plc,
         TransactionConcurrency concurrency,
@@ -252,10 +253,10 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      */
-    @Override public void doneRemote(GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers) {
+    @Override public void doneRemote(CacheVersion baseVer,
+        Collection<CacheVersion> committedVers,
+        Collection<CacheVersion> rolledbackVers,
+        Collection<CacheVersion> pendingVers) {
         Map<IgniteTxKey, IgniteTxEntry> readMap = txState.readMap();
 
         if (readMap != null && !readMap.isEmpty()) {
@@ -294,16 +295,16 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      * @param pendingVers Pending versions.
      */
     private void doneRemote(IgniteTxEntry txEntry,
-        GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers) {
+        CacheVersion baseVer,
+        Collection<CacheVersion> committedVers,
+        Collection<CacheVersion> rolledbackVers,
+        Collection<CacheVersion> pendingVers) {
         while (true) {
             GridDistributedCacheEntry entry = (GridDistributedCacheEntry)txEntry.cached();
 
             try {
                 // Handle explicit locks.
-                GridCacheVersion doneVer = txEntry.explicitVersion() != null ? txEntry.explicitVersion() : xidVer;
+                CacheVersion doneVer = txEntry.explicitVersion() != null ? txEntry.explicitVersion() : xidVer;
 
                 entry.doneRemote(doneVer, baseVer, pendingVers, committedVers, rolledbackVers, isSystemInvalidate());
 
@@ -423,7 +424,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     assert entry != null : "Missing cached entry for transaction entry: " + txEntry;
 
                     try {
-                        GridCacheVersion ver = txEntry.explicitVersion() != null ? txEntry.explicitVersion() : xidVer;
+                        CacheVersion ver = txEntry.explicitVersion() != null ? txEntry.explicitVersion() : xidVer;
 
                         // If locks haven't been acquired yet, keep waiting.
                         if (!entry.lockedBy(ver)) {
@@ -492,7 +493,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     GridCacheOperation op = res.get1();
                                     CacheObject val = res.get2();
 
-                                    GridCacheVersion explicitVer = txEntry.conflictVersion();
+                                    CacheVersion explicitVer = txEntry.conflictVersion();
 
                                     if (explicitVer == null)
                                         explicitVer = writeVersion();
@@ -531,7 +532,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.
                                         explicitVer = null;
 
-                                    GridCacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
+                                    CacheVersion dhtVer = cached.isNear() ? writeVersion() : null;
 
                                     if (op == CREATE || op == UPDATE) {
                                         // Invalidate only for near nodes (backups cannot be invalidated).
@@ -772,8 +773,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheVersion> alternateVersions() {
-        return explicitVers == null ? Collections.<GridCacheVersion>emptyList() : explicitVers;
+    @Override public Collection<CacheVersion> alternateVersions() {
+        return explicitVers == null ? Collections.<CacheVersion>emptyList() : explicitVers;
     }
 
     /**

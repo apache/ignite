@@ -25,6 +25,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -44,7 +45,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
     /** Lock or transaction version. */
     @GridToStringInclude
-    protected GridCacheVersion ver;
+    protected CacheVersion ver;
 
     /** */
     @GridToStringExclude
@@ -52,13 +53,13 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
     /** Committed versions with order higher than one for this message (needed for commit ordering). */
     @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> committedVers;
+    @GridDirectCollection(CacheVersion.class)
+    private Collection<CacheVersion> committedVers;
 
     /** Rolled back versions with order higher than one for this message (needed for commit ordering). */
     @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> rolledbackVers;
+    @GridDirectCollection(CacheVersion.class)
+    private Collection<CacheVersion> rolledbackVers;
 
     /** Count of keys referenced in candidates array (needed only locally for optimization). */
     @GridToStringInclude
@@ -88,7 +89,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
      * @param cnt Key count.
      * @param addDepInfo Deployment info flag.
      */
-    protected GridDistributedBaseMessage(GridCacheVersion ver, int cnt, boolean addDepInfo) {
+    protected GridDistributedBaseMessage(CacheVersion ver, int cnt, boolean addDepInfo) {
         this(cnt, addDepInfo);
 
         assert ver != null;
@@ -104,14 +105,14 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
     /**
      * @return Version.
      */
-    @Override public GridCacheVersion version() {
+    @Override public CacheVersion version() {
         return ver;
     }
 
     /**
      * @param ver Version.
      */
-    public void version(GridCacheVersion ver) {
+    public void version(CacheVersion ver) {
         this.ver = ver;
     }
 
@@ -119,8 +120,8 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      */
-    public void completedVersions(Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers) {
+    public void completedVersions(Collection<CacheVersion> committedVers,
+        Collection<CacheVersion> rolledbackVers) {
         this.committedVers = committedVers;
         this.rolledbackVers = rolledbackVers;
     }
@@ -128,15 +129,15 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
     /**
      * @return Committed versions.
      */
-    public Collection<GridCacheVersion> committedVersions() {
-        return committedVers == null ? Collections.<GridCacheVersion>emptyList() : committedVers;
+    public Collection<CacheVersion> committedVersions() {
+        return committedVers == null ? Collections.<CacheVersion>emptyList() : committedVers;
     }
 
     /**
      * @return Rolled back versions.
      */
-    public Collection<GridCacheVersion> rolledbackVersions() {
-        return rolledbackVers == null ? Collections.<GridCacheVersion>emptyList() : rolledbackVers;
+    public Collection<CacheVersion> rolledbackVersions() {
+        return rolledbackVers == null ? Collections.<CacheVersion>emptyList() : rolledbackVers;
     }
 
     /**

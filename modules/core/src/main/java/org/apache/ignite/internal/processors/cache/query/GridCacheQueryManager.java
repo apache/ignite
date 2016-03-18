@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicate;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
@@ -390,7 +391,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException In case of error.
      */
-    public void store(CacheObject key, CacheObject val, GridCacheVersion ver, long expirationTime)
+    public void store(CacheObject key, CacheObject val, CacheVersion ver, long expirationTime)
         throws IgniteCheckedException {
         assert key != null;
         assert val != null;
@@ -2484,11 +2485,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @return Expire time.
          */
         abstract long expireTime();
-
-        /**
-         * @return Version.
-         */
-        abstract GridCacheVersion version();
     }
 
     /**
@@ -2526,11 +2522,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override long expireTime() {
             return GridCacheSwapEntryImpl.expireTime(e.getValue());
-        }
-
-        /** {@inheritDoc} */
-        @Override GridCacheVersion version() {
-            return GridCacheSwapEntryImpl.version(e.getValue());
         }
     }
 
@@ -2576,11 +2567,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override long expireTime() {
             return GridCacheOffheapSwapEntry.expireTime(valPtr.get1());
-        }
-
-        /** {@inheritDoc} */
-        @Override GridCacheVersion version() {
-            return GridCacheOffheapSwapEntry.version(valPtr.get1());
         }
     }
 

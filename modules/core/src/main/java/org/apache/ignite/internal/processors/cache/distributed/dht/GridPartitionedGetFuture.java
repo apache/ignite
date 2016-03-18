@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -446,10 +447,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     boolean isNew = entry.isNewLocked();
 
                     CacheObject v = null;
-                    GridCacheVersion ver = null;
+                    CacheVersion ver = null;
 
                     if (needVer) {
-                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                        T2<CacheObject, CacheVersion> res = entry.innerGetVersioned(
                             null,
                             /*swap*/true,
                             /*unmarshal*/true,

@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -138,7 +138,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * @param ver Version (or {@code null} if any candidate should be removed.)
      * @return Removed candidate if matches given parameters.
      */
-    public GridCacheMvccCandidate removeCandidate(IgniteTxKey key, @Nullable GridCacheVersion ver) {
+    public GridCacheMvccCandidate removeCandidate(IgniteTxKey key, @Nullable CacheVersion ver) {
         lock();
 
         try {
@@ -211,7 +211,7 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
      * @param ver Version to lookup (if {@code null} - return any).
      * @return Last added explicit lock candidate, if any, or {@code null}.
      */
-    @Nullable public GridCacheMvccCandidate candidate(IgniteTxKey key, @Nullable final GridCacheVersion ver) {
+    @Nullable public GridCacheMvccCandidate candidate(IgniteTxKey key, @Nullable final CacheVersion ver) {
         lock();
 
         try {

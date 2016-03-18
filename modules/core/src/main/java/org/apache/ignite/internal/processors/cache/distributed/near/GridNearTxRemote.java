@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteStateImpl;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
@@ -57,10 +57,10 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     private UUID nearNodeId;
 
     /** Near transaction ID. */
-    private GridCacheVersion nearXidVer;
+    private CacheVersion nearXidVer;
 
     /** Owned versions. */
-    private Map<IgniteTxKey, GridCacheVersion> owned;
+    private Map<IgniteTxKey, CacheVersion> owned;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -92,8 +92,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         ClassLoader ldr,
         UUID nodeId,
         UUID nearNodeId,
-        GridCacheVersion xidVer,
-        GridCacheVersion commitVer,
+        CacheVersion xidVer,
+        CacheVersion commitVer,
         boolean sys,
         byte plc,
         TransactionConcurrency concurrency,
@@ -159,9 +159,9 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         GridCacheSharedContext ctx,
         UUID nodeId,
         UUID nearNodeId,
-        GridCacheVersion nearXidVer,
-        GridCacheVersion xidVer,
-        GridCacheVersion commitVer,
+        CacheVersion nearXidVer,
+        CacheVersion xidVer,
+        CacheVersion commitVer,
         boolean sys,
         byte plc,
         TransactionConcurrency concurrency,
@@ -213,14 +213,14 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion ownedVersion(IgniteTxKey key) {
+    @Override public CacheVersion ownedVersion(IgniteTxKey key) {
         return owned == null ? null : owned.get(key);
     }
 
     /**
      * @return Near transaction ID.
      */
-    @Override public GridCacheVersion nearXidVersion() {
+    @Override public CacheVersion nearXidVersion() {
         return nearXidVer;
     }
 
@@ -236,7 +236,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      *
      * @param vers Map of owned versions.
      */
-    public void ownedVersions(Map<IgniteTxKey, GridCacheVersion> vers) {
+    public void ownedVersions(Map<IgniteTxKey, CacheVersion> vers) {
         if (F.isEmpty(vers))
             return;
 
@@ -362,7 +362,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         IgniteTxKey key,
         GridCacheOperation op,
         CacheObject val,
-        @Nullable GridCacheVersion drVer,
+        @Nullable CacheVersion drVer,
         boolean skipStore,
         boolean keepBinary
     ) throws IgniteCheckedException {

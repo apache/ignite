@@ -25,7 +25,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -43,19 +43,19 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
 
     /** Collection of versions that are pending and less than lock version. */
     @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> pending;
+    @GridDirectCollection(CacheVersion.class)
+    private Collection<CacheVersion> pending;
 
     /** */
     private IgniteUuid miniId;
 
     /** DHT versions. */
     @GridToStringInclude
-    private GridCacheVersion[] dhtVers;
+    private CacheVersion[] dhtVers;
 
     /** DHT candidate versions. */
     @GridToStringInclude
-    private GridCacheVersion[] mappedVers;
+    private CacheVersion[] mappedVers;
 
     /** Filter evaluation results for fast-commit transactions. */
     private boolean[] filterRes;
@@ -83,7 +83,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      */
     public GridNearLockResponse(
         int cacheId,
-        GridCacheVersion lockVer,
+        CacheVersion lockVer,
         IgniteUuid futId,
         IgniteUuid miniId,
         boolean filterRes,
@@ -99,8 +99,8 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         this.miniId = miniId;
         this.clientRemapVer = clientRemapVer;
 
-        dhtVers = new GridCacheVersion[cnt];
-        mappedVers = new GridCacheVersion[cnt];
+        dhtVers = new CacheVersion[cnt];
+        mappedVers = new CacheVersion[cnt];
 
         if (filterRes)
             this.filterRes = new boolean[cnt];
@@ -118,7 +118,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      *
      * @return Pending versions.
      */
-    public Collection<GridCacheVersion> pending() {
+    public Collection<CacheVersion> pending() {
         return pending;
     }
 
@@ -127,7 +127,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      *
      * @param pending Pending versions.
      */
-    public void pending(Collection<GridCacheVersion> pending) {
+    public void pending(Collection<CacheVersion> pending) {
         this.pending = pending;
     }
 
@@ -142,7 +142,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      * @param idx Index.
      * @return DHT version.
      */
-    public GridCacheVersion dhtVersion(int idx) {
+    public CacheVersion dhtVersion(int idx) {
         return dhtVers == null ? null : dhtVers[idx];
     }
 
@@ -152,7 +152,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
      * @param idx Key index.
      * @return DHT version.
      */
-    public GridCacheVersion mappedVersion(int idx) {
+    public CacheVersion mappedVersion(int idx) {
         return mappedVers == null ? null : mappedVers[idx];
     }
 
@@ -178,8 +178,8 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     public void addValueBytes(
         @Nullable CacheObject val,
         boolean filterPassed,
-        @Nullable GridCacheVersion dhtVer,
-        @Nullable GridCacheVersion mappedVer
+        @Nullable CacheVersion dhtVer,
+        @Nullable CacheVersion mappedVer
     ) throws IgniteCheckedException {
         int idx = valuesSize();
 
@@ -269,7 +269,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 11:
-                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
+                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, CacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -285,7 +285,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 13:
-                mappedVers = reader.readObjectArray("mappedVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
+                mappedVers = reader.readObjectArray("mappedVers", MessageCollectionItemType.MSG, CacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;

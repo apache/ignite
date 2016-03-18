@@ -19,7 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -55,7 +56,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage {
      * @param success {@code True} if all remote transactions were prepared, {@code false} otherwise.
      * @param addDepInfo Deployment info flag.
      */
-    public GridCacheTxRecoveryResponse(GridCacheVersion txId,
+    public GridCacheTxRecoveryResponse(CacheVersion txId,
         IgniteUuid futId,
         IgniteUuid miniId,
         boolean success,

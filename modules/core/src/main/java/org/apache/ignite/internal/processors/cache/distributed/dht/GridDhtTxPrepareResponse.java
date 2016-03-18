@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -86,7 +86,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
      * @param miniId Mini future ID.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, boolean addDepInfo) {
+    public GridDhtTxPrepareResponse(CacheVersion xid, IgniteUuid futId, IgniteUuid miniId, boolean addDepInfo) {
         super(xid, addDepInfo);
 
         assert futId != null;
@@ -103,7 +103,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
      * @param err Error.
      * @param addDepInfo Deployment enabled.
      */
-    public GridDhtTxPrepareResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId, Throwable err,
+    public GridDhtTxPrepareResponse(CacheVersion xid, IgniteUuid futId, IgniteUuid miniId, Throwable err,
         boolean addDepInfo) {
         super(xid, err, addDepInfo);
 

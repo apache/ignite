@@ -116,7 +116,7 @@ public class GridMessageCollectionTest extends TestCase {
 
         assertEquals(m.directType(), type);
 
-        GridIoMessageFactory msgFactory = new GridIoMessageFactory(null);
+        GridIoMessageFactory msgFactory = new GridIoMessageFactory(null, true);
 
         Message mx = msgFactory.create(type);
 

@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -225,7 +226,7 @@ public class GridCacheVersionMultinodeTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     private void checkEntryVersion(String key) throws Exception {
-        GridCacheVersion ver = null;
+        CacheVersion ver = null;
 
         boolean verified = false;
 

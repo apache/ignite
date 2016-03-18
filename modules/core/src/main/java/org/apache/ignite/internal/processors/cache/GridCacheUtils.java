@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -250,8 +251,8 @@ public class GridCacheUtils {
     };
 
     /** Converts transaction to XID version. */
-    private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, GridCacheVersion>() {
-        @Override public GridCacheVersion apply(IgniteInternalTx tx) {
+    private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, CacheVersion>() {
+        @Override public CacheVersion apply(IgniteInternalTx tx) {
             return tx.xidVersion();
         }
 
@@ -298,46 +299,6 @@ public class GridCacheUtils {
      */
     protected GridCacheUtils() {
         // No-op.
-    }
-
-    /**
-     * Writes {@link GridCacheVersion} to output stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
-     *
-     * @param out Output stream.
-     * @param ver Version to write.
-     * @throws IOException If write failed.
-     */
-    public static void writeVersion(ObjectOutput out, GridCacheVersion ver) throws IOException {
-        // Write null flag.
-        out.writeBoolean(ver == null);
-
-        if (ver != null) {
-            out.writeBoolean(ver instanceof GridCacheVersionEx);
-
-            ver.writeExternal(out);
-        }
-    }
-
-    /**
-     * Reads {@link GridCacheVersion} from input stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
-     *
-     * @param in Input stream.
-     * @return Read version.
-     * @throws IOException If read failed.
-     */
-    @Nullable public static GridCacheVersion readVersion(ObjectInput in) throws IOException {
-        // If UUID is not null.
-        if (!in.readBoolean()) {
-            GridCacheVersion ver = in.readBoolean() ? new GridCacheVersionEx() : new GridCacheVersion();
-
-            ver.readExternal(in);
-
-            return ver;
-        }
-
-        return null;
     }
 
     /**
@@ -1069,7 +1030,7 @@ public class GridCacheUtils {
      * @param ver Version.
      * @return Byte array.
      */
-    public static byte[] versionToBytes(GridCacheVersion ver) {
+    public static byte[] versionToBytes(CacheVersion ver) {
         assert ver != null;
 
         byte[] bytes = new byte[28];

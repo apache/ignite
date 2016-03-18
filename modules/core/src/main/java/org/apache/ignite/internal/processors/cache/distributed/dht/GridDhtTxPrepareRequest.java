@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -75,18 +75,18 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** Owned versions by key. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<IgniteTxKey, GridCacheVersion> owned;
+    private Map<IgniteTxKey, CacheVersion> owned;
 
     /** Owned keys. */
     @GridDirectCollection(IgniteTxKey.class)
     private Collection<IgniteTxKey> ownedKeys;
 
     /** Owned values. */
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> ownedVals;
+    @GridDirectCollection(CacheVersion.class)
+    private Collection<CacheVersion> ownedVals;
 
     /** Near transaction ID. */
-    private GridCacheVersion nearXidVer;
+    private CacheVersion nearXidVer;
 
     /** {@code True} if this is last prepare request for node. */
     private boolean last;
@@ -127,7 +127,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         Collection<IgniteTxEntry> dhtWrites,
         Collection<IgniteTxEntry> nearWrites,
         Map<UUID, Collection<UUID>> txNodes,
-        GridCacheVersion nearXidVer,
+        CacheVersion nearXidVer,
         boolean last,
         boolean onePhaseCommit,
         UUID subjId,
@@ -162,7 +162,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /**
      * @return Near transaction ID.
      */
-    public GridCacheVersion nearXidVersion() {
+    public CacheVersion nearXidVersion() {
         return nearXidVer;
     }
 
@@ -259,7 +259,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param key Key.
      * @param ownerMapped Owner mapped version.
      */
-    public void owned(IgniteTxKey key, GridCacheVersion ownerMapped) {
+    public void owned(IgniteTxKey key, CacheVersion ownerMapped) {
         if (owned == null)
             owned = new GridLeanMap<>(3);
 
@@ -269,7 +269,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /**
      * @return Owned versions map.
      */
-    public Map<IgniteTxKey, GridCacheVersion> owned() {
+    public Map<IgniteTxKey, CacheVersion> owned() {
         return owned;
     }
 
@@ -311,7 +311,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
             Iterator<IgniteTxKey> keyIter = ownedKeys.iterator();
 
-            Iterator<GridCacheVersion> valIter = ownedVals.iterator();
+            Iterator<CacheVersion> valIter = ownedVals.iterator();
 
             while (keyIter.hasNext()) {
                 IgniteTxKey key = keyIter.next();

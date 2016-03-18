@@ -92,6 +92,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
@@ -1100,7 +1101,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (cnt == 0)
                 cnt = 1; // Still perform cleanup since there could be entries in swap.
 
-            GridCacheVersion obsoleteVer = ctx.versions().next();
+            CacheVersion obsoleteVer = ctx.versions().next();
 
             List<GridCacheClearAllRunnable<K, V>> res = new ArrayList<>(cnt);
 
@@ -1243,7 +1244,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (F.isEmpty(keys))
             return;
 
-        GridCacheVersion obsoleteVer = ctx.versions().next();
+        CacheVersion obsoleteVer = ctx.versions().next();
 
         for (KeyCacheObject key : keys) {
             GridCacheEntryEx e = peekEx(key);
@@ -1274,7 +1275,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param filter Filter.
      * @return {@code True} if entry was evicted.
      */
-    private boolean evictx(K key, GridCacheVersion ver,
+    private boolean evictx(K key, CacheVersion ver,
         @Nullable CacheEntryPredicate[] filter) {
         KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
@@ -1869,7 +1870,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 final boolean needEntry = storeEnabled || ctx.isSwapOrOffheapEnabled();
 
-                Map<KeyCacheObject, GridCacheVersion> misses = null;
+                Map<KeyCacheObject, CacheVersion> misses = null;
 
                 for (KeyCacheObject key : keys) {
                     while (true) {
@@ -1883,7 +1884,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         }
 
                         try {
-                            T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(null,
+                            T2<CacheObject, CacheVersion> res = entry.innerGetVersioned(null,
                                 ctx.isSwapOrOffheapEnabled(),
                                 /*unmarshal*/true,
                                 /*update-metrics*/!skipVals,
@@ -1896,7 +1897,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                             if (res == null) {
                                 if (storeEnabled) {
-                                    GridCacheVersion ver = entry.version();
+                                    CacheVersion ver = entry.version();
 
                                     if (misses == null)
                                         misses = new HashMap<>();
@@ -1934,7 +1935,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 }
 
                 if (storeEnabled && misses != null) {
-                    final Map<KeyCacheObject, GridCacheVersion> loadKeys = misses;
+                    final Map<KeyCacheObject, CacheVersion> loadKeys = misses;
 
                     final IgniteTxLocalAdapter tx0 = tx;
 
@@ -1945,7 +1946,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                             @Override public Map<K1, V1> call() throws Exception {
                                 ctx.store().loadAll(null/*tx*/, loadKeys.keySet(), new CI2<KeyCacheObject, Object>() {
                                     @Override public void apply(KeyCacheObject key, Object val) {
-                                        GridCacheVersion ver = loadKeys.get(key);
+                                        CacheVersion ver = loadKeys.get(key);
 
                                         if (ver == null) {
                                             if (log.isDebugEnabled())
@@ -1963,7 +1964,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                             GridCacheEntryEx entry = entryEx(key);
 
                                             try {
-                                                GridCacheVersion verSet = entry.versionedValue(cacheVal, ver, null);
+                                                CacheVersion verSet = entry.versionedValue(cacheVal, ver, null);
 
                                                 boolean set = verSet != null;
 
@@ -3066,7 +3067,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAllConflict(final Map<KeyCacheObject, GridCacheVersion> drMap)
+    @Override public void removeAllConflict(final Map<KeyCacheObject, CacheVersion> drMap)
         throws IgniteCheckedException {
         if (F.isEmpty(drMap))
             return;
@@ -3085,7 +3086,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllConflictAsync(final Map<KeyCacheObject, GridCacheVersion> drMap)
+    @Override public IgniteInternalFuture<?> removeAllConflictAsync(final Map<KeyCacheObject, CacheVersion> drMap)
         throws IgniteCheckedException {
         if (F.isEmpty(drMap))
             return new GridFinishedFuture<Object>();
@@ -3508,7 +3509,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
             else {
                 // Version for all loaded entries.
-                final GridCacheVersion ver0 = ctx.versions().nextForLoad();
+                final CacheVersion ver0 = ctx.versions().nextForLoad();
 
                 ctx.store().loadCache(new CIX3<KeyCacheObject, Object, GridCacheVersion>() {
                     @Override public void applyx(KeyCacheObject key, Object val, @Nullable GridCacheVersion ver)
@@ -3542,7 +3543,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     private void loadEntry(KeyCacheObject key,
         Object val,
-        GridCacheVersion ver,
+        CacheVersion ver,
         @Nullable IgniteBiPredicate<Object, Object> p,
         AffinityTopologyVersion topVer,
         boolean replicate,
@@ -3709,7 +3710,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
         else {
             // Version for all loaded entries.
-            final GridCacheVersion ver0 = ctx.versions().nextForLoad();
+            final CacheVersion ver0 = ctx.versions().nextForLoad();
 
             ctx.store().loadAll(null, keys0, new CI2<KeyCacheObject, Object>() {
                 @Override public void apply(KeyCacheObject key, Object val) {
@@ -4604,7 +4605,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKey(key);
 
-        GridCacheVersion obsoleteVer = ctx.versions().next();
+        CacheVersion obsoleteVer = ctx.versions().next();
 
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
@@ -4644,7 +4645,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKey(keys);
 
-        GridCacheVersion obsoleteVer = ctx.versions().next();
+        CacheVersion obsoleteVer = ctx.versions().next();
 
         if (!ctx.evicts().evictSyncOrNearSync() && ctx.isSwapOrOffheapEnabled()) {
             try {
@@ -4812,7 +4813,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param entry Entry.
      * @param ver Version.
      */
-    public abstract void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver);
+    public abstract void onDeferredDelete(GridCacheEntryEx entry, CacheVersion ver);
 
     /**
      *
@@ -5661,10 +5662,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     protected abstract static class CacheExpiryPolicy implements IgniteCacheExpiryPolicy {
         /** */
-        private Map<KeyCacheObject, GridCacheVersion> entries;
+        private Map<KeyCacheObject, CacheVersion> entries;
 
         /** */
-        private Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> rdrsMap;
+        private Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, CacheVersion>>> rdrsMap;
 
         /**
          * @param expiryPlc Expiry policy.
@@ -5729,7 +5730,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          */
         @SuppressWarnings("unchecked")
         @Override public void ttlUpdated(KeyCacheObject key,
-            GridCacheVersion ver,
+            CacheVersion ver,
             @Nullable Collection<UUID> rdrs) {
             if (entries == null)
                 entries = new HashMap<>();
@@ -5741,7 +5742,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     rdrsMap = new HashMap<>();
 
                 for (UUID nodeId : rdrs) {
-                    Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>> col = rdrsMap.get(nodeId);
+                    Collection<IgniteBiTuple<KeyCacheObject, CacheVersion>> col = rdrsMap.get(nodeId);
 
                     if (col == null)
                         rdrsMap.put(nodeId, col = new ArrayList<>());
@@ -5754,12 +5755,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /**
          * @return TTL update request.
          */
-        @Nullable @Override public Map<KeyCacheObject, GridCacheVersion> entries() {
+        @Nullable @Override public Map<KeyCacheObject, CacheVersion> entries() {
             return entries;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, GridCacheVersion>>> readers() {
+        @Nullable @Override public Map<UUID, Collection<IgniteBiTuple<KeyCacheObject, CacheVersion>>> readers() {
             return rdrsMap;
         }
 

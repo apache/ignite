@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -63,8 +63,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
     /** Pending versions with order less than one for this message (needed for commit ordering). */
     @GridToStringInclude
-    @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> pendingVers;
+    @GridDirectCollection(CacheVersion.class)
+    private Collection<CacheVersion> pendingVers;
 
     /** Check committed flag. */
     private boolean checkCommitted;
@@ -75,7 +75,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     private GridLongList partUpdateCnt;
 
     /** One phase commit write version. */
-    private GridCacheVersion writeVer;
+    private CacheVersion writeVer;
 
     /** Subject ID. */
     private UUID subjId;
@@ -123,8 +123,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         IgniteUuid futId,
         IgniteUuid miniId,
         @NotNull AffinityTopologyVersion topVer,
-        GridCacheVersion xidVer,
-        GridCacheVersion commitVer,
+        CacheVersion xidVer,
+        CacheVersion commitVer,
         long threadId,
         TransactionIsolation isolation,
         boolean commit,
@@ -134,10 +134,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean sysInvalidate,
         boolean syncCommit,
         boolean syncRollback,
-        GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers,
+        CacheVersion baseVer,
+        Collection<CacheVersion> committedVers,
+        Collection<CacheVersion> rolledbackVers,
+        Collection<CacheVersion> pendingVers,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
@@ -205,8 +205,8 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         IgniteUuid futId,
         IgniteUuid miniId,
         @NotNull AffinityTopologyVersion topVer,
-        GridCacheVersion xidVer,
-        GridCacheVersion commitVer,
+        CacheVersion xidVer,
+        CacheVersion commitVer,
         long threadId,
         TransactionIsolation isolation,
         boolean commit,
@@ -216,10 +216,10 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         boolean sysInvalidate,
         boolean syncCommit,
         boolean syncRollback,
-        GridCacheVersion baseVer,
-        Collection<GridCacheVersion> committedVers,
-        Collection<GridCacheVersion> rolledbackVers,
-        Collection<GridCacheVersion> pendingVers,
+        CacheVersion baseVer,
+        Collection<CacheVersion> committedVers,
+        Collection<CacheVersion> rolledbackVers,
+        Collection<CacheVersion> pendingVers,
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
@@ -290,14 +290,14 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /**
      * @return Write version for one-phase commit transactions.
      */
-    public GridCacheVersion writeVersion() {
+    public CacheVersion writeVersion() {
         return writeVer;
     }
 
     /**
      * @param writeVer Write version for one-phase commit transactions.
      */
-    public void writeVersion(GridCacheVersion writeVer) {
+    public void writeVersion(CacheVersion writeVer) {
         this.writeVer = writeVer;
     }
 

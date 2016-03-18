@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.processors.cache.extras;
 
 import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -38,7 +39,7 @@ public class GridCacheAttributesEntryExtras extends GridCacheEntryExtrasAdapter 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryExtras obsoleteVersion(GridCacheVersion obsoleteVer) {
+    @Override public GridCacheEntryExtras obsoleteVersion(CacheVersion obsoleteVer) {
         return obsoleteVer != null ? new GridCacheAttributesObsoleteEntryExtras(obsoleteVer) : this;
     }
 

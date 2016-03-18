@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -442,7 +443,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         GridCacheEvictionResponse res = new GridCacheEvictionResponse(cctx.cacheId(), req.futureId());
 
-        GridCacheVersion obsoleteVer = cctx.versions().next();
+        CacheVersion obsoleteVer = cctx.versions().next();
 
         // DHT and replicated cache entries.
         for (Map.Entry<Integer, Collection<CacheEvictionEntry>> e : dhtEntries.entrySet()) {
@@ -453,7 +454,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             try {
                 for (CacheEvictionEntry t : e.getValue()) {
                     KeyCacheObject key = t.key();
-                    GridCacheVersion ver = t.version();
+                    CacheVersion ver = t.version();
                     boolean near = t.near();
 
                     assert !near;
@@ -481,7 +482,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         // Near entries.
         for (CacheEvictionEntry t : nearEntries) {
             KeyCacheObject key = t.key();
-            GridCacheVersion ver = t.version();
+            CacheVersion ver = t.version();
             boolean near = t.near();
 
             assert near;
@@ -527,7 +528,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      * @param ver Version.
      * @param p Partition ID.
      */
-    private void saveEvictionInfo(KeyCacheObject key, GridCacheVersion ver, int p) {
+    private void saveEvictionInfo(KeyCacheObject key, CacheVersion ver, int p) {
         assert cctx.rebalanceEnabled();
 
         if (!cctx.isNear()) {
@@ -645,9 +646,9 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      * @return {@code true} if evicted successfully, {@code false} if could not be evicted.
      */
     private boolean evictLocally(KeyCacheObject key,
-        final GridCacheVersion ver,
+        final CacheVersion ver,
         boolean near,
-        GridCacheVersion obsoleteVer)
+        CacheVersion obsoleteVer)
     {
         assert key != null;
         assert ver != null;
@@ -692,7 +693,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
     private boolean evict0(
         GridCacheAdapter cache,
         GridCacheEntryEx entry,
-        GridCacheVersion obsoleteVer,
+        CacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter,
         boolean explicit
     ) throws IgniteCheckedException {
@@ -895,7 +896,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      * @return {@code True} if entry was marked for eviction.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean evict(@Nullable GridCacheEntryEx entry, @Nullable GridCacheVersion obsoleteVer,
+    public boolean evict(@Nullable GridCacheEntryEx entry, @Nullable CacheVersion obsoleteVer,
         boolean explicit, @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
         if (entry == null)
             return true;
@@ -951,7 +952,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      * @param obsoleteVer Obsolete version.
      * @throws IgniteCheckedException In case of error.
      */
-    public void batchEvict(Collection<?> keys, @Nullable GridCacheVersion obsoleteVer) throws IgniteCheckedException {
+    public void batchEvict(Collection<?> keys, @Nullable CacheVersion obsoleteVer) throws IgniteCheckedException {
         assert !evictSyncAgr;
         assert cctx.isSwapOrOffheapEnabled();
 
@@ -1226,7 +1227,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             }
 
             // Evict remotely evicted entries.
-            GridCacheVersion obsoleteVer = null;
+            CacheVersion obsoleteVer = null;
 
             Collection<EvictionInfo> evictedEntries = t.get1();
 
@@ -1307,7 +1308,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         return new CacheEntryPredicate[]{new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx e) {
                 try {
-                    GridCacheVersion ver = e.version();
+                    CacheVersion ver = e.version();
 
                     return info.version().equals(ver) && F.isAll(info.filter());
                 }
@@ -1537,7 +1538,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         private GridCacheEntryEx entry;
 
         /** Start version. */
-        private GridCacheVersion ver;
+        private CacheVersion ver;
 
         /** Filter to pass before entry will be evicted. */
         private CacheEntryPredicate[] filter;
@@ -1547,7 +1548,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
          * @param ver Version.
          * @param filter Filter.
          */
-        EvictionInfo(GridCacheEntryEx entry, GridCacheVersion ver,
+        EvictionInfo(GridCacheEntryEx entry, CacheVersion ver,
             CacheEntryPredicate[] filter) {
             assert entry != null;
             assert ver != null;
@@ -1567,7 +1568,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         /**
          * @return Version.
          */
-        GridCacheVersion version() {
+        CacheVersion version() {
             return ver;
         }
 
@@ -1769,7 +1770,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
                 if (locals != null) {
                     // Evict entries without remote participant nodes immediately.
-                    GridCacheVersion obsoleteVer = cctx.versions().next();
+                    CacheVersion obsoleteVer = cctx.versions().next();
 
                     for (EvictionInfo info : locals) {
                         if (log.isDebugEnabled())

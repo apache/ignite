@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -442,7 +443,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                         if (committed) {
                             if (tx.syncCommit()) {
-                                GridCacheVersion nearXidVer = tx.nearXidVersion();
+                                CacheVersion nearXidVer = tx.nearXidVersion();
 
                                 assert nearXidVer != null : tx;
 
@@ -547,14 +548,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      */
     private void readyNearMappingFromBackup(GridDistributedTxMapping mapping) {
         if (mapping.near()) {
-            GridCacheVersion xidVer = tx.xidVersion();
+            CacheVersion xidVer = tx.xidVersion();
 
             mapping.dhtVersion(xidVer, xidVer);
 
             tx.readyNearLocks(mapping,
-                Collections.<GridCacheVersion>emptyList(),
-                Collections.<GridCacheVersion>emptyList(),
-                Collections.<GridCacheVersion>emptyList());
+                Collections.<CacheVersion>emptyList(),
+                Collections.<CacheVersion>emptyList(),
+                Collections.<CacheVersion>emptyList());
         }
     }
 

@@ -46,7 +46,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -102,7 +102,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** Conflict remove values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private Collection<GridCacheVersion> conflictRmvVals;
+    private Collection<CacheVersion> conflictRmvVals;
 
     /** Return value require flag. */
     private final boolean retval;
@@ -179,7 +179,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         @Nullable Collection<?> vals,
         @Nullable Object[] invokeArgs,
         @Nullable Collection<GridCacheDrInfo> conflictPutVals,
-        @Nullable Collection<GridCacheVersion> conflictRmvVals,
+        @Nullable Collection<CacheVersion> conflictRmvVals,
         final boolean retval,
         final boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
@@ -239,7 +239,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
+    @Override public CacheVersion version() {
         return state.futureVersion();
     }
 
@@ -323,7 +323,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             retval = Collections.emptyMap();
 
         if (super.onDone(retval, err)) {
-            GridCacheVersion futVer = state.onFutureDone();
+            CacheVersion futVer = state.onFutureDone();
 
             if (futVer != null)
                 cctx.mvcc().removeAtomicFuture(futVer);
@@ -529,7 +529,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         private AffinityTopologyVersion topVer = AffinityTopologyVersion.ZERO;
 
         /** */
-        private GridCacheVersion updVer;
+        private CacheVersion updVer;
 
         /** Topology version when got mapping error. */
         private AffinityTopologyVersion mapErrTopVer;
@@ -545,7 +545,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         private CachePartialUpdateCheckedException err;
 
         /** Future ID. */
-        private GridCacheVersion futVer;
+        private CacheVersion futVer;
 
         /** Completion future for a particular topology version. */
         private GridFutureAdapter<Void> topCompleteFut;
@@ -562,7 +562,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         /**
          * @return Future version.
          */
-        @Nullable synchronized GridCacheVersion futureVersion() {
+        @Nullable synchronized CacheVersion futureVersion() {
             return futVer;
         }
 
@@ -843,9 +843,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
             int size = keys.size();
 
-            GridCacheVersion futVer = cctx.versions().next(topVer);
+            CacheVersion futVer = cctx.versions().next(topVer);
 
-            GridCacheVersion updVer;
+            CacheVersion updVer;
 
             // Assign version on near node in CLOCK ordering mode even if fastMap is false.
             if (cctx.config().getAtomicWriteOrderMode() == CLOCK) {
@@ -960,8 +960,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         /**
          * @return Future version.
          */
-        GridCacheVersion onFutureDone() {
-            GridCacheVersion ver0;
+        CacheVersion onFutureDone() {
+            CacheVersion ver0;
 
             GridFutureAdapter<Void> fut0;
 
@@ -992,8 +992,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
          */
         private Map<UUID, GridNearAtomicUpdateRequest> mapUpdate(Collection<ClusterNode> topNodes,
             AffinityTopologyVersion topVer,
-            GridCacheVersion futVer,
-            @Nullable GridCacheVersion updVer,
+            CacheVersion futVer,
+            @Nullable CacheVersion updVer,
             @Nullable Collection<KeyCacheObject> remapKeys) throws Exception {
             Iterator<?> it = null;
 
@@ -1005,7 +1005,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             if (conflictPutVals != null)
                 conflictPutValsIt = conflictPutVals.iterator();
 
-            Iterator<GridCacheVersion> conflictRmvValsIt = null;
+            Iterator<CacheVersion> conflictRmvValsIt = null;
 
             if (conflictRmvVals != null)
                 conflictRmvValsIt = conflictRmvVals.iterator();
@@ -1018,7 +1018,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     throw new NullPointerException("Null key.");
 
                 Object val;
-                GridCacheVersion conflictVer;
+                CacheVersion conflictVer;
                 long conflictTtl;
                 long conflictExpireTime;
 
@@ -1123,12 +1123,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
          * @throws Exception If failed.
          */
         private GridNearAtomicUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
-            GridCacheVersion futVer,
-            @Nullable GridCacheVersion updVer) throws Exception {
+            CacheVersion futVer,
+            @Nullable CacheVersion updVer) throws Exception {
             Object key = F.first(keys);
 
             Object val;
-            GridCacheVersion conflictVer;
+            CacheVersion conflictVer;
             long conflictTtl;
             long conflictExpireTime;
 

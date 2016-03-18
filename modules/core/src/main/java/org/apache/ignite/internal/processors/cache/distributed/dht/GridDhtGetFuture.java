@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
@@ -89,7 +90,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private IgniteUuid futId;
 
     /** Version. */
-    private GridCacheVersion ver;
+    private CacheVersion ver;
 
     /** Topology version .*/
     private AffinityTopologyVersion topVer;
@@ -187,7 +188,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /**
      * @return Future version.
      */
-    public GridCacheVersion version() {
+    public CacheVersion version() {
         return ver;
     }
 

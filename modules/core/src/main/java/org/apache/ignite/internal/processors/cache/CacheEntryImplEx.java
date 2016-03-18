@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.GET_ENTRY_INVALID_VER_AFTER_GET;
@@ -36,7 +37,7 @@ public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements Cach
     private static final long serialVersionUID = 0L;
 
     /** Version. */
-    private GridCacheVersion ver;
+    private CacheVersion ver;
 
     /**
      * Required by {@link Externalizable}.
@@ -50,14 +51,14 @@ public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements Cach
      * @param val Value (always null).
      * @param ver Version.
      */
-    public CacheEntryImplEx(K key, V val, GridCacheVersion ver) {
+    public CacheEntryImplEx(K key, V val, CacheVersion ver) {
         super(key, val);
 
         this.ver = ver;
     }
 
     /** {@inheritDoc} */
-    public GridCacheVersion version() {
+    public CacheVersion version() {
         if (ver == GET_ENTRY_INVALID_VER_AFTER_GET) {
             throw new IgniteException("Impossible to get entry version after " +
                 "get() inside OPTIMISTIC REPEATABLE_READ transaction. Use only getEntry() or getEntries() inside " +

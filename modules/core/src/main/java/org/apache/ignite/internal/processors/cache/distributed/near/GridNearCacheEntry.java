@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -52,7 +53,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** DHT version which caused the last update. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private GridCacheVersion dhtVer;
+    private CacheVersion dhtVer;
 
     /** Partition. */
     private int part;
@@ -142,7 +143,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 GridCacheEntryInfo e = entry.info();
 
                 if (e != null) {
-                    GridCacheVersion enqueueVer = null;
+                    CacheVersion enqueueVer = null;
 
                     try {
                         synchronized (this) {
@@ -201,8 +202,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @throws GridCacheEntryRemovedException If obsolete.
      */
     public boolean resetFromPrimary(CacheObject val,
-        GridCacheVersion ver,
-        GridCacheVersion dhtVer,
+        CacheVersion ver,
+        CacheVersion dhtVer,
         UUID primaryNodeId,
         AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException
@@ -239,7 +240,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param primaryNodeId Primary node ID.
      * @param topVer Topology version.
      */
-    public void updateOrEvict(GridCacheVersion dhtVer,
+    public void updateOrEvict(CacheVersion dhtVer,
         @Nullable CacheObject val,
         long expireTime,
         long ttl,
@@ -275,7 +276,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @return DHT version for this entry.
      * @throws GridCacheEntryRemovedException If obsolete.
      */
-    @Nullable public synchronized GridCacheVersion dhtVersion() throws GridCacheEntryRemovedException {
+    @Nullable public synchronized CacheVersion dhtVersion() throws GridCacheEntryRemovedException {
         checkObsolete();
 
         return dhtVer;
@@ -285,7 +286,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @return Tuple with version and value of this entry.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public synchronized IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue()
+    @Nullable public synchronized IgniteBiTuple<CacheVersion, CacheObject> versionedValue()
         throws GridCacheEntryRemovedException {
         checkObsolete();
 
@@ -309,7 +310,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param dhtVer DHT version to record.
      * @return {@code False} if given version is lower then existing version.
      */
-    public final boolean recordDhtVersion(GridCacheVersion dhtVer) {
+    public final boolean recordDhtVersion(CacheVersion dhtVer) {
         assert dhtVer != null;
         assert Thread.holdsLock(this);
 
@@ -358,8 +359,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     public boolean loadedValue(@Nullable IgniteInternalTx tx,
         UUID primaryNodeId,
         CacheObject val,
-        GridCacheVersion ver,
-        GridCacheVersion dhtVer,
+        CacheVersion ver,
+        CacheVersion dhtVer,
         long ttl,
         long expireTime,
         boolean evt,
@@ -369,7 +370,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert dhtVer != null;
 
-        GridCacheVersion enqueueVer = null;
+        CacheVersion enqueueVer = null;
 
         try {
             synchronized (this) {
@@ -431,7 +432,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void updateIndex(CacheObject val, long expireTime,
-        GridCacheVersion ver, CacheObject old) throws IgniteCheckedException {
+        CacheVersion ver, CacheObject old) throws IgniteCheckedException {
         // No-op: queries are disabled for near cache.
     }
 
@@ -443,7 +444,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /** {@inheritDoc} */
     @Override public GridCacheMvccCandidate addLocal(
         long threadId,
-        GridCacheVersion ver,
+        CacheVersion ver,
         AffinityTopologyVersion topVer,
         long timeout,
         boolean reenter,
@@ -478,7 +479,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     @Nullable public GridCacheMvccCandidate addNearLocal(
         @Nullable UUID dhtNodeId,
         long threadId,
-        GridCacheVersion ver,
+        CacheVersion ver,
         AffinityTopologyVersion topVer,
         long timeout,
         boolean reenter,
@@ -554,7 +555,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @return {@code true} if candidate was found.
      * @throws GridCacheEntryRemovedException If entry is removed.
      */
-    @Nullable public synchronized GridCacheMvccCandidate dhtNodeId(GridCacheVersion ver, UUID dhtNodeId)
+    @Nullable public synchronized GridCacheMvccCandidate dhtNodeId(CacheVersion ver, UUID dhtNodeId)
         throws GridCacheEntryRemovedException {
         checkObsolete();
 
