@@ -50,15 +50,17 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
@@ -748,5 +750,59 @@ public class CacheTxLockTimeoutTest extends GridCommonAbstractTest {
                 }
             }
         }, 4, "opt-tx-thread");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxPessimisticNoEarlyTimeout() throws Exception {
+        doTestTxNoEarlyTimeout(PESSIMISTIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxOptimisticNoEarlyTimeout() throws Exception {
+        doTestTxNoEarlyTimeout(OPTIMISTIC);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestTxNoEarlyTimeout(TransactionConcurrency concurrency) throws Exception {
+        int timeout = 1000;
+
+        Ignite ignite = ignite(SRVS);
+
+        IgniteCache<Object, Object> cache = ignite.cache(CACHE1);
+
+        final Transaction tx = ignite.transactions().txStart(concurrency, REPEATABLE_READ, timeout, 0);
+
+        long txStart = System.currentTimeMillis();
+
+        IgniteInternalFuture<Long> fut = GridTestUtils.runAsync(new Callable<Long>() {
+            @Override public Long call() throws Exception {
+                while (!tx.isRollbackOnly())
+                    U.sleep(10);
+
+                return System.currentTimeMillis();
+            }
+        });
+
+        try {
+            cache.put(0, 0);
+
+            U.sleep(timeout + (timeout / 3));
+
+            tx.commit();
+        }
+        catch(Exception e) {
+            if (!X.hasCause(e, TransactionRollbackException.class))
+                throw e;
+        }
+
+        long delta = fut.get() - txStart;
+
+        assertTrue("Timeout happened after " + delta + " ms", delta >= timeout);
     }
 }
