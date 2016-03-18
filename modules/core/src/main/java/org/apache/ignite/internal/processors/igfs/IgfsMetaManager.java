@@ -3549,7 +3549,7 @@ public class IgfsMetaManager extends IgfsManager {
                             IgniteUuid oldId = pathIds.lastId();
 
                             id2InfoPrj.invoke(trashId, new ListingAddProcessor(oldId.toString(),
-                                new IgfsListingEntry(oldId, true)));
+                                new IgfsListingEntry(oldInfo)));
 
                             // Second step: replace ID in parent directory.
                             String name = pathIds.lastPart();
