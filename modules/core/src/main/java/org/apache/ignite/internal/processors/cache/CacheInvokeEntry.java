@@ -21,6 +21,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,22 +41,29 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     /** Entry version. */
     private GridCacheVersion ver;
 
+    /** Versioned entry (optional) */
+    private GridCacheVersionedEntry versionedEntry;
+
     /**
      * @param cctx Cache context.
      * @param keyObj Key cache object.
      * @param valObj Cache object value.
      * @param ver Entry version.
+     * @param keepBinary Keep binary flag.
+     * @param versionedEntry Versioned entry.
      */
     public CacheInvokeEntry(GridCacheContext cctx,
         KeyCacheObject keyObj,
         @Nullable CacheObject valObj,
         GridCacheVersion ver,
-        boolean keepBinary
+        boolean keepBinary,
+        @Nullable GridCacheVersionedEntry versionedEntry
     ) {
         super(cctx, keyObj, valObj, keepBinary);
 
         this.hadVal = valObj != null;
         this.ver = ver;
+        this.versionedEntry = versionedEntry;
     }
 
     /**
@@ -65,6 +73,7 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
      * @param valObj Value cache object.
      * @param val Value.
      * @param ver Entry version.
+     * @param versionedEntry Versioned entry.
      */
     public CacheInvokeEntry(GridCacheContext<K, V> ctx,
         KeyCacheObject keyObj,
@@ -72,12 +81,14 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         @Nullable CacheObject valObj,
         @Nullable V val,
         GridCacheVersion ver,
-        boolean keepBinary
+        boolean keepBinary,
+        @Nullable GridCacheVersionedEntry versionedEntry
     ) {
         super(ctx, keyObj, key, valObj, val, keepBinary);
 
         this.hadVal = valObj != null || val != null;
         this.ver = ver;
+        this.versionedEntry = versionedEntry;
     }
 
     /** {@inheritDoc} */
@@ -122,11 +133,26 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         return op != Operation.NONE;
     }
 
+    /**
+     * @return Versioned entry or null if not assigned.
+     */
+    @Nullable public GridCacheVersionedEntry versionedEntry() {
+        return versionedEntry;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {
         if (cls.isAssignableFrom(CacheEntry.class) && ver != null)
             return (T)new CacheEntryImplEx<>(getKey(), getValue(), ver);
+
+        if (cls.isAssignableFrom(GridCacheVersionedEntry.class) && versionedEntry != null)
+            return (T)versionedEntry;
+
+        final T res = cctx.plugin().unwrapEntry(this, cls);
+
+        if (res != null)
+            return res;
 
         return super.unwrap(cls);
     }
