@@ -626,17 +626,17 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testCreateOpenAppend() throws Exception {
         // Error - path points to root directory.
-        assertCreateFails("/", false, "Failed to create file (path points to an existing directory)");
+        assertCreateFails("/", false);
 
         // Create directories.
         igfs.mkdirs(path("/A/B1/C1"));
 
         // Error - path points to directory.
         for (String path : Arrays.asList("/A", "/A/B1", "/A/B1/C1")) {
-            assertCreateFails(path, false, "Failed to create file (path points to an existing directory)");
-            assertCreateFails(path, true, "Failed to create file (path points to an existing directory)");
-            assertAppendFails(path, false, "Failed to open file (path points to an existing directory)");
-            assertAppendFails(path, true, "Failed to open file (path points to an existing directory)");
+            assertCreateFails(path, false);
+            assertCreateFails(path, true);
+            assertAppendFails(path, false);
+            assertAppendFails(path, true);
             assertOpenFails(path, "Failed to open file (not a file)");
         }
 
@@ -647,13 +647,13 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         for (String path : Arrays.asList("/A/a", "/A/B1/a", "/A/B1/C1/a")) {
             // Error - file doesn't exist.
             assertOpenFails(path, "File not found");
-            assertAppendFails(path, false, "File not found");
+            assertAppendFails(path, false);
 
             // Create new and write.
             assertEquals(text1, create(path, false, text1));
 
             // Error - file already exists.
-            assertCreateFails(path, false, "Failed to create file (file already exists and overwrite flag is false)");
+            assertCreateFails(path, false);
 
             // Overwrite existent.
             assertEquals(text2, create(path, true, text2));
@@ -669,7 +669,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
             // Error - file doesn't exist.
             assertOpenFails(path, "File not found");
-            assertAppendFails(path, false, "File not found");
+            assertAppendFails(path, false);
 
             // Create with append.
             assertEquals(text1, append(path, true, text1));
@@ -927,16 +927,15 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @param path File path to create.
      * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
-     * @param msg Failure message if expected exception was not thrown.
      */
-    private void assertCreateFails(final String path, final boolean overwrite, @Nullable String msg) {
+    private void assertCreateFails(final String path, final boolean overwrite) {
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 igfs.create(path(path), overwrite);
 
                 return false;
             }
-        }, IgfsException.class, msg);
+        }, IgfsException.class, null);
     }
 
     /**
@@ -944,16 +943,15 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
      *
      * @param path File path to append.
      * @param create Create file if it doesn't exist yet.
-     * @param msg Failure message if expected exception was not thrown.
      */
-    private void assertAppendFails(final String path, final boolean create, @Nullable String msg) {
+    private void assertAppendFails(final String path, final boolean create) {
         GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 igfs.append(path(path), create);
 
                 return false;
             }
-        }, IgfsException.class, msg);
+        }, IgfsException.class, null);
     }
 
     /**
