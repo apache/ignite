@@ -267,10 +267,10 @@ public class IgfsPathIds {
      * @param infos Info.
      * @return {@code True} if full integrity is preserved.
      */
-    public boolean verifyIntegrity(Map<IgniteUuid, IgfsFileInfo> infos) {
+    public boolean verifyIntegrity(Map<IgniteUuid, IgfsEntryInfo> infos) {
         for (int i = 0; i <= lastExistingIdx; i++) {
             IgniteUuid curId = ids[i];
-            IgfsFileInfo curInfo = infos.get(curId);
+            IgfsEntryInfo curInfo = infos.get(curId);
 
             // Check if required ID is there.
             if (curInfo == null)

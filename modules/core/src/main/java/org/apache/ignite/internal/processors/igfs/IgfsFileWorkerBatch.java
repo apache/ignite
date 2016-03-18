@@ -17,22 +17,23 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Work batch is an abstraction of the logically grouped tasks.
  */
 public abstract class IgfsFileWorkerBatch implements Runnable {
     /** Stop marker. */
-    private static final byte[] STOP_MARKER = new byte[0];
+    private static final byte[] FINISH_MARKER = new byte[0];
 
     /** Cancel marker. */
     private static final byte[] CANCEL_MARKER = new byte[0];
@@ -48,9 +49,6 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
 
     /** Output stream to the file. */
     private final OutputStream out;
-
-    /** Cancel flag. */
-    private volatile boolean cancelled;
 
     /** Finishing flag. */
     private volatile boolean finishing;
@@ -76,31 +74,48 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
      * @return {@code True} in case write was enqueued.
      */
     synchronized boolean write(final byte[] data) {
-        if (!finishing) {
-            queue.add(data);
-
-            return true;
-        }
-        else
-            return false;
+        return offer(data, false, false);
     }
 
     /**
      * Add the last task to that batch which will release all the resources.
+     *
+     * @return {@code True} if finish was signalled.
      */
-    synchronized void finish() {
-        if (!finishing) {
-            finishing = true;
-
-            queue.add(STOP_MARKER);
-        }
+    synchronized boolean finish() {
+        return offer(FINISH_MARKER, false, true);
     }
 
     /**
      * Cancel batch processing.
+     *
+     * @return {@code True} if cancel was signalled.
      */
-    synchronized void cancel() {
-        queue.addFirst(CANCEL_MARKER);
+    synchronized boolean cancel() {
+        return offer(CANCEL_MARKER, true, true);
+    }
+
+    /**
+     * Add request to queue.
+     *
+     * @param data Data.
+     * @param head Whether to add to head.
+     * @param finish Whether this is the last batch to be accepted.
+     * @return {@code True} if request was added to queue.
+     */
+    private synchronized boolean offer(byte[] data, boolean head, boolean finish) {
+        if (finishing)
+            return false;
+
+        if (head)
+            queue.addFirst(data);
+        else
+            queue.addLast(data);
+
+        if (finish)
+            finishing = true;
+
+        return true;
     }
 
     /**
@@ -108,13 +123,6 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
      */
     boolean finishing() {
         return finishing;
-    }
-
-    /**
-     * @return {@code True} if batch write was terminated abruptly due to explicit cancellation.
-     */
-    boolean cancelled() {
-        return cancelled;
     }
 
     /**
@@ -129,16 +137,13 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
                 try {
                     byte[] data = queue.poll(1000, TimeUnit.MILLISECONDS);
 
-                    if (data == STOP_MARKER) {
+                    if (data == FINISH_MARKER) {
                         assert queue.isEmpty();
 
                         break;
                     }
-                    else if (data == CANCEL_MARKER) {
-                        cancelled = true;
-
-                        throw new IgniteCheckedException("Write to file was cancelled due to node stop.");
-                    }
+                    else if (data == CANCEL_MARKER)
+                        throw new IgfsFileWorkerBatchCancelledException(path);
                     else if (data != null) {
                         try {
                             out.write(data);
