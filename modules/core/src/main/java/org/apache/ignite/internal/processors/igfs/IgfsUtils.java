@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.lang.reflect.Constructor;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -42,6 +38,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+
+import java.lang.reflect.Constructor;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -104,7 +104,17 @@ public class IgfsUtils {
      * @return {@code True} if this is root ID or trash ID.
      */
     public static boolean isRootOrTrashId(@Nullable IgniteUuid id) {
-        return id != null && (ROOT_ID.equals(id) || isTrashId(id));
+        return isRootId(id) || isTrashId(id);
+    }
+
+    /**
+     * Check whether provided ID is root ID.
+     *
+     * @param id ID.
+     * @return {@code True} if this is root ID.
+     */
+    public static boolean isRootId(@Nullable IgniteUuid id) {
+        return id != null && ROOT_ID.equals(id);
     }
 
     /**
@@ -114,7 +124,8 @@ public class IgfsUtils {
      * @return {@code True} if this is trash ID.
      */
     private static boolean isTrashId(IgniteUuid id) {
-        assert id != null;
+        if (id == null)
+            return false;
 
         UUID gid = id.globalId();
 
