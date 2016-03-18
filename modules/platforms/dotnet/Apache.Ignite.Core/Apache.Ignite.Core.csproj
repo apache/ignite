@@ -428,16 +428,15 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>
-	set OLD_JAVA_HOME = %25JAVA_HOME%25
-	set JAVA_HOME=%25JAVA_HOME64%25
-	echo JHOME: %25JAVA_HOME%25
-"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Release
-"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Debug
+    <PreBuildEvent>set OLD_JAVA_HOME = %25JAVA_HOME%25
+set JAVA_HOME=%25JAVA_HOME64%25
+echo JHOME: %25JAVA_HOME%25
+"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Release /t:Clean;Rebuild
+"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Debug /t:Clean;Rebuild
 set JAVA_HOME=%25JAVA_HOME32%25
 echo JHOME: %25JAVA_HOME%25
-"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Release
-"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Debug
+"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Release /t:Clean;Rebuild
+"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Debug /t:Clean;Rebuild
 set JAVA_HOME = %25OLD_JAVA_HOME%25
 	</PreBuildEvent>
   </PropertyGroup>
