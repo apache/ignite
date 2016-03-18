@@ -20,9 +20,12 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsPath;
@@ -263,5 +266,59 @@ public class IgfsUtils {
 
         if (evts.isRecordable(type))
             evts.record(new IgfsEvent(path, locNode, type));
+    }
+
+    /**
+     * @param cfg Grid configuration.
+     * @param cacheName Cache name.
+     * @return {@code True} in this is IGFS data or meta cache.
+     */
+    public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
+        FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
+
+        if (igfsCfgs != null) {
+            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
+                // IGFS config probably has not been validated yet => possible NPE, so we check for null.
+                if (igfsCfg != null) {
+                    if (F.eq(cacheName, igfsCfg.getDataCacheName()) || F.eq(cacheName, igfsCfg.getMetaCacheName()))
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Prepare cache configuration if this is IGFS meta or data cache.
+     *
+     * @param cfg Configuration.
+     * @param ccfg Cache configuration.
+     */
+    public static void prepareCacheConfiguration(IgniteConfiguration cfg, CacheConfiguration ccfg) {
+        FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
+
+        if (igfsCfgs != null) {
+            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
+                if (igfsCfg != null) {
+                    if (F.eq(ccfg.getName(), igfsCfg.getMetaCacheName())) {
+                        ccfg.setCopyOnRead(false);
+
+                        // Set co-located affinity mapper if needed.
+                        if (igfsCfg.isColocateMetadata() && ccfg.getCacheMode() == CacheMode.REPLICATED &&
+                            ccfg.getAffinityMapper() == null)
+                            ccfg.setAffinityMapper(new IgfsColocatedMetadataAffinityKeyMapper());
+
+                        return;
+                    }
+
+                    if (F.eq(ccfg.getName(), igfsCfg.getDataCacheName())) {
+                        ccfg.setCopyOnRead(false);
+
+                        return;
+                    }
+                }
+            }
+        }
     }
 }
