@@ -2971,9 +2971,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             Object res = null;
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
+                final boolean keepBinary = txEntry.keepBinary();
+
                 CacheInvokeEntry<Object, Object> invokeEntry =
                     new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0, ver,
-                        txEntry.keepBinary());
+                        keepBinary,
+                        ctx.conflictNeedResolve() ? txEntry.cached().versionedEntry(keepBinary) : null);
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 
