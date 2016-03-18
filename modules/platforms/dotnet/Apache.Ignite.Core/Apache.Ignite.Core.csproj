@@ -397,20 +397,12 @@
     <Compile Include="Transactions\TransactionState.cs" />
     <Compile Include="Transactions\TransactionTimeoutException.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
-    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\x64\Debug\ignite.common.dll">
-      <Link>resources\debug\x64\ignite.common.dll</Link>
+  <ItemGroup Condition="'$(Platform)' == 'AnyCPU'">
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\x64\$(Configuration)\ignite.common.dll">
+      <Link>resources\$(Configuration)\x64\ignite.common.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\Win32\Debug\ignite.common.dll">
-      <Link>resources\debug\x86\ignite.common.dll</Link>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)' == 'Release'">
-    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\x64\Release\ignite.common.dll">
-      <Link>resources\release\x64\ignite.common.dll</Link>
-    </EmbeddedResource>
-    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\Win32\Release\ignite.common.dll">
-      <Link>resources\release\x86\ignite.common.dll</Link>
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll">
+      <Link>resources\$(Configuration)\x86\ignite.common.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -431,12 +423,12 @@
     <PreBuildEvent>set OLD_JAVA_HOME = %25JAVA_HOME%25
 set JAVA_HOME=%25JAVA_HOME64%25
 echo JHOME: %25JAVA_HOME%25
-"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Release /t:Clean;Rebuild
-"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Debug /t:Clean;Rebuild
+"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Release
+"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=Debug
 set JAVA_HOME=%25JAVA_HOME32%25
 echo JHOME: %25JAVA_HOME%25
-"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Release /t:Clean;Rebuild
-"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Debug /t:Clean;Rebuild
+"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Release
+"$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=Debug
 set JAVA_HOME = %25OLD_JAVA_HOME%25
 	</PreBuildEvent>
   </PropertyGroup>
