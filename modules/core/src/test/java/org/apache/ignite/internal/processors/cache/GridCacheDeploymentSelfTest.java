@@ -133,6 +133,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Ignite g0 = startGrid(GRID_NAME);
 
+            awaitPartitionMapExchange();
+
             ClassLoader ldr = getExternalClassLoader();
 
             Class cls = ldr.loadClass(TEST_TASK_1);
@@ -158,6 +160,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g2 = startGrid(2);
 
             Ignite g0 = startGrid(GRID_NAME);
+
+            awaitPartitionMapExchange();
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -251,6 +255,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g2 = startGrid(2);
 
             Ignite g0 = startGrid(GRID_NAME);
+
+            awaitPartitionMapExchange();
 
             info("Started grids:");
             info("g0: " + g0.cluster().localNode().id());

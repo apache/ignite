@@ -50,7 +50,7 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "myCache";
 
     /** */
-    private static final int MAX_FAILOVER_ATTEMPTS = 105;
+    private static final int MAX_FAILOVER_ATTEMPTS = 500;
 
     /** */
     private static final int SRVS = 4;
