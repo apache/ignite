@@ -57,9 +57,10 @@
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
     "passport-local-mongoose": "3.1.0",
+    "passport.socketio": "^3.6.1",
     "require-dir": "^0.3.0",
     "serve-favicon": "~2.3.0",
-    "ws": "~0.8.0"
+    "socket.io": "^1.4.5"
   },
   "devDependencies": {
     "jspm": "^0.16.15",
@@ -77,10 +78,11 @@
       "angular-loading": "github:darthwade/angular-loading@^0.1.4",
       "angular-motion": "github:mgcrea/angular-motion@^0.4.3",
       "angular-nvd3": "github:krispo/angular-nvd3@^1.0.4",
-      "angular-retina": "github:jrief/angular-retina@^0.3.8",
+      "angular-retina": "github:jrief/angular-retina@0.3.8",
       "angular-sanitize": "github:angular/bower-angular-sanitize@^1.5.0",
       "angular-smart-table": "github:lorenzofox3/Smart-Table@^2.1.4",
-      "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
+      "angular-socket-io": "github:btford/angular-socket-io@^0.7.0",
+      "angular-strap": "github:mgcrea/angular-strap@2.3.7",
       "angular-tree-control": "github:wix/angular-tree-control@^0.2.23",
       "angular-ui-grid": "github:angular-ui/bower-ui-grid@^3.0.7",
       "angular-ui-router": "github:angular-ui/ui-router@^0.2.15",
@@ -97,6 +99,7 @@
       "lodash": "npm:lodash@^3.10.1",
       "pdfmake": "github:bpampuch/pdfmake@^0.1.20",
       "query-command-supported": "github:zenorocha/document.queryCommandSupported@^1.0.0",
+      "socket.io-client": "github:socketio/socket.io-client@1.4.5",
       "text": "github:systemjs/plugin-text@^0.0.7"
     },
     "devDependencies": {
@@ -116,6 +119,20 @@
             "deps": [
               "jquery"
             ]
+          }
+        }
+      },
+      "github:btford/angular-socket-io@0.7.0": {
+        "dependencies": {
+          "socket.io-client": "github:socketio/socket.io-client@1.4.5"
+        }
+      },
+      "github:socketio/socket.io-client@1.4.5": {
+        "format": "global",
+        "main": "socket.io",
+        "shim": {
+          "socket.io": {
+            "exports": "io"
           }
         }
       },
@@ -141,14 +158,12 @@
       "github:krispo/angular-nvd3@1.0.4": {
         "main": "dist/angular-nvd3",
         "dependencies": {
-          "angular": "^1",
           "nvd3": "npm:nvd3@1.8.1",
           "d3": "npm:d3@3.5.14"
         },
         "shim": {
           "dist/angular-nvd3": {
             "deps": [
-              "angular",
               "d3",
               "nvd3"
             ]
@@ -218,18 +233,22 @@
           "pdfmake": "github:bpampuch/pdfmake@^0.1.20"
         }
       },
-      "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
-        "main": "dist/angular-strap.tpl",
+      "github:mgcrea/angular-strap@2.3.7": {
+        "directories": {
+          "lib": "dist"
+        },
+        "main": "angular-strap.tpl",
         "dependencies": {
-          "angular": "github:angular/bower-angular@^1.5.0",
+          "angular": "^1",
           "angular-animate": "github:angular/bower-angular-animate@^1.5.0",
           "angular-motion": "github:mgcrea/angular-motion@^0.4.3",
           "angular-sanitize": "github:angular/bower-angular-sanitize@^1.5.0"
         },
         "shim": {
-          "dist/angular-strap.tpl": {
+          "angular-strap.tpl": {
             "deps": [
-              "./angular-strap"
+              "./angular-strap",
+              "angular"
             ]
           }
         }

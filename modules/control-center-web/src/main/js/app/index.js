@@ -20,26 +20,26 @@ import _ from 'lodash';
 import ace from 'ace';
 import angular from 'angular';
 import pdfMake from 'pdfmake';
+import io from 'socket.io-client';
 
 window._ = _;
-window.jQuery = jQuery;
 window.ace = ace;
 window.require = ace.require; // TODO Should be removed after full refactoring to directives.
-window.angular = angular;
 window.pdfMake = pdfMake;
 
-import 'angular-ui-router';
-import 'angular-ui-router-metatags';
 import 'angular-animate';
 import 'angular-sanitize';
-import 'angular-ui-grid';
+import 'angular-strap';
+import 'angular-socket-io';
 import 'angular-loading';
+import 'angular-retina';
+import 'angular-ui-router';
+import 'angular-ui-router-metatags';
+import 'angular-smart-table';
+import 'angular-ui-grid';
 import 'angular-drag-and-drop-lists';
 import 'angular-nvd3';
-import 'angular-retina';
-import 'angular-strap';
 import 'angular-tree-control';
-import 'angular-smart-table';
 
 import 'bootstrap-carousel';
 import 'file-saver';
@@ -55,7 +55,7 @@ import 'angular-ui-grid/ui-grid.css!';
 import 'angular-loading/angular-loading.css!';
 import 'angular-motion/dist/angular-motion.css!';
 
-// import './decorator/select';
+import './decorator/select';
 
 import './modules/form/form.module';
 import './modules/JavaTypes/JavaTypes.provider';
@@ -94,10 +94,12 @@ import igniteFormFieldJavaClass from './directives/form-field-java-class/form-fi
 import igniteBsAffixUpdate from './directives/bs-affix-update.directive';
 
 // Services.
-import cleanup from './services/cleanup/cleanup.service';
+import cleanup from './services/cleanup.service';
 import GeneratorXml from './services/Generator/Xml.service';
 import GeneratorJava from './services/Generator/Java.service';
-import IgniteCountries from './services/Countries/Countries.service';
+import IgniteCountries from './services/Countries.service';
+import IgniteChartColors from './services/ChartColors.service';
+import IgniteAgentMonitor from './services/AgentMonitor.service';
 
 // Providers
 
@@ -107,9 +109,13 @@ import byName from './filters/byName.filter';
 
 angular
 .module('ignite-console', [
+    'ngRetina',
+    'btford.socket-io',
+    'ngAnimate',
+    'ngSanitize',
+    'mgcrea.ngStrap',
     'ui.router',
     'ui.router.metatags',
-    'ngRetina',
     // Base modules.
     'ignite-console.user',
     'ignite-console.branding',
@@ -149,6 +155,8 @@ angular
 .service(...GeneratorXml)
 .service(...GeneratorJava)
 .service(...IgniteCountries)
+.service(...IgniteChartColors)
+.service(...IgniteAgentMonitor)
 // Providers.
 // Filters.
 .filter(...hasPojo)
@@ -179,14 +187,15 @@ angular
 .run(['$rootScope', ($root) => {
     $root._ = _;
 }])
-.run(['$rootScope', '$state', 'MetaTags', 'Auth', 'User', ($root, $state, $meta, Auth, User) => {
+.run(['$rootScope', '$state', 'MetaTags', 'Auth', 'User', 'IgniteAgentMonitor', ($root, $state, $meta, Auth, User, AgentMonitor) => {
     $root.$state = $state;
 
     $root.$meta = $meta;
 
     if (Auth.authorized) {
         User.read()
-            .then((user) => $root.$broadcast('user', user));
+            .then((user) => $root.$broadcast('user', user))
+            .then(() => AgentMonitor.init());
     }
 }])
 .run(['$rootScope', ($root) => {

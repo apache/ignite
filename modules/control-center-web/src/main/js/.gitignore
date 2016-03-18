@@ -6,3 +6,6 @@ jspm_packages
 build
 app/plugins
 public/stylesheets/*.css
+serve/config/*.json
+serve/agent_dists/*.zip
+

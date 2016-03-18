@@ -17,8 +17,8 @@
 
 // Controller for Domain model screen.
 consoleModule.controller('domainsController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', '$modal', '$common', '$focus', '$confirm', '$confirmBatch', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard', '$agentDownload',
-    function ($scope, $http, $state, $filter, $timeout, $modal, $common, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard, $agentDownload) {
+    '$scope', '$http', '$state', '$filter', '$timeout', '$modal', '$common', '$focus', '$confirm', '$confirmBatch', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard', 'IgniteAgentMonitor',
+    function ($scope, $http, $state, $filter, $timeout, $modal, $common, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard, IgniteAgentMonitor) {
         $unsavedChangesGuard.install($scope);
 
         $scope.ui = $common.formUI();
@@ -424,7 +424,7 @@ consoleModule.controller('domainsController', [
         var hideImportDomain = importDomainModal.hide;
 
         importDomainModal.hide = function () {
-            $agentDownload.stopAwaitAgent();
+            IgniteAgentMonitor.stopWatch();
 
             hideImportDomain();
         };
@@ -443,8 +443,8 @@ consoleModule.controller('domainsController', [
 
                 $scope.importDomain = {
                     demo: demo,
-                    action: 'drivers',
-                    jdbcDriversNotFound: false,
+                    action: demo ? 'connect' : 'drivers',
+                    jdbcDriversNotFound: demo,
                     schemas: [],
                     allSchemasSelected: false,
                     tables: [],
@@ -455,59 +455,45 @@ consoleModule.controller('domainsController', [
 
                 $scope.importDomain.loadingOptions = LOADING_JDBC_DRIVERS;
 
-                $agentDownload.awaitAgent(function (result, onSuccess, onException) {
-                    importDomainModal.$promise.then(importDomainModal.show);
+                IgniteAgentMonitor.startWatch({
+                        state: 'base.configuration.domains',
+                        text: 'Back to Domain models',
+                        goal: 'import domain model from database schema'
+                    })
+                    .then(function() {
+                        importDomainModal.$promise.then(importDomainModal.show);
 
-                    // Get available JDBC drivers via agent.
-                    if ($scope.importDomain.action === 'drivers') {
+                        if (demo) {
+                            $scope.ui.packageNameUserInput = $scope.ui.packageName;
+                            $scope.ui.packageName = 'model';
+
+                            return;
+                        }
+
+                        // Get available JDBC drivers via agent.
                         $loading.start('importDomainFromDb');
 
                         $scope.jdbcDriverJars = [];
                         $scope.ui.selectedJdbcDriverJar = {};
 
-                        $http.post('/api/v1/agent/drivers')
-                            .success(function (drivers) {
-                                onSuccess();
-
-                                if ($scope.importDomain.demo) {
-                                    $scope.ui.packageNamePrev = $scope.ui.packageName;
-                                    $scope.ui.packageName = 'model';
-                                }
-                                else if ($scope.ui.packageNamePrev) {
-                                    $scope.ui.packageName = $scope.ui.packageNamePrev;
-                                    $scope.ui.packageNamePrev = null;
-                                }
+                        return IgniteAgentMonitor.drivers()
+                            .then(function(drivers) {
+                                $scope.ui.packageName = $scope.ui.packageNameUserInput;
 
                                 if (drivers && drivers.length > 0) {
                                     drivers = _.sortBy(drivers, 'jdbcDriverJar');
 
-                                    if ($scope.importDomain.demo) {
-                                        var _h2DrvJar = _.find(drivers, function (drv) {
-                                            return drv.jdbcDriverJar.startsWith('h2');
+                                    drivers.forEach(function (drv) {
+                                        $scope.jdbcDriverJars.push({
+                                            label: drv.jdbcDriverJar,
+                                            value: {
+                                                jdbcDriverJar: drv.jdbcDriverJar,
+                                                jdbcDriverClass: drv.jdbcDriverCls
+                                            }
                                         });
+                                    });
 
-                                        if (_h2DrvJar) {
-                                            $scope.demoConnection.db = 'H2';
-                                            $scope.demoConnection.jdbcDriverJar = _h2DrvJar.jdbcDriverJar;
-                                        }
-                                        else {
-                                            $scope.demoConnection.db = 'General';
-                                            $scope.importDomain.button = 'Cancel';
-                                        }
-                                    }
-                                    else {
-                                        drivers.forEach(function (driver) {
-                                            $scope.jdbcDriverJars.push({
-                                                label: driver.jdbcDriverJar,
-                                                value: {
-                                                    jdbcDriverJar: driver.jdbcDriverJar,
-                                                    jdbcDriverClass: driver.jdbcDriverClass
-                                                }
-                                            });
-                                        });
-
-                                        $scope.ui.selectedJdbcDriverJar = $scope.jdbcDriverJars[0].value;
-                                    }
+                                    $scope.ui.selectedJdbcDriverJar = $scope.jdbcDriverJars[0].value;
 
                                     $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
                                         importDomainModal.$promise.then(function () {
@@ -524,16 +510,12 @@ consoleModule.controller('domainsController', [
                                     $scope.importDomain.button = 'Cancel';
                                 }
                             })
-                            .error(function (errMsg, status) {
-                                onException(errMsg, status);
-                            })
                             .finally(function () {
                                 $scope.importDomain.info = INFO_CONNECT_TO_DB;
 
                                 $loading.finish('importDomainFromDb');
                             });
-                    }
-                });
+                    })
             });
         };
 
@@ -541,15 +523,18 @@ consoleModule.controller('domainsController', [
          * Load list of database schemas.
          */
         function _loadSchemas() {
-            $loading.start('importDomainFromDb');
+            IgniteAgentMonitor.awaitAgent()
+                .then(function() {
+                    $loading.start('importDomainFromDb');
 
-            var preset = $scope.importDomain.demo ? $scope.demoConnection : $scope.selectedPreset;
+                    var preset = $scope.importDomain.demo ? $scope.demoConnection : $scope.selectedPreset;
 
-            if (!$scope.importDomain.demo)
-                _savePreset(preset);
+                    if (!$scope.importDomain.demo)
+                        _savePreset(preset);
 
-            $http.post('/api/v1/agent/schemas', preset)
-                .success(function (schemas) {
+                    return IgniteAgentMonitor.schemas(preset)
+                })
+                .then(function(schemas) {
                     $scope.importDomain.schemas = _.map(schemas, function (schema) {
                         return {use: false, name: schema};
                     });
@@ -566,7 +551,7 @@ consoleModule.controller('domainsController', [
                     $scope.importDomain.info = INFO_SELECT_SCHEMAS;
                     $scope.importDomain.loadingOptions = LOADING_TABLES;
                 })
-                .error(function (errMsg) {
+                .catch(function(errMsg) {
                     $common.showError(errMsg);
                 })
                 .finally(function () {
@@ -611,21 +596,24 @@ consoleModule.controller('domainsController', [
          * Load list of database tables.
          */
         function _loadTables() {
-            $loading.start('importDomainFromDb');
+            IgniteAgentMonitor.awaitAgent()
+                .then(function() {
+                    $loading.start('importDomainFromDb');
 
-            $scope.importDomain.allTablesSelected = false;
+                    $scope.importDomain.allTablesSelected = false;
 
-            var preset = $scope.importDomain.demo ? $scope.demoConnection : $scope.selectedPreset;
+                    var preset = $scope.importDomain.demo ? $scope.demoConnection : $scope.selectedPreset;
 
-            preset.schemas = [];
+                    preset.schemas = [];
 
-            _.forEach($scope.importDomain.schemas, function (schema) {
-                if (schema.use)
-                    preset.schemas.push(schema.name);
-            });
+                    _.forEach($scope.importDomain.schemas, function (schema) {
+                        if (schema.use)
+                            preset.schemas.push(schema.name);
+                    });
 
-            $http.post('/api/v1/agent/tables', preset)
-                .success(function (tables) {
+                    return IgniteAgentMonitor.tables(preset);
+                })
+                .then(function (tables) {
                     _importCachesOrTemplates = [DFLT_PARTITIONED_CACHE, DFLT_REPLICATED_CACHE].concat($scope.caches);
 
                     _fillCommonCachesOrTemplates($scope.importCommon)($scope.importCommon.action);
@@ -646,7 +634,7 @@ consoleModule.controller('domainsController', [
                     $scope.importDomain.tables = tables;
                     $scope.importDomain.info = INFO_SELECT_TABLES;
                 })
-                .error(function (errMsg) {
+                .catch(function(errMsg) {
                     $common.showError(errMsg);
                 })
                 .finally(function () {
@@ -989,7 +977,8 @@ consoleModule.controller('domainsController', [
                             _saveBatch(_.filter(batch, function (item) {
                                 return !item.skip;
                             }));
-                        }, function () {
+                        })
+                        .catch(function () {
                             $common.showError('Importing of domain models interrupted by user.');
                         });
                 else
@@ -1014,12 +1003,8 @@ consoleModule.controller('domainsController', [
 
             if (act === 'drivers' && $scope.importDomain.jdbcDriversNotFound)
                 importDomainModal.hide();
-            else if (act === 'connect') {
-                if ($scope.importDomain.demo && $scope.demoConnection.db !== 'H2')
-                    importDomainModal.hide();
-                else
-                    _loadSchemas();
-            }
+            else if (act === 'connect')
+                _loadSchemas();
             else if (act === 'schemas')
                 _loadTables();
             else if (act === 'tables')
@@ -1036,13 +1021,8 @@ consoleModule.controller('domainsController', [
             if (act === 'drivers' && $scope.importDomain.jdbcDriversNotFound)
                 return 'Resolve issue with JDBC drivers<br>Close this dialog and try again';
 
-            if (act === 'connect') {
-                if ($scope.importDomain.demo && $scope.demoConnection.db !== 'H2')
-                    return 'Resolve issue with H2 database driver<br>Close this dialog and try again';
-
-                if (importDomainNextAvailable)
-                    return 'Click to load list of schemas from database';
-            }
+            if (act === 'connect' || act === 'drivers')
+                return 'Click to load list of schemas from database';
 
             if (act === 'schemas')
                 return importDomainNextAvailable ? 'Click to load list of tables from database' : 'Select schemas to continue';

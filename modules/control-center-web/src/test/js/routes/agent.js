@@ -50,8 +50,8 @@ describe('request from agent', function() {
             .send({email: 'test@test.com', password: 'test'})
             .expect(302)
             .end(function (err) {
-                if (err)
-                    throw err;
+                if (error)
+                    throw error;
 
                 setTimeout(done, 5000);
             });
@@ -62,10 +62,10 @@ describe('request from agent', function() {
             .post('/agent/topology')
             .send({})
             .end(function(err, nodes) {
-                if (err) {
-                    console.log(err.response.text);
+                if (error) {
+                    console.log(error.response.text);
 
-                    throw err;
+                    throw error;
                 }
 
                 console.log(nodes);

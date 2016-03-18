@@ -16,8 +16,8 @@
 
 ul.select.dropdown-menu(tabindex='-1' ng-show='$isVisible()' role='select')
     li(ng-if='$showAllNoneButtons || ($isMultiple && $matches.length > 2)')
-        a(id='li-dropdown-select-all' ng-click='$selectAllAtOnce()') {{$allText}} ({{$matches.length}})
-        a(id='li-dropdown-select-none' ng-click='$selectNoneAtOnce()') {{$noneText}}
+        a(id='li-dropdown-select-all' ng-click='$selectAll()') {{$allText}} ({{$matches.length}})
+        a(id='li-dropdown-select-none' ng-click='$selectNone()') {{$noneText}}
         hr(style='margin: 5px 0')
     li(role='presentation' ng-repeat='match in $matches')
         hr(ng-if='match.value == undefined' style='margin: 5px 0')

@@ -18,9 +18,9 @@
     .modal-dialog
         .modal-content
             #errors-container.modal-header.header
-                h4.modal-title(ng-if='!nodeFailedConnection') Connection to Ignite Web Agent is not established
-                h4.modal-title(ng-if='nodeFailedConnection') Connection to Ignite Node is not established
-            .agent-download(ng-if='!nodeFailedConnection')
+                h4.modal-title(ng-if='!hasAgents') Connection to Ignite Web Agent is not established
+                h4.modal-title(ng-if='hasAgents') Connection to Ignite Node is not established
+            .agent-download(ng-if='!hasAgents')
                 p Please download and run&nbsp;
                     a(href='javascript:void(0)' ng-click='downloadAgent()') ignite-web-agent
                     | &nbsp;in order to {{::agentGoal}}
@@ -41,7 +41,7 @@
                     label.labelField Security token: {{user.token}}
                     i.tipLabel.fa.fa-clipboard(ng-click-copy='{{user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
                     i.tipLabel.fa.fa-question-circle(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
-            .agent-download(ng-if='nodeFailedConnection')
+            .agent-download(ng-if='hasAgents')
                 p Connection to Ignite Web Agent is established, but agent failed to connect to Ignite Node
                 p Please check the following:
                 ul
@@ -52,5 +52,6 @@
                         b README.txt
                         | &nbsp; in agent folder for more information
             .modal-footer
+                button.btn.btn-info(ng-if='hasAgents && startDemo' ng-click='startDemo()') Demo
                 button.btn.btn-default(ng-click='back()') {{::backText}}
-                button.btn.btn-primary(ng-if='!nodeFailedConnection' ng-click='downloadAgent()') Download zip
+                button.btn.btn-primary(ng-if='!hasAgents' ng-click='downloadAgent()') Download zip

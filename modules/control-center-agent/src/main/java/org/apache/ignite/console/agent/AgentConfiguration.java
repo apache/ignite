@@ -39,7 +39,7 @@ public class AgentConfiguration {
     public static final String DFLT_CFG_PATH = "default.properties";
 
     /** Default server URI. */
-    private static final String DFLT_SERVER_URI = "wss://localhost:3001";
+    private static final String DFLT_SERVER_URI = "http://localhost:3001";
 
     /** Default Ignite node HTTP URI. */
     private static final String DFLT_NODE_URI = "http://localhost:8080";
@@ -74,9 +74,6 @@ public class AgentConfiguration {
         "                             " +
         "      Default value: ./jdbc-drivers")
     private String driversFolder;
-
-    /** Release date. */
-    private long relDate;
 
     /** */
     @Parameter(names = { "-h", "--help" }, help = true, description = "Print this help message")
@@ -160,17 +157,10 @@ public class AgentConfiguration {
     }
 
     /**
-     * @return Release date.
-     */
-    public long relDate() {
-        return relDate;
-    }
-
-    /**
      * @return {@code true} If agent options usage should be printed.
      */
     public Boolean help() {
-        return help != null ? help : false;
+        return help != null ? help : Boolean.FALSE;
     }
 
     /**
@@ -202,17 +192,6 @@ public class AgentConfiguration {
 
         if (val != null)
             driversFolder(val);
-
-        val = (String)props.remove("rel-date");
-
-        if (val != null) {
-            try {
-                this.relDate = Long.parseLong(val);
-            }
-            catch (NumberFormatException ignored) {
-                // No-op.
-            }
-        }
     }
 
     /**
@@ -236,8 +215,6 @@ public class AgentConfiguration {
 
         if (driversFolder == null)
             driversFolder(cmd.driversFolder());
-
-        relDate = cmd.relDate();
     }
 
     /** {@inheritDoc} */
@@ -248,12 +225,12 @@ public class AgentConfiguration {
             sb.append("User's security token         : ");
 
             if (tok.length() > 4) {
-                sb.append(new String(new char[tok.length() - 4]).replace("\0", "*"));
+                sb.append(new String(new char[tok.length() - 4]).replace('\0', '*'));
 
                 sb.append(tok.substring(tok.length() - 4));
             }
             else
-                sb.append(new String(new char[tok.length()]).replace("\0", "*"));
+                sb.append(new String(new char[tok.length()]).replace('\0', '*'));
 
             sb.append('\n');
         }

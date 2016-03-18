@@ -25,7 +25,7 @@ module.exports = {
 };
 
 module.exports.factory = function(nconf, fs) {
-    nconf.file({file: './serve/config/default.json'});
+    nconf.file({file: './serve/config/settings.json'});
 
     /**
      * Normalize a port into a number, string, or false.
@@ -46,8 +46,8 @@ module.exports.factory = function(nconf, fs) {
 
     return {
         agent: {
-            file: 'ignite-web-agent-1.5.0.final',
-            port: _normalizePort(nconf.get('agent-server:port')),
+            dists: 'serve/agent_dists',
+            port: _normalizePort(nconf.get('agent-server:port') || 3001),
             SSLOptions: nconf.get('agent-server:ssl') && {
                 key: fs.readFileSync(nconf.get('agent-server:key')),
                 cert: fs.readFileSync(nconf.get('agent-server:cert')),
@@ -55,11 +55,10 @@ module.exports.factory = function(nconf, fs) {
             }
         },
         server: {
-            port: _normalizePort(nconf.get('server:port') || 80),
+            port: _normalizePort(nconf.get('server:port') || 3000),
             SSLOptions: nconf.get('server:ssl') && {
                 enable301Redirects: true,
                 trustXFPHeader: true,
-                port: _normalizePort(nconf.get('server:https-port') || 443),
                 key: fs.readFileSync(nconf.get('server:key')),
                 cert: fs.readFileSync(nconf.get('server:cert')),
                 passphrase: nconf.get('server:keyPassphrase')
@@ -73,7 +72,7 @@ module.exports.factory = function(nconf, fs) {
             password: nconf.get('smtp:password'),
             address: (username, email) => username ? '"' + username + '" <' + email + '>' : email
         },
-        mongoUrl: nconf.get('mongoDB:url'),
+        mongoUrl: nconf.get('mongoDB:url') || 'mongodb://localhost/console',
         cookieTTL: 3600000 * 24 * 30,
         sessionSecret: 'keyboard cat',
         tokenLength: 20

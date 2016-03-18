@@ -39,19 +39,15 @@ var options = {
 	minify: true
 };
 
-gulp.task('bundle', function(cb) {
-	return sequence('bundle:ignite', 'bundle:legacy', cb);
-});
+gulp.task('bundle', ['eslint', 'bundle:ignite', 'bundle:legacy']);
 
 // Package all external dependencies and ignite-console.
-gulp.task('bundle:ignite', ['eslint'], function() {
-	if (util.env.debug) {
+gulp.task('bundle:ignite', function() {
+	if (util.env.debug)
 		delete options.minify;
-	}
 
-	if (util.env.debug || util.env.sourcemaps) {
+	if (util.env.debug || util.env.sourcemaps)
 		options.sourceMaps = true;
-	}
 
 	return jspm.bundleSFX('app/index', 'build/app.min.js', options);
 });

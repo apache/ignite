@@ -20,6 +20,7 @@ ecmaFeatures:
 
 globals:
     _: true
+    io: true
     window: true
     global: true
     angular: true

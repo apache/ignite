@@ -28,13 +28,6 @@
 
     <fileSets>
         <fileSet>
-            <directory>${basedir}/../indexing/target/libs</directory>
-            <outputDirectory>/jdbc-drivers</outputDirectory>
-            <includes>
-                <include>**/h2-*.jar</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <directory>${basedir}</directory>
             <outputDirectory>/</outputDirectory>
             <includes>

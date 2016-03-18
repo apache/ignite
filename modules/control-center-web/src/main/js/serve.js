@@ -66,29 +66,23 @@ const fireUp = require('fire-up').newInjector({
     ]
 });
 
-Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent')])
+Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent'), fireUp('io')])
     .then((values) => {
-        const settings = values[0], app = values[1], agent = values[2];
+        const settings = values[0];
+        const app = values[1];
+        const agent = values[2];
+        const io = values[3];
 
-        // Create HTTP server.
-        const server = http.createServer(app);
-
-        app.set('port', settings.server.port);
+        // Start rest server.
+        const server = settings.server.SSLOptions
+            ? https.createServer(settings.server.SSLOptions) : http.createServer();
 
         server.listen(settings.server.port);
         server.on('error', _onError.bind(null, settings.server.port));
         server.on('listening', _onListening.bind(null, server.address()));
 
-        // Create HTTPS server if needed.
-        if (settings.server.SSLOptions) {
-            const httpsServer = https.createServer(settings.server.SSLOptions, app);
-
-            const httpsPort = settings.server.SSLOptions.port;
-
-            httpsServer.listen(httpsPort);
-            httpsServer.on('error', _onError.bind(null, httpsPort));
-            httpsServer.on('listening', _onListening.bind(null, httpsServer.address()));
-        }
+        app.listen(server);
+        io.listen(server);
 
         // Start agent server.
         const agentServer = settings.agent.SSLOptions
@@ -104,7 +98,7 @@ Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent')])
         if (process.send)
             process.send('running');
     }).catch((err) => {
-        console.error(err);
+        console.error(error);
 
         process.exit(1);
     });

@@ -15,23 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.console.agent.remote;
+import COLORS from 'app/data/colors.json!';
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-/**
- * Use this annotation to associate methods with remote NodeJS server commands.
- */
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface Remote {
-    /**
-     * Whether or not method should be executed synchronously.
-     *
-     * @return {@code true} if method will be executed in separated thread otherwise if method will be executed in handler thread.
-     */
-    boolean async() default true;
-}
+export default ['IgniteChartColors', function() {
+    return COLORS;
+}];

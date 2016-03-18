@@ -17,10 +17,21 @@
 
 var consoleModule = angular.module('ignite-web-console',
     [
-        'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'treeControl', 'darthwade.dwLoading', 'ui.grid', 'ui.grid.autoResize', 'ui.grid.exporter', 'nvd3', 'dndLists'
+        'darthwade.dwLoading',
+        'smart-table',
+        'treeControl',
+        'ui.grid',
+        'ui.grid.saveState',
+        'ui.grid.selection',
+        'ui.grid.resizeColumns',
+        'ui.grid.autoResize',
+        'ui.grid.exporter',
+        'nvd3',
+        'dndLists'
         /* ignite:modules */
         , 'ignite-console'
         /* endignite */
+
         /* ignite:plugins */
         /* endignite */
     ])
@@ -2044,194 +2055,6 @@ consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries',
 
     $focus('user_email');
 }]);
-
-// Download agent controller.
-consoleModule.service('$agentDownload', [
-    '$http', '$interval', '$rootScope', '$state', '$modal', '$loading', '$common',
-        function ($http, $interval, $rootScope, $state, $modal, $loading, $common) {
-        var scope = $rootScope.$new();
-
-        // Pre-fetch modal dialogs.
-        var _modal = $modal({scope: scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
-
-        var _modalHide = _modal.hide;
-
-        var _modalAlertHide = function () {
-            $common.hideAlert();
-
-            _modalHide();
-        };
-
-        /**
-         * Special dialog hide function.
-         */
-        _modal.hide = function () {
-            _stopInterval();
-
-            _modalAlertHide();
-        };
-
-        /**
-         * Close dialog and go by specified link.
-         */
-        scope.back = function () {
-            _modal.hide();
-
-            if (_modal.backState)
-                $state.go(_modal.backState);
-        };
-
-        scope.downloadAgent = function () {
-            var lnk = document.createElement('a');
-
-            lnk.setAttribute('href', '/api/v1/agent/download/zip');
-            lnk.setAttribute('target', '_self');
-            lnk.setAttribute('download', null);
-            lnk.style.display = 'none';
-
-            document.body.appendChild(lnk);
-
-            lnk.click();
-
-            document.body.removeChild(lnk);
-        };
-
-        /**
-         * Base handler of exceptions on agent interaction
-         *
-         * @param errMsg Error message.
-         * @param status Error code.
-         * @param timedOut True if request timedOut.
-         */
-        function _handleException (errMsg, status, timedOut) {
-            if (_modal.skipSingleError)
-                _modal.skipSingleError = false;
-            else if (!_modal.$isShown) {
-                // Don't show missing node dialog on SQL demo enabling.
-                if (_modal.check.params && _modal.check.params.demo && timedOut || !_modal.updatePromise)
-                    return;
-
-                $loading.finish('loading');
-
-                _modal.$promise.then(_modal.show);
-            }
-
-            var nodeError = _.includes([401, 403, 500], status);
-
-            scope.nodeFailedConnection = nodeError || timedOut;
-
-            if (nodeError)
-                $common.showError(errMsg, 'top-right', 'body', true);
-        }
-
-        /**
-         * Start interval to agent listening.
-         */
-        function _startInterval(awaitFirstSuccess) {
-            _modal.skipSingleError = false;
-
-            // Stop refresh after first success.
-            _modal.awaitFirstSuccess = awaitFirstSuccess;
-
-            _modal.updatePromise = $interval(function () {
-                _tryWithAgent();
-            }, 5000, 0, false);
-
-            _tryWithAgent();
-        }
-
-        /**
-         * Stop interval to agent listening.
-         */
-        function _stopInterval() {
-            $interval.cancel(_modal.updatePromise);
-
-            _modal.updatePromise = null;
-        }
-
-        /**
-         * Try to access agent and execute specified function.
-         */
-        function _tryWithAgent() {
-            var _timeout = 3000,
-                _timedOut = false;
-
-            setTimeout(function () {
-                _timedOut = true;
-            }, _timeout);
-
-            $http.post(_modal.check.url, _modal.check.params, {timeout: _timeout})
-                .success(function (data) {
-                    if (_modal.awaitFirstSuccess)
-                        _stopInterval();
-
-                    $loading.finish('loading');
-
-                    _modal.check.cb(data, _modalAlertHide, _handleException);
-
-                    if (!_modal.skipSingleError && _modal.check.onConnect)
-                        _modal.check.onConnect();
-
-                    _modal.skipSingleError = true;
-                })
-                .error(function (errMsg, status) {
-                    _handleException(errMsg, status, _timedOut);
-                });
-        }
-
-        return {
-            /**
-             * Start listening topology from node.
-             *
-             * @param cb Function to execute by timer when topology received.
-             * @param onConnect Function to execute when agent connected to a grid.
-             * @param demo True if need work with demo grid.
-             * @param attr True if need receive nodes attributes.
-             * @param mtr True if need receive nodes metrics.
-             */
-            startTopologyListening: function (cb, onConnect, demo, attr, mtr) {
-                _modal.check = {
-                    url: '/api/v1/agent/topology',
-                    params: {demo: !!demo,  attr: !!attr, mtr: !!mtr},
-                    onConnect: onConnect,
-                    cb: cb
-                };
-
-                _modal.backState = 'base.configuration.clusters';
-
-                scope.agentGoal = 'execute sql statements';
-
-                scope.backText = 'Back to Configuration';
-
-                _startInterval();
-            },
-            /**
-             * Start awaiting agent start using ping.
-             *
-             * @param success Function to execute by timer when agent available.
-             */
-            awaitAgent: function (success) {
-                _modal.check = {
-                    url: '/api/v1/agent/ping',
-                    cb: success
-                };
-
-                _modal.backState = 'base.configuration.domains';
-
-                scope.agentGoal = 'import domain model from database schema';
-
-                scope.backText = 'Back to Domain models';
-
-                _startInterval(true);
-            },
-            /**
-             * Stop listening of agent by ping.
-             */
-            stopAwaitAgent: function () {
-                _stopInterval();
-            }
-        };
-    }]);
 
 // Navigation bar controller.
 consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$common',

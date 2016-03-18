@@ -18,18 +18,39 @@
 package org.apache.ignite.console.agent;
 
 import com.beust.jcommander.JCommander;
+import com.beust.jcommander.ParameterException;
+import io.socket.client.Ack;
+import io.socket.client.IO;
+import io.socket.client.Socket;
+import io.socket.emitter.Emitter;
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
-
-import com.beust.jcommander.ParameterException;
-import org.apache.ignite.console.agent.handlers.RestExecutor;
+import java.util.concurrent.CountDownLatch;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLHandshakeException;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import org.apache.ignite.console.agent.handlers.DatabaseHandler;
+import org.apache.ignite.console.agent.handlers.RestHandler;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.log4j.Logger;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import static io.socket.client.Socket.EVENT_CONNECT;
+import static io.socket.client.Socket.EVENT_CONNECTING;
+import static io.socket.client.Socket.EVENT_CONNECT_ERROR;
+import static io.socket.client.Socket.EVENT_DISCONNECT;
+import static io.socket.client.Socket.EVENT_ERROR;
+import static io.socket.client.Socket.EVENT_RECONNECTING;
 import static org.apache.ignite.console.agent.AgentConfiguration.DFLT_SERVER_PORT;
 
 /**
@@ -40,7 +61,86 @@ public class AgentLauncher {
     private static final Logger log = Logger.getLogger(AgentLauncher.class.getName());
 
     /** */
+    private static final String EVENT_NODE_REST = "node:rest";
+
+    /** */
+    private static final String EVENT_SCHEMA_IMPORT_DRIVERS = "schemaImport:drivers";
+
+    /** */
+    private static final String EVENT_SCHEMA_IMPORT_SCHEMAS = "schemaImport:schemas";
+
+    /** */
+    private static final String EVENT_SCHEMA_IMPORT_METADATA = "schemaImport:metadata";
+
+    /** */
+    private static final String EVENT_AGENT_CLOSE = "agent:close";
+
+    /** */
     private static final int RECONNECT_INTERVAL = 3000;
+
+    /**
+     * Create a trust manager that trusts all certificates It is not using a particular keyStore
+     */
+    private static TrustManager[] getTrustManagers() {
+        return new TrustManager[] {
+            new X509TrustManager() {
+                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                    return null;
+                }
+
+                public void checkClientTrusted(
+                    java.security.cert.X509Certificate[] certs, String authType) {
+                }
+
+                public void checkServerTrusted(
+                    java.security.cert.X509Certificate[] certs, String authType) {
+                }
+            }};
+    }
+
+    /**
+     * On error listener.
+     */
+    private static final Emitter.Listener onError = new Emitter.Listener() {
+        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+        @Override public void call(Object... args) {
+            Throwable e = (Throwable)args[0];
+
+            ConnectException ce = X.cause(e, ConnectException.class);
+
+            if (ce != null)
+                log.warn(ce.getMessage());
+            else {
+                Exception ignore = X.cause(e, SSLHandshakeException.class);
+
+                if (ignore != null) {
+                    log.error("Failed to establish SSL connection to server, due to errors with SSL handshake.");
+                    log.error("Add to environment variable JVM_OPTS parameter \"-Dtrust.all=true\" to skip certificate validation in case of using self-signed certificate.");
+
+                    System.exit(1);
+                }
+
+                ignore = X.cause(e, SocketException.class);
+
+                if (ignore != null) {
+                    log.error("Failed to receive response from server (connection refused).");
+
+                    return;
+                }
+
+                log.error("Connection error.", e);
+            }
+        }
+    };
+
+    /**
+     * On disconnect listener.
+     */
+    private static final Emitter.Listener onDisconnect = new Emitter.Listener() {
+        @Override public void call(Object... args) {
+            log.error(String.format("Connection closed: %s.", args[0]));
+        }
+    };
 
     /**
      * @param args Args.
@@ -49,7 +149,7 @@ public class AgentLauncher {
     public static void main(String[] args) throws Exception {
         log.info("Starting Apache Ignite Web Console Agent...");
 
-        AgentConfiguration cfg = new AgentConfiguration();
+        final AgentConfiguration cfg = new AgentConfiguration();
 
         JCommander jCommander = new JCommander(cfg);
 
@@ -76,13 +176,13 @@ public class AgentLauncher {
             File f = AgentUtils.resolvePath(prop);
 
             if (f == null)
-                log.warn("Failed to find agent property file: '" + prop + "'");
+                log.warn("Failed to find agent property file: " + prop);
             else
                 propCfg.load(f.toURI().toURL());
         }
         catch (IOException ignore) {
             if (!AgentConfiguration.DFLT_CFG_PATH.equals(prop))
-                log.warn("Failed to load agent property file: '" + prop + "'", ignore);
+                log.warn("Failed to load agent property file: " + prop, ignore);
         }
 
         cfg.merge(propCfg);
@@ -118,47 +218,120 @@ public class AgentLauncher {
             cfg.token(System.console().readLine().trim());
         }
 
-        RestExecutor restExecutor = new RestExecutor(cfg);
-
-        restExecutor.start();
+        final RestHandler restHnd = new RestHandler(cfg);
 
         try {
-            SslContextFactory sslCtxFactory = new SslContextFactory();
+            restHnd.start();
 
-            // Workaround for use self-signed certificate:
-            if (Boolean.getBoolean("trust.all"))
-                sslCtxFactory.setTrustAll(true);
+            URI uri = URI.create(cfg.serverUri());
 
-            WebSocketClient client = new WebSocketClient(sslCtxFactory);
+            if (uri.getPort() == -1)
+                uri = URI.create(cfg.serverUri() + ':' + DFLT_SERVER_PORT);
 
-            client.setMaxIdleTimeout(Long.MAX_VALUE);
+            IO.Options opts = new IO.Options();
 
-            client.start();
+            opts.reconnectionDelay = RECONNECT_INTERVAL;
+
+            // Workaround for use self-signed certificate
+            if (Boolean.getBoolean("trust.all")) {
+                SSLContext ctx = SSLContext.getInstance("TLS");
+
+                // Create an SSLContext that uses our TrustManager
+                ctx.init(null, getTrustManagers(), null);
+
+                opts.sslContext = ctx;
+            }
+
+            final Socket client = IO.socket(uri, opts);
 
             try {
-                while (!Thread.interrupted()) {
-                    AgentSocket agentSock = new AgentSocket(cfg, restExecutor);
+                Emitter.Listener onConnecting = new Emitter.Listener() {
+                    @Override public void call(Object... args) {
+                        log.info("Connecting to: " + cfg.serverUri());
+                    }
+                };
 
-                    log.info("Connecting to: " + cfg.serverUri());
+                Emitter.Listener onConnect = new Emitter.Listener() {
+                    @Override public void call(Object... args) {
+                        log.info("Connection established.");
 
-                    URI uri = URI.create(cfg.serverUri());
+                        JSONObject authMsg = new JSONObject();
 
-                    if (uri.getPort() == -1)
-                        uri = URI.create(cfg.serverUri() + ":" + DFLT_SERVER_PORT);
+                        try {
+                            authMsg.put("token", cfg.token());
 
-                    client.connect(agentSock, uri);
+                            String clsName = AgentLauncher.class.getSimpleName() + ".class";
 
-                    agentSock.waitForClose();
+                            String clsPath = AgentLauncher.class.getResource(clsName).toString();
 
-                    Thread.sleep(RECONNECT_INTERVAL);
-                }
+                            if (clsPath.startsWith("jar")) {
+                                String manifestPath = clsPath.substring(0, clsPath.lastIndexOf('!') + 1) +
+                                    "/META-INF/MANIFEST.MF";
+
+                                Manifest manifest = new Manifest(new URL(manifestPath).openStream());
+
+                                Attributes attr = manifest.getMainAttributes();
+
+                                authMsg.put("ver", attr.getValue("Implementation-Version"));
+                                authMsg.put("bt", attr.getValue("Build-Time"));
+                            }
+
+                            client.emit("agent:auth", authMsg, new Ack() {
+                                @Override public void call(Object... args) {
+                                    // Authentication failed if response contains args.
+                                    if (args != null && args.length > 0) {
+                                        onDisconnect.call("Authentication failed: " + args[0]);
+
+                                        System.exit(1);
+                                    }
+
+                                    log.info("Authentication success.");
+                                }
+                            });
+                        }
+                        catch (JSONException | IOException e) {
+                            log.error("Failed to construct authentication message", e);
+
+                            client.close();
+                        }
+                    }
+                };
+
+                DatabaseHandler dbHnd = new DatabaseHandler(cfg);
+
+                final CountDownLatch latch = new CountDownLatch(1);
+
+                client
+                    .on(EVENT_CONNECTING, onConnecting)
+                    .on(EVENT_CONNECT, onConnect)
+                    .on(EVENT_CONNECT_ERROR, onError)
+                    .on(EVENT_RECONNECTING, onConnecting)
+                    .on(EVENT_NODE_REST, restHnd)
+                    .on(EVENT_SCHEMA_IMPORT_DRIVERS, dbHnd.availableDriversListener())
+                    .on(EVENT_SCHEMA_IMPORT_SCHEMAS, dbHnd.schemasListener())
+                    .on(EVENT_SCHEMA_IMPORT_METADATA, dbHnd.metadataListener())
+                    .on(EVENT_ERROR, onError)
+                    .on(EVENT_DISCONNECT, onDisconnect)
+                    .on(EVENT_AGENT_CLOSE, new Emitter.Listener() {
+                        @Override public void call(Object... args) {
+                            onDisconnect.call(args);
+
+                            client.off();
+
+                            latch.countDown();
+                        }
+                    });
+
+                client.connect();
+
+                latch.await();
             }
             finally {
-                client.stop();
+                client.close();
             }
         }
         finally {
-            restExecutor.stop();
+            restHnd.stop();
         }
     }
 }

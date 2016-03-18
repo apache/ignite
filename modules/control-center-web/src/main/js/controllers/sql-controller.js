@@ -17,15 +17,18 @@
 
 // Controller for SQL notebook screen.
 consoleModule.controller('sqlController', [
-    '$scope', '$http', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', '$common', '$confirm', '$agentDownload', 'QueryNotebooks', 'uiGridExporterConstants',
-    function ($scope, $http, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, $common, $confirm, $agentDownload, QueryNotebooks, uiGridExporterConstants) {
+    '$scope', '$http', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', '$common', '$confirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridExporterConstants',
+    function ($scope, $http, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, $common, $confirm, IgniteAgentMonitor, IgniteChartColors, QueryNotebooks, uiGridExporterConstants) {
+
+        var stopTopology = null;
+
         $scope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+            $interval.cancel(stopTopology);
+
             if ($scope.notebook && $scope.notebook.paragraphs)
                 $scope.notebook.paragraphs.forEach(function (paragraph) {
                     _tryStopRefresh(paragraph);
                 });
-
-            $agentDownload.stopAwaitAgent();
         });
 
         $scope.joinTip = $common.joinTip;
@@ -84,17 +87,12 @@ consoleModule.controller('sqlController', [
         // We need max 1800 items to hold history for 30 mins in case of refresh every second.
         var HISTORY_LENGTH = 1800;
 
-        var CHART_COLORS = [
-            '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
-            '#ffbb78', '#98df8a', '#ff9896', '#c5b0d5', '#aec7e8', '#c49c94', '#f7b6d2', '#c7c7c7', '#dbdb8d', '#9edae5'
-        ];
-
-        var MAX_VAL_COLS = CHART_COLORS.length;
+        var MAX_VAL_COLS = IgniteChartColors.length;
 
         $anchorScroll.yOffset = 55;
 
         $scope.chartColor = function(index) {
-            return {"color": "white", "background-color": CHART_COLORS[index]};
+            return {"color": "white", "background-color": IgniteChartColors[index]};
         };
 
         $scope.chartRemoveKeyColumn = function (paragraph, index) {
@@ -256,6 +254,23 @@ consoleModule.controller('sqlController', [
                 });
         };
 
+        var _refreshFn = function() {
+            IgniteAgentMonitor.topology($scope.demo)
+                .then(function(clusters) {
+                    var caches = _.flattenDeep(clusters.map(function (cluster) { return cluster._caches; }));
+
+                    $scope.caches = _.sortBy(_.uniq(_.reject(caches, { mode: 'LOCAL' }), function (cache) {
+                        return _mask(cache.name);
+                    }), 'name');
+
+                    _setActiveCache();
+                })
+                .catch(_handleException)
+                .finally(function() {
+                    $loading.finish('loading');
+                });
+        };
+
         var loadNotebook = function (notebook) {
             $scope.notebook = notebook;
 
@@ -278,14 +293,28 @@ consoleModule.controller('sqlController', [
             else
                 $scope.rebuildScrollParagraphs();
 
-            $agentDownload.startTopologyListening(getTopology, _onConnect, $scope.demo);
-        };
+            IgniteAgentMonitor.startWatch({
+                    state: 'base.configuration.clusters',
+                    text: 'Back to Configuration',
+                    goal: 'execute sql statements'
+                }, function () {
+                    $state.go('base.sql.demo');
+                })
+                .then(function () {
+                    $loading.start('loading');
 
-        $loading.start('loading');
+                    _refreshFn();
+
+                    if ($scope.demo)
+                        _.forEach($scope.notebook.paragraphs, $scope.execute);
+
+                    stopTopology = $interval(_refreshFn, 5000, 0, false);
+                });
+        };
 
         QueryNotebooks.read($scope.demo, $state.params.noteId)
             .then(loadNotebook)
-            .catch(function(err) {
+            .catch(function() {
                 $scope.notebookLoadFailed = true;
 
                 $loading.finish('loading');
@@ -329,9 +358,7 @@ consoleModule.controller('sqlController', [
                     else
                         $state.go('base.configuration.clusters');
                 })
-                .catch(function (errMsg) {
-                    $common.showError(errMsg);
-                });
+                .catch(_handleException);
         };
 
         $scope.renameParagraph = function (paragraph, newName) {
@@ -440,27 +467,6 @@ consoleModule.controller('sqlController', [
 
             return panel_idx >= 0;
         };
-
-        function getTopology(clusters, onSuccess) {
-            onSuccess();
-
-            var caches = _.flattenDeep(clusters.map(function (cluster) { return cluster._caches; }));
-
-            $scope.caches = _.sortBy(_.uniq(_.reject(caches, { mode: 'LOCAL' }), function (cache) {
-                return _mask(cache.name);
-            }), 'name');
-
-            _setActiveCache();
-
-            $loading.finish('loading');
-        }
-
-        function _onConnect() {
-            if (!$scope.demo)
-                return;
-
-            _.forEach($scope.notebook.paragraphs, $scope.execute);
-        }
 
         var _columnFilter = function(paragraph) {
             return paragraph.disabledSystemColumns || paragraph.systemColumns ? _allColumn : _hideColumn;
@@ -579,116 +585,113 @@ consoleModule.controller('sqlController', [
             return retainedCols;
         }
 
-        var _tryCloseQueryResult = function (queryId) {
-            if (queryId)
-                $http.post('/api/v1/agent/query/close', { demo: $scope.demo, queryId: queryId });
-        };
+        var _processQueryResult = function (paragraph, res) {
+            var prevKeyCols = paragraph.chartKeyCols;
+            var prevValCols = paragraph.chartValCols;
 
-        var _processQueryResult = function (paragraph, refreshMode) {
-            return function (res) {
-                var prevKeyCols = paragraph.chartKeyCols;
-                var prevValCols = paragraph.chartValCols;
+            if (!_.eq(paragraph.meta, res.meta)) {
+                paragraph.meta = [];
 
-                if (res.meta && !refreshMode) {
-                    paragraph.meta = [];
+                paragraph.chartColumns = [];
 
-                    paragraph.chartColumns = [];
+                if (!$common.isDefined(paragraph.chartKeyCols))
+                    paragraph.chartKeyCols = [];
 
-                    if (!$common.isDefined(paragraph.chartKeyCols))
-                        paragraph.chartKeyCols = [];
+                if (!$common.isDefined(paragraph.chartValCols))
+                    paragraph.chartValCols = [];
 
-                    if (!$common.isDefined(paragraph.chartValCols))
-                        paragraph.chartValCols = [];
+                if (res.meta.length <= 2) {
+                    var _key = _.find(res.meta, {fieldName: '_KEY'});
+                    var _val = _.find(res.meta, {fieldName: '_VAL'});
 
-                    if (res.meta.length <= 2) {
-                        var _key = _.find(res.meta, {fieldName: '_KEY'});
-                        var _val = _.find(res.meta, {fieldName: '_VAL'});
-
-                        paragraph.disabledSystemColumns = (res.meta.length == 2 && _key && _val) ||
-                            (res.meta.length == 1 && (_key || _val));
-                    }
-
-                    paragraph.columnFilter = _columnFilter(paragraph);
-
-                    paragraph.meta = res.meta;
-
-                    _rebuildColumns(paragraph);
+                    paragraph.disabledSystemColumns = (res.meta.length == 2 && _key && _val) ||
+                        (res.meta.length == 1 && (_key || _val));
                 }
 
-                paragraph.page = 1;
+                paragraph.columnFilter = _columnFilter(paragraph);
 
-                paragraph.total = 0;
+                paragraph.meta = res.meta;
 
-                paragraph.queryId = res.queryId;
+                _rebuildColumns(paragraph);
+            }
 
-                delete paragraph.errMsg;
+            paragraph.page = 1;
 
-                // Prepare explain results for display in table.
-                if (paragraph.queryArgs.type == "EXPLAIN" && res.rows) {
-                    paragraph.rows = [];
+            paragraph.total = 0;
 
-                    res.rows.forEach(function (row, i) {
-                        var line = res.rows.length - 1 == i ? row[0] : row[0] + '\n';
+            paragraph.queryId = res.queryId;
 
-                        line.replace(/\"/g, '').split('\n').forEach(function (line) {
-                            paragraph.rows.push([line]);
-                        });
+            delete paragraph.errMsg;
+
+            // Prepare explain results for display in table.
+            if (paragraph.queryArgs.type == "EXPLAIN" && res.rows) {
+                paragraph.rows = [];
+
+                res.rows.forEach(function (row, i) {
+                    var line = res.rows.length - 1 == i ? row[0] : row[0] + '\n';
+
+                    line.replace(/\"/g, '').split('\n').forEach(function (line) {
+                        paragraph.rows.push([line]);
                     });
+                });
+            }
+            else
+                paragraph.rows = res.rows;
+
+            paragraph.gridOptions.setRows(paragraph.rows);
+
+            var chartHistory = paragraph.chartHistory;
+
+            // Clear history on query change.
+            var queryChanged = paragraph.prevQuery != paragraph.query;
+
+            if (queryChanged) {
+                paragraph.prevQuery = paragraph.query;
+
+                chartHistory.length = 0;
+
+                _.forEach(paragraph.charts, function (chart) {
+                    chart.data.length = 0;
+                })
+            }
+
+            // Add results to history.
+            chartHistory.push({tm: new Date(), rows: paragraph.rows});
+
+            // Keep history size no more than max length.
+            while (chartHistory.length > HISTORY_LENGTH)
+                chartHistory.shift();
+
+            _showLoading(paragraph, false);
+
+            if (paragraph.result == 'none' || paragraph.queryArgs.type != "QUERY")
+                paragraph.result = 'table';
+            else if (paragraph.chart()) {
+                var resetCharts = queryChanged;
+
+                if (!resetCharts) {
+                    var curKeyCols = paragraph.chartKeyCols;
+                    var curValCols = paragraph.chartValCols;
+
+                    resetCharts = !prevKeyCols || !prevValCols ||
+                        prevKeyCols.length != curKeyCols.length ||
+                        prevValCols.length != curValCols.length;
                 }
-                else
-                    paragraph.rows = res.rows;
 
-                paragraph.gridOptions.setRows(paragraph.rows);
-
-                var chartHistory = paragraph.chartHistory;
-
-                // Clear history on query change.
-                var queryChanged = paragraph.prevQuery != paragraph.query;
-
-                if (queryChanged) {
-                    paragraph.prevQuery = paragraph.query;
-
-                    chartHistory.length = 0;
-
-                    _.forEach(paragraph.charts, function (chart) {
-                        chart.data.length = 0;
-                    })
-                }
-
-                // Add results to history.
-                chartHistory.push({tm: new Date(), rows: paragraph.rows});
-
-                // Keep history size no more than max length.
-                while (chartHistory.length > HISTORY_LENGTH)
-                    chartHistory.shift();
-
-                _showLoading(paragraph, false);
-
-                if (paragraph.result == 'none' || paragraph.queryArgs.type != "QUERY")
-                    paragraph.result = 'table';
-                else if (paragraph.chart()) {
-                    var resetCharts = queryChanged;
-
-                    if (!resetCharts) {
-                        var curKeyCols = paragraph.chartKeyCols;
-                        var curValCols = paragraph.chartValCols;
-
-                        resetCharts = !prevKeyCols || !prevValCols ||
-                            prevKeyCols.length != curKeyCols.length ||
-                            prevValCols.length != curValCols.length;
-                    }
-
-                    _chartApplySettings(paragraph, resetCharts);
-                }
+                _chartApplySettings(paragraph, resetCharts);
             }
         };
 
         var _executeRefresh = function (paragraph) {
-            _tryCloseQueryResult(paragraph.queryId);
-
-            $http.post('/api/v1/agent/query', paragraph.queryArgs)
-                .success(_processQueryResult(paragraph, true))
-                .error(function (errMsg) {
+            IgniteAgentMonitor.awaitAgent()
+                .then(function () {
+                    return IgniteAgentMonitor.queryClose(paragraph.queryArgs);
+                })
+                .then(function () {
+                    return IgniteAgentMonitor.query(paragraph.queryArgs);
+                })
+                .then(_processQueryResult.bind(this, paragraph))
+                .catch(function (errMsg) {
                     paragraph.errMsg = errMsg;
                 });
         };
@@ -705,31 +708,33 @@ consoleModule.controller('sqlController', [
 
             _showLoading(paragraph, true);
 
-            _tryCloseQueryResult(paragraph.queryId);
+            IgniteAgentMonitor.queryClose(paragraph.queryArgs)
+                .then(function () {
+                    paragraph.queryArgs = {
+                        demo: $scope.demo,
+                        type: "QUERY",
+                        query: paragraph.query,
+                        pageSize: paragraph.pageSize,
+                        cacheName: paragraph.cacheName || undefined
+                    };
 
-            paragraph.queryArgs = {
-                demo: $scope.demo,
-                type: "QUERY",
-                query: paragraph.query,
-                pageSize: paragraph.pageSize,
-                cacheName: paragraph.cacheName || undefined
-            };
-
-            $http.post('/api/v1/agent/query', paragraph.queryArgs)
-                .success(function (res) {
-                    _processQueryResult(paragraph)(res);
+                    return IgniteAgentMonitor.query(paragraph.queryArgs);
+                })
+                .then(function (res) {
+                    _processQueryResult(paragraph, res);
 
                     _tryStartRefresh(paragraph);
                 })
-                .error(function (errMsg) {
+                .catch(function (errMsg) {
                     paragraph.errMsg = errMsg;
 
-                    _showLoading(paragraph, false);
+                        _showLoading(paragraph, false);
 
                     $scope.stopRefresh(paragraph);
+                })
+                .finally(function () {
+                    paragraph.ace.focus();
                 });
-
-            paragraph.ace.focus();
         };
 
         $scope.queryExecuted = function(paragraph) {
@@ -744,25 +749,27 @@ consoleModule.controller('sqlController', [
 
             _showLoading(paragraph, true);
 
-            _tryCloseQueryResult(paragraph.queryId);
+            IgniteAgentMonitor.queryClose(paragraph.queryArgs)
+                .then(function () {
+                    paragraph.queryArgs = {
+                        demo: $scope.demo,
+                        type: "EXPLAIN",
+                        query: 'EXPLAIN ' + paragraph.query,
+                        pageSize: paragraph.pageSize,
+                        cacheName: paragraph.cacheName || undefined
+                    };
 
-            paragraph.queryArgs = {
-                demo: $scope.demo,
-                type: "EXPLAIN",
-                query: 'EXPLAIN ' + paragraph.query,
-                pageSize: paragraph.pageSize,
-                cacheName: paragraph.cacheName || undefined
-            };
-
-            $http.post('/api/v1/agent/query', paragraph.queryArgs)
-                .success(_processQueryResult(paragraph))
-                .error(function (errMsg) {
+                    return IgniteAgentMonitor.query(paragraph.queryArgs);
+                })
+                .then(_processQueryResult.bind(this, paragraph))
+                .catch(function (errMsg) {
                     paragraph.errMsg = errMsg;
 
                     _showLoading(paragraph, false);
+                })
+                .finally(function () {
+                    paragraph.ace.focus();
                 });
-
-            paragraph.ace.focus();
         };
 
         $scope.scan = function (paragraph) {
@@ -773,36 +780,40 @@ consoleModule.controller('sqlController', [
 
             _showLoading(paragraph, true);
 
-            _tryCloseQueryResult(paragraph.queryId);
+            IgniteAgentMonitor.queryClose(paragraph.queryArgs)
+                .then(function () {
+                    paragraph.queryArgs = {
+                        demo: $scope.demo,
+                        type: "SCAN",
+                        pageSize: paragraph.pageSize,
+                        cacheName: paragraph.cacheName || undefined
+                    };
 
-            paragraph.queryArgs = {
-                demo: $scope.demo,
-                type: "SCAN",
-                pageSize: paragraph.pageSize,
-                cacheName: paragraph.cacheName || undefined
-            };
-
-            $http.post('/api/v1/agent/scan', paragraph.queryArgs)
-                .success(_processQueryResult(paragraph))
-                .error(function (errMsg) {
+                    return IgniteAgentMonitor.query(paragraph.queryArgs);
+                })
+                .then(_processQueryResult.bind(this, paragraph))
+                .catch(function (errMsg) {
                     paragraph.errMsg = errMsg;
 
                     _showLoading(paragraph, false);
+                })
+                .finally(function () {
+                    paragraph.ace.focus();
                 });
-
-            paragraph.ace.focus();
         };
 
         $scope.nextPage = function(paragraph) {
             _showLoading(paragraph, true);
 
-            $http.post('/api/v1/agent/query/fetch', {
-                    demo: $scope.demo,
-                    queryId: paragraph.queryId,
-                    pageSize: paragraph.pageSize,
-                    cacheName: paragraph.queryArgs.cacheName
-                })
-                .success(function (res) {
+            paragraph.queryArgs = {
+                demo: $scope.demo,
+                queryId: paragraph.queryId,
+                pageSize: paragraph.pageSize,
+                cacheName: paragraph.queryArgs.cacheName
+            };
+
+            IgniteAgentMonitor.next(paragraph.queryArgs)
+                .then(function (res) {
                     paragraph.page++;
 
                     paragraph.total += paragraph.rows.length;
@@ -823,10 +834,13 @@ consoleModule.controller('sqlController', [
                     if (res.last)
                         delete paragraph.queryId;
                 })
-                .error(function (errMsg) {
+                .catch(function (errMsg) {
                     paragraph.errMsg = errMsg;
 
                     _showLoading(paragraph, false);
+                })
+                .finally(function () {
+                    paragraph.ace.focus();
                 });
         };
 
@@ -887,17 +901,18 @@ consoleModule.controller('sqlController', [
             paragraph.gridOptions.api.exporter.pdfExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
         };
 
-        $scope.exportCsvAll = function(paragraph) {
-            $http.post('/api/v1/agent/query/getAll', {
+        $scope.exportCsvAll = function (paragraph) {
+            IgniteAgentMonitor.query({
                     demo: $scope.demo,
+                    type: paragraph.queryArgs.type,
                     query: paragraph.queryArgs.query,
                     cacheName: paragraph.queryArgs.cacheName
                 })
-                .success(function (response) {
-                    _export(paragraph.name + '-all.csv', response.meta, response.rows);
+                .then(function (res) {
+                    _export(paragraph.name + '-all.csv', res.meta, res.rows);
                 })
-                .error(function (errMsg) {
-                    $common.showError(errMsg);
+                .finally(function () {
+                    paragraph.ace.focus();
                 });
         };
 
@@ -1337,7 +1352,7 @@ consoleModule.controller('sqlController', [
                             axisLabel:  _yAxisLabel(paragraph),
                             tickFormat: _yAxisFormat
                         },
-                        color: CHART_COLORS,
+                        color: IgniteChartColors,
                         stacked: stacked,
                         showControls: true
                     }
@@ -1405,7 +1420,7 @@ consoleModule.controller('sqlController', [
                             axisLabel:  _yAxisLabel(paragraph),
                             tickFormat: _yAxisFormat
                         },
-                        color: CHART_COLORS,
+                        color: IgniteChartColors,
                         useInteractiveGuideline: true
                     }
                 };
@@ -1426,27 +1441,27 @@ consoleModule.controller('sqlController', [
                     ? paragraph.chartsOptions.areaChart.style
                     : 'stack';
 
-                var options = {
-                    chart: {
-                        type: 'stackedAreaChart',
-                        height: 400,
-                        margin: {left: 70},
-                        duration: 0,
-                        x: _xX,
-                        y: _yY,
-                        xAxis: {
-                            axisLabel: _xAxisLabel(paragraph),
-                            tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
-                            showMaxMin: false
-                        },
-                        yAxis: {
-                            axisLabel:  _yAxisLabel(paragraph),
-                            tickFormat: _yAxisFormat
-                        },
-                        color: CHART_COLORS,
-                        style: style
-                    }
-                };
+            var options = {
+                chart: {
+                    type: 'stackedAreaChart',
+                    height: 400,
+                    margin: {left: 70},
+                    duration: 0,
+                    x: _xX,
+                    y: _yY,
+                    xAxis: {
+                        axisLabel: _xAxisLabel(paragraph),
+                        tickFormat: paragraph.chartTimeLineEnabled() ? _xAxisTimeFormat : _xAxisWithLabelFormat(paragraph),
+                        showMaxMin: false
+                    },
+                    yAxis: {
+                        axisLabel:  _yAxisLabel(paragraph),
+                        tickFormat: _yAxisFormat
+                    },
+                    color: IgniteChartColors,
+                    style: style
+                }
+            };
 
                 paragraph.charts = [{options: options, data: datum}];
 
@@ -1487,10 +1502,10 @@ consoleModule.controller('sqlController', [
 
             $scope.metadata = [];
 
-            $http.post('/api/v1/agent/cache/metadata', {demo: $scope.demo})
-                .success(function (metadata) {
-                    $scope.metadata = _.sortBy(_.filter(metadata, function (meta) {
-                        var cache = _.find($scope.caches, { name: meta.cacheName });
+        IgniteAgentMonitor.metadata($scope.demo)
+            .then(function (metadata) {
+                $scope.metadata = _.sortBy(_.filter(metadata, function (meta) {
+                    var cache = _.find($scope.caches, { name: meta.cacheName });
 
                         if (cache) {
                             meta.name = (cache.sqlSchema ? cache.sqlSchema : '"' + meta.cacheName + '"') + '.' + meta.typeName;
@@ -1503,15 +1518,12 @@ consoleModule.controller('sqlController', [
                             meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode});
                         }
 
-                        return cache;
-                    }), 'name');
-                })
-                .error(function (errMsg) {
-                    $common.showError(errMsg);
-                })
-                .finally(function() {
-                    $loading.finish('loadingCacheMetadata');
-                });
+                    return cache;
+                }), 'name');
+            })
+            .finally(function () {
+                $loading.finish('loadingCacheMetadata');
+            });
         };
 
         $scope.showResultQuery = function (paragraph) {

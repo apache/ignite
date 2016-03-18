@@ -25,10 +25,11 @@ System.config({
     "angular-loading": "github:darthwade/angular-loading@0.1.4",
     "angular-motion": "github:mgcrea/angular-motion@0.4.3",
     "angular-nvd3": "github:krispo/angular-nvd3@1.0.5",
-    "angular-retina": "github:jrief/angular-retina@0.3.11",
+    "angular-retina": "github:jrief/angular-retina@0.3.8",
     "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.1",
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.7",
-    "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
+    "angular-socket-io": "github:btford/angular-socket-io@0.7.0",
+    "angular-strap": "github:mgcrea/angular-strap@2.3.7",
     "angular-tree-control": "github:wix/angular-tree-control@0.2.23",
     "angular-ui-ace": "github:angular-ui/ui-ace@0.2.3",
     "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.1.1",
@@ -54,14 +55,9 @@ System.config({
     "nvd3": "npm:nvd3@1.8.1",
     "pdfmake": "github:bpampuch/pdfmake@0.1.20",
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
+    "socket.io-client": "github:socketio/socket.io-client@1.4.5",
     "spinjs": "github:fgnass/spin.js@2.3.2",
     "text": "github:systemjs/plugin-text@0.0.7",
-    "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
-      "angular": "github:angular/bower-angular@1.5.1",
-      "angular-animate": "github:angular/bower-angular-animate@1.5.1",
-      "angular-motion": "github:mgcrea/angular-motion@0.4.3",
-      "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.1"
-    },
     "github:angular-ui/bower-ui-grid@3.1.1": {
       "pdfmake": "github:bpampuch/pdfmake@0.1.20"
     },
@@ -79,6 +75,9 @@ System.config({
     },
     "github:angular/bower-angular@1.5.1": {
       "jquery": "github:components/jquery@2.2.1"
+    },
+    "github:btford/angular-socket-io@0.7.0": {
+      "socket.io-client": "github:socketio/socket.io-client@1.4.5"
     },
     "github:darthwade/angular-loading@0.1.4": {
       "spinjs": "github:fgnass/spin.js@2.3.2"
@@ -139,13 +138,18 @@ System.config({
       "vm-browserify": "npm:vm-browserify@0.0.4"
     },
     "github:krispo/angular-nvd3@1.0.5": {
-      "angular": "github:angular/bower-angular@1.5.1",
       "d3": "npm:d3@3.5.14",
       "nvd3": "npm:nvd3@1.8.1"
     },
     "github:mgcrea/angular-motion@0.4.3": {
       "angular": "github:angular/bower-angular@1.5.1",
       "css": "github:systemjs/plugin-css@0.1.20"
+    },
+    "github:mgcrea/angular-strap@2.3.7": {
+      "angular": "github:angular/bower-angular@1.5.1",
+      "angular-animate": "github:angular/bower-angular-animate@1.5.1",
+      "angular-motion": "github:mgcrea/angular-motion@0.4.3",
+      "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.1"
     },
     "github:twbs/bootstrap@3.3.6": {
       "jquery": "github:components/jquery@2.2.1"

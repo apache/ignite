@@ -17,45 +17,54 @@
 
 import angular from 'angular';
 
+/**
+ * Special decorator that fix problem in AngularStrap selectAll / deselectAll methods.
+ * If this problem will be fixed in AngularStrap we can remove this delegate.
+ */
 angular.module('mgcrea.ngStrap.select')
     .decorator('$select', ($delegate) => {
         function SelectFactoryDecorated(element, controller, config) {
             const deligate = $delegate(element, controller, config);
 
+            // Common vars.
+            const options = angular.extend({}, $delegate.defaults, config);
+
             const scope = deligate.$scope;
 
-            const $selectAllDeligate = scope.$selectAll;
+            const selectAll = (active) => {
+                var selected = [];
 
-            scope.$selectAll = () => {
-                if (scope.$isMultiple) {
-                    const newActiveIndex = [];
+                scope.$apply(function () {
+                    for (var i = 0; i < scope.$matches.length; i++) {
+                        if (scope.$isActive(i) === active) {
+                            selected[i] = scope.$matches[i].value;
 
-                    for (let i = 0; i < scope.$matches.length; i++)
-                        newActiveIndex.push(i);
+                            deligate.activate(i);
 
-                    scope.$activeIndex = newActiveIndex;
+                            controller.$setViewValue(scope.$activeIndex.map(function (index) {
+                                if (angular.isUndefined(scope.$matches[index])) {
+                                    return null;
+                                }
+                                return scope.$matches[index].value;
+                            }));
+                        }
+                    }
+                });
 
-                    controller.$setViewValue(scope.$activeIndex.map((index) => {
-                        if (angular.isUndefined(scope.$matches[index]))
-                            return null;
-
-                        return scope.$matches[index].value;
-                    }));
+                // Emit events.
+                for (var i = 0; i < selected.length; i++) {
+                    if (selected[i]) {
+                        scope.$emit(options.prefixEvent + '.select', selected[i], i, deligate);
+                    }
                 }
-                else
-                    $selectAllDeligate();
             };
 
-            const $selectNoneDeligate = scope.$selectNone;
+            scope.$selectAll = () => {
+                scope.$$postDigest(selectAll.bind(this, false));
+            };
 
             scope.$selectNone = () => {
-                if (scope.$isMultiple) {
-                    scope.$activeIndex = [];
-
-                    controller.$setViewValue([]);
-                }
-                else
-                    $selectNoneDeligate();
+                scope.$$postDigest(selectAll.bind(this, true));
             };
 
             return deligate;
