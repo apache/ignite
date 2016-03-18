@@ -33,6 +33,7 @@ import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -543,6 +544,74 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    public void testReentrantLockFailsWhenServersLeft() throws Exception {
+        client = true;
+
+        Ignite client = startGrid(gridCount());
+
+        Ignite server = grid(0);
+
+        // Initialize lock.
+        IgniteLock srvLock = server.reentrantLock("lock", true, true);
+
+        IgniteSemaphore semaphore = server.semaphore("sync", 0, true, true);
+
+        IgniteCompute compute = client.compute().withAsync();
+
+        compute.apply(new IgniteClosure<Ignite, Object>() {
+            @Override public Object apply(Ignite ignite) {
+                final IgniteLock l = ignite.reentrantLock("lock", true, true);
+
+                l.lock();
+
+                assertTrue(l.isHeldByCurrentThread());
+
+                l.unlock();
+
+                assertFalse(l.isHeldByCurrentThread());
+
+                // Signal the server to go down.
+                ignite.semaphore("sync", 0, true, true).release();
+
+                boolean isExceptionThrown = false;
+
+                try {
+                    // Wait for the server to go down.
+                    Thread.sleep(1000);
+
+                    l.lock();
+
+                    fail("Exception must be thrown.");
+                }
+                catch (InterruptedException e) {
+                    fail("Interrupted exception not expected here.");
+                }
+                catch (IgniteInterruptedException e) {
+                    isExceptionThrown = true;
+                }
+                finally {
+                    assertTrue(isExceptionThrown);
+
+                    assertFalse(l.isHeldByCurrentThread());
+                }
+                return null;
+            }
+        }, client);
+
+        // Wait for the lock on client to be acquired then released.
+        semaphore.acquire();
+
+        for (int i = 0; i < gridCount(); i++)
+            stopGrid(i);
+
+        compute.future().get();
+
+        client.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testReentrantLockConstantTopologyChangeFailoverSafe() throws Exception {
         doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true);
     }
@@ -571,11 +640,11 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
-    private void doTestReentrantLock(ConstantTopologyChangeWorker topWorker, boolean failoverSafe) throws Exception {
+    private void doTestReentrantLock(ConstantTopologyChangeWorker topWorker, final boolean failoverSafe) throws Exception {
         try (IgniteLock lock = grid(0).reentrantLock(STRUCTURE_NAME, failoverSafe, true)) {
             IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
                 @Override public Object apply(Ignite ignite) {
-                    IgniteLock l = ignite.reentrantLock(STRUCTURE_NAME, failoverSafe, false);
+                    final IgniteLock l = ignite.reentrantLock(STRUCTURE_NAME, failoverSafe, false);
 
                     IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {

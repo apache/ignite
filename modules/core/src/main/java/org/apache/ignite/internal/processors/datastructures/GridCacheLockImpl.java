@@ -232,9 +232,16 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
         /** Check if lock is in correct state (i.e. not broken in non-failoversafe mode),
          * if not throw  {@linkplain IgniteInterruptedException} */
-        private void validate(){
-            if(Thread.interrupted() || interruptAll){
-                throw new IgniteInterruptedException("Lock broken in non-failoversafe mode.");
+        private void validate(final boolean checkInterrupt){
+            // Interrupted flag is not always cleared
+            // (e.g. lock() doesn't throw exception and doesn't clear interrupted)
+            // but should be cleared if this method is called after lock breakage or node stop.
+            // If interruptAll is set, exception is thrown anyway.
+            boolean clearInterrupt = checkInterrupt || interruptAll;
+
+            if((clearInterrupt && Thread.interrupted()) || interruptAll){
+                throw new IgniteInterruptedException("Lock broken (possible reason: node stopped" +
+                    " or node owning lock failed while in non-failoversafe mode).");
             }
         }
 
@@ -431,7 +438,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
         /**
          * This method is used for synchronizing the reentrant lock state across all nodes.
          */
-        protected boolean compareAndSetGlobalState(final int expVal, final int newVal, long newThreadID) {
+        protected boolean compareAndSetGlobalState(final int expVal, final int newVal, final long newThreadID) {
             try {
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
@@ -449,6 +456,8 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                                     val.setId(thisNode);
 
                                     val.setThreadId(newThreadID);
+
+                                    val.setSignals(null);
 
                                     lockView.put(key, val);
 
@@ -668,7 +677,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
                     object.await();
 
-                    sync.validate();
+                    sync.validate(true);
                 }
                 catch (InterruptedException e) {
                     throw new IgniteInterruptedException(e);
@@ -689,6 +698,8 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                     lastCondition = this.name;
 
                     object.awaitUninterruptibly();
+
+                    sync.validate(false);
                 }
                 finally {
                     ctx.kernalContext().gateway().readUnlock();
@@ -707,7 +718,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
                     long result =  object.awaitNanos(nanosTimeout);
 
-                    sync.validate();
+                    sync.validate(true);
 
                     return result;
                 }
@@ -731,7 +742,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
                     boolean result = object.await(time, unit);
 
-                    sync.validate();
+                    sync.validate(true);
 
                     return result;
                 }
@@ -755,7 +766,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
                     boolean result = object.awaitUntil(deadline);
 
-                    sync.validate();
+                    sync.validate(true);
 
                     return result;
                 }
@@ -775,7 +786,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                     if (!isHeldExclusively())
                         throw new IllegalMonitorStateException();
 
-                    validate();
+                    validate(false);
 
                     addOutgoingSignal(name);
                 }
@@ -792,7 +803,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                     if (!isHeldExclusively())
                         throw new IllegalMonitorStateException();
 
-                    sync.validate();
+                    sync.validate(false);
 
                     addOutgoingSignalAll(name);
                 }
@@ -928,7 +939,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() {
+    @Override public void onStop() {
         if (sync == null) {
             interruptAll = true;
 
@@ -957,7 +968,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
             sync.lock();
 
-            sync.validate();
+            sync.validate(false);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -976,7 +987,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
             sync.acquireInterruptibly(1);
 
-            sync.validate();
+            sync.validate(true);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -998,7 +1009,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
             boolean result = sync.nonfairTryAcquire(1);
 
-            sync.validate();
+            sync.validate(false);
 
             return result;
         }
@@ -1019,7 +1030,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
             boolean result = sync.tryAcquireNanos(1, unit.toNanos(timeout));
 
-            sync.validate();
+            sync.validate(true);
 
             return result;
         }
@@ -1042,7 +1053,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
             initializeReentrantLock();
 
             // Validate before release.
-            sync.validate();
+            sync.validate(false);
 
             sync.release(1);
         }
@@ -1067,7 +1078,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
             IgniteCondition result = sync.newCondition(name);
 
-            sync.validate();
+            sync.validate(false);
 
             return result;
         }

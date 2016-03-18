@@ -24,17 +24,19 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCondition;
+import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteCallable;
@@ -96,46 +98,52 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
      * @param failoverSafe Failover safe flag.
      * @throws Exception
      */
-    private void checkFailover(boolean failoverSafe) throws Exception {
+    private void checkFailover(final boolean failoverSafe) throws Exception {
         IgniteEx g = startGrid(NODES_CNT + 1);
 
         // For vars locality.
         {
             // Ensure not exists.
-            assert g.semaphore("sem", 2, failoverSafe, false) == null;
+            assert g.reentrantLock("lock", failoverSafe, false) == null;
 
-            IgniteSemaphore sem = g.semaphore(
-                "sem",
-                2,
-                failoverSafe,
-                true);
+            IgniteLock lock  = g.reentrantLock("lock", failoverSafe, true);
 
-            sem.acquire(2);
+            lock.lock();
 
-            assert !sem.tryAcquire();
-            assertEquals(
-                0,
-                sem.availablePermits());
+            assert lock.tryLock();
+
+            assertEquals(2, lock.getHoldCount());
         }
 
         Ignite g0 = grid(0);
 
-        final IgniteSemaphore sem0 = g0.semaphore(
-            "sem",
-            -10,
-            false,
-            false);
+        final IgniteLock lock0 = g0.reentrantLock("lock", false, false);
 
-        assert !sem0.tryAcquire();
-        assertEquals(0, sem0.availablePermits());
+        assert !lock0.tryLock();
+
+        assertEquals(0, lock0.getHoldCount());
 
         IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    sem0.acquire();
+                    try {
+                        lock0.lock();
 
-                    info("Acquired in separate thread.");
+                        info("Acquired in separate thread.");
 
+                        // Lock is acquired silently in failoverSafe mode.
+                        if (failoverSafe) {
+                            lock0.unlock();
+
+                            info("Released lock in separate thread.");
+                        }
+                    }
+                    catch (IgniteInterruptedException e) {
+                        if (!failoverSafe)
+                            info("Ignored expected exception: " + e);
+                        else
+                            throw e;
+                    }
                     return null;
                 }
             },
@@ -145,17 +153,9 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
         g.close();
 
-        try {
-            fut.get(500);
-        }
-        catch (IgniteCheckedException e) {
-            if (!failoverSafe && e.hasCause(InterruptedException.class))
-                info("Ignored expected exception: " + e);
-            else
-                throw e;
-        }
+        fut.get(500);
 
-        sem0.close();
+        lock0.close();
     }
 
     /**
@@ -234,7 +234,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
         // Ensure there are no hangs.
         fut.get();
 
-        // Test operations on removed semaphore.
+        // Test operations on removed lock.
         lock1.close();
 
         checkRemovedReentrantLock(lock1);
@@ -411,6 +411,608 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
         for (IgniteInternalFuture<?> fut : futs)
             fut.get(30_000);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockInterruptibly() throws Exception {
+        final IgniteLock lock0 = grid(0).reentrantLock("lock", true, true);
+
+        assertEquals(0, lock0.getHoldCount());
+
+        assertFalse(lock0.hasQueuedThreads());
+
+        final int totalThreads = 2;
+
+        final Set<Thread> startedThreads = new GridConcurrentHashSet<Thread>();
+
+        lock0.lock();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    assertFalse(lock0.isHeldByCurrentThread());
+
+                    startedThreads.add(Thread.currentThread());
+
+                    boolean isInterrupted = false;
+
+                    try {
+                        lock0.lockInterruptibly();
+                    }
+                    catch (IgniteInterruptedException e) {
+                        assertFalse(Thread.currentThread().isInterrupted());
+
+                        isInterrupted = true;
+                    }
+                    finally {
+                        System.out.println(Thread.currentThread());
+
+                        // Assert that thread was interrupted.
+                        assertTrue(isInterrupted);
+
+                        // Assert that locked is still owned by main thread.
+                        assertTrue(lock0.isLocked());
+
+                        // Assert that this thread doesn't own the lock.
+                        assertFalse(lock0.isHeldByCurrentThread());
+                    }
+
+                    return null;
+                }
+            }, totalThreads);
+
+        // Wait for all threads to attempt to acquire lock.
+        while (startedThreads.size() != totalThreads) {
+            Thread.sleep(1000);
+        }
+
+        for (Thread t : startedThreads)
+            t.interrupt();
+
+        fut.get();
+
+        lock0.unlock();
+
+        assertFalse(lock0.isLocked());
+
+        for (Thread t : startedThreads)
+            assertFalse(lock0.hasQueuedThread(t));
+
+        lock0.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLock() throws Exception {
+        final IgniteLock lock0 = grid(0).reentrantLock("lock", true, true);
+
+        assertEquals(0, lock0.getHoldCount());
+
+        assertFalse(lock0.hasQueuedThreads());
+
+        final int totalThreads = 2;
+
+        final Set<Thread> startedThreads = new GridConcurrentHashSet<Thread>();
+
+        lock0.lock();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    assertFalse(lock0.isHeldByCurrentThread());
+
+                    startedThreads.add(Thread.currentThread());
+
+                    boolean isInterrupted = false;
+
+                    try {
+                        lock0.lock();
+                    }
+                    catch (IgniteInterruptedException e) {
+                        isInterrupted = true;
+
+                        fail("Lock() method is uninterruptible.");
+                    }
+                    finally {
+                        // Assert that thread was not interrupted.
+                        assertFalse(isInterrupted);
+
+                        // Assert that interrupted flag is set and clear it in order to call unlock().
+                        assertTrue(Thread.interrupted());
+
+                        // Assert that lock is still owned by this thread.
+                        assertTrue(lock0.isLocked());
+
+                        // Assert that this thread does own the lock.
+                        assertTrue(lock0.isHeldByCurrentThread());
+
+                        // Release lock.
+                        lock0.unlock();
+                    }
+
+                    return null;
+                }
+            }, totalThreads);
+
+        // Wait for all threads to attempt to acquire lock.
+        while (startedThreads.size() != totalThreads) {
+            Thread.sleep(500);
+        }
+
+        for (Thread t : startedThreads)
+            t.interrupt();
+
+        lock0.unlock();
+
+        fut.get();
+
+        assertFalse(lock0.isLocked());
+
+        for (Thread t : startedThreads)
+            assertFalse(lock0.hasQueuedThread(t));
+
+        lock0.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTryLock() throws Exception {
+        final IgniteLock lock0 = grid(0).reentrantLock("lock", true, true);
+
+        assertEquals(0, lock0.getHoldCount());
+
+        assertFalse(lock0.hasQueuedThreads());
+
+        final int totalThreads = 2;
+
+        final Set<Thread> startedThreads = new GridConcurrentHashSet<Thread>();
+
+        lock0.lock();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    assertFalse(lock0.isHeldByCurrentThread());
+
+                    startedThreads.add(Thread.currentThread());
+
+                    boolean isInterrupted = false;
+
+                    boolean locked = false;
+
+                    try {
+                        locked = lock0.tryLock();
+                    }
+                    catch (IgniteInterruptedException e) {
+                        isInterrupted = true;
+
+                        fail("tryLock() method is uninterruptible.");
+                    }
+                    finally {
+                        // Assert that thread was not interrupted.
+                        assertFalse(isInterrupted);
+
+                        // Assert that lock is locked.
+                        assertTrue(lock0.isLocked());
+
+                        // Assert that this thread does own the lock.
+                        assertEquals(locked, lock0.isHeldByCurrentThread());
+
+                        // Release lock.
+                        if (locked)
+                            lock0.unlock();
+                    }
+
+                    return null;
+                }
+            }, totalThreads);
+
+        // Wait for all threads to attempt to acquire lock.
+        while (startedThreads.size() != totalThreads) {
+            Thread.sleep(500);
+        }
+
+        for (Thread t : startedThreads)
+            t.interrupt();
+
+        fut.get();
+
+        lock0.unlock();
+
+        assertFalse(lock0.isLocked());
+
+        for (Thread t : startedThreads)
+            assertFalse(lock0.hasQueuedThread(t));
+
+        lock0.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTryLockTimed() throws Exception {
+        final IgniteLock lock0 = grid(0).reentrantLock("lock", true, true);
+
+        assertEquals(0, lock0.getHoldCount());
+
+        assertFalse(lock0.hasQueuedThreads());
+
+        final int totalThreads = 2;
+
+        final Set<Thread> startedThreads = new GridConcurrentHashSet<Thread>();
+
+        lock0.lock();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    assertFalse(lock0.isHeldByCurrentThread());
+
+                    startedThreads.add(Thread.currentThread());
+
+                    boolean isInterrupted = false;
+
+                    boolean locked = false;
+
+                    try {
+                        locked = lock0.tryLock(100, TimeUnit.MILLISECONDS);
+                    }
+                    catch (IgniteInterruptedException e) {
+                        isInterrupted = true;
+                    }
+                    finally {
+                        // Assert that thread was not interrupted.
+                        assertFalse(isInterrupted);
+
+                        // Assert that tryLock returned false.
+                        assertFalse(locked);
+
+                        // Assert that lock is still owned by main thread.
+                        assertTrue(lock0.isLocked());
+
+                        // Assert that this thread doesn't own the lock.
+                        assertFalse(lock0.isHeldByCurrentThread());
+
+                        // Release lock.
+                        if (locked)
+                            lock0.unlock();
+                    }
+
+                    return null;
+                }
+            }, totalThreads);
+
+        fut.get();
+
+        lock0.unlock();
+
+        assertFalse(lock0.isLocked());
+
+        for (Thread t : startedThreads)
+            assertFalse(lock0.hasQueuedThread(t));
+
+        lock0.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConditionAwaitUninterruptibly() throws Exception {
+        final IgniteLock lock0 = grid(0).reentrantLock("lock", true, true);
+
+        assertEquals(0, lock0.getHoldCount());
+
+        assertFalse(lock0.hasQueuedThreads());
+
+        final int totalThreads = 2;
+
+        final Set<Thread> startedThreads = new GridConcurrentHashSet<Thread>();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    assertFalse(lock0.isHeldByCurrentThread());
+
+                    startedThreads.add(Thread.currentThread());
+
+                    boolean isInterrupted = false;
+
+                    lock0.lock();
+
+                    IgniteCondition cond = lock0.getOrCreateCondition("cond");
+
+                    try {
+                        cond.awaitUninterruptibly();
+                    }
+                    catch (IgniteInterruptedException e) {
+                        isInterrupted = true;
+                    }
+                    finally {
+                        // Assert that thread was not interrupted.
+                        assertFalse(isInterrupted);
+
+                        // Assert that lock is still locked.
+                        assertTrue(lock0.isLocked());
+
+                        // Assert that this thread does own the lock.
+                        assertTrue(lock0.isHeldByCurrentThread());
+
+                        // Clear interrupt flag.
+                        assertTrue(Thread.interrupted());
+
+                        // Release lock.
+                        if (lock0.isHeldByCurrentThread())
+                            lock0.unlock();
+                    }
+
+                    return null;
+                }
+            }, totalThreads);
+
+        // Wait for all threads to attempt to acquire lock.
+        while (startedThreads.size() != totalThreads) {
+            Thread.sleep(500);
+        }
+
+        lock0.lock();
+
+        for (Thread t : startedThreads) {
+            t.interrupt();
+
+            lock0.getOrCreateCondition("cond").signal();
+        }
+
+        lock0.unlock();
+
+        fut.get();
+
+        assertFalse(lock0.isLocked());
+
+        for (Thread t : startedThreads)
+            assertFalse(lock0.hasQueuedThread(t));
+
+        lock0.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConditionInterruptAwait() throws Exception {
+        final IgniteLock lock0 = grid(0).reentrantLock("lock", true, true);
+
+        assertEquals(0, lock0.getHoldCount());
+
+        assertFalse(lock0.hasQueuedThreads());
+
+        final int totalThreads = 2;
+
+        final Set<Thread> startedThreads = new GridConcurrentHashSet<Thread>();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    assertFalse(lock0.isHeldByCurrentThread());
+
+                    startedThreads.add(Thread.currentThread());
+
+                    boolean isInterrupted = false;
+
+                    lock0.lock();
+
+                    IgniteCondition cond = lock0.getOrCreateCondition("cond");
+
+                    try {
+                        cond.await();
+                    }
+                    catch (IgniteInterruptedException e) {
+                        isInterrupted = true;
+                    }
+                    finally {
+                        // Assert that thread was interrupted.
+                        assertTrue(isInterrupted);
+
+                        // Assert that lock is still locked.
+                        assertTrue(lock0.isLocked());
+
+                        // Assert that this thread does own the lock.
+                        assertTrue(lock0.isHeldByCurrentThread());
+
+                        // Release lock.
+                        if (lock0.isHeldByCurrentThread())
+                            lock0.unlock();
+                    }
+
+                    return null;
+                }
+            }, totalThreads);
+
+        // Wait for all threads to attempt to acquire lock.
+        while (startedThreads.size() != totalThreads) {
+            Thread.sleep(500);
+        }
+
+        for (Thread t : startedThreads)
+            t.interrupt();
+
+        fut.get();
+
+        assertFalse(lock0.isLocked());
+
+        for (Thread t : startedThreads)
+            assertFalse(lock0.hasQueuedThread(t));
+
+        lock0.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testHasQueuedThreads() throws Exception {
+        final IgniteLock lock0 = grid(0).reentrantLock("lock", true, true);
+
+        assertEquals(0, lock0.getHoldCount());
+
+        assertFalse(lock0.hasQueuedThreads());
+
+        final int totalThreads = 5;
+
+        final Set<Thread> startedThreads = new GridConcurrentHashSet<Thread>();
+
+        final Set<Thread> finishedThreads = new GridConcurrentHashSet<Thread>();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    assertFalse(lock0.isHeldByCurrentThread());
+
+                    startedThreads.add(Thread.currentThread());
+
+                    lock0.lock();
+
+                    // Wait until every thread tries to lock.
+                    do {
+                        Thread.sleep(1000);
+                    }
+                    while (startedThreads.size() != totalThreads);
+
+                    try {
+                        info("Acquired in separate thread. ");
+
+                        assertTrue(lock0.isHeldByCurrentThread());
+
+                        assertFalse(lock0.hasQueuedThread(Thread.currentThread()));
+
+                        finishedThreads.add(Thread.currentThread());
+
+                        if (startedThreads.size() != finishedThreads.size()) {
+                            assertTrue(lock0.hasQueuedThreads());
+                        }
+
+                        for (Thread t : startedThreads) {
+                            assertTrue(lock0.hasQueuedThread(t) != finishedThreads.contains(t));
+                        }
+                    }
+                    finally {
+                        lock0.unlock();
+
+                        assertFalse(lock0.isHeldByCurrentThread());
+                    }
+
+                    return null;
+                }
+            }, totalThreads);
+
+        fut.get();
+
+        assertFalse(lock0.hasQueuedThreads());
+
+        for (Thread t : startedThreads)
+            assertFalse(lock0.hasQueuedThread(t));
+
+        lock0.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testHasConditionQueuedThreads() throws Exception {
+        final IgniteLock lock0 = grid(0).reentrantLock("lock", true, true);
+
+        assertEquals(0, lock0.getHoldCount());
+
+        assertFalse(lock0.hasQueuedThreads());
+
+        final int totalThreads = 5;
+
+        final Set<Thread> startedThreads = new GridConcurrentHashSet<Thread>();
+
+        final Set<Thread> finishedThreads = new GridConcurrentHashSet<Thread>();
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(
+            new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    assertFalse(lock0.isHeldByCurrentThread());
+
+                    IgniteCondition cond = lock0.getOrCreateCondition("cond");
+
+                    lock0.lock();
+
+                    startedThreads.add(Thread.currentThread());
+
+                    // Wait until every thread tries to lock.
+                    do {
+                        cond.await();
+
+                        Thread.sleep(1000);
+                    }
+                    while (startedThreads.size() != totalThreads);
+
+                    try {
+                        info("Acquired in separate thread. Number of threads waiting on condition: "
+                            + lock0.getWaitQueueLength(cond));
+
+                        assertTrue(lock0.isHeldByCurrentThread());
+
+                        assertFalse(lock0.hasQueuedThread(Thread.currentThread()));
+
+                        finishedThreads.add(Thread.currentThread());
+
+                        if (startedThreads.size() != finishedThreads.size()) {
+                            assertTrue(lock0.hasWaiters(cond));
+                        }
+
+                        for (Thread t : startedThreads) {
+                            if (!finishedThreads.contains(t))
+                                assertTrue(lock0.hasWaiters(cond));
+                        }
+
+                        assertTrue(lock0.getWaitQueueLength(cond) == (startedThreads.size() - finishedThreads.size()));
+                    }
+                    finally {
+                        cond.signal();
+
+                        lock0.unlock();
+
+                        assertFalse(lock0.isHeldByCurrentThread());
+                    }
+
+                    return null;
+                }
+            }, totalThreads);
+
+        IgniteCondition cond = lock0.getOrCreateCondition("cond");
+
+        lock0.lock();
+
+        try {
+            // Wait until all threads are waiting on condition.
+            while (lock0.getWaitQueueLength(cond) != totalThreads) {
+                lock0.unlock();
+
+                Thread.sleep(1000);
+
+                lock0.lock();
+            }
+
+            // Signal once to get things started.
+            cond.signal();
+        }
+        finally {
+            lock0.unlock();
+        }
+
+        fut.get();
+
+        assertFalse(lock0.hasQueuedThreads());
+
+        for (Thread t : startedThreads)
+            assertFalse(lock0.hasQueuedThread(t));
+
+        lock0.close();
     }
 
     /** {@inheritDoc} */

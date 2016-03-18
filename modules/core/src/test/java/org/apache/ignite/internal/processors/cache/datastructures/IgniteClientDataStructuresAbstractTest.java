@@ -351,7 +351,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
             assertFalse(lock.isLocked());
 
-            Semaphore semaphore = new Semaphore(0);
+            final Semaphore semaphore = new Semaphore(0);
 
             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {

@@ -40,8 +40,31 @@ public interface IgniteLock extends Lock, Closeable {
      */
     public String name();
 
-    /** {@inheritDoc} */
-    @Override public void lock();
+    /**
+     * Acquires the distributed reentrant lock.
+     *
+     * <p>Acquires the lock if it is not held by another thread and returns
+     * immediately, setting the lock hold count to one.
+     *
+     * <p>If the current thread already holds this lock then the hold count
+     * is incremented by one and the method returns immediately.
+     *
+     * <p>If the lock is held by another thread then the
+     * current thread becomes disabled for thread scheduling
+     * purposes and lies dormant until one of four things happens:
+     *
+     * <ul>
+     *
+     * <li>The lock is acquired by the current thread; or
+     *
+     * <li>Lock is broken (any node failed while owning this lock), and lock is created in
+     * non-failoverSafe mode.
+     *
+     * <li>Local node is stopped.
+     *
+     * @throws IgniteInterruptedException if the node is stopped or broken in non-failoverSafe mode
+     */
+    void lock() throws IgniteInterruptedException;
 
     /**
      * Acquires the lock unless the current thread is
@@ -100,8 +123,40 @@ public interface IgniteLock extends Lock, Closeable {
      */
     @Override public void lockInterruptibly() throws IgniteInterruptedException;
 
-    /** {@inheritDoc} */
-    @Override public boolean tryLock();
+    /**
+     * Acquires the lock only if it is free at the time of invocation.
+     *
+     * <p>Acquires the lock if it is available and returns immediately
+     * with the value {@code true}.
+     * If the lock is not available then this method will return
+     * immediately with the value {@code false}.
+     *
+     * <p>A typical usage idiom for this method would be:
+     *  <pre> {@code
+     * Lock lock = ...;
+     * if (lock.tryLock()) {
+     *   try {
+     *     // manipulate protected state
+     *   } finally {
+     *     lock.unlock();
+     *   }
+     * } else {
+     *   // perform alternative actions
+     * }}</pre>
+     *
+     * This usage ensures that the lock is unlocked if it was acquired, and
+     * doesn't try to unlock if the lock was not acquired.
+     *
+     * If node is stopped, or any node failed while owning the lock in non-failoverSafe mode,
+     * then {@link IgniteInterruptedException} is thrown.
+     *
+     * @return {@code true} if the lock was acquired and
+     *         {@code false} otherwise
+     *
+     * @throws IgniteInterruptedException if node is stopped or,
+     *          lock is already broken in non-failover safe mode
+     */
+    @Override public boolean tryLock() throws IgniteInterruptedException;
 
     /**
      * Acquires the lock if it is not held by another thread within the given
@@ -176,8 +231,18 @@ public interface IgniteLock extends Lock, Closeable {
      */
     @Override public boolean tryLock(long timeout, TimeUnit unit) throws IgniteInterruptedException;
 
-    /** {@inheritDoc} */
-    @Override public void unlock();
+    /**
+     * Releases the lock.
+     *
+     * If lock is not owned by current thread, then an {@link
+     * IllegalMonitorStateException} is thrown.
+     * If lock is already broken prior to invocation of this method, and
+     * lock is created in non-failover safe mode, then {@link IgniteInterruptedException} is thrown.
+     *
+     * @throws IllegalMonitorStateException if not owned by current thread
+     * @throws IgniteInterruptedException if node is stopped or lock is already broken
+     */
+    void unlock() throws IgniteInterruptedException;
 
     /**
      * Returns a {@link Condition} instance for use with this
@@ -317,9 +382,6 @@ public interface IgniteLock extends Lock, Closeable {
      * @return true if any node failed while owning the lock.
      */
     public boolean isBroken();
-
-    /** {@inheritDoc} */
-    @Override public String toString();
 
     /**
      * Gets status of reentrant lock.

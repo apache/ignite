@@ -269,7 +269,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         for (GridCacheRemovable ds : dsMap.values()) {
             if (ds instanceof GridCacheLockEx)
-                ((GridCacheLockEx)ds).stop();
+                ((GridCacheLockEx)ds).onStop();
         }
 
         if (initLatch.getCount() > 0) {

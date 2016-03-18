@@ -22,7 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
 /**
- * This interface provides a rich API for working with conditions associated with distributed reentrant locks.
+ * This interface provides a rich API for working with condition objects
+ * associated with distributed reentrant locks.
  * <p>
  * <h1 class="header">Functionality</h1>
  * IgniteCondition provides functionality similar to {@code java.util.concurrent.locks.Condition}.
@@ -51,16 +52,16 @@ public interface IgniteCondition extends Condition {
      * {@code Condition}; or
      * <li>Some other thread {@linkplain Thread#interrupt interrupts} the
      * current thread, and interruption of thread suspension is supported; or
-     * <li> Some other node in grid fails, and lock is created in non-failoverSafe mode; or
-     * <li> Local node is stopped; or
+     * <li>Some other node in grid fails, and lock is created in non-failoverSafe mode; or
+     * <li>Local node is stopped; or
      * <li>A &quot;<em>spurious wakeup</em>&quot; occurs.
      * </ul>
      *
      * <p>If lock is not broken (because of failure of lock owner node)
      * in non-failoverSafe mode and local node is alive,
      * before this method can return the current thread must
-     * re-acquire the lock associated with this condition. When the
-     * thread returns it is <em>guaranteed</em> to hold this lock.
+     * re-acquire the lock associated with this condition. In all other cases
+     * when the thread returns it is <em>guaranteed</em> to hold this lock.
      *
      * <p>If the current thread:
      * <ul>
@@ -84,8 +85,45 @@ public interface IgniteCondition extends Condition {
      */
     @Override void await() throws IgniteInterruptedException;
 
-    /** {@inheritDoc} */
-    @Override void awaitUninterruptibly();
+    /**
+     * Causes the current thread to wait until it is signalled.
+     *
+     * <p>The lock associated with this condition is atomically
+     * released and the current thread becomes disabled for thread scheduling
+     * purposes and lies dormant until <em>one</em> of five things happens:
+     * <ul>
+     * <li>Some other thread invokes the {@link #signal} method for this
+     * {@code Condition} and the current thread happens to be chosen as the
+     * thread to be awakened; or
+     * <li>Some other thread invokes the {@link #signalAll} method for this
+     * {@code Condition}; or
+     * <li>Some other node in grid fails, and lock is created in non-failoverSafe mode; or
+     * <li>Local node is stopped; or
+     * <li>A &quot;<em>spurious wakeup</em>&quot; occurs.
+     * </ul>
+     *
+     * <p>If lock is not broken (because of failure of lock owner node)
+     * in non-failoverSafe mode and local node is alive,
+     * before this method can return the current thread must
+     * re-acquire the lock associated with this condition. In all other cases,
+     * when the thread returns it is <em>guaranteed</em> to hold this lock.
+     *
+     * <p>If the current thread's interrupted status is set when it enters
+     * this method, or it is {@linkplain Thread#interrupt interrupted}
+     * while waiting, it will continue to wait until signalled. When it finally
+     * returns from this method its interrupted status will still
+     * be set.
+     *
+     * <p><b>Implementation Considerations</b>
+     *
+     * <p>The current thread is assumed to hold the lock associated with this
+     * {@code Condition} when this method is called. If not, an {@link IllegalMonitorStateException}
+     * will be thrown.
+     *
+     * @throws IgniteInterruptedException if the node stopped, or
+     *         node owning the lock failed in non-failoversafe mode
+     */
+    @Override void awaitUninterruptibly() throws IgniteInterruptedException;
 
     /**
      * Causes the current thread to wait until it is signalled or interrupted,
@@ -254,13 +292,44 @@ public interface IgniteCondition extends Condition {
      * @return {@code false} if the deadline has elapsed upon return, else
      *         {@code true}
      * @throws IgniteInterruptedException if the current thread is interrupted
-     *         (and interruption of thread suspension is supported)
+     *         (and interruption of thread suspension is supported) or node stopped or
+     *         node owning the lock failed in non-failoversafe mode
      */
     @Override boolean awaitUntil(Date deadline) throws IgniteInterruptedException;
 
-    /** {@inheritDoc} */
-    @Override void signal();
+    /**
+     * Wakes up one waiting thread.
+     *
+     * <p>If any threads are waiting on this condition then one
+     * is selected for waking up. That thread must then re-acquire the
+     * lock before returning from {@code await}.
+     *
+     * <p><b>Implementation Considerations</b>
+     *
+     * <p>The current thread is assumed to hold the lock associated with this
+     * {@code Condition} when this method is called. If not, an {@link IllegalMonitorStateException}
+     * will be thrown.
+     *
+     * @throws IgniteInterruptedException if node is stopped or
+     *         node owning the lock failed in non-failoversafe mode
+     */
+    @Override void signal() throws IgniteInterruptedException;
 
-    /** {@inheritDoc} */
-    @Override void signalAll();
+    /**
+     * Wakes up all waiting threads.
+     *
+     * <p>If any threads are waiting on this condition then they are
+     * all woken up. Each thread must re-acquire the lock before it can
+     * return from {@code await}.
+     *
+     * <p><b>Implementation Considerations</b>
+     *
+     * <p>The current thread is assumed to hold the lock associated with this
+     * {@code Condition} when this method is called. If not, an {@link IllegalMonitorStateException}
+     * will be thrown.
+     *
+     * @throws IgniteInterruptedException if node is stopped or
+     *         node owning the lock failed in non-failoversafe mode
+     */
+    @Override void signalAll() throws IgniteInterruptedException;
 }
