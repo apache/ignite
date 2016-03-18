@@ -27,8 +27,8 @@
 /// cache projection.
 /// 
 /// Requirements:
-/// * Java JRE (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
-/// * JAVA_HOME environment variable should point to the corresponding JRE installation
+/// * Java Runtime Environment (JRE): http://www.oracle.com/technetwork/java/javase/downloads/index.html (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
+/// * JAVA_HOME environment variable should point to JRE installation directory
 /// </summary>
 
 void Main()
