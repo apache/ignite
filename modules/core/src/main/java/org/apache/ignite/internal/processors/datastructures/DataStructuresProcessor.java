@@ -194,7 +194,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                                 for (GridCacheRemovable ds : dsMap.values()) {
                                     if (ds instanceof GridCacheSemaphoreEx)
                                         ((GridCacheSemaphoreEx)ds).onNodeRemoved(leftNodeId);
-                                    else if(ds instanceof GridCacheLockEx)
+                                    else if (ds instanceof GridCacheLockEx)
                                         ((GridCacheLockEx)ds).onNodeRemoved(leftNodeId);
                                 }
 
@@ -269,13 +269,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         super.onKernalStop(cancel);
 
         for (GridCacheRemovable ds : dsMap.values()) {
-            if (ds instanceof GridCacheSemaphoreEx)
+            if (ds instanceof GridCacheSemaphoreEx) {
                 ((GridCacheSemaphoreEx)ds).stop();
-        }
+            }
 
-        for (GridCacheRemovable ds : dsMap.values()) {
-            if (ds instanceof GridCacheLockEx)
+            if (ds instanceof GridCacheLockEx) {
                 ((GridCacheLockEx)ds).onStop();
+            }
         }
 
         if (initLatch.getCount() > 0) {
