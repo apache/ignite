@@ -114,9 +114,10 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      * @param keepBinary Flag to keep binary if needed.
      * @return the value corresponding to this entry
      */
+    @SuppressWarnings("unchecked")
     public V getValue(boolean keepBinary) {
         if (val == null)
-            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, false);
+            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, true);
 
         return val;
     }

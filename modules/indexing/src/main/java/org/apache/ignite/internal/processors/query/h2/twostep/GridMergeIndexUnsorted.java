@@ -24,6 +24,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.result.Row;
@@ -40,25 +41,27 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
     private final BlockingQueue<GridResultPage> queue = new LinkedBlockingQueue<>();
 
     /**
+     * @param ctx Context.
      * @param tbl  Table.
      * @param name Index name.
      */
-    public GridMergeIndexUnsorted(GridMergeTable tbl, String name) {
-        super(tbl, name, IndexType.createScan(false), IndexColumn.wrap(tbl.getColumns()));
+    public GridMergeIndexUnsorted(GridKernalContext ctx, GridMergeTable tbl, String name) {
+        super(ctx, tbl, name, IndexType.createScan(false), IndexColumn.wrap(tbl.getColumns()));
     }
 
     /**
+     * @param ctx Context.
      * @return Dummy index instance.
      */
-    public static GridMergeIndexUnsorted createDummy() {
-        return new GridMergeIndexUnsorted();
+    public static GridMergeIndexUnsorted createDummy(GridKernalContext ctx) {
+        return new GridMergeIndexUnsorted(ctx);
     }
 
     /**
-     *
+     * @param ctx Context.
      */
-    private GridMergeIndexUnsorted() {
-        // No-op.
+    private GridMergeIndexUnsorted(GridKernalContext ctx) {
+        super(ctx);
     }
 
     /** {@inheritDoc} */
@@ -94,7 +97,7 @@ public class GridMergeIndexUnsorted extends GridMergeIndex {
                         if (page != null)
                             break;
 
-                        ((GridMergeTable)table).checkSourceNodesAlive();
+                        checkSourceNodesAlive();
                     }
 
                     if (page.isLast())

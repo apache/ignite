@@ -257,6 +257,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     qryId = dsCacheCtx.continuousQueries().executeInternalQuery(new DataStructuresEntryListener(),
                         new DataStructuresEntryFilter(),
                         dsCacheCtx.isReplicated() && dsCacheCtx.affinityNode(),
+                        false,
                         false);
                 }
             }
@@ -266,6 +267,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         super.onKernalStop(cancel);
+
+        for (GridCacheRemovable ds : dsMap.values()) {
+            if (ds instanceof GridCacheSemaphoreEx)
+                ((GridCacheSemaphoreEx)ds).stop();
+        }
 
         for (GridCacheRemovable ds : dsMap.values()) {
             if (ds instanceof GridCacheLockEx)
@@ -1197,12 +1203,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                 try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                     // Check correctness type of removable object.
                     GridCacheCountDownLatchValue val =
-                        cast(dsView.get(key), GridCacheCountDownLatchValue.class);
+                            cast(dsView.get(key), GridCacheCountDownLatchValue.class);
 
                     if (val != null) {
                         if (val.get() > 0) {
                             throw new IgniteCheckedException("Failed to remove count down latch " +
-                                "with non-zero count: " + val.get());
+                                    "with non-zero count: " + val.get());
                         }
 
                         dsView.remove(key);

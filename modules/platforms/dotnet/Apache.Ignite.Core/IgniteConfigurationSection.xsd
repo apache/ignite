@@ -78,6 +78,7 @@
                             </xs:element>
                         </xs:all>
                         <xs:attribute name="defaultKeepDeserialized" type="xs:boolean" />
+                        <xs:attribute name="compactFooter" type="xs:boolean" />
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="cacheConfiguration" minOccurs="0">
@@ -189,6 +190,8 @@
                                     <xs:attribute name="longQueryWarningTimeout" type="xs:string" />
                                     <xs:attribute name="sqlEscapeAll" type="xs:boolean" />
                                     <xs:attribute name="sqlOnheapRowCacheSize" type="xs:int" />
+                                    <xs:attribute name="readThrough" type="xs:boolean" />
+                                    <xs:attribute name="writeThrough" type="xs:boolean" />
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
