@@ -38,6 +38,9 @@ import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
+import org.jetbrains.annotations.Nullable;
+
+import javax.cache.processor.MutableEntry;
 
 /**
  * Cache plugin manager.
@@ -128,6 +131,26 @@ public class CachePluginManager extends GridCacheManagerAdapter {
             return (T)new CacheOsStoreManager(ctx, cfg);
 
         throw new IgniteException("Unsupported component type: " + cls);
+    }
+
+    /**
+     * Unwrap entry to specified type. For details see {@link MutableEntry#unwrap(Class)}.
+     *
+     * @param mutableEntry Mutable entry to unwrap.
+     * @param cls Type of the expected component.
+     * @param <T> Return type.
+     * @return New instance of underlying type or {@code null} if it's not available.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable public <T> T unwrapEntry(MutableEntry<?, ?> mutableEntry, Class<T> cls) {
+        for (final CachePluginProvider provider : providersList) {
+            final T res = (T) provider.unwrapEntry(mutableEntry, cls);
+
+            if (res != null)
+                return res;
+        }
+
+        return null;
     }
 
     /**
