@@ -31,7 +31,7 @@ public class IgfsPathsCreateResult {
     private final List<IgfsPath> paths;
 
     /** Info of the last created file. */
-    private final IgfsFileInfo info;
+    private final IgfsEntryInfo info;
 
     /** Parent ID. */
     private final IgniteUuid parentId;
@@ -43,7 +43,7 @@ public class IgfsPathsCreateResult {
      * @param info Info of the last created file.
      * @param parentId Parent ID.
      */
-    public IgfsPathsCreateResult(List<IgfsPath> paths, IgfsFileInfo info, IgniteUuid parentId) {
+    public IgfsPathsCreateResult(List<IgfsPath> paths, IgfsEntryInfo info, IgniteUuid parentId) {
         this.paths = paths;
         this.info = info;
         this.parentId = parentId;
@@ -59,7 +59,7 @@ public class IgfsPathsCreateResult {
     /**
      * @return Info of the last created file.
      */
-    public IgfsFileInfo info() {
+    public IgfsEntryInfo info() {
         return info;
     }
 

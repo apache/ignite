@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.DataInput;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsMode;
@@ -32,6 +28,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.DataInput;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
@@ -55,7 +56,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
     /** File descriptor. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private IgfsFileInfo fileInfo;
+    private IgfsEntryInfo fileInfo;
 
     /** Parent ID. */
     private final IgniteUuid parentId;
@@ -102,7 +103,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param batch Optional secondary file system batch.
      * @param metrics Local IGFS metrics.
      */
-    IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsFileInfo fileInfo, IgniteUuid parentId,
+    IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsEntryInfo fileInfo, IgniteUuid parentId,
         int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics) {
         super(path, optimizeBufferSize(bufSize, fileInfo));
 
@@ -143,7 +144,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @return Optimized buffer size.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private static int optimizeBufferSize(int bufSize, IgfsFileInfo fileInfo) {
+    private static int optimizeBufferSize(int bufSize, IgfsEntryInfo fileInfo) {
         assert bufSize > 0;
 
         if (fileInfo == null)
@@ -292,7 +293,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             if (space > 0) {
                 data.awaitAllAcksReceived(fileInfo.id());
 
-                IgfsFileInfo fileInfo0 = meta.reserveSpace(path, fileInfo.id(), space, streamRange);
+                IgfsEntryInfo fileInfo0 = meta.reserveSpace(path, fileInfo.id(), space, streamRange);
 
                 if (fileInfo0 == null)
                     throw new IOException("File was concurrently deleted: " + path);
@@ -407,7 +408,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param fileInfo File info to build initial range for.
      * @return Affinity range.
      */
-    private IgfsFileAffinityRange initialStreamRange(IgfsFileInfo fileInfo) {
+    private IgfsFileAffinityRange initialStreamRange(IgfsEntryInfo fileInfo) {
         if (!igfsCtx.configuration().isFragmentizerEnabled())
             return null;
 

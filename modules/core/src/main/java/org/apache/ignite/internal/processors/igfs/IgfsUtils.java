@@ -43,6 +43,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -320,5 +321,72 @@ public class IgfsUtils {
                 }
             }
         }
+    }
+
+    /**
+     * Create empty directory with the given ID.
+     *
+     * @param id ID.
+     * @return File info.
+     */
+    public static IgfsDirectoryInfo createDirectory(IgniteUuid id) {
+        return createDirectory(id, null, null);
+    }
+
+    /**
+     * Create directory.
+     *
+     * @param id ID.
+     * @param listing Listing.
+     * @param props Properties.
+     * @return File info.
+     */
+    public static IgfsDirectoryInfo createDirectory(
+        IgniteUuid id,
+        @Nullable Map<String, IgfsListingEntry> listing,
+        @Nullable Map<String, String> props) {
+        long time = System.currentTimeMillis();
+
+        return createDirectory(id, listing, props, time, time);
+    }
+
+    /**
+     * Create directory.
+     *
+     * @param id ID.
+     * @param listing Listing.
+     * @param props Properties.
+     * @param createTime Create time.
+     * @param modificationTime Modification time.
+     * @return File info.
+     */
+    public static IgfsDirectoryInfo createDirectory(
+        IgniteUuid id,
+        @Nullable Map<String, IgfsListingEntry> listing,
+        @Nullable Map<String,String> props,
+        long createTime,
+        long modificationTime) {
+        return new IgfsDirectoryInfo(id, listing, props, createTime, modificationTime);
+    }
+
+    /**
+     * Create file.
+     *
+     * @param id File ID.
+     * @param blockSize Block size.
+     * @param len Length.
+     * @param affKey Affinity key.
+     * @param lockId Lock ID.
+     * @param evictExclude Evict exclude flag.
+     * @param props Properties.
+     * @param accessTime Access time.
+     * @param modificationTime Modification time.
+     * @return File info.
+     */
+    public static IgfsFileInfo createFile(IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
+        @Nullable IgniteUuid lockId, boolean evictExclude, @Nullable Map<String, String> props, long accessTime,
+        long modificationTime) {
+        return new IgfsFileInfo(id, blockSize, len, affKey, props, null, lockId, accessTime, modificationTime,
+            evictExclude);
     }
 }
