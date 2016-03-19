@@ -140,6 +140,8 @@ import java.util.Map;
         ccfg.setWriteBehindFlushSize(in.readInt());
         ccfg.setWriteBehindFlushThreadCount(in.readInt());
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
+        ccfg.setReadThrough(in.readBoolean());
+        ccfg.setWriteThrough(in.readBoolean());
 
         Object storeFactory = in.readObjectDetached();
 
@@ -419,6 +421,8 @@ import java.util.Map;
         writer.writeInt(ccfg.getWriteBehindFlushSize());
         writer.writeInt(ccfg.getWriteBehindFlushThreadCount());
         writer.writeInt(ccfg.getWriteSynchronizationMode() == null ? 0 : ccfg.getWriteSynchronizationMode().ordinal());
+        writer.writeBoolean(ccfg.isReadThrough());
+        writer.writeBoolean(ccfg.isWriteThrough());
 
         if (ccfg.getCacheStoreFactory() instanceof PlatformDotNetCacheStoreFactoryNative)
             writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());

@@ -17,35 +17,31 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.igfs.IgfsInputStream;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-
-import java.io.IOException;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Implementation adapter providing necessary methods.
+ * Special implementation of affinity mapper which maps all metadata to the same primary.
  */
-public abstract class IgfsInputStreamAdapter extends IgfsInputStream
-    implements IgfsSecondaryFileSystemPositionedReadable {
+public class IgfsColocatedMetadataAffinityKeyMapper implements AffinityKeyMapper {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Affinity. */
+    private static final Integer AFF = 1;
+
     /** {@inheritDoc} */
-    @Override public long length() {
-        return fileInfo().length();
+    @Override public Object affinityKey(Object key) {
+        return AFF;
     }
 
-    /**
-     * Gets file info for opened file.
-     *
-     * @return File info.
-     */
-    public abstract IgfsEntryInfo fileInfo();
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        // No-op.
+    }
 
-    /**
-     * Reads bytes from given position.
-     *
-     * @param pos Position to read from.
-     * @param len Number of bytes to read.
-     * @return Array of chunks with respect to chunk file representation.
-     * @throws IOException If read failed.
-     */
-    public abstract byte[][] readChunks(long pos, int len) throws IOException;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgfsColocatedMetadataAffinityKeyMapper.class, this);
+    }
 }

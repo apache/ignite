@@ -17,27 +17,35 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.igfs.IgfsPath;
 
 /**
- * Internal exception thrown when attempted to update range that is no longer present
- * in file affinity map.
+ * Exception indicating that file batch processing was cancelled.
  */
-public class IgfsInvalidRangeException extends IgniteException {
+public class IgfsFileWorkerBatchCancelledException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * @param msg Error message.
-     */
-    public IgfsInvalidRangeException(String msg) {
-        super(msg);
-    }
+    /** Path. */
+    private IgfsPath path;
 
     /**
-     * @param cause Error cause.
+     * Default constructor.
      */
-    public IgfsInvalidRangeException(Throwable cause) {
-        super(cause);
+    public IgfsFileWorkerBatchCancelledException() {
+        // No-op.
+    }
+
+    public IgfsFileWorkerBatchCancelledException(IgfsPath path) {
+        this.path = path;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getMessage() {
+        if (path == null)
+            return "Asynchronous file processing was cancelled due to node stop.";
+        else
+            return "Asynchronous file processing was cancelled due to node stop: " + path;
     }
 }
