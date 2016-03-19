@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.junits.common;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1118,6 +1119,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             catch (TransactionRollbackException ignore) {
                 // Safe to retry right away.
             }
+        }
+    }
+
+    /**
+     * @param file File or directory to delete.
+     */
+    protected void deleteRecursively(File file) {
+        if (file.isDirectory()) {
+            for (File f : file.listFiles())
+                deleteRecursively(f);
+        }
+        else {
+            if (!file.delete())
+                info("Failed to delete: " + file);
         }
     }
 }

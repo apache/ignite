@@ -21,25 +21,37 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 
+import java.nio.ByteBuffer;
+
 /**
  * Persistent store of pages.
  */
-public interface PageStore extends PageIdAllocator {
+public interface PageStore {
+    /**
+     * Allocates next page index.
+     *
+     * @return Next page index.
+     * @throws IgniteCheckedException If failed to allocate.
+     */
+    public long allocatePage() throws IgniteCheckedException;
+
     /**
      * Reads a page.
      *
-     * @param page Page to read into.
+     * @param pageId Page ID.
+     * @param pageBuf Page buffer to read into.
      * @throws IgniteCheckedException If reading failed (IO error occurred).
      */
-    public void read(Page page) throws IgniteCheckedException;
+    public void read(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
     /**
      * Writes a page.
      *
-     * @param page Page to write.
+     * @param pageId Page ID.
+     * @param pageBuf Page buffer to write.
      * @throws IgniteCheckedException If page writing failed (IO error occurred).
      */
-    public void write(Page page) throws IgniteCheckedException;
+    public void write(long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
     /**
      * Sync method used to ensure that the given pages are guaranteed to be written to the store.

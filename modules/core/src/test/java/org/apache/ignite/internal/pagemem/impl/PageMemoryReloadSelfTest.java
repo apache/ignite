@@ -312,7 +312,7 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
         MappedFileMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath, clean,
             10 * 1024 * 1024, 1024 * 1024);
 
-        return new PageMemoryImpl(log, provider, PAGE_SIZE, Runtime.getRuntime().availableProcessors());
+        return new PageMemoryImpl(log, provider, null, PAGE_SIZE, Runtime.getRuntime().availableProcessors());
     }
 
     /**

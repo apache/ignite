@@ -7,13 +7,13 @@ import org.apache.ignite.IgniteCheckedException;
  */
 public interface PageIdAllocator {
     /** */
+    public static final byte FLAG_META = 0;
+
+    /** */
     public static final byte FLAG_DATA = 1;
 
     /** */
     public static final byte FLAG_IDX = 2;
-
-    /** */
-    public static final byte FLAG_META = 4;
 
     /**
      * TODO do we need a generic abstraction for flags?

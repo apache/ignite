@@ -65,24 +65,6 @@ public class DatabaseConfiguration implements Serializable {
     }
 
     /**
-     * Gets number of pages in file allocation block.
-     *
-     * @return Pages in block.
-     */
-    public int getPagesInBlock() {
-        return pagesInBlock;
-    }
-
-    /**
-     * Sets number of pages in file allocation block.
-     *
-     * @param pagesInBlock Pages in block.
-     */
-    public void setPagesInBlock(int pagesInBlock) {
-        this.pagesInBlock = pagesInBlock;
-    }
-
-    /**
      * @return File allocation path.
      */
     public String getFileCacheAllocationPath() {

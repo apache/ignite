@@ -75,6 +75,9 @@ public interface Page extends AutoCloseable {
      */
     public void releaseWrite(boolean markDirty);
 
+    /**
+     * @return {@code True} if the page was modified since the last checkpoint.
+     */
     public boolean isDirty();
 
     /**

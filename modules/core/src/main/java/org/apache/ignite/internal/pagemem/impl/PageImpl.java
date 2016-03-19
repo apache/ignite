@@ -21,7 +21,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
@@ -47,6 +50,9 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
     /** */
     private final ByteBuffer buf;
+
+    /** Buffer copy to ensure writes during a checkpoint. */
+    private T2<ByteBuffer, Boolean> cp;
 
     /** */
     private final PageMemoryImpl pageMem;
@@ -135,6 +141,9 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
     @Override public ByteBuffer getForRead() {
         acquireShared(1);
 
+        if (cp != null)
+            return reset(cp.get1().asReadOnlyBuffer());
+
         return reset(buf.asReadOnlyBuffer());
     }
 
@@ -163,14 +172,86 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
             setExclusiveOwnerThread(th);
         }
 
+        // Create a buffer copy if the page needs to be checkpointed.
+        if (pageMem.isInCheckpoint(pageId)) {
+            if (cp == null) {
+                ByteBuffer cpBuf = ByteBuffer.allocate(pageMem.pageSize());
+
+                // Pin the page until checkpoint is not finished.
+                acquireReference();
+
+                reset(buf);
+
+                cpBuf.put(buf);
+
+                pageMem.setDirty(pageId, ptr, false);
+
+                cp = new T2<>(cpBuf, false);
+            }
+
+            return reset(cp.get1());
+        }
+
         return reset(buf);
+    }
+
+    /**
+     * If page was concurrently modified during the checkpoint phase, this method will flush all changes from the
+     * temporary location to main memory.
+     */
+    public boolean flushCheckpoint(IgniteLogger log) {
+        Thread th = Thread.currentThread();
+
+        boolean release = false;
+
+        if (getExclusiveOwnerThread() != th) {
+            acquire(1);
+
+            setExclusiveOwnerThread(th);
+
+            release = true;
+        }
+
+        try {
+            if (cp != null) {
+                ByteBuffer cpBuf = cp.get1();
+
+                reset(cpBuf);
+
+                reset(buf);
+
+                buf.put(cpBuf);
+
+                pageMem.clearCheckpoint(pageId);
+
+                pageMem.setDirty(pageId, ptr, cp.get2());
+
+                cp = null;
+
+                return releaseReference();
+            }
+            else
+                pageMem.setDirty(pageId, ptr, false);
+
+            return false;
+        }
+        finally {
+            if (release) {
+                setExclusiveOwnerThread(null);
+
+                release(1);
+            }
+        }
     }
 
     /**
      * Mark dirty.
      */
     private void markDirty() {
-        pageMem.setDirty(pageId, ptr, true);
+        if (cp != null)
+            cp.set2(true);
+        else
+            pageMem.setDirty(pageId, ptr, true);
     }
 
     /** {@inheritDoc} */

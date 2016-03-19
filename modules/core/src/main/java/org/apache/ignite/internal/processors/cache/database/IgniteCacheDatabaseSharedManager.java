@@ -25,9 +25,13 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.File;
+import java.util.Collection;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  *
@@ -38,6 +42,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** */
     private MetadataStorage meta;
+
+    /** */
+    private ReadWriteLock txLock = new ReentrantReadWriteLock();
 
     /** {@inheritDoc} */
     @Override public void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
@@ -80,6 +87,46 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Callback invoked before transaction is committed.
+     *
+     * @param xidVer Transaction version.
+     */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    public void txCommitBegin(GridCacheVersion xidVer) {
+        txLock.readLock().lock();
+    }
+
+    /**
+     * Callback invoked after transaction has been committed.
+     *
+     * @param xidVer Transaction version.
+     */
+    public void txCommitEnd(GridCacheVersion xidVer) {
+        txLock.readLock().unlock();
+    }
+
+    /**
+     * Marks checkpoint begin.
+     */
+    public Collection<Long> snapshotCheckpoint() {
+        txLock.writeLock().lock();
+
+        try {
+            return pageMem.beginCheckpoint();
+        }
+        finally {
+            txLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Marks checkpoint end.
+     */
+    public void checkpointEnd() {
+        pageMem.finishCheckpoint();
+    }
+
+    /**
      * @param dbCfg Database configuration.
      * @return Page memory instance.
      */
@@ -116,7 +163,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 dbCfg.getPageCacheSize(),
                 fragmentSize);
 
-        return new PageMemoryImpl(log, memProvider, dbCfg.getPageSize(), dbCfg.getConcurrencyLevel());
+        return new PageMemoryImpl(log, memProvider, cctx.pageStore(), dbCfg.getPageSize(), dbCfg.getConcurrencyLevel());
     }
 
     /**

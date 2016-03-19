@@ -166,17 +166,6 @@ public class IgniteDbMultiNodePutGetRestartSelfTest extends GridCommonAbstractTe
             assertEquals(new DbValue(i, "value-" + i, i), cache.get(i));
     }
 
-    private void deleteRecursively(File file) {
-        if (file.isDirectory()) {
-            for (File f : file.listFiles())
-                deleteRecursively(f);
-        }
-        else {
-            if (!file.delete())
-                info("Failed to delete: " + file);
-        }
-    }
-
     /**
      *
      */

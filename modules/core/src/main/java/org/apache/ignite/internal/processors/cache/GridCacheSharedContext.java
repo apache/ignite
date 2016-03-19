@@ -36,6 +36,7 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
@@ -88,6 +89,9 @@ public class GridCacheSharedContext<K, V> {
 
     /** Database manager. */
     private IgniteCacheDatabaseSharedManager dbMgr;
+
+    /** Page store manager. */
+    private IgnitePageStoreManager pageStoreMgr;
 
     /** Cache contexts map. */
     private ConcurrentMap<Integer, GridCacheContext<K, V>> ctxMap;
@@ -392,6 +396,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public IgniteCacheDatabaseSharedManager database() {
         return dbMgr;
+    }
+
+    /**
+     * @return Page store manager.
+     */
+    public IgnitePageStoreManager pageStore() {
+        return pageStoreMgr;
     }
 
     /**

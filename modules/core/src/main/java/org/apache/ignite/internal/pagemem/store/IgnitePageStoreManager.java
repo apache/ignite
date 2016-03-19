@@ -18,15 +18,16 @@
 package org.apache.ignite.internal.pagemem.store;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 
+import java.nio.ByteBuffer;
+
 /**
  *
  */
-public interface PageStoreManager extends GridCacheSharedManager {
+public interface IgnitePageStoreManager extends GridCacheSharedManager {
     /**
      * Callback called when a cache is starting.
      *
@@ -67,19 +68,21 @@ public interface PageStoreManager extends GridCacheSharedManager {
      * Reads a page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.
      *
      * @param cacheId Cache ID.
-     * @param page Page to read into.
+     * @param pageId PageID to read.
+     * @param pageBuf Page buffer to write to.
      * @throws IgniteCheckedException If failed to read the page.
      */
-    public void read(int cacheId, Page page) throws IgniteCheckedException;
+    public void read(int cacheId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
     /**
      * Writes the page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.
      *
      * @param cacheId Cache ID.
-     * @param page Page to write.
+     * @param pageId Page ID.
+     * @param pageBuf Page buffer to write.
      * @throws IgniteCheckedException If failed to write page.
      */
-    public void write(int cacheId, Page page) throws IgniteCheckedException;
+    public void write(int cacheId, long pageId, ByteBuffer pageBuf) throws IgniteCheckedException;
 
     /**
      * Makes sure that all previous writes to the store has been written to disk.
@@ -101,4 +104,9 @@ public interface PageStoreManager extends GridCacheSharedManager {
      * @throws IgniteCheckedException If IO exception occurred while allocating a page ID.
      */
     public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException;
+
+    /**
+     * @return Page ID of a root metadata page.
+     */
+    public long metaRoot();
 }

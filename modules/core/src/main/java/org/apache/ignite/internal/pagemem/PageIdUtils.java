@@ -169,12 +169,11 @@ public final class PageIdUtils {
     }
 
     /**
-     * @param cacheId Cache ID.
      * @param partId Partition ID.
      * @return Part ID constructed from the given cache ID and partition ID.
      */
-    public static long pageId(int cacheId, int partId, byte flag, long pageIdx) {
-        int fileId = cacheId;
+    public static long pageId(int partId, byte flag, long pageIdx) {
+        int fileId = 0;
 
         fileId = (fileId << FLAG_SIZE) | (flag & FLAG_MASK);
 
