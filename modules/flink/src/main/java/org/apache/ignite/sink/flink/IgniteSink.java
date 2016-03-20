@@ -18,58 +18,68 @@
 package org.apache.ignite.sink.flink;
 
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
-import org.apache.flink.streaming.util.serialization.SerializationSchema;
-import org.apache.ignite.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.A;
+
+import java.util.Map;
 
 /**
  * Apache Flink Ignite sink implemented as a RichSinkFunction.
  */
 public class IgniteSink<IN> extends RichSinkFunction<IN> {
-
-    private static final long serialVersionUID = 1L;
+    /** Default flush frequency. */
+    private static final long DFLT_FLUSH_FREQ = 10000L;
 
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
-    /**
-     * Configuration for Ignite collections.
-     */
+    /** Automatic flush frequency. */
+    private long autoFlushFrequency = DFLT_FLUSH_FREQ;
+
+    /** Enables overwriting existing values in cache. */
+    private boolean allowOverwrite = false;
+
+    /** Flag for stopped state. */
+    private static volatile boolean stopped = true;
+
+    /**Configuration for Ignite collections. */
     private static CollectionConfiguration colCfg;
 
-    private static IgniteQueue queue;
+    /**Ignite grid configuration file. */
+    private static String igniteCfgFile;
+
+    /** Cache name. */
+    private static String cacheName;
+
     /**
-     * The serialization schema describes how to turn a data object into a different serialized
-     * representation.
+     * Gets the {@link IgniteDataStreamer} streamer.
      *
+     * @return {@link IgniteDataStreamer} streamer.
      */
-    private SerializationSchema schema;
-
-    /**
-     * Ignite grid configuration file.
-     */
-    private static String igniteConfigFile;
-
-    /** Queue name. */
-    private static String queueName;
-
-    /**
-     * Gets the {@link IgniteQueue} queue.
-     *
-     * @return {@link IgniteQueue} queue.
-     */
-
-    public static IgniteQueue getQueue() {
-        return SinkContext.getQueue();
+    public static IgniteDataStreamer getStreamer() {
+        return SinkContext.getStreamer();
     }
 
     /**
-     * Gets the queue name.
+     * Gets the cache name.
      *
-     * @return Queue name.
+     * @return Cache name.
      */
-    public String getQueueName() {
-        return queueName;
+    public String getCacheName() {
+        return cacheName;
+    }
+    /**
+     * Sets the cache name.
+     *
+     * @param cacheName Cache name.
+     */
+    public void setCacheName(String cacheName) {
+        this.cacheName = cacheName;
     }
 
     /**
@@ -78,49 +88,132 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      * @return Configuration file.
      */
     public String getIgniteConfigFile() {
-        return igniteConfigFile;
+        return igniteCfgFile;
     }
 
-    public IgniteSink(String queueName,
-                      String igniteConfigFile,
-                      SerializationSchema schema,
+    /**
+     * Specifies Ignite configuration file.
+     *
+     * @param igniteConfigFile Ignite config file.
+     */
+    public void setIgniteConfigFile(String igniteConfigFile) {
+        this.igniteCfgFile = igniteConfigFile;
+    }
+
+    /**
+     * Obtains data flush frequency.
+     *
+     * @return Flush frequency.
+     */
+    public long getAutoFlushFrequency() {
+        return autoFlushFrequency;
+    }
+
+    /**
+     * Specifies data flush frequency into the grid.
+     *
+     * @param autoFlushFrequency Flush frequency.
+     */
+    public void setAutoFlushFrequency(long autoFlushFrequency) {
+        this.autoFlushFrequency = autoFlushFrequency;
+    }
+
+    /**
+     * Obtains flag for enabling overwriting existing values in cache.
+     *
+     * @return True if overwriting is allowed, false otherwise.
+     */
+    public boolean getAllowOverwrite() {
+        return allowOverwrite;
+    }
+
+    /**
+     * Enables overwriting existing values in cache.
+     *
+     * @param allowOverwrite Flag value.
+     */
+    public void setAllowOverwrite(boolean allowOverwrite) {
+        this.allowOverwrite = allowOverwrite;
+    }
+
+    /**
+     * Default IgniteSink constructor.
+     *
+     * @param cacheName
+     * @param igniteCfgFile
+     * @param colCfg
+     */
+    public IgniteSink(String cacheName,
+                      String igniteCfgFile,
                       CollectionConfiguration colCfg) {
-        this.queueName = queueName;
-        this.igniteConfigFile = igniteConfigFile;
-        this.schema = schema;
+        this.cacheName = cacheName;
+        this.igniteCfgFile = igniteCfgFile;
         this.colCfg = colCfg;
         this.log = SinkContext.getIgnite().log();
     }
 
     /**
+     * Starts streamer.
+     *
+     * @throws IgniteException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void start() throws IgniteException {
+        A.notNull(igniteCfgFile, "Ignite config file");
+        A.notNull(cacheName, "Cache name");
+
+        SinkContext.getStreamer().autoFlushFrequency(autoFlushFrequency);
+        SinkContext.getStreamer().allowOverwrite(allowOverwrite);
+
+        stopped = false;
+    }
+
+    /**
+     * Stops streamer.
+     *
+     * @throws IgniteException If failed.
+     */
+    public void stop() throws IgniteException {
+        if (stopped)
+            return;
+
+        stopped = true;
+
+        SinkContext.getIgnite().cache(cacheName).close();
+        SinkContext.getIgnite().close();
+    }
+
+    /**
      * Transfers data into grid. It is called when new data
-     * arrives to the sink, and forwards it to {@link IgniteQueue}
+     * arrives to the sink, and forwards it to {@link IgniteDataStreamer}.
      *
      * @param in IN.
      */
     @SuppressWarnings("unchecked")
     @Override
     public void invoke(IN in) {
-
         try {
-            Object object = schema.serialize(in);
-            queue = SinkContext.getQueue();
-            queue.put(object);
+            if(!(in instanceof Map))
+                throw new IgniteException("Map as a streamer input is expected!");
+
+            SinkContext.getStreamer().addData((Map)in);
         } catch (Exception e) {
-            log.error("Error while processing IN of " + queueName, e);
+            log.error("Error while processing IN of " + cacheName, e);
         }
     }
 
+    /**
+     * Streamer context initializing grid and data streamer instances on demand.
+     */
     public static class SinkContext {
-
-        /** Constructor.*/
+        /** Constructor. */
         private SinkContext() {
         }
 
-        /** Instance holder.*/
+        /** Instance holder. */
         private static class Holder {
-            private static final Ignite IGNITE = Ignition.start(igniteConfigFile);
-            private static final IgniteQueue QUEUE = IGNITE.queue(queueName, 0, colCfg);
+            private static final Ignite IGNITE = Ignition.start(igniteCfgFile);
+            private static final IgniteDataStreamer STREAMER = IGNITE.dataStreamer(cacheName);
         }
 
         /**
@@ -137,8 +230,8 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
          *
          * @return Data streamer instance.
          */
-        public static IgniteQueue getQueue() {
-            return Holder.QUEUE;
+        public static IgniteDataStreamer getStreamer() {
+            return Holder.STREAMER;
         }
     }
 }

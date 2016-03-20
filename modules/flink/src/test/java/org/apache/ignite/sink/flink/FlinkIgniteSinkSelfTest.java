@@ -17,17 +17,12 @@
 
 package org.apache.ignite.sink.flink;
 
-import java.util.concurrent.TimeoutException;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.typeutils.TypeInfoParser;
-import org.apache.flink.hadoop.shaded.org.jboss.netty.util.internal.SystemPropertyUtil;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
-import org.apache.flink.streaming.util.serialization.TypeInformationSerializationSchema;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -37,9 +32,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Tests for {@link IgniteSink}.
  */
 public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
-
-    /** Logger. */
-    private IgniteLogger log;
+    /** Cache name. */
+    private static final String TEST_CACHE = "testCache";
 
     /** Ignite instance. */
     private Ignite ignite;
@@ -51,7 +45,9 @@ public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         IgniteConfiguration cfg = loadConfiguration(GRID_CONF_FILE);
+
         cfg.setClientMode(false);
+
         ignite = startGrid("igniteServerNode", cfg);
     }
 
@@ -61,34 +57,41 @@ public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests for the Flink sink. Ignite started in sink based on what is specified in the configuration file.
+     * Tests for the Flink sink.
+     * Ignite started in sink based on what is specified in the configuration file.
      *
-     * @throws TimeoutException
-     * @throws InterruptedException
+     * @throws Exception
      */
-    public void testFlinkIgniteSink() throws TimeoutException, InterruptedException {
-
-        TypeInformation<Tuple2<Long, String>> longStringInfo = TypeInfoParser.parse("Tuple2<Long, String>");
+    public void testFlinkIgniteSink() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
         env.getConfig().disableSysoutLogging();
 
-        TypeInformationSerializationSchema<Tuple2<Long, String>> serSchema =
-                new TypeInformationSerializationSchema<>(longStringInfo, env.getConfig());
         CollectionConfiguration colCfg = new CollectionConfiguration();
-        colCfg.setCacheMode(CacheMode.PARTITIONED);
-        IgniteSink igniteSink = new IgniteSink("myQueue", GRID_CONF_FILE, serSchema, colCfg);
 
-        DataStream<Tuple2<Long, String>> stream = env.addSource(new SourceFunction<Tuple2<Long, String>>() {
+        colCfg.setCacheMode(CacheMode.PARTITIONED);
+
+        IgniteSink igniteSink = new IgniteSink(TEST_CACHE, GRID_CONF_FILE, colCfg);
+
+        igniteSink.setAllowOverwrite(true);
+
+        igniteSink.setAutoFlushFrequency(1L);
+
+        igniteSink.start();
+
+        DataStream<Map> stream = env.addSource(new SourceFunction<Map>() {
 
             private boolean running = true;
 
             @Override
-            public void run(SourceContext<Tuple2<Long, String>> ctx) throws Exception {
+            public void run(SourceContext<Map> ctx) throws Exception {
+                Map testDataMap = new HashMap<>();
                 long cnt = 0;
-                while (cnt < 100) {
-                    ctx.collect(new Tuple2<Long, String>(cnt, "ignite-" + cnt));
+                while (running && (cnt < 10))  {
+                    testDataMap.put(cnt, "ignite-" + cnt);
                     cnt++;
                 }
+                ctx.collect(testDataMap);
             }
 
             @Override
@@ -97,16 +100,19 @@ public class FlinkIgniteSinkSelfTest extends GridCommonAbstractTest {
             }
         }).setParallelism(1);
 
-        // sink data into
+        assertEquals(0, ignite.getOrCreateCache(TEST_CACHE).size());
+
+        // sink data into the grid.
         stream.addSink(igniteSink);
 
-        try{
-            env.execute();
-        }catch (Exception e){
-            e.printStackTrace();
+        env.execute();
+
+        assertEquals(10, ignite.getOrCreateCache(TEST_CACHE).size());
+
+        for(long i = 0;i < 10; i++){
+            assertEquals("ignite-" + i, ignite.getOrCreateCache(TEST_CACHE).get(i));
         }
 
-        assertTrue(igniteSink.getQueue().size()>0);
-        ignite.log().info("Ignite Sink has "+ igniteSink.getQueue().size()+" elements");
+        igniteSink.stop();
     }
 }

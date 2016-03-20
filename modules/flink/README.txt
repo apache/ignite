@@ -5,7 +5,7 @@ Apache Ignite Flink Sink module provides sink via Ignite queue.
 
 Starting data transfer to Ignite queue can be done with the following steps.
 
-1. Import Ignite Flink Sink Module In Maven Project
+1. Import Ignite Flink Sink Module in Maven Project
 
 If you are using Maven to manage dependencies of your project, you can add Flink module
 dependency like this (replace '${ignite.version}' with actual Ignite version you are
@@ -30,6 +30,4 @@ interested in):
 
 2. Create an Ignite configuration file (see example-ignite.xml) and make sure it is accessible from the sink.
 
-3. Make sure your data input to the sink is specified.
-
-4. Create a topology with the sink and start.
+3. Make sure your data input to the sink is specified. For example `input.addSink(igniteSinkObject)`

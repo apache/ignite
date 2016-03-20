@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * FlinkStreamer -- integration with Apache Storm.
+ * FlinkStreamer -- streaming connector integration with Apache Flink.
  */
 package org.apache.ignite.sink.flink;
