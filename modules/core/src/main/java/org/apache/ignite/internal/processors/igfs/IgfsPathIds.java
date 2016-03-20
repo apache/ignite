@@ -134,7 +134,7 @@ public class IgfsPathIds {
      *
      * @return Last ID.
      */
-    @Nullable public IgniteUuid lastId() {
+    public IgniteUuid lastId() {
         return ids[ids.length - 1];
     }
 
