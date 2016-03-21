@@ -64,11 +64,6 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
 
                     break;
 
-                case 'clusterDiscovery':
-                    ctrl.generator = (cluster) => generator.clusterDiscovery(cluster.discovery).asString();
-
-                    break;
-
                 case 'igfss':
                     ctrl.generator = (cluster) => {
                         const igfss = _.reduce(scope.detail, (acc, igfs) => {

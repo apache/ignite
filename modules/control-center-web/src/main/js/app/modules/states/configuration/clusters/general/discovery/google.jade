@@ -14,57 +14,22 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.discovery.GoogleStorage';
 
 div
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Project name:
-            ignite-form-field-tooltip
-                | Google Cloud Platforms project name#[br]
-                | Usually this is an auto generated project number (ex. 208709979073) that can be found in 'Overview' section of Google Developer Console
-            ignite-form-field-input-text(
-                data-id='projectName'
-                data-name='projectName'
-                data-ng-model='#{model}.projectName'
-                data-ng-required='true'
-            )
+        +text('Project name:', model + '.projectName', 'projectName', 'true', 'Input project name', '' +
+            'Google Cloud Platforms project name<br/>\
+            Usually this is an auto generated project number(ex. 208709979073) that can be found in "Overview" section of Google Developer Console')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Bucket name:
-            ignite-form-field-tooltip
-                | Google Cloud Storage bucket name#[br]
-                | If the bucket doesn't exist Ignite will automatically create it#[br]
-                | However the name must be unique across whole Google Cloud Storage and Service Account Id must be authorized to perform this operation
-            ignite-form-field-input-text(
-                data-id='bucketName'
-                data-name='bucketName'
-                data-ng-model='#{model}.bucketName'
-                data-ng-required='true'
-            )
+        +text('Bucket name:', model + '.bucketName', 'bucketName', 'true', 'Input bucket name',
+            'Google Cloud Storage bucket name<br/>\
+            If the bucket does not exist Ignite will automatically create it<br/>\
+            However the name must be unique across whole Google Cloud Storage and Service Account Id must be authorized to perform this operation')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Private key path:
-            ignite-form-field-tooltip
-                | Full path to the private key in PKCS12 format of the Service Account
-            ignite-form-field-input-text(
-                data-id='serviceAccountP12FilePath'
-                data-name='serviceAccountP12FilePath'
-                data-ng-model='#{model}.serviceAccountP12FilePath'
-                data-ng-required='true'
-            )
+        +text('Private key path:', model + '.serviceAccountP12FilePath', 'serviceAccountP12FilePath', 'true', 'Input private key path',
+            'Full path to the private key in PKCS12 format of the Service Account')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Account id:
-            ignite-form-field-tooltip
-                | Service account ID (typically an e-mail address)
-            ignite-form-field-input-text(
-                data-id='serviceAccountId'
-                data-name='serviceAccountId'
-                data-ng-model='#{model}.serviceAccountId'
-                data-ng-required='true'
-            )
+        +text('Account id:', model + '.serviceAccountId', 'serviceAccountId', 'true', 'Input account id', 'Service account ID (typically an e-mail address)')

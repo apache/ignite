@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem'
 
 form.panel.panel-default(name='time' novalidate)
@@ -27,67 +29,18 @@ form.panel.panel-default(name='time' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Samples size
-                        ignite-form-field-tooltip
-                            | Number of samples used to synchronize clocks between different nodes#[br]
-                            | Clock synchronization is used for cache version assignment in CLOCK order mode
-                        ignite-form-field-input-number(
-                            data-id='clockSyncSamples'
-                            data-name='clockSyncSamples'
-                            data-ng-model='#{model}.clockSyncSamples'
-                            data-placeholder='8'
-                        )
+                    +number('Samples size:', model + '.clockSyncSamples', 'clockSyncSamples', 'true', '8', '0',
+                        'Number of samples used to synchronize clocks between different nodes<br/>\
+                        Clock synchronization is used for cache version assignment in CLOCK order mode')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Frequency
-                        ignite-form-field-tooltip
-                            | Frequency at which clock is synchronized between nodes, in milliseconds#[br]
-                            | Clock synchronization is used for cache version assignment in CLOCK order mode
-                        ignite-form-field-input-number(
-                            data-id='clockSyncFrequency'
-                            data-name='clockSyncFrequency'
-                            data-ng-model='#{model}.clockSyncFrequency'
-                            data-placeholder='120000'
-                        )
+                    +number('Frequency:', model + '.clockSyncFrequency', 'clockSyncFrequency', 'true', '120000', '0',
+                        'Frequency at which clock is synchronized between nodes, in milliseconds<br/>\
+                        Clock synchronization is used for cache version assignment in CLOCK order mode')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Port base
-                        ignite-form-field-tooltip
-                            | Time server provides clock synchronization between nodes#[br]
-                            | Base UPD port number for grid time server. Time server will be started on one of free ports in range
-                        ignite-form-field-input-number(
-                            data-id='timeServerPortBase'
-                            data-name='timeServerPortBase'
-                            data-ng-model='#{model}.timeServerPortBase'
-                            data-placeholder='31100'
-                            data-max='65535'
-                        )
+                    +number-min-max('Port base:', model + '.timeServerPortBase', 'timeServerPortBase', 'true', '31100', '0', '65535',
+                        'Time server provides clock synchronization between nodes<br/>\
+                        Base UPD port number for grid time server. Time server will be started on one of free ports in range')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Port range
-                        ignite-form-field-tooltip
-                            | Time server port range
-                        ignite-form-field-input-number(
-                            data-id='timeServerPortRange'
-                            data-name='timeServerPortRange'
-                            data-ng-model='#{model}.timeServerPortRange'
-                            data-placeholder='100'
-                            data-min='1'
-                        )
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterTime' ng-model='$parent.data')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterTime' ng-model='$parent.data')
-                    .preview-content-empty(ng-if='!data')
-                        label All Defaults
+                    +number('Port range:', model + '.timeServerPortRange', 'timeServerPortRange', 'true', '100', '1', 'Time server port range')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterTime')

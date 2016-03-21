@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.atomicConfiguration'
 
 form.panel.panel-default(name='atomics' novalidate)
@@ -28,59 +30,23 @@ form.panel.panel-default(name='atomics' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Cache mode:
-                        ignite-form-field-tooltip
-                            | Cache modes:
-                            ul: li Partitioned - in this mode the overall key set will be divided into partitions and all partitions will be split equally between participating nodes
-                                li Replicated - in this mode all the keys are distributed to all participating nodes
-                                li Local - in this mode caches residing on different grid nodes will not know about each other
-                        ignite-form-field-dropdown(
-                            data-id='cacheMode'
-                            data-name='cacheMode'
-                            data-options='[\
-                                {value: "LOCAL", label: "LOCAL"},\
-                                {value: "REPLICATED", label: "REPLICATED"},\
-                                {value: "PARTITIONED", label: "PARTITIONED"}\
-                            ]'
-                            data-ng-model='#{model}.cacheMode'
-                            data-placeholder='PARTITIONED'
-                        )
+                    +dropdown('Cache mode:', model + '.cacheMode', 'cacheMode', 'true', 'PARTITIONED',
+                        '[\
+                            {value: "LOCAL", label: "LOCAL"},\
+                            {value: "REPLICATED", label: "REPLICATED"},\
+                            {value: "PARTITIONED", label: "PARTITIONED"}\
+                        ]',
+                        'Cache modes:\
+                        <ul>\
+                            <li>Partitioned - in this mode the overall key set will be divided into partitions and all partitions will be split equally between participating nodes</li>\
+                            <li>Replicated - in this mode all the keys are distributed to all participating nodes</li>\
+                            <li>Local - in this mode caches residing on different grid nodes will not know about each other</li>\
+                        </ul>')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Sequence reserve:
-                        ignite-form-field-tooltip
-                            | Default number of sequence values reserved for IgniteAtomicSequence instances#[br]
-                            | After a certain number has been reserved, consequent increments of sequence will happen locally, without communication with other nodes, until the next reservation has to be made
-                        ignite-form-field-input-number(
-                            data-id='atomicSequenceReserveSize'
-                            data-name='atomicSequenceReserveSize'
-                            data-ng-model='#{model}.atomicSequenceReserveSize'
-                            data-placeholder='1000'
-                        )
+                    +number('Sequence reserve:', model + '.atomicSequenceReserveSize', 'atomicSequenceReserveSize', 'true', '1000', '0',
+                        'Default number of sequence values reserved for IgniteAtomicSequence instances<br/>\
+                        After a certain number has been reserved, consequent increments of sequence will happen locally, without communication with other nodes, until the next reservation has to be made')
                 .settings-row(ng-if='!(#{model}.cacheMode && #{model}.cacheMode != "PARTITIONED")')
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Backups:
-                        ignite-form-field-tooltip
-                            | Number of backup nodes
-                        ignite-form-field-input-number(
-                            data-id='backups'
-                            data-name='backups'
-                            data-ng-model='#{model}.backups'
-                            data-placeholder='0'
-                        )
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterAtomics' ng-model='$parent.data')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterAtomics' ng-model='$parent.data')
-                    .preview-content-empty(ng-if='!data')
-                        label All Defaults
+                    +number('Backups:', model + '.backups', 'backups', 'true', '0', '0', 'Number of backup nodes')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterAtomics')

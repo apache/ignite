@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem'
 
 form.panel.panel-default(name='igfs' novalidate)
@@ -27,29 +29,9 @@ form.panel.panel-default(name='igfs' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | IGFS: #[a(ui-sref='base.configuration.igfs({id: #{model}._id})') (add)]
-                        ignite-form-field-tooltip
-                            | Select IGFS to start in cluster or add a new IGFS
-                        ignite-form-field-dropdown(
-                            data-id='igfss'
-                            data-name='igfss'
-                            data-options='igfss'
-                            data-multiple='true'
-                            data-ng-model='#{model}.igfss'
-                            data-ng-disabled='!igfss.length'
-                            data-placeholder='{{ igfss.length ? "Choose IGFS": "No IGFS configured" }}'
-                        )
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='igfss' data-detail='igfss' ng-model='$parent.data')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='igfss' data-detail='igfss' ng-model='$parent.data')
-                    .preview-content-empty(ng-if='!data')
-                        label All Defaults
+                    +dropdown-multiple('<span>IGFS:</span>' +
+                        '<a ui-sref="base.configuration.igfs({id: ' + model + '._id})"> (add)</a>',
+                        model + '.igfss', 'igfss', 'Choose IGFS', 'No IGFS configured', 'igfss',
+                        'Select IGFS to start in cluster or add a new IGFS')
+            .col-sm-6
+                +preview-xml-java(model, 'igfss')

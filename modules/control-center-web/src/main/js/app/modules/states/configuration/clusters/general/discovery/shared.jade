@@ -14,16 +14,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.discovery.SharedFs';
 
 div
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | File path:
-            ignite-form-field-input-text(
-                data-id='path'
-                data-name='path'
-                data-ng-model='#{model}.path'
-                data-placeholder='disco/tcp'
-            )
+        +text('File path:', model + '.path', 'path', 'false', 'disco/tcp', 'Shared path')

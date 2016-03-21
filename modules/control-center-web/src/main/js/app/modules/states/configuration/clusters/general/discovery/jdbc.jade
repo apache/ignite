@@ -14,16 +14,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.discovery.Jdbc';
 
 div
     .details-row
-        ignite-form-field.checkbox
-            ignite-form-field-input-checkbox(
-                data-id='initSchema'
-                data-name='initSchema'
-                data-ng-model='#{model}.initSchema'
-            )
-            | DB schema should be initialized by Ignite
-            ignite-form-field-tooltip
-                | Flag indicating whether DB schema should be initialized by Ignite or was explicitly created by user
+        +checkbox('DB schema should be initialized by Ignite', model + '.initSchema', 'initSchema',
+            'Flag indicating whether DB schema should be initialized by Ignite or was explicitly created by user')

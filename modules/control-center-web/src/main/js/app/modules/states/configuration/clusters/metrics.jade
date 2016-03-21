@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem'
 
 form.panel.panel-default(name='metrics' novalidate)
@@ -27,63 +29,21 @@ form.panel.panel-default(name='metrics' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field(data-label='Elapsed time')
-                        ignite-form-field-tooltip
-                            |Time in milliseconds after which a certain metric value is considered expired
-                        ignite-form-field-input-number(
-                            data-id='metricsExpireTime'
-                            data-name='metricsExpireTime'
-                            data-ng-model='#{model}.metricsExpireTime'
-                            data-min='1'
-                            data-placeholder='Long.MAX_VALUE'
-                        )
-
+                    +number('Elapsed time:', model + '.metricsExpireTime', 'metricsExpireTime', 'true', 'Long.MAX_VALUE', '1',
+                        'Time in milliseconds after which a certain metric value is considered expired')
                 .settings-row
-                    ignite-form-field(data-label='History size')
-                        ignite-form-field-tooltip
-                            | Number of metrics kept in history to compute totals and averages
-                        ignite-form-field-input-number(
-                            data-id='metricsHistorySize'
-                            data-name='metricsHistorySize'
-                            data-ng-model='#{model}.metricsHistorySize'
-                            data-placeholder='10000'
-                            data-min='1'
-                        )
-
+                    +number('History size:', model + '.metricsHistorySize', 'metricsHistorySize', 'true', '10000', '1',
+                        'Number of metrics kept in history to compute totals and averages')
                 .settings-row
-                    ignite-form-field(data-label='Log frequency')
-                        ignite-form-field-tooltip
-                            | Frequency of metrics log print out. To disable set to 0
-                        ignite-form-field-input-number(
-                            data-id='metricsLogFrequency'
-                            data-name='metricsLogFrequency'
-                            data-ng-model='#{model}.metricsLogFrequency'
-                            data-placeholder='60000'
-                        )
-
+                    +number('Log frequency:', model + '.metricsLogFrequency', 'metricsLogFrequency', 'true', '60000', '0',
+                        'Frequency of metrics log print out. To disable set to 0')
                 .settings-row
-                    ignite-form-field(data-label='Update frequency')
-                        ignite-form-field-tooltip
-                            | Job metrics update frequency in milliseconds
-                            ul
-                                li If set to -1 job metrics are never updated
-                                li If set to 0 job metrics are updated on each job start and finish
-                                li Positive value defines the actual update frequency
-                        ignite-form-field-input-number(
-                            data-id='metricsUpdateFrequency'
-                            data-name='metricsUpdateFrequency'
-                            data-ng-model='#{model}.metricsUpdateFrequency'
-                            data-placeholder='2000'
-                        )
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterMetrics' ng-model='$parent.data')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterMetrics' ng-model='$parent.data')
-                    .preview-content-empty(ng-if='!data')
-                        label All Defaults
+                    +number('Update frequency:', model + '.metricsUpdateFrequency', 'metricsUpdateFrequency', 'true', '2000', '0',
+                        'Job metrics update frequency in milliseconds\
+                        <ul>\
+                            <li>If set to -1 job metrics are never updated</li>\
+                            <li>If set to 0 job metrics are updated on each job start and finish</li>\
+                            <li>Positive value defines the actual update frequency</li>\
+                        </ul>')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterMetrics')

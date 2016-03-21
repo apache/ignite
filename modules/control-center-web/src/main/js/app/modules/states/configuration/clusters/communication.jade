@@ -14,7 +14,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-- var model = 'backupItem.communication'
+include ../../../../../app/helpers/jade/mixins.jade
+
+- var model = 'backupItem'
+- var communication = model + '.communication'
 
 form.panel.panel-default(name='communication' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
@@ -27,321 +30,60 @@ form.panel.panel-default(name='communication' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Timeout:
-                        ignite-form-field-tooltip
-                            | Maximum timeout in milliseconds for network requests
-                        ignite-form-field-input-number(
-                            data-id='commNetworkTimeout'
-                            data-name='commNetworkTimeout'
-                            data-ng-model='backupItem.networkTimeout'
-                            data-placeholder='5000'
-                            data-min='1'
-                        )
+                    +number('Timeout:', model + '.networkTimeout', 'commNetworkTimeout', 'true', '5000', '1', 'Maximum timeout in milliseconds for network requests')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Send retry delay:
-                        ignite-form-field-tooltip
-                            | Interval in milliseconds between message send retries
-                        ignite-form-field-input-number(
-                            data-id='networkSendRetryDelay'
-                            data-name='networkSendRetryDelay'
-                            data-ng-model='backupItem.networkSendRetryDelay'
-                            data-placeholder='1000'
-                            data-min='1'
-                        )
+                    +number('Send retry delay:', model + '.networkSendRetryDelay', 'networkSendRetryDelay', 'true', '1000', '1', 'Interval in milliseconds between message send retries')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Send retry count:
-                        ignite-form-field-tooltip
-                            | Message send retries count
-                        ignite-form-field-input-number(
-                            data-id='networkSendRetryCount'
-                            data-name='networkSendRetryCount'
-                            data-ng-model='backupItem.networkSendRetryCount'
-                            data-placeholder='3'
-                            data-min='1'
-                        )
+                    +number('Send retry count:', model + '.networkSendRetryCount', 'networkSendRetryCount', 'true', '3', '1', 'Message send retries count')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Discovery startup delay:
-                        ignite-form-field-tooltip
-                            | This value is used to expire messages from waiting list whenever node discovery discrepancies happen
-                        ignite-form-field-input-number(
-                            data-id='discoveryStartupDelay'
-                            data-name='discoveryStartupDelay'
-                            data-ng-model='backupItem.discoveryStartupDelay'
-                            data-placeholder='60000'
-                            data-min='1'
-                        )
+                    +number('Discovery startup delay:', model + '.discoveryStartupDelay', 'discoveryStartupDelay', 'true', '60000', '1', 'This value is used to expire messages from waiting list whenever node discovery discrepancies happen')
                 .settings-row
-                   ignite-form-field
-                        ignite-form-field-label
-                            | Communication listener:
-                        ignite-form-field-tooltip
-                            | Communication listener
-                        ignite-form-field-java-class(
-                            data-id='comListener'
-                            data-name='comListener'
-                            data-ng-model='#{model}.listener'
-                        )
+                    +java-class('Communication listener:', communication + '.listener', 'comListener', 'true', 'false', 'Communication listener')
                 .settings-row
-                   ignite-form-field
-                        ignite-form-field-label
-                            | Local IP address:
-                        ignite-form-field-tooltip
-                            | Local host address for socket binding
-                        ignite-form-field-input-text(
-                            data-id='comLocalAddress'
-                            data-name='comLocalAddress'
-                            data-ng-model='#{model}.localAddress'
-                            data-placeholder='228.1.2.4'
-                        )
+                    +text-ip-address('Local IP address:', communication + '.localAddress', 'comLocalAddress', 'true', '228.1.2.4', 'Local host address for socket binding')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Local port:
-                        ignite-form-field-tooltip
-                            | Local port for socket binding
-                        ignite-form-field-input-number(
-                            data-id='comLocalPort'
-                            data-name='comLocalPort'
-                            data-ng-model='#{model}.localPort'
-                            data-placeholder='47100'
-                            data-min='1024'
-                            data-max='65535'
-                        )
+                    +number-min-max('Local port:', communication + '.localPort', 'comLocalPort', 'true', '47100', '1024', '65535', 'Local port for socket binding')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Local port range:
-                        ignite-form-field-tooltip
-                            | Local port range for local host ports
-                        ignite-form-field-input-number(
-                            data-id='comLocalPortRange'
-                            data-name='comLocalPortRange'
-                            data-ng-model='#{model}.localPortRange'
-                            data-placeholder='100'
-                            data-min='1'
-                        )
+                    +number('Local port range:', communication + '.localPortRange', 'comLocalPortRange', 'true', '100', '1', 'Local port range for local host ports')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Shared memory port:
-                        ignite-form-field-tooltip
-                            | Local port to accept shared memory connections#[br]
-                            | If set to #[b -1] shared memory communication will be disabled
-                        ignite-form-field-input-number(
-                            data-id='sharedMemoryPort'
-                            data-name='sharedMemoryPort'
-                            data-ng-model='#{model}.sharedMemoryPort'
-                            data-placeholder='48100'
-                            data-min='-1'
-                            data-max='65535'
-                        )
+                    +number-min-max('Shared memory port:', communication + '.sharedMemoryPort', 'sharedMemoryPort', 'true', '48100', '-1', '65535',
+                        'Local port to accept shared memory connections<br/>\
+                        If set to #[b -1] shared memory communication will be disabled')
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='directBuffer'
-                            data-name='directBuffer'
-                            data-ng-model='#{model}.directBuffer'
-                        )
-                        | Direct buffer
-                        ignite-form-field-tooltip
-                            | If value is true, then SPI will use ByteBuffer.allocateDirect(int) call#[br]
-                            | Otherwise, SPI will use ByteBuffer.allocate(int) call.
+                    +checkbox('Direct buffer', communication + '.directBuffer', 'directBuffer',
+                        'If value is true, then SPI will use ByteBuffer.allocateDirect(int) call<br/>\
+                        Otherwise, SPI will use ByteBuffer.allocate(int) call.')
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='directSendBuffer'
-                            data-name='directSendBuffer'
-                            data-ng-model='#{model}.directSendBuffer'
-                        )
-                        | Direct send buffer
-                        ignite-form-field-tooltip
-                            | Flag defining whether direct send buffer should be used
+                    +checkbox('Direct send buffer', communication + '.directSendBuffer', 'directSendBuffer', 'Flag defining whether direct send buffer should be used')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Idle connection timeout:
-                        ignite-form-field-tooltip
-                            | Maximum idle connection timeout upon which a connection to client will be closed
-                        ignite-form-field-input-number(
-                            data-id='idleConnectionTimeout'
-                            data-name='idleConnectionTimeout'
-                            data-ng-model='#{model}.idleConnectionTimeout'
-                            data-placeholder='30000'
-                            data-min='1'
-                        )
+                    +number('Idle connection timeout:', communication + '.idleConnectionTimeout', 'idleConnectionTimeout', 'true', '30000', '1',
+                        'Maximum idle connection timeout upon which a connection to client will be closed')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Connect timeout:
-                        ignite-form-field-tooltip
-                            | Connect timeout used when establishing connection with remote nodes
-                        ignite-form-field-input-number(
-                            data-id='connectTimeout'
-                            data-name='connectTimeout'
-                            data-ng-model='#{model}.connectTimeout'
-                            data-placeholder='5000'
-                        )
+                    +number('Connect timeout:', communication + '.connectTimeout', 'connectTimeout', 'true', '5000', '0', 'Connect timeout used when establishing connection with remote nodes')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Maximum connect timeout:
-                        ignite-form-field-tooltip
-                            | Maximum connect timeout
-                        ignite-form-field-input-number(
-                            data-id='maxConnectTimeout'
-                            data-name='maxConnectTimeout'
-                            data-ng-model='#{model}.maxConnectTimeout'
-                            data-placeholder='600000'
-                        )
+                    +number('Maximum connect timeout:', communication + '.maxConnectTimeout', 'maxConnectTimeout', 'true', '600000', '0', 'Maximum connect timeout')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Reconnect count:
-                        ignite-form-field-tooltip
-                            | Maximum number of reconnect attempts used when establishing connection with remote nodes
-                        ignite-form-field-input-number(
-                            data-id='comReconnectCount'
-                            data-name='comReconnectCount'
-                            data-ng-model='#{model}.reconnectCount'
-                            data-placeholder='10'
-                            data-min='1'
-                        )
+                    +number('Reconnect count:', communication + '.reconnectCount', 'comReconnectCount', 'true', '10', '1',
+                        'Maximum number of reconnect attempts used when establishing connection with remote nodes')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Socket send buffer:
-                        ignite-form-field-tooltip
-                            | Send buffer size for sockets created or accepted by this SPI
-                        ignite-form-field-input-number(
-                            data-id='socketSendBuffer'
-                            data-name='socketSendBuffer'
-                            data-ng-model='#{model}.socketSendBuffer'
-                            data-placeholder='32768'
-                        )
+                    +number('Socket send buffer:', communication + '.socketSendBuffer', 'socketSendBuffer', 'true', '32768', '0', 'Send buffer size for sockets created or accepted by this SPI')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Socket receive buffer:
-                        ignite-form-field-tooltip
-                            | Receive buffer size for sockets created or accepted by this SPI
-                        ignite-form-field-input-number(
-                            data-id='socketReceiveBuffer'
-                            data-name='socketReceiveBuffer'
-                            data-ng-model='#{model}.socketReceiveBuffer'
-                            data-placeholder='32768'
-                        )
+                    +number('Socket receive buffer:', communication + '.socketReceiveBuffer', 'socketReceiveBuffer', 'true', '32768', '0', 'Receive buffer size for sockets created or accepted by this SPI')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Message queue limit:
-                        ignite-form-field-tooltip
-                            | Message queue limit for incoming and outgoing messages
-                        ignite-form-field-input-number(
-                            data-id='messageQueueLimit'
-                            data-name='messageQueueLimit'
-                            data-ng-model='#{model}.messageQueueLimit'
-                            data-placeholder='1024'
-                        )
+                    +number('Message queue limit:', communication + '.messageQueueLimit', 'messageQueueLimit', 'true', '1024', '0', 'Message queue limit for incoming and outgoing messages')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Slow client queue limit:
-                        ignite-form-field-tooltip
-                            | Slow client queue limit
-                        ignite-form-field-input-number(
-                            data-id='slowClientQueueLimit'
-                            data-name='slowClientQueueLimit'
-                            data-ng-model='#{model}.slowClientQueueLimit'
-                            data-placeholder='0'
-                        )
+                    +number('Slow client queue limit:', communication + '.slowClientQueueLimit', 'slowClientQueueLimit', 'true', '0', '0', 'Slow client queue limit')
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='tcpNoDelay'
-                            data-name='tcpNoDelay'
-                            data-ng-model='#{model}.tcpNoDelay'
-                        )
-                        | TCP_NODELAY option
-                        ignite-form-field-tooltip
-                            | Value for TCP_NODELAY socket option
+                    +checkbox('TCP_NODELAY option', communication + '.tcpNoDelay', 'tcpNoDelay', 'Value for TCP_NODELAY socket option')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Ack send threshold:
-                        ignite-form-field-tooltip
-                            | Number of received messages per connection to node after which acknowledgment message is sent
-                        ignite-form-field-input-number(
-                            data-id='ackSendThreshold'
-                            data-name='ackSendThreshold'
-                            data-ng-model='#{model}.ackSendThreshold'
-                            data-placeholder='16'
-                            data-min='1'
-                        )
+                    +number('Ack send threshold:', communication + '.ackSendThreshold', 'ackSendThreshold', 'true', '16', '1', 'Number of received messages per connection to node after which acknowledgment message is sent')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Unacknowledged messages:
-                        ignite-form-field-tooltip
-                            | Maximum number of stored unacknowledged messages per connection to node
-                        ignite-form-field-input-number(
-                            data-id='unacknowledgedMessagesBufferSize'
-                            data-name='unacknowledgedMessagesBufferSize'
-                            data-ng-model='#{model}.unacknowledgedMessagesBufferSize'
-                            data-placeholder='0'
-                        )
+                    +number('Unacknowledged messages:', communication + '.unacknowledgedMessagesBufferSize', 'unacknowledgedMessagesBufferSize', 'true', '0', '0', 'Maximum number of stored unacknowledged messages per connection to node')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Socket write timeout:
-                        ignite-form-field-tooltip
-                            | Socket write timeout
-                        ignite-form-field-input-number(
-                            data-id='socketWriteTimeout'
-                            data-name='socketWriteTimeout'
-                            data-ng-model='#{model}.socketWriteTimeout'
-                            data-placeholder='2000'
-                        )
+                    +number('Socket write timeout:', communication + '.socketWriteTimeout', 'socketWriteTimeout', 'true', '2000', '0', 'Socket write timeout')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Selectors count:
-                        ignite-form-field-tooltip
-                            | Count of selectors te be used in TCP server
-                        ignite-form-field-input-number(
-                            data-id='selectorsCount'
-                            data-name='selectorsCount'
-                            data-ng-model='#{model}.selectorsCount'
-                            data-placeholder='min(4, availableProcessors)'
-                            data-min='1'
-                        )
+                    +number('Selectors count:', communication + '.selectorsCount', 'selectorsCount', 'true', 'min(4, availableProcessors)', '1', 'Count of selectors te be used in TCP server')
                 .settings-row
-                   ignite-form-field
-                        ignite-form-field-label
-                            | Address resolver:
-                        ignite-form-field-tooltip
-                            | Address resolver
-                        ignite-form-field-java-class(
-                            data-id='comAddressResolver'
-                            data-name='comAddressResolver'
-                            data-ng-model='#{model}.addressResolver'
-                        )
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterCommunication' ng-model='$parent.data')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterCommunication' ng-model='$parent.data')
-                    .preview-content-empty(ng-if='!data')
-                        label All Defaults
+                    +java-class('Address resolver:', communication + '.addressResolver', 'comAddressResolver', 'true', 'false', 'Address resolver')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterCommunication')

@@ -14,43 +14,13 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../app/helpers/jade/mixins.jade
+
 - var cluster = 'backupItem'
 - var enabled = 'backupItem.sslEnabled'
 - var model = cluster + '.sslContextFactory'
 - var trust = model + '.trustManagers'
 - var form = 'trustManagers'
-
-mixin trstMgrField(field, save, newItem)
-    - var reset = (newItem ? 'group.add = []' : 'field.edit = false')
-    - var resetOnEnter = (newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)')
-    - var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
-
-    ignite-form-field-java-class(
-        data-name='#{field}'
-        data-ng-model='#{field}'
-        data-ng-required='true'
-        data-ignite-unique='#{trust}'
-        data-ignite-form-field-input-autofocus='true'
-        on-enter='#{valid} && (#{save}); #{valid} && #{resetOnEnter};'
-        on-escape='#{reset}'
-        ng-blur='#{valid} && (#{save}); #{resetOnBlur};'
-    )
-        block
-
-mixin trstMgrSaveBtn(valid, save, reset)
-    i.fa.fa-floppy-o(
-        ng-show='#{valid}'
-        ng-click='#{valid} && (#{save}); #{valid} && (#{reset});'
-        bs-tooltip
-        data-title='Click icon or press [Enter] to save item'
-    )
-
-mixin trstMgrFeedbackUnique(field)
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='!#{form}.#{field}.$pristine && #{form}.#{field}.$error.igniteUnique'
-        bs-tooltip
-        data-title='Such trust manager already exists!'
-    )
 
 form.panel.panel-default(name='#{form}' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
@@ -63,80 +33,24 @@ form.panel.panel-default(name='#{form}' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='sslEnabled'
-                            data-name='sslEnabled'
-                            data-ng-model='#{enabled}'
-                        )
-                        | Enabled
-                        ignite-form-field-tooltip
-                            | Flag indicating whether to configure SSL configuration
-                
+                    +checkbox('Enabled', enabled, 'sslEnabled', 'Flag indicating whether to configure SSL configuration')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Algorithm to create a key manager:
-                        ignite-form-field-tooltip
-                            | Sets key manager algorithm that will be used to create a key manager,#[br]
-                            | Notice that in most cased default value suites well, however, on Android platform this value need to be set to X509
-                        ignite-form-field-input-datalist(
-                            data-id='keyAlgorithm'
-                            data-name='keyAlgorithm'
-                            data-options='["SumX509", "X509"]'
-                            data-ng-model='#{model}.keyAlgorithm'
-                            data-placeholder='SumX509'
-                            data-ng-disabled='!#{enabled}'
-                        )
-
+                    +text-options('Algorithm to create a key manager:', model + '.keyAlgorithm', 'keyAlgorithm', '["SumX509", "X509"]', enabled, 'SumX509',
+                        'Sets key manager algorithm that will be used to create a key manager<br/>\
+                        Notice that in most cased default value suites well, however, on Android platform this value need to be set to X509')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Key store file:
-                        ignite-form-field-tooltip
-                            | Path to the key store file,#[br]
-                            | This is a mandatory parameter since ssl context could not be initialized without key manager
-                        ignite-form-field-input-text(
-                            data-id='keyStoreFilePath'
-                            data-name='keyStoreFilePath'
-                            data-ng-model='#{model}.keyStoreFilePath'
-                            data-placeholder='Path to the key store file'
-                            data-ng-required='#{enabled}'
-                            data-ng-disabled='!#{enabled}'
-                        )
-
+                    +text-enabled('Key store file:', model + '.keyStoreFilePath', 'keyStoreFilePath', enabled, enabled, 'Path to the key store file',
+                        'Path to the key store file<br/>\
+                        This is a mandatory parameter since ssl context could not be initialized without key manager')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Key store type:
-                        ignite-form-field-tooltip
-                            | Key store type used in context initialization
-                        ignite-form-field-input-datalist(
-                            data-id='keyStoreType'
-                            data-name='keyStoreType'
-                            data-options='["JKS", "PCKS11", "PCKS12"]'
-                            data-ng-model='#{model}.keyStoreType'
-                            data-placeholder='JKS'
-                            data-ng-disabled='!#{enabled}'
-                        )
-
+                    +text-options('Key store type:', model + '.keyStoreType', 'keyStoreType', '["JKS", "PCKS11", "PCKS12"]', enabled, 'JKS',
+                        'Key store type used in context initialization')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Protocol:
-                        ignite-form-field-tooltip
-                            | Protocol for secure transport
-                        ignite-form-field-input-datalist(
-                            data-id='protocol'
-                            data-name='protocol'
-                            data-options='["TSL", "SSL"]'
-                            data-ng-model='#{model}.protocol'
-                            data-placeholder='TSL'
-                            data-ng-disabled='!#{enabled}'
-                        )
-
+                    +text-options('Protocol:', model + '.protocol', 'protocol', '["TSL", "SSL"]', enabled, 'TSL', 'Protocol for secure transport')
                 .settings-row
                     ignite-form-group(ng-form='trustManagers' ng-model='#{trust}')
+                        - var uniqueTip = 'Such trust manager already exists!'
+
                         ignite-form-field-label
                             | Trust managers
                         ignite-form-group-tooltip
@@ -152,72 +66,31 @@ form.panel.panel-default(name='#{form}' novalidate)
 
                             ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal' name='Trust manager')
                                 .indexField
-                                    | {{ $index+1 }}) 
-                                i.tipField.fa.fa-remove(
-                                    ng-show='#{enabled}'
-                                    ng-hide='field.edit'
-                                    bs-tooltip='"Remove trust manager"'
-                                    ng-click='#{enabled} && (#{trust}.splice(#{trust}.indexOf(model), 1))'
-                                )
+                                    | {{ $index+1 }})
+                                +table-remove-conditional-button(trust, enabled, 'Remove trust manager')
                                 span(ng-hide='field.edit')
                                     a.labelFormField(ng-click='#{enabled} && (field.edit = true)') {{ model }}
                                 span(ng-if='field.edit' ng-init='#{field} = model')
-                                    +trstMgrField(field, save, false)
-                                        +trstMgrSaveBtn(valid, save, reset)
-                                        +trstMgrFeedbackUnique(field)
+                                    +table-java-class-field(field, trust, save, false)
+                                        +table-save-button(valid, save, false)
+                                        +table-feedback-unique(form, field, uniqueTip)
 
                         .group-content(ng-repeat='field in group.add')
                             - var field = 'new'
                             - var valid = form + '.' + field + '.$valid'
                             - var save = trust + '.push(' + field + ')'
-                            - var reset = 'group.add = []'
 
                             ignite-form-field(type='internal' name='Trust manager')
-                                +trstMgrField(field, save, true)
-                                    +trstMgrSaveBtn(valid, save, reset)
-                                    +trstMgrFeedbackUnique(field)
+                                +table-java-class-field(field, trust, save, true)
+                                    +table-save-button(valid, save, true)
+                                    +table-feedback-unique(form, field, uniqueTip)
 
                         .group-content-empty(ng-if='!(#{trust}.length) && !group.add.length')
                             | Not defined
 
                 .settings-row(ng-if='!#{trust}.length')
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Trust store file:
-                        ignite-form-field-tooltip
-                            | Path to the trust store file
-                        ignite-form-field-input-text(
-                            data-id='trustStoreFilePath'
-                            data-name='trustStoreFilePath'
-                            data-ng-model='#{model}.trustStoreFilePath'
-                            data-placeholder='Path to the trust store file'
-                            data-ng-disabled='!#{enabled}'
-                        )
-
+                    +text-enabled('Trust store file:', model + '.trustStoreFilePath', 'trustStoreFilePath', enabled, 'false', 'Path to the trust store file', 'Path to the trust store file')
                 .settings-row(ng-if='!#{trust}.length')
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Trust store type:
-                        ignite-form-field-tooltip
-                            | Trust store type used in context initialization
-                        ignite-form-field-input-datalist(
-                            data-id='trustStoreType'
-                            data-name='trustStoreType'
-                            data-options='["JKS", "PCKS11", "PCKS12"]'
-                            data-ng-model='#{model}.trustStoreType'
-                            data-placeholder='JKS'
-                            data-ng-disabled='!#{enabled}'
-                        )                        
- 
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterSsl' ng-model='$parent.data')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterSsl' ng-model='$parent.data')
-                    .preview-content-empty(ng-if='!data')
-                        label All Defaults
+                    +text-options('Trust store type:', model + '.trustStoreType', 'trustStoreType', '["JKS", "PCKS11", "PCKS12"]', enabled, 'JKS', 'Trust store type used in context initialization')
+            .col-sm-6
+                +preview-xml-java(cluster, 'clusterSsl')

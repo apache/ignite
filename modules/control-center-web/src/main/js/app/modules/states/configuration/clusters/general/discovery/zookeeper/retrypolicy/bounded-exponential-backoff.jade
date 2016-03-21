@@ -14,43 +14,14 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.discovery.ZooKeeper.retryPolicy.BoundedExponentialBackoff';
 
 div
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Base interval:
-            ignite-form-field-tooltip
-                | Initial amount of time in ms to wait between retries
-            ignite-form-field-input-number(
-                data-id='baseSleepTimeMs'
-                data-name='baseSleepTimeMs'
-                data-ng-model='#{model}.baseSleepTimeMs'
-                data-placeholder='1000'
-            )
+        +number('Base interval:', model + '.baseSleepTimeMs', 'baseSleepTimeMs', 'true', '1000', '0', 'Initial amount of time in ms to wait between retries')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Max interval:
-            ignite-form-field-tooltip
-                | Max time in ms to sleep on each retry
-            ignite-form-field-input-number(
-                data-id='maxSleepTimeMs'
-                data-name='maxSleepTimeMs'
-                data-ng-model='#{model}.maxSleepTimeMs'
-                data-placeholder='Integer.MAX_VALUE'
-            )
+        +number('Max interval:', model + '.maxSleepTimeMs', 'maxSleepTimeMs', 'true', 'Integer.MAX_VALUE', '0', 'Max time in ms to sleep on each retry')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Max retries:
-            ignite-form-field-tooltip
-                | Max number of times to retry
-            ignite-form-field-input-number(
-                data-id='maxRetries'
-                data-name='maxRetries'
-                data-ng-model='#{model}.maxRetries'
-                data-placeholder='10'
-                data-max='29'
-            )
+        +number-min-max('Max retries:', model + '.maxRetries', 'maxRetries', 'true', '10', '0', '29', 'Max number of times to retry')

@@ -14,65 +14,42 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.discovery.ZooKeeper';
 
 div
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Curator:
-            ignite-form-field-tooltip
-                | The Curator framework in use #[br]
-                | By default generates curator of org.apache.curator. framework.imps.CuratorFrameworkImpl
-                | class with configured connect string, retry policy, and default session and connection timeouts
-            ignite-form-field-java-class(
-                data-id='curator'
-                data-name='curator'
-                data-ng-model='#{model}.curator'
-            )
+        +java-class('Curator:', model + '.curator', 'curator', 'true', 'false',
+            'The Curator framework in use<br/>\
+            By default generates curator of org.apache.curator. framework.imps.CuratorFrameworkImpl\
+            class with configured connect string, retry policy, and default session and connection timeouts')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Connect string:
-            ignite-form-field-tooltip
-                | When "IGNITE_ZK_CONNECTION_STRING" system property is not configured this property will be used
-            ignite-form-field-input-text(
-                data-id='zkConnectionString'
-                data-name='zkConnectionString'
-                data-ng-model='#{model}.zkConnectionString'
-                data-placeholder='host:port[chroot][,host:port[chroot]]'
-                data-ng-required='true'
-            )
+        +text('Connect string:', model + '.zkConnectionString', 'zkConnectionString', 'true', 'host:port[chroot][,host:port[chroot]]',
+            'When "IGNITE_ZK_CONNECTION_STRING" system property is not configured this property will be used')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Retry policy:
-            ignite-form-field-tooltip
-                | Available retry policies:
-                ul: li Exponential backoff - retries a set number of times with increasing sleep time between retries
-                   li Bounded exponential backoff - retries a set number of times with an increasing (up to a maximum bound) sleep time between retries
-                    li Until elapsed - retries until a given amount of time elapses
-                    li Max number of times - retries a max number of times
-                    li Only once - retries only once
-                    li Always allow retry - retries infinitely
-                    li Custom - custom retry policy implementation
-                    li Default - exponential backoff retry policy with configured base sleep time equal to 1000ms and max retry count equal to 10
-            ignite-form-field-dropdown(
-                data-id='retryPolicy'
-                data-name='retryPolicy'
-                data-options='[\
-                    {value: "ExponentialBackoff", label: "Exponential backoff"},\
-                    {value: "BoundedExponentialBackoff", label: "Bounded exponential backoff"},\
-                    {value: "UntilElapsed", label: "Until elapsed"},\
-                    {value: "NTimes", label: "Max number of times"},\
-                    {value: "OneTime", label: "Only once"},\
-                    {value: "Forever", label: "Always allow retry"},\
-                    {value: "Custom", label: "Custom"},\
-                    {value: undefined, label: "Default"}\
-                ]'
-                data-ng-model='#{model}.retryPolicy.kind'
-                data-multiple='false'
-            )
+        +dropdown('Retry policy:', model + '.retryPolicy.kind', 'retryPolicy', 'true', 'Default',
+            '[\
+                {value: "ExponentialBackoff", label: "Exponential backoff"},\
+                {value: "BoundedExponentialBackoff", label: "Bounded exponential backoff"},\
+                {value: "UntilElapsed", label: "Until elapsed"},\
+                {value: "NTimes", label: "Max number of times"},\
+                {value: "OneTime", label: "Only once"},\
+                {value: "Forever", label: "Always allow retry"},\
+                {value: "Custom", label: "Custom"},\
+                {value: undefined, label: "Default"}\
+            ]',
+            'Available retry policies:\
+            <ul>\
+                <li>Exponential backoff - retries a set number of times with increasing sleep time between retries</li>\
+                <li>Bounded exponential backoff - retries a set number of times with an increasing (up to a maximum bound) sleep time between retries</li>\
+                <li>Until elapsed - retries until a given amount of time elapses</li>\
+                <li>Max number of times - retries a max number of times</li>\
+                <li>Only once - retries only once</li>\
+                <li>Always allow retry - retries infinitely</li>\
+                <li>Custom - custom retry policy implementation</li>\
+                <li>Default - exponential backoff retry policy with configured base sleep time equal to 1000ms and max retry count equal to 10</li>\
+            </ul>')
     .details-row(ng-if='#{model}.retryPolicy.kind')
         .panel-details.col-sm-12
             div(ng-switch='#{model}.retryPolicy.kind')
@@ -84,40 +61,13 @@ div
                 ignite-configuration-clusters-general-discovery-zookeeper-forever(ng-switch-when='Forever')
                 ignite-configuration-clusters-general-discovery-zookeeper-custom(ng-switch-when='Custom')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Base path:
-            ignite-form-field-tooltip
-                | Base path for service registration
-            ignite-form-field-input-text(
-                data-id='basePath'
-                data-name='basePath'
-                data-ng-model='#{model}.basePath'
-                data-placeholder='/services'
-            )
+        +text('Base path:', model + '.basePath', 'basePath', 'false', '/services', 'Base path for service registration')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Service name:
-            ignite-form-field-tooltip
-                | Service name to use, as defined by Curator's ServiceDiscovery recipe#[br]
-                | In physical ZooKeeper terms, it represents the node under basePath, under which services will be registered
-            ignite-form-field-input-text(
-                data-id='serviceName'
-                data-name='serviceName'
-                data-ng-model='#{model}.serviceName'
-                data-placeholder='ignite'
-            )
+        +text('Service name:', model + '.serviceName', 'serviceName', 'false', 'ignite',
+            'Service name to use, as defined by Curator&#39;s ServiceDiscovery recipe<br/>\
+            In physical ZooKeeper terms, it represents the node under basePath, under which services will be registered')
     .details-row
-        ignite-form-field.checkbox
-            ignite-form-field-input-checkbox(
-                data-id='allowDuplicateRegistrations'
-                data-name='allowDuplicateRegistrations'
-                data-ng-model='#{model}.allowDuplicateRegistrations'
-            )
-            | Allow duplicate registrations
-            ignite-form-field-tooltip
-                | Whether to register each node only once, or if duplicate registrations are allowed#[br]
-                | Nodes will attempt to register themselves, plus those they know about#[br]
-                | By default, duplicate registrations are not allowed, but you might want to set this property
-                | to #[b true] if you have multiple network interfaces or if you are facing troubles
+        +checkbox('Allow duplicate registrations', model + '.allowDuplicateRegistrations', 'allowDuplicateRegistrations',
+            'Whether to register each node only once, or if duplicate registrations are allowed<br/>\
+            Nodes will attempt to register themselves, plus those they know about<br/>\
+            By default, duplicate registrations are not allowed, but you might want to set this property to <b>true</b> if you have multiple network interfaces or if you are facing troubles')

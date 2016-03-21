@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem'
 - var exclude = model + '.peerClassLoadingLocalClassPathExclude'
 - var form = 'deployment'
@@ -21,9 +23,9 @@
 
 mixin feedback(name, error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='!#{form}.#{name}.$pristine && #{form}.#{name}.$error.#{error}'
+        ng-show=form + '.' + name +  '.$error.' + error
         bs-tooltip
-        data-title='#{message}'
+        data-title=message
     )
 
 form.panel.panel-default(name='#{form}' novalidate)
@@ -37,160 +39,71 @@ form.panel.panel-default(name='#{form}' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Deployment mode:
-                        ignite-form-field-tooltip
-                            | Task classes and resources sharing mode#[br]
-                            | The following deployment modes are supported:#[br]
-                            ul
-                                li PRIVATE - in this mode deployed classes do not share resources
-                                li ISOLATED - in this mode tasks or classes deployed within the same class loader will share the same instances of resources
-                                li SHARED - same as ISOLATED, but now tasks from different master nodes with the same user version and same class loader will share the same class loader on remote nodes
-                                li CONTINUOUS - same as SHARED deployment mode, but resources will not be undeployed even after all master nodes left grid
-                        ignite-form-field-dropdown(
-                            data-id='deploymentMode'
-                            data-name='deploymentMode'
-                            data-options='[\
-                                {value: "PRIVATE", label: "PRIVATE"},\
-                                {value: "ISOLATED", label: "ISOLATED"}, \
-                                {value: "SHARED", label: "SHARED"},\
-                                {value: "CONTINUOUS", label: "CONTINUOUS"}\
-                            ]'
-                            data-ng-model='#{model}.deploymentMode'
-                            data-placeholder='SHARED'
-                        )
+                    +dropdown('Deployment mode:', model + '.deploymentMode', 'deploymentMode', 'true', 'SHARED',
+                        '[\
+                            {value: "PRIVATE", label: "PRIVATE"},\
+                            {value: "ISOLATED", label: "ISOLATED"}, \
+                            {value: "SHARED", label: "SHARED"},\
+                            {value: "CONTINUOUS", label: "CONTINUOUS"}\
+                        ]',
+                        'Task classes and resources sharing mode<br/>\
+                        The following deployment modes are supported:\
+                        <ul>\
+                            <li>PRIVATE - in this mode deployed classes do not share resources</li>\
+                            <li>ISOLATED - in this mode tasks or classes deployed within the same class loader will share the same instances of resources</li>\
+                            <li>SHARED - same as ISOLATED, but now tasks from different master nodes with the same user version and same class loader will share the same class loader on remote nodes</li>\
+                            <li>CONTINUOUS - same as SHARED deployment mode, but resources will not be undeployed even after all master nodes left grid</li>\
+                        </ul>')
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='peerClassLoadingEnabled'
-                            data-name='peerClassLoadingEnabled'
-                            data-ng-model='#{model}.peerClassLoadingEnabled'
-                        )
-                        | Enable peer class loading
-                        ignite-form-field-tooltip
-                            | Enables/disables peer class loading
+                    +checkbox('Enable peer class loading', model + '.peerClassLoadingEnabled', 'peerClassLoadingEnabled', 'Enables/disables peer class loading')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Missed resources cache size:
-                        ignite-form-field-tooltip
-                            | If size greater than 0, missed resources will be cached and next resource request ignored
-                            | If size is 0, then request for the resource will be sent to the remote node every time this resource is requested
-                        ignite-form-field-input-number(
-                            data-id='peerClassLoadingMissedResourcesCacheSize'
-                            data-name='peerClassLoadingMissedResourcesCacheSize'
-                            data-ng-model='#{model}.peerClassLoadingMissedResourcesCacheSize'
-                            data-placeholder='100'
-                            data-ng-disabled='!#{enabled}'
-                        )
+                    +number('Missed resources cache size:', model + '.peerClassLoadingMissedResourcesCacheSize', 'peerClassLoadingMissedResourcesCacheSize', enabled, '100', '0',
+                        'If size greater than 0, missed resources will be cached and next resource request ignored<br/>\
+                        If size is 0, then request for the resource will be sent to the remote node every time this resource is requested')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Pool size:
-                        ignite-form-field-tooltip
-                            | Thread pool size to use for peer class loading
-                        ignite-form-field-input-number(
-                            data-id='peerClassLoadingThreadPoolSize'
-                            data-name='peerClassLoadingThreadPoolSize'
-                            data-ng-model='#{model}.peerClassLoadingThreadPoolSize'
-                            data-placeholder='2'
-                            data-ng-disabled='!#{enabled}'
-                            data-min='1'
-                        )
+                    +number('Pool size:', model + '.peerClassLoadingThreadPoolSize', 'peerClassLoadingThreadPoolSize', enabled, '2', '1', 'Thread pool size to use for peer class loading')
                 .settings-row
-                    ignite-form-group(ng-model='#{exclude}' ng-form='#{form}' )
+                    ignite-form-group(ng-model=exclude ng-form=form)
                         ignite-form-field-label
                             | Local class path exclude
                         ignite-form-group-tooltip
-                            | List of packages from the system classpath that need to be peer-to-peer loaded from task originating node#[br]
+                            | List of packages from the system classpath that need to be peer-to-peer loaded from task originating node<br/>
                             | '*' is supported at the end of the package name which means that all sub-packages and their classes are included like in Java package import clause
                         ignite-form-group-add(ng-show='#{enabled}' ng-click='(group.add = [{}])')
                             | Add package name.
 
-                        - var field = 'edit'
-                        - var valid = form + '.' + field + '.$valid'
-                        - var save = exclude + '[$index] = ' + field
+                        .group-content(ng-if=exclude + '.length')
+                            - var field = 'edit'
+                            - var valid = form + '.' + field + '.$valid'
+                            - var save = exclude + '[$index] = ' + field
 
-                        .group-content(ng-if='#{exclude}.length')
-                            ignite-form-field(ng-repeat='model in #{exclude} track by $index' type='internal')
+                            ignite-form-field(ng-repeat='model in #{exclude} track by $index' type='internal' name='Package name')
                                 .indexField
-                                    | {{ $index+1 }}) 
-                                i.tipField.fa.fa-remove(
-                                    ng-hide='field.edit'
-                                    bs-tooltip='"Remove package name"'
-                                    ng-click='#{exclude}.splice(#{exclude}.indexOf(model), 1)'
-                                )
+                                    | {{ $index+1 }})
+                                +table-remove-button(exclude, 'Remove package name')
                                 span(ng-hide='field.edit')
                                     a.labelFormField(ng-click='#{enabled} && (field.edit = true)') {{ model }}
                                 span(ng-if='field.edit' ng-init='#{field} = model')
-                                    ignite-form-field-input-text(
-                                        data-name='#{field}'
-                                        data-ng-model='#{field}'
-                                        data-ng-required='true'
-                                        data-placeholder='Enter package name'
-                                        data-java-keywords='true'
-                                        data-java-package-name='true'
-                                        data-ignite-unique='#{exclude}'
-                                        data-ignite-form-field-input-autofocus='true'
-                                        on-enter='#{valid} && (#{save}); #{valid} && (field.edit = false);'
-                                        on-escape='field.edit = false'
-                                        ng-blur='#{valid} && (#{save}); (field.edit = false)'
-                                    )
-                                        i.fa.fa-floppy-o(
-                                            ng-show='#{valid}'
-                                            ng-click='#{valid} && (#{save}); #{valid} && (field.edit = false);'
-                                            bs-tooltip 
-                                            data-title='Click icon or press [Enter] to save item' 
-                                        )
-
-                                        +feedback(field, 'required', 'Package name could not be empty')
+                                    +table-java-package-field(field, exclude, save, false)
+                                        +table-save-button(valid, save, false)
+                                        +table-feedback-unique(form, field, 'Such package already exists')
                                         +feedback(field, 'javaPackageName', 'Package name is invalid')
                                         +feedback(field, 'javaKeywords', 'Package name could not contains reserved java keyword')
-                                        +feedback(field, 'igniteUnique', 'Such package already exists')
-
-                        - var field = 'new'
-                        - var valid = form + '.' + field + '.$valid'
-                        - var push = exclude + '.push(' + field + ')'
 
                         .group-content(ng-repeat='field in group.add')
-                            ignite-form-field(type='internal')
-                                ignite-form-field-input-text(
-                                    data-name='#{field}'
-                                    data-ng-model='#{field}'
-                                    data-ng-required='true'
-                                    data-placeholder='Enter package name'
-                                    data-java-keywords='true'
-                                    data-java-package-name='true'
-                                    data-ignite-unique='#{exclude}'
-                                    data-ignite-form-field-input-autofocus='true'
-                                    on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (group.add = [{}])'
-                                    on-escape='group.add = []'
-                                    ng-blur='#{valid} && #{push}; !stopblur && (group.add = [])'
-                                )
-                                    i.fa.fa-floppy-o(
-                                        ng-show='#{valid}'
-                                        ng-click='#{valid} && #{push}; #{valid} && (group.add = [])'
-                                        bs-tooltip 
-                                        data-title='Click icon or press [Enter] to save item' 
-                                    )
+                            - var field = 'new'
+                            - var valid = form + '.' + field + '.$valid'
+                            - var save = exclude + '.push(' + field + ')'
 
-                                    +feedback(field, 'required', 'Package name could not be empty')
+                            ignite-form-field(type='internal' name='Package name')
+                                +table-java-package-field(field, exclude, save, true)
+                                    +table-save-button(valid, save, true)
+                                    +table-feedback-unique(form, field, 'Such package already exists')
                                     +feedback(field, 'javaPackageName', 'Package name is invalid')
                                     +feedback(field, 'javaKeywords', 'Package name could not contains reserved java keyword')
-                                    +feedback(field, 'igniteUnique', 'Such package already exists')
-            
+
+
                         .group-content-empty(ng-if='!(#{exclude}.length) && !group.add.length')
                             | Not defined
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterDeployment' ng-model='$parent.data')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterDeployment' ng-model='$parent.data')
-                    .preview-content-empty(ng-if='!data')
-                        label All Defaults
+            .col-sm-6
+                +preview-xml-java(model, 'clusterDeployment')

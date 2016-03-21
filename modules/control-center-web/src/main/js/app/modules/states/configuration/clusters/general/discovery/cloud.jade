@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.discovery.Cloud';
 - var regions = model + '.regions';
 - var zones = model + '.zones';
@@ -22,56 +24,23 @@
 
 div
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Credential:
-            ignite-form-field-tooltip
-                | Credential that is used during authentication on the cloud#[br]
-                | Depending on a cloud platform it can be a password or access key
-            ignite-form-field-input-text(
-                data-id='credential'
-                data-name='credential'
-                data-ng-model='#{model}.credential'
-            )
+        +text('Credential:', model + '.credential', 'credential', 'false', 'Input cloud credential',
+            'Credential that is used during authentication on the cloud<br/>\
+            Depending on a cloud platform it can be a password or access key')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Path to credential:
-            ignite-form-field-tooltip
-                | Path to a credential that is used during authentication on the cloud#[br]
-                | Access key or private key should be stored in a plain or PEM file without a passphrase
-            ignite-form-field-input-text(
-                data-id='credentialPath'
-                data-name='credentialPath'
-                data-ng-model='#{model}.credentialPath'
-            )
+        +text('Path to credential:', model + '.credentialPath', 'credentialPath', 'false', 'Input pathto credential',
+            'Path to a credential that is used during authentication on the cloud<br/>\
+            Access key or private key should be stored in a plain or PEM file without a passphrase')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Identity:
-            ignite-form-field-tooltip
-                | Identity that is used as a user name during a connection to the cloud#[br]
-                | Depending on a cloud platform it can be an email address, user name, etc
-            ignite-form-field-input-text(
-                data-id='identity'
-                data-name='identity'
-                data-ng-model='#{model}.identity'
-                data-ng-required='true'
-            )
+        +text('Identity:', model + '.identity', 'identity', 'true', 'Input identity',
+            'Identity that is used as a user name during a connection to the cloud<br/>\
+            Depending on a cloud platform it can be an email address, user name, etc')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Provider:
-            ignite-form-field-tooltip
-                | Cloud provider to use
-            ignite-form-field-input-text(
-                data-id='provider'
-                data-name='provider'
-                data-ng-model='#{model}.provider'
-                data-ng-required='true'
-            )
+        +text('Provider:', model + '.provider', 'provider', 'true', 'Input provider', 'Cloud provider to use')
     .details-row
-        ignite-form-group(ng-model='#{regions}' ng-form='#{formRegions}')
+        ignite-form-group(ng-model=regions ng-form=formRegions)
+            - var uniqueTip = 'Such region already exists!'
+
             ignite-form-field-label
                 | Regions
             ignite-form-group-tooltip
@@ -81,80 +50,38 @@ div
             ignite-form-group-add(ng-click='group.add = [{}]')
                 | Add new region
 
-            - var field = 'edit'
-            - var valid = formRegions + '.' + field + '.$valid'
-            - var save = regions + '[$index] = ' + field
-
             .group-content(ng-if='#{regions}.length')
-                ignite-form-field(ng-repeat='model in #{regions} track by $index' type='internal')
+                - var field = 'edit'
+                - var valid = formRegions + '.' + field + '.$valid'
+                - var save = regions + '[$index] = ' + field
+
+                ignite-form-field(ng-repeat='model in #{regions} track by $index' type='internal' name='Region')
                     .indexField
-                        | {{ $index+1 }}) 
-                    i.tipField.fa.fa-remove(
-                        ng-hide='field.edit'
-                        bs-tooltip='"Remove region"'
-                        ng-click='#{regions}.splice(#{regions}.indexOf(model), 1)'
-                    )
+                        | {{ $index+1 }})
+                    +table-remove-button(regions, 'Remove region')
                     span(ng-hide='field.edit')
                         a.labelFormField(ng-click='field.edit = true') {{ model }}
                     span(ng-if='field.edit' ng-init='#{field} = model')
-                        ignite-form-field-input-text(
-                            data-name='#{field}'
-                            data-ng-model='#{field}'
-                            data-ng-required='true'
-                            data-placeholder='Region name'
-                            data-ignite-unique='#{regions}'
-                            data-ignite-form-field-input-autofocus='true'
-                            on-enter='#{valid} && (#{save}); #{valid} && (field.edit = false);'
-                            on-escape='field.edit = false'
-                            ng-blur='#{valid} && (#{save}); (field.edit = false)'
-                        )
-                            i.fa.fa-floppy-o(
-                                ng-show='#{valid}'
-                                ng-click='#{valid} && (#{save}); #{valid} && (field.edit = false);'
-                                bs-tooltip 
-                                data-title='Click icon or press [Enter] to save item' 
-                            )
-
-                            i.fa.fa-exclamation-triangle.form-control-feedback(
-                                ng-show='!#{formRegions}.#{field}.$pristine && #{formRegions}.#{field}.$error.igniteUnique'
-                                bs-tooltip
-                                data-title='Such region already exists!'
-                            )
-
-            - var field = 'new'
-            - var valid = formRegions + '.' + field + '.$valid'
-            - var push = regions + '.push(' + field + ')'
+                        +table-text-field(field, regions, save, 'Region name', false)
+                            +table-save-button(valid, save, false)
+                            +table-feedback-unique(formRegions, field, uniqueTip)
 
             .group-content(ng-repeat='field in group.add')
-                ignite-form-field(type='internal')
-                    ignite-form-field-input-text(
-                        data-name='#{field}'
-                        data-ng-model='#{field}'
-                        data-ng-required='true'
-                        data-placeholder='Region name'
-                        data-ignite-unique='#{regions}'
-                        data-ignite-form-field-input-autofocus='true'
-                        on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (group.add = [{}])'
-                        on-escape='group.add = []'
-                        ng-blur='#{valid} && #{push}; !stopblur && (group.add = [])'
-                    )
-                        i.fa.fa-floppy-o(
-                            ng-show='#{valid}'
-                            ng-click='#{valid} && #{push}; #{valid} && (group.add = [])'
-                            bs-tooltip 
-                            data-title='Click icon or press [Enter] to save item' 
-                        )
+                - var field = 'new'
+                - var valid = formRegions + '.' + field + '.$valid'
+                - var save = regions + '.push(' + field + ')'
 
-                        i.fa.fa-exclamation-triangle.form-control-feedback(
-                            ng-show='!#{formRegions}.#{field}.$pristine && #{formRegions}.#{field}.$error.igniteUnique'
-                            bs-tooltip
-                            data-title='Such region already exists!'
-                        )
-            
+                ignite-form-field(type='internal' name='Region')
+                    +table-text-field(field, regions, save, 'Region name', true)
+                        +table-save-button(valid, save, true)
+                        +table-feedback-unique(formRegions, field, uniqueTip)
+
             .group-content-empty(ng-if='!(#{regions}.length) && !group.add.length')
                 | Not defined
     .details-row
-         ignite-form-group(ng-model='#{zones}' ng-form='#{formZones}')
+        ignite-form-group(ng-model=zones ng-form=formZones)
+            - var uniqueTip = 'Such zone already exists!'
+
             ignite-form-field-label
                 | Zones
             ignite-form-group-tooltip
@@ -164,75 +91,31 @@ div
             ignite-form-group-add(ng-click='group.add = [{}]')
                 | Add new zone
 
-            - var field = 'edit'
-            - var valid = formZones + '.' + field + '.$valid'
-            - var save = zones + '[$index] = ' + field
-
             .group-content(ng-if='#{zones}.length')
-                ignite-form-field(ng-repeat='model in #{zones} track by $index' type='internal')
+                - var field = 'edit'
+                - var valid = formZones + '.' + field + '.$valid'
+                - var save = zones + '[$index] = ' + field
+
+                ignite-form-field(ng-repeat='model in #{zones} track by $index' type='internal' name='Zone')
                     .indexField
-                        | {{ $index+1 }}) 
-                    i.tipField.fa.fa-remove(
-                        ng-hide='field.edit'
-                        bs-tooltip='"Remove zone"'
-                        ng-click='#{zones}.splice(#{zones}.indexOf(model), 1)'
-                    )
+                        | {{ $index+1 }})
+                    +table-remove-button(zones, 'Remove zone')
                     span(ng-hide='field.edit')
                         a.labelFormField(ng-click='field.edit = true') {{ model }}
                     span(ng-if='field.edit' ng-init='#{field} = model')
-                        ignite-form-field-input-text(
-                            data-name='#{field}'
-                            data-ng-model='#{field}'
-                            data-ng-required='true'
-                            data-placeholder='Zone name'
-                            data-ignite-unique='#{zones}'
-                            data-ignite-form-field-input-autofocus='true'
-                            on-enter='#{valid} && (#{save}); #{valid} && (field.edit = false);'
-                            on-escape='field.edit = false'
-                            ng-blur='#{valid} && (#{save}); (field.edit = false)'
-                        )
-                            i.fa.fa-floppy-o(
-                                ng-show='#{valid}'
-                                ng-click='#{valid} && (#{save}); #{valid} && (field.edit = false);'
-                                bs-tooltip 
-                                data-title='Click icon or press [Enter] to save item' 
-                            )
-
-                            i.fa.fa-exclamation-triangle.form-control-feedback(
-                                ng-show='!#{formZones}.#{field}.$pristine && #{formZones}.#{field}.$error.igniteUnique'
-                                bs-tooltip
-                                data-title='Such zone already exists!'
-                            )
-
-            - var field = 'new'
-            - var valid = formZones + '.' + field + '.$valid'
-            - var push = zones + '.push(' + field + ')'
+                        +table-text-field(field, zones, save, 'Zone name',false)
+                            +table-save-button(valid, save, false)
+                            +table-feedback-unique(formZones, field, uniqueTip)
 
             .group-content(ng-repeat='field in group.add')
-                ignite-form-field(type='internal')
-                    ignite-form-field-input-text(
-                        data-name='#{field}'
-                        data-ng-model='#{field}'
-                        data-ng-required='true'
-                        data-placeholder='Zone name'
-                        data-ignite-unique='#{zones}'
-                        data-ignite-form-field-input-autofocus='true'
-                        on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (group.add = [{}])'
-                        on-escape='group.add = []'
-                        ng-blur='#{valid} && #{push}; !stopblur && (group.add = [])'
-                    )
-                        i.fa.fa-floppy-o(
-                            ng-show='#{valid}'
-                            ng-click='#{valid} && #{push}; #{valid} && (group.add = [])'
-                            bs-tooltip 
-                            data-title='Click icon or press [Enter] to save item' 
-                        )
+                - var field = 'new'
+                - var valid = formZones + '.' + field + '.$valid'
+                - var save = zones + '.push(' + field + ')'
 
-                        i.fa.fa-exclamation-triangle.form-control-feedback(
-                            ng-show='!#{formZones}.#{field}.$pristine && #{formZones}.#{field}.$error.igniteUnique'
-                            bs-tooltip
-                            data-title='Such zone already exists!'
-                        )
-            
+                ignite-form-field(type='internal' name='Zone')
+                    +table-text-field(field, zones, save, 'Zone name',true)
+                        +table-save-button(valid, save, true)
+                        +table-feedback-unique(formZones, field, uniqueTip)
+
             .group-content-empty(ng-if='!(#{zones}.length) && !group.add.length')
                 | Not defined

@@ -14,17 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.discovery.ZooKeeper.retryPolicy.Forever';
 
 .details-row
-    ignite-form-field
-        ignite-form-field-label
-            | Interval:
-        ignite-form-field-tooltip
-            | Time in ms between retry attempts
-        ignite-form-field-input-number(
-            data-id='retryIntervalMs'
-            data-name='retryIntervalMs'
-            data-ng-model='#{model}.retryIntervalMs'
-            data-placeholder='1000'
-        )
+    +number('Interval:', model + '.retryIntervalMs', 'retryIntervalMs', 'true', '1000', '0', 'Time in ms between retry attempts')

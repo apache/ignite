@@ -485,11 +485,9 @@ $generatorXml.clusterGeneral = function (cluster, res) {
 };
 
 // Generate atomics group.
-$generatorXml.clusterAtomics = function (cluster, res) {
+$generatorXml.clusterAtomics = function (atomics, res) {
     if (!res)
         res = $generatorCommon.builder();
-
-    var atomics = cluster.atomicConfiguration;
 
     if ($commonUtils.hasAtLeastOneProperty(atomics, ['cacheMode', 'atomicSequenceReserveSize', 'backups'])) {
         res.startSafeBlock();
@@ -523,19 +521,17 @@ $generatorXml.clusterAtomics = function (cluster, res) {
 };
 
 // Generate binary group.
-$generatorXml.clusterBinary = function (cluster, res) {
+$generatorXml.clusterBinary = function (binary, res) {
     if (!res)
         res = $generatorCommon.builder();
-
-    var binary = cluster.binaryConfiguration;
 
     if ($generatorCommon.binaryIsDefined(binary)) {
         res.startBlock('<property name="binaryConfiguration">');
         res.startBlock('<bean class="org.apache.ignite.configuration.BinaryConfiguration">');
 
         $generatorXml.simpleBeanProperty(res, binary, 'idMapper');
-        $generatorXml.simpleBeanProperty(res, binary, 'serializer');
         $generatorXml.simpleBeanProperty(res, binary, 'nameMapper');
+        $generatorXml.simpleBeanProperty(res, binary, 'serializer');
 
         if ($commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations)) {
             res.startBlock('<property name="typeConfigurations">');
@@ -590,23 +586,23 @@ $generatorXml.clusterCommunication = function (cluster, res) {
 /**
  * XML generator for cluster's REST access configuration.
  *
- * @param cluster Cluster to get REST configuration.
+ * @param connector Cluster REST connector configuration.
  * @param res Optional configuration presentation builder object.
  * @returns Configuration presentation builder object
  */
-$generatorXml.clusterConnector = function(cluster, res) {
+$generatorXml.clusterConnector = function(connector, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($commonUtils.isDefined(cluster.connector) && cluster.connector.enabled) {
+    if ($commonUtils.isDefined(connector) && connector.enabled) {
         var cfg = _.cloneDeep($generatorCommon.CONNECTOR_CONFIGURATION);
 
-        if (cluster.connector.sslEnabled) {
+        if (connector.sslEnabled) {
             cfg.fields.sslClientAuth = {dflt: false};
             cfg.fields.sslFactory = {type: 'bean'};
         }
 
-        $generatorXml.beanProperty(res, cluster.connector, 'connectorConfiguration', cfg, true);
+        $generatorXml.beanProperty(res, connector, 'connectorConfiguration', cfg, true);
 
         res.needEmptyLine = true;
     }
@@ -644,36 +640,38 @@ $generatorXml.clusterDiscovery = function (disco, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.property(res, disco, 'localAddress');
-    $generatorXml.property(res, disco, 'localPort', null, 47500);
-    $generatorXml.property(res, disco, 'localPortRange', null, 100);
-    if ($commonUtils.isDefinedAndNotEmpty(disco.addressResolver))
-        $generatorXml.beanProperty(res, disco, 'addressResolver', {className: disco.addressResolver}, true);
-    $generatorXml.property(res, disco, 'socketTimeout', null, 5000);
-    $generatorXml.property(res, disco, 'ackTimeout', null, 5000);
-    $generatorXml.property(res, disco, 'maxAckTimeout', null, 600000);
-    $generatorXml.property(res, disco, 'networkTimeout', null, 5000);
-    $generatorXml.property(res, disco, 'joinTimeout', null, 0);
-    $generatorXml.property(res, disco, 'threadPriority', null, 10);
-    $generatorXml.property(res, disco, 'heartbeatFrequency', null, 2000);
-    $generatorXml.property(res, disco, 'maxMissedHeartbeats', null, 1);
-    $generatorXml.property(res, disco, 'maxMissedClientHeartbeats', null, 5);
-    $generatorXml.property(res, disco, 'topHistorySize', null, 1000);
-    if ($commonUtils.isDefinedAndNotEmpty(disco.listener))
-        $generatorXml.beanProperty(res, disco, 'listener', {className: disco.listener}, true);
-    if ($commonUtils.isDefinedAndNotEmpty(disco.dataExchange))
-        $generatorXml.beanProperty(res, disco, 'dataExchange', {className: disco.dataExchange}, true);
-    if ($commonUtils.isDefinedAndNotEmpty(disco.metricsProvider))
-        $generatorXml.beanProperty(res, disco, 'metricsProvider', {className: disco.metricsProvider}, true);
-    $generatorXml.property(res, disco, 'reconnectCount', null, 10);
-    $generatorXml.property(res, disco, 'statisticsPrintFrequency', null, 0);
-    $generatorXml.property(res, disco, 'ipFinderCleanFrequency', null, 60000);
-    if ($commonUtils.isDefinedAndNotEmpty(disco.authenticator))
-        $generatorXml.beanProperty(res, disco, 'authenticator', {className: disco.authenticator}, true);
-    $generatorXml.property(res, disco, 'forceServerMode', null, false);
-    $generatorXml.property(res, disco, 'clientReconnectDisabled', null, false);
+    if (disco) {
+        $generatorXml.property(res, disco, 'localAddress');
+        $generatorXml.property(res, disco, 'localPort', null, 47500);
+        $generatorXml.property(res, disco, 'localPortRange', null, 100);
+        if ($commonUtils.isDefinedAndNotEmpty(disco.addressResolver))
+            $generatorXml.beanProperty(res, disco, 'addressResolver', {className: disco.addressResolver}, true);
+        $generatorXml.property(res, disco, 'socketTimeout', null, 5000);
+        $generatorXml.property(res, disco, 'ackTimeout', null, 5000);
+        $generatorXml.property(res, disco, 'maxAckTimeout', null, 600000);
+        $generatorXml.property(res, disco, 'networkTimeout', null, 5000);
+        $generatorXml.property(res, disco, 'joinTimeout', null, 0);
+        $generatorXml.property(res, disco, 'threadPriority', null, 10);
+        $generatorXml.property(res, disco, 'heartbeatFrequency', null, 2000);
+        $generatorXml.property(res, disco, 'maxMissedHeartbeats', null, 1);
+        $generatorXml.property(res, disco, 'maxMissedClientHeartbeats', null, 5);
+        $generatorXml.property(res, disco, 'topHistorySize', null, 1000);
+        if ($commonUtils.isDefinedAndNotEmpty(disco.listener))
+            $generatorXml.beanProperty(res, disco, 'listener', {className: disco.listener}, true);
+        if ($commonUtils.isDefinedAndNotEmpty(disco.dataExchange))
+            $generatorXml.beanProperty(res, disco, 'dataExchange', {className: disco.dataExchange}, true);
+        if ($commonUtils.isDefinedAndNotEmpty(disco.metricsProvider))
+            $generatorXml.beanProperty(res, disco, 'metricsProvider', {className: disco.metricsProvider}, true);
+        $generatorXml.property(res, disco, 'reconnectCount', null, 10);
+        $generatorXml.property(res, disco, 'statisticsPrintFrequency', null, 0);
+        $generatorXml.property(res, disco, 'ipFinderCleanFrequency', null, 60000);
+        if ($commonUtils.isDefinedAndNotEmpty(disco.authenticator))
+            $generatorXml.beanProperty(res, disco, 'authenticator', {className: disco.authenticator}, true);
+        $generatorXml.property(res, disco, 'forceServerMode', null, false);
+        $generatorXml.property(res, disco, 'clientReconnectDisabled', null, false);
 
-    res.needEmptyLine = true;
+        res.needEmptyLine = true;
+    }
 
     return res;
 };
@@ -803,11 +801,11 @@ $generatorXml.clusterPools = function (cluster, res) {
 };
 
 // Generate transactions group.
-$generatorXml.clusterTransactions = function (cluster, res) {
+$generatorXml.clusterTransactions = function (transactionConfiguration, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.beanProperty(res, cluster.transactionConfiguration, 'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION, false);
+    $generatorXml.beanProperty(res, transactionConfiguration, 'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION, false);
 
     res.needEmptyLine = true;
 
@@ -1663,13 +1661,13 @@ $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     $generatorXml.clusterGeneral(cluster, res);
 
-    $generatorXml.clusterAtomics(cluster, res);
+    $generatorXml.clusterAtomics(cluster.atomicConfiguration, res);
 
-    $generatorXml.clusterBinary(cluster, res);
+    $generatorXml.clusterBinary(cluster.binaryConfiguration, res);
 
     $generatorXml.clusterCommunication(cluster, res);
 
-    $generatorXml.clusterConnector(cluster, res);
+    $generatorXml.clusterConnector(cluster.connector, res);
 
     $generatorXml.clusterDeployment(cluster, res);
 
@@ -1685,7 +1683,7 @@ $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     $generatorXml.clusterPools(cluster, res);
 
-    $generatorXml.clusterTransactions(cluster, res);
+    $generatorXml.clusterTransactions(cluster.transactionConfiguration, res);
 
     $generatorXml.clusterCaches(cluster.caches, cluster.igfss, isSrvCfg, res);
 

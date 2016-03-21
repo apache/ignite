@@ -14,7 +14,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-- var model = 'backupItem.marshaller'
+include ../../../../../app/helpers/jade/mixins.jade
+
+- var model = 'backupItem'
+- var marshaller = model + '.marshaller'
+- var optMarshaller = marshaller + '.OptimizedMarshaller'
 
 form.panel.panel-default(name='marshaller' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
@@ -28,106 +32,37 @@ form.panel.panel-default(name='marshaller' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Marshaller:
-                        ignite-form-field-tooltip
-                            | Instance of marshaller to use in grid#[br]
-                            | If not provided, BinaryMarshaller will be used
-                        ignite-form-field-dropdown(
-                            data-id='kind'
-                            data-name='kind'
-                            data-options='[\
-                                {value: "OptimizedMarshaller", label: "OptimizedMarshaller"},\
-                                {value: "JdkMarshaller", label: "JdkMarshaller"},\
-                                {value: undefined, label: "Not set"}\
-                            ]'
-                            data-ng-model='#{model}.kind'
-                            data-placeholder='Choose marshaller'
-                        )
-
+                    +dropdown('Marshaller:', marshaller + '.kind', 'kind', 'true', 'Choose marshaller',
+                        '[\
+                            {value: "OptimizedMarshaller", label: "OptimizedMarshaller"},\
+                            {value: "JdkMarshaller", label: "JdkMarshaller"},\
+                            {value: undefined, label: "Not set"}\
+                        ]',
+                        'Instance of marshaller to use in grid<br/>\
+                        If not provided, BinaryMarshaller will be used')
                     a.customize(
-                        ng-if='#{model}.kind && #{model}.kind === "OptimizedMarshaller"'
-                        ng-click='#{model}.expanded = !#{model}.expanded'
-                    ) {{ #{model}.expanded ? "Hide settings" : "Show settings"}}
-
+                        ng-if='#{marshaller}.kind && #{marshaller}.kind === "OptimizedMarshaller"'
+                        ng-click='#{marshaller}.expanded = !#{marshaller}.expanded'
+                    ) {{ #{marshaller}.expanded ? "Hide settings" : "Show settings"}}
                 .settings-row
-                    .panel-details.col-sm-12(ng-if='#{model}.expanded && #{model}.kind === "OptimizedMarshaller"')
+                    .panel-details.col-sm-12(ng-if='#{marshaller}.expanded && #{marshaller}.kind === "OptimizedMarshaller"')
                         .details-row
-                            ignite-form-field
-                                ignite-form-field-label
-                                    | Streams pool size:
-                                ignite-form-field-tooltip
-                                    | Specifies size of cached object streams used by marshaller#[br]
-                                    | Object streams are cached for performance reason to avoid costly recreation for every serialization routine#[br]
-                                    | If 0 (default), pool is not used and each thread has its own cached object stream which it keeps reusing#[br]
-                                    | Since each stream has an internal buffer, creating a stream for each thread can lead to high memory consumption if many large messages are marshalled or unmarshalled concurrently#[br]
-                                    | Consider using pool in this case. This will limit number of streams that can be created and, therefore, decrease memory consumption#[br]
-                                    | NOTE: Using streams pool can decrease performance since streams will be shared between different threads which will lead to more frequent context switching
-                                ignite-form-field-input-number(
-                                    data-id='poolSize'
-                                    data-name='poolSize'
-                                    data-ng-model='#{model}.OptimizedMarshaller.poolSize'
-                                    data-placeholder='0'
-                                )
-
+                            +number('Streams pool size:', optMarshaller + '.poolSize', 'poolSize', 'true', '0', '0',
+                                'Specifies size of cached object streams used by marshaller<br/>\
+                                Object streams are cached for performance reason to avoid costly recreation for every serialization routine<br/>\
+                                If 0 (default), pool is not used and each thread has its own cached object stream which it keeps reusing<br/>\
+                                Since each stream has an internal buffer, creating a stream for each thread can lead to high memory consumption if many large messages are marshalled or unmarshalled concurrently<br/>\
+                                Consider using pool in this case. This will limit number of streams that can be created and, therefore, decrease memory consumption<br/>\
+                                NOTE: Using streams pool can decrease performance since streams will be shared between different threads which will lead to more frequent context switching')
                         .details-row
-                            ignite-form-field.checkbox
-                                ignite-form-field-input-checkbox(
-                                    data-id='requireSerializable'
-                                    data-name='requireSerializable'
-                                    data-ng-model='#{model}.OptimizedMarshaller.requireSerializable'
-                                )
-                                | Require serializable
-                                ignite-form-field-tooltip
-                                    | Whether marshaller should require Serializable interface or not
-
+                            +checkbox('Require serializable', optMarshaller + '.requireSerializable', 'requireSerializable',
+                                'Whether marshaller should require Serializable interface or not')
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='marshalLocalJobs'
-                            data-name='marshalLocalJobs'
-                            data-ng-model='backupItem.marshalLocalJobs'
-                        )
-                        | Marshal local jobs
-                        ignite-form-field-tooltip
-                            | If this flag is enabled, jobs mapped to local node will be marshalled as if it was remote node
-
+                    +checkbox('Marshal local jobs', model + '.marshalLocalJobs', 'marshalLocalJobs', 'If this flag is enabled, jobs mapped to local node will be marshalled as if it was remote node')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Keep alive time:
-                        ignite-form-field-tooltip
-                            | Keep alive time of thread pool that is in charge of processing marshaller messages
-                        ignite-form-field-input-number(
-                            data-id='marshallerCacheKeepAliveTime'
-                            data-name='marshallerCacheKeepAliveTime'
-                            data-ng-model='backupItem.marshallerCacheKeepAliveTime'
-                            data-placeholder='10000'
-                        )
-
+                    +number('Keep alive time:', model + '.marshallerCacheKeepAliveTime', 'marshallerCacheKeepAliveTime', 'true', '10000', '0')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Pool size:
-                        ignite-form-field-tooltip
-                            | Default size of thread pool that is in charge of processing marshaller messages
-                        ignite-form-field-input-number(
-                            data-id='marshallerCacheThreadPoolSize'
-                            data-name='marshallerCacheThreadPoolSize'
-                            data-ng-model='backupItem.marshallerCacheThreadPoolSize'
-                            data-placeholder='max(8, availableProcessors) * 2'
-                        )
-
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterMarshaller' ng-model='$parent.data')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterMarshaller' ng-model='$parent.data')
-                    .preview-content-empty(ng-if='!data')
-                        label All Defaults
+                    +number('Pool size:', model + '.marshallerCacheThreadPoolSize', 'marshallerCacheThreadPoolSize', 'true', 'max(8, availableProcessors) * 2', '0',
+                        'Default size of thread pool that is in charge of processing marshaller messages')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterMarshaller')

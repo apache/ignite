@@ -14,30 +14,12 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.discovery.ZooKeeper.retryPolicy.NTimes';
 
 div
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Retries:
-            ignite-form-field-tooltip
-                | Number of times to retry
-            ignite-form-field-input-number(
-                data-id='n'
-                data-name='n'
-                data-ng-model='#{model}.n'
-                data-placeholder='10'
-            )
+        +number('Retries:', model + '.n', 'n', 'true', '10', '0', 'Number of times to retry')
     .details-row
-        ignite-form-field
-            ignite-form-field-label
-                | Interval:
-            ignite-form-field-tooltip
-                | Time in ms between retry attempts
-            ignite-form-field-input-number(
-                data-id='sleepMsBetweenRetries'
-                data-name='sleepMsBetweenRetries'
-                data-ng-model='#{model}.sleepMsBetweenRetries'
-                data-placeholder='1000'
-            )
+        +number('Interval:', model + '.sleepMsBetweenRetries', 'sleepMsBetweenRetries', 'true', '1000', '0', 'Time in ms between retry attempts')

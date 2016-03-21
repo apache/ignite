@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.transactionConfiguration'
 
 form.panel.panel-default(name='transactionConfiguration' novalidate)
@@ -27,95 +29,30 @@ form.panel.panel-default(name='transactionConfiguration' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Concurrency
-                        ignite-form-field-tooltip
-                            | Cache transaction concurrency to use when one is not explicitly specified
-                        ignite-form-field-dropdown(
-                            data-id='defaultTxConcurrency'
-                            data-name='defaultTxConcurrency'
-                            data-options='[\
-                                {value: "OPTIMISTIC", label: "OPTIMISTIC"},\
-                                {value: "PESSIMISTIC", label: "PESSIMISTIC"}\
-                            ]'
-                            data-ng-model='#{model}.defaultTxConcurrency'
-                            data-placeholder='PESSIMISTIC'
-                        )
+                    +dropdown('Concurrency:', model + '.defaultTxConcurrency', 'defaultTxConcurrency', 'true', 'PESSIMISTIC',
+                        '[\
+                            {value: "OPTIMISTIC", label: "OPTIMISTIC"},\
+                            {value: "PESSIMISTIC", label: "PESSIMISTIC"}\
+                        ]',
+                        'Cache transaction concurrency to use when one is not explicitly specified')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Isolation
-                        ignite-form-field-tooltip
-                            | Default transaction isolation
-                        ignite-form-field-dropdown(
-                            data-id='defaultTxIsolation'
-                            data-name='defaultTxIsolation'
-                            data-options='[\
-                                {value: "READ_COMMITTED", label: "READ_COMMITTED"},\
-                                {value: "REPEATABLE_READ", label: "REPEATABLE_READ"},\
-                                {value: "SERIALIZABLE", label: "SERIALIZABLE"}\
-                            ]'
-                            data-ng-model='#{model}.defaultTxIsolation'
-                            data-placeholder='REPEATABLE_READ'
-                        )
+                    +dropdown('Isolation:', model + '.defaultTxIsolation', 'defaultTxIsolation', 'true', 'REPEATABLE_READ',
+                        '[\
+                            {value: "READ_COMMITTED", label: "READ_COMMITTED"},\
+                            {value: "REPEATABLE_READ", label: "REPEATABLE_READ"},\
+                            {value: "SERIALIZABLE", label: "SERIALIZABLE"}\
+                        ]',
+                        'Default transaction isolation')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Default timeout
-                        ignite-form-field-tooltip
-                            | Default transaction timeout
-                        ignite-form-field-input-number(
-                            data-id='defaultTxTimeout'
-                            data-name='defaultTxTimeout'
-                            data-ng-model='#{model}.defaultTxTimeout'
-                            data-placeholder='0'
-                        )
+                    +number('Default timeout:', model + '.defaultTxTimeout', 'defaultTxTimeout', 'true', '0', '0', 'Default transaction timeout')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Pessimistic log cleanup delay
-                        ignite-form-field-tooltip
-                            | Delay, in milliseconds, after which pessimistic recovery entries will be cleaned up for failed node
-                        ignite-form-field-input-number(
-                            data-id='pessimisticTxLogLinger'
-                            data-name='pessimisticTxLogLinger'
-                            data-ng-model='#{model}.pessimisticTxLogLinger'
-                            data-placeholder='10000'
-                        )
+                    +number('Pessimistic log cleanup delay:', model + '.pessimisticTxLogLinger', 'pessimisticTxLogLinger', 'true', '10000', '0',
+                        'Delay, in milliseconds, after which pessimistic recovery entries will be cleaned up for failed node')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Pessimistic log size
-                        ignite-form-field-tooltip
-                            | Size of pessimistic transactions log stored on node in order to recover transaction commit if originating node has left grid before it has sent all messages to transaction nodes
-                        ignite-form-field-input-number(
-                            data-id='pessimisticTxLogSize'
-                            data-name='pessimisticTxLogSize'
-                            data-ng-model='#{model}.pessimisticTxLogSize'
-                            data-placeholder='0'
-                        )
+                    +number('Pessimistic log size:', model + '.pessimisticTxLogSize', 'pessimisticTxLogSize', 'true', '0', '0',
+                        'Size of pessimistic transactions log stored on node in order to recover transaction commit if originating node has left grid before it has sent all messages to transaction nodes')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Manager factory
-                        ignite-form-field-tooltip 
-                            | Class name of transaction manager factory for integration with JEE app servers
-                        ignite-form-field-java-class(
-                            data-id='txManagerFactory'
-                            data-name='txManagerFactory'
-                            data-ng-model='#{model}.txManagerFactory'
-                            data-placeholder='Enter fully qualified class name'
-                        )
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterTransactions' ng-model='$parent.data')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterTransactions' ng-model='$parent.data')
-                    .preview-content-empty(ng-if='!data')
-                        label All Defaults
+                    +java-class('Manager factory:', model + '.txManagerFactory', 'txManagerFactory', 'true', 'false',
+                        'Class name of transaction manager factory for integration with JEE app servers')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterTransactions')

@@ -14,17 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.discovery.ZooKeeper.retryPolicy.Custom';
 
 .details-row
-    ignite-form-field
-        ignite-form-field-label
-            | Class name:
-        ignite-form-field-tooltip
-            | Custom retry policy implementation class name
-        ignite-form-field-java-class(
-            data-id='className'
-            data-name='className'
-            data-ng-model='#{model}.className'
-            data-ng-required='true'
-        )
+    +java-class('Class name:', model + '.className', 'className', 'true', 'false', 'Custom retry policy implementation class name')

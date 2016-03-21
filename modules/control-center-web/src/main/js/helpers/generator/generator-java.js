@@ -631,11 +631,9 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
 };
 
 // Generate atomics group.
-$generatorJava.clusterAtomics = function (cluster, res) {
+$generatorJava.clusterAtomics = function (atomics, res) {
     if (!res)
         res = $generatorCommon.builder();
-
-    var atomics = cluster.atomicConfiguration;
 
     if ($commonUtils.hasAtLeastOneProperty(atomics, ['cacheMode', 'atomicSequenceReserveSize', 'backups'])) {
         res.startSafeBlock();
@@ -667,11 +665,9 @@ $generatorJava.clusterAtomics = function (cluster, res) {
 };
 
 // Generate binary group.
-$generatorJava.clusterBinary = function (cluster, res) {
+$generatorJava.clusterBinary = function (binary, res) {
     if (!res)
         res = $generatorCommon.builder();
-
-    var binary = cluster.binaryConfiguration;
 
     if ($generatorCommon.binaryIsDefined(binary)) {
         var varName = 'binary';
@@ -808,19 +804,19 @@ $generatorJava.clusterCommunication = function (cluster, res) {
 };
 
 // Generate REST access group.
-$generatorJava.clusterConnector = function (cluster, res) {
+$generatorJava.clusterConnector = function (connector, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($commonUtils.isDefined(cluster.connector) && cluster.connector.enabled) {
+    if ($commonUtils.isDefined(connector) && connector.enabled) {
         var cfg = _.cloneDeep($generatorCommon.CONNECTOR_CONFIGURATION);
 
-        if (cluster.connector.sslEnabled) {
+        if (connector.sslEnabled) {
             cfg.fields.sslClientAuth = {dflt: false};
             cfg.fields.sslFactory = {type: 'bean'};
         }
 
-        $generatorJava.beanProperty(res, 'cfg', cluster.connector, 'connectorConfiguration', 'clientCfg',
+        $generatorJava.beanProperty(res, 'cfg', connector, 'connectorConfiguration', 'clientCfg',
             cfg.className, cfg.fields, true);
 
         res.needEmptyLine = true;
@@ -860,54 +856,56 @@ $generatorJava.clusterDiscovery = function (disco, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, 'discovery', disco, 'localAddress');
-    $generatorJava.property(res, 'discovery', disco, 'localPort', null, null, 47500);
-    $generatorJava.property(res, 'discovery', disco, 'localPortRange', null, null, 100);
+    if (disco) {
+        $generatorJava.property(res, 'discovery', disco, 'localAddress');
+        $generatorJava.property(res, 'discovery', disco, 'localPort', null, null, 47500);
+        $generatorJava.property(res, 'discovery', disco, 'localPortRange', null, null, 100);
 
-    if ($commonUtils.isDefinedAndNotEmpty(disco.addressResolver)) {
-        $generatorJava.beanProperty(res, 'discovery', disco, 'addressResolver', 'addressResolver', disco.addressResolver, {}, true);
-        res.needEmptyLine = false;
+        if ($commonUtils.isDefinedAndNotEmpty(disco.addressResolver)) {
+            $generatorJava.beanProperty(res, 'discovery', disco, 'addressResolver', 'addressResolver', disco.addressResolver, {}, true);
+            res.needEmptyLine = false;
+        }
+
+        $generatorJava.property(res, 'discovery', disco, 'socketTimeout', null, null, 5000);
+        $generatorJava.property(res, 'discovery', disco, 'ackTimeout', null, null, 5000);
+        $generatorJava.property(res, 'discovery', disco, 'maxAckTimeout', null, null, 600000);
+        $generatorJava.property(res, 'discovery', disco, 'networkTimeout', null, null, 5000);
+        $generatorJava.property(res, 'discovery', disco, 'joinTimeout', null, null, 0);
+        $generatorJava.property(res, 'discovery', disco, 'threadPriority', null, null, 10);
+        $generatorJava.property(res, 'discovery', disco, 'heartbeatFrequency', null, null, 2000);
+        $generatorJava.property(res, 'discovery', disco, 'maxMissedHeartbeats', null, null, 1);
+        $generatorJava.property(res, 'discovery', disco, 'maxMissedClientHeartbeats', null, null, 5);
+        $generatorJava.property(res, 'discovery', disco, 'topHistorySize', null, null, 1000);
+
+        if ($commonUtils.isDefinedAndNotEmpty(disco.listener)) {
+            $generatorJava.beanProperty(res, 'discovery', disco, 'listener', 'listener', disco.listener, {}, true);
+            res.needEmptyLine = false;
+        }
+
+        if ($commonUtils.isDefinedAndNotEmpty(disco.dataExchange)) {
+            $generatorJava.beanProperty(res, 'discovery', disco, 'dataExchange', 'dataExchange', disco.dataExchange, {}, true);
+            res.needEmptyLine = false;
+        }
+
+        if ($commonUtils.isDefinedAndNotEmpty(disco.metricsProvider)) {
+            $generatorJava.beanProperty(res, 'discovery', disco, 'metricsProvider', 'metricsProvider', disco.metricsProvider, {}, true);
+            res.needEmptyLine = false;
+        }
+
+        $generatorJava.property(res, 'discovery', disco, 'reconnectCount', null, null, 10);
+        $generatorJava.property(res, 'discovery', disco, 'statisticsPrintFrequency', null, null, 0);
+        $generatorJava.property(res, 'discovery', disco, 'ipFinderCleanFrequency', null, null, 60000);
+
+        if ($commonUtils.isDefinedAndNotEmpty(disco.authenticator)) {
+            $generatorJava.beanProperty(res, 'discovery', disco, 'authenticator', 'authenticator', disco.authenticator, {}, true);
+            res.needEmptyLine = false;
+        }
+
+        $generatorJava.property(res, 'discovery', disco, 'forceServerMode', null, null, false);
+        $generatorJava.property(res, 'discovery', disco, 'clientReconnectDisabled', null, null, false);
+
+        res.needEmptyLine = true;
     }
-
-    $generatorJava.property(res, 'discovery', disco, 'socketTimeout', null, null, 5000);
-    $generatorJava.property(res, 'discovery', disco, 'ackTimeout', null, null, 5000);
-    $generatorJava.property(res, 'discovery', disco, 'maxAckTimeout', null, null, 600000);
-    $generatorJava.property(res, 'discovery', disco, 'networkTimeout', null, null, 5000);
-    $generatorJava.property(res, 'discovery', disco, 'joinTimeout', null, null, 0);
-    $generatorJava.property(res, 'discovery', disco, 'threadPriority', null, null, 10);
-    $generatorJava.property(res, 'discovery', disco, 'heartbeatFrequency', null, null, 2000);
-    $generatorJava.property(res, 'discovery', disco, 'maxMissedHeartbeats', null, null, 1);
-    $generatorJava.property(res, 'discovery', disco, 'maxMissedClientHeartbeats', null, null, 5);
-    $generatorJava.property(res, 'discovery', disco, 'topHistorySize', null, null, 1000);
-
-    if ($commonUtils.isDefinedAndNotEmpty(disco.listener)) {
-        $generatorJava.beanProperty(res, 'discovery', disco, 'listener', 'listener', disco.listener, {}, true);
-        res.needEmptyLine = false;
-    }
-
-    if ($commonUtils.isDefinedAndNotEmpty(disco.dataExchange)) {
-        $generatorJava.beanProperty(res, 'discovery', disco, 'dataExchange', 'dataExchange', disco.dataExchange, {}, true);
-        res.needEmptyLine = false;
-    }
-
-    if ($commonUtils.isDefinedAndNotEmpty(disco.metricsProvider)) {
-        $generatorJava.beanProperty(res, 'discovery', disco, 'metricsProvider', 'metricsProvider', disco.metricsProvider, {}, true);
-        res.needEmptyLine = false;
-    }
-
-    $generatorJava.property(res, 'discovery', disco, 'reconnectCount', null, null, 10);
-    $generatorJava.property(res, 'discovery', disco, 'statisticsPrintFrequency', null, null, 0);
-    $generatorJava.property(res, 'discovery', disco, 'ipFinderCleanFrequency', null, null, 60000);
-
-    if ($commonUtils.isDefinedAndNotEmpty(disco.authenticator)) {
-        $generatorJava.beanProperty(res, 'discovery', disco, 'authenticator', 'authenticator', disco.authenticator, {}, true);
-        res.needEmptyLine = false;
-    }
-
-    $generatorJava.property(res, 'discovery', disco, 'forceServerMode', null, null, false);
-    $generatorJava.property(res, 'discovery', disco, 'clientReconnectDisabled', null, null, false);
-
-    res.needEmptyLine = true;
 
     return res;
 };
@@ -1059,11 +1057,11 @@ $generatorJava.clusterPools = function (cluster, res) {
 };
 
 // Generate transactions group.
-$generatorJava.clusterTransactions = function (cluster, res) {
+$generatorJava.clusterTransactions = function (transactionConfiguration, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.beanProperty(res, 'cfg', cluster.transactionConfiguration, 'transactionConfiguration',
+    $generatorJava.beanProperty(res, 'cfg', transactionConfiguration, 'transactionConfiguration',
         'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION.className,
         $generatorCommon.TRANSACTION_CONFIGURATION.fields, false);
 
@@ -2474,13 +2472,13 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
 $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
     $generatorJava.clusterGeneral(cluster, clientNearCfg, res);
 
-    $generatorJava.clusterAtomics(cluster, res);
+    $generatorJava.clusterAtomics(cluster.atomicConfiguration, res);
 
-    $generatorJava.clusterBinary(cluster, res);
+    $generatorJava.clusterBinary(cluster.binaryConfiguration, res);
 
     $generatorJava.clusterCommunication(cluster, res);
 
-    $generatorJava.clusterConnector(cluster, res);
+    $generatorJava.clusterConnector(cluster.connector, res);
 
     $generatorJava.clusterDeployment(cluster, res);
 
@@ -2496,7 +2494,7 @@ $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     $generatorJava.clusterPools(cluster, res);
 
-    $generatorJava.clusterTransactions(cluster, res);
+    $generatorJava.clusterTransactions(cluster.transactionConfiguration, res);
 
     var isSrvCfg = !$commonUtils.isDefined(clientNearCfg);
 

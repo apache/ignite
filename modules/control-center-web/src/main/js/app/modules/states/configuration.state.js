@@ -17,9 +17,10 @@
 
 import angular from 'angular';
 
-// Clusters screen.
-import previewPanel from './configuration/clusters/preview-panel.directive';
+// Common directives.
+import previewPanel from './configuration/preview-panel.directive.js';
 
+// Clusters screen.
 import clustersGeneral from './configuration/clusters/general.directive';
 
 import clustersGeneralDiscoveryCloud from './configuration/clusters/general/discovery/cloud.directive';

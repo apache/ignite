@@ -263,7 +263,12 @@ consoleModule.controller('clustersController', [
                     msg = errors[firstErrorKey][0].$errorMessages[actualError.$name][firstErrorKey];
                 }
                 catch(ignored) {
-                    msg = 'Invalid value';
+                    try {
+                        msg = form[firstError.$name].$errorMessages[actualError.$name][firstErrorKey];
+                    }
+                    catch(ignited) {
+                        // No-op.
+                    }
                 }
 
                 return showPopoverMessage($scope.ui, firstError.$name, actualError.$name, msg);

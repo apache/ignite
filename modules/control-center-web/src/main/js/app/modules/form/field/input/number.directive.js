@@ -54,6 +54,7 @@ export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
 
             min: '@',
             max: '@',
+            step: '@',
             value: '=ngModel'
         },
         link,

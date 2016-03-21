@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem'
 
 form.panel.panel-default(name='general' novalidate)
@@ -25,66 +27,27 @@ form.panel.panel-default(name='general' novalidate)
         .panel-body
             .col-sm-6
                 .settings-row
-                   ignite-form-field
-                        ignite-form-field-label
-                            | Name:
-                        ignite-form-field-tooltip
-                            | Grid name
-                        ignite-form-field-input-text(
-                            data-id='clusterName'
-                            data-name='clusterName'
-                            data-ng-model='#{model}.name'
-                            data-ng-required='true'
-                            data-placeholder='Input name'
-                        )
+                    +text('Name:', model + '.name', 'clusterName', 'true', 'Input name', 'Grid name')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Caches: #[a(ui-sref='base.configuration.caches({id: #{model}._id})') (add)]
-                        ignite-form-field-tooltip
-                            | Select caches to start in cluster or add a new cache
-                        ignite-form-field-dropdown(
-                            data-id='caches'
-                            data-name='caches'
-                            data-options='caches'
-                            data-multiple='true'
-                            data-ng-model='#{model}.caches'
-                            data-ng-disabled='!caches.length'
-                            data-placeholder='{{ caches.length ? "Choose caches": "No caches configured" }}'
-                        )
+                    +dropdown-multiple('<span>Caches:</span>' +
+                        '<a ui-sref="base.configuration.caches({id: ' + model + '._id})"> (add)</a>',
+                        model + '.caches', 'caches', 'Choose caches', 'No caches configured', 'caches',
+                        'Select caches to start in cluster or add a new cache')
                 .settings-row
-                   ignite-form-field
-                        ignite-form-field-label
-                            | Local host:
-                        ignite-form-field-tooltip
-                            | System-wide local address or host for all Ignite components to bind to
-                        ignite-form-field-input-text(
-                            data-id='localHost'
-                            data-name='localHost'
-                            data-ng-model='#{model}.localHost'
-                            data-placeholder='0.0.0.0'
-                        )
+                    +text-ip-address('Local host:', model + '.localHost', 'localHost', 'true', '0.0.0.0', 'System-wide local address or host for all Ignite components to bind to')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Discovery:
-                        ignite-form-field-tooltip
-                            | Discovery allows to discover remote nodes in grid
-                            ul: li Static IPs - IP Finder which works only with pre configured list of IP addresses specified
-                                li Multicast - Multicast based IP finder
-                                li AWS S3 - AWS S3 based IP finder
-                                li Apache jclouds - Apache jclouds multi cloud toolkit based IP finder
-                                li Google cloud storage - Google Cloud Storage based IP finder
-                                li JDBC - JDBC based IP finder
-                                li Shared filesystem - Shared filesystem based IP finder
-                                li Apache ZooKeeper - Apache ZooKeeper based IP finder
-                        ignite-form-field-dropdown(
-                            data-id='discovery'
-                            data-name='discovery'
-                            data-options='discoveries'
-                            data-ng-model='#{model}.discovery.kind'
-                            data-placeholder='Choose marshaller'
-                        )
+                    +dropdown('Discovery:', model + '.discovery.kind', 'discovery', 'true', 'Choose discovery', 'discoveries',
+                        'Discovery allows to discover remote nodes in grid\
+                        <ul>\
+                            <li>Static IPs - IP Finder which works only with pre configured list of IP addresses specified</li>\
+                            <li>Multicast - Multicast based IP finder</li>\
+                            <li>AWS S3 - AWS S3 based IP finder</li>\
+                            <li>Apache jclouds - Apache jclouds multi cloud toolkit based IP finder</li>\
+                            <li>Google cloud storage - Google Cloud Storage based IP finder</li>\
+                            <li>JDBC - JDBC based IP finder</li>\
+                            <li>Shared filesystem - Shared filesystem based IP finder</li>\
+                            <li>Apache ZooKeeper - Apache ZooKeeper based IP finder</li>\
+                        </ul>')
                 .settings-row
                     .panel-details.col-sm-12
                         ignite-configuration-clusters-general-discovery-cloud(
@@ -103,13 +66,5 @@ form.panel.panel-default(name='general' novalidate)
                             ng-if='#{model}.discovery.kind === "Vm"')
                         ignite-configuration-clusters-general-discovery-zookeeper(
                             ng-if='#{model}.discovery.kind === "ZooKeeper"')
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterCaches' data-details='caches')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterCaches' data-details='caches')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterCaches', 'caches')

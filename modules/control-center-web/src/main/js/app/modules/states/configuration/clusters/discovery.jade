@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.discovery'
 
 form.panel.panel-default(name='discovery' novalidate)
@@ -27,292 +29,52 @@ form.panel.panel-default(name='discovery' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                   ignite-form-field
-                        ignite-form-field-label
-                            | Local address:
-                        ignite-form-field-tooltip
-                            | Local address
-                        ignite-form-field-input-text(
-                            data-id='discoLocalAddress'
-                            data-name='discoLocalAddress'
-                            data-ng-model='#{model}.localAddress'
-                            data-placeholder='228.1.2.4'
-                        )
+                    +text-ip-address('Local address:', model + '.localAddress', 'discoLocalAddress', 'true', '228.1.2.4', 'Local address')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Local port:
-                        ignite-form-field-tooltip
-                            | Local port which node uses
-                        ignite-form-field-input-number(
-                            data-id='discoLocalPort'
-                            data-name='discoLocalPort'
-                            data-ng-model='#{model}.localPort'
-                            data-min='1024'
-                            data-max='65535'
-                            data-placeholder='47500'
-                        )
+                    +number-min-max('Local port:', model + '.localPort', 'discoLocalPort', 'true', '47500', '1024', '65535', 'Local port which node uses')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Local port range:
-                        ignite-form-field-tooltip
-                            | Local port range
-                        ignite-form-field-input-number(
-                            data-id='discoLocalPortRange'
-                            data-name='discoLocalPortRange'
-                            data-ng-model='#{model}.localPortRange'
-                            data-placeholder='100'
-                            data-min='1'
-                        )
+                    +number('Local port range:', model + '.localPortRange', 'discoLocalPortRange', 'true', '100', '1', 'Local port range')
                 .settings-row
-                   ignite-form-field
-                        ignite-form-field-label
-                            | Address resolver:
-                        ignite-form-field-tooltip
-                            | Class name of resolution between external and internal addresses provider
-                        ignite-form-field-java-class(
-                            data-id='discoAddressResolver'
-                            data-name='discoAddressResolver'
-                            data-ng-model='#{model}.addressResolver'
-                        )
+                    +java-class('Address resolver:', model + '.addressResolver', 'discoAddressResolver', 'true', 'false',
+                        'Class name of resolution between external and internal addresses provider')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Socket timeout:
-                        ignite-form-field-tooltip
-                            | Socket operations timeout
-                        ignite-form-field-input-number(
-                            data-id='socketTimeout'
-                            data-name='socketTimeout'
-                            data-ng-model='#{model}.socketTimeout'
-                            data-placeholder='5000'
-                        )
+                    +number('Socket timeout:', model + '.socketTimeout', 'socketTimeout', 'true', '5000', '0', 'Socket operations timeout')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Acknowledgement timeout:
-                        ignite-form-field-tooltip
-                            | Message acknowledgement timeout
-                        ignite-form-field-input-number(
-                            data-id='ackTimeout'
-                            data-name='ackTimeout'
-                            data-ng-model='#{model}.ackTimeout'
-                            data-placeholder='5000'
-                        )
+                    +number('Acknowledgement timeout:', model + '.ackTimeout', 'ackTimeout', 'true', '5000', '0', 'Message acknowledgement timeout')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Max acknowledgement timeout:
-                        ignite-form-field-tooltip
-                            | Maximum message acknowledgement timeout
-                        ignite-form-field-input-number(
-                            data-id='maxAckTimeout'
-                            data-name='maxAckTimeout'
-                            data-ng-model='#{model}.maxAckTimeout'
-                            data-placeholder='600000'
-                        )
+                    +number('Max acknowledgement timeout:', model + '.maxAckTimeout', 'maxAckTimeout', 'true', '600000', '0', 'Maximum message acknowledgement timeout')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Network timeout:
-                        ignite-form-field-tooltip
-                            | Network timeout
-                        ignite-form-field-input-number(
-                            data-id='discoNetworkTimeout'
-                            data-name='discoNetworkTimeout'
-                            data-ng-model='#{model}.networkTimeout'
-                            data-placeholder='5000'
-                            data-min='1'
-                        )
+                    +number('Network timeout:', model + '.networkTimeout', 'discoNetworkTimeout', 'true', '5000', '1', 'Network timeout')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Join timeout:
-                        ignite-form-field-tooltip
-                            | Join timeout
-                        ignite-form-field-input-number(
-                            data-id='joinTimeout'
-                            data-name='joinTimeout'
-                            data-ng-model='#{model}.joinTimeout'
-                            data-placeholder='0'
-                        )
+                    +number('Join timeout:', model + '.joinTimeout', 'joinTimeout', 'true', '0', '0', 'Join timeout')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Thread priority:
-                        ignite-form-field-tooltip
-                            | Thread priority for all threads started by SPI
-                        ignite-form-field-input-number(
-                            data-id='threadPriority'
-                            data-name='threadPriority'
-                            data-ng-model='#{model}.threadPriority'
-                            data-placeholder='10'
-                            data-min='1'
-                        )
+                    +number('Thread priority:', model + '.threadPriority', 'threadPriority', 'true', '10', '1', 'Thread priority for all threads started by SPI')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Heartbeat frequency:
-                        ignite-form-field-tooltip
-                            | Heartbeat messages issuing frequency
-                        ignite-form-field-input-number(
-                            data-id='heartbeatFrequency'
-                            data-name='heartbeatFrequency'
-                            data-ng-model='#{model}.heartbeatFrequency'
-                            data-placeholder='2000'
-                            data-min='1'
-                        )
+                    +number('Heartbeat frequency:', model + '.heartbeatFrequency', 'heartbeatFrequency', 'true', '2000', '1', 'Heartbeat messages issuing frequency')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Max heartbeats miss w/o init:
-                        ignite-form-field-tooltip
-                            | Max heartbeats count node can miss without initiating status check
-                        ignite-form-field-input-number(
-                            data-id='maxMissedHeartbeats'
-                            data-name='maxMissedHeartbeats'
-                            data-ng-model='#{model}.maxMissedHeartbeats'
-                            data-placeholder='1'
-                            data-min='1'
-                        )
+                    +number('Max heartbeats miss w/o init:', model + '.maxMissedHeartbeats', 'maxMissedHeartbeats', 'true', '1', '1',
+                        'Max heartbeats count node can miss without initiating status check')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Max heartbeats miss w/o failing client node:
-                        ignite-form-field-tooltip
-                            | Max heartbeats count node can miss without failing client node
-                        ignite-form-field-input-number(
-                            data-id='maxMissedClientHeartbeats'
-                            data-name='maxMissedClientHeartbeats'
-                            data-ng-model='#{model}.maxMissedClientHeartbeats'
-                            data-placeholder='5'
-                            data-min='1'
-                        )
+                    +number('Max heartbeats miss w/o failing client node:', model + '.maxMissedClientHeartbeats', 'maxMissedClientHeartbeats', 'true', '5', '1')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Topology history:
-                        ignite-form-field-tooltip
-                            | Size of topology snapshots history
-                        ignite-form-field-input-number(
-                            data-id='topHistorySize'
-                            data-name='topHistorySize'
-                            data-ng-model='#{model}.topHistorySize'
-                            data-placeholder='1000'
-                        )
+                    +number('Topology history:', model + '.topHistorySize', 'topHistorySize', 'true', '1000', '0', 'Size of topology snapshots history')
                 .settings-row
-                   ignite-form-field
-                        ignite-form-field-label
-                            | Discovery listener:
-                        ignite-form-field-tooltip
-                            | Grid discovery listener
-                        ignite-form-field-java-class(
-                            data-id='discoListener'
-                            data-name='discoListener'
-                            data-ng-model='#{model}.listener'
-                        )
+                    +java-class('Discovery listener:', model + '.listener', 'discoListener', 'true', 'false', 'Grid discovery listener')
                 .settings-row
-                   ignite-form-field
-                        ignite-form-field-label
-                            | Data exchange:
-                        ignite-form-field-tooltip
-                            | Class name of handler for initial data exchange between Ignite nodes
-                        ignite-form-field-java-class(
-                            data-id='dataExchange'
-                            data-name='dataExchange'
-                            data-ng-model='#{model}.dataExchange'
-                        )
+                    +java-class('Data exchange:', model + '.dataExchange', 'dataExchange', 'true', 'false', 'Class name of handler for initial data exchange between Ignite nodes')
                 .settings-row
-                   ignite-form-field
-                        ignite-form-field-label
-                            | Metrics provider:
-                        ignite-form-field-tooltip
-                            | Class name of metric provider to discovery SPI
-                        ignite-form-field-java-class(
-                            data-id='metricsProvider'
-                            data-name='metricsProvider'
-                            data-ng-model='#{model}.metricsProvider'
-                        )
+                    +java-class('Metrics provider:', model + '.metricsProvider', 'metricsProvider', 'true', 'false', 'Class name of metric provider to discovery SPI')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Reconnect count:
-                        ignite-form-field-tooltip
-                            | Reconnect attempts count
-                        ignite-form-field-input-number(
-                            data-id='discoReconnectCount'
-                            data-name='discoReconnectCount'
-                            data-ng-model='#{model}.reconnectCount'
-                            data-placeholder='10'
-                            data-min='1'
-                        )
+                    +number('Reconnect count:', model + '.reconnectCount', 'discoReconnectCount', 'true', '10', '1', 'Reconnect attempts count')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Statistics frequency:
-                        ignite-form-field-tooltip
-                            | Statistics print frequency
-                        ignite-form-field-input-number(
-                            data-id='statisticsPrintFrequency'
-                            data-name='statisticsPrintFrequency'
-                            data-ng-model='#{model}.statisticsPrintFrequency'
-                            data-placeholder='0'
-                            data-min='1'
-                        )
+                    +number('Statistics frequency:', model + '.statisticsPrintFrequency', 'statisticsPrintFrequency', 'true', '0', '1', 'Statistics print frequency')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | IP finder clean frequency:
-                        ignite-form-field-tooltip
-                            | IP finder clean frequency
-                        ignite-form-field-input-number(
-                            data-id='ipFinderCleanFrequency'
-                            data-name='ipFinderCleanFrequency'
-                            data-ng-model='#{model}.ipFinderCleanFrequency'
-                            data-placeholder='60000'
-                            data-min='1'
-                        )
+                    +number('IP finder clean frequency:', model + '.ipFinderCleanFrequency', 'ipFinderCleanFrequency', 'true', '60000', '1', 'IP finder clean frequency')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Node authenticator:
-                        ignite-form-field-tooltip
-                            | Node authenticator
-                        ignite-form-field-java-class(
-                            data-id='authenticator'
-                            data-name='authenticator'
-                            data-ng-model='#{model}.authenticator'
-                        )
+                    +java-class('Node authenticator:', model + '.authenticator', 'authenticator', 'true', 'false', 'Node authenticator')
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='forceServerMode'
-                            data-name='forceServerMode'
-                            data-ng-model='#{model}.forceServerMode'
-                        )
-                        | Force server mode
-                        ignite-form-field-tooltip
-                            | Force server mode
+                    +checkbox('Force server mode', model + '.forceServerMode', 'forceServerMode', 'Force server mode')
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='clientReconnectDisabled'
-                            data-name='clientReconnectDisabled'
-                            data-ng-model='#{model}.clientReconnectDisabled'
-                        )
-                        | Client reconnect disabled
-                        ignite-form-field-tooltip
-                            | Client reconnect disabled
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterDiscovery' ng-model='$parent.data')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterDiscovery' ng-model='$parent.data')
-                    .preview-content-empty(ng-if='!data')
-                        label All Defaults
+                    +checkbox('Client reconnect disabled', model + '.clientReconnectDisabled', 'clientReconnectDisabled', 'Client reconnect disabled')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterDiscovery')

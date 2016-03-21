@@ -30,6 +30,7 @@ mixin feedback(error, message)
         type='number'
         min='{{ min || 0 }}'
         max='{{ max || Number.MAX_VALUE }}'
+        step='{{ step || 1 }}'
 
         data-ng-model='value'
         data-ng-required='required || false'

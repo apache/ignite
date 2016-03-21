@@ -14,7 +14,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.connector'
+- var enabled = model + '.enabled'
+- var sslEnabled = enabled + ' && ' + model + '.sslEnabled'
 
 form.panel.panel-default(name='connector' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
@@ -27,282 +31,72 @@ form.panel.panel-default(name='connector' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='restEnabled'
-                            data-name='restEnabled'
-                            data-ng-model='#{model}.enabled'
-                        )
-                        | Enabled
-                        ignite-form-field-tooltip
-                            | Flag indicating whether to configure connector configuration
+                    +checkbox('Enabled', enabled, 'restEnabled', 'Flag indicating whether to configure connector configuration')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Jetty configuration path:
-                        ignite-form-field-tooltip
-                            | Path, either absolute or relative to IGNITE_HOME, to Jetty XML configuration file#[br]
-                            | Jetty is used to support REST over HTTP protocol for accessing Ignite APIs remotely#[br]
-                            | If not provided, Jetty instance with default configuration will be started picking IgniteSystemProperties.IGNITE_JETTY_HOST and IgniteSystemProperties.IGNITE_JETTY_PORT as host and port respectively
-                        ignite-form-field-input-text(
-                            data-id='connectorJettyPath'
-                            data-name='connectorJettyPath'
-                            data-ng-model='#{model}.jettyPath'
-                            data-ng-disabled='!#{model}.enabled'
-                        )
+                    +text-enabled('Jetty configuration path:', model + '.jettyPath', 'connectorJettyPath', enabled, 'false', 'Input path to Jetty configuration',
+                        'Path, either absolute or relative to IGNITE_HOME, to Jetty XML configuration file<br/>\
+                        Jetty is used to support REST over HTTP protocol for accessing Ignite APIs remotely<br/>\
+                        If not provided, Jetty instance with default configuration will be started picking IgniteSystemProperties.IGNITE_JETTY_HOST and IgniteSystemProperties.IGNITE_JETTY_PORT as host and port respectively')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | TCP host:
-                        ignite-form-field-tooltip
-                            | Host for TCP binary protocol server#[br]
-                            | This can be either an IP address or a domain name#[br]
-                            | If not defined, system-wide local address will be used IgniteConfiguration#getLocalHost()#[br]
-                            | You can also use '0.0.0.0' value to bind to all locally-available IP addresses
-                        ignite-form-field-input-text(
-                            data-id='connectorHost'
-                            data-name='connectorHost'
-                            data-ng-model='#{model}.host'
-                            data-ng-disabled='!#{model}.enabled'
-                            data-placeholder='IgniteConfiguration#getLocalHost()'
-                        )
+                    +text-ip-address('TCP host:', model + '.host', 'connectorHost', enabled, 'IgniteConfiguration#getLocalHost()',
+                        'Host for TCP binary protocol server<br/>\
+                        This can be either an IP address or a domain name<br/>\
+                        If not defined, system - wide local address will be used IgniteConfiguration#getLocalHost()<br/>\
+                        You can also use "0.0.0.0" value to bind to all locally - available IP addresses')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | TCP port:
-                        ignite-form-field-tooltip
-                            | Port for TCP binary protocol server
-                        ignite-form-field-input-number(
-                            data-id='connectorPort'
-                            data-name='connectorPort'
-                            data-ng-model='#{model}.port'
-                            data-ng-disabled='!#{model}.enabled'
-                            data-placeholder='11211'
-                            data-min='1024'
-                            data-max='65535'
-                        )
+                    +number-min-max('TCP port:', model + '.port', 'connectorPort', enabled, '11211', '1024', '65535', 'Port for TCP binary protocol server')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | TCP port range:
-                        ignite-form-field-tooltip
-                            | Number of ports for TCP binary protocol server to try if configured port is already in use
-                        ignite-form-field-input-number(
-                            data-id='connectorPortRange'
-                            data-name='connectorPortRange'
-                            data-ng-model='#{model}.portRange'
-                            data-placeholder='100'
-                            data-ng-disabled='!#{model}.enabled'
-                            data-min='1'
-                        )
+                    +number('TCP port range:', model + '.portRange', 'connectorPortRange', enabled, '100', '1', 'Number of ports for TCP binary protocol server to try if configured port is already in use')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Idle query cursor timeout:
-                        ignite-form-field-tooltip
-                            | Reject open query cursors that is not used timeout#[br]
-                            | If no fetch query request come within idle timeout, it will be removed on next check for old query cursors
-                        ignite-form-field-input-number(
-                        data-id='connectorIdleQueryCursorTimeout'
-                        data-name='connectorIdleQueryCursorTimeout'
-                        data-ng-model='#{model}.idleQueryCursorTimeout'
-                        data-placeholder='600000'
-                        data-ng-disabled='!#{model}.enabled'
-                        )
+                    +number('Idle query cursor timeout:', model + '.idleQueryCursorTimeout', 'connectorIdleQueryCursorTimeout', enabled, '600000', '0',
+                        'Reject open query cursors that is not used timeout<br/>\
+                        If no fetch query request come within idle timeout, it will be removed on next check for old query cursors')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Idle query cursor check frequency:
-                        ignite-form-field-tooltip
-                            | Idle query cursors check frequency#[br]
-                            | This setting is used to reject open query cursors that is not used
-                        ignite-form-field-input-number(
-                        data-id='connectorIdleQueryCursorCheckFrequency'
-                        data-name='connectorIdleQueryCursorCheckFrequency'
-                        data-ng-model='#{model}.idleQueryCursorCheckFrequency'
-                        data-placeholder='60000'
-                        data-ng-disabled='!#{model}.enabled'
-                        )
+                    +number('Idle query cursor check frequency:', model + '.idleQueryCursorCheckFrequency', 'connectorIdleQueryCursorCheckFrequency', enabled, '60000', '0',
+                        'Idle query cursors check frequency<br/>\
+                        This setting is used to reject open query cursors that is not used')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Idle timeout:
-                        ignite-form-field-tooltip
-                            | Idle timeout for REST server#[br]
-                            | This setting is used to reject half-opened sockets#[br]
-                            | If no packets come within idle timeout, the connection is closed
-                        ignite-form-field-input-number(
-                            data-id='connectorIdleTimeout'
-                            data-name='connectorIdleTimeout'
-                            data-ng-model='#{model}.idleTimeout'
-                            data-placeholder='7000'
-                            data-ng-disabled='!#{model}.enabled'
-                        )
+                    +number('Idle timeout:', model + '.idleTimeout', 'connectorIdleTimeout', enabled, '7000', '0',
+                        'Idle timeout for REST server<br/>\
+                        This setting is used to reject half - opened sockets<br/>\
+                        If no packets come within idle timeout, the connection is closed')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Receive buffer size:
-                        ignite-form-field-tooltip
-                            | REST TCP server receive buffer size
-                        ignite-form-field-input-number(
-                            data-id='connectorReceiveBufferSize'
-                            data-name='connectorReceiveBufferSize'
-                            data-ng-model='#{model}.receiveBufferSize'
-                            data-placeholder='32768'
-                            data-ng-disabled='!#{model}.enabled'
-                        )
+                    +number('Receive buffer size:', model + '.receiveBufferSize', 'connectorReceiveBufferSize', enabled, '32768', '0', 'REST TCP server receive buffer size')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Send buffer size:
-                        ignite-form-field-tooltip
-                            | REST TCP server send buffer size
-                        ignite-form-field-input-number(
-                            data-id='connectorSendBufferSize'
-                            data-name='connectorSendBufferSize'
-                            data-ng-model='#{model}.sendBufferSize'
-                            data-placeholder='32768'
-                            data-ng-disabled='!#{model}.enabled'
-                        )
+                    +number('Send buffer size:', model + '.sendBufferSize', 'connectorSendBufferSize', enabled, '32768', '0', 'REST TCP server send buffer size')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Send queue limit:
-                        ignite-form-field-tooltip
-                            | REST TCP server send queue limit#[br]
-                            | If the limit exceeds, all successive writes will block until the queue has enough capacity
-                        ignite-form-field-input-number(
-                            data-id='connectorSendQueueLimit'
-                            data-name='connectorSendQueueLimit'
-                            data-ng-model='#{model}.sendQueueLimit'
-                            data-placeholder='unlimited'
-                            data-ng-disabled='!#{model}.enabled'
-                        )
+                    +number('Send queue limit:', model + '.sendQueueLimit', 'connectorSendQueueLimit', enabled, 'unlimited', '0',
+                        'REST TCP server send queue limit<br/>\
+                        If the limit exceeds, all successive writes will block until the queue has enough capacity')
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='connectorDirectBuffer'
-                            data-name='connectorDirectBuffer'
-                            data-ng-model='#{model}.directBuffer'
-                            data-ng-disabled='!#{model}.enabled'
-                        )
-                        | Direct buffer
-                        ignite-form-field-tooltip
-                            | Flag indicating whether REST TCP server should use direct buffers#[br]
-                            | A direct buffer is a buffer that is allocated and accessed using native system calls, without using JVM heap#[br]
-                            | Enabling direct buffer may improve performance and avoid memory issues (long GC pauses due to huge buffer size)
+                    +checkbox-enabled('Direct buffer', model + '.directBuffer', 'connectorDirectBuffer', enabled,
+                        'Flag indicating whether REST TCP server should use direct buffers<br/>\
+                        A direct buffer is a buffer that is allocated and accessed using native system calls, without using JVM heap<br/>\
+                        Enabling direct buffer may improve performance and avoid memory issues(long GC pauses due to huge buffer size)')
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='connectorNoDelay'
-                            data-name='connectorNoDelay'
-                            data-ng-model='#{model}.noDelay'
-                            data-ng-disabled='!#{model}.enabled'
-                        )
-                        | TCP_NODELAY option
-                        ignite-form-field-tooltip
-                            | Flag indicating whether TCP_NODELAY option should be set for accepted client connections#[br]
-                            | Setting this option reduces network latency and should be enabled in majority of cases#[br]
-                            | For more information, see Socket#setTcpNoDelay(boolean)
+                    +checkbox-enabled('TCP_NODELAY option', model + '.noDelay', 'connectorNoDelay', enabled,
+                        'Flag indicating whether TCP_NODELAY option should be set for accepted client connections<br/>\
+                        Setting this option reduces network latency and should be enabled in majority of cases<br/>\
+                        For more information, see Socket#setTcpNoDelay(boolean)')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Selector count:
-                        ignite-form-field-tooltip
-                            | Number of selector threads in REST TCP server#[br]
-                            | Higher value for this parameter may increase throughput, but also increases context switching
-                        ignite-form-field-input-number(
-                            data-id='connectorSelectorCount'
-                            data-name='connectorSelectorCount'
-                            data-ng-model='#{model}.selectorCount'
-                            data-placeholder='min(4, availableProcessors)'
-                            data-ng-disabled='!#{model}.enabled'
-                            data-min='1'
-                        )
+                    +number('Selector count:', model + '.selectorCount', 'connectorSelectorCount', enabled, 'min(4, availableProcessors)', '1',
+                        'Number of selector threads in REST TCP server<br/>\
+                        Higher value for this parameter may increase throughput, but also increases context switching')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Thread pool size:
-                        ignite-form-field-tooltip
-                            | Thread pool size to use for processing of client messages (REST requests)
-                        ignite-form-field-input-number(
-                            data-id='connectorThreadPoolSize'
-                            data-name='connectorThreadPoolSize'
-                            data-ng-model='#{model}.threadPoolSize'
-                            data-placeholder='max(8, availableProcessors) * 2'
-                            data-ng-disabled='!#{model}.enabled'
-                            data-min='1'
-                        )
+                    +number('Thread pool size:', model + '.threadPoolSize', 'connectorThreadPoolSize', enabled, 'max(8, availableProcessors) * 2', '1',
+                        'Thread pool size to use for processing of client messages (REST requests)')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Message interceptor:
-                        ignite-form-field-tooltip
-                            | Interceptor allows to transform all objects exchanged via REST protocol#[br]
-                            | For example if you use custom serialisation on client you can write interceptor to transform binary representations received from client to Java objects and later access them from java code directly
-                        ignite-form-field-java-class(
-                            data-id='connectorMessageInterceptor'
-                            data-name='connectorMessageInterceptor'
-                            data-ng-model='#{model}.messageInterceptor'
-                            data-ng-disabled='!#{model}.enabled'
-                        )
+                    +java-class('Message interceptor:', model + '.messageInterceptor', 'connectorMessageInterceptor', enabled, 'false',
+                        'Interceptor allows to transform all objects exchanged via REST protocol<br/>\
+                        For example if you use custom serialisation on client you can write interceptor to transform binary representations received from client to Java objects and later access them from java code directly')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Secret key:
-                        ignite-form-field-tooltip
-                            | Secret key to authenticate REST requests
-                        ignite-form-field-input-text(
-                            data-id='connectorSecretKey'
-                            data-name='connectorSecretKey'
-                            data-ng-model='#{model}.secretKey'
-                            data-ng-disabled='!#{model}.enabled'
-                            data-placeholder='Specify to enable authentication'
-                        )
+                    +text-enabled('Secret key:', model + '.secretKey', 'connectorSecretKey', enabled, 'false', 'Specify to enable authentication', 'Secret key to authenticate REST requests')
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='connectorSslEnabled'
-                            data-name='connectorSslEnabled'
-                            data-ng-model='#{model}.sslEnabled'
-                            data-ng-disabled='!#{model}.enabled'
-                        )
-                        | Enable SSL
-                        ignite-form-field-tooltip
-                            | Enables/disables SSL for REST TCP binary protocol
+                    +checkbox-enabled('Enable SSL', model + '.sslEnabled', 'connectorSslEnabled', enabled, 'Enables/disables SSL for REST TCP binary protocol')
                 .settings-row
-                    ignite-form-field.checkbox
-                        ignite-form-field-input-checkbox(
-                            data-id='connectorSslClientAuth'
-                            data-name='connectorSslClientAuth'
-                            data-ng-model='#{model}.sslClientAuth'
-                            data-ng-disabled='!#{model}.enabled || !#{model}.sslEnabled'
-                        )
-                        | Enable SSL client auth
-                        ignite-form-field-tooltip
-                            | Flag indicating whether or not SSL client authentication is required
+                    +checkbox-enabled('Enable SSL client auth', model + '.sslClientAuth', 'connectorSslClientAuth', sslEnabled, 'Flag indicating whether or not SSL client authentication is required')
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | SSL factory:
-                        ignite-form-field-tooltip
-                            | Instance of Factory that will be used to create an instance of SSLContext for Secure Socket Layer on TCP binary protocol
-                        ignite-form-field-java-class(
-                            data-id='connectorSslFactory'
-                            data-name='connectorSslFactory'
-                            data-ng-model='#{model}.sslFactory'
-                            data-ng-required='#{model}.sslEnabled'
-                            data-ng-disabled='!#{model}.enabled || !#{model}.sslEnabled'
-                        )
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterConnector' ng-model='$parent.data')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterConnector' ng-model='$parent.data')
-                    .preview-content-empty(ng-if='!data')
-                        label All Defaults
+                    +java-class('SSL factory:', model + '.sslFactory', 'connectorSslFactory', sslEnabled, sslEnabled,
+                        'Instance of Factory that will be used to create an instance of SSLContext for Secure Socket Layer on TCP binary protocol')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterConnector')

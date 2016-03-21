@@ -55,6 +55,22 @@ mixin java-class(lbl, model, name, enabled, required, tip)
         )
 
 //- Mixin for text field.
+mixin text-ip-address(lbl, model, name, enabled, placeholder, tip)
+    ignite-form-field
+        ignite-form-field-label
+            | #{lbl}
+        ignite-form-field-tooltip
+            | !{tip}
+        ignite-form-field-input-text(
+            data-id=name
+            data-name=name
+            data-ng-model=model
+            data-ipaddress='true'
+            data-ng-disabled='!(#{enabled})'
+            data-placeholder=placeholder
+        )
+
+//- Mixin for text field.
 mixin text-enabled(lbl, model, name, enabled, required, placeholder, tip)
     ignite-form-field
         ignite-form-field-label
@@ -81,7 +97,7 @@ mixin text-options(lbl, model, name, options, enabled, placeholder, tip)
             | #{lbl}
         ignite-form-field-tooltip
             | !{tip}
-        ignite-form-field-input-text(
+        ignite-form-field-input-datalist(
             data-id=name
             data-name=name
             data-ng-model=model
@@ -109,6 +125,10 @@ mixin number-requited(lbl, model, name, required, enabled, placeholder, min, tip
 
 //- Mixin for required numeric field with maximum and minimum limit.
 mixin number-min-max(lbl, model, name, enabled, placeholder, min, max, tip)
+    +number-min-max-step(lbl, model, name, enabled, placeholder, min, max, '1', tip)
+
+//- Mixin for required numeric field with maximum and minimum limit.
+mixin number-min-max-step(lbl, model, name, enabled, placeholder, min, max, step, tip)
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
@@ -122,6 +142,7 @@ mixin number-min-max(lbl, model, name, enabled, placeholder, min, max, tip)
             data-placeholder=placeholder
             data-min=min
             data-max=max
+            data-step=step
         )
 
 //- Mixin for numeric field.
@@ -169,10 +190,10 @@ mixin dropdown-multiple(lbl, model, name, placeholder, placeholderEmpty, options
 
 //- Mixin for table java class field.
 mixin table-java-class-field(field, items, save, newItem)
-    - var reset = (newItem ? 'group.add = []' : 'field.edit = false')
-
     - var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     - var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+
+    - var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
 
     - var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
     - var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
@@ -184,15 +205,87 @@ mixin table-java-class-field(field, items, save, newItem)
         data-ignite-unique=items
         data-ignite-form-field-input-autofocus='true'
         on-enter=onEnter
+        on-escape=onEscape
         ng-blur=onBlur
-        on-escape=reset
+    )
+        block
+
+//- Mixin for table java package field.
+mixin table-java-package-field(field, items, save, newItem)
+    - var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    - var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+
+    - var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
+
+    - var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    - var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+
+    ignite-form-field-input-text(
+        data-name=field
+        data-ng-model=field
+        data-ng-required='true'
+        data-placeholder='Enter package name'
+        data-java-keywords='true'
+        data-java-package-name='true'
+        data-ignite-unique=items
+        data-ignite-form-field-input-autofocus='true'
+        on-enter=onEnter
+        on-escape=onEscape
+        ng-blur=onBlur
+    )
+        block
+
+//- Mixin for table text field.
+mixin table-text-field(field, items, save, placeholder, newItem)
+    - var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    - var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+
+    - var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
+
+    - var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    - var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+
+    ignite-form-field-input-text(
+        data-name=field
+        data-ng-model=field
+        data-ng-required='true'
+        data-placeholder=placeholder
+        data-ignite-unique=items
+        data-ignite-form-field-input-autofocus='true'
+        on-enter=onEnter
+        on-escape=onEscape
+        ng-blur=onBlur
+    )
+        block
+
+//- Mixin for table address field.
+mixin table-address-field(field, items, save, newItem)
+    - var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    - var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+
+    - var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
+
+    - var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    - var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+
+    ignite-form-field-input-text(
+        data-name=field
+        data-ng-model=field
+        data-ng-required='true'
+        data-placeholder='IP address:port'
+        data-ipaddress='true'
+        data-ignite-unique=items
+        data-ignite-form-field-input-autofocus='true'
+        on-enter=onEnter
+        on-escape=onEscape
+        ng-blur=onBlur
     )
         block
 
 //- Mixin for table save button.
 mixin table-save-button(valid, save, newItem)
     - var reset = (newItem ? 'group.add = []' : 'field.edit = false')
-    - var onClick = valid + ' && ' + save + '; ' + valid  + '&& (' + reset + ');'
+    - var onClick = valid + ' && ' + save + '; ' + valid  + ' && (' + reset + ');'
 
     i.fa.fa-floppy-o(
         ng-show=valid
@@ -202,19 +295,30 @@ mixin table-save-button(valid, save, newItem)
     )
 
 //- Mixin for table remove button.
-mixin table-remove-button(items, tip)
+mixin table-remove-conditional-button(items, show, tip)
     i.tipField.fa.fa-remove(
+        ng-show='#{show}'
         ng-hide='field.edit'
         bs-tooltip='"#{tip}"'
         ng-click='#{items}.splice(#{items}.indexOf(model), 1)'
     )
 
+//- Mixin for table remove button.
+mixin table-remove-button(items, tip)
+    +table-remove-conditional-button(items, 'true', tip)
+
 //- Mixin for table feedback for unique validator.
 mixin table-feedback-unique(from, field, tip)
-    - var formField = form + '.' + field
-
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='!' + formField + '.$pristine && ' + formField + '.$error.igniteUnique'
+        ng-show=form + '.' + field + '.$error.igniteUnique'
+        bs-tooltip
+        data-title=tip
+    )
+
+//- Mixin for table feedback for valid host name / IP address.
+mixin table-feedback-ip-address(from, field, tip)
+    i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-show=form + '.' + field + '.$error.ipaddress'
         bs-tooltip
         data-title=tip
     )

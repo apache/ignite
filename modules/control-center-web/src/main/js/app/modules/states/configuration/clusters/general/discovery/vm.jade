@@ -14,60 +14,17 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem.discovery.Vm';
 - var addresses = model + '.addresses';
 - var form = 'discoveryVmAddresses';
 
-mixin addressField(field, save, newItem)
-    - var reset = (newItem ? 'group.add = []' : 'field.edit = false')
-    - var resetOnEnter = (newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)')
-    - var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
-
-    ignite-form-field-input-text(
-        data-name='#{field}'
-        data-ng-model='#{field}'
-        data-ng-required='true'
-        data-placeholder='IP address:port'
-        data-ipaddress='true'
-        data-ignite-unique='#{addresses}'
-        data-ignite-form-field-input-autofocus='true'
-        on-enter='#{valid} && (#{save}); #{valid} && #{resetOnEnter};'
-        on-escape='#{reset}'
-        ng-blur='#{valid} && (#{save}); #{resetOnBlur};'
-    )
-        block
-
-mixin addressSaveBtn(valid, save, reset)
-    i.fa.fa-floppy-o(
-        ng-show='#{valid}'
-        ng-click='#{valid} && #{save}; #{valid} && (#{reset})'
-        bs-tooltip
-        data-title='Click icon or press [Enter] to save item'
-    )
-
-mixin addressFeedbackUnique(field)
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='#{form}.#{field}.$error.igniteUnique'
-        bs-tooltip
-        data-title='Such IP address already exists!'
-    )
-
-mixin addressFeedbackValid(field)
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='#{form}.#{field}.$error.ipaddress'
-        bs-tooltip
-        data-title='Invalid IP address!'
-    )
-
-mixin addressFeedbackRequired(field)
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='!#{form}.#{field}.$pristine && #{form}.#{field}.$error.required'
-        bs-tooltip
-        data-title='IP address should not be empty!'
-    )
-
 .details-row
-    ignite-form-group(ng-model='#{addresses}' ng-form='discoveryVmAddresses')
+    ignite-form-group(ng-model=addresses ng-form=form)
+        - var uniqueTip = 'Such IP address already exists!'
+        - var ipAddressTip = 'Invalid IP address!'
+
         ignite-form-field-label
             | Addresses
         ignite-form-group-tooltip
@@ -89,40 +46,33 @@ mixin addressFeedbackRequired(field)
             - var field = 'edit'
             - var valid = form + '.' + field + '.$valid'
             - var save = addresses + '[$index] = ' + field
-            - var reset = 'field.edit = false'
 
-            ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal')
+            ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal' name='Address')
                 .indexField
-                    | {{ $index+1 }}) 
-                i.tipField.fa.fa-remove(
-                    ng-hide='field.edit'
-                    bs-tooltip='"Remove address"'
-                    ng-click='#{addresses}.splice(#{addresses}.indexOf(model), 1)'
-                )
+                    | {{ $index+1 }})
+                +table-remove-button(addresses, 'Remove address')
 
-                ignite-form-field-down(ng-if='!$last' ng-hide='field.edit' data-ng-model='model' data-models='#{addresses}')
-                ignite-form-field-up(ng-if='!$first' ng-hide='field.edit' data-ng-model='model' data-models='#{addresses}')
+                ignite-form-field-down(ng-if='!$last' ng-hide='field.edit' data-ng-model='model' data-models=addresses)
+                ignite-form-field-up(ng-if='!$first' ng-hide='field.edit' data-ng-model='model' data-models=addresses)
                 
                 span(ng-hide='field.edit')
                     a.labelFormField(ng-click='field.edit = true') {{ model }}
                 span(ng-if='field.edit' ng-init='#{field} = model')
-                    +addressField(field, save, false)
-                        +addressSaveBtn(valid, save, reset)
-                        +addressFeedbackUnique(field)
-                        +addressFeedbackValid(field)
-                        +addressFeedbackRequired(field)
-
-        - var field = 'new'
-        - var valid = form + '.' + field + '.$valid'
-        - var save = addresses + '.push(' + field + ')'
-        - var reset = 'group.add = []'
+                    +table-address-field(field, addresses, save, false)
+                        +table-save-button(valid, save, false)
+                        +table-feedback-unique(form, field, uniqueTip)
+                        +table-feedback-ip-address(form, field, ipAddressTip)
 
         .group-content(ng-repeat='field in group.add')
-            ignite-form-field(type='internal')
-                +addressField(field, save, true)
-                    +addressSaveBtn(valid, save, reset)
-                    +addressFeedbackUnique(field)
-                    +addressFeedbackValid(field)
-        
+            - var field = 'new'
+            - var valid = form + '.' + field + '.$valid'
+            - var save = addresses + '.push(' + field + ')'
+
+            ignite-form-field(type='internal' name='Address')
+                +table-address-field(field, addresses, save, true)
+                    +table-save-button(valid, save, true)
+                    +table-feedback-unique(form, field, uniqueTip)
+                    +table-feedback-ip-address(form, field, ipAddressTip)
+
         .group-content-empty(id='addresses' ng-if='!(#{addresses}.length) && !group.add.length')
                 | Not defined

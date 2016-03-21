@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../../../../app/helpers/jade/mixins.jade
+
 - var model = 'backupItem'
 
 form.panel.panel-default(name='events' novalidate)
@@ -27,29 +29,8 @@ form.panel.panel-default(name='events' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field
-                        ignite-form-field-label
-                            | Include type:
-                        ignite-form-field-tooltip
-                            | Array of event types, which will be recorded by GridEventStorageManager#record(Event)#[br]
-                            | Note, that either the include event types or the exclude event types can be established
-                        ignite-form-field-dropdown(
-                            data-id='includeEventTypes'
-                            data-name='includeEventTypes'
-                            data-options='eventGroups'
-                            data-multiple='true'
-                            data-ng-model='#{model}.includeEventTypes'
-                            data-placeholder='Choose recorded event types'
-                        )
-            ignite-ui-ace-tabs.col-sm-6
-                .preview-panel(ng-init='mode = false')
-                    .preview-legend
-                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
-                        | &nbsp;
-                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-master='backupItem' data-generator='clusterEvents' ng-model='$parent.data')
-                    .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-master='backupItem' data-generator='clusterEvents' ng-model='$parent.data')
-                    .preview-content-empty(ng-if='!data')
-                        label All Defaults
+                    +dropdown-multiple('Include type:', model + '.includeEventTypes', 'includeEventTypes', 'Choose recorded event types', '', 'eventGroups',
+                        'Array of event types, which will be recorded by GridEventStorageManager#record(Event)<br/>\
+                        Note, that either the include event types or the exclude event types can be established')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterEvents')
