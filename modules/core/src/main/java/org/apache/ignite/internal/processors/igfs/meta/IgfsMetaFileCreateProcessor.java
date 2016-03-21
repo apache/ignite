@@ -1,7 +1,15 @@
 package org.apache.ignite.internal.processors.igfs.meta;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -19,7 +27,7 @@ import java.util.Map;
  * File create processor.
  */
 public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, IgfsEntryInfo, IgfsEntryInfo>,
-    Externalizable {
+    Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -106,5 +114,34 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
         affKey = (IgniteUuid)in.readObject();
         lockId = (IgniteUuid)in.readObject();
         evictExclude = in.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
+
+        out.writeLong(createTime);
+        out.writeMap(props);
+        out.writeInt(blockSize);
+        BinaryUtils.writeIgniteUuid(out, affKey);
+        BinaryUtils.writeIgniteUuid(out, lockId);
+        out.writeBoolean(evictExclude);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
+        createTime = in.readLong();
+        props = in.readMap();
+        blockSize = in.readInt();
+        affKey = BinaryUtils.readIgniteUuid(in);
+        lockId = BinaryUtils.readIgniteUuid(in);
+        evictExclude = in.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgfsMetaFileCreateProcessor.class, this);
     }
 }

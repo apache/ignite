@@ -1,6 +1,13 @@
 package org.apache.ignite.internal.processors.igfs.meta;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
 import javax.cache.processor.EntryProcessor;
@@ -15,7 +22,7 @@ import java.io.ObjectOutput;
  * Update times entry processor.
  */
 public class IgfsMetaUpdateTimesProcessor implements EntryProcessor<IgniteUuid, IgfsEntryInfo, Void>,
-    Externalizable {
+    Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -64,5 +71,26 @@ public class IgfsMetaUpdateTimesProcessor implements EntryProcessor<IgniteUuid, 
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         accessTime = in.readLong();
         modificationTime = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
+
+        out.writeLong(accessTime);
+        out.writeLong(modificationTime);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
+        accessTime = in.readLong();
+        modificationTime = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgfsMetaUpdateTimesProcessor.class, this);
     }
 }

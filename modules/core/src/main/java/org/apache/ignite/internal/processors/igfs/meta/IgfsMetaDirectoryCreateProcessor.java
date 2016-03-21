@@ -1,8 +1,15 @@
 package org.apache.ignite.internal.processors.igfs.meta;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsListingEntry;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -20,7 +27,7 @@ import java.util.Map;
  * Directory create processor.
  */
 public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUuid, IgfsEntryInfo, IgfsEntryInfo>,
-    Externalizable {
+    Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -113,5 +120,34 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
             childName = U.readString(in);
             childEntry = (IgfsListingEntry)in.readObject();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
+
+        out.writeLong(createTime);
+        out.writeMap(props);
+        out.writeString(childName);
+
+        if (childName != null)
+            out.writeObject(childEntry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
+        createTime = in.readLong();
+        props = in.readMap();
+        childName = in.readString();
+
+        if (childName != null)
+            childEntry = in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgfsMetaDirectoryCreateProcessor.class, this);
     }
 }

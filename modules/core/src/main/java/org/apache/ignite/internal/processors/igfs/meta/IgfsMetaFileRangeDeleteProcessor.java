@@ -1,5 +1,11 @@
 package org.apache.ignite.internal.processors.igfs.meta;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
 import org.apache.ignite.internal.processors.igfs.IgfsFileMap;
@@ -18,7 +24,7 @@ import java.io.ObjectOutput;
  * Delete range processor.
  */
 public class IgfsMetaFileRangeDeleteProcessor implements EntryProcessor<IgniteUuid, IgfsEntryInfo, IgfsEntryInfo>,
-    Externalizable {
+    Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -65,6 +71,20 @@ public class IgfsMetaFileRangeDeleteProcessor implements EntryProcessor<IgniteUu
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         range = (IgfsFileAffinityRange)in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
+
+        out.writeObject(range);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
+        range = in.readObject();
     }
 
     /** {@inheritDoc} */
