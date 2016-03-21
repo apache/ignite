@@ -21,7 +21,6 @@ import java.util.Collection;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Update future for atomic cache.

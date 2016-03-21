@@ -178,8 +178,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -8980,11 +8978,11 @@ public abstract class IgniteUtils {
 
             assert drVer != null;
 
-            GridUnsafe.putInt(arr, off, drVer.topologyVersion());
+            GridUnsafe.putInt(arr, off, drVer.topologyVersionRaw());
 
             off += 4;
 
-            GridUnsafe.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
+            GridUnsafe.putInt(arr, off, drVer.nodeOrderRaw());
 
             off += 4;
 
@@ -8992,16 +8990,16 @@ public abstract class IgniteUtils {
 
             off += 8;
 
-            GridUnsafe.putLong(arr, off, drVer.order());
+            GridUnsafe.putLong(arr, off, drVer.orderRaw());
 
             off += 8;
         }
 
-        GridUnsafe.putInt(arr, off, ver.topologyVersion());
+        GridUnsafe.putInt(arr, off, ver.topologyVersionRaw());
 
         off += 4;
 
-        GridUnsafe.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
+        GridUnsafe.putInt(arr, off, ver.nodeOrderRaw());
 
         off += 4;
 
@@ -9009,7 +9007,7 @@ public abstract class IgniteUtils {
 
         off += 8;
 
-        GridUnsafe.putLong(arr, off, ver.order());
+        GridUnsafe.putLong(arr, off, ver.orderRaw());
 
         off += 8;
 

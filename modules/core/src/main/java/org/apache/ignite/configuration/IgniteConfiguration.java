@@ -202,6 +202,9 @@ public class IgniteConfiguration {
     /** Default value for cache sanity check enabled flag. */
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
+    /** Default value for affinity assignment mode. */
+    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
+
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
@@ -438,6 +441,9 @@ public class IgniteConfiguration {
     /** */
     private BinaryConfiguration binaryCfg;
 
+    /** */
+    private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -494,6 +500,7 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
+        lateAffAssignment = cfg.isLateAffinityAssignment();
         lifecycleBeans = cfg.getLifecycleBeans();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
@@ -2492,6 +2499,14 @@ public class IgniteConfiguration {
      */
     public void setPlatformConfiguration(PlatformConfiguration platformCfg) {
         this.platformCfg = platformCfg;
+    }
+
+    public boolean isLateAffinityAssignment() {
+        return lateAffAssignment;
+    }
+
+    public void setLateAffinityAssignment(boolean lateAffAssignment) {
+        this.lateAffAssignment = lateAffAssignment;
     }
 
     /** {@inheritDoc} */

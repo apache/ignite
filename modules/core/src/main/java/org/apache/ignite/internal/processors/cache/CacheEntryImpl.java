@@ -24,7 +24,6 @@ import java.io.ObjectOutput;
 import javax.cache.Cache;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  *

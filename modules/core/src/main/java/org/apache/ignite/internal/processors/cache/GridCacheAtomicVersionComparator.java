@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Atomic cache version comparator.
@@ -37,24 +36,31 @@ public class GridCacheAtomicVersionComparator {
         int otherTopVer = other.topologyVersion();
 
         if (topVer == otherTopVer) {
-            long globalTime = one.globalTime();
-            long otherGlobalTime = other.globalTime();
+            int minorTopVer = one.minorTopologyVersion();
+            int otherMinorTopVer = other.minorTopologyVersion();
 
-            if (globalTime == otherGlobalTime || ignoreTime) {
-                long locOrder = one.order();
-                long otherLocOrder = other.order();
+            if (minorTopVer == otherMinorTopVer) {
+                long globalTime = one.globalTime();
+                long otherGlobalTime = other.globalTime();
 
-                if (locOrder == otherLocOrder) {
-                    int nodeOrder = one.nodeOrder();
-                    int otherNodeOrder = other.nodeOrder();
+                if (globalTime == otherGlobalTime || ignoreTime) {
+                    long locOrder = one.order();
+                    long otherLocOrder = other.order();
 
-                    return nodeOrder == otherNodeOrder ? 0 : nodeOrder < otherNodeOrder ? -1 : 1;
+                    if (locOrder == otherLocOrder) {
+                        int nodeOrder = one.nodeOrder();
+                        int otherNodeOrder = other.nodeOrder();
+
+                        return nodeOrder == otherNodeOrder ? 0 : nodeOrder < otherNodeOrder ? -1 : 1;
+                    }
+                    else
+                        return locOrder > otherLocOrder ? 1 : -1;
                 }
                 else
-                    return locOrder > otherLocOrder ? 1 : -1;
+                    return globalTime > otherGlobalTime ? 1 : -1;
             }
             else
-                return globalTime > otherGlobalTime ? 1 : -1;
+                return minorTopVer > otherMinorTopVer ? 1 : -1;
         }
         else
             return topVer > otherTopVer ? 1 : -1;

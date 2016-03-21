@@ -23,9 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -72,10 +70,10 @@ public class GridCacheVersion implements CacheVersion, Externalizable {
      * @param dataCenterId Replication data center ID.
      */
     public GridCacheVersion(int topVer, long globalTime, long order, int nodeOrder, int dataCenterId) {
-        assert topVer >= 0;
-        assert order >= 0;
-        assert nodeOrder >= 0;
-        assert dataCenterId < 32 && dataCenterId >= 0;
+        assert topVer >= 0 : topVer;
+        assert order >= 0 : order;
+        assert nodeOrder >= 0 : nodeOrder;
+        assert dataCenterId < 32 && dataCenterId >= 0 : dataCenterId;
 
         if (nodeOrder > NODE_ORDER_MASK)
             throw new IllegalArgumentException("Node order overflow: " + nodeOrder);
@@ -104,8 +102,13 @@ public class GridCacheVersion implements CacheVersion, Externalizable {
     /**
      * @return Topology version plus number of seconds from the start time of the first grid node..
      */
-    public int topologyVersion() {
+    @Override public int topologyVersion() {
         return topVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int minorTopologyVersion() {
+        return 0;
     }
 
     /**
@@ -113,35 +116,45 @@ public class GridCacheVersion implements CacheVersion, Externalizable {
      *
      * @return Combined integer for node order and DR ID.
      */
-    public int nodeOrderAndDrIdRaw() {
+    @Override public int nodeOrderRaw() {
         return nodeOrderDrId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int topologyVersionRaw() {
+        return topVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long orderRaw() {
+        return order;
     }
 
     /**
      * @return Adjusted time.
      */
-    public long globalTime() {
+    @Override public long globalTime() {
         return globalTime;
     }
 
     /**
      * @return Version order.
      */
-    public long order() {
+    @Override public long order() {
         return order;
     }
 
     /**
      * @return Node order on which this version was assigned.
      */
-    public int nodeOrder() {
+    @Override public int nodeOrder() {
         return nodeOrderDrId & NODE_ORDER_MASK;
     }
 
     /**
      * @return DR mask.
      */
-    public byte dataCenterId() {
+    @Override public byte dataCenterId() {
         return (byte)((nodeOrderDrId >> DR_ID_SHIFT) & DR_ID_MASK);
     }
 
@@ -153,40 +166,8 @@ public class GridCacheVersion implements CacheVersion, Externalizable {
     /**
      * @return Conflict version.
      */
-    public CacheVersion conflictVersion() {
+    @Override public CacheVersion conflictVersion() {
         return this; // Use current version.
-    }
-
-    /**
-     * @param ver Version.
-     * @return {@code True} if this version is greater.
-     */
-    public boolean isGreater(GridCacheVersion ver) {
-        return compareTo(ver) > 0;
-    }
-
-    /**
-     * @param ver Version.
-     * @return {@code True} if this version is greater or equal.
-     */
-    public boolean isGreaterEqual(GridCacheVersion ver) {
-        return compareTo(ver) >= 0;
-    }
-
-    /**
-     * @param ver Version.
-     * @return {@code True} if this version is less.
-     */
-    public boolean isLess(GridCacheVersion ver) {
-        return compareTo(ver) < 0;
-    }
-
-    /**
-     * @param ver Version.
-     * @return {@code True} if this version is less or equal.
-     */
-    public boolean isLessEqual(GridCacheVersion ver) {
-        return compareTo(ver) <= 0;
     }
 
     /**
@@ -357,6 +338,9 @@ public class GridCacheVersion implements CacheVersion, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheVersion.class, this);
+        return "GridCacheVersion [topVer=" + topologyVersion() +
+            ", time=" + globalTime() +
+            ", order=" + order() +
+            ", nodeOrder=" + nodeOrder() + ']';
     }
 }

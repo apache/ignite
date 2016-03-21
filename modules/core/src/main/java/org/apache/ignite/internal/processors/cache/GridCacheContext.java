@@ -126,7 +126,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     };
 
     /** Empty cache version array. */
-    private static final GridCacheVersion[] EMPTY_VERSION = new GridCacheVersion[0];
+    private static final CacheVersion[] EMPTY_VERSION = new CacheVersion[0];
 
     /** Kernal context. */
     private GridKernalContext ctx;
@@ -1133,7 +1133,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Empty cache version array.
      */
-    public GridCacheVersion[] emptyVersion() {
+    public CacheVersion[] emptyVersion() {
         return EMPTY_VERSION;
     }
 

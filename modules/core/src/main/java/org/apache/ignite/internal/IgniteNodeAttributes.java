@@ -151,7 +151,7 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_BINARY_CONFIGURATION = ATTR_PREFIX + ".binary.config";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_DELAY_AFFINITY_ASSIGN = ATTR_PREFIX + ".cache.delayAffinity";
+    public static final String ATTR_LATE_AFFINITY_ASSIGNMENT = ATTR_PREFIX + ".cache.lateAffinity";
 
     /**
      * Enforces singleton.

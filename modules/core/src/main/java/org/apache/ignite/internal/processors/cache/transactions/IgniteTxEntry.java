@@ -70,14 +70,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    // TODO: GG-10885.
-
-    /** Dummy version for non-existing entry read in SERIALIZABLE transaction. */
-    public static final GridCacheVersion SER_READ_EMPTY_ENTRY_VER = new GridCacheVersion(0, 0, 0, 0);
-
-    /** Dummy version for any existing entry read in SERIALIZABLE transaction. */
-    public static final GridCacheVersion SER_READ_NOT_EMPTY_VER = new GridCacheVersion(0, 0, 0, 1);
-
     /** */
     public static final GridCacheVersion GET_ENTRY_INVALID_VER_UPDATED = new GridCacheVersion(0, 0, 0, 2);
 

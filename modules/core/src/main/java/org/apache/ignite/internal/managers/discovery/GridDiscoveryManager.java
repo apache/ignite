@@ -125,7 +125,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DELAY_AFFINITY_ASSIGN;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
@@ -1004,7 +1004,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         Boolean locMarshUseDfltSuid = locNode.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
         boolean locMarshUseDfltSuidBool = locMarshUseDfltSuid == null ? true : locMarshUseDfltSuid;
 
-        boolean locDelayAssign = locNode.attribute(ATTR_DELAY_AFFINITY_ASSIGN);
+        boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
 
         for (ClusterNode n : nodes) {
             int rmtJvmMajVer = nodeJavaMajorVersion(n);
@@ -1068,7 +1068,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             boolean rmtDelayAssign;
 
             if (n.version().compareTo(CacheAffinitySharedManager.DELAY_AFF_ASSIGN_SINCE) >= 0)
-                rmtDelayAssign = n.attribute(ATTR_DELAY_AFFINITY_ASSIGN);
+                rmtDelayAssign = n.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
             else
                 rmtDelayAssign = false;
 

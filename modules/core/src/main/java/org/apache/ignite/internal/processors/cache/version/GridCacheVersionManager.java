@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.version;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -66,7 +65,13 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     private CacheVersion ISOLATED_STREAMER_VER;
 
     /** */
-    private boolean delayAffAssign = true;
+    private boolean lateAffAssign;
+
+    /** Dummy version for non-existing entry read in SERIALIZABLE transaction. */
+    private CacheVersion SER_READ_EMPTY_ENTRY_VER;
+
+    /** Dummy version for any existing entry read in SERIALIZABLE transaction. */
+    private CacheVersion SER_READ_NOT_EMPTY_VER;
 
     /** */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -84,9 +89,36 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
+        lateAffAssign = cctx.kernalContext().config().isLateAffinityAssignment();
+
+        if (lateAffAssign) {
+            SER_READ_EMPTY_ENTRY_VER = new CacheVersionImpl(0, 0, 0, 0);
+            SER_READ_NOT_EMPTY_VER = new CacheVersionImpl(0, 0, 0, 1);
+
+            last = new CacheVersionImpl(0, 0, 0, order.get(), 0, dataCenterId);
+        }
+        else {
+            SER_READ_EMPTY_ENTRY_VER = new GridCacheVersion(0, 0, 0, 0);
+            SER_READ_NOT_EMPTY_VER = new GridCacheVersion(0, 0, 0, 1);
+
+            last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
+        }
 
         cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_METRICS_UPDATED);
+    }
+
+    /**
+     * @return Dummy version for non-existing entry read in SERIALIZABLE transaction.
+     */
+    public CacheVersion readEmptyEntryVersion() {
+        return SER_READ_EMPTY_ENTRY_VER;
+    }
+
+    /**
+     * @return Dummy version for any existing entry read in SERIALIZABLE transaction.
+     */
+    public CacheVersion readNotEmptyEntryVersion() {
+        return SER_READ_NOT_EMPTY_VER;
     }
 
     /** {@inheritDoc} */
@@ -120,8 +152,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * TODO: GG-10885.
-     *
      * @param nodeId Node ID.
      * @param ver Remote version.
      */
@@ -185,7 +215,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     /**
      * @param arr Array.
      * @param off Offset.
-     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
+     * @param verEx If {@code true} reads version with conflict version.
      * @return Version.
      */
     public CacheVersion readVersion(byte[] arr, long off, boolean verEx) {
@@ -228,17 +258,39 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         return ver;
     }
 
+    public CacheVersion version(int topVerRaw, long globalTime, long orderRaw, int nodeOrder, int dataCenterId) {
+        if (lateAffAssign) {
+            return new CacheVersionImpl(topVerRaw,
+                globalTime,
+                orderRaw,
+                nodeOrder,
+                dataCenterId);
+        }
+        else {
+            return new GridCacheVersion(topVerRaw,
+                globalTime,
+                orderRaw,
+                nodeOrder,
+                dataCenterId);
+        }
+    }
+
     /**
      * @param ver Version.
      * @param conflictVer Conflict version.
-     * @return
+     * @return Version with conflict version.
      */
     public CacheVersion versionEx(CacheVersion ver, CacheVersion conflictVer) {
         return createVersionEx(ver, conflictVer);
     }
 
+    /**
+     * @param ver Version.
+     * @param conflictVer Conflict version.
+     * @return Version with conflict version.
+     */
     private CacheVersion createVersionEx(CacheVersion ver, CacheVersion conflictVer) {
-        if (delayAffAssign)
+        if (lateAffAssign)
             return new CacheVersionImplEx((CacheVersionImpl)ver, (CacheVersionImpl)conflictVer);
         else {
             return new GridCacheVersionEx(ver.topologyVersion(),
@@ -255,7 +307,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
         long globalTime,
         long order,
         CacheVersion conflictVer) {
-        if (delayAffAssign) {
+        if (lateAffAssign) {
             return new CacheVersionImplEx(topVer,
                 nodeOrderDrId,
                 globalTime,
@@ -272,7 +324,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     }
 
     private CacheVersion createVersionFromRaw(int topVer, int nodeOrderDrId, long globalTime, long order) {
-        if (delayAffAssign)
+        if (lateAffAssign)
             return new CacheVersionImpl(topVer, nodeOrderDrId, globalTime, order);
         else
             return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
@@ -293,7 +345,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
             topVer += (gridStartTime - TOP_VER_BASE_TIME) / 1000;
 
-            ISOLATED_STREAMER_VER = delayAffAssign ? new CacheVersionImpl((int)topVer, 0, 0, 0, 1, dataCenterId) :
+            ISOLATED_STREAMER_VER = lateAffAssign ? new CacheVersionImpl((int)topVer, 0, 0, 0, 1, dataCenterId) :
                 new GridCacheVersion((int)topVer, 0, 0, 1, dataCenterId);
         }
 
@@ -358,7 +410,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      */
     public CacheVersion nextForLoad(CacheVersion ver) {
         long topVer = ver.topologyVersion();
-        int minorTopVer = delayAffAssign ? ((CacheVersionImpl)ver).minorTopologyVersion() : 0;
+        int minorTopVer = ver.minorTopologyVersion();
 
         return next(topVer, minorTopVer, false, true, dataCenterId);
     }
@@ -371,7 +423,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      */
     public CacheVersion next(CacheVersion ver) {
         long topVer = ver.topologyVersion();
-        int minorTopVer = delayAffAssign ? ((CacheVersionImpl)ver).minorTopologyVersion() : 0;
+
+        int minorTopVer = ver.minorTopologyVersion();
 
         return next(topVer, minorTopVer, false, false, dataCenterId);
     }
@@ -411,7 +464,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
         CacheVersion next;
 
-        if (delayAffAssign) {
+        if (lateAffAssign) {
             next = new CacheVersionImpl(
                 (int)topVer,
                 minorTopVer,

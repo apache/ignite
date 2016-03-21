@@ -163,4 +163,13 @@ public class GridCacheVersionEx extends GridCacheVersion {
 
         drVer.writeExternal(out);
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "GridCacheVersionEx [topVer=" + topologyVersion() +
+            ", time=" + globalTime() +
+            ", order=" + order() +
+            ", nodeOrder=" + nodeOrder() +
+            ", drVer=" + drVer + ']';
+    }
 }

@@ -18,10 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
-
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -216,7 +213,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
      */
     public byte[] marshal() {
         // Ttl + expire time + Ex Version flag + Version.
-        int size = 16 + 1 + ((ver instanceof GridCacheVersionEx) ? VERSION_EX_SIZE : VERSION_SIZE);
+        int size = 16 + 1 + (ver.hasConflictVersion() ? VERSION_EX_SIZE : VERSION_SIZE);
 
         size += 1; // Plain byte array flag.
 

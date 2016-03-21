@@ -79,9 +79,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -682,16 +680,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAllConflict(Map<KeyCacheObject, CacheVersion> conflictMap)
+    @Override public void removeAllConflict(Map<KeyCacheObject, ? extends CacheVersion> conflictMap)
         throws IgniteCheckedException {
         removeAllConflictAsync(conflictMap).get();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, CacheVersion> conflictMap) {
+    @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, ? extends CacheVersion> conflictMap) {
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
-        return removeAllAsync0(null, conflictMap, false, false, null);
+        return removeAllAsync0(null, (Map)conflictMap, false, false, null);
     }
 
     /**
@@ -2028,7 +2026,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 long newConflictTtl = req.conflictTtl(i);
                 long newConflictExpireTime = req.conflictExpireTime(i);
 
-                assert !(newConflictVer instanceof GridCacheVersionEx) : newConflictVer;
+                assert newConflictVer == null || !newConflictVer.hasConflictVersion() : newConflictVer;
 
                 boolean primary = !req.fastMap() || ctx.affinity().primary(ctx.localNode(), entry.key(),
                     req.topologyVersion());

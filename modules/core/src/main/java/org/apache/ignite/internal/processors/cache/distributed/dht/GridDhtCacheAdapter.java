@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -513,8 +512,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             ctx.kernalContext().resource().injectGeneric(p);
 
         try {
-            ctx.store().loadCache(new CI3<KeyCacheObject, Object, GridCacheVersion>() {
-                @Override public void apply(KeyCacheObject key, Object val, @Nullable GridCacheVersion ver) {
+            ctx.store().loadCache(new CI3<KeyCacheObject, Object, CacheVersion>() {
+                @Override public void apply(KeyCacheObject key, Object val, @Nullable CacheVersion ver) {
                     assert ver == null;
 
                     loadEntry(key, val, ver0, p, topVer, replicate, plc);
@@ -658,7 +657,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param canRemap Can remap flag.
      * @return Get future.
      */
-    IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> getDhtAllAsync(
+    IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, CacheVersion>>> getDhtAllAsync(
         Collection<KeyCacheObject> keys,
         boolean readThrough,
         @Nullable UUID subjId,

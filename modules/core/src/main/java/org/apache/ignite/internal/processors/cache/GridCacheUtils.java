@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,14 +26,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -72,8 +68,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -101,7 +95,6 @@ import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -167,14 +160,6 @@ public class GridCacheUtils {
         new C1<GridDhtLocalPartition, GridDhtPartitionState>() {
             @Override public GridDhtPartitionState apply(GridDhtLocalPartition p) {
                 return p.state();
-            }
-        };
-
-    /** */
-    private static final IgniteClosure<Integer, GridCacheVersion[]> VER_ARR_FACTORY =
-        new C1<Integer, GridCacheVersion[]>() {
-            @Override public GridCacheVersion[] apply(Integer size) {
-                return new GridCacheVersion[size];
             }
         };
 
@@ -588,8 +573,8 @@ public class GridCacheUtils {
      * @return Closure which converts transaction entry xid to XID version.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<IgniteInternalTx, GridCacheVersion> tx2xidVersion() {
-        return (IgniteClosure<IgniteInternalTx, GridCacheVersion>)tx2xidVer;
+    public static <K, V> IgniteClosure<IgniteInternalTx, CacheVersion> tx2xidVersion() {
+        return (IgniteClosure<IgniteInternalTx, CacheVersion>)tx2xidVer;
     }
 
     /**
@@ -1018,13 +1003,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return Version array factory.
-     */
-    public static IgniteClosure<Integer, GridCacheVersion[]> versionArrayFactory() {
-        return VER_ARR_FACTORY;
-    }
-
-    /**
      * Converts cache version to byte array.
      *
      * @param ver Version.
@@ -1038,7 +1016,7 @@ public class GridCacheUtils {
         U.intToBytes(ver.topologyVersion(), bytes, 0);
         U.longToBytes(ver.globalTime(), bytes, 4);
         U.longToBytes(ver.order(), bytes, 12);
-        U.intToBytes(ver.nodeOrderAndDrIdRaw(), bytes, 20);
+        U.intToBytes(ver.nodeOrderRaw(), bytes, 20);
 
         return bytes;
     }

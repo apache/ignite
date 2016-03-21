@@ -1648,7 +1648,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param drMap DR map.
      * @throws IgniteCheckedException If remove failed.
      */
-    public void removeAllConflict(Map<KeyCacheObject, CacheVersion> drMap) throws IgniteCheckedException;
+    public void removeAllConflict(Map<KeyCacheObject, ? extends CacheVersion> drMap) throws IgniteCheckedException;
 
     /**
      * Removes DR data asynchronously.
@@ -1657,7 +1657,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future.
      * @throws IgniteCheckedException If remove failed.
      */
-    public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, CacheVersion> drMap) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, ? extends CacheVersion> drMap) throws IgniteCheckedException;
 
     /**
      * Asynchronously stores given key-value pair in cache only if only if the previous value is equal to the

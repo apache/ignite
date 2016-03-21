@@ -24,7 +24,6 @@ import java.io.ObjectOutput;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.GET_ENTRY_INVALID_VER_AFTER_GET;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.GET_ENTRY_INVALID_VER_UPDATED;
@@ -86,7 +85,7 @@ public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements Cach
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        ver = (GridCacheVersion)in.readObject();
+        ver = (CacheVersion)in.readObject();
     }
 
     /** {@inheritDoc} */

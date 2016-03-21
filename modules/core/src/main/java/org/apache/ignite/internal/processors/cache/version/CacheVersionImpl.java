@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -35,16 +36,26 @@ public class CacheVersionImpl implements CacheVersion {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Topology version. */
+    /** */
+    public static final long ORDER_MASK = 0x00_FF_FF_FF_FF_FF_FF_FFL;
+
+    /** */
+    public static final int TOP_VER_MASK = 0x00_FF_FF_FF;
+
+    /** Topology version and first minor topology version byte. */
+    @GridToStringInclude
     protected int topVer;
 
     /** Node order (used as global order) and DR ID. */
+    @GridToStringInclude
     protected int nodeOrderDrId;
 
     /** Globally adjusted time. */
+    @GridToStringInclude
     protected long globalTime;
 
-    /** Order. */
+    /** Order and second minor topology version byte. */
+    @GridToStringInclude
     protected long order;
 
     /**
@@ -54,22 +65,51 @@ public class CacheVersionImpl implements CacheVersion {
         // No-op.
     }
 
+    /**
+     * @param topVer Topology version plus number of seconds from the start time of the first grid node.
+     * @param minorTopVer Minor topology version.
+     * @param globalTime Globally adjusted time.
+     * @param order Version order.
+     * @param nodeOrder Node order.
+     * @param dataCenterId Replication data center ID.
+     */
     public CacheVersionImpl(int topVer, int minorTopVer, long globalTime, long order, int nodeOrder, int dataCenterId) {
-        assert topVer >= 0;
-        assert order >= 0;
-        assert nodeOrder >= 0;
-        assert dataCenterId < 32 && dataCenterId >= 0;
+        assert topVer >= 0 : topVer;
+        assert minorTopVer >= 0 : minorTopVer;
+        assert order >= 0 : order;
+        assert nodeOrder >= 0 : nodeOrder;
+        assert dataCenterId < 32 && dataCenterId >= 0 : dataCenterId;
 
         if (nodeOrder > GridCacheVersion.NODE_ORDER_MASK)
             throw new IllegalArgumentException("Node order overflow: " + nodeOrder);
 
-        this.topVer = topVer;
         this.globalTime = globalTime;
-        this.order = order;
+        this.topVer = topVer | (minorTopVer << 24);
+        this.order = ((minorTopVer & 0xFF00L) << 48) | order;
 
         nodeOrderDrId = nodeOrder | (dataCenterId << GridCacheVersion.DR_ID_SHIFT);
     }
 
+    /**
+     * @param topVerRaw Raw topology version field.
+     * @param globalTime Raw time field.
+     * @param orderRaw Raw order field.
+     * @param nodeOrder Node order.
+     * @param dataCenterId Replication data center ID.
+     */
+    public CacheVersionImpl(int topVerRaw, long globalTime, long orderRaw, int nodeOrder, int dataCenterId) {
+        this.globalTime = globalTime;
+        topVer = topVerRaw;
+        order = orderRaw;
+        nodeOrderDrId = nodeOrder | (dataCenterId << GridCacheVersion.DR_ID_SHIFT);
+    }
+
+    /**
+     * @param topVer Raw topology version field.
+     * @param nodeOrderDrId Raw nodeOrderDrId field.
+     * @param globalTime Raw time field.
+     * @param order Raw order field.
+     */
     public CacheVersionImpl(int topVer, int nodeOrderDrId, long globalTime, long order) {
         this.topVer = topVer;
         this.nodeOrderDrId = nodeOrderDrId;
@@ -77,21 +117,32 @@ public class CacheVersionImpl implements CacheVersion {
         this.order = order;
     }
 
-    /**
-     * @return Topology minor version.
-     */
-    public int minorTopologyVersion() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int minorTopologyVersion() {
+        int low = topVer >>> 24;
+        int high = ((int)(order >>> 48)) & 0xFF00;
+
+        return high | low;
     }
 
     /** {@inheritDoc} */
     @Override public int topologyVersion() {
+        return topVer & TOP_VER_MASK;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int nodeOrderRaw() {
+        return nodeOrderDrId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int topologyVersionRaw() {
         return topVer;
     }
 
     /** {@inheritDoc} */
-    @Override public int nodeOrderAndDrIdRaw() {
-        return nodeOrderDrId;
+    @Override public long orderRaw() {
+        return order;
     }
 
     /** {@inheritDoc} */
@@ -101,7 +152,7 @@ public class CacheVersionImpl implements CacheVersion {
 
     /** {@inheritDoc} */
     @Override public long order() {
-        return order;
+        return order & ORDER_MASK;
     }
 
     /** {@inheritDoc} */
@@ -138,7 +189,7 @@ public class CacheVersionImpl implements CacheVersion {
         if (res != 0)
             return res;
 
-        res = Integer.compare(minorTopologyVersion(), ((CacheVersionImpl)other).minorTopologyVersion());
+        res = Integer.compare(minorTopologyVersion(), other.minorTopologyVersion());
 
         if (res != 0)
             return res;
@@ -294,6 +345,10 @@ public class CacheVersionImpl implements CacheVersion {
 
     /** {@inheritDoc} */
     public String toString() {
-        return S.toString(CacheVersionImpl.class, this);
+        return "CacheVersionImpl [topVer=" + topologyVersion() +
+            ", minorTopVer=" + minorTopologyVersion() +
+            ", time=" + globalTime() +
+            ", order=" + order() +
+            ", nodeOrder=" + nodeOrder() + ']';
     }
 }

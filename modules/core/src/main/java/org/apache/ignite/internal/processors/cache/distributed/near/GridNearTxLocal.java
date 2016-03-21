@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -494,12 +493,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             }
 
             if (skipVals && v == Boolean.FALSE)
-                c.apply(key, null, IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER);
+                c.apply(key, null, cctx.versions().readEmptyEntryVersion());
             else
                 c.apply(key, v, ver);
         }
         else
-            c.apply(key, null, IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER);
+            c.apply(key, null, cctx.versions().readEmptyEntryVersion());
     }
 
     /** {@inheritDoc} */

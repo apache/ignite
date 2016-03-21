@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -109,7 +108,7 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
      * @throws IgniteCheckedException If data loading failed.
      */
     public void localStoreLoadAll(@Nullable IgniteInternalTx tx, Collection<? extends KeyCacheObject> keys,
-        final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> vis) throws IgniteCheckedException;
+        final GridInClosure3<KeyCacheObject, Object, CacheVersion> vis) throws IgniteCheckedException;
 
     /**
      * Loads data from persistent store.
@@ -119,7 +118,7 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
      * @return {@code True} if there is a persistent storage.
      * @throws IgniteCheckedException If data loading failed.
      */
-    public boolean loadCache(final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> vis, Object[] args)
+    public boolean loadCache(final GridInClosure3<KeyCacheObject, Object, CacheVersion> vis, Object[] args)
         throws IgniteCheckedException;
 
     /**

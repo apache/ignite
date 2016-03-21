@@ -137,7 +137,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DELAY_AFFINITY_ASSIGN;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
@@ -3179,7 +3179,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 Boolean rmtMarshUseDfltSuid = node.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
                 boolean rmtMarshUseDfltSuidBool = rmtMarshUseDfltSuid == null ? true : rmtMarshUseDfltSuid;
 
-                boolean locDelayAssign = locNode.attribute(ATTR_DELAY_AFFINITY_ASSIGN);
+                boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
 
                 if (locMarshUseDfltSuidBool != rmtMarshUseDfltSuidBool) {
                     String errMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
@@ -3240,7 +3240,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 boolean rmtDelayAssign;
 
                 if (node.version().compareTo(CacheAffinitySharedManager.DELAY_AFF_ASSIGN_SINCE) >= 0)
-                    rmtDelayAssign = node.attribute(ATTR_DELAY_AFFINITY_ASSIGN);
+                    rmtDelayAssign = node.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
                 else
                     rmtDelayAssign = false;
 

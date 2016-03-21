@@ -32,11 +32,9 @@ public interface CacheVersion extends Comparable<CacheVersion>, Message, Externa
     public int topologyVersion();
 
     /**
-     * Gets combined node order and DR ID.
-     *
-     * @return Combined integer for node order and DR ID.
+     * @return Minor topology version.
      */
-    public int nodeOrderAndDrIdRaw();
+    public int minorTopologyVersion();
 
     /**
      * @return Adjusted time.
@@ -59,17 +57,26 @@ public interface CacheVersion extends Comparable<CacheVersion>, Message, Externa
     public byte dataCenterId();
 
     /**
-     * @return Conflict version.
-     */
-    public CacheVersion conflictVersion();
-
-    /**
      * @return {@code True} if has conflict version.
      */
     public boolean hasConflictVersion();
 
     /**
+     * @return Conflict version.
+     */
+    public CacheVersion conflictVersion();
+
+    /**
      * @return Version represented as {@code GridUuid}
      */
     public IgniteUuid asGridUuid();
+
+    /**
+     * @return Combined integer for node order and DR ID.
+     */
+    public int nodeOrderRaw();
+
+    public int topologyVersionRaw();
+
+    public long orderRaw();
 }

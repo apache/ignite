@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
@@ -392,7 +391,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 txFut.markInitialized();
         }
 
-        IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> fut;
+        IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, CacheVersion>>> fut;
 
         if (txFut == null || txFut.isDone()) {
             if (tx == null) {
@@ -421,8 +420,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             // transactions to complete.
             fut = new GridEmbeddedFuture<>(
                 txFut,
-                new C2<Boolean, Exception, IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>>>() {
-                    @Override public IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>> apply(Boolean b, Exception e) {
+                new C2<Boolean, Exception, IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, CacheVersion>>>>() {
+                    @Override public IgniteInternalFuture<Map<KeyCacheObject, T2<CacheObject, CacheVersion>>> apply(Boolean b, Exception e) {
                         if (e != null)
                             throw new GridClosureException(e);
 
@@ -458,9 +457,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         }
 
         return new GridEmbeddedFuture<>(
-            new C2<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>, Exception, Collection<GridCacheEntryInfo>>() {
+            new C2<Map<KeyCacheObject, T2<CacheObject, CacheVersion>>, Exception, Collection<GridCacheEntryInfo>>() {
                 @Override public Collection<GridCacheEntryInfo> apply(
-                    Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map, Exception e
+                    Map<KeyCacheObject, T2<CacheObject, CacheVersion>> map, Exception e
                 ) {
                     if (e != null) {
                         onDone(e);
@@ -478,14 +477,14 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param map Map to convert.
      * @return List of infos.
      */
-    private Collection<GridCacheEntryInfo> toEntryInfos(Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map) {
+    private Collection<GridCacheEntryInfo> toEntryInfos(Map<KeyCacheObject, T2<CacheObject, CacheVersion>> map) {
         if (map.isEmpty())
             return Collections.emptyList();
 
         Collection<GridCacheEntryInfo> infos = new ArrayList<>(map.size());
 
-        for (Map.Entry<KeyCacheObject, T2<CacheObject, GridCacheVersion>> entry : map.entrySet()) {
-            T2<CacheObject, GridCacheVersion> val = entry.getValue();
+        for (Map.Entry<KeyCacheObject, T2<CacheObject, CacheVersion>> entry : map.entrySet()) {
+            T2<CacheObject, CacheVersion> val = entry.getValue();
 
             assert val != null;
 

@@ -31,10 +31,17 @@ public class CacheVersionImplEx extends CacheVersionImpl {
     /** DR version. */
     private CacheVersionImpl drVer;
 
+    /**
+     *
+     */
     public CacheVersionImplEx() {
         // No-op.
     }
 
+    /**
+     * @param ver Version.
+     * @param drVer DR version.
+     */
     public CacheVersionImplEx(CacheVersionImpl ver,  CacheVersionImpl drVer) {
         super(ver.topVer, ver.nodeOrderDrId, ver.globalTime, ver.order);
 
@@ -43,6 +50,13 @@ public class CacheVersionImplEx extends CacheVersionImpl {
         this.drVer = drVer;
     }
 
+    /**
+     * @param topVer Raw topology version field.
+     * @param nodeOrderDrId Raw nodeOrderDrId field.
+     * @param globalTime Raw time field.
+     * @param order Raw order field.
+     * @param drVer DR version.
+     */
     public CacheVersionImplEx(int topVer, int nodeOrderDrId, long globalTime, long order, CacheVersionImpl drVer) {
         super(topVer, nodeOrderDrId, globalTime, order);
 
@@ -51,20 +65,23 @@ public class CacheVersionImplEx extends CacheVersionImpl {
         this.drVer = drVer;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean hasConflictVersion() {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public CacheVersion conflictVersion() {
         return drVer;
     }
 
+    /** {@inheritDoc} */
     @Override public byte directType() {
         return 104;
     }
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
         drVer = new CacheVersionImpl();
@@ -72,10 +89,20 @@ public class CacheVersionImplEx extends CacheVersionImpl {
         drVer.readExternal(in);
     }
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
         drVer.writeExternal(out);
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return "CacheVersionImplEx [topVer=" + topologyVersion() +
+            ", minorTopVer=" + minorTopologyVersion() +
+            ", time=" + globalTime() +
+            ", order=" + order() +
+            ", nodeOrder=" + nodeOrder() +
+            ", drVer=" + drVer + ']';
     }
 }

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Committed transaction information. Contains recovery writes that will be used to set commit values
  * in case if originating node crashes.
  */
+@Deprecated
 public class GridCacheCommittedTxInfo implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -101,7 +102,7 @@ public class GridCacheCommittedTxInfo implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        originatingTxId = new GridCacheVersion(); // TODO GG-10885.
+        originatingTxId = new GridCacheVersion();
 
         originatingTxId.readExternal(in);
 

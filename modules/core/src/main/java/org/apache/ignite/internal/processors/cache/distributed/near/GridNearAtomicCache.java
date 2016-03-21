@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.CI2;
@@ -651,13 +650,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAllConflict(Map<KeyCacheObject, CacheVersion> drMap)
+    @Override public void removeAllConflict(Map<KeyCacheObject, ? extends CacheVersion> drMap)
         throws IgniteCheckedException {
         dht.removeAllConflict(drMap);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, CacheVersion> drMap)
+    @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, ? extends CacheVersion> drMap)
         throws IgniteCheckedException {
         return dht.removeAllConflictAsync(drMap);
     }

@@ -3016,9 +3016,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (!serReadVer.equals(ver)) {
             boolean empty = isStartVersion() || deletedUnlocked();
 
-            if (serReadVer.equals(IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER))
+            if (serReadVer.equals(cctx.versions().readEmptyEntryVersion()))
                 return empty;
-            else if (serReadVer.equals(IgniteTxEntry.SER_READ_NOT_EMPTY_VER))
+            else if (serReadVer.equals(cctx.versions().readNotEmptyEntryVersion()))
                 return !empty;
 
             return false;
