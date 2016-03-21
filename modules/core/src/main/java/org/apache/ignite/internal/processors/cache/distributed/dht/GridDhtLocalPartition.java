@@ -290,9 +290,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         assert entry.obsolete() : entry;
 
         // Make sure to remove exactly this entry.
-        synchronized (entry) {
             map.removeEntry(entry);
-        }
 
         // Attempt to evict.
         tryEvict();
