@@ -40,6 +40,15 @@ namespace ignite
         {
             friend class Environment;
         public:
+            /** ODBC communication protocol version. */
+            enum { PROTOCOL_VERSION = 2 };
+
+            /**
+             * Apache Ignite version when the current ODBC communication
+             * protocol version has been introduced.
+             */
+            static const std::string PROTOCOL_VERSION_SINCE;
+
             /**
              * Destructor.
              */

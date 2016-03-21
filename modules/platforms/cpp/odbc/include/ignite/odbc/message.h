@@ -454,6 +454,24 @@ namespace ignite
                 return accepted;
             }
 
+            /**
+             * Get host Apache Ignite version when protocol version has been introduced.
+             * @return Host Apache Ignite version when protocol version has been introduced.
+             */
+            const std::string& ProtoVerSince() const
+            {
+                return protoVerSince;
+            }
+
+            /**
+             * Current host Apache Ignite version.
+             * @return Current host Apache Ignite version.
+             */
+            const std::string& CurrentVer() const
+            {
+                return currentVer;
+            }
+
         private:
             /**
              * Read response using provided reader.
@@ -462,10 +480,18 @@ namespace ignite
             virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
             {
                 accepted = reader.ReadBool();
+                utility::ReadString(reader, protoVerSince);
+                utility::ReadString(reader, currentVer);
             }
 
             /** Handshake accepted. */
             bool accepted;
+
+            /** Host Apache Ignite version when protocol version has been introduced. */
+            std::string protoVerSince;
+
+            /** Current host Apache Ignite version. */
+            std::string currentVer;
         };
 
         /**

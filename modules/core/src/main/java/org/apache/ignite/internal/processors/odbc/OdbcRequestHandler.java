@@ -22,6 +22,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -110,9 +111,15 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
-        boolean accepted = req.version() == OdbcMessageParser.PROTOCOL_VERSION;
+        long lattestVersion = OdbcMessageParser.PROTOCOL_VERSION;
+        boolean accepted = req.version() == lattestVersion;
 
-        return new OdbcResponse(accepted);
+        String lattestVersionSince = OdbcMessageParser.PROTOCOL_VERSION_SINCE;
+        String currentVersion = IgniteVersionUtils.VER_STR;
+
+        OdbcHandshakeResult res = new OdbcHandshakeResult(accepted, lattestVersionSince, currentVersion);
+
+        return new OdbcResponse(res);
     }
 
     /**

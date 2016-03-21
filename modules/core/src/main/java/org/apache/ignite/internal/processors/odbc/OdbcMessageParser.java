@@ -34,8 +34,11 @@ import java.util.Collection;
  * ODBC message parser.
  */
 public class OdbcMessageParser {
-    /** Current ODBC communication protocol version */
+    /** Current ODBC communication protocol version. */
     public static final long PROTOCOL_VERSION = 1;
+
+    /** Apache Ignite version when ODBC communication protocol version has been introduced. */
+    public static final String PROTOCOL_VERSION_SINCE = "1.6.0";
 
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
@@ -186,6 +189,8 @@ public class OdbcMessageParser {
             versionConfirmed = res.accepted();
 
             writer.writeBoolean(res.accepted());
+            writer.writeString(res.protoVerSince());
+            writer.writeString(res.currentVer());
         }
         else if (res0 instanceof OdbcQueryExecuteResult) {
             OdbcQueryExecuteResult res = (OdbcQueryExecuteResult) res0;

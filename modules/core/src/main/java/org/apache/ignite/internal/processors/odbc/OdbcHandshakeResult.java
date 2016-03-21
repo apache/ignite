@@ -24,11 +24,21 @@ public class OdbcHandshakeResult {
     /** Handshake accepted. */
     private final boolean accepted;
 
+    /** Apache Ignite version when protocol version has been introduced. */
+    private final String protoVerSince;
+
+    /** Current Apache Ignite version. */
+    private final String currentVer;
+
     /**
      * @param accepted Handshake accepted.
+     * @param protoVerSince Apache Ignite version when protocol version has been introduced.
+     * @param currentVer Current Apache Ignite version.
      */
-    public OdbcHandshakeResult(boolean accepted){
+    public OdbcHandshakeResult(boolean accepted, String protoVerSince, String currentVer) {
         this.accepted = accepted;
+        this.protoVerSince = protoVerSince;
+        this.currentVer = currentVer;
     }
 
     /**
@@ -36,5 +46,19 @@ public class OdbcHandshakeResult {
      */
     public boolean accepted() {
         return accepted;
+    }
+
+    /**
+     * @return Apache Ignite version when protocol version has been introduced.
+     */
+    public String protoVerSince() {
+        return protoVerSince;
+    }
+
+    /**
+     * @return Current Apache Ignite version.
+     */
+    public String currentVer() {
+        return currentVer;
     }
 }
