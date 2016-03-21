@@ -60,7 +60,6 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 var cache = ignite.GetOrCreateCache<object, object>(new CacheConfiguration
                 {
-                    Name = null,
                     QueryEntities = new[]
                     {
                         new QueryEntity(typeof(int), typeof(Organization)),
