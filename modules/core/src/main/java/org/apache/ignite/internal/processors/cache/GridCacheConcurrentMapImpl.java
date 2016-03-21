@@ -150,7 +150,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
                 result.set(entry);
 
-                if (entry.deleted())
+                if (!entry.deleted())
                     decrementPublicSize(entry);
 
                 return null;
@@ -207,7 +207,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     @Override public boolean removeEntry(GridCacheEntryEx entry) {
         boolean result = map.remove(entry.key(), entry);
 
-        if (entry.deleted())
+        if (!entry.deleted() && result)
             decrementPublicSize(entry);
 
         return result;
