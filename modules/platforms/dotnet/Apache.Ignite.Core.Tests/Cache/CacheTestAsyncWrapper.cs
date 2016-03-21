@@ -119,6 +119,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritDoc /> */
+        public void LoadAll(IEnumerable<TK> keys, bool replaceExistingValues)
+        {
+            _cache.LoadAll(keys, replaceExistingValues);
+        }
+
+        /** <inheritDoc /> */
         public Task LoadAllAsync(IEnumerable<TK> keys, bool replaceExistingValues)
         {
             return _cache.LoadAllAsync(keys, replaceExistingValues);
