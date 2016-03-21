@@ -670,7 +670,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         lock.lock();
 
         try {
-            AffinityTopologyVersion topVer = new AffinityTopologyVersion(grid(0).cluster().topologyVersion());
+            AffinityTopologyVersion topVer = grid(0).context().discovery().topologyVersionEx();
 
             GridNearCacheEntry nearEntry1 = nearEntry(0, key);
 

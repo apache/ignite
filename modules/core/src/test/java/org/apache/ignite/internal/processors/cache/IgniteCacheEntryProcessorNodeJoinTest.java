@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
@@ -58,7 +60,10 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     private static final int GRID_CNT = 2;
 
     /** Number of increment iterations. */
-    private static final int NUM_SETS = 50;
+    private static final int INCREMENTS = 1;//100;
+
+    /** */
+    private static final int KEYS = 50;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -121,6 +126,54 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testEntryProcessorNodeLeave() throws Exception {
+        startGrid(GRID_CNT);
+
+        int NODES = GRID_CNT + 1;
+
+        final int RESTART_IDX = GRID_CNT + 1;
+
+        for (int iter = 0; iter < 10; iter++) {
+            log.info("Iteration: " + iter);
+
+            startGrid(RESTART_IDX);
+
+            awaitPartitionMapExchange();
+
+            final CountDownLatch latch = new CountDownLatch(1);
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    latch.await();
+
+                    stopGrid(RESTART_IDX);
+
+                    return null;
+                }
+            }, "stop-thread");
+
+            int increments = checkIncrement(iter % 2 == 2, fut, latch);
+
+            assert increments >= INCREMENTS;
+
+            fut.get();
+
+            for (int i = 0; i < KEYS; i++) {
+                for (int g = 0; g < NODES; g++) {
+                    Set<String> vals = ignite(g).<String, Set<String>>cache(null).get("set-" + i);
+
+                    assertNotNull(vals);
+                    assertEquals(increments, vals.size());
+                }
+            }
+
+            ignite(0).cache(null).removeAll();
+        }
+    }
+
+    /**
      * @param invokeAll If {@code true} tests invokeAll operation.
      * @throws Exception If failed.
      */
@@ -146,7 +199,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
             }, 1, "starter");
 
             try {
-                checkIncrement(invokeAll);
+                checkIncrement(invokeAll, null, null);
             }
             finally {
                 stop.set(true);
@@ -154,12 +207,12 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                 fut.get(getTestTimeout());
             }
 
-            for (int i = 0; i < NUM_SETS; i++) {
+            for (int i = 0; i < KEYS; i++) {
                 for (int g = 0; g < GRID_CNT + started; g++) {
                     Set<String> vals = ignite(g).<String, Set<String>>cache(null).get("set-" + i);
 
                     assertNotNull(vals);
-                    assertEquals(100, vals.size());
+                    assertEquals(INCREMENTS, vals.size());
                 }
             }
         }
@@ -173,14 +226,18 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
      * @param invokeAll If {@code true} tests invokeAll operation.
      * @throws Exception If failed.
      */
-    private void checkIncrement(boolean invokeAll) throws Exception {
-        for (int k = 0; k < 100; k++) {
+    private int checkIncrement(boolean invokeAll, IgniteInternalFuture<?> fut, CountDownLatch latch) throws Exception {
+        int increments = 0;
+
+        for (int k = 0; k < INCREMENTS || (fut != null && !fut.isDone()); k++) {
+            increments++;
+
             if (invokeAll) {
                 IgniteCache<String, Set<String>> cache = ignite(0).cache(null);
 
                 Map<String, Processor> procs = new LinkedHashMap<>();
 
-                for (int i = 0; i < NUM_SETS; i++) {
+                for (int i = 0; i < KEYS; i++) {
                     String key = "set-" + i;
 
                     String val = "value-" + k;
@@ -200,7 +257,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
             else {
                 IgniteCache<String, Set<String>> cache = ignite(0).cache(null);
 
-                for (int i = 0; i < NUM_SETS; i++) {
+                for (int i = 0; i < KEYS; i++) {
                     String key = "set-" + i;
 
                     String val = "value-" + k;
@@ -210,7 +267,12 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                     assertEquals(k + 1, (Object)valsCnt);
                 }
             }
+
+            if (latch != null && k == 0)
+                latch.countDown();
         }
+
+        return increments;
     }
 
     /**

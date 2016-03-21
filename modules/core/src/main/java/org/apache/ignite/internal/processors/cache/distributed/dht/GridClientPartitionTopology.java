@@ -387,10 +387,13 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         try {
             GridDhtPartitionMap2 partMap = node2part.get(nodeId);
 
-            if (partMap != null)
-                return partMap.get(part);
+            if (partMap != null) {
+                GridDhtPartitionState state = partMap.get(part);
 
-            return null;
+                return state == null ? EVICTED : state;
+            }
+
+            return EVICTED;
         }
         finally {
             lock.readLock().unlock();

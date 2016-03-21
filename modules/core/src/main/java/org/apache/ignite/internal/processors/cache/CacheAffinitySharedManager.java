@@ -1288,7 +1288,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         initCoordinatorCaches(fut);
 
-        AffinityTopologyVersion topVer = fut.topologyVersion();
+        final AffinityTopologyVersion topVer = fut.topologyVersion();
 
         final RebalancingInfo rebalancingInfo = new RebalancingInfo(topVer);
 
@@ -1305,7 +1305,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 AffinityTopologyVersion affTopVer = cache.affinity().lastVersion();
 
-                assert affTopVer.topologyVersion() > 0 : affTopVer;
+                assert affTopVer.topologyVersion() > 0 && !affTopVer.equals(topVer): affTopVer;
 
                 List<List<ClusterNode>> curAssignment = cache.affinity().assignments(affTopVer);
                 List<List<ClusterNode>> newAssignment = cache.affinity().idealAssignment();
@@ -1316,7 +1316,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 Map<Integer, List<UUID>> cacheAssignment = null;
 
-                // TODO 10885, add 'boolean top.owner(UUID id)' method.
                 for (int p = 0; p < newAssignment.size(); p++) {
                     List<ClusterNode> newNodes = newAssignment.get(p);
                     List<ClusterNode> curNodes = curAssignment.get(p);
@@ -1326,38 +1325,36 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     List<ClusterNode> newNodes0 = null;
 
-                    if (curPrimary != null && newPrimary != null) {
-                        if (!curPrimary.equals(newPrimary)) {
-                            if (aliveNodes.contains(curPrimary)) {
-                                if (!top.owners(p).isEmpty()) {
-                                    GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
-
-                                    if (state != GridDhtPartitionState.OWNING) {
-                                        newNodes0 = delayedPrimaryAssignment(cache.affinity(),
-                                            p,
-                                            curPrimary,
-                                            newNodes,
-                                            rebalancingInfo);
-                                    }
-                                }
-                            }
-                            else {
+                    if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
+                        if (aliveNodes.contains(curPrimary)) {
+                            if (!top.owners(p).isEmpty()) {
                                 GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
 
                                 if (state != GridDhtPartitionState.OWNING) {
-                                    List<ClusterNode> owners = top.owners(p);
+                                    newNodes0 = delayedPrimaryAssignment(cache.affinity(),
+                                        p,
+                                        curPrimary,
+                                        newNodes,
+                                        rebalancingInfo);
+                                }
+                            }
+                        }
+                        else {
+                            GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
 
-                                    if (!owners.isEmpty()) {
-                                        ClusterNode primary = owners.get(0);
+                            if (state != GridDhtPartitionState.OWNING) {
+                                List<ClusterNode> owners = top.owners(p);
 
-                                        assert aliveNodes.contains(primary) : primary;
+                                if (!owners.isEmpty()) {
+                                    ClusterNode primary = owners.get(0);
 
-                                        newNodes0 = delayedPrimaryAssignment(cache.affinity(),
-                                            p,
-                                            primary,
-                                            newNodes,
-                                            rebalancingInfo);
-                                    }
+                                    assert aliveNodes.contains(primary) : primary;
+
+                                    newNodes0 = delayedPrimaryAssignment(cache.affinity(),
+                                        p,
+                                        primary,
+                                        newNodes,
+                                        rebalancingInfo);
                                 }
                             }
                         }

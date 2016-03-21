@@ -87,13 +87,17 @@ public interface GridDhtPartitionTopology {
      * Pre-initializes this topology.
      *
      * @param exchFut Exchange future.
+     * @param affReady Affinity ready flag.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean initParts)
+    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean affReady)
         throws IgniteCheckedException;
 
-    public void initPartitions(GridDhtPartitionsExchangeFuture exchFut)
-        throws IgniteInterruptedCheckedException ;
+    /**
+     * @param exchFut Exchange future.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    public void initPartitions(GridDhtPartitionsExchangeFuture exchFut) throws IgniteInterruptedCheckedException;
 
     /**
      * Post-initializes this topology.
