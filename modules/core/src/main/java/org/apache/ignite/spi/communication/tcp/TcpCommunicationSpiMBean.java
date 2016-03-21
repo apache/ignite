@@ -287,4 +287,10 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Slow client queue limit.")
     public int getSlowClientQueueLimit();
+
+    /**
+     * Dumps SPI per-connection stats to logs.
+     */
+    @MXBeanDescription("Dumps SPI statistics to logs.")
+    public void dumpStats();
 }

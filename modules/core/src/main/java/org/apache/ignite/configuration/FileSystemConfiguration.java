@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
@@ -82,6 +83,9 @@ public class FileSystemConfiguration {
 
     /** Default value of whether to initialize default path modes. */
     public static final boolean DFLT_INIT_DFLT_PATH_MODES = true;
+
+    /** Default value of metadata co-location flag. */
+    public static boolean DFLT_COLOCATE_META = true;
 
     /** IGFS instance name. */
     private String name;
@@ -164,6 +168,9 @@ public class FileSystemConfiguration {
     /** Whether to initialize default path modes. */
     private boolean initDfltPathModes = DFLT_INIT_DFLT_PATH_MODES;
 
+    /** Metadata co-location flag. */
+    private boolean colocateMeta = DFLT_COLOCATE_META;
+
     /**
      * Constructs default configuration.
      */
@@ -184,6 +191,7 @@ public class FileSystemConfiguration {
          */
         blockSize = cfg.getBlockSize();
         bufSize = cfg.getStreamBufferSize();
+        colocateMeta = cfg.isColocateMetadata();
         dataCacheName = cfg.getDataCacheName();
         dfltMode = cfg.getDefaultMode();
         dualModeMaxPendingPutsSize = cfg.getDualModeMaxPendingPutsSize();
@@ -828,6 +836,45 @@ public class FileSystemConfiguration {
      */
     public void setInitializeDefaultPathModes(boolean initDfltPathModes) {
         this.initDfltPathModes = initDfltPathModes;
+    }
+
+    /**
+     * Get whether to co-locate metadata on a single node.
+     * <p>
+     * Normally Ignite spread ownership of particular keys among all cache nodes. Transaction with keys owned by
+     * different nodes will produce more network traffic and will require more time to complete comparing to
+     * transaction with keys owned only by a single node.
+     * <p>
+     * IGFS stores information about file system structure (metadata) inside a transactional cache configured through
+     * {@link #getMetaCacheName()} property. Metadata updates caused by operations on IGFS usually require several
+     * intearnal keys to be updated. As IGFS metadata cache usually operates in {@link CacheMode#REPLICATED} mode,
+     * meaning that all nodes have all metadata locally, it makes sense to give a hint to Ignite to co-locate
+     * ownership of all metadata keys on a single node. This will decrease amount of network trips required to update
+     * metadata and hence could improve performance.
+     * <p>
+     * This property should be disabled if you see excessive CPU and network load on a single node, which
+     * degrades performance and cannot be explained by business logic of your application.
+     * <p>
+     * This settings is only used if metadata cache is configured in {@code CacheMode#REPLICATED} mode. Otherwise it
+     * is ignored.
+     * <p>
+     * Defaults to {@link #DFLT_COLOCATE_META}.
+     *
+     * @return {@code True} if metadata co-location is enabled.
+     */
+    public boolean isColocateMetadata() {
+        return colocateMeta;
+    }
+
+    /**
+     * Set metadata co-location flag.
+     * <p>
+     * See {@link #isColocateMetadata()} for more information.
+     *
+     * @param colocateMeta Whether metadata co-location is enabled.
+     */
+    public void setColocateMetadata(boolean colocateMeta) {
+        this.colocateMeta = colocateMeta;
     }
 
     /** {@inheritDoc} */
