@@ -51,7 +51,7 @@ import sun.misc.SharedSecrets;
  *
  */
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "FieldAccessedSynchronizedAndUnsynchronized"})
-public class PageMemoryImpl implements PageMemory {
+public class  PageMemoryImpl implements PageMemory {
     /** Relative pointer chunk index mask. */
     private static final long CHUNK_INDEX_MASK = 0xFFFFFF0000000000L;
 
@@ -408,7 +408,7 @@ public class PageMemoryImpl implements PageMemory {
                         // We are in the segment write lock, so it is safe to remove the page if use counter is
                         // equal to 0.
                         if (page.flushCheckpoint(log))
-                            seg.acquiredPages.remove(pageId, page);
+                            seg.acquiredPages.remove(pageId);
                     }
                     // else page was not modified since the checkpoint started.
                     else {
