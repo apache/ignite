@@ -22,6 +22,7 @@ using Apache.Ignite.Core.Transactions;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>
@@ -35,7 +36,7 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-cache.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     class TransactionExample
@@ -48,7 +49,7 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-cache.xml",
+                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
 
@@ -57,7 +58,11 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine();
                 Console.WriteLine(">>> Transaction example started.");
 
-                var cache = ignite.GetCache<int, Account>("tx");
+                var cache = ignite.GetOrCreateCache<int, Account>(new CacheConfiguration
+                {
+                    Name = "tx",
+                    AtomicityMode = CacheAtomicityMode.Transactional
+                });
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();
