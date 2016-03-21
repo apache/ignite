@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,7 +40,7 @@ import java.util.Map;
 /**
  * IGFS directory info.
  */
-public class IgfsDirectoryInfo extends IgfsEntryInfo {
+public class IgfsDirectoryInfo extends IgfsEntryInfo implements Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -183,6 +190,24 @@ public class IgfsDirectoryInfo extends IgfsEntryInfo {
         super.readExternal(in);
 
         listing = (Map<String, IgfsListingEntry>)in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
+
+        writeBinary(out);
+
+        out.writeMap(listing);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
+        readBinary(in);
+
+        listing = in.readMap();
     }
 
     /** {@inheritDoc} */
