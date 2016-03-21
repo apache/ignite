@@ -502,7 +502,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             loadAll(new[] {105, 106}, true);
             Assert.AreEqual("val_105", cache[105]);
-            Assert.AreEqual("val_165", cache[106]);
+            Assert.AreEqual("val_106", cache[106]);
         }
 
         /// <summary>
