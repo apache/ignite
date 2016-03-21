@@ -602,16 +602,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public long primarySizeLong() {
-        long sum = 0;
-
-        AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
-
-        for (GridDhtLocalPartition p : topology().currentLocalPartitions()) {
-            if (p.primary(topVer))
-                sum += p.size();
-        }
-
-        return sum;
+        return map.publicSize();
     }
 
     /**
@@ -1183,19 +1174,17 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         GridDhtLocalPartition part = topology().localPartition(entry.partition(), AffinityTopologyVersion.NONE,
             false);
 
-        map.removeEntry(entry);
-
         //TODO
         // Do not remove entry on replica topology. Instead, add entry to removal queue.
         // It will be cleared eventually.
-//        if (part != null) {
-//            try {
-//                part.onDeferredDelete(entry.key(), ver);
-//            }
-//            catch (IgniteCheckedException e) {
-//                U.error(log, "Failed to enqueue deleted entry [key=" + entry.key() + ", ver=" + ver + ']', e);
-//            }
-//        }
+        if (part != null) {
+            try {
+                part.onDeferredDelete(entry.key(), ver);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to enqueue deleted entry [key=" + entry.key() + ", ver=" + ver + ']', e);
+            }
+        }
     }
 
     /**

@@ -77,6 +77,12 @@ public interface GridCacheConcurrentMap {
      */
     int size();
 
+    int publicSize();
+
+    void incrementPublicSize(GridCacheEntryEx e);
+
+    void decrementPublicSize(GridCacheEntryEx e);
+
     @Nullable GridCacheMapEntry randomEntry();
 
     /**

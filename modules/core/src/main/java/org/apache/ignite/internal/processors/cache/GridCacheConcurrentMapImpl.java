@@ -22,6 +22,7 @@ import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridSerializableSet;
@@ -50,6 +51,8 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
     /** Cache context. */
     private final GridCacheContext ctx;
+
+    private final AtomicInteger pubSize = new AtomicInteger();
 
     /**
      * Creates a new, empty map with the specified initial
@@ -124,6 +127,9 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
                         cur = entry;
                 }
 
+                if (created0 != null && doomed0 == null)
+                    incrementPublicSize(created0);
+
                 created.set(created0);
                 doomed.set(doomed0);
                 return cur;
@@ -144,6 +150,9 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
                 result.set(entry);
 
+                if (entry.deleted())
+                    decrementPublicSize(entry);
+
                 return null;
             }
         });
@@ -154,6 +163,18 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     /** {@inheritDoc} */
     @Override public int size() {
         return map.size();
+    }
+
+    @Override public int publicSize() {
+        return pubSize.get();
+    }
+
+    @Override public void incrementPublicSize(GridCacheEntryEx e) {
+        pubSize.incrementAndGet();
+    }
+
+    @Override public void decrementPublicSize(GridCacheEntryEx e) {
+        pubSize.decrementAndGet();
     }
 
     /** {@inheritDoc} */
@@ -184,7 +205,12 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
     /** {@inheritDoc} */
     @Override public boolean removeEntry(GridCacheEntryEx entry) {
-        return map.remove(entry.key(), entry);
+        boolean result = map.remove(entry.key(), entry);
+
+        if (entry.deleted())
+            decrementPublicSize(entry);
+
+        return result;
     }
 
     /** {@inheritDoc} */

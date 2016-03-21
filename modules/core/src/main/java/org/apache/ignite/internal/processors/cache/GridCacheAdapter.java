@@ -388,9 +388,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     public void incrementSize(GridCacheMapEntry e) {
+        map.incrementPublicSize(e);
     }
 
     public void decrementSize(GridCacheMapEntry e) {
+        map.decrementPublicSize(e);
     }
 
     /**
@@ -3941,12 +3943,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return map.size();
+        return map.publicSize();
     }
 
     /** {@inheritDoc} */
     @Override public long sizeLong() {
-        return map.size();
+        return map.publicSize();
     }
 
     /** {@inheritDoc} */
@@ -3956,12 +3958,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public int primarySize() {
-        return map.size();
+        return map.publicSize();
     }
 
     /** {@inheritDoc} */
     @Override public long primarySizeLong() {
-        return map.size();
+        return map.publicSize();
     }
 
     /** {@inheritDoc} */

@@ -216,6 +216,18 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return map.size();
     }
 
+    public int publicSize() {
+        return map.publicSize();
+    }
+
+    public void incrementPublicSize(GridCacheEntryEx e) {
+        map.incrementPublicSize(e);
+    }
+
+    public void decrementPublicSize(GridCacheEntryEx e) {
+        map.decrementPublicSize(e);
+    }
+
     /**
      * @return If partition is moving or owning or renting.
      */
