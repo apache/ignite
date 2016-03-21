@@ -24,6 +24,7 @@ using Apache.Ignite.Core.Cache.Query;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>
@@ -38,7 +39,7 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-cache-query.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class QueryExample
@@ -48,7 +49,7 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-cache-query.xml",
+                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
                 JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
             };
 
@@ -57,7 +58,15 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache query example started.");
 
-                var cache = ignite.GetCache<object, object>(null);
+                var cache = ignite.GetOrCreateCache<object, object>(new CacheConfiguration
+                {
+                    Name = null,
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity(typeof(int), typeof(Organization)),
+                        new QueryEntity(typeof(EmployeeKey), typeof(Employee))
+                    }
+                });
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();

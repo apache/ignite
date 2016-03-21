@@ -19,6 +19,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
 {
     using System;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
     /// Address.
@@ -45,6 +46,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <summary>
         /// ZIP code.
         /// </summary>
+        [QuerySqlField(IsIndexed = true)]
         public int Zip { get; set; }
 
         /// <summary>

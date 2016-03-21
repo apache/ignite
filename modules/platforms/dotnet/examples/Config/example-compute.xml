@@ -41,7 +41,35 @@
                 </property>
             </bean>
         </property>
-		
+
+        <!-- Configure binarizable types. -->
+        <property name="platformConfiguration">
+            <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
+                <property name="binaryConfiguration">
+                    <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration">
+                        <property name="types">
+                            <list>
+                                <value>Apache.Ignite.ExamplesDll.Binary.Account</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.Address</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.Employee</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.EmployeeKey</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.Organization</value>
+                            </list>
+                        </property>
+                        <property name="typesConfiguration">
+                            <list>
+                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration">
+                                    <property name="typeName" value="Apache.Ignite.ExamplesDll.Binary.OrganizationType" />
+                                    <property name="enum" value="true" />
+                                </bean>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
+
         <!-- Enable task execution events for examples. -->
         <property name="includeEventTypes">
             <list>

@@ -18,6 +18,8 @@
 namespace Apache.Ignite.ExamplesDll.Binary
 {
     using System;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
 
     /// <summary>
     /// Organization.
@@ -51,6 +53,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <summary>
         /// Name.
         /// </summary>
+        [QuerySqlField(IsIndexed = true)]
         public string Name { get; set; }
 
         /// <summary>
