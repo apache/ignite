@@ -17,13 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -36,6 +29,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_PURGED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
@@ -162,7 +163,7 @@ public class IgfsDeleteWorker extends IgfsThread {
      * @param trashId Trash ID.
      */
     private void delete(IgniteUuid trashId) {
-        IgfsFileInfo info = null;
+        IgfsEntryInfo info = null;
 
         try {
             info = meta.info(trashId);
@@ -220,7 +221,7 @@ public class IgfsDeleteWorker extends IgfsThread {
         assert id != null;
 
         while (true) {
-            IgfsFileInfo info = meta.info(id);
+            IgfsEntryInfo info = meta.info(id);
 
             if (info != null) {
                 if (info.isDirectory()) {
@@ -234,7 +235,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                     assert info.isFile();
 
                     // Lock the file with special lock Id to prevent concurrent writing:
-                    IgfsFileInfo lockedInfo = meta.lock(id, true);
+                    IgfsEntryInfo lockedInfo = meta.lock(id, true);
 
                     if (lockedInfo == null)
                         return false; // File is locked, we cannot delete it.
@@ -271,7 +272,7 @@ public class IgfsDeleteWorker extends IgfsThread {
         assert id != null;
 
         while (true) {
-            IgfsFileInfo info = meta.info(id);
+            IgfsEntryInfo info = meta.info(id);
 
             if (info != null) {
                 assert info.isDirectory();
@@ -298,12 +299,12 @@ public class IgfsDeleteWorker extends IgfsThread {
                             failedFiles++;
                     }
                     else {
-                        IgfsFileInfo fileInfo = meta.info(entry.getValue().fileId());
+                        IgfsEntryInfo fileInfo = meta.info(entry.getValue().fileId());
 
                         if (fileInfo != null) {
                             assert fileInfo.isFile();
 
-                            IgfsFileInfo lockedInfo = meta.lock(fileInfo.id(), true);
+                            IgfsEntryInfo lockedInfo = meta.lock(fileInfo.id(), true);
 
                             if (lockedInfo == null)
                                 // File is already locked:

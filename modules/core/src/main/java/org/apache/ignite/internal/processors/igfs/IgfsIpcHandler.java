@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.Closeable;
-import java.io.DataInput;
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -45,6 +40,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Closeable;
+import java.io.DataInput;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * IGFS IPC handler.
@@ -342,10 +343,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                                 log.debug("Opened IGFS input stream for file read [igfsName=" + igfs.name() + ", path=" +
                                     req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
-                            IgfsFileInfo info = new IgfsFileInfo(igfsIn.fileInfo(), null,
-                                igfsIn.fileInfo().modificationTime());
-
-                            res.response(new IgfsInputStreamDescriptor(streamId, info.length()));
+                            res.response(new IgfsInputStreamDescriptor(streamId, igfsIn.fileInfo().length()));
 
                             break;
                         }

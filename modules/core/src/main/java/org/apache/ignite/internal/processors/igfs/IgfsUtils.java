@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.lang.reflect.Constructor;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsPath;
@@ -42,6 +41,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
+
+import java.lang.reflect.Constructor;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -104,7 +108,17 @@ public class IgfsUtils {
      * @return {@code True} if this is root ID or trash ID.
      */
     public static boolean isRootOrTrashId(@Nullable IgniteUuid id) {
-        return id != null && (ROOT_ID.equals(id) || isTrashId(id));
+        return isRootId(id) || isTrashId(id);
+    }
+
+    /**
+     * Check whether provided ID is root ID.
+     *
+     * @param id ID.
+     * @return {@code True} if this is root ID.
+     */
+    public static boolean isRootId(@Nullable IgniteUuid id) {
+        return id != null && ROOT_ID.equals(id);
     }
 
     /**
@@ -114,7 +128,8 @@ public class IgfsUtils {
      * @return {@code True} if this is trash ID.
      */
     private static boolean isTrashId(IgniteUuid id) {
-        assert id != null;
+        if (id == null)
+            return false;
 
         UUID gid = id.globalId();
 
@@ -252,5 +267,126 @@ public class IgfsUtils {
 
         if (evts.isRecordable(type))
             evts.record(new IgfsEvent(path, locNode, type));
+    }
+
+    /**
+     * @param cfg Grid configuration.
+     * @param cacheName Cache name.
+     * @return {@code True} in this is IGFS data or meta cache.
+     */
+    public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
+        FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
+
+        if (igfsCfgs != null) {
+            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
+                // IGFS config probably has not been validated yet => possible NPE, so we check for null.
+                if (igfsCfg != null) {
+                    if (F.eq(cacheName, igfsCfg.getDataCacheName()) || F.eq(cacheName, igfsCfg.getMetaCacheName()))
+                        return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Prepare cache configuration if this is IGFS meta or data cache.
+     *
+     * @param cfg Configuration.
+     * @param ccfg Cache configuration.
+     */
+    public static void prepareCacheConfiguration(IgniteConfiguration cfg, CacheConfiguration ccfg) {
+        FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
+
+        if (igfsCfgs != null) {
+            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
+                if (igfsCfg != null) {
+                    if (F.eq(ccfg.getName(), igfsCfg.getMetaCacheName())) {
+                        ccfg.setCopyOnRead(false);
+
+                        // Set co-located affinity mapper if needed.
+                        if (igfsCfg.isColocateMetadata() && ccfg.getCacheMode() == CacheMode.REPLICATED &&
+                            ccfg.getAffinityMapper() == null)
+                            ccfg.setAffinityMapper(new IgfsColocatedMetadataAffinityKeyMapper());
+
+                        return;
+                    }
+
+                    if (F.eq(ccfg.getName(), igfsCfg.getDataCacheName())) {
+                        ccfg.setCopyOnRead(false);
+
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Create empty directory with the given ID.
+     *
+     * @param id ID.
+     * @return File info.
+     */
+    public static IgfsDirectoryInfo createDirectory(IgniteUuid id) {
+        return createDirectory(id, null, null);
+    }
+
+    /**
+     * Create directory.
+     *
+     * @param id ID.
+     * @param listing Listing.
+     * @param props Properties.
+     * @return File info.
+     */
+    public static IgfsDirectoryInfo createDirectory(
+        IgniteUuid id,
+        @Nullable Map<String, IgfsListingEntry> listing,
+        @Nullable Map<String, String> props) {
+        long time = System.currentTimeMillis();
+
+        return createDirectory(id, listing, props, time, time);
+    }
+
+    /**
+     * Create directory.
+     *
+     * @param id ID.
+     * @param listing Listing.
+     * @param props Properties.
+     * @param createTime Create time.
+     * @param modificationTime Modification time.
+     * @return File info.
+     */
+    public static IgfsDirectoryInfo createDirectory(
+        IgniteUuid id,
+        @Nullable Map<String, IgfsListingEntry> listing,
+        @Nullable Map<String,String> props,
+        long createTime,
+        long modificationTime) {
+        return new IgfsDirectoryInfo(id, listing, props, createTime, modificationTime);
+    }
+
+    /**
+     * Create file.
+     *
+     * @param id File ID.
+     * @param blockSize Block size.
+     * @param len Length.
+     * @param affKey Affinity key.
+     * @param lockId Lock ID.
+     * @param evictExclude Evict exclude flag.
+     * @param props Properties.
+     * @param accessTime Access time.
+     * @param modificationTime Modification time.
+     * @return File info.
+     */
+    public static IgfsFileInfo createFile(IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
+        @Nullable IgniteUuid lockId, boolean evictExclude, @Nullable Map<String, String> props, long accessTime,
+        long modificationTime) {
+        return new IgfsFileInfo(id, blockSize, len, affKey, props, null, lockId, accessTime, modificationTime,
+            evictExclude);
     }
 }

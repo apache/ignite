@@ -1177,6 +1177,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             cacheCtx.preloader().dumpDebugInfo();
 
         cctx.affinity().dumpDebugInfo();
+
+        // Dump IO manager statistics.
+        cctx.gridIO().dumpStats();
     }
 
     /**
