@@ -24,9 +24,9 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,189 +38,150 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * IGFS file info.
+ * IGFS directory info.
  */
-public final class IgfsFileInfo extends IgfsEntryInfo implements Binarylizable {
+public class IgfsDirectoryInfo extends IgfsEntryInfo implements Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** File length in bytes. */
-    private long len;
-
-    /** File block size, {@code zero} for directories. */
-    private int blockSize;
-
-    /** File lock ID. */
-    private IgniteUuid lockId;
-
-    /** Affinity key used for single-node file collocation. */
-    private IgniteUuid affKey;
-
-    /** File affinity map. */
-    private IgfsFileMap fileMap;
-
-    /** Whether data blocks of this entry should never be excluded. */
-    private boolean evictExclude;
+    /** Directory listing. */
+    @GridToStringInclude
+    private Map<String, IgfsListingEntry> listing;
 
     /**
      * {@link Externalizable} support.
      */
-    public IgfsFileInfo() {
+    public IgfsDirectoryInfo() {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public IgfsFileInfo length(long len) {
-        IgfsFileInfo res = copy();
+    /**
+     * Update length.
+     *
+     * @param len New length.
+     * @return Updated file info.
+     */
+    public IgfsEntryInfo length(long len) {
+        throw new UnsupportedOperationException("length");
+    }
 
-        res.len = len;
+    /** {@inheritDoc} */
+    @Override public IgfsDirectoryInfo listing(@Nullable Map<String, IgfsListingEntry> listing) {
+        IgfsDirectoryInfo res = copy();
+
+        res.listing = listing;
 
         return res;
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsEntryInfo listing(@Nullable Map<String, IgfsListingEntry> listing) {
-        throw new UnsupportedOperationException("listing");
+    @Override public IgfsEntryInfo lock(IgniteUuid lockId) {
+        throw new UnsupportedOperationException("lock");
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsFileInfo lock(IgniteUuid lockId) {
-        assert lockId != null;
-        assert this.lockId == null;
-
-        IgfsFileInfo res = copy();
-
-        res.lockId = lockId;
-
-        return res;
+    @Override public IgfsEntryInfo unlock(long modificationTime) {
+        throw new UnsupportedOperationException("unlock");
     }
 
     /** {@inheritDoc} */
-    @Override public IgfsFileInfo unlock(long modificationTime) {
-        IgfsFileInfo res = copy();
-
-        res.lockId = null;
-        res.modificationTime = modificationTime;
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgfsFileInfo fileMap(IgfsFileMap fileMap) {
-        IgfsFileInfo res = copy();
-
-        res.fileMap = fileMap;
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgfsFileInfo copy() {
-        return new IgfsFileInfo(id, blockSize, len, affKey, props, fileMap, lockId, accessTime, modificationTime,
-            evictExclude);
+    @Override public IgfsEntryInfo fileMap(IgfsFileMap fileMap) {
+        throw new UnsupportedOperationException("fileMap");
     }
 
     /**
      * Constructs file info.
      *
      * @param id ID or {@code null} to generate it automatically.
-     * @param blockSize Block size.
-     * @param len Size of a file.
-     * @param affKey Affinity key for data blocks.
+     * @param listing Directory listing.
      * @param props File properties.
-     * @param fileMap File map.
-     * @param lockId Lock ID.
      * @param accessTime Last access time.
      * @param modificationTime Last modification time.
-     * @param evictExclude Evict exclude flag.
      */
-    IgfsFileInfo(IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
-        @Nullable Map<String, String> props, @Nullable IgfsFileMap fileMap, @Nullable IgniteUuid lockId,
-        long accessTime, long modificationTime, boolean evictExclude) {
+    IgfsDirectoryInfo(IgniteUuid id, @Nullable Map<String, IgfsListingEntry> listing,
+        @Nullable Map<String, String> props, long accessTime, long modificationTime) {
         super(id, props, accessTime, modificationTime);
 
-        this.len = len;
-        this.blockSize = blockSize;
-        this.affKey = affKey;
+        this.listing = listing;
+    }
 
-        if (fileMap == null)
-            fileMap = new IgfsFileMap();
-
-        this.fileMap = fileMap;
-        this.lockId = lockId;
-        this.evictExclude = evictExclude;
+    /** {@inheritDoc} */
+    protected IgfsDirectoryInfo copy() {
+        return new IgfsDirectoryInfo(id, listing, props, accessTime, modificationTime);
     }
 
     /** {@inheritDoc} */
     public boolean isFile() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
     public long length() {
-        return len;
+        return 0;
     }
 
     /** {@inheritDoc} */
     public int blockSize() {
-        return blockSize;
+        return 0;
     }
 
     /** {@inheritDoc} */
     public long blocksCount() {
-        return (len + blockSize() - 1) / blockSize();
+        return 0;
     }
 
     /** {@inheritDoc} */
     public Map<String, IgfsListingEntry> listing() {
-        return Collections.emptyMap();
+        return listing != null ? listing : Collections.<String, IgfsListingEntry>emptyMap();
     }
 
     /** {@inheritDoc} */
     public boolean hasChildren() {
-        return false;
+        return !F.isEmpty(listing);
     }
 
     /** {@inheritDoc} */
     public boolean hasChild(String name) {
-        return false;
+        return listing != null && listing.containsKey(name);
     }
 
     /** {@inheritDoc} */
     public boolean hasChild(String name, IgniteUuid expId) {
+        if (listing != null) {
+            IgfsListingEntry entry = listing.get(name);
+
+            if (entry != null)
+                return F.eq(expId, entry.fileId());
+        }
+
         return false;
     }
 
     /** {@inheritDoc} */
     @Nullable public IgniteUuid affinityKey() {
-        return affKey;
+        return null;
     }
 
     /** {@inheritDoc} */
     public IgfsFileMap fileMap() {
-        return fileMap;
+        return null;
     }
 
     /** {@inheritDoc} */
     @Nullable public IgniteUuid lockId() {
-        return lockId;
+        return null;
     }
 
     /** {@inheritDoc} */
     public boolean evictExclude() {
-        return evictExclude;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        out.writeInt(blockSize);
-        out.writeLong(len);
-        U.writeGridUuid(out, lockId);
-        U.writeGridUuid(out, affKey);
-        out.writeObject(fileMap);
-        out.writeBoolean(evictExclude);
+        out.writeObject(listing);
     }
 
     /** {@inheritDoc} */
@@ -228,12 +189,7 @@ public final class IgfsFileInfo extends IgfsEntryInfo implements Binarylizable {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        blockSize = in.readInt();
-        len = in.readLong();
-        lockId = U.readGridUuid(in);
-        affKey = U.readGridUuid(in);
-        fileMap = (IgfsFileMap)in.readObject();
-        evictExclude = in.readBoolean();
+        listing = (Map<String, IgfsListingEntry>)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -242,12 +198,7 @@ public final class IgfsFileInfo extends IgfsEntryInfo implements Binarylizable {
 
         writeBinary(out);
 
-        out.writeInt(blockSize);
-        out.writeLong(len);
-        BinaryUtils.writeIgniteUuid(out, lockId);
-        BinaryUtils.writeIgniteUuid(out, affKey);
-        out.writeObject(fileMap);
-        out.writeBoolean(evictExclude);
+        out.writeMap(listing);
     }
 
     /** {@inheritDoc} */
@@ -256,18 +207,12 @@ public final class IgfsFileInfo extends IgfsEntryInfo implements Binarylizable {
 
         readBinary(in);
 
-        blockSize = in.readInt();
-        len = in.readLong();
-        lockId = BinaryUtils.readIgniteUuid(in);
-        affKey = BinaryUtils.readIgniteUuid(in);
-        fileMap = in.readObject();
-        evictExclude = in.readBoolean();
+        listing = in.readMap();
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return id.hashCode() ^ blockSize ^ (int)(len ^ (len >>> 32)) ^ (props == null ? 0 : props.hashCode()) ^
-            (lockId == null ? 0 : lockId.hashCode());
+        return id.hashCode() ^ (props == null ? 0 : props.hashCode());
     }
 
     /** {@inheritDoc} */
@@ -278,14 +223,13 @@ public final class IgfsFileInfo extends IgfsEntryInfo implements Binarylizable {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        IgfsFileInfo that = (IgfsFileInfo)obj;
+        IgfsDirectoryInfo that = (IgfsDirectoryInfo)obj;
 
-        return id.equals(that.id) && blockSize == that.blockSize && len == that.len && F.eq(affKey, that.affKey) &&
-            F.eq(props, that.props) && F.eq(lockId, that.lockId);
+        return id.equals(that.id) && F.eq(props, that.props);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgfsFileInfo.class, this);
+        return S.toString(IgfsDirectoryInfo.class, this);
     }
 }

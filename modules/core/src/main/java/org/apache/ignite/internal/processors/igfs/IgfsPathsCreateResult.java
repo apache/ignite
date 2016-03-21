@@ -17,58 +17,61 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 
-import java.io.OutputStream;
+import java.util.List;
 
 /**
- * Descriptor of an output stream opened to the secondary file system.
+ * IGFS paths create result.
  */
-public class IgfsSecondaryOutputStreamDescriptor {
-    /** Parent ID in the primary file system. */
-    private final IgniteUuid parentId;
+public class IgfsPathsCreateResult {
+    /** Created paths. */
+    private final List<IgfsPath> paths;
 
-    /** File info in the primary file system. */
+    /** Info of the last created file. */
     private final IgfsEntryInfo info;
 
-    /** Output stream to the secondary file system. */
-    private final OutputStream out;
+    /** Parent ID. */
+    private final IgniteUuid parentId;
 
     /**
      * Constructor.
      *
-     * @param parentId Parent ID in the primary file system.
-     * @param info File info in the primary file system.
-     * @param out Output stream to the secondary file system.
+     * @param paths Created paths.
+     * @param info Info of the last created file.
+     * @param parentId Parent ID.
      */
-    IgfsSecondaryOutputStreamDescriptor(IgniteUuid parentId, IgfsEntryInfo info, OutputStream out) {
-        assert parentId != null;
-        assert info != null;
-        assert out != null;
-
-        this.parentId = parentId;
+    public IgfsPathsCreateResult(List<IgfsPath> paths, IgfsEntryInfo info, IgniteUuid parentId) {
+        this.paths = paths;
         this.info = info;
-        this.out = out;
+        this.parentId = parentId;
     }
 
     /**
-     * @return Parent ID in the primary file system.
+     * @return Created paths.
      */
-    IgniteUuid parentId() {
-        return parentId;
+    public List<IgfsPath> createdPaths() {
+        return paths;
     }
 
     /**
-     * @return File info in the primary file system.
+     * @return Info of the last created file.
      */
-    IgfsEntryInfo info() {
+    public IgfsEntryInfo info() {
         return info;
     }
 
     /**
-     * @return Output stream to the secondary file system.
+     * @return Parent ID.
      */
-    OutputStream out() {
-        return out;
+    public IgniteUuid parentId() {
+        return parentId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgfsPathsCreateResult.class, this);
     }
 }

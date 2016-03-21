@@ -51,12 +51,15 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -1989,6 +1992,40 @@ public class BinaryUtils {
      */
     public static String qualifiedFieldName(Class cls, String fieldName) {
         return cls.getName() + "." + fieldName;
+    }
+
+    /**
+     * Write {@code IgniteUuid} instance.
+     *
+     * @param out Writer.
+     * @param val Value.
+     */
+    public static void writeIgniteUuid(BinaryRawWriter out, @Nullable IgniteUuid val) {
+        if (val != null) {
+            out.writeBoolean(true);
+
+            out.writeLong(val.globalId().getMostSignificantBits());
+            out.writeLong(val.globalId().getLeastSignificantBits());
+            out.writeLong(val.localId());
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Read {@code IgniteUuid} instance.
+     *
+     * @param in Reader.
+     * @return Value.
+     */
+    @Nullable public static IgniteUuid readIgniteUuid(BinaryRawReader in) {
+        if (in.readBoolean()) {
+            UUID globalId = new UUID(in.readLong(), in.readLong());
+
+            return new IgniteUuid(globalId, in.readLong());
+        }
+        else
+            return null;
     }
 
     /**
