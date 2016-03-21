@@ -10,7 +10,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -65,5 +67,41 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
         }
 
         assertEquals(parts, keys.size());
+
+        Map<Integer, Comparable> vers = new HashMap<>();
+
+        for (Integer k : keys) {
+            cache.put(k, k);
+
+            vers.put(k, cache.getEntry(k).version());
+        }
+
+        checkVersionIncrease(cache, vers);
+
+        int nodeIdx= 1;
+
+        for (int i = 0; i < 10; i++) {
+            startGrid(nodeIdx++);
+
+            awaitPartitionMapExchange();
+
+            checkVersionIncrease(cache, vers);
+        }
+    }
+
+    private void checkVersionIncrease(IgniteCache cache, Map<Integer, Comparable> vers) {
+        for (Integer k : vers.keySet()) {
+            cache.put(k, k);
+
+            Comparable curVer = vers.get(k);
+            Comparable newVer = cache.getEntry(k).version();
+
+            if (k.equals(0))
+                log.info("Ver " + curVer + " " + newVer);
+
+            assertTrue(newVer.compareTo(curVer) > 0);
+
+            vers.put(k, newVer);
+        }
     }
 }

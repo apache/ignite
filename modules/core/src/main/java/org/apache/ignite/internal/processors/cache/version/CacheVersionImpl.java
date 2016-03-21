@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -289,5 +290,10 @@ public class CacheVersionImpl implements CacheVersion {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return S.toString(CacheVersionImpl.class, this);
     }
 }
