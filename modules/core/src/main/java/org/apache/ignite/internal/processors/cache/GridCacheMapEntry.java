@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -899,7 +900,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         if (ret != null) {
-            ret = cctx.unwrapTemporary(ret);
+            assert tmp || !(ret instanceof BinaryObjectOffheapImpl);
 
             // If return value is consistent, then done.
             return retVer ? new T2<>(ret, resVer) : ret;
@@ -977,8 +978,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         assert ret == null || !retVer;
+        assert tmp || !(ret instanceof BinaryObjectOffheapImpl);
 
-        return cctx.unwrapTemporary(ret);
+        return ret;
     }
 
     /** {@inheritDoc} */
