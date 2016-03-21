@@ -37,10 +37,11 @@ namespace Apache.Ignite.ExamplesDll.Binary
             Street = street;
             Zip = zip;
         }
-        
+
         /// <summary>
         /// Street.
         /// </summary>
+        [QueryTextField]
         public string Street { get; set; }
 
         /// <summary>
