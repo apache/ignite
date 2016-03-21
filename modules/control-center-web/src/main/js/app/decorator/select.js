@@ -24,14 +24,14 @@ import angular from 'angular';
 angular.module('mgcrea.ngStrap.select')
     .decorator('$select', ($delegate) => {
         function SelectFactoryDecorated(element, controller, config) {
-            const deligate = $delegate(element, controller, config);
+            const delegate = $delegate(element, controller, config);
 
             // Common vars.
             const options = angular.extend({}, $delegate.defaults, config);
 
-            const scope = deligate.$scope;
+            const scope = delegate.$scope;
 
-            const _valueMap = (index) => {
+            const valueByIndex = (index) => {
                 if (angular.isUndefined(scope.$matches[index]))
                     return null;
 
@@ -46,9 +46,9 @@ angular.module('mgcrea.ngStrap.select')
                         if (scope.$isActive(i) === active) {
                             selected[i] = scope.$matches[i].value;
 
-                            deligate.activate(i);
+                            delegate.activate(i);
 
-                            controller.$setViewValue(scope.$activeIndex.map(_valueMap));
+                            controller.$setViewValue(scope.$activeIndex.map(valueByIndex));
                         }
                     }
                 });
@@ -56,7 +56,7 @@ angular.module('mgcrea.ngStrap.select')
                 // Emit events.
                 for (let i = 0; i < selected.length; i++) {
                     if (selected[i])
-                        scope.$emit(options.prefixEvent + '.select', selected[i], i, deligate);
+                        scope.$emit(options.prefixEvent + '.select', selected[i], i, delegate);
                 }
             };
 
@@ -68,7 +68,7 @@ angular.module('mgcrea.ngStrap.select')
                 scope.$$postDigest(selectAll.bind(this, true));
             };
 
-            return deligate;
+            return delegate;
         }
 
         SelectFactoryDecorated.defaults = $delegate.defaults;
