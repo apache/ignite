@@ -1900,7 +1900,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (!keepCacheObjects) {
             Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary);
 
-            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(unwrapTemporary(val), !deserializeBinary);
+            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary);
 
             assert key0 != null : key;
             assert val0 != null : val;

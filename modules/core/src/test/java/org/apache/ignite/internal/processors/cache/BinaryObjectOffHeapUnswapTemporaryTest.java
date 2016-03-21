@@ -55,6 +55,7 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
         cfg.setAtomicityMode(atomicMode);
         cfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
         cfg.setBackups(1);
+        cfg.setSwapEnabled(true);
 
         c.setCacheConfiguration(cfg);
 
@@ -88,7 +89,26 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
         builder.setField("field1", key);
         builder.setField("field2", "name_" + key);
 
-        keepBinaryCache.put(0, builder.build());
+        try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            BinaryObject val = keepBinaryCache.get(key);
+
+            assertFalse(val instanceof BinaryObjectOffheapImpl);
+
+            keepBinaryCache.put(key, val);
+
+            tx.commit();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetRealObject() throws Exception {
+        final int key = 0;
+
+        IgniteCache<Integer, BinaryObject> keepBinaryCache = jcache(0).withKeepBinary();
+
+        jcache(0).put(key, new TestObject());
 
         try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             BinaryObject val = keepBinaryCache.get(key);
@@ -151,5 +171,16 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
 
             tx.commit();
         }
+    }
+
+    /**
+     *
+     */
+    private static class TestObject {
+        /** */
+        String field = "str";
+
+        /** */
+        int field2 = 32;
     }
 }

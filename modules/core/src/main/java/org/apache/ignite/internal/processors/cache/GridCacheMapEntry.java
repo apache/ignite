@@ -898,9 +898,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
         }
 
-        if (ret != null)
+        if (ret != null) {
+            ret = cctx.unwrapTemporary(ret);
+
             // If return value is consistent, then done.
             return retVer ? new T2<>(ret, resVer) : ret;
+        }
 
         boolean loadedFromStore = false;
 
@@ -975,7 +978,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         assert ret == null || !retVer;
 
-        return ret;
+        return cctx.unwrapTemporary(ret);
     }
 
     /** {@inheritDoc} */
