@@ -25,6 +25,7 @@ html(ng-app='ignite-web-console' id='app')
 
         title(ng-bind='$meta.title')
 
+        meta(name='fragment' content='!')
         meta(name='description' content='{{$meta.description}}')
         meta(name='keywords' content='{{$meta.keywords}}')
         meta(ng-repeat='(key, value) in $meta.properties' name='{{::key}}' content='{{::value}}')
