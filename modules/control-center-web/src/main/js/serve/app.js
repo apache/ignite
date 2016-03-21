@@ -21,7 +21,7 @@
 
 module.exports = {
     implements: 'app',
-    inject: ['require(express)', 'configure', 'routes', 'io']
+    inject: ['require(express)', 'configure', 'routes']
 };
 
 module.exports.factory = function(Express, configure, routes) {

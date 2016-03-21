@@ -902,7 +902,7 @@ consoleModule.controller('sqlController', [
         };
 
         $scope.exportCsvAll = function (paragraph) {
-            IgniteAgentMonitor.query({
+            IgniteAgentMonitor.queryGetAll({
                     demo: $scope.demo,
                     type: paragraph.queryArgs.type,
                     query: paragraph.queryArgs.query,

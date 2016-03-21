@@ -19,6 +19,9 @@
 
 // Fire me up!
 
+/**
+ * Module mongo schema.
+ */
 module.exports = {
     implements: 'mongo',
     inject: ['require(mongoose-deep-populate)', 'require(passport-local-mongoose)', 'settings', 'ignite_modules/mongo:*']

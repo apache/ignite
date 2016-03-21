@@ -20,7 +20,6 @@ import _ from 'lodash';
 import ace from 'ace';
 import angular from 'angular';
 import pdfMake from 'pdfmake';
-import io from 'socket.io-client';
 
 window._ = _;
 window.ace = ace;

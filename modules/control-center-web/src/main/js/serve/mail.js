@@ -19,6 +19,9 @@
 
 // Fire me up!
 
+/**
+ * Module for send email.
+ */
 module.exports = {
     implements: 'mail',
     inject: ['require(nodemailer)', 'settings']

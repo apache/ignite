@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import io from 'socket.io-client';
+
 class IgniteAgentMonitor {
     constructor(socketFactory, $root, $q, $state, $modal, $common) {
         this._scope = $root.$new();
@@ -254,6 +256,14 @@ class IgniteAgentMonitor {
      */
     query(args) {
         return this._rest('node:query', args);
+    }
+
+    /**
+     * @param {Object} args
+     * @returns {Promise}
+     */
+    queryGetAll(args) {
+        return this._rest('node:query:getAll', args);
     }
 
     /**

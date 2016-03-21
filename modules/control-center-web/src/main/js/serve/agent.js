@@ -19,8 +19,11 @@
 
 // Fire me up!
 
+/**
+ * Module interaction with agents.
+ */
 module.exports = {
-    implements: 'agent',
+    implements: 'agent-manager',
     inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'require(apache-ignite)', 'settings', 'mongo']
 };
 
@@ -81,34 +84,44 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
         }
     }
 
+    /**
+     * Connected agent descriptor.
+     */
     class Agent {
         /**
-         * @param {socketIo.Socket} _wsSrv
-         * @param {AgentManager} manager
+         * @param {socketIo.Socket} socket - Agent socket for interaction.
          */
-        constructor(_wsSrv, manager) {
-            const self = this;
-
-            this._manager = manager;
-
+        constructor(socket) {
             /**
+             * Agent socket for interaction.
+             *
              * @type {socketIo.Socket}
              * @private
              */
-            this._wsAgents = _wsSrv;
+            this._socket = socket;
 
-            this._wsAgents.on('disconnect', () => {
-                if (self._user)
-                    self._manager._removeAgent(self._user._id, self);
-            });
+            /**
+             * Executor for grid.
+             *
+             * @type {apacheIgnite.Ignite}
+             * @private
+             */
+            this._cluster = new apacheIgnite.Ignite(new AgentServer(this));
 
-            this._wsAgents.on('agent:auth', (msg, cb) => self._processAuth(msg, cb));
+            /**
+             * Executor for demo node.
+             *
+             * @type {apacheIgnite.Ignite}
+             * @private
+             */
+            this._demo = new apacheIgnite.Ignite(new AgentServer(this, true));
         }
 
         /**
+         * Send message to agent.
          *
-         * @param event
-         * @param data
+         * @param {String} event - Event name.
+         * @param {Object} data - Transmitted data.
          * @returns {Promise}
          */
         _exec(event, data) {
@@ -125,12 +138,33 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
         }
 
         /**
-         * @param {String} uri
-         * @param {Object} params
-         * @param {Boolean} demo
-         * @param {String} [method]
-         * @param {Object} [headers]
-         * @param {String} [body]
+         * Send message to agent.
+         *
+         * @this {Agent}
+         * @param {String} event Command name.
+         * @param {Object} data Command params.
+         * @param {Function} [callback] on finish
+         */
+        _emit(event, data, callback) {
+            if (!this._socket.connected) {
+                if (callback)
+                    callback('org.apache.ignite.agent.AgentException: Connection is closed');
+
+                return;
+            }
+
+            this._socket.emit(event, data, callback);
+        }
+
+        /**
+         * Execute rest request on node.
+         *
+         * @param {String} uri - REST endpoint uri.
+         * @param {Object} params - REST request parameters.
+         * @param {Boolean} demo - true if execute on demo node.
+         * @param {String} [method] - Request method GET or POST.
+         * @param {Object} [headers] - REST request headers.
+         * @param {String} [body] - REST request body
          * @param {Function} [cb] Callback. Take 3 arguments: {Number} successStatus, {String} error,  {String} response.
          */
         executeRest(uri, params, demo, method, headers, body, cb) {
@@ -223,90 +257,38 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
         }
 
         /**
-         * Run http request
-         *
-         * @this {Agent}
-         * @param {String} event Command name.
-         * @param {Object} data Command params.
-         * @param {Function} [callback] on finish
-         */
-        _emit(event, data, callback) {
-            if (!this._wsAgents.connected) {
-                if (callback)
-                    callback('org.apache.ignite.agent.AgentException: Connection is closed');
-
-                return;
-            }
-
-            this._wsAgents.emit(event, data, callback);
-        }
-
-        /**
-         * Process auth request.
-         *
-         * @param {Object} data
-         * @param {Function} cb
-         * @private
-         */
-        _processAuth(data, cb) {
-            const self = this;
-
-            if (!_.isEmpty(this._manager.supportedAgents)) {
-                const ver = data.ver;
-                const bt = data.bt;
-
-                if (_.isEmpty(ver) || _.isEmpty(bt) || _.isEmpty(this._manager.supportedAgents[ver]) ||
-                    this._manager.supportedAgents[ver].buildTime > bt)
-                    return cb('You are using an older version of the agent. Please reload agent archive');
-            }
-
-            mongo.Account.findOne({token: data.token}, (err, account) => {
-                // TODO IGNITE-1379 send error to web master.
-                if (err)
-                    cb('Failed to authorize user');
-                else if (!account)
-                    cb('Invalid token, user not found');
-                else {
-                    self._user = account;
-
-                    self._manager._addAgent(account._id, self);
-
-                    self._cluster = new apacheIgnite.Ignite(new AgentServer(self));
-
-                    self._demo = new apacheIgnite.Ignite(new AgentServer(self, true));
-
-                    cb();
-                }
-            });
-        }
-
-        /**
-         * @returns {Ignite}
+         * @returns {apacheIgnite.Ignite}
          */
         ignite(demo) {
             return demo ? this._demo : this._cluster;
         }
     }
 
+    /**
+     * Connected agents manager.
+     */
     class AgentManager {
         /**
          * @constructor
          */
         constructor() {
             /**
+             * Connected agents by user id.
              * @type {Object.<ObjectId, Array.<Agent>>}
              */
             this._agents = {};
 
             /**
+             * Connected browsers by user id.
              * @type {Object.<ObjectId, Array.<Socket>>}
              */
-            this._users = {};
+            this._browsers = {};
 
             const agentArchives = fs.readdirSync(settings.agent.dists)
                 .filter((file) => path.extname(file) === '.zip');
 
             /**
+             * Supported agents distribution.
              * @type {Object.<String, String>}
              */
             this.supportedAgents = {};
@@ -360,14 +342,15 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
                 }
             }));
 
+            // Latest version of agent distribution.
             if (latest)
                 this.supportedAgents.latest = this.supportedAgents[latest];
         }
 
         /**
-         * @param {http.Server|https.Server} srv
+         * @param {http.Server|https.Server} srv Server instance that we want to attach agent handler.
          */
-        listen(srv) {
+        attach(srv) {
             if (this._server)
                 throw 'Agent server already started!';
 
@@ -376,11 +359,39 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
             /**
              * @type {WebSocketServer}
              */
-            this._wsAgents = socketio(this._server);
+            this._socket = socketio(this._server);
 
-            const self = this;
+            this._socket.on('connection', (socket) => {
+                socket.on('agent:auth', (data, cb) => {
+                    if (!_.isEmpty(this.supportedAgents)) {
+                        const ver = data.ver;
+                        const bt = data.bt;
 
-            this._wsAgents.on('connection', (_wsSrv) => new Agent(_wsSrv, self));
+                        if (_.isEmpty(ver) || _.isEmpty(bt) || _.isEmpty(this.supportedAgents[ver]) ||
+                            this.supportedAgents[ver].buildTime > bt)
+                            return cb('You are using an older version of the agent. Please reload agent archive');
+                    }
+
+                    mongo.Account.findOne({token: data.token}, (err, account) => {
+                        // TODO IGNITE-1379 send error to web master.
+                        if (err)
+                            cb('Failed to authorize user');
+                        else if (!account)
+                            cb('Invalid token, user not found');
+                        else {
+                            const agent = new Agent(socket);
+
+                            socket.on('disconnect', () => {
+                                this._removeAgent(account._id, agent);
+                            });
+
+                            this._addAgent(account._id, agent);
+
+                            cb();
+                        }
+                    });
+                });
+            });
         }
 
         /**
@@ -389,10 +400,10 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
          * @returns {int} connected agent count.
          */
         addAgentListener(userId, user) {
-            let users = this._users[userId];
+            let users = this._browsers[userId];
 
             if (!users)
-                this._users[userId] = users = [];
+                this._browsers[userId] = users = [];
 
             users.push(user);
 
@@ -407,7 +418,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
          * @returns {int} connected agent count.
          */
         removeAgentListener(userId, user) {
-            const users = this._users[userId];
+            const users = this._browsers[userId];
 
             _.remove(users, (_user) => _user === user);
         }
@@ -453,7 +464,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
 
             _.remove(agents, (_agent) => _agent === agent);
 
-            const users = this._users[userId];
+            const users = this._browsers[userId];
 
             _.forEach(users, (user) => user.emit('agent:count', {count: agents.length}));
         }
@@ -470,7 +481,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
 
             agents.push(agent);
 
-            const users = this._users[userId];
+            const users = this._browsers[userId];
 
             _.forEach(users, (user) => user.emit('agent:count', {count: agents.length}));
         }

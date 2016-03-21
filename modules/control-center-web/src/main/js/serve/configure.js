@@ -19,6 +19,9 @@
 
 // Fire me up!
 
+/**
+ * Module for configuration express and websocket server.
+ */
 module.exports = {
     implements: 'configure',
     inject: ['require(morgan)', 'require(cookie-parser)', 'require(body-parser)',

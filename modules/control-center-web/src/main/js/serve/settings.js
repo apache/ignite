@@ -19,6 +19,9 @@
 
 // Fire me up!
 
+/**
+ * Module with server-side configuration.
+ */
 module.exports = {
     implements: 'settings',
     inject: ['require(nconf)', 'require(fs)']

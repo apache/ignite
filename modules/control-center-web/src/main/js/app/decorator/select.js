@@ -31,31 +31,32 @@ angular.module('mgcrea.ngStrap.select')
 
             const scope = deligate.$scope;
 
-            const selectAll = (active) => {
-                var selected = [];
+            const _valueMap = (index) => {
+                if (angular.isUndefined(scope.$matches[index]))
+                    return null;
 
-                scope.$apply(function () {
-                    for (var i = 0; i < scope.$matches.length; i++) {
+                return scope.$matches[index].value;
+            };
+
+            const selectAll = (active) => {
+                const selected = [];
+
+                scope.$apply(() => {
+                    for (let i = 0; i < scope.$matches.length; i++) {
                         if (scope.$isActive(i) === active) {
                             selected[i] = scope.$matches[i].value;
 
                             deligate.activate(i);
 
-                            controller.$setViewValue(scope.$activeIndex.map(function (index) {
-                                if (angular.isUndefined(scope.$matches[index])) {
-                                    return null;
-                                }
-                                return scope.$matches[index].value;
-                            }));
+                            controller.$setViewValue(scope.$activeIndex.map(_valueMap));
                         }
                     }
                 });
 
                 // Emit events.
-                for (var i = 0; i < selected.length; i++) {
-                    if (selected[i]) {
+                for (let i = 0; i < selected.length; i++) {
+                    if (selected[i])
                         scope.$emit(options.prefixEvent + '.select', selected[i], i, deligate);
-                    }
                 }
             };
 

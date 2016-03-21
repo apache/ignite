@@ -66,12 +66,12 @@ const fireUp = require('fire-up').newInjector({
     ]
 });
 
-Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent'), fireUp('io')])
+Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent-manager'), fireUp('browser-manager')])
     .then((values) => {
         const settings = values[0];
         const app = values[1];
-        const agent = values[2];
-        const io = values[3];
+        const agentMgr = values[2];
+        const browserMgr = values[3];
 
         // Start rest server.
         const server = settings.server.SSLOptions
@@ -82,7 +82,7 @@ Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent'), fireUp('io')])
         server.on('listening', _onListening.bind(null, server.address()));
 
         app.listen(server);
-        io.listen(server);
+        browserMgr.attach(server);
 
         // Start agent server.
         const agentServer = settings.agent.SSLOptions
@@ -92,13 +92,13 @@ Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent'), fireUp('io')])
         agentServer.on('error', _onError.bind(null, settings.agent.port));
         agentServer.on('listening', _onListening.bind(null, agentServer.address()));
 
-        agent.listen(agentServer);
+        agentMgr.attach(agentServer);
 
         // Used for automated test.
         if (process.send)
             process.send('running');
     }).catch((err) => {
-        console.error(error);
+        console.error(err);
 
         process.exit(1);
     });

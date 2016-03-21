@@ -21,7 +21,7 @@
 
 module.exports = {
     implements: 'agent-routes',
-    inject: ['require(lodash)', 'require(express)', 'require(fs)', 'require(jszip)', 'require(apache-ignite)', 'settings', 'agent']
+    inject: ['require(lodash)', 'require(express)', 'require(fs)', 'require(jszip)', 'require(apache-ignite)', 'settings', 'agent-manager']
 };
 
 /**
