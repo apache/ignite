@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,8 @@
 #include <string>
 #include <sstream>
 
+#include "ignite/impl/binary/binary_utils.h"
+
 #include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/app/application_data_buffer.h"
 #include "ignite/odbc/utility.h"
@@ -29,6 +31,8 @@ namespace ignite
     {
         namespace app
         {
+            using ignite::impl::binary::BinaryUtils;
+
             ApplicationDataBuffer::ApplicationDataBuffer() :
                 type(type_traits::IGNITE_ODBC_C_TYPE_UNSUPPORTED), buffer(0), buflen(0), reslen(0), offset(0)
             {
@@ -577,9 +581,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                time_t time = utility::DateToCTime(value);
+                tm tmTime;
 
-                tm* tmTime = std::gmtime(&time);
+                BinaryUtils::DateToCTm(value, tmTime);
 
                 switch (type)
                 {
@@ -589,7 +593,7 @@ namespace ignite
 
                         if (buffer)
                         {
-                            strftime(buffer, GetSize(), "%Y-%m-%d", tmTime);
+                            strftime(buffer, GetSize(), "%Y-%m-%d", &tmTime);
 
                             if (GetResLen())
                                 *GetResLen() = strlen(buffer);
@@ -608,7 +612,7 @@ namespace ignite
                         {
                             std::string tmp(GetSize(), 0);
 
-                            strftime(&tmp[0], GetSize(), "%Y-%m-%d", tmTime);
+                            strftime(&tmp[0], GetSize(), "%Y-%m-%d", &tmTime);
 
                             SqlLen toCopy = std::min(static_cast<SqlLen>(strlen(tmp.c_str()) + 1), GetSize());
 
@@ -630,9 +634,9 @@ namespace ignite
                     {
                         SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(GetData());
 
-                        buffer->year = tmTime->tm_year + 1900;
-                        buffer->month = tmTime->tm_mon + 1;
-                        buffer->day = tmTime->tm_mday;
+                        buffer->year = tmTime.tm_year + 1900;
+                        buffer->month = tmTime.tm_mon + 1;
+                        buffer->day = tmTime.tm_mday;
 
                         break;
                     }
@@ -641,12 +645,12 @@ namespace ignite
                     {
                         SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(GetData());
 
-                        buffer->year = tmTime->tm_year + 1900;
-                        buffer->month = tmTime->tm_mon + 1;
-                        buffer->day = tmTime->tm_mday;
-                        buffer->hour = tmTime->tm_hour;
-                        buffer->minute = tmTime->tm_min;
-                        buffer->second = tmTime->tm_sec;
+                        buffer->year = tmTime.tm_year + 1900;
+                        buffer->month = tmTime.tm_mon + 1;
+                        buffer->day = tmTime.tm_mday;
+                        buffer->hour = tmTime.tm_hour;
+                        buffer->minute = tmTime.tm_min;
+                        buffer->second = tmTime.tm_sec;
                         buffer->fraction = 0;
 
                         break;
@@ -688,9 +692,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                time_t time = utility::TimestampToCTime(value);
+                tm tmTime;
 
-                tm* tmTime = std::gmtime(&time);
+                BinaryUtils::TimestampToCTm(value, tmTime);
 
                 switch (type)
                 {
@@ -700,7 +704,7 @@ namespace ignite
 
                         if (buffer)
                         {
-                            strftime(buffer, GetSize(), "%Y-%m-%d %H:%M:%S", tmTime);
+                            strftime(buffer, GetSize(), "%Y-%m-%d %H:%M:%S", &tmTime);
 
                             if (GetResLen())
                                 *GetResLen() = strlen(buffer);
@@ -719,7 +723,7 @@ namespace ignite
                         {
                             std::string tmp(GetSize(), 0);
 
-                            strftime(&tmp[0], GetSize(), "%Y-%m-%d %H:%M:%S", tmTime);
+                            strftime(&tmp[0], GetSize(), "%Y-%m-%d %H:%M:%S", &tmTime);
 
                             SqlLen toCopy = std::min(static_cast<SqlLen>(strlen(tmp.c_str()) + 1), GetSize());
 
@@ -741,9 +745,9 @@ namespace ignite
                     {
                         SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(GetData());
 
-                        buffer->year = tmTime->tm_year + 1900;
-                        buffer->month = tmTime->tm_mon + 1;
-                        buffer->day = tmTime->tm_mday;
+                        buffer->year = tmTime.tm_year + 1900;
+                        buffer->month = tmTime.tm_mon + 1;
+                        buffer->day = tmTime.tm_mday;
 
                         break;
                     }
@@ -752,12 +756,12 @@ namespace ignite
                     {
                         SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(GetData());
 
-                        buffer->year = tmTime->tm_year + 1900;
-                        buffer->month = tmTime->tm_mon + 1;
-                        buffer->day = tmTime->tm_mday;
-                        buffer->hour = tmTime->tm_hour;
-                        buffer->minute = tmTime->tm_min;
-                        buffer->second = tmTime->tm_sec;
+                        buffer->year = tmTime.tm_year + 1900;
+                        buffer->month = tmTime.tm_mon + 1;
+                        buffer->day = tmTime.tm_mday;
+                        buffer->hour = tmTime.tm_hour;
+                        buffer->minute = tmTime.tm_min;
+                        buffer->second = tmTime.tm_sec;
                         buffer->fraction = value.GetSecondFraction();
 
                         break;
@@ -1136,9 +1140,7 @@ namespace ignite
                         break;
                 }
 
-                time_t cTime = mktime(&tmTime) - timezone;
-
-                return Date(cTime * 1000);
+                return BinaryUtils::CTmToDate(tmTime);
             }
 
             Timestamp ApplicationDataBuffer::GetTimestamp() const
@@ -1197,9 +1199,7 @@ namespace ignite
                         break;
                 }
 
-                time_t cTime = mktime(&tmTime) - timezone;
-
-                return Timestamp(cTime, nanos);
+                return BinaryUtils::CTmToTimestamp(tmTime, nanos);
             }
 
             template<typename T>

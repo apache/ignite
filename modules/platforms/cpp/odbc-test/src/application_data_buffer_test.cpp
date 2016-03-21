@@ -37,7 +37,7 @@ using namespace ignite::odbc;
 using namespace ignite::odbc::app;
 using namespace ignite::odbc::type_traits;
 
-using namespace test_utils;
+using ignite::impl::binary::BinaryUtils;
 
 BOOST_AUTO_TEST_SUITE(ApplicationDataBufferTestSuite)
 
@@ -407,7 +407,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToString)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
 
-    Date date = MakeDate(1999, 2, 22);
+    Date date = BinaryUtils::MakeDateGmt(1999, 2, 22);
 
     appBuf.PutDate(date);
 
@@ -421,7 +421,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
 
-    Timestamp date = MakeTimestamp(2018, 11, 1, 17, 45, 59);
+    Timestamp date = BinaryUtils::MakeTimestampGmt(2018, 11, 1, 17, 45, 59);
 
     appBuf.PutTimestamp(date);
 
@@ -438,7 +438,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToDate)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
 
-    Date date = MakeDate(1984, 5, 27);
+    Date date = BinaryUtils::MakeDateGmt(1984, 5, 27);
 
     appBuf.PutDate(date);
 
@@ -457,7 +457,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToDate)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
 
-    Timestamp ts = MakeTimestamp(2004, 8, 14, 6, 34, 51, 573948623);
+    Timestamp ts = BinaryUtils::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
 
     appBuf.PutTimestamp(ts);
 
@@ -476,7 +476,7 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToTimestamp)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
 
-    Timestamp ts = MakeTimestamp(2004, 8, 14, 6, 34, 51, 573948623);
+    Timestamp ts = BinaryUtils::MakeTimestampGmt(2004, 8, 14, 6, 34, 51, 573948623);
 
     appBuf.PutTimestamp(ts);
 
@@ -500,7 +500,7 @@ BOOST_AUTO_TEST_CASE(TestPutDateToTimestamp)
 
     ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
 
-    Date date = MakeDate(1984, 5, 27);
+    Date date = BinaryUtils::MakeDateGmt(1984, 5, 27);
 
     appBuf.PutDate(date);
 
@@ -822,18 +822,18 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromString)
 
     Date date = appBuf.GetDate();
 
-    time_t cTime = utility::DateToCTime(date);
+    tm tmDate;
 
-    tm *tmDate = std::gmtime(&cTime);
+    bool success = BinaryUtils::DateToCTm(date, tmDate);
 
-    BOOST_REQUIRE(tmDate != 0);
+    BOOST_REQUIRE(success);
 
-    BOOST_CHECK_EQUAL(1999, tmDate->tm_year + 1900);
-    BOOST_CHECK_EQUAL(2, tmDate->tm_mon + 1);
-    BOOST_CHECK_EQUAL(22, tmDate->tm_mday);
-    BOOST_CHECK_EQUAL(0, tmDate->tm_hour);
-    BOOST_CHECK_EQUAL(0, tmDate->tm_min);
-    BOOST_CHECK_EQUAL(0, tmDate->tm_sec);
+    BOOST_CHECK_EQUAL(1999, tmDate.tm_year + 1900);
+    BOOST_CHECK_EQUAL(2, tmDate.tm_mon + 1);
+    BOOST_CHECK_EQUAL(22, tmDate.tm_mday);
+    BOOST_CHECK_EQUAL(0, tmDate.tm_hour);
+    BOOST_CHECK_EQUAL(0, tmDate.tm_min);
+    BOOST_CHECK_EQUAL(0, tmDate.tm_sec);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetTimestampFromString)
@@ -853,18 +853,18 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromString)
 
     Timestamp date = appBuf.GetTimestamp();
 
-    time_t cTime = utility::TimestampToCTime(date);
+    tm tmDate;
 
-    tm *tmDate = std::gmtime(&cTime);
+    bool success = BinaryUtils::TimestampToCTm(date, tmDate);
 
-    BOOST_REQUIRE(tmDate != 0);
+    BOOST_REQUIRE(success);
 
-    BOOST_CHECK_EQUAL(2018, tmDate->tm_year + 1900);
-    BOOST_CHECK_EQUAL(11, tmDate->tm_mon + 1);
-    BOOST_CHECK_EQUAL(1, tmDate->tm_mday);
-    BOOST_CHECK_EQUAL(17, tmDate->tm_hour);
-    BOOST_CHECK_EQUAL(45, tmDate->tm_min);
-    BOOST_CHECK_EQUAL(59, tmDate->tm_sec);
+    BOOST_CHECK_EQUAL(2018, tmDate.tm_year + 1900);
+    BOOST_CHECK_EQUAL(11, tmDate.tm_mon + 1);
+    BOOST_CHECK_EQUAL(1, tmDate.tm_mday);
+    BOOST_CHECK_EQUAL(17, tmDate.tm_hour);
+    BOOST_CHECK_EQUAL(45, tmDate.tm_min);
+    BOOST_CHECK_EQUAL(59, tmDate.tm_sec);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetDateFromDate)
@@ -884,18 +884,18 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromDate)
 
     Date date = appBuf.GetDate();
 
-    time_t cTime = utility::DateToCTime(date);
+    tm tmDate;
 
-    tm *tmDate = std::gmtime(&cTime);
+    bool success = BinaryUtils::DateToCTm(date, tmDate);
 
-    BOOST_REQUIRE(tmDate != 0);
+    BOOST_REQUIRE(success);
 
-    BOOST_CHECK_EQUAL(1984, tmDate->tm_year + 1900);
-    BOOST_CHECK_EQUAL(5, tmDate->tm_mon + 1);
-    BOOST_CHECK_EQUAL(27, tmDate->tm_mday);
-    BOOST_CHECK_EQUAL(0, tmDate->tm_hour);
-    BOOST_CHECK_EQUAL(0, tmDate->tm_min);
-    BOOST_CHECK_EQUAL(0, tmDate->tm_sec);
+    BOOST_CHECK_EQUAL(1984, tmDate.tm_year + 1900);
+    BOOST_CHECK_EQUAL(5, tmDate.tm_mon + 1);
+    BOOST_CHECK_EQUAL(27, tmDate.tm_mday);
+    BOOST_CHECK_EQUAL(0, tmDate.tm_hour);
+    BOOST_CHECK_EQUAL(0, tmDate.tm_min);
+    BOOST_CHECK_EQUAL(0, tmDate.tm_sec);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetTimestampFromDate)
@@ -915,18 +915,18 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromDate)
 
     Timestamp ts = appBuf.GetTimestamp();
 
-    time_t cTime = utility::TimestampToCTime(ts);
+    tm tmDate;
 
-    tm *tmDate = std::gmtime(&cTime);
+    bool success = BinaryUtils::TimestampToCTm(ts, tmDate);
 
-    BOOST_REQUIRE(tmDate != 0);
+    BOOST_REQUIRE(success);
 
-    BOOST_CHECK_EQUAL(1984, tmDate->tm_year + 1900);
-    BOOST_CHECK_EQUAL(5, tmDate->tm_mon + 1);
-    BOOST_CHECK_EQUAL(27, tmDate->tm_mday);
-    BOOST_CHECK_EQUAL(0, tmDate->tm_hour);
-    BOOST_CHECK_EQUAL(0, tmDate->tm_min);
-    BOOST_CHECK_EQUAL(0, tmDate->tm_sec);
+    BOOST_CHECK_EQUAL(1984, tmDate.tm_year + 1900);
+    BOOST_CHECK_EQUAL(5, tmDate.tm_mon + 1);
+    BOOST_CHECK_EQUAL(27, tmDate.tm_mday);
+    BOOST_CHECK_EQUAL(0, tmDate.tm_hour);
+    BOOST_CHECK_EQUAL(0, tmDate.tm_min);
+    BOOST_CHECK_EQUAL(0, tmDate.tm_sec);
 }
 
 BOOST_AUTO_TEST_CASE(TestGetTimestampFromTimestamp)
@@ -950,18 +950,18 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromTimestamp)
 
     Timestamp ts = appBuf.GetTimestamp();
 
-    time_t cTime = utility::TimestampToCTime(ts);
+    tm tmDate;
 
-    tm *tmDate = std::gmtime(&cTime);
+    bool success = BinaryUtils::TimestampToCTm(ts, tmDate);
 
-    BOOST_REQUIRE(tmDate != 0);
+    BOOST_REQUIRE(success);
 
-    BOOST_CHECK_EQUAL(2004, tmDate->tm_year + 1900);
-    BOOST_CHECK_EQUAL(8, tmDate->tm_mon + 1);
-    BOOST_CHECK_EQUAL(14, tmDate->tm_mday);
-    BOOST_CHECK_EQUAL(6, tmDate->tm_hour);
-    BOOST_CHECK_EQUAL(34, tmDate->tm_min);
-    BOOST_CHECK_EQUAL(51, tmDate->tm_sec);
+    BOOST_CHECK_EQUAL(2004, tmDate.tm_year + 1900);
+    BOOST_CHECK_EQUAL(8, tmDate.tm_mon + 1);
+    BOOST_CHECK_EQUAL(14, tmDate.tm_mday);
+    BOOST_CHECK_EQUAL(6, tmDate.tm_hour);
+    BOOST_CHECK_EQUAL(34, tmDate.tm_min);
+    BOOST_CHECK_EQUAL(51, tmDate.tm_sec);
     BOOST_CHECK_EQUAL(573948623, ts.GetSecondFraction());
 }
 
@@ -986,18 +986,18 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromTimestamp)
 
     Date date = appBuf.GetDate();
 
-    time_t cTime = utility::DateToCTime(date);
+    tm tmDate;
 
-    tm *tmDate = std::gmtime(&cTime);
+    bool success = BinaryUtils::DateToCTm(date, tmDate);
 
-    BOOST_REQUIRE(tmDate != 0);
+    BOOST_REQUIRE(success);
 
-    BOOST_CHECK_EQUAL(2004, tmDate->tm_year + 1900);
-    BOOST_CHECK_EQUAL(8, tmDate->tm_mon + 1);
-    BOOST_CHECK_EQUAL(14, tmDate->tm_mday);
-    BOOST_CHECK_EQUAL(6, tmDate->tm_hour);
-    BOOST_CHECK_EQUAL(34, tmDate->tm_min);
-    BOOST_CHECK_EQUAL(51, tmDate->tm_sec);
+    BOOST_CHECK_EQUAL(2004, tmDate.tm_year + 1900);
+    BOOST_CHECK_EQUAL(8, tmDate.tm_mon + 1);
+    BOOST_CHECK_EQUAL(14, tmDate.tm_mday);
+    BOOST_CHECK_EQUAL(6, tmDate.tm_hour);
+    BOOST_CHECK_EQUAL(34, tmDate.tm_min);
+    BOOST_CHECK_EQUAL(51, tmDate.tm_sec);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
