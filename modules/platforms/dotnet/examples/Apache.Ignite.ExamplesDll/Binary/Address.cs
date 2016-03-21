@@ -46,7 +46,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <summary>
         /// ZIP code.
         /// </summary>
-        [QuerySqlField(IsIndexed = true)]  // TODO: bug with indexed nested property
+        [QuerySqlField(IsIndexed = true)]
         public int Zip { get; set; }
 
         /// <summary>
