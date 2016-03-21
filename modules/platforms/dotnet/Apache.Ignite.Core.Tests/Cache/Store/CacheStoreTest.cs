@@ -476,13 +476,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         }
 
         [Test]
-        public void TestLoadAll()
+        public void TestLoadAll([Values(true, false)] bool isAsync)
         {
             var cache = GetCache();
 
+            var loadAll = isAsync
+                ? (Action<IEnumerable<int>, bool>) ((x, y) => { cache.LoadAllAsync(x, y).Wait(); })
+                : cache.LoadAll;
+
             Assert.AreEqual(0, cache.GetSize());
 
-            cache.LoadAllAsync(Enumerable.Range(105, 5), false).Wait();
+            loadAll(Enumerable.Range(105, 5), false);
 
             Assert.AreEqual(5, cache.GetSize());
 
@@ -493,10 +497,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             cache[105] = "42";
 
             cache.LocalEvict(new[] { 105 });
-            cache.LoadAllAsync(new[] {105}, false).Wait();
+            loadAll(new[] {105}, false);
             Assert.AreEqual("42", cache[105]);
 
-            cache.LoadAllAsync(new[] {105, 106}, true).Wait();
+            loadAll(new[] {105, 106}, true);
             Assert.AreEqual("val_105", cache[105]);
             Assert.AreEqual("val_165", cache[106]);
         }
