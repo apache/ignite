@@ -40,7 +40,7 @@ public class CacheVersionImpl implements CacheVersion {
     public static final long ORDER_MASK = 0x00_FF_FF_FF_FF_FF_FF_FFL;
 
     /** */
-    public static final int TOP_VER_MASK = 0x00_FF_FF_FF;
+    // public static final int TOP_VER_MASK = 0x00_FF_FF_FF;
 
     /** Topology version and first minor topology version byte. */
     @GridToStringInclude
@@ -84,8 +84,8 @@ public class CacheVersionImpl implements CacheVersion {
             throw new IllegalArgumentException("Node order overflow: " + nodeOrder);
 
         this.globalTime = globalTime;
-        this.topVer = topVer | (minorTopVer << 24);
-        this.order = ((minorTopVer & 0xFF00L) << 48) | order;
+        this.topVer = topVer;//topVer | (minorTopVer << 24);
+        this.order = order | (((long)minorTopVer) << 56);//((minorTopVer & 0xFF00L) << 48) | order;
 
         nodeOrderDrId = nodeOrder | (dataCenterId << GridCacheVersion.DR_ID_SHIFT);
     }
@@ -119,15 +119,16 @@ public class CacheVersionImpl implements CacheVersion {
 
     /** {@inheritDoc} */
     @Override public int minorTopologyVersion() {
-        int low = topVer >>> 24;
-        int high = ((int)(order >>> 48)) & 0xFF00;
-
-        return high | low;
+//        int low = topVer >>> 24;
+//        int high = ((int)(order >>> 48)) & 0xFF00;
+//
+//        return high | low;
+        return (int)(order >>> 56);
     }
 
     /** {@inheritDoc} */
     @Override public int topologyVersion() {
-        return topVer & TOP_VER_MASK;
+        return topVer;// & TOP_VER_MASK;
     }
 
     /** {@inheritDoc} */

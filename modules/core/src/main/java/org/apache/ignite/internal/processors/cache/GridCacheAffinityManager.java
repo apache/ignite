@@ -45,7 +45,7 @@ import java.util.UUID;
  */
 public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /** */
-    private static final AffinityTopologyVersion TOP_FIRST = new AffinityTopologyVersion(1);
+    private static final AffinityTopologyVersion LOC_CACHE_TOP_VER = new AffinityTopologyVersion(1);
 
     /** */
     public static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
@@ -76,7 +76,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (cctx.isLocal())
             // No discovery event needed for local affinity.
-            aff.calculate(TOP_FIRST, null);
+            aff.calculate(LOC_CACHE_TOP_VER, null);
     }
 
     /** {@inheritDoc} */
@@ -163,7 +163,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      */
     public List<List<ClusterNode>> assignments(AffinityTopologyVersion topVer) {
         if (cctx.isLocal())
-            topVer = new AffinityTopologyVersion(1);
+            topVer = LOC_CACHE_TOP_VER;
 
         return aff.assignments(topVer);
     }
@@ -236,7 +236,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      */
     public List<ClusterNode> nodes(int part, AffinityTopologyVersion topVer) {
         if (cctx.isLocal())
-            topVer = new AffinityTopologyVersion(1);
+            topVer = LOC_CACHE_TOP_VER;
 
         GridAffinityAssignmentCache aff0 = aff;
 
@@ -254,7 +254,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      */
     public GridAffinityAssignment assignment(AffinityTopologyVersion topVer) {
         if (cctx.isLocal())
-            topVer = new AffinityTopologyVersion(1);
+            topVer = LOC_CACHE_TOP_VER;
 
         GridAffinityAssignmentCache aff0 = aff;
 
@@ -400,7 +400,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      */
     public Set<Integer> primaryPartitions(UUID nodeId, AffinityTopologyVersion topVer) {
         if (cctx.isLocal())
-            topVer = new AffinityTopologyVersion(1);
+            topVer = LOC_CACHE_TOP_VER;
 
         GridAffinityAssignmentCache aff0 = aff;
 
@@ -417,7 +417,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      */
     public Set<Integer> backupPartitions(UUID nodeId, AffinityTopologyVersion topVer) {
         if (cctx.isLocal())
-            topVer = new AffinityTopologyVersion(1);
+            topVer = LOC_CACHE_TOP_VER;
 
         GridAffinityAssignmentCache aff0 = aff;
 

@@ -1036,7 +1036,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     continue;
 
                 try {
-                    if (crd != null && centralizedAff)
+                    if (centralizedAff)
                         cacheCtx.topology().initPartitions(this);
                 }
                 catch (IgniteInterruptedCheckedException e) {

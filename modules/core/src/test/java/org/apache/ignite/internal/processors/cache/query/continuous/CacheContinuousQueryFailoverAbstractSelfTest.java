@@ -1186,15 +1186,22 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @param cache Cache.
      * @param parts Number of partitions.
      * @return Keys.
+     * @throws Exception If failed.
      */
-    private List<Integer> testKeys(IgniteCache<Object, Object> cache, int parts) {
+    private List<Integer> testKeys(IgniteCache<Object, Object> cache, int parts) throws Exception {
         Ignite ignite = cache.unwrap(Ignite.class);
 
         List<Integer> res = new ArrayList<>();
 
-        Affinity<Object> aff = ignite.affinity(cache.getName());
+        final Affinity<Object> aff = ignite.affinity(cache.getName());
 
-        ClusterNode node = ignite.cluster().localNode();
+        final ClusterNode node = ignite.cluster().localNode();
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return aff.primaryPartitions(node).length > 0;
+            }
+        }, 5000));
 
         int[] nodeParts = aff.primaryPartitions(node);
 
