@@ -28,10 +28,7 @@ angular
     $stateProvider
     .state('signin', {
         url: '/',
-        templateUrl: '/signin.html',
-        metaTags: {
-            title: 'Management Tool and Configuration Wizard for Apache Ignite'
-        }
+        templateUrl: '/signin.html'
     });
 }])
 .run(['$rootScope', '$state', 'Auth', 'IgniteBranding', function($root, $state, Auth, branding) {

@@ -171,6 +171,7 @@ angular
 }])
 .config(['UIRouterMetatagsProvider', (UIRouterMetatagsProvider) => {
     UIRouterMetatagsProvider
+        .setDefaultTitle('Apache Ignite Web Console - Management Tool and Configuration Wizard for Apache Ignite')
         .setTitleSuffix(' – Apache Ignite Web Console')
         .setDefaultDescription('The Apache Ignite Web Console is an interactive management tool and configuration wizard for Apache Ignite which walks you through the creation of configuration files. Try the tool now.');
 }])
