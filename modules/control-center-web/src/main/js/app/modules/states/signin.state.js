@@ -28,7 +28,9 @@ angular
     $stateProvider
     .state('signin', {
         url: '/',
-        templateUrl: '/signin.html'
+        templateUrl: '/signin.html',
+        metaTags: {
+        }
     });
 }])
 .run(['$rootScope', '$state', 'Auth', 'IgniteBranding', function($root, $state, Auth, branding) {
