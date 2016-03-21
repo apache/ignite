@@ -22,6 +22,7 @@ import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -150,8 +151,10 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
                 result.set(entry);
 
-                if (!entry.deleted())
-                    decrementPublicSize(entry);
+                synchronized (entry) {
+                    if (!entry.deleted())
+                        decrementPublicSize(entry);
+                }
 
                 return null;
             }
@@ -204,13 +207,26 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeEntry(GridCacheEntryEx entry) {
-        boolean result = map.remove(entry.key(), entry);
+    @Override public boolean removeEntry(final GridCacheEntryEx entry) {
+        final AtomicBoolean result = new AtomicBoolean();
 
-        if (!entry.deleted() && result)
-            decrementPublicSize(entry);
+        map.compute(entry.key(), new ConcurrentHashMap8.BiFun<KeyCacheObject, GridCacheMapEntry, GridCacheMapEntry>() {
+            @Override public GridCacheMapEntry apply(KeyCacheObject object, GridCacheMapEntry entry0) {
+                if (entry.equals(entry0)) {
+                    result.set(true);
 
-        return result;
+                    synchronized (entry) {
+                        if (!entry.deleted())
+                            decrementPublicSize(entry);
+                    }
+
+                    return null;
+                }
+                return entry0;
+            }
+        });
+
+        return result.get();
     }
 
     /** {@inheritDoc} */
