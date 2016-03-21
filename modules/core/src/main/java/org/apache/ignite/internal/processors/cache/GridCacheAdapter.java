@@ -1028,7 +1028,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         Set<Cache.Entry<K, V>> entrySet = new HashSet<>();
 
         for (GridCacheEntryEx entryEx : map.entrySet(filter)) {
-            entrySet.add(entryEx.<K, V>wrap());
+            entrySet.add(entryEx.<K, V>wrapLazyValue());
         }
 
         return entrySet;

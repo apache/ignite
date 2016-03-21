@@ -94,7 +94,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry getEntry(Object key) {
-        return map.get(new KeyCacheObjectImpl(key, null));
+        return map.get(ctx.cacheObjects().toCacheKeyObject(ctx.cacheObjectContext(), key, true));
     }
 
     /** {@inheritDoc} */
