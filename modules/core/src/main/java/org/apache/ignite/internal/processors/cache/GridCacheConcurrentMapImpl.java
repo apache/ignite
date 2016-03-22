@@ -212,7 +212,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     @Override public boolean removeEntry(final GridCacheEntryEx entry) {
         final AtomicBoolean result = new AtomicBoolean();
 
-        map.compute(entry.key(), new ConcurrentHashMap8.BiFun<KeyCacheObject, GridCacheMapEntry, GridCacheMapEntry>() {
+        map.computeIfPresent(entry.key(), new ConcurrentHashMap8.BiFun<KeyCacheObject, GridCacheMapEntry, GridCacheMapEntry>() {
             @Override public GridCacheMapEntry apply(KeyCacheObject object, GridCacheMapEntry entry0) {
                 if (entry.equals(entry0)) {
                     result.set(true);
