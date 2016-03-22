@@ -86,10 +86,10 @@ public class FileSystemConfiguration {
     public static final boolean DFLT_INIT_DFLT_PATH_MODES = true;
 
     /** Default value of metadata co-location flag. */
-    public static boolean DFLT_COLOCATE_META = true;
+    public static final boolean DFLT_COLOCATE_META = true;
 
     /** Default value of relaxed consistency flag. */
-    public static boolean DFLT_RELAXED_CONSISTENCY = true;
+    public static final boolean DFLT_RELAXED_CONSISTENCY = true;
 
     /** IGFS instance name. */
     private String name;
