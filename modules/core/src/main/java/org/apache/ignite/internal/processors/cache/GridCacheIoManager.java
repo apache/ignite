@@ -128,6 +128,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                     AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
 
+                    DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheMsg.cacheId());
+
+                    if (cacheDesc != null && cacheDesc.startTopologyVersion() != null)
+                        startTopVer = cacheDesc.startTopologyVersion();
+
                     // Need to wait for initial exchange to avoid race between cache start and affinity request.
                     fut = cctx.exchange().affinityReadyFuture(startTopVer);
 
