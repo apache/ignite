@@ -111,8 +111,8 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         return part.removeEntry(entry);
     }
 
-    @Nullable @Override public GridCacheMapEntry randomEntry() {
-        return null;
+    @Nullable @Override public GridCacheEntryEx randomEntry() {
+        return entries().iterator().next();
     }
 
     @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {

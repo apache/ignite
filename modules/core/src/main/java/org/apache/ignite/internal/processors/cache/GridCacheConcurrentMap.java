@@ -83,7 +83,7 @@ public interface GridCacheConcurrentMap {
 
     void decrementPublicSize(GridCacheEntryEx e);
 
-    @Nullable GridCacheMapEntry randomEntry();
+    @Nullable GridCacheEntryEx randomEntry();
 
     /**
      * @return Random entry out of hash map.

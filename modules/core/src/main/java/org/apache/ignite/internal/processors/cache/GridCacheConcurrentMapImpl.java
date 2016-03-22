@@ -242,7 +242,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry randomEntry() {
+    @Nullable @Override public GridCacheEntryEx randomEntry() {
         // TODO
         return map.values().iterator().next();
     }

@@ -3810,7 +3810,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     @Deprecated
     @Nullable public Cache.Entry<K, V> randomEntry() {
-        GridCacheMapEntry entry;
+        GridCacheEntryEx entry;
 
         if (ctx.offheapTiered()) {
             Iterator<Cache.Entry<K, V>> it;

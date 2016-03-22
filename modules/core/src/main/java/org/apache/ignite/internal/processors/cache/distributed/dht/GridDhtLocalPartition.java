@@ -258,7 +258,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return map.removeEntryIfObsolete(key);
     }
 
-    @Nullable public GridCacheMapEntry randomEntry() {
+    @Nullable public GridCacheEntryEx randomEntry() {
         return map.randomEntry();
     }
 
