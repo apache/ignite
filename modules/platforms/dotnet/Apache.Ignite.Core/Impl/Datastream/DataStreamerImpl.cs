@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private long _topVer;
 
         /** Topology size. */
-        private int _topSize;
+        private int _topSize = 1;
         
         /** Buffer send size. */
         private volatile int _bufSndSize;
