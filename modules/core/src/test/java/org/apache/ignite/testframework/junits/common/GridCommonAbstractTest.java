@@ -580,7 +580,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
     }
 
-
     /**
      * @param ignite Node.
      */

@@ -234,7 +234,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true);
 
-        checkPartitionMapMetaExchange();
+        checkPartitionMapExchangeFinished();
 
         checkPartitionMapMessagesAbsent();
 
@@ -244,7 +244,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true);
 
-        checkPartitionMapMetaExchange();
+        checkPartitionMapExchangeFinished();
 
         checkPartitionMapMessagesAbsent();
 
@@ -255,7 +255,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true);
 
-        checkPartitionMapMetaExchange();
+        checkPartitionMapExchangeFinished();
 
         checkPartitionMapMessagesAbsent();
 
@@ -265,7 +265,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true);
 
-        checkPartitionMapMetaExchange();
+        checkPartitionMapExchangeFinished();
 
         checkPartitionMapMessagesAbsent();
 
@@ -408,7 +408,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    protected void checkPartitionMapMetaExchange() {
+    protected void checkPartitionMapExchangeFinished() {
         for (Ignite g : G.allGrids()) {
             IgniteKernal g0 = (IgniteKernal)g;
 
@@ -612,7 +612,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true);
 
-        checkPartitionMapMetaExchange();
+        checkPartitionMapExchangeFinished();
 
         checkPartitionMapMessagesAbsent();
 
