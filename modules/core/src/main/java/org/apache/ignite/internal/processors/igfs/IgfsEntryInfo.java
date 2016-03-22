@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,9 +50,6 @@ public abstract class IgfsEntryInfo implements Externalizable {
 
     /** Last modification time. */
     protected long modificationTime;
-
-    /** Original file path. This is a helper field used only during real file delete. */
-    protected IgfsPath path;
 
     /**
      * Default constructor.
@@ -113,13 +109,6 @@ public abstract class IgfsEntryInfo implements Externalizable {
     }
 
     /**
-     * @return Original file path. This is a helper field used only in some operations like delete.
-     */
-    public IgfsPath path() {
-        return path;
-    }
-
-    /**
      * @return {@code True} if this is a file.
      */
     public abstract boolean isFile();
@@ -150,20 +139,6 @@ public abstract class IgfsEntryInfo implements Externalizable {
         IgfsEntryInfo res = copy();
 
         res.props = props;
-
-        return res;
-    }
-
-    /**
-     * Update path.
-     *
-     * @param path Path.
-     * @return Updated file info.
-     */
-    public IgfsEntryInfo path(IgfsPath path) {
-        IgfsEntryInfo res = copy();
-
-        res.path = path;
 
         return res;
     }
@@ -295,7 +270,6 @@ public abstract class IgfsEntryInfo implements Externalizable {
         U.writeStringMap(out, props);
         out.writeLong(accessTime);
         out.writeLong(modificationTime);
-        out.writeObject(path);
     }
 
     /** {@inheritDoc} */
@@ -304,7 +278,6 @@ public abstract class IgfsEntryInfo implements Externalizable {
         props = U.readStringMap(in);
         accessTime = in.readLong();
         modificationTime = in.readLong();
-        path = (IgfsPath)in.readObject();
     }
 
     /**
@@ -319,7 +292,6 @@ public abstract class IgfsEntryInfo implements Externalizable {
 
         out.writeLong(accessTime);
         out.writeLong(modificationTime);
-        out.writeObject(path);
     }
 
     /**
@@ -334,7 +306,6 @@ public abstract class IgfsEntryInfo implements Externalizable {
 
         accessTime = in.readLong();
         modificationTime = in.readLong();
-        path = in.readObject();
     }
 
     /** {@inheritDoc} */

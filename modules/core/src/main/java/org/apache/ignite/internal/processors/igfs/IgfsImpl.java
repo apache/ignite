@@ -691,12 +691,7 @@ public final class IgfsImpl implements IgfsEx {
                     return null;
                 }
 
-                IgfsEntryInfo info = meta.move(src, dest);
-
-                int evtTyp = info.isFile() ? EVT_IGFS_FILE_RENAMED : EVT_IGFS_DIR_RENAMED;
-
-                if (evts.isRecordable(evtTyp))
-                    evts.record(new IgfsEvent(src, info.path(), localNode(), evtTyp));
+                meta.move(src, dest);
 
                 return null;
             }
@@ -1016,8 +1011,8 @@ public final class IgfsImpl implements IgfsEx {
 
                     batch = newBatch(path, desc.out());
 
-                    IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
-                        bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
+                    IgfsEventAwareOutputStream os = new IgfsEventAwareOutputStream(path, desc.info(),
+                        bufferSize(bufSize), mode, batch);
 
                     IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_WRITE);
 
@@ -1034,7 +1029,7 @@ public final class IgfsImpl implements IgfsEx {
                 else
                     dirProps = fileProps = new HashMap<>(props);
 
-                IgniteBiTuple<IgfsEntryInfo, IgniteUuid> t2 = meta.create(
+                IgfsEntryInfo res = meta.create(
                     path,
                     dirProps,
                     overwrite,
@@ -1044,10 +1039,9 @@ public final class IgfsImpl implements IgfsEx {
                     fileProps
                 );
 
-                assert t2 != null;
+                assert res != null;
 
-                return new IgfsEventAwareOutputStream(path, t2.get1(), t2.get2(),
-                    bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
+                return new IgfsEventAwareOutputStream(path, res, bufferSize(bufSize), mode, null);
             }
         });
     }
@@ -1082,8 +1076,7 @@ public final class IgfsImpl implements IgfsEx {
 
                     batch = newBatch(path, desc.out());
 
-                    return new IgfsEventAwareOutputStream(path, desc.info(), desc.parentId(),
-                        bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, batch);
+                    return new IgfsEventAwareOutputStream(path, desc.info(), bufferSize(bufSize), mode, batch);
                 }
 
                 final List<IgniteUuid> ids = meta.fileIds(path);
@@ -1112,7 +1105,7 @@ public final class IgfsImpl implements IgfsEx {
                 else
                     dirProps = fileProps = new HashMap<>(props);
 
-                IgniteBiTuple<IgfsEntryInfo, IgniteUuid> t2 = meta.append(
+                IgfsEntryInfo res = meta.append(
                     path,
                     dirProps,
                     create,
@@ -1122,10 +1115,9 @@ public final class IgfsImpl implements IgfsEx {
                     fileProps
                 );
 
-                assert t2 != null;
+                assert res != null;
 
-                return new IgfsEventAwareOutputStream(path, t2.get1(), t2.get2(),
-                        bufSize == 0 ? cfg.getStreamBufferSize() : bufSize, mode, null);
+                return new IgfsEventAwareOutputStream(path, res, bufferSize(bufSize), mode, null);
             }
         });
     }
@@ -1693,14 +1685,13 @@ public final class IgfsImpl implements IgfsEx {
          *
          * @param path Path to stored file.
          * @param fileInfo File info.
-         * @param parentId Parent ID.
          * @param bufSize The size of the buffer to be used.
          * @param mode IGFS mode.
          * @param batch Optional secondary file system batch.
          */
-        IgfsEventAwareOutputStream(IgfsPath path, IgfsEntryInfo fileInfo,
-            IgniteUuid parentId, int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch) {
-            super(igfsCtx, path, fileInfo, parentId, bufSize, mode, batch, metrics);
+        IgfsEventAwareOutputStream(IgfsPath path, IgfsEntryInfo fileInfo, int bufSize, IgfsMode mode,
+            @Nullable IgfsFileWorkerBatch batch) {
+            super(igfsCtx, path, fileInfo, bufSize, mode, batch, metrics);
 
             metrics.incrementFilesOpenedForWrite();
         }
@@ -1961,6 +1952,16 @@ public final class IgfsImpl implements IgfsEx {
         }
         else
             throw new IllegalStateException("Failed to perform IGFS action because grid is stopping.");
+    }
+
+    /**
+     * Get buffer size.
+     *
+     * @param bufSize Original buffer size.
+     * @return Real buffer size.
+     */
+    private int bufferSize(int bufSize) {
+        return bufSize == 0 ? cfg.getStreamBufferSize() : bufSize;
     }
 
     /**

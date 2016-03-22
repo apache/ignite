@@ -282,7 +282,6 @@ public class IgfsUtils {
             "exceeded. [maxAttempts=" + MAX_CACHE_TX_RETRIES + ']');
     }
 
-
     /**
      * Sends a series of event.
      *
@@ -290,14 +289,29 @@ public class IgfsUtils {
      * @param type The type of event to send.
      */
     public static void sendEvents(GridKernalContext kernalCtx, IgfsPath path, int type) {
+        sendEvents(kernalCtx, path, null, type);
+    }
+
+    /**
+     * Sends a series of event.
+     *
+     * @param path The path of the created file.
+     * @param newPath New path.
+     * @param type The type of event to send.
+     */
+    public static void sendEvents(GridKernalContext kernalCtx, IgfsPath path, IgfsPath newPath, int type) {
         assert kernalCtx != null;
         assert path != null;
 
         GridEventStorageManager evts = kernalCtx.event();
         ClusterNode locNode = kernalCtx.discovery().localNode();
 
-        if (evts.isRecordable(type))
-            evts.record(new IgfsEvent(path, locNode, type));
+        if (evts.isRecordable(type)) {
+            if (newPath == null)
+                evts.record(new IgfsEvent(path, locNode, type));
+            else
+                evts.record(new IgfsEvent(path, newPath, locNode, type));
+        }
     }
 
     /**

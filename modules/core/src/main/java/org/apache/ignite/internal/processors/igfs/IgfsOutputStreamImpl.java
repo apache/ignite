@@ -58,12 +58,6 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private IgfsEntryInfo fileInfo;
 
-    /** Parent ID. */
-    private final IgniteUuid parentId;
-
-    /** File name. */
-    private final String fileName;
-
     /** Space in file to write data. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private long space;
@@ -103,8 +97,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param batch Optional secondary file system batch.
      * @param metrics Local IGFS metrics.
      */
-    IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsEntryInfo fileInfo, IgniteUuid parentId,
-        int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics) {
+    IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsEntryInfo fileInfo, int bufSize, IgfsMode mode,
+        @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics) {
         super(path, optimizeBufferSize(bufSize, fileInfo));
 
         assert fileInfo != null;
@@ -126,12 +120,9 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         this.fileInfo = fileInfo;
         this.mode = mode;
         this.batch = batch;
-        this.parentId = parentId;
         this.metrics = metrics;
 
         streamRange = initialStreamRange(fileInfo);
-
-        fileName = path.name();
 
         writeCompletionFut = data.writeStart(fileInfo);
     }
@@ -270,7 +261,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             exists = meta.exists(fileInfo.id());
         }
         catch (IgniteCheckedException e) {
-            throw new IOException("File to read file metadata: " + fileInfo.path(), e);
+            throw new IOException("File to read file metadata: " + path, e);
         }
 
         if (!exists) {
@@ -339,7 +330,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 exists = !deleted && meta.exists(fileInfo.id());
             }
             catch (IgniteCheckedException e) {
-                throw new IOException("File to read file metadata: " + fileInfo.path(), e);
+                throw new IOException("File to read file metadata: " + path, e);
             }
 
             if (exists) {
@@ -379,7 +370,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                     throw new IOException("File was concurrently deleted: " + path);
                 }
                 catch (IgniteCheckedException e) {
-                    throw new IOException("File to read file metadata: " + fileInfo.path(), e);
+                    throw new IOException("File to read file metadata: " + path, e);
                 }
 
                 if (err != null)

@@ -17,17 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.lang.IgniteUuid;
-
 import java.io.OutputStream;
 
 /**
  * Descriptor of an output stream opened to the secondary file system.
  */
 public class IgfsSecondaryOutputStreamDescriptor {
-    /** Parent ID in the primary file system. */
-    private final IgniteUuid parentId;
-
     /** File info in the primary file system. */
     private final IgfsEntryInfo info;
 
@@ -37,25 +32,15 @@ public class IgfsSecondaryOutputStreamDescriptor {
     /**
      * Constructor.
      *
-     * @param parentId Parent ID in the primary file system.
      * @param info File info in the primary file system.
      * @param out Output stream to the secondary file system.
      */
-    IgfsSecondaryOutputStreamDescriptor(IgniteUuid parentId, IgfsEntryInfo info, OutputStream out) {
-        assert parentId != null;
+    IgfsSecondaryOutputStreamDescriptor(IgfsEntryInfo info, OutputStream out) {
         assert info != null;
         assert out != null;
 
-        this.parentId = parentId;
         this.info = info;
         this.out = out;
-    }
-
-    /**
-     * @return Parent ID in the primary file system.
-     */
-    IgniteUuid parentId() {
-        return parentId;
     }
 
     /**
