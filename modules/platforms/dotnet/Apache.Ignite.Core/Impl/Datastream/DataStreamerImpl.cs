@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
@@ -86,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private long _topVer;
 
         /** Topology size. */
-        private int _topSize = 1;
+        private int _topSize;
         
         /** Buffer send size. */
         private volatile int _bufSndSize;
@@ -559,6 +560,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /** <inheritDoc /> */
         public void TopologyChange(long topVer, int topSize)
         {
+            Debug.Assert(topSize > 0);
+
             _rwLock.EnterWriteLock(); 
             
             try
@@ -568,7 +571,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 if (_topVer < topVer)
                 {
                     _topVer = topVer;
-                    _topSize = topSize <= 0 ? 1 : topSize;
+                    _topSize = topSize;
 
                     _bufSndSize = topSize * UU.DataStreamerPerNodeBufferSizeGet(Target);
                 }
