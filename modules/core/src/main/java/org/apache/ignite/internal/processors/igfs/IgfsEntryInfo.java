@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -301,5 +305,36 @@ public abstract class IgfsEntryInfo implements Externalizable {
         accessTime = in.readLong();
         modificationTime = in.readLong();
         path = (IgfsPath)in.readObject();
+    }
+
+    /**
+     * Write binary content.
+     *
+     * @param out Writer.
+     */
+    protected void writeBinary(BinaryRawWriter out) {
+        BinaryUtils.writeIgniteUuid(out, id);
+        out.writeMap(props);
+        out.writeLong(accessTime);
+        out.writeLong(modificationTime);
+        out.writeObject(path);
+    }
+
+    /**
+     * Read binary content.
+     *
+     * @param in Reader.
+     */
+    protected void readBinary(BinaryRawReader in) {
+        id = BinaryUtils.readIgniteUuid(in);
+        props = in.readMap();
+        accessTime = in.readLong();
+        modificationTime = in.readLong();
+        path = in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgfsEntryInfo.class, this);
     }
 }
