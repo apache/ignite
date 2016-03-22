@@ -49,7 +49,7 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
+                SpringConfigUrl = @"platforms\dotnet\examples\config\examples-config.xml",
                 JvmOptions = new List<string> {"-Xms512m", "-Xmx1024m"}
             };
 
