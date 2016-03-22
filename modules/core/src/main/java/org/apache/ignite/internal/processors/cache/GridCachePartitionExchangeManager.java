@@ -1267,7 +1267,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (!cctx.kernalContext().clientNode() && futQ.isEmpty() && preloadFinished)
                         timeout = cctx.gridConfig().getNetworkTimeout();
 
-
                     // After workers line up and before preloading starts we initialize all futures.
                     if (log.isDebugEnabled())
                         log.debug("Before waiting for exchange futures [futs" +
