@@ -86,9 +86,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 
 /**
  * Test fo regular igfs operations.
@@ -228,6 +225,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * @return Relaxed consistency flag.
+     */
+    protected boolean relaxedConsistency() {
+        return false;
+    }
+
+    /**
      * Data chunk.
      *
      * @param len Length.
@@ -305,6 +309,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setSecondaryFileSystem(secondaryFs);
         igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
+        igfsCfg.setRelaxedConsistency(relaxedConsistency());
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -803,10 +808,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         if (dual)
             // Check only permissions because user and group will always be present in Hadoop Fs.
-            assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(SUBSUBDIR.toString()).get(PROP_PERMISSION));
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+                igfsSecondary.properties(SUBSUBDIR.toString()).get(IgfsUtils.PROP_PERMISSION));
 
         // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
+        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+            igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
     }
 
     /**
@@ -824,10 +831,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         if (dual)
             // check permission only since Hadoop Fs will always have user and group:
-            assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(DIR.toString()).get(PROP_PERMISSION));
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+                igfsSecondary.properties(DIR.toString()).get(IgfsUtils.PROP_PERMISSION));
 
         // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(PROP_PERMISSION), igfs.info(DIR).properties().get(PROP_PERMISSION));
+        assertEquals(props.get(IgfsUtils.PROP_PERMISSION), igfs.info(DIR).properties().get(IgfsUtils.PROP_PERMISSION));
     }
 
     /**
@@ -2368,6 +2376,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     private void checkDeadlocksRepeat(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
         int primaryLvlCnt, int renCnt, int delCnt,
         int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
+        if (relaxedConsistency())
+            return;
+
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
                 checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
@@ -3026,13 +3037,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         Map<String, String> props = new HashMap<>();
 
         if (username != null)
-            props.put(PROP_USER_NAME, username);
+            props.put(IgfsUtils.PROP_USER_NAME, username);
 
         if (grpName != null)
-            props.put(PROP_GROUP_NAME, grpName);
+            props.put(IgfsUtils.PROP_GROUP_NAME, grpName);
 
         if (perm != null)
-            props.put(PROP_PERMISSION, perm);
+            props.put(IgfsUtils.PROP_PERMISSION, perm);
 
         return props;
     }

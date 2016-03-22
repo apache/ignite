@@ -38,7 +38,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_PURGED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
 
 /**
@@ -246,12 +245,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                     // In case this node crashes, other node will re-delete the file.
                     data.delete(lockedInfo).get();
 
-                    boolean ret = meta.delete(trashId, name, id);
-
-                    if (info.path() != null)
-                        IgfsUtils.sendEvents(igfsCtx.kernalContext(), info.path(), EVT_IGFS_FILE_PURGED);
-
-                    return ret;
+                    return meta.delete(trashId, name, id);
                 }
             }
             else
