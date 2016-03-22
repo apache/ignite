@@ -593,6 +593,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         {
             int bufSndSize0 = _bufSndSize;
 
+            Debug.Assert(bufSndSize0 > 0);
+
             while (true)
             {
                 var batch0 = _batch;
