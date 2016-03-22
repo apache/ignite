@@ -257,21 +257,26 @@ consoleModule.controller('clustersController', [
                 var firstError = errors[firstErrorKey][0];
                 var actualError = firstError.$error[firstErrorKey][0];
 
+                var errName = actualError.$name;
+
+                if (errName.endsWith('TextInput') || errName.endsWith('JavaClass'))
+                    errName = errName.substring(0, errName.length - 9);
+
                 var msg = 'Invalid value!';
 
                 try {
-                    msg = errors[firstErrorKey][0].$errorMessages[actualError.$name][firstErrorKey];
+                    msg = errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
                 }
                 catch(ignored) {
                     try {
-                        msg = form[firstError.$name].$errorMessages[actualError.$name][firstErrorKey];
+                        msg = form[firstError.$name].$errorMessages[errName][firstErrorKey];
                     }
                     catch(ignited) {
                         // No-op.
                     }
                 }
 
-                return showPopoverMessage($scope.ui, firstError.$name, actualError.$name, msg);
+                return showPopoverMessage($scope.ui, firstError.$name, errName, msg);
             }
 
             var caches = _.filter(_.map($scope.caches, function (scopeCache) {
@@ -302,10 +307,10 @@ consoleModule.controller('clustersController', [
                         var type = b.typeConfigurations[typeIx];
 
                         if ($common.isEmptyString(type.typeName))
-                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type name should be specified!');
+                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx + 'JavaClass', 'Type name should be specified!');
 
                         if (_.find(b.typeConfigurations, sameName))
-                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type with such name is already specified!');
+                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx + 'JavaClass', 'Type with such name is already specified!');
                     }
                 }
             }

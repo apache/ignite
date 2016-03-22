@@ -22,7 +22,7 @@ include ../../../../../app/helpers/jade/mixins.jade
 -var trust = model + '.trustManagers'
 -var form = 'trustManagers'
 
-form.panel.panel-default(name='#{form}' novalidate)
+form.panel.panel-default(name='sslConfiguration' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label(id='sslConfiguration-title') SSL configuration
