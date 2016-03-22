@@ -93,6 +93,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MAR
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.P2P_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.isReservedGridIoPolicy;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
@@ -149,6 +150,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Marshaller cache pool. */
     private ExecutorService marshCachePool;
+
+    /** IGFS pool. */
+    private ExecutorService igfsPool;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -252,6 +256,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         mgmtPool = ctx.getManagementExecutorService();
         utilityCachePool = ctx.utilityCachePool();
         marshCachePool = ctx.marshallerCachePool();
+        igfsPool = ctx.getIgfsExecutorService();
         affPool = new IgniteThreadPoolExecutor(
             "aff",
             ctx.gridName(),
@@ -643,6 +648,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case AFFINITY_POOL:
                 case UTILITY_CACHE_POOL:
                 case MARSH_CACHE_POOL:
+                case IGFS_CACHE_POOL:
                 {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
@@ -692,6 +698,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return mgmtPool;
             case AFFINITY_POOL:
                 return affPool;
+
+            case IGFS_CACHE_POOL:
+                assert igfsPool != null;
+
+                return igfsPool;
 
             case UTILITY_CACHE_POOL:
                 assert utilityCachePool != null : "Utility cache pool is not configured.";
