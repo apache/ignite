@@ -17,12 +17,14 @@
 
 namespace Apache.Ignite.ExamplesDll.Binary
 {
+    using System;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
     /// Address.
     /// </summary>
+    [Serializable]
     public class Address : IBinarizable
     {
         /// <summary>

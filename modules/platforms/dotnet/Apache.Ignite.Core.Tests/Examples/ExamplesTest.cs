@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             };
 
             // Try with multiple standalone nodes
-            for (var i = 0; i < 2; i++)
+            for (var i = 0; i < 1; i++)
             {
                 // Start a grid to monitor topology
                 // Stop it after topology check so we don't interfere with example
