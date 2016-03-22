@@ -117,7 +117,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
                 if (entry == null) {
                     if (create)
-                        cur = created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                        entry = cur = created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
                 }
                 else {
                     if (entry.obsolete()) {
@@ -125,13 +125,20 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
                         if (create)
                             cur = created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                        else
+                            decrementPublicSize(entry);
                     }
                     else
                         cur = entry;
                 }
 
-                if (created0 != null && doomed0 == null)
-                    incrementPublicSize(created0);
+                if (entry != null)
+                    synchronized (entry) {
+                        if (created0 != null && doomed0 == null)
+                            incrementPublicSize(entry);
+                        else if (doomed0 != null && created0 == null)
+                            decrementPublicSize(entry);
+                    }
 
                 created.set(created0);
                 doomed.set(doomed0);
@@ -140,6 +147,29 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
         });
 
         return new GridTriple<>(cur, created.get(), doomed.get());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removeEntry(final GridCacheEntryEx entry) {
+        final AtomicBoolean result = new AtomicBoolean();
+
+        map.computeIfPresent(entry.key(), new ConcurrentHashMap8.BiFun<KeyCacheObject, GridCacheMapEntry, GridCacheMapEntry>() {
+            @Override public GridCacheMapEntry apply(KeyCacheObject object, GridCacheMapEntry entry0) {
+                if (entry.equals(entry0)) {
+                    result.set(true);
+
+                    synchronized (entry) {
+                        if (!entry.deleted())
+                            decrementPublicSize(entry);
+                    }
+
+                    return null;
+                }
+                return entry0;
+            }
+        });
+
+        return result.get();
     }
 
     /** {@inheritDoc} */
@@ -206,29 +236,6 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
                 return map.keySet().contains(o) && p.apply((KeyCacheObject)o);
             }
         };
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removeEntry(final GridCacheEntryEx entry) {
-        final AtomicBoolean result = new AtomicBoolean();
-
-        map.computeIfPresent(entry.key(), new ConcurrentHashMap8.BiFun<KeyCacheObject, GridCacheMapEntry, GridCacheMapEntry>() {
-            @Override public GridCacheMapEntry apply(KeyCacheObject object, GridCacheMapEntry entry0) {
-                if (entry.equals(entry0)) {
-                    result.set(true);
-
-                    synchronized (entry) {
-                        if (!entry.deleted())
-                            decrementPublicSize(entry);
-                    }
-
-                    return null;
-                }
-                return entry0;
-            }
-        });
-
-        return result.get();
     }
 
     /** {@inheritDoc} */
