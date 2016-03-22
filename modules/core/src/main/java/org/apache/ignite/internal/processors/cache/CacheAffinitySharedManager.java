@@ -996,7 +996,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             List<List<ClusterNode>> aff = res.affinityAssignment(cctx.discovery());
 
-            assert aff != null;
+            assert aff != null : res;
 
             affCache.initialize(topVer, aff);
         }
@@ -1193,7 +1193,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         AffinityTopologyVersion affTopVer = aff.lastVersion();
 
-        assert affTopVer.topologyVersion() > 0 : affTopVer;
+        assert affTopVer.topologyVersion() > 0 : "Affinity is not initialized [cache=" + aff.cacheName() +
+            ", topVer=" + affTopVer + ", node=" + cctx.localNodeId() + ']';
 
         List<List<ClusterNode>> curAff = aff.assignments(affTopVer);
 

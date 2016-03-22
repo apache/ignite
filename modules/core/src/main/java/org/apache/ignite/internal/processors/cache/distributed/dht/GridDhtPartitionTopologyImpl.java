@@ -304,6 +304,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
 
+        assert oldest != null || cctx.kernalContext().clientNode();
+
         GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
 
         assert topVer.equals(exchFut.topologyVersion()) :
@@ -322,7 +324,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (cctx.rebalanceEnabled()) {
             boolean added = exchFut.isCacheAdded(cctx.cacheId(), exchId.topologyVersion());
 
-            boolean first = (oldest.id().equals(loc.id()) && oldest.id().equals(exchId.nodeId()) && exchId.isJoined()) || added;
+            boolean first = (loc.equals(oldest) && loc.id().equals(exchId.nodeId()) && exchId.isJoined()) || added;
 
             if (first) {
                 assert exchId.isJoined() || added;
@@ -432,7 +434,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             // In case if node joins, get topology at the time of joining node.
             ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
 
-            assert oldest != null;
+            assert oldest != null || cctx.kernalContext().clientNode();
 
             if (log.isDebugEnabled())
                 log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
@@ -442,7 +444,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             cntrMap.clear();
 
             // If this is the oldest node.
-            if (oldest.id().equals(loc.id()) || exchFut.isCacheAdded(cctx.cacheId(), exchId.topologyVersion())) {
+            if (oldest != null && (loc.equals(oldest) || exchFut.isCacheAdded(cctx.cacheId(), exchId.topologyVersion()))) {
                 if (node2part == null) {
                     node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq);
 
@@ -1261,10 +1263,10 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         // In case if node joins, get topology at the time of joining node.
         ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
 
-        assert oldest != null;
+        assert oldest != null || cctx.kernalContext().clientNode();
 
         // If this node became the oldest node.
-        if (oldest.id().equals(cctx.nodeId())) {
+        if (cctx.localNode().equals(oldest)) {
             long seq = node2part.updateSequence();
 
             if (seq != updateSeq) {

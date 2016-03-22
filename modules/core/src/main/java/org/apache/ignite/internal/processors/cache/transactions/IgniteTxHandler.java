@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -464,8 +465,19 @@ public class IgniteTxHandler {
             Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheAffinityNodes(ctx.name(), expVer);
             Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheAffinityNodes(ctx.name(), curVer);
 
-            if (!cacheNodes0.equals(cacheNodes1))
+            if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().compareTo(curVer) < 0)
                 return true;
+
+            try {
+                List<List<ClusterNode>> aff1 = ctx.affinity().assignments(expVer);
+                List<List<ClusterNode>> aff2 = ctx.affinity().assignments(curVer);
+
+                if (!aff1.equals(aff2))
+                    return true;
+            }
+            catch (IllegalStateException err) {
+                return true;
+            }
         }
 
         return false;

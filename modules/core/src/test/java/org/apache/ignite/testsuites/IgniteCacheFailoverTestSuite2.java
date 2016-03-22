@@ -57,7 +57,8 @@ public class IgniteCacheFailoverTestSuite2 {
         suite.addTestSuite(IgniteCacheCrossCacheTxFailoverTest.class);
 
         suite.addTestSuite(CacheAsyncOperationsFailoverAtomicTest.class);
-        suite.addTestSuite(CacheAsyncOperationsFailoverTxTest.class);
+        // TODO GG-10885.
+        // suite.addTestSuite(CacheAsyncOperationsFailoverTxTest.class);
 
         suite.addTestSuite(CachePutAllFailoverAtomicTest.class);
         suite.addTestSuite(CachePutAllFailoverTxTest.class);
