@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClos
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -45,6 +46,8 @@ import java.util.UUID;
 import java.util.HashMap;
 import java.util.Collection;
 import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Interop services.
@@ -71,6 +74,10 @@ public class PlatformServices extends PlatformAbstractTarget {
 
     /** */
     private static final byte PLATFORM_DOTNET = 1;
+
+    /** */
+    private static final CopyOnWriteConcurrentMap<T3<Class, String, Integer>, Method> SVC_METHODS
+        = new CopyOnWriteConcurrentMap<>();
 
     /** */
     private final IgniteServices services;
@@ -400,7 +407,11 @@ public class PlatformServices extends PlatformAbstractTarget {
             assert mthdName != null;
             assert args != null;
 
-            // TODO: Cache result
+            T3<Class, String, Integer> cacheKey = new T3<>(clazz, mthdName, args.length);
+            Method res = SVC_METHODS.get(cacheKey);
+
+            if (res != null)
+                return res;
 
             Method[] allMethods = clazz.getMethods();
 
@@ -411,8 +422,14 @@ public class PlatformServices extends PlatformAbstractTarget {
                 if (m.getName().equals(mthdName) && m.getParameterTypes().length == args.length)
                     methods.add(m);
 
-            if (methods.size() == 1)
-                return methods.get(0);
+            if (methods.size() == 1) {
+                res = methods.get(0);
+
+                // Update cache only when there is a single method with a given name and arg count.
+                SVC_METHODS.put(cacheKey, res);
+
+                return res;
+            }
 
             if (methods.isEmpty())
                 throw new NoSuchMethodException("Could not find proxy method '" + mthdName + "' in class " + clazz);
@@ -458,8 +475,53 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @return Primitive wrapper, or the same class.
          */
         @SuppressWarnings("unchecked")
-        private static  Class wrap(Class c) {
+        private static Class wrap(Class c) {
             return c.isPrimitive() ? PRIMITIVES_TO_WRAPPERS.get(c) : c;
+        }
+    }
+
+    /**
+     * Concurrent map.
+     */
+    private static class CopyOnWriteConcurrentMap<K, V> {
+        /** */
+        private final Lock lock = new ReentrantLock();
+
+        /** */
+        private volatile Map<K, V> map = new HashMap<>();
+
+        /**
+         * Gets a value.
+         *
+         * @param key Key.
+         * @return Value.
+         */
+        public V get(K key) {
+            return map.get(key);
+        }
+
+        /**
+         * Puts a value.
+         *
+         * @param key Key.
+         * @param val Value.
+         */
+        public void put(K key, V val) {
+            lock.lock();
+
+            try {
+                if (map.containsKey(key))
+                    return;
+
+                Map<K, V> map0 = new HashMap<>(map);
+
+                map0.put(key, val);
+
+                map = map0;
+            }
+            finally {
+                lock.unlock();
+            }
         }
     }
 }

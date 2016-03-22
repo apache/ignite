@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Services
 
             if (methods.Length == 1)
             {
-                // Update cache only when there is a single method with a given name and arg count
+                // Update cache only when there is a single method with a given name and arg count.
                 Methods.GetOrAdd(cacheKey, x => methods[0]);
 
                 return methods[0];

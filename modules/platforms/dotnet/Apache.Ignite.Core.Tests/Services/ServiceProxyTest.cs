@@ -165,7 +165,8 @@ namespace Apache.Ignite.Core.Tests.Services
             var ex = Assert.Throws<InvalidOperationException>(() => prx.MissingMethod());
 
             Assert.AreEqual("Failed to invoke proxy: there is no method 'MissingMethod'" +
-                            " in type 'Apache.Ignite.Core.Tests.Services.ServiceProxyTest+TestIgniteService'", ex.Message);
+                            " in type 'Apache.Ignite.Core.Tests.Services.ServiceProxyTest+TestIgniteService'" +
+                            " with 0 arguments", ex.Message);
         }
 
         /// <summary>
