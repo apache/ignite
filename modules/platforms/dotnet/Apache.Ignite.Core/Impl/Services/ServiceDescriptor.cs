@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Services
             TotalCount = reader.ReadInt();
             OriginNodeId = reader.ReadGuid() ?? Guid.Empty;
             AffinityKey = reader.ReadObject<object>();
-            Platform = reader.ReadBoolean() ? Platform.DotNet : Platform.Java;
+            Platform = (Platform) reader.ReadByte();
 
             var mapSize = reader.ReadInt();
             var snap = new Dictionary<Guid, int>(mapSize);

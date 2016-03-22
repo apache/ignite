@@ -67,6 +67,12 @@ public class PlatformServices extends PlatformAbstractTarget {
     private static final int OP_DESCRIPTORS = 5;
 
     /** */
+    private static final byte PLATFORM_JAVA = 0;
+
+    /** */
+    private static final byte PLATFORM_DOTNET = 1;
+
+    /** */
     private final IgniteServices services;
 
     /** Server keep binary flag. */
@@ -281,8 +287,10 @@ public class PlatformServices extends PlatformAbstractTarget {
                         writer.writeUuid(d.originNodeId());
                         writer.writeObject(d.affinityKey());
 
-                        // Write platform (true when .NET). There are only 2 platforms now.
-                        writer.writeBoolean(d.serviceClass().equals(PlatformDotNetServiceImpl.class));
+                        // Write platform. There are only 2 platforms now.
+                        byte platform = d.serviceClass().equals(PlatformDotNetServiceImpl.class)
+                            ? PLATFORM_DOTNET : PLATFORM_JAVA;
+                        writer.writeByte(platform);
 
                         Map<UUID, Integer> top = d.topologySnapshot();
 

@@ -25,11 +25,11 @@ namespace Apache.Ignite.Core.Common
         /// <summary>
         /// Java platform.
         /// </summary>
-        Java,
+        Java = 0,
 
         /// <summary>
         /// .NET platform.
         /// </summary>
-        DotNet
+        DotNet = 1
     }
 }
