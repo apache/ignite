@@ -8978,11 +8978,11 @@ public abstract class IgniteUtils {
 
             assert drVer != null;
 
-            GridUnsafe.putInt(arr, off, drVer.topologyVersionRaw());
+            GridUnsafe.putInt(arr, off, drVer.topologyVersion());
 
             off += 4;
 
-            GridUnsafe.putInt(arr, off, drVer.nodeOrderRaw());
+            GridUnsafe.putInt(arr, off, drVer.nodeOrderAndDrIdRaw());
 
             off += 4;
 
@@ -8990,16 +8990,16 @@ public abstract class IgniteUtils {
 
             off += 8;
 
-            GridUnsafe.putLong(arr, off, drVer.orderRaw());
+            GridUnsafe.putLong(arr, off, drVer.order());
 
             off += 8;
         }
 
-        GridUnsafe.putInt(arr, off, ver.topologyVersionRaw());
+        GridUnsafe.putInt(arr, off, ver.topologyVersion());
 
         off += 4;
 
-        GridUnsafe.putInt(arr, off, ver.nodeOrderRaw());
+        GridUnsafe.putInt(arr, off, ver.nodeOrder());
 
         off += 4;
 
@@ -9007,7 +9007,7 @@ public abstract class IgniteUtils {
 
         off += 8;
 
-        GridUnsafe.putLong(arr, off, ver.orderRaw());
+        GridUnsafe.putLong(arr, off, ver.order());
 
         off += 8;
 

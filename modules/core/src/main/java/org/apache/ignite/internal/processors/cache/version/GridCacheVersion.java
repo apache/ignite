@@ -107,60 +107,33 @@ public class GridCacheVersion implements CacheVersion, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public int minorTopologyVersion() {
-        return 0;
-    }
-
-    /**
-     * Gets combined node order and DR ID.
-     *
-     * @return Combined integer for node order and DR ID.
-     */
-    @Override public int nodeOrderRaw() {
+    @Override public int nodeOrderAndDrIdRaw() {
         return nodeOrderDrId;
     }
 
     /** {@inheritDoc} */
-    @Override public int topologyVersionRaw() {
-        return topVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long orderRaw() {
-        return order;
-    }
-
-    /**
-     * @return Adjusted time.
-     */
     @Override public long globalTime() {
         return globalTime;
     }
 
-    /**
-     * @return Version order.
-     */
+    /** {@inheritDoc} */
     @Override public long order() {
         return order;
     }
 
-    /**
-     * @return Node order on which this version was assigned.
-     */
+    /** {@inheritDoc} */
     @Override public int nodeOrder() {
         return nodeOrderDrId & NODE_ORDER_MASK;
     }
 
-    /**
-     * @return DR mask.
-     */
+    /** {@inheritDoc} */
     @Override public byte dataCenterId() {
         return (byte)((nodeOrderDrId >> DR_ID_SHIFT) & DR_ID_MASK);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasConflictVersion() {
-        return true;
+        return false;
     }
 
     /**

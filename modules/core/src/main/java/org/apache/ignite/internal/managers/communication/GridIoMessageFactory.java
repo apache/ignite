@@ -26,13 +26,13 @@ import org.apache.ignite.internal.GridJobSiblingsRequest;
 import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentRequest;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentResponse;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageMessage;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
@@ -99,7 +99,9 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder;
-import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.clock.GridClockDeltaSnapshotMessage;
 import org.apache.ignite.internal.processors.clock.GridClockDeltaVersion;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
@@ -142,15 +144,11 @@ public class GridIoMessageFactory implements MessageFactory {
     /** Extensions. */
     private final MessageFactory[] ext;
 
-    /** */
-    private final boolean newVer;
-
     /**
      * @param ext Extensions.
      */
-    public GridIoMessageFactory(MessageFactory[] ext, boolean newVer) {
+    public GridIoMessageFactory(MessageFactory[] ext) {
         this.ext = ext;
-        this.newVer = newVer;
     }
 
     /** {@inheritDoc} */
@@ -554,7 +552,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 86:
-                msg = newVer ? new CacheVersionImpl() : new GridCacheVersion();
+                msg = new GridCacheVersion();
 
                 break;
 
@@ -644,7 +642,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 104:
-                msg = newVer ? new CacheVersionImplEx() : new GridCacheVersionEx();
+                msg = new GridCacheVersionEx();
 
                 break;
 

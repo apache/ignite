@@ -1017,7 +1017,7 @@ public class GridCacheUtils {
         U.intToBytes(ver.topologyVersion(), bytes, 0);
         U.longToBytes(ver.globalTime(), bytes, 4);
         U.longToBytes(ver.order(), bytes, 12);
-        U.intToBytes(ver.nodeOrderRaw(), bytes, 20);
+        U.intToBytes(ver.nodeOrder(), bytes, 20);
 
         return bytes;
     }

@@ -32,11 +32,6 @@ public interface CacheVersion extends Comparable<CacheVersion>, Message, Externa
     public int topologyVersion();
 
     /**
-     * @return Minor topology version.
-     */
-    public int minorTopologyVersion();
-
-    /**
      * @return Adjusted time.
      */
     public long globalTime();
@@ -74,9 +69,5 @@ public interface CacheVersion extends Comparable<CacheVersion>, Message, Externa
     /**
      * @return Combined integer for node order and DR ID.
      */
-    public int nodeOrderRaw();
-
-    public int topologyVersionRaw();
-
-    public long orderRaw();
+    public int nodeOrderAndDrIdRaw();
 }

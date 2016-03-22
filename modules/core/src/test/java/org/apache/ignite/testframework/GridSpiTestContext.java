@@ -520,7 +520,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /** {@inheritDoc} */
     @Override public MessageFactory messageFactory() {
         if (factory == null)
-            factory = new GridIoMessageFactory(null, true);
+            factory = new GridIoMessageFactory(null);
 
         return factory;
     }

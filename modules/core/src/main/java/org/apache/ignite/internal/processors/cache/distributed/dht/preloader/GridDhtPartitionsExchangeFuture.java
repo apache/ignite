@@ -1129,25 +1129,33 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * @param node Sender node.
-     * @param msg Single partition info.
+     * @param ver Version.
      */
-    public void onReceive(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
-        assert msg != null;
+    private void updateLastVersion(CacheVersion ver) {
+        assert ver != null;
 
-        assert msg.exchangeId().equals(exchId);
-
-        // Update last seen version.
         while (true) {
             CacheVersion old = lastVer.get();
 
-            if (old == null || old.compareTo(msg.lastVersion()) < 0) {
-                if (lastVer.compareAndSet(old, msg.lastVersion()))
+            if (old == null || Long.compare(old.order(), ver.order()) < 0) {
+                if (lastVer.compareAndSet(old, ver))
                     break;
             }
             else
                 break;
         }
+    }
+
+    /**
+     * @param node Sender node.
+     * @param msg Single partition info.
+     */
+    public void onReceive(final ClusterNode node, final GridDhtPartitionsSingleMessage msg) {
+        assert msg != null;
+        assert msg.exchangeId().equals(exchId) : msg;
+        assert msg.lastVersion() != null : msg;
+
+        updateLastVersion(msg.lastVersion());
 
         if (isDone()) {
             if (log.isDebugEnabled())
@@ -1214,6 +1222,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         cacheCtx.topology().beforeExchange(GridDhtPartitionsExchangeFuture.this, !centralizedAff);
                 }
             }
+
+            updateLastVersion(cctx.versions().last());
+
+            cctx.versions().onExchange(topologyVersion(), lastVer.get().order());
 
             if (centralizedAff) {
                 Map<Integer, Map<Integer, List<UUID>>> assignmentChange =
@@ -1324,7 +1336,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param msg Message.
      */
     private void processMessage(ClusterNode node, GridDhtPartitionsFullMessage msg) {
-        assert exchId.topologyVersion().equals(msg.topologyVersion()) : msg;
+        assert msg.exchangeId().equals(exchId) : msg;
+        assert msg.lastVersion() != null : msg;
 
         synchronized (mux) {
             if (crd == null)
@@ -1342,11 +1355,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
-        assert msg.exchangeId().equals(exchId);
-
-        if (msg.lastVersion() != null)
-            cctx.versions().onReceived(node.id(), msg.lastVersion());
-
         updatePartitionFullMap(msg);
 
         onDone(exchId.topologyVersion());
@@ -1358,6 +1366,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param msg Partitions full messages.
      */
     private void updatePartitionFullMap(GridDhtPartitionsFullMessage msg) {
+        cctx.versions().onExchange(topologyVersion(), msg.lastVersion().order());
+
         for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();
 
@@ -1416,8 +1426,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         if (!crd.isLocal()) {
                             GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage();
 
-                            if (partsMsg.lastVersion() != null)
-                                cctx.versions().onReceived(node.id(), partsMsg.lastVersion());
+                            assert partsMsg != null : msg;
+                            assert partsMsg.lastVersion() != null : partsMsg;
 
                             updatePartitionFullMap(partsMsg);
                         }
