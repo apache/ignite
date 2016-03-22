@@ -136,8 +136,20 @@ public class IgfsMetaManager extends IgfsManager {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
+    /** Relaxed flag. */
+    private final boolean relaxed;
+
     /**
+     * Constructor.
      *
+     * @param relaxed Relaxed mode flag.
+     */
+    public IgfsMetaManager(boolean relaxed) {
+        this.relaxed = relaxed;
+    }
+
+    /**
+     * Await initialization.
      */
     void awaitInit() {
         try {
@@ -889,19 +901,19 @@ public class IgfsMetaManager extends IgfsManager {
                 // Lock participating IDs.
                 final Set<IgniteUuid> lockIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                srcPathIds.addExistingIds(lockIds);
-                dstPathIds.addExistingIds(lockIds);
+                srcPathIds.addExistingIds(lockIds, relaxed);
+                dstPathIds.addExistingIds(lockIds, relaxed);
 
                 try (IgniteInternalTx tx = startTx()) {
                     // Obtain the locks.
                     final Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
                     // Verify integrity of source and destination paths.
-                    if (!srcPathIds.verifyIntegrity(lockInfos))
+                    if (!srcPathIds.verifyIntegrity(lockInfos, relaxed))
                         throw new IgfsPathNotFoundException("Failed to perform move because source directory " +
                             "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
 
-                    if (!dstPathIds.verifyIntegrity(lockInfos))
+                    if (!dstPathIds.verifyIntegrity(lockInfos, relaxed))
                         throw new IgfsPathNotFoundException("Failed to perform move because destination directory " +
                             "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
 
@@ -1103,7 +1115,7 @@ public class IgfsMetaManager extends IgfsManager {
                 // Prepare IDs to lock.
                 SortedSet<IgniteUuid> allIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                pathIds.addExistingIds(allIds);
+                pathIds.addExistingIds(allIds, relaxed);
 
                 IgniteUuid trashId = IgfsUtils.randomTrashId();
 
@@ -1114,7 +1126,7 @@ public class IgfsMetaManager extends IgfsManager {
                     Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(allIds);
 
                     // Ensure that all participants are still in place.
-                    if (!pathIds.verifyIntegrity(lockInfos))
+                    if (!pathIds.verifyIntegrity(lockInfos, relaxed))
                         return null;
 
                     IgfsEntryInfo victimInfo = lockInfos.get(victimId);
@@ -1589,16 +1601,14 @@ public class IgfsMetaManager extends IgfsManager {
                     // Prepare lock IDs. Essentially, they consist of two parts: existing IDs and potential new IDs.
                     Set<IgniteUuid> lockIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                    pathIds.addExistingIds(lockIds);
+                    pathIds.addExistingIds(lockIds, relaxed);
                     pathIds.addSurrogateIds(lockIds);
-
-                    assert lockIds.size() == pathIds.count();
 
                     // Start TX.
                     try (IgniteInternalTx tx = startTx()) {
                         final Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
-                        if (!pathIds.verifyIntegrity(lockInfos))
+                        if (!pathIds.verifyIntegrity(lockInfos, relaxed))
                             // Directory structure changed concurrently. So we simply re-try.
                             continue;
 
@@ -2907,14 +2917,14 @@ public class IgfsMetaManager extends IgfsManager {
                     // Prepare lock IDs.
                     Set<IgniteUuid> lockIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                    pathIds.addExistingIds(lockIds);
+                    pathIds.addExistingIds(lockIds, relaxed);
                     pathIds.addSurrogateIds(lockIds);
 
                     // Start TX.
                     try (IgniteInternalTx tx = startTx()) {
                         Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
-                        if (!pathIds.verifyIntegrity(lockInfos))
+                        if (!pathIds.verifyIntegrity(lockInfos, relaxed))
                             // Directory structure changed concurrently. So we simply re-try.
                             continue;
 
@@ -2998,7 +3008,7 @@ public class IgfsMetaManager extends IgfsManager {
                     // Prepare lock IDs.
                     Set<IgniteUuid> lockIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                    pathIds.addExistingIds(lockIds);
+                    pathIds.addExistingIds(lockIds, relaxed);
                     pathIds.addSurrogateIds(lockIds);
 
                     // In overwrite mode we also lock ID of potential replacement as well as trash ID.
@@ -3017,7 +3027,7 @@ public class IgfsMetaManager extends IgfsManager {
                     try (IgniteInternalTx tx = startTx()) {
                         Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
-                        if (!pathIds.verifyIntegrity(lockInfos))
+                        if (!pathIds.verifyIntegrity(lockInfos, relaxed))
                             // Directory structure changed concurrently. So we simply re-try.
                             continue;
 
