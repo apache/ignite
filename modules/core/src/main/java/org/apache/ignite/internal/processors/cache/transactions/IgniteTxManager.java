@@ -1394,12 +1394,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         throws IgniteCheckedException {
         assert tx.optimistic() || !tx.local();
 
-        long remainingTime = U.currentTimeMillis() - (tx.startTime() + tx.timeout());
+        long remainingTime = tx.timeout() - (U.currentTimeMillis() - tx.startTime());
 
         // For serializable transactions, failure to acquire lock means
         // that there is a serializable conflict. For all other isolation levels,
         // we wait for the lock.
-        long timeout = tx.timeout() == 0 ? 0 : remainingTime;
+        long timeout = tx.timeout() == 0 ? 0 : (remainingTime < 0 ? 0 : remainingTime);
 
         GridCacheVersion serOrder = (tx.serializable() && tx.optimistic()) ? tx.nearXidVersion() : null;
 

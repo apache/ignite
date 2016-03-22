@@ -27,6 +27,7 @@ import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -332,6 +333,11 @@ public class DirectMessageWriter implements MessageWriter {
         state.reset();
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(DirectMessageWriter.class, this);
+    }
+
     /**
      */
     private static class StateItem implements DirectMessageStateItem {
@@ -368,6 +374,11 @@ public class DirectMessageWriter implements MessageWriter {
         @Override public void reset() {
             state = 0;
             hdrWritten = false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(StateItem.class, this);
         }
     }
 }
