@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -30,6 +32,7 @@ import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -388,5 +391,40 @@ public class IgfsUtils {
         long modificationTime) {
         return new IgfsFileInfo(id, blockSize, len, affKey, props, null, lockId, accessTime, modificationTime,
             evictExclude);
+    }
+
+    /**
+     * Write listing entry.
+     *
+     * @param out Writer.
+     * @param entry Entry.
+     */
+    public static void writeListingEntry(BinaryRawWriter out, @Nullable IgfsListingEntry entry) {
+        if (entry != null) {
+            out.writeBoolean(true);
+
+            BinaryUtils.writeIgniteUuid(out, entry.fileId());
+
+            out.writeBoolean(entry.isDirectory());
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Read listing entry.
+     *
+     * @param in Reader.
+     * @return Entry.
+     */
+    @Nullable public static IgfsListingEntry readListingEntry(BinaryRawReader in) {
+        if (in.readBoolean()) {
+            IgniteUuid id = BinaryUtils.readIgniteUuid(in);
+            boolean dir = in.readBoolean();
+
+            return new IgfsListingEntry(id, dir);
+        }
+        else
+            return null;
     }
 }
