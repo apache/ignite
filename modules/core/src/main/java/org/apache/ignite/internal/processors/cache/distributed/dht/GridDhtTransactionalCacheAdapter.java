@@ -871,6 +871,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             return new GridFinishedFuture<>(res);
                         }
 
+                        U.dumpStack(null, "!!! GridDhtTxLocal");
+
                         tx = new GridDhtTxLocal(
                             ctx.shared(),
                             nearNode.id(),

@@ -173,12 +173,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     assert evt instanceof DiscoveryEvent;
                     assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
+                    log.info("!!! IgniteTxManager:onEvent:enter");
+
                     DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                     cctx.time().addTimeoutObject(new NodeFailureTimeoutObject(discoEvt.eventNode().id()));
 
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(discoEvt.eventNode().id());
+
+                    log.info("!!! IgniteTxManager:onEvent:exit");
                 }
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT);
@@ -1815,6 +1819,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         private NodeFailureTimeoutObject(UUID evtNodeId) {
             super(IgniteUuid.fromUuid(cctx.localNodeId()), TX_SALVAGE_TIMEOUT);
 
+            System.out.println("!!! TX_SALVAGE_TIMEOUT: " + TX_SALVAGE_TIMEOUT);
+
             this.evtNodeId = evtNodeId;
         }
 
@@ -1826,8 +1832,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 cctx.kernalContext().gateway().readLock();
             }
             catch (IllegalStateException | IgniteClientDisconnectedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to acquire kernal gateway [err=" + e + ']');
+                //if (log.isDebugEnabled())
+                    log.info("!!! Failed to acquire kernal gateway [err=" + e + ']');
 
                 return;
             }

@@ -166,6 +166,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public void onLocked(GridDistributedCacheEntry entry) {
+            log.info("!!! onLocked: entry = " + entry);
+
+            U.dumpStack(null, "!!! onLocked dump");
+
             if (entry.isNear())
                 nearLocked.put(entry.txKey(), entry);
             else
@@ -174,6 +178,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public void onFreed(GridDistributedCacheEntry entry) {
+            log.info("!!! onFreed: entry = " + entry);
+
+            U.dumpStack(null, "!!! onFreed dump");
+
             if (entry.isNear())
                 nearLocked.remove(entry.txKey());
             else
@@ -1096,8 +1104,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      *
      */
     public void recheckPendingLocks() {
-        if (exchLog.isDebugEnabled())
-            exchLog.debug("Rechecking pending locks for completion.");
+        //if (exchLog.isDebugEnabled())
+            exchLog.info("!!! Rechecking pending locks for completion.");
 
         if (!finishFuts.isEmptyx()) {
             for (FinishLockFuture fut : finishFuts)
@@ -1150,8 +1158,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 }
             }
 
-            if (exchLog.isDebugEnabled())
-                exchLog.debug("Pending lock set [topVer=" + topVer + ", locks=" + pendingLocks + ']');
+            //if (exchLog.isDebugEnabled())
+                exchLog.info("!!! Pending lock set [topVer=" + topVer + ", locks=" + pendingLocks + ']');
         }
 
         /**
@@ -1201,12 +1209,12 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                     recheck(entry);
             }
 
-            if (log.isDebugEnabled())
-                log.debug("After rechecking finished future: " + this);
+            //if (log.isDebugEnabled())
+                log.info("!!! After rechecking finished future: " + this);
 
             if (pendingLocks.isEmpty()) {
-                if (exchLog.isDebugEnabled())
-                    exchLog.debug("Finish lock future is done: " + this);
+                //if (exchLog.isDebugEnabled())
+                    exchLog.info("!!! Finish lock future is done: " + this);
 
                 onDone();
             }
@@ -1220,8 +1228,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             if (entry == null)
                 return;
 
-            if (exchLog.isDebugEnabled())
-                exchLog.debug("Rechecking entry for completion [entry=" + entry + ", finFut=" + this + ']');
+            //if (exchLog.isDebugEnabled())
+                exchLog.info("!!! Rechecking entry for completion [entry=" + entry + ", finFut=" + this + ']');
 
             Collection<GridCacheMvccCandidate> cands = pendingLocks.get(entry.txKey());
 

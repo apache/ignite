@@ -1060,6 +1060,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                 }
 
                 case ROLLED_BACK: {
+                    U.dumpStack(null, "!!! ROLLED_BACK: " + this);
+
                     if (setDone())
                         notify = true;
 
@@ -1154,8 +1156,16 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
-        if (local() && !dht())
-            state(MARKED_ROLLBACK, true);
+        Boolean changed = null;
+
+        boolean local = local();
+        boolean dht = dht();
+
+        if (local && !dht)
+            changed = state(MARKED_ROLLBACK, true);
+
+        U.dumpStack(null, "!!! onTimeout: local = " + local + ", dht = " + dht + ", changed = " + changed + ", " +
+            this);
     }
 
     /** {@inheritDoc} */

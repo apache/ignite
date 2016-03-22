@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -72,7 +73,7 @@ public class CacheTxLockTimeoutTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final int SRVS = 4;
+    private static final int SRVS = 1;
 
     /** */
     private static final String CACHE1 = "cache1";
@@ -552,6 +553,10 @@ public class CacheTxLockTimeoutTest extends GridCommonAbstractTest {
         txTimeoutMultithreaded(false);
     }
 
+    @Override protected long getTestTimeout() {
+        return 40000;
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -563,7 +568,7 @@ public class CacheTxLockTimeoutTest extends GridCommonAbstractTest {
      * @param restartNode Restart node flag.
      * @throws Exception If failed.
      */
-    public void txTimeoutMultithreaded(boolean restartNode) throws Exception {
+    private void txTimeoutMultithreaded(boolean restartNode) throws Exception {
         final int KEYS = 5;
 
         final Ignite client = ignite(SRVS);
@@ -609,7 +614,7 @@ public class CacheTxLockTimeoutTest extends GridCommonAbstractTest {
 
                         return null;
                     }
-                }, 10, "tx-thread");
+                }, 1, "tx-thread");
             }
         }
         finally {
@@ -630,11 +635,19 @@ public class CacheTxLockTimeoutTest extends GridCommonAbstractTest {
                 while (!stop.get()) {
                     Ignite ignite = startGrid(nodeIdx);
 
+                    UUID nodeId = ignite.cluster().localNode().id();
+
+                    log.info("!!! Node started: " + nodeId);
+
                     assertFalse(ignite.configuration().isClientMode());
 
                     U.sleep(300);
 
+                    log.info("!!! Node stopping: " + nodeId);
+
                     stopGrid(nodeIdx);
+
+                    log.info("!!! Node stopped: " + nodeId);
                 }
 
                 return null;

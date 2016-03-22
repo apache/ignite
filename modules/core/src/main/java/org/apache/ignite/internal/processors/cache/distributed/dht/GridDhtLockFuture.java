@@ -429,6 +429,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * @param dist If {@code true}, then remove locks from remote nodes as well.
      */
     private void undoLocks(boolean dist) {
+        log.info("!!! undoLocks: dist = " + dist + ", tx = " + tx);
+
         // Transactions will undo during rollback.
         Collection<GridDhtCacheEntry> entriesCp = entriesCopy();
 
@@ -449,6 +451,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                 else if (log.isDebugEnabled())
                     log.debug("Transaction was not marked rollback-only while locks were not acquired: " + tx);
             }
+
+            log.info("!!! undoLocks: entriesCp.size = " + entriesCp.size());
 
             for (GridCacheEntryEx e : entriesCp) {
                 try {
@@ -732,8 +736,10 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      * @return {@code True} if complete by this operation.
      */
     private boolean onComplete(boolean success, boolean stopping) {
-        if (log.isDebugEnabled())
-            log.debug("Received onComplete(..) callback [success=" + success + ", fut=" + this + ']');
+        //if (log.isDebugEnabled())
+            log.info("!!! Received onComplete(..) callback [success=" + success + ", stopping=" + stopping + ", fut=" +
+                this +
+                ']');
 
         if (!success && !stopping)
             undoLocks(true);

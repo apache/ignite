@@ -790,6 +790,9 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     protected void checkCallbacks(boolean emptyBefore, boolean emptyAfter) {
         assert Thread.holdsLock(this);
 
+        log.info("!!! checkCallbacks: emptyBefore = " + emptyBefore + ", emptyAfter = " + emptyAfter + ", entry = " +
+            this);
+
         if (emptyBefore != emptyAfter) {
             if (emptyBefore)
                 cctx.mvcc().callback().onLocked(this);
