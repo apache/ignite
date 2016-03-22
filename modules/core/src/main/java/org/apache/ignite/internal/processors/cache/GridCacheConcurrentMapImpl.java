@@ -116,13 +116,15 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
                 GridCacheMapEntry doomed0 = null;
 
                 if (entry == null) {
-                    if (val != null || create)
+                    if (create)
                         cur = created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
                 }
                 else {
                     if (entry.obsolete()) {
-                        cur = created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
                         doomed0 = entry;
+
+                        if (create)
+                            cur = created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
                     }
                     else
                         cur = entry;
