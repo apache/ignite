@@ -144,7 +144,9 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
         BinaryRawWriter out = writer.rawWriter();
 
         out.writeLong(createTime);
-        out.writeMap(props);
+
+        IgfsUtils.writeProperties(out, props);
+
         out.writeString(childName);
 
         if (childName != null)
@@ -156,7 +158,9 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
         BinaryRawReader in = reader.rawReader();
 
         createTime = in.readLong();
-        props = in.readMap();
+
+        props = IgfsUtils.readProperties(in);
+
         childName = in.readString();
 
         if (childName != null)

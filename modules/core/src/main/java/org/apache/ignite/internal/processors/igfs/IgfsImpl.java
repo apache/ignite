@@ -121,7 +121,7 @@ public final class IgfsImpl implements IgfsEx {
     private static final String PERMISSION_DFLT_VAL = "0777";
 
     /** Default directory metadata. */
-    static final Map<String, String> DFLT_DIR_META = F.asMap(PROP_PERMISSION, PERMISSION_DFLT_VAL);
+    static final Map<String, String> DFLT_DIR_META = F.asMap(IgfsUtils.PROP_PERMISSION, PERMISSION_DFLT_VAL);
 
     /** Handshake message. */
     private final IgfsPaths secondaryPaths;

@@ -46,6 +46,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -66,6 +67,33 @@ public class IgfsUtils {
 
     /** Constant trash concurrency level. */
     public static final int TRASH_CONCURRENCY = 64;
+
+    /** File property: user name. */
+    public static final String PROP_USER_NAME = "usrName";
+
+    /** File property: group name. */
+    public static final String PROP_GROUP_NAME = "grpName";
+
+    /** File property: permission. */
+    public static final String PROP_PERMISSION = "permission";
+
+    /** File property: prefer writes to local node. */
+    public static final String PROP_PREFER_LOCAL_WRITES = "locWrite";
+
+    /** Generic property index. */
+    private static final byte PROP_IDX = 0;
+
+    /** User name property index. */
+    private static final byte PROP_USER_NAME_IDX = 1;
+
+    /** Group name property index. */
+    private static final byte PROP_GROUP_NAME_IDX = 2;
+
+    /** Permission property index. */
+    private static final byte PROP_PERMISSION_IDX = 3;
+
+    /** Prefer local writes property index. */
+    private static final byte PROP_PREFER_LOCAL_WRITES_IDX = 4;
 
     /** Trash directory IDs. */
     private static final IgniteUuid[] TRASH_IDS;
@@ -423,6 +451,91 @@ public class IgfsUtils {
             boolean dir = in.readBoolean();
 
             return new IgfsListingEntry(id, dir);
+        }
+        else
+            return null;
+    }
+
+    /**
+     * Write entry properties. Rely on reference equality for well-known properties.
+     *
+     * @param out Writer.
+     * @param props Properties.
+     */
+    @SuppressWarnings("StringEquality")
+    public static void writeProperties(BinaryRawWriter out, @Nullable Map<String, String> props) {
+        if (props != null) {
+            out.writeInt(props.size());
+
+            for (Map.Entry<String, String> entry : props.entrySet()) {
+                String key = entry.getKey();
+
+                if (key == PROP_PERMISSION)
+                    out.writeByte(PROP_PERMISSION_IDX);
+                else if (key == PROP_PREFER_LOCAL_WRITES)
+                    out.writeByte(PROP_PREFER_LOCAL_WRITES_IDX);
+                else if (key == PROP_USER_NAME)
+                    out.writeByte(PROP_USER_NAME_IDX);
+                else if (key == PROP_GROUP_NAME)
+                    out.writeByte(PROP_GROUP_NAME_IDX);
+                else {
+                    out.writeByte(PROP_IDX);
+                    out.writeString(key);
+                }
+
+                out.writeString(entry.getValue());
+            }
+        }
+        else
+            out.writeInt(-1);
+    }
+
+    /**
+     * Read entry properties.
+     *
+     * @param in Reader.
+     * @return Properties.
+     */
+    @Nullable public static Map<String, String> readProperties(BinaryRawReader in) {
+        int size = in.readInt();
+
+        if (size >= 0) {
+            Map<String, String> props = new HashMap<>(size);
+
+            for (int i = 0; i < size; i++) {
+                byte idx = in.readByte();
+
+                String key;
+
+                switch (idx) {
+                    case PROP_PERMISSION_IDX:
+                        key = PROP_PERMISSION;
+
+                        break;
+
+                    case PROP_PREFER_LOCAL_WRITES_IDX:
+                        key = PROP_PREFER_LOCAL_WRITES;
+
+                        break;
+
+                    case PROP_USER_NAME_IDX:
+                        key = PROP_USER_NAME;
+
+                        break;
+
+                    case PROP_GROUP_NAME_IDX:
+                        key = PROP_GROUP_NAME;
+
+                        break;
+
+                    default:
+                        key = in.readString();
+                }
+
+                props.put(key, in.readString());
+            }
+
+            return props;
         }
         else
             return null;
