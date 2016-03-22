@@ -125,8 +125,6 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
                         if (create)
                             cur = created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
-                        else
-                            decrementPublicSize(entry);
                     }
                     else
                         cur = entry;
