@@ -568,7 +568,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 if (_topVer < topVer)
                 {
                     _topVer = topVer;
-                    _topSize = topSize;
+                    _topSize = topSize <= 0 ? 1 : topSize;
 
                     _bufSndSize = topSize * UU.DataStreamerPerNodeBufferSizeGet(Target);
                 }
