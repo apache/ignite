@@ -64,6 +64,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -1455,16 +1456,24 @@ public class GridNioServer<T> {
                                 for (SelectionKey key : keys) {
                                     GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
-                                    sb.append("    Conn [")
+                                    MessageWriter writer = ses.meta(MSG_WRITER.ordinal());
+                                    MessageReader reader = ses.meta(GridDirectParser.READER_META_KEY);
+
+                                    sb.append("    Connection info [")
                                         .append("rmtAddr=").append(ses.remoteAddress())
                                         .append(", locAddr=").append(ses.localAddress())
+                                        .append(", msgWriter=").append(writer != null ? writer.toString() : "null")
+                                        .append(", msgReader=").append(reader != null ? reader.toString() : "null")
                                         .append(", bytesRcvd=").append(ses.bytesReceived())
                                         .append(", bytesSent=").append(ses.bytesSent());
 
-                                    if (ses.recoveryDescriptor() != null) {
-                                        sb.append(", msgsSent=").append(ses.recoveryDescriptor().sent())
-                                            .append(", msgsAckedByRmt=").append(ses.recoveryDescriptor().acked())
-                                            .append(", msgsRcvd=").append(ses.recoveryDescriptor().received());
+                                    GridNioRecoveryDescriptor desc = ses.recoveryDescriptor();
+
+                                    if (desc != null) {
+                                        sb.append(", msgsSent=").append(desc.sent())
+                                            .append(", msgsAckedByRmt=").append(desc.acked())
+                                            .append(", msgsRcvd=").append(desc.received())
+                                            .append(", descIdHash=").append(System.identityHashCode(desc));
                                     }
                                     else
                                         sb.append(", recoveryDesc=null");
