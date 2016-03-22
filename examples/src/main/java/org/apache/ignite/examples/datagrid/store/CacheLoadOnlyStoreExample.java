@@ -58,11 +58,13 @@ public class CacheLoadOnlyStoreExample {
             productLoader.setBatchSize(10);
             productLoader.setBatchQueueSize(1);
 
-            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cacheConfiguration(productLoader))) {
+            try (IgniteCache<String, Product> cache = ignite.getOrCreateCache(cacheConfiguration(productLoader))) {
                 // load data.
                 cache.loadCache(null);
 
                 System.out.println(">>> Loaded number of items: " + cache.size(CachePeekMode.PRIMARY));
+
+                System.out.println(">>> Product id1's data: " + cache.get("id1"));
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
@@ -176,24 +178,15 @@ public class CacheLoadOnlyStoreExample {
             this.price = price;
         }
 
-        public String getId() {
-            return id;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public String getDesc() {
-            return desc;
-        }
-
-        public String getVendor() {
-            return vendor;
-        }
-
-        public BigDecimal getPrice() {
-            return price;
+        /**
+         * {@inheritDoc}
+         */
+        @Override public String toString() {
+            return "Product [id=" + id +
+                ", title=" + title +
+                ", desc=" + desc +
+                ", vendor=" + vendor +
+                ", price=" + price + ']';
         }
     }
 }
