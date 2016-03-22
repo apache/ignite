@@ -34,6 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
@@ -66,7 +67,7 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(1);
+        startGridsMultiThreaded(3);
     }
 
     /** {@inheritDoc} */
@@ -80,23 +81,27 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testGet() throws Exception {
-        final int key = 0;
-
         IgniteCache<Integer, BinaryObject> keepBinaryCache = jcache(0).withKeepBinary();
 
-        BinaryObjectBuilder builder = ignite(0).binary().builder("SomeType");
+        for (int key = 0; key < 100; key++) {
+            BinaryObjectBuilder builder = ignite(0).binary().builder("SomeType");
 
-        builder.setField("field1", key);
-        builder.setField("field2", "name_" + key);
+            builder.setField("field1", key);
+            builder.setField("field2", "name_" + key);
 
-        try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            BinaryObject val = keepBinaryCache.get(key);
+            keepBinaryCache.put(key, builder.build());
+        }
 
-            assertFalse(val instanceof BinaryObjectOffheapImpl);
+        for (int key = 0; key < 100; key++) {
+            try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
+                BinaryObject val = keepBinaryCache.get(key);
 
-            keepBinaryCache.put(key, val);
+                assertFalse(val instanceof BinaryObjectOffheapImpl);
 
-            tx.commit();
+                keepBinaryCache.put(key, val);
+
+                tx.commit();
+            }
         }
     }
 
@@ -104,20 +109,21 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testGetRealObject() throws Exception {
-        final int key = 0;
-
         IgniteCache<Integer, BinaryObject> keepBinaryCache = jcache(0).withKeepBinary();
 
-        jcache(0).put(key, new TestObject());
+        for (int key = 0; key < 100; key++)
+            jcache(0).put(key, new TestObject(key));
 
-        try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            BinaryObject val = keepBinaryCache.get(key);
+        for (int key = 0; key < 100; key++) {
+            try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                BinaryObject val = keepBinaryCache.get(key);
 
-            assertFalse(val instanceof BinaryObjectOffheapImpl);
+                assertFalse(val instanceof BinaryObjectOffheapImpl);
 
-            keepBinaryCache.put(key, val);
+                keepBinaryCache.put(key, val);
 
-            tx.commit();
+                tx.commit();
+            }
         }
     }
 
@@ -125,20 +131,23 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testGetAtomic() throws Exception {
-        final int key = 0;
-
         IgniteCache<Integer, BinaryObject> keepBinaryCache = jcache(0).withKeepBinary();
 
-        BinaryObjectBuilder builder = ignite(0).binary().builder("SomeType");
+        for (int key = 0; key < 100; key++) {
+            BinaryObjectBuilder builder = ignite(0).binary().builder("SomeType");
+            builder.setField("field1", key);
+            builder.setField("field2", "name_" + key);
 
-        builder.setField("field1", key);
-        builder.setField("field2", "name_" + key);
+            keepBinaryCache.put(key, builder.build());
+        }
 
-        keepBinaryCache.put(0, builder.build());
+        for (int key = 0; key < 100; key++) {
+            BinaryObject val = keepBinaryCache.get(key);
 
-        BinaryObject val = keepBinaryCache.get(key);
+            assertFalse(val instanceof BinaryObjectOffheapImpl);
 
-        assertFalse(val instanceof BinaryObjectOffheapImpl);
+            keepBinaryCache.put(key, val);
+        }
     }
 
     /**
@@ -164,7 +173,7 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
             Map<Integer, BinaryObject> vals = keepBinaryCache.getAll(keys);
 
             for (Map.Entry<Integer, BinaryObject> e : vals.entrySet()) {
-                assertFalse(e.getValue() instanceof BinaryObjectOffheapImpl);
+                assertFalse("Key: " + e.getKey(), e.getValue() instanceof BinaryObjectOffheapImpl);
 
                 keepBinaryCache.put(e.getKey(), e.getValue());
             }
@@ -178,9 +187,17 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
      */
     private static class TestObject {
         /** */
-        String field = "str";
+        String field;
 
         /** */
-        int field2 = 32;
+        int field2;
+
+        /**
+         * @param key Key.
+         */
+        TestObject(int key) {
+            field = "str" + key;
+            field2 = key;
+        }
     }
 }
