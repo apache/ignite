@@ -214,12 +214,12 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
     private IgfsEntryInfo createFileAndGetInfo(String path) throws IgniteCheckedException {
         IgfsPath p = path(path);
 
-        IgniteBiTuple<IgfsEntryInfo, IgniteUuid> t2 = mgr.create(p, null, false, 400, null, false, null);
+        IgfsEntryInfo res = mgr.create(p, null, false, 400, null, false, null);
 
-        assert t2 != null;
-        assert !t2.get1().isDirectory();
+        assert res != null;
+        assert !res.isDirectory();
 
-        return t2.get1();
+        return res;
     }
 
     /**

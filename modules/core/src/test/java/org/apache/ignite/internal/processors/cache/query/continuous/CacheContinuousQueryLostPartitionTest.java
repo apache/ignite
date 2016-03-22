@@ -140,8 +140,6 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
         // node2 now becomes the primary for the key.
         stopGrid(0);
 
-        awaitPartitionMapExchange();
-
         cache2.put(key, "2");
 
         // Sanity check.

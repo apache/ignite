@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCou
 import org.apache.ignite.internal.processors.hadoop.examples.HadoopWordCount1;
 import org.apache.ignite.internal.processors.hadoop.examples.HadoopWordCount2;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -110,7 +111,7 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
      * @return The owner.
      */
     private static String getOwner(IgfsEx i, IgfsPath p) {
-        return i.info(p).property(IgfsEx.PROP_USER_NAME);
+        return i.info(p).property(IgfsUtils.PROP_USER_NAME);
     }
 
     /**
@@ -122,7 +123,7 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
     private static String getOwnerSecondary(final IgfsSecondaryFileSystem secFs, final IgfsPath p) {
         return IgfsUserContext.doAs(USER, new IgniteOutClosure<String>() {
             @Override public String apply() {
-                return secFs.info(p).property(IgfsEx.PROP_USER_NAME);
+                return secFs.info(p).property(IgfsUtils.PROP_USER_NAME);
             }
         });
     }
