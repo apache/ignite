@@ -1016,8 +1016,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         boolean centralizedAff;
 
         if (lateAffAssign) {
-            for (GridCacheContext cacheCtx : cctx.cacheContexts())
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (cacheCtx.isLocal())
+                    continue;
+
                 cacheCtx.affinity().affinityCache().calculate(fut.topologyVersion(), fut.discoveryEvent());
+            }
 
             centralizedAff = true;
         }
@@ -1043,8 +1047,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private void initCachesAffinity(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         assert !lateAffAssign;
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts())
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            if (cacheCtx.isLocal())
+                continue;
+
             initAffinity(cacheCtx.affinity().affinityCache(), fut, false);
+        }
     }
 
     /**
@@ -1157,6 +1165,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         if (!crd) {
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (cacheCtx.isLocal())
+                    continue;
+
                 boolean delay = cacheCtx.rebalanceEnabled();
 
                 initAffinityOnNodeJoin(fut, cacheCtx.affinity().affinityCache(), null, delay);
