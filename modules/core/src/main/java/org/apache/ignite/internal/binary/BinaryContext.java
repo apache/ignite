@@ -80,7 +80,6 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeDeletePr
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeUpdateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileReserveSpaceProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePathProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -135,7 +134,6 @@ public class BinaryContext {
         sysClss.add(IgfsMetaFileRangeUpdateProcessor.class.getName());
         sysClss.add(IgfsMetaFileReserveSpaceProcessor.class.getName());
         sysClss.add(IgfsMetaFileUnlockProcessor.class.getName());
-        sysClss.add(IgfsMetaUpdatePathProcessor.class.getName());
         sysClss.add(IgfsMetaUpdatePropertiesProcessor.class.getName());
         sysClss.add(IgfsMetaUpdateTimesProcessor.class.getName());
 
