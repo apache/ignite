@@ -17,14 +17,12 @@
 
 namespace Apache.Ignite.ExamplesDll.Binary
 {
-    using System;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
     /// Employee key. Used in query example to co-locate employees with their organizations.
     /// </summary>
-    [Serializable]
     public class EmployeeKey
     {
         /// <summary>

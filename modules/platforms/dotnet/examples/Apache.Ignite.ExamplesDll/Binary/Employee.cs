@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.ExamplesDll.Binary
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -25,7 +24,6 @@ namespace Apache.Ignite.ExamplesDll.Binary
     /// <summary>
     /// Employee.
     /// </summary>
-    [Serializable]
     public class Employee
     {
         /// <summary>

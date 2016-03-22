@@ -19,22 +19,12 @@ namespace Apache.Ignite.ExamplesDll.Binary
 {
     using System;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Cache.Query;
 
     /// <summary>
     /// Organization.
     /// </summary>
-    [Serializable]
     public class Organization
     {
-        /// <summary>
-        /// Default constructor.
-        /// </summary>
-        public Organization()
-        {
-            // No-op.
-        }
-
         /// <summary>
         /// Constructor.
         /// </summary>
