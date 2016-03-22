@@ -23,7 +23,6 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -35,6 +34,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -198,6 +198,20 @@ public class IgfsDirectoryInfo extends IgfsEntryInfo implements Binarylizable {
 
         writeBinary(out);
 
+        if (listing != null) {
+            out.writeBoolean(true);
+
+            out.writeInt(listing.size());
+
+            for (Map.Entry<String, IgfsListingEntry> entry : listing.entrySet()) {
+                out.writeString(entry.getKey());
+
+                IgfsUtils.writeListingEntry(out, entry.getValue());
+            }
+        }
+        else
+            out.writeBoolean(false);
+
         out.writeMap(listing);
     }
 
@@ -206,6 +220,20 @@ public class IgfsDirectoryInfo extends IgfsEntryInfo implements Binarylizable {
         BinaryRawReader in = reader.rawReader();
 
         readBinary(in);
+
+        if (in.readBoolean()) {
+            int listingSize = in.readInt();
+
+            listing = new HashMap<>(listingSize);
+
+            for (int i = 0; i < listingSize; i++) {
+                String key = in.readString();
+
+                IgfsListingEntry val = IgfsUtils.readListingEntry(in);
+
+                listing.put(key, val);
+            }
+        }
 
         listing = in.readMap();
     }

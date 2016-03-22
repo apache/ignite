@@ -148,7 +148,7 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
         out.writeString(childName);
 
         if (childName != null)
-            out.writeObject(childEntry);
+            IgfsUtils.writeListingEntry(out, childEntry);
     }
 
     /** {@inheritDoc} */
@@ -160,7 +160,7 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
         childName = in.readString();
 
         if (childName != null)
-            childEntry = in.readObject();
+            childEntry = IgfsUtils.readListingEntry(in);
     }
 
     /** {@inheritDoc} */
