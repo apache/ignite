@@ -66,6 +66,8 @@ namespace Apache.Ignite.Core.Impl.Services
         /// </summary>
         private static MethodBase GetMethodOrThrow(Type svcType, string methodName, object[] arguments)
         {
+            // TODO: Cache result
+
             Debug.Assert(svcType != null);
             Debug.Assert(!string.IsNullOrWhiteSpace(methodName));
 

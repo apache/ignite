@@ -400,6 +400,8 @@ public class PlatformServices extends PlatformAbstractTarget {
             assert mthdName != null;
             assert args != null;
 
+            // TODO: Cache result
+
             Method[] allMethods = clazz.getMethods();
 
             List<Method> methods = new ArrayList<>(allMethods.length);
