@@ -190,13 +190,13 @@ mixin dropdown-multiple(lbl, model, name, placeholder, placeholderEmpty, options
 
 //- Mixin for table java class field.
 mixin table-java-class-field(field, items, save, newItem)
-    - var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
-    - var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
-    - var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
+    -var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
 
-    - var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
-    - var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+    -var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-java-class(
         data-name=field
@@ -212,13 +212,13 @@ mixin table-java-class-field(field, items, save, newItem)
 
 //- Mixin for table java package field.
 mixin table-java-package-field(field, items, save, newItem)
-    - var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
-    - var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
-    - var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
+    -var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
 
-    - var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
-    - var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+    -var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
         data-name=field
@@ -237,13 +237,13 @@ mixin table-java-package-field(field, items, save, newItem)
 
 //- Mixin for table text field.
 mixin table-text-field(field, items, save, placeholder, newItem)
-    - var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
-    - var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
-    - var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
+    -var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
 
-    - var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
-    - var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+    -var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
         data-name=field
@@ -260,13 +260,13 @@ mixin table-text-field(field, items, save, placeholder, newItem)
 
 //- Mixin for table address field.
 mixin table-address-field(field, items, save, newItem)
-    - var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
-    - var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
-    - var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
+    -var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
 
-    - var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
-    - var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+    -var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
         data-name=field
@@ -284,8 +284,8 @@ mixin table-address-field(field, items, save, newItem)
 
 //- Mixin for table save button.
 mixin table-save-button(valid, save, newItem)
-    - var reset = (newItem ? 'group.add = []' : 'field.edit = false')
-    - var onClick = valid + ' && ' + save + '; ' + valid  + ' && (' + reset + ');'
+    -var reset = (newItem ? 'group.add = []' : 'field.edit = false')
+    -var onClick = valid + ' && ' + save + '; ' + valid  + ' && (' + reset + ');'
 
     i.fa.fa-floppy-o(
         ng-show=valid
@@ -308,20 +308,14 @@ mixin table-remove-button(items, tip)
     +table-remove-conditional-button(items, 'true', tip)
 
 //- Mixin for table feedback for unique validator.
-mixin table-feedback-unique(from, field, tip)
+mixin table-error-feedback(visible, error, errorMessage)
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show=form + '.' + field + '.$error.igniteUnique'
-        bs-tooltip
-        data-title=tip
+        ng-if=visible
+        bs-tooltip='"#{errorMessage}"'
+        ignite-error=error
+        ignite-error-message=errorMessage
     )
 
-//- Mixin for table feedback for valid host name / IP address.
-mixin table-feedback-ip-address(from, field, tip)
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show=form + '.' + field + '.$error.ipaddress'
-        bs-tooltip
-        data-title=tip
-    )
 
 //- Mixin for cache mode.
 mixin cacheMode(lbl, model, name, placeholder)
@@ -341,8 +335,8 @@ mixin cacheMode(lbl, model, name, placeholder)
 
 //- Mixin for eviction policy.
 mixin evictionPolicy(model, name, required, enabled, tip)
-    - var kind = model + '.kind'
-    - var policy = model + '[' + kind + ']'
+    -var kind = model + '.kind'
+    -var policy = model + '[' + kind + ']'
 
     +dropdown-required('Eviction policy:', kind, name + 'Kind', required, enabled, 'Not set',
         '[\

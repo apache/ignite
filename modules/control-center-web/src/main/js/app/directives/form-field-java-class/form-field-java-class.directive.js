@@ -45,6 +45,13 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
         scope.$watch(() => form.$pristine, setAsDefault);
         scope.$watch('value', setAsDefault);
 
+        const checkValid = () => {
+            if (ngModel.$valid)
+                el.find('input').addClass('ng-valid').removeClass('ng-invalid');
+            else
+                el.find('input').removeClass('ng-valid').addClass('ng-invalid');
+        };
+
         scope.ngChange = function() {
             ngModel.$setViewValue(scope.value);
 
@@ -52,6 +59,8 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
                 ngModel.$setDirty();
             else
                 ngModel.$setPristine();
+
+            setTimeout(checkValid, 100);  // Use setTimeout() workaround of problem of two controllers.
         };
 
         ngModel.$render = function() {

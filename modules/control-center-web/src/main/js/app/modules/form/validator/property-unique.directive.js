@@ -31,9 +31,8 @@ export default ['ignitePropertyUnique', ['$parse', ($parse) => {
             const name = attrs.name;
 
             // Check for $index in case of editing in-place.
-            return _.isNumber(scope.$index) && !_.find(arr, function(checkedVal, ix) {
-                return (name === 'new' || scope.$index !== ix) && checkedVal.split('=')[0] === key;
-            });
+            return _.isNumber(scope.$index) &&
+                !_.find(arr, (checkedVal, ix) => (name === 'new' || scope.$index !== ix) && checkedVal.split('=')[0] === key);
         };
     };
 

@@ -66,8 +66,8 @@ mixin hard-link(ref, txt)
 
                         .panel-collapse(id='client' role='tabpanel' bs-collapse-target)
                             form(name='clientForm' novalidate)
-                                - var nearCfg = 'ctrl.cluster.clientNearCfg'
-                                - var nearCfgEvictionPolicy = nearCfg + '.nearEvictionPolicy[' + nearCfg + '.nearEvictionPolicy.kind]'
+                                -var nearCfg = 'ctrl.cluster.clientNearCfg'
+                                -var nearCfgEvictionPolicy = nearCfg + '.nearEvictionPolicy[' + nearCfg + '.nearEvictionPolicy.kind]'
 
                                 .details-row
                                     ignite-form-field.col-xs-8.col-sm-8.col-md-7(data-label='Near cache start size')

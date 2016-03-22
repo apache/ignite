@@ -16,7 +16,7 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
-- var model = 'backupItem'
+-var model = 'backupItem'
 
 form.panel.panel-default(name='server-near-cache' novalidate ng-show='#{model}.cacheMode === "PARTITIONED"')
     .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
@@ -30,8 +30,8 @@ form.panel.panel-default(name='server-near-cache' novalidate ng-show='#{model}.c
     .panel-collapse(role='tabpanel' bs-collapse-target id='server-near-cache')
         .panel-body(ng-if='__show__')
             .col-sm-6
-                - var enabled = model + '.nearCacheEnabled'
-                - var nearCfg = model + '.nearConfiguration'
+                -var enabled = model + '.nearCacheEnabled'
+                -var nearCfg = model + '.nearConfiguration'
 
                 .settings-row
                     +checkbox('Enabled', enabled, 'nearCacheEnabled', 'Flag indicating whether to configure near cache')

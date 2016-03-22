@@ -245,7 +245,7 @@ consoleModule.controller('clustersController', [
             $common.hidePopover();
 
             if ($common.isEmptyString(item.name))
-                return showPopoverMessage($scope.ui, 'general', 'clusterName', 'Name should not be empty');
+                return showPopoverMessage($scope.ui, 'general', 'clusterName', 'Cluster name should not be empty!');
 
             var form = $scope.ui.inputForm;
             var errors = form.$error;
@@ -257,7 +257,7 @@ consoleModule.controller('clustersController', [
                 var firstError = errors[firstErrorKey][0];
                 var actualError = firstError.$error[firstErrorKey][0];
 
-                var msg = 'Invalid value';
+                var msg = 'Invalid value!';
 
                 try {
                     msg = errors[firstErrorKey][0].$errorMessages[actualError.$name][firstErrorKey];
@@ -302,10 +302,10 @@ consoleModule.controller('clustersController', [
                         var type = b.typeConfigurations[typeIx];
 
                         if ($common.isEmptyString(type.typeName))
-                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type name should be specified');
+                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type name should be specified!');
 
                         if (_.find(b.typeConfigurations, sameName))
-                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type with such name is already specified');
+                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type with such name is already specified!');
                     }
                 }
             }
@@ -316,56 +316,56 @@ consoleModule.controller('clustersController', [
                 if ($common.isDefined(c.unacknowledgedMessagesBufferSize)) {
                     if ($common.isDefined(c.messageQueueLimit))
                         if (c.unacknowledgedMessagesBufferSize < 5 * c.messageQueueLimit)
-                            return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * message queue limit');
+                            return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * message queue limit!');
 
                     if ($common.isDefined(c.ackSendThreshold))
                         if (c.unacknowledgedMessagesBufferSize < 5 * c.ackSendThreshold)
-                            return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * ack send threshold');
+                            return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * ack send threshold!');
                 }
 
                 if (c.sharedMemoryPort === 0)
-                    return showPopoverMessage($scope.ui, 'communication', 'sharedMemoryPort', 'Shared memory port should be more than 0 or -1');
+                    return showPopoverMessage($scope.ui, 'communication', 'sharedMemoryPort', 'Shared memory port should be more than "0" or equals to "-1"!');
             }
 
             var r = item.connector;
 
             if ($common.isDefined(r)) {
                 if (r.sslEnabled && $common.isEmptyString(r.sslFactory))
-                    return showPopoverMessage($scope.ui, 'connector', 'connectorSslFactory', 'SSL factory should not be empty');
+                    return showPopoverMessage($scope.ui, 'connector', 'connectorSslFactory', 'SSL factory should not be empty!');
             }
 
             var d = item.discovery;
 
             if (d) {
                 if ((d.maxAckTimeout != undefined ? d.maxAckTimeout : 600000) < (d.ackTimeout || 5000))
-                    return showPopoverMessage($scope.ui, 'discovery', 'ackTimeout', 'Acknowledgement timeout should be less than max acknowledgement timeout');
+                    return showPopoverMessage($scope.ui, 'discovery', 'ackTimeout', 'Acknowledgement timeout should be less than max acknowledgement timeout!');
 
                 if (d.kind === 'Vm' && d.Vm && d.Vm.addresses.length === 0)
-                    return showPopoverMessage($scope.ui, 'general', 'addresses', 'Addresses are not specified');
+                    return showPopoverMessage($scope.ui, 'general', 'addresses', 'Addresses are not specified!');
 
                 if (d.kind === 'S3' && d.S3 && $common.isEmptyString(d.S3.bucketName))
-                    return showPopoverMessage($scope.ui, 'general', 'bucketName', 'Bucket name should not be empty');
+                    return showPopoverMessage($scope.ui, 'general', 'bucketName', 'Bucket name should not be empty!');
 
                 if (d.kind === 'Cloud' && d.Cloud) {
                     if ($common.isEmptyString(d.Cloud.identity))
-                        return showPopoverMessage($scope.ui, 'general', 'identity', 'Identity should not be empty');
+                        return showPopoverMessage($scope.ui, 'general', 'identity', 'Identity should not be empty!');
 
                     if ($common.isEmptyString(d.Cloud.provider))
-                        return showPopoverMessage($scope.ui, 'general', 'provider', 'Provider should not be empty');
+                        return showPopoverMessage($scope.ui, 'general', 'provider', 'Provider should not be empty!');
                 }
 
                 if (d.kind === 'GoogleStorage' && d.GoogleStorage) {
                     if ($common.isEmptyString(d.GoogleStorage.projectName))
-                        return showPopoverMessage($scope.ui, 'general', 'projectName', 'Project name should not be empty');
+                        return showPopoverMessage($scope.ui, 'general', 'projectName', 'Project name should not be empty!');
 
                     if ($common.isEmptyString(d.GoogleStorage.bucketName))
-                        return showPopoverMessage($scope.ui, 'general', 'bucketName', 'Bucket name should not be empty');
+                        return showPopoverMessage($scope.ui, 'general', 'bucketName', 'Bucket name should not be empty!');
 
                     if ($common.isEmptyString(d.GoogleStorage.serviceAccountP12FilePath))
-                        return showPopoverMessage($scope.ui, 'general', 'serviceAccountP12FilePath', 'Private key path should not be empty');
+                        return showPopoverMessage($scope.ui, 'general', 'serviceAccountP12FilePath', 'Private key path should not be empty!');
 
                     if ($common.isEmptyString(d.GoogleStorage.serviceAccountId))
-                        return showPopoverMessage($scope.ui, 'general', 'serviceAccountId', 'Account ID should not be empty');
+                        return showPopoverMessage($scope.ui, 'general', 'serviceAccountId', 'Account ID should not be empty!');
                 }
             }
 
@@ -377,20 +377,20 @@ consoleModule.controller('clustersController', [
                 var sparsity = swap.maximumSparsity;
 
                 if ($common.isDefined(sparsity) && (sparsity < 0 || sparsity >= 1))
-                    return showPopoverMessage($scope.ui, 'swap', 'maximumSparsity', 'Maximum sparsity should be more or equal 0 and less than 1');
+                    return showPopoverMessage($scope.ui, 'swap', 'maximumSparsity', 'Maximum sparsity should be more or equal 0 and less than 1!');
 
                 var readStripesNumber = swap.readStripesNumber;
 
                 if (readStripesNumber && !(readStripesNumber == -1 || (readStripesNumber & (readStripesNumber - 1)) == 0))
-                    return showPopoverMessage($scope.ui, 'swap', 'readStripesNumber', 'Read stripe size must be positive and power of two');
+                    return showPopoverMessage($scope.ui, 'swap', 'readStripesNumber', 'Read stripe size must be positive and power of two!');
             }
 
             if (item.sslEnabled) {
                 if (!$common.isDefined(item.sslContextFactory) || $common.isEmptyString(item.sslContextFactory.keyStoreFilePath))
-                    return showPopoverMessage($scope.ui, 'sslConfiguration', 'keyStoreFilePath', 'Key store file should not be empty');
+                    return showPopoverMessage($scope.ui, 'sslConfiguration', 'keyStoreFilePath', 'Key store file should not be empty!');
 
                 if ($common.isEmptyString(item.sslContextFactory.trustStoreFilePath) && $common.isEmptyArray(item.sslContextFactory.trustManagers))
-                    return showPopoverMessage($scope.ui, 'sslConfiguration', 'sslConfiguration-title', 'Trust storage file or managers should be configured');
+                    return showPopoverMessage($scope.ui, 'sslConfiguration', 'sslConfiguration-title', 'Trust storage file or managers should be configured!');
             }
 
             if (!swapKind && item.caches) {
@@ -409,7 +409,7 @@ consoleModule.controller('clustersController', [
 
             if (item.rebalanceThreadPoolSize && item.systemThreadPoolSize && item.systemThreadPoolSize <= item.rebalanceThreadPoolSize)
                 return showPopoverMessage($scope.ui, 'pools', 'rebalanceThreadPoolSize',
-                    'Rebalance thread pool size exceed or equals System thread pool size');
+                    'Rebalance thread pool size exceed or equals System thread pool size!');
 
             return true;
         }

@@ -16,11 +16,11 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
-- var cluster = 'backupItem'
-- var enabled = 'backupItem.sslEnabled'
-- var model = cluster + '.sslContextFactory'
-- var trust = model + '.trustManagers'
-- var form = 'trustManagers'
+-var cluster = 'backupItem'
+-var enabled = 'backupItem.sslEnabled'
+-var model = cluster + '.sslContextFactory'
+-var trust = model + '.trustManagers'
+-var form = 'trustManagers'
 
 form.panel.panel-default(name='#{form}' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
@@ -49,7 +49,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                     +text-options('Protocol:', model + '.protocol', 'protocol', '["TSL", "SSL"]', enabled, 'TSL', 'Protocol for secure transport')
                 .settings-row
                     ignite-form-group(ng-form='trustManagers' ng-model='#{trust}')
-                        - var uniqueTip = 'Such trust manager already exists!'
+                        -var uniqueTip = 'Such trust manager already exists!'
 
                         ignite-form-field-label
                             | Trust managers
@@ -59,10 +59,11 @@ form.panel.panel-default(name='#{form}' novalidate)
                             | Add new trust manager.
 
                         .group-content(ng-if='#{trust}.length')
-                            - var field = 'edit'
-                            - var valid = form + '.' + field + '.$valid'
-                            - var save = trust + '[$index] = ' + field
-                            - var reset = 'field.edit = false'
+                            -var field = 'edit'
+                            -var valid = form + '.' + field + '.$valid'
+                            -var unique = form + '.' + field + '.$error.igniteUnique'
+                            -var save = trust + '[$index] = ' + field
+                            -var reset = 'field.edit = false'
 
                             ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal' name='Trust manager')
                                 .indexField
@@ -73,17 +74,18 @@ form.panel.panel-default(name='#{form}' novalidate)
                                 span(ng-if='field.edit' ng-init='#{field} = model')
                                     +table-java-class-field(field, trust, save, false)
                                         +table-save-button(valid, save, false)
-                                        +table-feedback-unique(form, field, uniqueTip)
+                                        +table-error-feedback(unique, 'igniteUnique', uniqueTip)
 
                         .group-content(ng-repeat='field in group.add')
-                            - var field = 'new'
-                            - var valid = form + '.' + field + '.$valid'
-                            - var save = trust + '.push(' + field + ')'
+                            -var field = 'new'
+                            -var valid = form + '.' + field + '.$valid'
+                            -var unique = form + '.' + field + '.$error.igniteUnique'
+                            -var save = trust + '.push(' + field + ')'
 
                             ignite-form-field(type='internal' name='Trust manager')
                                 +table-java-class-field(field, trust, save, true)
                                     +table-save-button(valid, save, true)
-                                    +table-feedback-unique(form, field, uniqueTip)
+                                    +table-error-feedback(unique, 'igniteUnique', uniqueTip)
 
                         .group-content-empty(ng-if='!(#{trust}.length) && !group.add.length')
                             | Not defined

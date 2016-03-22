@@ -16,9 +16,9 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
-- var model = 'backupItem.connector'
-- var enabled = model + '.enabled'
-- var sslEnabled = enabled + ' && ' + model + '.sslEnabled'
+-var model = 'backupItem.connector'
+-var enabled = model + '.enabled'
+-var sslEnabled = enabled + ' && ' + model + '.sslEnabled'
 
 form.panel.panel-default(name='connector' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')

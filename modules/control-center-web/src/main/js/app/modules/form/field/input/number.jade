@@ -14,12 +14,14 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin feedback(error, message)
+mixin feedback(isCheckPristine, error, errorMessage)
+    -var checkPristine = isCheckPristine ? '!field.$pristine && ' : ''
+
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='!field.$pristine && field.$error.#{error}'
-        bs-tooltip='"#{message}"'
-        ignite-error='#{error}'
-        ignite-error-message='#{message}'
+        ng-show='#{checkPristine}field.$error.#{error}'
+        bs-tooltip='"#{errorMessage}"'
+        ignite-error=error
+        ignite-error-message=errorMessage
     )
 
 .input-tip
@@ -38,9 +40,9 @@ mixin feedback(error, message)
         data-ng-model-options='{debounce: 150}'
     )
 
-    +feedback('min', 'Value is less than allowable minimum: {{ min || 0 }}')
-    +feedback('max', 'Value is more than allowable maximum: {{ max }}')
-    +feedback('number', 'Only numbers allowed')
-    +feedback('required', 'This field could not be empty')
+    +feedback(true, 'required', 'This field could not be empty')
+    +feedback(false, 'min', 'Value is less than allowable minimum: {{ min || 0 }}')
+    +feedback(false, 'max', 'Value is more than allowable maximum: {{ max }}')
+    +feedback(false, 'number', 'Only numbers allowed')
 
     span(ng-transclude='')

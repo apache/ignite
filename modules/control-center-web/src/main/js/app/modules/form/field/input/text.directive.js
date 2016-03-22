@@ -26,6 +26,7 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
 
         scope.ngModel = ngModel;
         scope.form = form;
+        scope.field = form[name];
         scope.label = label;
 
         scope.$watch('required', (required) => {
@@ -52,7 +53,14 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
         scope.$watch(() => form.$pristine, setAsDefault);
         scope.$watch('value', setAsDefault);
 
-        scope.ngChange = function() {
+        const checkValid = () => {
+            if (ngModel.$valid)
+                el.find('input').addClass('ng-valid').removeClass('ng-invalid');
+            else
+                el.find('input').removeClass('ng-valid').addClass('ng-invalid');
+        };
+
+        scope.ngChange = () => {
             ngModel.$setViewValue(scope.value);
 
             if (JSON.stringify(scope.value) !== JSON.stringify(form.$defaults[name]))
@@ -60,15 +68,10 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
             else
                 ngModel.$setPristine();
 
-            setTimeout(() => {
-                if (ngModel.$valid)
-                    el.find('input').addClass('ng-valid').removeClass('ng-invalid');
-                else
-                    el.find('input').removeClass('ng-valid').addClass('ng-invalid');
-            }, 100); // Use setTimeout() workaround of problem of two controllers.
+            setTimeout(checkValid, 100); // Use setTimeout() workaround of problem of two controllers.
         };
 
-        ngModel.$render = function() {
+        ngModel.$render = () => {
             scope.value = ngModel.$modelValue;
         };
     };

@@ -16,12 +16,9 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
-- var model = 'backupItem'
-- var form = 'querySqlFunctionClasses';
-- var sqlFunctionClasses = model + '.sqlFunctionClasses';
-
-mixin sqlFxFeedbackUnique(field)
-    +table-feedback-unique(form, field, 'SQL function with such class name already exists!')
+-var model = 'backupItem'
+-var form = 'querySqlFunctionClasses';
+-var sqlFunctionClasses = model + '.sqlFunctionClasses';
 
 form.panel.panel-default(name='query' novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
@@ -50,10 +47,13 @@ form.panel.panel-default(name='query' novalidate)
                         ignite-form-group-add(ng-click='group.add = [{}]')
                             | Add new user-defined functions for SQL queries
 
+                        -var uniqueTip = 'SQL function with such class name already exists!'
+
                         .group-content(ng-if='#{sqlFunctionClasses}.length')
-                            - var field = 'edit'
-                            - var valid = form + '.' + field + '.$valid'
-                            - var save = sqlFunctionClasses + '[$index] = ' + field
+                            -var field = 'edit'
+                            -var valid = form + '.' + field + '.$valid'
+                            -var unique = form + '.' + field + '.$error.igniteUnique'
+                            -var save = sqlFunctionClasses + '[$index] = ' + field
 
                             ignite-form-field(ng-repeat='model in #{sqlFunctionClasses} track by $index' type='internal' name='SQL function')
                                 .indexField
@@ -65,17 +65,19 @@ form.panel.panel-default(name='query' novalidate)
                                 span(ng-if='field.edit' ng-init='#{field} = model')
                                     +table-java-class-field(field, sqlFunctionClasses, save, false)
                                         +table-save-button(valid, save, false)
-                                        +sqlFxFeedbackUnique(field)
+                                        +table-error-feedback(unique, 'igniteUnique', uniqueTip)
 
                         .group-content(ng-repeat='field in group.add')
-                            - var field = 'new'
-                            - var valid = form + '.' + field + '.$valid'
-                            - var save = sqlFunctionClasses + '.push(' + field + ')'
+                            -var field = 'new'
+                            -var valid = form + '.' + field + '.$valid'
+                            -var unique = form + '.' + field + '.$error.igniteUnique'
+                            -var save = sqlFunctionClasses + '.push(' + field + ')'
 
                             ignite-form-field(type='internal' name='SQL function')
                                 +table-java-class-field(field, sqlFunctionClasses, save, true)
                                     +table-save-button(valid, save, true)
-                                    +sqlFxFeedbackUnique(field)
+                                    +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+
                         .group-content-empty(ng-if='!(#{sqlFunctionClasses}.length) && !group.add.length')
                             | Not defined
                 .settings-row

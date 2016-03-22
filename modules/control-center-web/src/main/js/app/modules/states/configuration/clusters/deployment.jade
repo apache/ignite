@@ -16,17 +16,10 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
-- var model = 'backupItem'
-- var exclude = model + '.peerClassLoadingLocalClassPathExclude'
-- var form = 'deployment'
-- var enabled = 'backupItem.peerClassLoadingEnabled'
-
-mixin feedback(name, error, message)
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show=form + '.' + name +  '.$error.' + error
-        bs-tooltip
-        data-title=message
-    )
+-var model = 'backupItem'
+-var exclude = model + '.peerClassLoadingLocalClassPathExclude'
+-var form = 'deployment'
+-var enabled = 'backupItem.peerClassLoadingEnabled'
 
 form.panel.panel-default(name='#{form}' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
@@ -72,10 +65,17 @@ form.panel.panel-default(name='#{form}' novalidate)
                         ignite-form-group-add(ng-show='#{enabled}' ng-click='(group.add = [{}])')
                             | Add package name.
 
+                        -var uniqueTip = 'Such package already exists'
+                        -var tipJavaPackageName = 'Package name is invalid'
+                        -var tipJavaKeyWord = 'Package name could not contains reserved java keyword'
+
                         .group-content(ng-if=exclude + '.length')
-                            - var field = 'edit'
-                            - var valid = form + '.' + field + '.$valid'
-                            - var save = exclude + '[$index] = ' + field
+                            -var field = 'edit'
+                            -var valid = form + '.' + field + '.$valid'
+                            -var unique = form + '.' + field + '.$error.igniteUnique'
+                            -var javaPackageName = form + '.' + field + '.$error.javaPackageName'
+                            -var javaKeywords = form + '.' + field + '.$error.javaKeywords'
+                            -var save = exclude + '[$index] = ' + field
 
                             ignite-form-field(ng-repeat='model in #{exclude} track by $index' type='internal' name='Package name')
                                 .indexField
@@ -86,21 +86,24 @@ form.panel.panel-default(name='#{form}' novalidate)
                                 span(ng-if='field.edit' ng-init='#{field} = model')
                                     +table-java-package-field(field, exclude, save, false)
                                         +table-save-button(valid, save, false)
-                                        +table-feedback-unique(form, field, 'Such package already exists')
-                                        +feedback(field, 'javaPackageName', 'Package name is invalid')
-                                        +feedback(field, 'javaKeywords', 'Package name could not contains reserved java keyword')
+                                        +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+                                        +table-error-feedback(javaPackageName, 'javaPackageName', tipJavaPackageName)
+                                        +table-error-feedback(javaKeywords, 'javaKeywords', tipJavaKeyWord)
 
                         .group-content(ng-repeat='field in group.add')
-                            - var field = 'new'
-                            - var valid = form + '.' + field + '.$valid'
-                            - var save = exclude + '.push(' + field + ')'
+                            -var field = 'new'
+                            -var valid = form + '.' + field + '.$valid'
+                            -var unique = form + '.' + field + '.$error.igniteUnique'
+                            -var javaPackageName = form + '.' + field + '.$error.javaPackageName'
+                            -var javaKeywords = form + '.' + field + '.$error.javaKeywords'
+                            -var save = exclude + '.push(' + field + ')'
 
                             ignite-form-field(type='internal' name='Package name')
                                 +table-java-package-field(field, exclude, save, true)
                                     +table-save-button(valid, save, true)
-                                    +table-feedback-unique(form, field, 'Such package already exists')
-                                    +feedback(field, 'javaPackageName', 'Package name is invalid')
-                                    +feedback(field, 'javaKeywords', 'Package name could not contains reserved java keyword')
+                                    +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+                                    +table-error-feedback(javaPackageName, 'javaPackageName', tipJavaPackageName)
+                                    +table-error-feedback(javaKeywords, 'javaKeywords', tipJavaKeyWord)
 
 
                         .group-content-empty(ng-if='!(#{exclude}.length) && !group.add.length')

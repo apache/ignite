@@ -143,14 +143,14 @@ mixin table-igfs-path-mode(header, tblMdl, keyFld, valFld, keyPlaceholder, valPl
                             +table-igfs-path-mode-edit('new', keyPlaceholder, valPlaceholder, '{{::field.focusId}}', '-1')
 
 mixin details-row(lblClasses, fieldClasses)
-    - var lblDetailClasses = lblClasses + ' details-label'
+    -var lblDetailClasses = lblClasses + ' details-label'
 
-    - var detailMdl = 'getModel(backupItem, detail)[detail.model]';
-    - var detailHide = '{{detail.hide}}'
-    - var detailCommon = {'ng-model': detailMdl, 'ng-required': '{{detail.required}}', 'ng-disabled': '{{detail.disabled}}', 'ng-focus': 'tableReset(true)'};
-    - var dropdownPlaceholder = {'ng-class': '{placeholder: !(' + detailMdl + ' && ' + detailMdl + '.length > 0)}'}
+    -var detailMdl = 'getModel(backupItem, detail)[detail.model]';
+    -var detailHide = '{{detail.hide}}'
+    -var detailCommon = {'ng-model': detailMdl, 'ng-required': '{{detail.required}}', 'ng-disabled': '{{detail.disabled}}', 'ng-focus': 'tableReset(true)'};
+    -var dropdownPlaceholder = {'ng-class': '{placeholder: !(' + detailMdl + ' && ' + detailMdl + '.length > 0)}'}
 
-    - var customValidators = {'ng-attr-ipaddress': '{{detail.ipaddress}}'}
+    -var customValidators = {'ng-attr-ipaddress': '{{detail.ipaddress}}'}
 
     div(ng-switch='detail.type')
         div(ng-switch-when='label' ng-hide=detailHide)
@@ -302,10 +302,10 @@ mixin table-binary-configurations(tblMdl, keyFld, valFld, keyPlaceholder, valPla
                         +table-row(['col-xs-4 col-sm-4 col-md-4'], ['col-xs-8 col-sm-8 col-md-8'])
 
 mixin table-row(lblClasses, fieldClasses)
-    - var lblRowClasses = lblClasses + ' details-label'
+    -var lblRowClasses = lblClasses + ' details-label'
 
-    - var rowMdl = 'getModel(backupItem, field)[field.model][rowIndex][tableField.model]';
-    - var rowCommon = {'ng-model': rowMdl, 'ng-required': '{{tableField.required}}', 'ng-disabled': '{{tableField.disabled}}', 'ng-focus': 'tableReset(true)'};
+    -var rowMdl = 'getModel(backupItem, field)[field.model][rowIndex][tableField.model]';
+    -var rowCommon = {'ng-model': rowMdl, 'ng-required': '{{tableField.required}}', 'ng-disabled': '{{tableField.disabled}}', 'ng-focus': 'tableReset(true)'};
 
     div(ng-switch='tableField.type')
         div.checkbox(ng-switch-when='check')
@@ -326,13 +326,13 @@ mixin form-row(dataSource)
     +form-row-custom(['col-xs-4 col-sm-4 col-md-4'], ['col-xs-8 col-sm-8 col-md-8'], dataSource)
 
 mixin form-row-custom(lblClasses, fieldClasses, dataSource)
-    - var fieldMdl = 'getModel('+ dataSource + ', field)[field.model]';
-    - var fieldCommon = {'ng-model': fieldMdl, 'ng-required': 'field.required || required(field)', 'ng-focus': 'tableReset(true)'};
-    - var fieldRequiredClass = '{true: "required"}[field.required || required(field)]'
-    - var fieldHide = '{{field.hide}}'
-    - var fieldDisabled = {'ng-disabled': '{{field.disabled}}'}
-    - var dropdownPlaceholder = {'ng-class': '{placeholder: ' + fieldMdl + ' == undefined || ' + fieldMdl + ' == null}'}
-    - var dropdownMultiPlaceholder = {'ng-class': '{placeholder: !(' + fieldMdl + ' && ' + fieldMdl + '.length > 0)}'}
+    -var fieldMdl = 'getModel('+ dataSource + ', field)[field.model]';
+    -var fieldCommon = {'ng-model': fieldMdl, 'ng-required': 'field.required || required(field)', 'ng-focus': 'tableReset(true)'};
+    -var fieldRequiredClass = '{true: "required"}[field.required || required(field)]'
+    -var fieldHide = '{{field.hide}}'
+    -var fieldDisabled = {'ng-disabled': '{{field.disabled}}'}
+    -var dropdownPlaceholder = {'ng-class': '{placeholder: ' + fieldMdl + ' == undefined || ' + fieldMdl + ' == null}'}
+    -var dropdownMultiPlaceholder = {'ng-class': '{placeholder: !(' + fieldMdl + ' && ' + fieldMdl + '.length > 0)}'}
 
     div(ng-switch='field.type')
         div(ng-switch-when='label' ng-hide=fieldHide)
@@ -386,7 +386,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                 .input-tip
                     button.select-toggle.form-control(id='{{::field.id}}' bs-select ng-disabled='{{field.items}}.length == 0' data-multiple='1' data-placeholder='{{::$eval(field.items).length == 0 ? field.placeholderEmpty || field.placeholder : field.placeholder}}' bs-options='item.value as item.label for item in {{field.items}}' tabindex='-1')&attributes(fieldCommon)&attributes(dropdownMultiPlaceholder)
         div(ng-switch-when='dropdown-details' ng-hide=fieldHide)
-            - var expanded = 'field.details[' + fieldMdl + '].expanded'
+            -var expanded = 'field.details[' + fieldMdl + '].expanded'
 
             label(class=lblClasses ng-class=fieldRequiredClass) {{::field.label}}:
             div(class=fieldClasses)
