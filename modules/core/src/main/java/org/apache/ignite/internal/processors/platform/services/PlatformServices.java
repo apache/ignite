@@ -46,8 +46,6 @@ import java.util.UUID;
 import java.util.HashMap;
 import java.util.Collection;
 import java.util.ArrayList;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Interop services.
@@ -485,9 +483,6 @@ public class PlatformServices extends PlatformAbstractTarget {
      */
     private static class CopyOnWriteConcurrentMap<K, V> {
         /** */
-        private final Lock lock = new ReentrantLock();
-
-        /** */
         private volatile Map<K, V> map = new HashMap<>();
 
         /**
@@ -507,9 +502,7 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @param val Value.
          */
         public void put(K key, V val) {
-            lock.lock();
-
-            try {
+            synchronized (this){
                 if (map.containsKey(key))
                     return;
 
@@ -518,9 +511,6 @@ public class PlatformServices extends PlatformAbstractTarget {
                 map0.put(key, val);
 
                 map = map0;
-            }
-            finally {
-                lock.unlock();
             }
         }
     }
