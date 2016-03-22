@@ -195,7 +195,7 @@ public class CacheVersionImpl implements CacheVersion {
         if (res != 0)
             return res;
 
-        res = Long.compare(order, other.order());
+        res = Long.compare(order(), other.order());
 
         if (res != 0)
             return res;
