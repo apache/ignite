@@ -41,9 +41,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTest {
-    /** */
-    private CacheAtomicityMode atomicMode = CacheAtomicityMode.TRANSACTIONAL;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
@@ -53,7 +50,7 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(CacheMode.PARTITIONED);
-        cfg.setAtomicityMode(atomicMode);
+        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         cfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
         cfg.setBackups(1);
         cfg.setSwapEnabled(true);
@@ -80,7 +77,7 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testGet() throws Exception {
+    public void testGetTxNoClass() throws Exception {
         IgniteCache<Integer, BinaryObject> keepBinaryCache = jcache(0).withKeepBinary();
 
         for (int key = 0; key < 100; key++) {
@@ -108,7 +105,7 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testGetRealObject() throws Exception {
+    public void testGetTxRealObject() throws Exception {
         IgniteCache<Integer, BinaryObject> keepBinaryCache = jcache(0).withKeepBinary();
 
         for (int key = 0; key < 100; key++)
@@ -130,7 +127,7 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testGetAtomic() throws Exception {
+    public void testGetNoClass() throws Exception {
         IgniteCache<Integer, BinaryObject> keepBinaryCache = jcache(0).withKeepBinary();
 
         for (int key = 0; key < 100; key++) {
@@ -153,7 +150,7 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testGetAll() throws Exception {
+    public void testGetAllTxNoClass() throws Exception {
         IgniteCache<Integer, BinaryObject> keepBinaryCache = jcache(0).withKeepBinary();
 
         Set<Integer> keys = new HashSet<>();
