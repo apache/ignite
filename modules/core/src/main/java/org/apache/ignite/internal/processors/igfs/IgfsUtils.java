@@ -65,7 +65,7 @@ public class IgfsUtils {
     public static final IgniteUuid DELETE_LOCK_ID = new IgniteUuid(new UUID(0, 0), 0);
 
     /** Constant trash concurrency level. */
-    public static final int TRASH_CONCURRENCY = 16;
+    public static final int TRASH_CONCURRENCY = 64;
 
     /** Trash directory IDs. */
     private static final IgniteUuid[] TRASH_IDS;
