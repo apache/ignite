@@ -390,10 +390,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
             else if (req.start() && !req.clientStartOnly()) {
                 DynamicCacheDescriptor desc = new DynamicCacheDescriptor(cctx.kernalContext(),
-                        req.startCacheConfiguration(),
-                        req.cacheType(),
-                        false,
-                        req.deploymentId());
+                    req.startCacheConfiguration(),
+                    req.cacheType(),
+                    false,
+                    req.deploymentId());
 
                 DynamicCacheDescriptor old = registeredCaches.put(cacheId, desc);
 
@@ -459,9 +459,15 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 cctx.cache().blockGateway(req);
 
                 if (crd) {
-                    boolean rmvCache = req.stop() || (req.close() &&
-                        req.initiatingNodeId().equals(cctx.localNodeId()) &&
-                        !cctx.discovery().cacheAffinityNode(cctx.localNode(), req.cacheName()));
+                    boolean rmvCache = false;
+
+                    if (req.close() && req.initiatingNodeId().equals(cctx.localNodeId())) {
+                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                        rmvCache = cacheCtx != null && !cacheCtx.affinityNode();
+                    }
+                    else if (req.stop())
+                        rmvCache = true;
 
                     if (rmvCache) {
                         CacheHolder cache = caches.remove(cacheId);
@@ -1337,7 +1343,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     List<ClusterNode> newNodes0 = null;
 
-                    assert newPrimary == null || aliveNodes.contains(newPrimary) : newPrimary;
+                    assert newPrimary == null || aliveNodes.contains(newPrimary) :  "Invalid new primary [" +
+                        "cache=" + cache.name() +
+                        ", node=" + newPrimary +
+                        ", topVer=" + topVer + ']';
 
                     if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
                         if (aliveNodes.contains(curPrimary)) {
@@ -1562,6 +1571,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             GridAffinityAssignmentCache aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
                 ccfg.getName(),
                 affFunc,
+                ccfg.getNodeFilter(),
                 ccfg.getBackups(),
                 ccfg.getCacheMode() == LOCAL);
 

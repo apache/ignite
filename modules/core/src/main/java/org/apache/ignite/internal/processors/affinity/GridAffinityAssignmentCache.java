@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -64,6 +65,9 @@ public class GridAffinityAssignmentCache {
 
     /** Affinity function. */
     private final AffinityFunction aff;
+
+    /** */
+    private final IgnitePredicate<ClusterNode> nodeFilter;
 
     /** Partitions count. */
     private final int partsCnt;
@@ -104,6 +108,7 @@ public class GridAffinityAssignmentCache {
     public GridAffinityAssignmentCache(GridKernalContext ctx,
         String cacheName,
         AffinityFunction aff,
+        IgnitePredicate<ClusterNode> nodeFilter,
         int backups,
         boolean locCache)
     {
@@ -112,6 +117,7 @@ public class GridAffinityAssignmentCache {
 
         this.ctx = ctx;
         this.aff = aff;
+        this.nodeFilter = nodeFilter;
         this.cacheName = cacheName;
         this.backups = backups;
         this.locCache = locCache;
@@ -238,7 +244,7 @@ public class GridAffinityAssignmentCache {
         List<List<ClusterNode>> assignment;
 
         if (prevAssignment != null && discoEvt != null) {
-            boolean affNode = ctx.discovery().cacheAffinityNode(discoEvt.eventNode(), cacheName);
+            boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter);
 
             if (!affNode)
                 assignment = prevAssignment;

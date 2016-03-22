@@ -1040,7 +1040,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             boolean changed = false;
 
-            if (cctx.affinity().affinityTopologyVersion().compareTo(topVer) >= 0) {
+            AffinityTopologyVersion affVer = cctx.affinity().affinityTopologyVersion();
+
+            if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
                 List<List<ClusterNode>> aff = cctx.affinity().assignments(topVer);
 
                 changed = checkEvictions(updateSeq, aff);
@@ -1158,7 +1160,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            if (cctx.affinity().affinityTopologyVersion().compareTo(topVer) >= 0) {
+            AffinityTopologyVersion affVer = cctx.affinity().affinityTopologyVersion();
+
+            if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
                 List<List<ClusterNode>> aff = cctx.affinity().assignments(topVer);
 
                 changed |= checkEvictions(updateSeq, aff);
