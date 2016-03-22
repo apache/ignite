@@ -545,6 +545,14 @@ public class GridNioServer<T> {
     }
 
     /**
+     *
+     */
+    public void dumpStats() {
+        for (int i = 0; i < clientWorkers.size(); i++)
+            clientWorkers.get(i).offer(new NioOperationFuture<Void>(null, NioOperation.DUMP_STATS));
+    }
+
+    /**
      * Establishes a session.
      *
      * @param ch Channel to register within the server and create session for.
@@ -1401,6 +1409,43 @@ public class GridNioServer<T> {
 
                                 break;
                             }
+
+                            case DUMP_STATS: {
+                                StringBuilder sb = new StringBuilder();
+
+                                Set<SelectionKey> keys = selector.keys();
+
+                                sb.append(U.nl())
+                                    .append(">> Selector info [idx=").append(idx)
+                                    .append(", keysCnt=").append(keys.size())
+                                    .append("]").append(U.nl());
+
+                                for (SelectionKey key : keys) {
+                                    GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
+
+                                    sb.append("    Conn [")
+                                        .append("rmtAddr=").append(ses.remoteAddress())
+                                        .append(", locAddr=").append(ses.localAddress())
+                                        .append(", bytesRcvd=").append(ses.bytesReceived())
+                                        .append(", bytesSent=").append(ses.bytesSent());
+
+                                    if (ses.recoveryDescriptor() != null) {
+                                        sb.append(", msgsSent=").append(ses.recoveryDescriptor().sent())
+                                            .append(", msgsAckedByRmt=").append(ses.recoveryDescriptor().acked())
+                                            .append(", msgsRcvd=").append(ses.recoveryDescriptor().received());
+                                    }
+                                    else
+                                        sb.append(", recoveryDesc=null");
+
+                                    sb.append("]").append(U.nl());
+                                }
+
+                                if (log.isInfoEnabled())
+                                    log.info(sb.toString());
+
+                                // Complete the request just in case (none should wait on this future).
+                                req.onDone(true);
+                            }
                         }
                     }
 
@@ -1908,7 +1953,10 @@ public class GridNioServer<T> {
         PAUSE_READ,
 
         /** Resume read. */
-        RESUME_READ
+        RESUME_READ,
+
+        /** Dump statistics. */
+        DUMP_STATS
     }
 
     /**
@@ -1976,7 +2024,7 @@ public class GridNioServer<T> {
          * @param op Requested operation.
          */
         NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op) {
-            assert ses != null;
+            assert ses != null || op == NioOperation.DUMP_STATS : "Invalid params [ses=" + ses + ", op=" + op + ']';
             assert op != null;
             assert op != NioOperation.REGISTER;
 
