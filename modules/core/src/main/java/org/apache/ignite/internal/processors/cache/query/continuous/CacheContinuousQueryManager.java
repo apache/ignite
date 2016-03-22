@@ -649,6 +649,18 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             autoUnsubscribe,
             pred).get();
 
+        try {
+            if (hnd.isQuery() && cctx.userCache())
+                hnd.waitTopologyFuture(cctx.kernalContext());
+        }
+        catch (IgniteCheckedException e) {
+            log.warning("Failed to start continuous query.", e);
+
+            cctx.kernalContext().continuous().stopRoutine(id);
+
+            throw new IgniteCheckedException("Failed to start continuous query.", e);
+        }
+
         if (notifyExisting) {
             final Iterator<GridCacheEntryEx> it = cctx.cache().allEntries().iterator();
 
