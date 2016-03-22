@@ -138,7 +138,9 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
         BinaryRawWriter out = writer.rawWriter();
 
         out.writeLong(createTime);
-        out.writeMap(props);
+
+        IgfsUtils.writeProperties(out, props);
+
         out.writeInt(blockSize);
         BinaryUtils.writeIgniteUuid(out, affKey);
         BinaryUtils.writeIgniteUuid(out, lockId);
@@ -150,7 +152,9 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
         BinaryRawReader in = reader.rawReader();
 
         createTime = in.readLong();
-        props = in.readMap();
+
+        props = IgfsUtils.readProperties(in);
+
         blockSize = in.readInt();
         affKey = BinaryUtils.readIgniteUuid(in);
         lockId = BinaryUtils.readIgniteUuid(in);

@@ -26,6 +26,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsListingEntry;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -113,7 +114,8 @@ public final class IgfsMetaDirectoryListingAddProcessor implements EntryProcesso
         BinaryRawWriter out = writer.rawWriter();
 
         out.writeString(fileName);
-        out.writeObject(entry);
+
+        IgfsUtils.writeListingEntry(out, entry);
     }
 
     /** {@inheritDoc} */
@@ -121,7 +123,8 @@ public final class IgfsMetaDirectoryListingAddProcessor implements EntryProcesso
         BinaryRawReader in = reader.rawReader();
 
         fileName = in.readString();
-        entry = in.readObject();
+
+        entry = IgfsUtils.readListingEntry(in);
     }
 
     /** {@inheritDoc} */

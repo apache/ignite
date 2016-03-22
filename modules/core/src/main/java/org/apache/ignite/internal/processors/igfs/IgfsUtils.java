@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -30,6 +32,7 @@ import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -43,6 +46,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -62,7 +66,34 @@ public class IgfsUtils {
     public static final IgniteUuid DELETE_LOCK_ID = new IgniteUuid(new UUID(0, 0), 0);
 
     /** Constant trash concurrency level. */
-    public static final int TRASH_CONCURRENCY = 16;
+    public static final int TRASH_CONCURRENCY = 64;
+
+    /** File property: user name. */
+    public static final String PROP_USER_NAME = "usrName";
+
+    /** File property: group name. */
+    public static final String PROP_GROUP_NAME = "grpName";
+
+    /** File property: permission. */
+    public static final String PROP_PERMISSION = "permission";
+
+    /** File property: prefer writes to local node. */
+    public static final String PROP_PREFER_LOCAL_WRITES = "locWrite";
+
+    /** Generic property index. */
+    private static final byte PROP_IDX = 0;
+
+    /** User name property index. */
+    private static final byte PROP_USER_NAME_IDX = 1;
+
+    /** Group name property index. */
+    private static final byte PROP_GROUP_NAME_IDX = 2;
+
+    /** Permission property index. */
+    private static final byte PROP_PERMISSION_IDX = 3;
+
+    /** Prefer local writes property index. */
+    private static final byte PROP_PREFER_LOCAL_WRITES_IDX = 4;
 
     /** Trash directory IDs. */
     private static final IgniteUuid[] TRASH_IDS;
@@ -388,5 +419,125 @@ public class IgfsUtils {
         long modificationTime) {
         return new IgfsFileInfo(id, blockSize, len, affKey, props, null, lockId, accessTime, modificationTime,
             evictExclude);
+    }
+
+    /**
+     * Write listing entry.
+     *
+     * @param out Writer.
+     * @param entry Entry.
+     */
+    public static void writeListingEntry(BinaryRawWriter out, @Nullable IgfsListingEntry entry) {
+        if (entry != null) {
+            out.writeBoolean(true);
+
+            BinaryUtils.writeIgniteUuid(out, entry.fileId());
+
+            out.writeBoolean(entry.isDirectory());
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Read listing entry.
+     *
+     * @param in Reader.
+     * @return Entry.
+     */
+    @Nullable public static IgfsListingEntry readListingEntry(BinaryRawReader in) {
+        if (in.readBoolean()) {
+            IgniteUuid id = BinaryUtils.readIgniteUuid(in);
+            boolean dir = in.readBoolean();
+
+            return new IgfsListingEntry(id, dir);
+        }
+        else
+            return null;
+    }
+
+    /**
+     * Write entry properties. Rely on reference equality for well-known properties.
+     *
+     * @param out Writer.
+     * @param props Properties.
+     */
+    @SuppressWarnings("StringEquality")
+    public static void writeProperties(BinaryRawWriter out, @Nullable Map<String, String> props) {
+        if (props != null) {
+            out.writeInt(props.size());
+
+            for (Map.Entry<String, String> entry : props.entrySet()) {
+                String key = entry.getKey();
+
+                if (key == PROP_PERMISSION)
+                    out.writeByte(PROP_PERMISSION_IDX);
+                else if (key == PROP_PREFER_LOCAL_WRITES)
+                    out.writeByte(PROP_PREFER_LOCAL_WRITES_IDX);
+                else if (key == PROP_USER_NAME)
+                    out.writeByte(PROP_USER_NAME_IDX);
+                else if (key == PROP_GROUP_NAME)
+                    out.writeByte(PROP_GROUP_NAME_IDX);
+                else {
+                    out.writeByte(PROP_IDX);
+                    out.writeString(key);
+                }
+
+                out.writeString(entry.getValue());
+            }
+        }
+        else
+            out.writeInt(-1);
+    }
+
+    /**
+     * Read entry properties.
+     *
+     * @param in Reader.
+     * @return Properties.
+     */
+    @Nullable public static Map<String, String> readProperties(BinaryRawReader in) {
+        int size = in.readInt();
+
+        if (size >= 0) {
+            Map<String, String> props = new HashMap<>(size);
+
+            for (int i = 0; i < size; i++) {
+                byte idx = in.readByte();
+
+                String key;
+
+                switch (idx) {
+                    case PROP_PERMISSION_IDX:
+                        key = PROP_PERMISSION;
+
+                        break;
+
+                    case PROP_PREFER_LOCAL_WRITES_IDX:
+                        key = PROP_PREFER_LOCAL_WRITES;
+
+                        break;
+
+                    case PROP_USER_NAME_IDX:
+                        key = PROP_USER_NAME;
+
+                        break;
+
+                    case PROP_GROUP_NAME_IDX:
+                        key = PROP_GROUP_NAME;
+
+                        break;
+
+                    default:
+                        key = in.readString();
+                }
+
+                props.put(key, in.readString());
+            }
+
+            return props;
+        }
+        else
+            return null;
     }
 }

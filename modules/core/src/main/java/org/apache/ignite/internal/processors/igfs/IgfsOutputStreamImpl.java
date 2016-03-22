@@ -412,7 +412,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         if (!igfsCtx.configuration().isFragmentizerEnabled())
             return null;
 
-        if (!Boolean.parseBoolean(fileInfo.properties().get(IgfsEx.PROP_PREFER_LOCAL_WRITES)))
+        if (!Boolean.parseBoolean(fileInfo.properties().get(IgfsUtils.PROP_PREFER_LOCAL_WRITES)))
             return null;
 
         int blockSize = fileInfo.blockSize();
