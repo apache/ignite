@@ -39,7 +39,7 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @param pageId Page ID.
      * @return Page or {@code null} if this page ID was not allocated.
      */
-    public Page page(long pageId) throws IgniteCheckedException;
+    public Page page(FullPageId pageId) throws IgniteCheckedException;
 
     /**
      * @param page Page to release.
@@ -60,7 +60,7 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @return Collection of dirty page IDs.
      * @throws IgniteException If checkpoint has been already started and was not finished.
      */
-    public Collection<Long> beginCheckpoint() throws IgniteException;
+    public Collection<FullPageId> beginCheckpoint() throws IgniteException;
 
     /**
      * Finishes checkpoint operation.
@@ -75,5 +75,5 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @return A buffer containing checkpointed page data.
      * @throws IgniteException If failed to obtain page data.
      */
-    public ByteBuffer getForCheckpoint(long pageId);
+    public ByteBuffer getForCheckpoint(FullPageId pageId);
 }

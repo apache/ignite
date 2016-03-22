@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -36,7 +37,7 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
         AtomicIntegerFieldUpdater.newUpdater(PageImpl.class, "refCnt");
 
     /** */
-    private final long pageId;
+    private final FullPageId fullId;
 
     /** */
     public final long ptr;
@@ -58,11 +59,11 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
     private final PageMemoryImpl pageMem;
 
     /**
-     * @param pageId Handle.
+     * @param fullId Full page ID.
      * @param pageMem Page memory.
      */
-    public PageImpl(long pageId, long ptr, PageMemoryImpl pageMem) {
-        this.pageId = pageId;
+    public PageImpl(FullPageId fullId, long ptr, PageMemoryImpl pageMem) {
+        this.fullId = fullId;
         this.ptr = ptr;
         this.pageMem = pageMem;
 
@@ -94,7 +95,12 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
     /** {@inheritDoc} */
     @Override public long id() {
-        return pageId;
+        return fullId.pageId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public FullPageId fullId() {
+        return fullId;
     }
 
     /** {@inheritDoc} */
@@ -173,7 +179,7 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
         }
 
         // Create a buffer copy if the page needs to be checkpointed.
-        if (pageMem.isInCheckpoint(pageId)) {
+        if (pageMem.isInCheckpoint(fullId)) {
             if (cp == null) {
                 ByteBuffer cpBuf = ByteBuffer.allocate(pageMem.pageSize());
 
@@ -184,7 +190,7 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
                 cpBuf.put(buf);
 
-                pageMem.setDirty(pageId, ptr, false);
+                pageMem.setDirty(fullId, ptr, false);
 
                 cp = new T2<>(cpBuf, false);
             }
@@ -222,16 +228,16 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
                 buf.put(cpBuf);
 
-                pageMem.clearCheckpoint(pageId);
+                pageMem.clearCheckpoint(fullId);
 
-                pageMem.setDirty(pageId, ptr, cp.get2());
+                pageMem.setDirty(fullId, ptr, cp.get2());
 
                 cp = null;
 
                 return releaseReference();
             }
             else
-                pageMem.setDirty(pageId, ptr, false);
+                pageMem.setDirty(fullId, ptr, false);
 
             return false;
         }
@@ -251,7 +257,7 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
         if (cp != null)
             cp.set2(true);
         else
-            pageMem.setDirty(pageId, ptr, true);
+            pageMem.setDirty(fullId, ptr, true);
     }
 
     /** {@inheritDoc} */
@@ -281,7 +287,7 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
     @Override public String toString() {
         SB sb = new SB("PageImpl [handle=");
 
-        sb.appendHex(pageId);
+        sb.a(fullId);
         sb.a(", relPtr=");
         sb.appendHex(pageMem.readRelative(ptr));
         sb.a(", absPtr=");

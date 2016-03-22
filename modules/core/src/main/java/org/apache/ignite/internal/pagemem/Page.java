@@ -33,6 +33,11 @@ public interface Page extends AutoCloseable {
     public long id();
 
     /**
+     * @return Full page ID.
+     */
+    public FullPageId fullId();
+
+    /**
      * Simple version counter.
      *
      * @return Current version.

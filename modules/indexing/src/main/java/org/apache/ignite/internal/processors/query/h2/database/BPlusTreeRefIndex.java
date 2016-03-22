@@ -8,6 +8,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -48,7 +49,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     private CacheObjectContext coctx;
 
     /** */
-    private final long metaPageId;
+    private final long rootPageId;
 
     /** */
     private volatile long lastDataPageId;
@@ -57,9 +58,21 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @param keyCol Key column.
      * @param valCol Value column.
      */
-    public BPlusTreeRefIndex(GridCacheContext<?,?> cctx, PageMemory pageMem, long metaPageId, boolean initNew,
-        int keyCol, int valCol, Table tbl, String name, boolean pk, IndexColumn[] cols) throws IgniteCheckedException {
+    public BPlusTreeRefIndex(
+        GridCacheContext<?,?> cctx,
+        PageMemory pageMem,
+        FullPageId rootPageId,
+        boolean initNew,
+        int keyCol,
+        int valCol,
+        Table tbl,
+        String name,
+        boolean pk,
+        IndexColumn[] cols
+    ) throws IgniteCheckedException {
         super(keyCol, valCol);
+
+        assert cctx.cacheId() == rootPageId.cacheId();
 
         if (!pk) {
             // For other indexes we add primary key at the end to avoid conflicts.
@@ -77,12 +90,12 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
         if (initNew) { // Init new index.
-            try (Page meta = pageMem.page(metaPageId)) {
+            try (Page meta = pageMem.page(rootPageId)) {
                 ByteBuffer buf = meta.getForInitialWrite();
 
                 MetaPageIO io = MetaPageIO.latest();
 
-                io.initNewPage(buf, metaPageId);
+                io.initNewPage(buf, rootPageId.pageId());
 
                 try (Page root = allocatePage(-1, FLAG_IDX)) {
                     LeafPageIO.latest().initNewPage(root.getForInitialWrite(), root.id());
@@ -93,7 +106,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             }
         }
 
-        this.metaPageId = metaPageId;
+        this.rootPageId = rootPageId.pageId();
     }
 
     /**
@@ -175,11 +188,11 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         long firstPageId;
 
-        try (Page meta = pageMem.page(metaPageId)) {
+        try (Page meta = page(rootPageId)) {
             firstPageId = getLeftmostPageId(meta, 0); // Level 0 is always bottom.
         }
 
-        try (Page first = pageMem.page(firstPageId)) {
+        try (Page first = page(firstPageId)) {
             ByteBuffer buf = first.getForRead();
 
             try {
@@ -236,7 +249,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      */
     private void initOperation(Get g) throws IgniteCheckedException {
         if (g.meta == null)
-            g.meta = pageMem.page(metaPageId);
+            g.meta = page(rootPageId);
 
         int rootLvl;
         long rootId;
@@ -285,7 +298,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      */
     private boolean findDown(final Get g, final long pageId, final long expFwdId, final int lvl)
         throws IgniteCheckedException {
-        try (Page page = pageMem.page(pageId)) {
+        try (Page page = page(pageId)) {
             int res;
 
             for (;;) {
@@ -359,7 +372,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             if (pageId == 0)
                 pageId = nextDataPage(0);
 
-            try (Page page = pageMem.page(pageId)) {
+            try (Page page = page(pageId)) {
                 ByteBuffer buf = page.getForWrite();
 
                 boolean ok = false;
@@ -393,7 +406,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     private String printTree(boolean keys) {
         StringBuilder b = new StringBuilder();
 
-        try (Page meta = pageMem.page(metaPageId)) {
+        try (Page meta = page(rootPageId)) {
             printTree(getRootPageId(meta), "", true, b, keys);
         }
         catch (IgniteCheckedException e) {
@@ -410,7 +423,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      */
     private void printTree(long pageId, String prefix, boolean tail, StringBuilder b, boolean keys)
         throws IgniteCheckedException {
-        try (Page page = pageMem.page(pageId)) {
+        try (Page page = page(pageId)) {
             ByteBuffer buf = page.getForRead();
 
             try {
@@ -570,7 +583,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             // Also in case of a single root page in the tree we will not have inner page.
             if (r.foundInnerPageId != 0) {
                 // Try to optimistically lock found inner page.
-                if (!r.tryLockPage(pageMem.page(r.foundInnerPageId), false))
+                if (!r.tryLockPage(page(r.foundInnerPageId), false))
                     findPageForRemove(r);
 
                 assert r.innerPage != null;
@@ -620,7 +633,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         assert pageId != 0;
 
         for (;;) {
-            try (Page page = pageMem.page(pageId)) {
+            try (Page page = page(pageId)) {
                 if (page == null)
                     return true; // Retry.
 
@@ -714,7 +727,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         long pageId = getLeftmostPageId(p.meta, lvl);
 
         for (;;) {
-            try (Page page = pageMem.page(pageId)) {
+            try (Page page = page(pageId)) {
                 int res = writePage(page, handler, p, lvl);
 
                 switch (res) {
@@ -1128,7 +1141,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @return Leftmost child page ID.
      */
     private long getLeftmostChild(long pageId) throws IgniteCheckedException {
-        try (Page page = pageMem.page(pageId)) {
+        try (Page page = page(pageId)) {
             ByteBuffer buf = page.getForRead();
 
             try {
@@ -1158,7 +1171,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         PageHandler<Put> handler;
 
-        Page page = pageMem.page(pageId);
+        Page page = page(pageId);
 
         try {
             int res;
@@ -1248,7 +1261,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         for (;;) {
             assert p.pageId != pageId;
 
-            page = pageMem.page(p.pageId);
+            page = page(p.pageId);
 
             try {
                 int res = writePage(page, handler, p, lvl);
@@ -1643,7 +1656,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @return Allocated page ID.
      */
     private Page allocatePage(int part, byte flag) throws IgniteCheckedException {
-        long pageId = pageMem.allocatePage(cctx.cacheId(), part, flag);
+        FullPageId pageId = pageMem.allocatePage(cctx.cacheId(), part, flag);
 
         return pageMem.page(pageId);
     }
@@ -1692,7 +1705,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         CacheObject val;
         GridCacheVersion ver;
 
-        try (Page page = pageMem.page(pageId(link))) {
+        try (Page page = page(pageId(link))) {
             ByteBuffer buf = page.getForRead();
 
             try {
@@ -1819,6 +1832,10 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         return res;
     }
 
+    private Page page(long pageId) throws IgniteCheckedException {
+        return pageMem.page(new FullPageId(pageId, cctx.cacheId()));
+    }
+
     /**
      * Forward cursor.
      */
@@ -1895,7 +1912,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 Page prevPage = page;
 
                 if (fwdId != 0) { // Lock next page.
-                    page = pageMem.page(fwdId);
+                    page = page(fwdId);
                     buf = page.getForRead();
                 }
                 else { // Clear.

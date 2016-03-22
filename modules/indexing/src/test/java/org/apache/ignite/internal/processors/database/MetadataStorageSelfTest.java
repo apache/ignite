@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -57,7 +58,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
 
         int[] cacheIds = new int[]{1, "partitioned".hashCode(), "replicated".hashCode()};
 
-        Map<Integer, Map<String, Long>> allocatedIdxs = new HashMap<>();
+        Map<Integer, Map<String, FullPageId>> allocatedIdxs = new HashMap<>();
 
         mem.start();
 
@@ -67,7 +68,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1_000; i++) {
                 int cacheId = cacheIds[i % cacheIds.length];
 
-                Map<String, Long> idxMap = allocatedIdxs.get(cacheId);
+                Map<String, FullPageId> idxMap = allocatedIdxs.get(cacheId);
 
                 if (idxMap == null) {
                     idxMap = new HashMap<>();
@@ -81,7 +82,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                     idxName = randomName();
                 } while (idxMap.containsKey(idxName));
 
-                IgniteBiTuple<Long, Boolean> rootPageId = metaStore.getOrAllocateForIndex(cacheId, idxName);
+                IgniteBiTuple<FullPageId, Boolean> rootPageId = metaStore.getOrAllocateForIndex(cacheId, idxName);
 
                 assertTrue(rootPageId.get2());
 
@@ -89,14 +90,14 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
             }
 
             for (int cacheId : cacheIds) {
-                Map<String, Long> idxMap = allocatedIdxs.get(cacheId);
+                Map<String, FullPageId> idxMap = allocatedIdxs.get(cacheId);
 
-                for (Map.Entry<String, Long> entry : idxMap.entrySet()) {
+                for (Map.Entry<String, FullPageId> entry : idxMap.entrySet()) {
                     String idxName = entry.getKey();
-                    long rootPageId = entry.getValue();
+                    FullPageId rootPageId = entry.getValue();
 
                     assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
-                        rootPageId, (long)metaStore.getOrAllocateForIndex(cacheId, idxName).get1());
+                        rootPageId, metaStore.getOrAllocateForIndex(cacheId, idxName).get1());
                 }
             }
         }
@@ -112,14 +113,14 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
             MetadataStorage meta = new MetadataStorage(mem);
 
             for (int cacheId : cacheIds) {
-                Map<String, Long> idxMap = allocatedIdxs.get(cacheId);
+                Map<String, FullPageId> idxMap = allocatedIdxs.get(cacheId);
 
-                for (Map.Entry<String, Long> entry : idxMap.entrySet()) {
+                for (Map.Entry<String, FullPageId> entry : idxMap.entrySet()) {
                     String idxName = entry.getKey();
-                    long rootPageId = entry.getValue();
+                    FullPageId rootPageId = entry.getValue();
 
                     assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
-                        rootPageId, (long)meta.getOrAllocateForIndex(cacheId, idxName).get1());
+                        rootPageId, meta.getOrAllocateForIndex(cacheId, idxName).get1());
                 }
             }
         }

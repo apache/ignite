@@ -20,12 +20,14 @@ package org.apache.ignite.internal.pagemem.impl;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -47,8 +49,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         mem.start();
 
         try {
-            long page1Handle = allocatePage(mem);
-            long page2Handle = allocatePage(mem);
+            FullPageId page1Handle = allocatePage(mem);
+            FullPageId page2Handle = allocatePage(mem);
 
             Page page1 = mem.page(page1Handle);
 
@@ -92,10 +94,10 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         try {
             int pagesCnt = 1024;
 
-            ArrayList<Long> pages = new ArrayList<>(pagesCnt);
+            List<FullPageId> pages = new ArrayList<>(pagesCnt);
 
             for (int i = 0; i < pagesCnt; i++) {
-                long pageHandle = allocatePage(mem);
+                FullPageId pageHandle = allocatePage(mem);
 
                 pages.add(pageHandle);
 
@@ -113,7 +115,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             }
 
             for (int i = 0; i < pagesCnt; i++) {
-                long pageHandle = pages.get(i);
+                FullPageId pageHandle = pages.get(i);
 
                 Page page = mem.page(pageHandle);
 
@@ -142,7 +144,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         mem.start();
 
         try {
-            long pageHandle = allocatePage(mem);
+            FullPageId pageHandle = allocatePage(mem);
 
             Page page = mem.page(pageHandle);
 
@@ -182,13 +184,13 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         try {
             int pages = 3 * 1024 * 1024 / (8 * 1024);
 
-            Set<Long> handles = new HashSet<>();
+            Collection<FullPageId> handles = new HashSet<>();
 
             for (int i = 0; i < pages; i++)
                 handles.add(allocatePage(mem));
 
-            for (Long handle : handles)
-                mem.freePage(0, handle);
+            for (FullPageId handle : handles)
+                mem.freePage(handle);
 
             for (int i = 0; i < pages; i++)
                 assertFalse(handles.add(allocatePage(mem)));
@@ -249,7 +251,7 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
      * @param mem Memory.
      * @return Page.
      */
-    public static long allocatePage(PageMemory mem) throws IgniteCheckedException {
+    public static FullPageId allocatePage(PageIdAllocator mem) throws IgniteCheckedException {
         return mem.allocatePage(0, -1, PageIdAllocator.FLAG_DATA);
     }
 }

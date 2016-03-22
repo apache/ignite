@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.DatabaseConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
@@ -108,7 +109,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * Marks checkpoint begin.
      */
-    public Collection<Long> snapshotCheckpoint() {
+    public Collection<FullPageId> snapshotCheckpoint() {
         txLock.writeLock().lock();
 
         try {

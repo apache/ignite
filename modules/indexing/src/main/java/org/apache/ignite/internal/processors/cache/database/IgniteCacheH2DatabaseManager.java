@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.query.h2.database.BPlusTreeRefIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -56,7 +57,7 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
     ) throws IgniteCheckedException {
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-        IgniteBiTuple<Long, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), name);
+        IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), name);
 
         if (log.isInfoEnabled())
             log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name +

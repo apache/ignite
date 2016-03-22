@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem.store;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
@@ -103,7 +104,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * @return Allocated page ID.
      * @throws IgniteCheckedException If IO exception occurred while allocating a page ID.
      */
-    public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException;
+    public FullPageId allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException;
 
     /**
      * @return Page ID of a root metadata page.
