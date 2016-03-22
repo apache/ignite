@@ -314,7 +314,9 @@ public abstract class IgfsEntryInfo implements Externalizable {
      */
     protected void writeBinary(BinaryRawWriter out) {
         BinaryUtils.writeIgniteUuid(out, id);
-        out.writeMap(props);
+
+        IgfsUtils.writeProperties(out, props);
+
         out.writeLong(accessTime);
         out.writeLong(modificationTime);
         out.writeObject(path);
@@ -327,7 +329,9 @@ public abstract class IgfsEntryInfo implements Externalizable {
      */
     protected void readBinary(BinaryRawReader in) {
         id = BinaryUtils.readIgniteUuid(in);
-        props = in.readMap();
+
+        props = IgfsUtils.readProperties(in);
+
         accessTime = in.readLong();
         modificationTime = in.readLong();
         path = in.readObject();
