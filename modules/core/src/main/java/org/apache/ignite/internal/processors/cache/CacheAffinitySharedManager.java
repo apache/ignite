@@ -1192,7 +1192,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
     }
 
-    void initAffinityOnNodeJoin(GridDhtPartitionsExchangeFuture fut,
+    private void initAffinityOnNodeJoin(GridDhtPartitionsExchangeFuture fut,
         GridAffinityAssignmentCache aff,
         RebalancingInfo rebalanceInfo,
         boolean delayNewPrimary)
@@ -1337,36 +1337,52 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     List<ClusterNode> newNodes0 = null;
 
+                    assert newPrimary == null || aliveNodes.contains(newPrimary) : newPrimary;
+
                     if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
                         if (aliveNodes.contains(curPrimary)) {
-                            if (!top.owners(p).isEmpty()) {
-                                GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
+                            GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
 
-                                if (state != GridDhtPartitionState.OWNING) {
-                                    newNodes0 = delayedPrimaryAssignment(cache.affinity(),
-                                        p,
-                                        curPrimary,
-                                        newNodes,
-                                        rebalancingInfo);
-                                }
+                            if (state != GridDhtPartitionState.OWNING) {
+                                newNodes0 = delayedPrimaryAssignment(cache.affinity(),
+                                    p,
+                                    curPrimary,
+                                    newNodes,
+                                    rebalancingInfo);
                             }
                         }
                         else {
                             GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
 
                             if (state != GridDhtPartitionState.OWNING) {
-                                List<ClusterNode> owners = top.owners(p);
+                                for (int i = 1; i < curNodes.size(); i++) {
+                                    ClusterNode curNode = curNodes.get(i);
 
-                                if (!owners.isEmpty()) {
-                                    ClusterNode primary = owners.get(0);
+                                    if (top.partitionState(curNode.id(), p) == GridDhtPartitionState.OWNING) {
+                                        newNodes0 = delayedPrimaryAssignment(cache.affinity(),
+                                            p,
+                                            curNode,
+                                            newNodes,
+                                            rebalancingInfo);
 
-                                    assert aliveNodes.contains(primary) : primary;
+                                        break;
+                                    }
+                                }
 
-                                    newNodes0 = delayedPrimaryAssignment(cache.affinity(),
-                                        p,
-                                        primary,
-                                        newNodes,
-                                        rebalancingInfo);
+                                if (newNodes0 == null) {
+                                    List<ClusterNode> owners = top.owners(p);
+
+                                    for (ClusterNode owner : owners) {
+                                        if (aliveNodes.contains(owner)) {
+                                            newNodes0 = delayedPrimaryAssignment(cache.affinity(),
+                                                p,
+                                                owner,
+                                                newNodes,
+                                                rebalancingInfo);
+
+                                            break;
+                                        }
+                                    }
                                 }
                             }
                         }

@@ -114,7 +114,9 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assert grids > 0;
         assert aff.backups() >= 0;
 
-        startGridsMultiThreaded(grids, true);
+        startGrids(grids);
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */

@@ -131,61 +131,52 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
     /**
      * @param topVer Topology version.
-     * @return {@code True} if this entry was initialized by this call.
      * @throws GridCacheEntryRemovedException If this entry is obsolete.
      */
-    public boolean initializeFromDht(AffinityTopologyVersion topVer) throws GridCacheEntryRemovedException {
-        while (true) {
-            GridDhtCacheEntry entry = cctx.near().dht().peekExx(key);
+    public void initializeFromDht(AffinityTopologyVersion topVer) throws GridCacheEntryRemovedException {
+        GridDhtCacheEntry entry = cctx.near().dht().peekExx(key);
 
-            if (entry != null) {
-                GridCacheEntryInfo e = entry.info();
+        if (entry != null) {
+            GridCacheEntryInfo e = entry.info();
 
-                if (e != null) {
-                    CacheVersion enqueueVer = null;
+            if (e != null) {
+                CacheVersion enqueueVer = null;
 
-                    try {
-                        synchronized (this) {
-                            checkObsolete();
+                try {
+                    synchronized (this) {
+                        checkObsolete();
 
-                            if (isNew() || !valid(topVer)) {
-                                // Version does not change for load ops.
-                                update(e.value(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version(), true);
+                        if (!e.version().equals(dhtVer) && (isNew() || !valid(topVer))) {
+                            // Version does not change for load ops.
+                            update(e.value(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version(), true);
 
-                                if (cctx.deferredDelete() && !isNew() && !isInternal()) {
-                                    boolean deleted = val == null;
+                            if (cctx.deferredDelete() && !isNew() && !isInternal()) {
+                                boolean deleted = val == null;
 
-                                    if (deleted != deletedUnlocked()) {
-                                        deletedUnlocked(deleted);
+                                if (deleted != deletedUnlocked()) {
+                                    deletedUnlocked(deleted);
 
-                                        if (deleted)
-                                            enqueueVer = e.version();
-                                    }
+                                    if (deleted)
+                                        enqueueVer = e.version();
                                 }
-
-                                ClusterNode primaryNode = cctx.affinity().primary(key, topVer);
-
-                                if (primaryNode == null)
-                                    this.topVer = AffinityTopologyVersion.NONE;
-                                else
-                                    recordNodeId(primaryNode.id(), topVer);
-
-                                dhtVer = e.isNew() || e.isDeleted() ? null : e.version();
-
-                                return true;
                             }
 
-                            return false;
+                            ClusterNode primaryNode = cctx.affinity().primary(key, topVer);
+
+                            if (primaryNode == null)
+                                this.topVer = AffinityTopologyVersion.NONE;
+                            else
+                                recordNodeId(primaryNode.id(), topVer);
+
+                            dhtVer = e.isNew() || e.isDeleted() ? null : e.version();
                         }
                     }
-                    finally {
-                        if (enqueueVer != null)
-                            cctx.onDeferredDelete(this, enqueueVer);
-                    }
+                }
+                finally {
+                    if (enqueueVer != null)
+                        cctx.onDeferredDelete(this, enqueueVer);
                 }
             }
-            else
-                return false;
         }
     }
 

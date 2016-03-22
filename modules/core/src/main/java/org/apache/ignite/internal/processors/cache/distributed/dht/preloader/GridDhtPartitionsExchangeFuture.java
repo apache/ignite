@@ -716,17 +716,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         waitPartitionRelease();
 
-        boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT;
+        boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal() || stopping(cacheCtx.cacheId()))
                 continue;
 
-            if (topChanged)
+            if (topChanged) {
                 cacheCtx.continuousQueries().beforeExchange(exchId.topologyVersion());
 
-            // Partition release future is done so we can flush the write-behind store.
-            cacheCtx.store().forceFlush();
+                // Partition release future is done so we can flush the write-behind store.
+                cacheCtx.store().forceFlush();
+            }
 
             cacheCtx.topology().beforeExchange(this, !centralizedAff);
         }
