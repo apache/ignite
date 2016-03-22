@@ -602,7 +602,16 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public long primarySizeLong() {
-        return map.publicSize();
+        long sum = 0;
+
+        AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
+
+        for (GridDhtLocalPartition p : topology().currentLocalPartitions()) {
+            if (p.primary(topVer))
+                sum += p.publicSize();
+        }
+
+        return sum;
     }
 
     /**
