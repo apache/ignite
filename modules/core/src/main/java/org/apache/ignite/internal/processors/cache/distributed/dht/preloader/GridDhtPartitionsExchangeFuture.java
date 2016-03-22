@@ -1536,6 +1536,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             ClusterTopologyCheckedException err = new ClusterTopologyCheckedException("Failed to " +
                                 "wait for exchange future, all server nodes left.");
 
+                            List<ClusterNode> empty = Collections.emptyList();
+
+                            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                                List<List<ClusterNode>> affAssignment = new ArrayList<>(cacheCtx.affinity().partitions());
+
+                                for (int i = 0; i < cacheCtx.affinity().partitions(); i++)
+                                    affAssignment.add(empty);
+
+                                cacheCtx.affinity().affinityCache().initialize(topologyVersion(), affAssignment);
+                            }
+
                             onDone(err);
 
                             return;
