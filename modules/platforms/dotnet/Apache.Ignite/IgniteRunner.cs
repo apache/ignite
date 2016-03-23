@@ -49,8 +49,6 @@ namespace Apache.Ignite
         /// </summary>
         internal static void Main(string[] args)
         {
-            IgniteConfiguration cfg;
-
             bool svc = false;
             bool install = false;
 
@@ -91,19 +89,15 @@ namespace Apache.Ignite
 
                 if (!svc)
                 {
-                    // Pick application configuration.
-                    cfg = new IgniteConfiguration();
-
-                    AppSettingsConfigurator.Configure(cfg, ConfigurationManager.AppSettings);
-
-                    // Pick command line arguments.
-                    ArgsConfigurator.Configure(cfg, args);
+                    // Pick application configuration first, command line arguments second.
+                    var allArgs = AppSettingsConfigurator.GetArgs(ConfigurationManager.AppSettings)
+                        .Concat(ArgsConfigurator.GetArgs(args));
 
                     if (install)
-                        IgniteService.DoInstall(cfg);
+                        IgniteService.DoInstall(allArgs.ToArray());
                     else
                     {
-                        Ignition.Start(cfg);
+                        Ignition.Start(Configurator.GetConfiguration(allArgs));
 
                         IgniteManager.DestroyJvm();
                     }
@@ -119,10 +113,8 @@ namespace Apache.Ignite
             }
 
             // If we are here, then this is a service call.
-            cfg = new IgniteConfiguration();
-
             // Use only arguments, not app.config.
-            ArgsConfigurator.Configure(cfg, args);
+            var cfg = Configurator.GetConfiguration(ArgsConfigurator.GetArgs(args));
 
             ServiceBase.Run(new IgniteService(cfg));
         }
