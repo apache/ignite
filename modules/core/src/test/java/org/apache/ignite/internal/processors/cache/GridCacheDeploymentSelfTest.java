@@ -22,6 +22,7 @@ import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -198,6 +199,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Ignite g0 = startGrid(GRID_NAME);
 
+            awaitPartitionMapExchange();
+
             ClassLoader ldr = getExternalClassLoader();
 
             Class cls = ldr.loadClass(TEST_TASK_3);
@@ -267,19 +270,28 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Class cls = ldr.loadClass(TEST_TASK_3);
 
-            String key = "";
+            String key = null;
+
+            Affinity<Object> aff = g1.affinity(null);
 
             for (int i = 0; i < 1000; i++) {
-                key = "1" + i;
+                String key0 = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()) &&
-                    g1.affinity(null).isBackup((backupLeavesGrid ? g0 : g1).cluster().localNode(), key))
+                if (aff.isPrimary(g2.cluster().localNode(), key0) &&
+                    aff.isBackup((backupLeavesGrid ? g0 : g1).cluster().localNode(), key0)) {
+                    key = key0;
+
                     break;
+                }
             }
+
+            assertNotNull(key);
 
             g0.compute().execute(cls, new T2<>(g1.cluster().localNode(), key));
 
             stopGrid(GRID_NAME);
+
+            awaitPartitionMapExchange();
 
             assertEquals(1, g1.cache(null).localSize(CachePeekMode.ALL));
 
