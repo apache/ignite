@@ -51,7 +51,7 @@ namespace Apache.Ignite.Examples.Misc
             var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" },
+                JvmOptions = new List<string> { "-Xms512m", "-Xmx512m" },
                 LifecycleBeans = new List<ILifecycleBean> { lifecycleExampleBean }
             };
 
