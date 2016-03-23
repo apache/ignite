@@ -902,6 +902,40 @@ namespace ignite
                 return Create(opts, optsLen, hnds, NULL);
             }
 
+            void GetJniErrorMessage(std::string& errMsg, jint res)
+            {
+                switch (res)
+                {
+                    case JNI_ERR:
+                        errMsg = "Unknown error (JNI_ERR).";
+                        break;
+
+                    case JNI_EDETACHED:
+                        errMsg = "Thread detached from the JVM.";
+                        break;
+
+                    case JNI_EVERSION:
+                        errMsg = "JNI version error.";
+                        break;
+
+                    case JNI_ENOMEM:
+                        errMsg = "Could not reserve enough space for object heap. Check Xmx option.";
+                        break;
+
+                    case JNI_EEXIST:
+                        errMsg = "JVM already created.";
+                        break;
+
+                    case JNI_EINVAL:
+                        errMsg = "Invalid JVM arguments.";
+                        break;
+
+                    default:
+                        errMsg = "Unexpected JNI_CreateJavaVM result.";
+                        break;
+                }
+            }
+
             JniContext* JniContext::Create(char** opts, int optsLen, JniHandlers hnds, JniErrorInfo* errInfo)
             {
                 // Acquire global lock to instantiate the JVM.
@@ -947,38 +981,14 @@ namespace ignite
                         }
                         else
                         {
-                            switch (res)
-                            {
-                                case JNI_ERR:
-                                    errMsg = "Unknown error (JNI_ERR).";
-                                    break;
-
-                                case JNI_EDETACHED:
-                                    errMsg = "Thread detached from the JVM.";
-                                    break;
-
-                                case JNI_EVERSION:
-                                    errMsg = "JNI version error.";
-                                    break;
-
-                                case JNI_ENOMEM:
-                                    errMsg = "Could not reserve enough space for object heap. Check Xmx option.";
-                                    break;
-                                
-                                case JNI_EEXIST:
-                                    errMsg = "JVM already created.";
-                                    break;
-
-                                case JNI_EINVAL:
-                                    errMsg = "Invalid JVM arguments.";
-                                    break;
-                            }
+                            GetJniErrorMessage(errMsg, res);
 
                             errMsgLen = errMsg.length();
                         }
                     }
 
-                    ctx = new JniContext(&JVM, hnds);
+                    if (JVM.GetJvm())
+                        ctx = new JniContext(&JVM, hnds);
                 }
                 catch (JvmException)
                 {
