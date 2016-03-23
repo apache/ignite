@@ -26,7 +26,7 @@
 #include <string>
 #include <stdint.h>
 
-#include <ignite/utils/common.h>
+#include <ignite/common/common.h>
 
 #include "ignite/binary/binary_raw_writer.h"
 

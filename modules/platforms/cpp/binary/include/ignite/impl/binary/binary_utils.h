@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#include "ignite/utils/utils.h"
+#include "ignite/common/utils.h"
 
 #include "ignite/guid.h"
 #include "ignite/date.h"

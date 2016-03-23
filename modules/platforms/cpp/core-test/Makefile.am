@@ -38,7 +38,7 @@ ignite_tests_SOURCES = src/cache_test.cpp \
                        src/teamcity_messages.cpp \
                        src/teamcity_boost.cpp
 
-ignite_tests_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite
+ignite_tests_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite-jni -lignite
 
 run-check: check
 	./ignite-tests -p

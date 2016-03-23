@@ -18,7 +18,7 @@
 #include <cstring>
 #include <utility>
 
-#include "ignite/utils/utils.h"
+#include "ignite/common/utils.h"
 
 #include "ignite/odbc/decimal.h"
 

@@ -22,7 +22,7 @@
 #include <string>
 #include <map>
 
-#include <ignite/utils/common.h>
+#include <ignite/common/common.h>
 
 namespace ignite
 {

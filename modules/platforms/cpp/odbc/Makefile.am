@@ -58,7 +58,7 @@ COMMON_SRC = os/linux/src/system/socket_client.cpp        \
 
 lib_LTLIBRARIES = libignite-odbc.la
 libignite_odbc_la_SOURCES = $(COMMON_SRC)
-libignite_odbc_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -lignite-utils -lignite-binary -ldl -version-info 0:0:0 -release $(PACKAGE_VERSION)
+libignite_odbc_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -lignite-common -lignite-binary -ldl -version-info 0:0:0 -release $(PACKAGE_VERSION)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = ignite-odbc.pc

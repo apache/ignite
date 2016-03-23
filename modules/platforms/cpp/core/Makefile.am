@@ -36,7 +36,7 @@ COMMON_SRC = src/ignite.cpp \
 
 lib_LTLIBRARIES = libignite.la
 libignite_la_SOURCES = $(COMMON_SRC)
-libignite_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -lignite-common -lignite-binary -ldl -version-info 0:0:0 -release $(PACKAGE_VERSION)
+libignite_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -lignite-common -lignite-jni -lignite-binary -ldl -version-info 0:0:0 -release $(PACKAGE_VERSION)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = ignite.pc

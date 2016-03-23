@@ -22,7 +22,7 @@
 #include <set>
 #include <vector>
 
-#include <ignite/utils/common.h>
+#include <ignite/common/common.h>
 
 #include "ignite/cache/cache_entry.h"
 #include "ignite/impl/binary/binary_reader_impl.h"

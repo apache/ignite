@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#include <ignite/utils/common.h>
+#include <ignite/common/common.h>
 
 #include <ignite/impl/interop/interop_memory.h>
 

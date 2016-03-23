@@ -23,8 +23,8 @@
 #include <stdint.h>
 #include <string>
 
-#include <ignite/utils/common.h>
-#include <ignite/utils/concurrent.h>
+#include <ignite/common/common.h>
+#include <ignite/common/concurrent.h>
 
 namespace ignite
 {    

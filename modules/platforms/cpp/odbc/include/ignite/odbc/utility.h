@@ -28,7 +28,7 @@
 #include <string>
 #include <algorithm>
 
-#include <ignite/utils/utils.h>
+#include <ignite/common/utils.h>
 
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_writer_impl.h"

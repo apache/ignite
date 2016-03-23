@@ -18,8 +18,8 @@
 #ifndef _IGNITE_ENVIRONMENT
 #define _IGNITE_ENVIRONMENT
 
-#include <ignite/utils/concurrent.h>
-#include <ignite/common/java.h>
+#include <ignite/common/concurrent.h>
+#include <ignite/jni/java.h>
 
 #include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/binary/binary_type_manager.h"

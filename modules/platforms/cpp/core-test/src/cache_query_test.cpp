@@ -23,7 +23,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <ignite/utils/utils.h>
+#include <ignite/common/utils.h>
 
 #include "ignite/cache/cache.h"
 #include "ignite/cache/query/query_cursor.h"

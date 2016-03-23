@@ -46,7 +46,7 @@ ignite_odbc_tests_SOURCES = src/teamcity_boost.cpp                        \
                             ../odbc/src/utility.cpp                       \
                             ../odbc/src/result_page.cpp
 
-ignite_odbc_tests_LDFLAGS = -static-libtool-libs -L/usr/local/lib -ldl -lignite-binary -lignite-utils
+ignite_odbc_tests_LDFLAGS = -static-libtool-libs -L/usr/local/lib -ldl -lignite-common -lignite-binary -lignite
 
 run-check: check
 	./ignite-odbc-tests -p

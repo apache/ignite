@@ -47,7 +47,7 @@ COMMON_SRC = src/binary/binary_containers.cpp \
 
 lib_LTLIBRARIES = libignite-binary.la
 libignite_binary_la_SOURCES = $(COMMON_SRC)
-libignite_binary_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -lignite-utils -version-info 0:0:0 -release $(PACKAGE_VERSION)
+libignite_binary_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -lignite-common -version-info 0:0:0 -release $(PACKAGE_VERSION)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = ignite-binary.pc

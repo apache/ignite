@@ -21,7 +21,7 @@
 #include <map>
 #include <stdint.h>
 
-#include <ignite/utils/concurrent.h>
+#include <ignite/common/concurrent.h>
 
 namespace ignite
 {

@@ -26,7 +26,7 @@
 #include <stdint.h>
 #include <string>
 
-#include <ignite/utils/common.h>
+#include <ignite/common/common.h>
 
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/binary/binary_consts.h"

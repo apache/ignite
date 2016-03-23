@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#include <ignite/utils/common.h>
+#include <ignite/common/common.h>
 
 namespace ignite 
 {

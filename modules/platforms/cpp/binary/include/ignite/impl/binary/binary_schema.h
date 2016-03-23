@@ -21,7 +21,7 @@
 #include <vector>
 #include <stdint.h>
 
-#include <ignite/utils/common.h>
+#include <ignite/common/common.h>
 #include <ignite/impl/interop/interop_output_stream.h>
 
 namespace ignite

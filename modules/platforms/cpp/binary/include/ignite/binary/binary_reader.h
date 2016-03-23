@@ -26,7 +26,7 @@
 #include <stdint.h>
 #include <string>
 
-#include <ignite/utils/common.h>
+#include <ignite/common/common.h>
 
 #include "ignite/binary/binary_raw_reader.h"
 #include "ignite/guid.h"

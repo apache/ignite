@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#include <ignite/utils/ignite_error.h>
-#include <ignite/common/java.h>
+#include <ignite/common/ignite_error.h>
+#include <ignite/jni/java.h>
 
 #include "ignite/impl/interop/interop_external_memory.h"
 

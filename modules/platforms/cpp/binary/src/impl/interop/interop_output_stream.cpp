@@ -17,7 +17,7 @@
 
 #include <cstring>
 
-#include <ignite/utils/ignite_error.h>
+#include <ignite/common/ignite_error.h>
 
 #include "ignite/impl/interop//interop_output_stream.h"
 
