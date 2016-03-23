@@ -31,7 +31,7 @@ COMMON_SRC = os/linux/src/concurrent_os.cpp \
 
 lib_LTLIBRARIES = libignite-common.la
 libignite_common_la_SOURCES = $(COMMON_SRC)
-libignite_common_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -version-info 0:0:0 -release $(PACKAGE_VERSION)
+libignite_common_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -ldl -version-info 0:0:0 -release $(PACKAGE_VERSION)
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = ignite-common.pc

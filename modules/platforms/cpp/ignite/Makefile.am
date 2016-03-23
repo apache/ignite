@@ -27,7 +27,7 @@ noinst_PROGRAMS = ignite
 
 ignite_SOURCES = src/ignite.cpp
 
-ignite_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite -lignite-jni
+ignite_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite-common -lignite-jni -lignite
 
 run-check: check
 	./ignite

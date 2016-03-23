@@ -21,7 +21,7 @@
 #include <dirent.h>
 #include <dlfcn.h>
 
-#include <ignite/utils/utils.h>
+#include <ignite/common/utils.h>
 
 namespace ignite
 {

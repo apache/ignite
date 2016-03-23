@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <pthread.h>
 
-#include "ignite/utils/common.h"
+#include "ignite/common/common.h"
 
 namespace ignite
 {

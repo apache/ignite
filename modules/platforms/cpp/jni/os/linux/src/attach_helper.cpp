@@ -16,8 +16,8 @@
  */
 #include <pthread.h>
 
-#include "ignite/common/attach_helper.h"
-#include "ignite/common/java.h"
+#include "ignite/jni/attach_helper.h"
+#include "ignite/jni/java.h"
 
 using namespace ignite::common::java;
 
