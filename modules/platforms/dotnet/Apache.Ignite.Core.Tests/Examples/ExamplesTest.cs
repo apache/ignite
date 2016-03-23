@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Examples
                 JvmOptions =
                     new[]
                     {
-                        "-Xms512m", "-Xmx512m", "-Xdebug", "-Xnoagent", "-Djava.compiler=NONE",
+                        "-Xms512m", "-Xmx1024m", "-Xdebug", "-Xnoagent", "-Djava.compiler=NONE",
                         "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
                     }
             };
