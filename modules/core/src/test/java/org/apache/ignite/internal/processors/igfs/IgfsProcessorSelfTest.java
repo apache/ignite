@@ -35,6 +35,7 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -779,14 +780,18 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assert !igfs.exists(path(dirPath));
         assert !igfs.exists(path(filePath));
 
-        int metaSize = 0;
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                int metaSize = 0;
 
-        for (Object metaId : grid(0).cachex(igfs.configuration().getMetaCacheName()).keySet()) {
-            if (!IgfsUtils.isRootOrTrashId((IgniteUuid)metaId))
-                metaSize++;
-        }
+                for (Object metaId : grid(0).cachex(igfs.configuration().getMetaCacheName()).keySet()) {
+                    if (!IgfsUtils.isRootOrTrashId((IgniteUuid)metaId))
+                        metaSize++;
+                }
 
-        assert metaSize == 0;
+                return metaSize == 0;
+            }
+        }, 5000);
     }
 
     /**

@@ -214,12 +214,10 @@ namespace Apache.Ignite.Core.Impl.Common
             Debug.Assert(field.DeclaringType != null);   // non-static
 
             var targetParam = Expression.Parameter(typeof(object));
-            var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
-
             var valParam = Expression.Parameter(typeof(object));
             var valParamConverted = Expression.Convert(valParam, field.FieldType);
 
-            var assignExpr = Expression.Call(GetWriteFieldMethod(field), targetParamConverted, valParamConverted);
+            var assignExpr = Expression.Call(GetWriteFieldMethod(field), targetParam, valParamConverted);
 
             return Expression.Lambda<Action<object, object>>(assignExpr, targetParam, valParam).Compile();
         }

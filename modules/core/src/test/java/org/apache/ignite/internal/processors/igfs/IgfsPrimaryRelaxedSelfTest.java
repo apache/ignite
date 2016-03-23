@@ -15,28 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
-{
-    /// <summary>
-    /// Object handle dictionary for <see cref="BinaryReader"/>.
-    /// </summary>
-    internal class BinaryReaderHandleDictionary : BinaryHandleDictionary<int, object>
-    {
-        /// <summary>
-        /// Constructor with initial key-value pair.
-        /// </summary>
-        /// <param name="key">Key.</param>
-        /// <param name="val">Value.</param>
-        public BinaryReaderHandleDictionary(int key, object val)
-            : base(key, val, null)
-        {
-            // No-op.
-        }
+package org.apache.ignite.internal.processors.igfs;
 
-        /** <inheritdoc /> */
-        protected override int EmptyKey
-        {
-            get { return -1; }
-        }
+/**
+ * Tests for PRIMARY mode and relaxed consistency model.
+ */
+public class IgfsPrimaryRelaxedSelfTest extends IgfsPrimarySelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean relaxedConsistency() {
+        return true;
     }
 }
