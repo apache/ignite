@@ -264,16 +264,26 @@ consoleModule.controller('cachesController', [
                 var firstError = errors[firstErrorKey][0];
                 var actualError = firstError.$error[firstErrorKey][0];
 
+                var errName = actualError.$name;
+
+                if (errName.endsWith('TextInput') || errName.endsWith('JavaClass'))
+                    errName = errName.substring(0, errName.length - 9);
+
                 var msg = 'Invalid value';
 
                 try {
-                    msg = errors[firstErrorKey][0].$errorMessages[actualError.$name][firstErrorKey];
+                    msg = errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
                 }
                 catch(ignored) {
-                    // No-op.
+                    try {
+                        msg = form[firstError.$name].$errorMessages[errName][firstErrorKey];
+                    }
+                    catch(ignited) {
+                        // No-op.
+                    }
                 }
 
-                return showPopoverMessage($scope.ui, firstError.$name, actualError.$name, msg);
+                return showPopoverMessage($scope.ui, firstError.$name, errName, msg);
             }
 
             if (item.memoryMode === 'OFFHEAP_VALUES' && !$common.isEmptyArray(item.domains))

@@ -607,6 +607,9 @@ consoleModule.service('$common', [
 
             var el = $('body').find('#' + id);
 
+            if (!el || el.length === 0)
+                el = $('body').find('[name="' + id + '"]');
+
             if (el && el.length > 0) {
                 var newPopover = $popover(el, {content: message});
 
