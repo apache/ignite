@@ -23,6 +23,7 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -4712,8 +4713,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param filter Filters to evaluate.
      * @return Key set.
      */
-    public Set<K> keySet(@Nullable CacheEntryPredicate... filter) {
-        return (Set<K>)map.keySet(filter);
+    public Set<K> keySet(@Nullable final CacheEntryPredicate... filter) {
+        CacheEntryPredicate p = new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx ex) {
+                if (ex instanceof GridCacheMapEntry)
+                    return ((GridCacheMapEntry)ex).visitable(filter);
+                else
+                    return !ex.deleted() && F.isAll(ex, filter);
+            }
+        };
+
+        return new KeySet<>(map.keySet(p));
     }
 
     /**
@@ -6471,6 +6481,31 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
             return null;
+        }
+    }
+
+    private final class KeySet<K> extends AbstractSet<K> {
+
+        private final Set<KeyCacheObject> internalSet;
+
+        public KeySet(Set<KeyCacheObject> internalSet) {
+            this.internalSet = internalSet;
+        }
+
+        @Override public Iterator<K> iterator() {
+            return F.iterator(internalSet, new IgniteClosure<KeyCacheObject, K>() {
+                @Override public K apply(KeyCacheObject object) {
+                    return (K) ctx.unwrapBinaryIfNeeded(object, ctx.keepBinary());
+                }
+            }, true);
+        }
+
+        @Override public int size() {
+            return internalSet.size();
+        }
+
+        @Override public boolean contains(Object o) {
+            return internalSet.contains(ctx.toCacheKeyObject(o));
         }
     }
 }

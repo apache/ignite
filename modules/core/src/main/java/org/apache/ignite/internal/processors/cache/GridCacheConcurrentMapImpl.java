@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.GridSerializableSet;
 import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -218,7 +217,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
             }
         };
 
-        return new GridSerializableSet<KeyCacheObject>() {
+        return new AbstractSet<KeyCacheObject>() {
             @Override public Iterator<KeyCacheObject> iterator() {
                 return F.iterator0(map.keySet(), true, p);
             }
