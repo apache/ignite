@@ -173,8 +173,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                 log.info("<" + name + "> Checked " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" + TEST_SIZE +
                     ", iteration=" + iter + ", cache=" + name + "]");
 
-            assert ignite.cache(name).get(i) != null && ignite.cache(name).get(i).equals(i + name.hashCode() + iter) :
-                i + " value " + (i + name.hashCode() + iter) + " does not match (" + ignite.cache(name).get(i) + ")";
+            assertEquals("Value does not match [key=" + i + ", cache=" + name + ']',
+                ignite.cache(name).get(i), i + name.hashCode() + iter);
         }
     }
 
@@ -199,8 +199,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        waitForRebalancing(0, 2);
-        waitForRebalancing(1, 2);
+        waitForRebalancing(0, new AffinityTopologyVersion(2, 1));
+        waitForRebalancing(1, new AffinityTopologyVersion(2, 1));
 
         stopGrid(0);
 
@@ -208,8 +208,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(2);
 
-        waitForRebalancing(1, 4);
-        waitForRebalancing(2, 4);
+        waitForRebalancing(1, new AffinityTopologyVersion(4, 1));
+        waitForRebalancing(2, new AffinityTopologyVersion(4, 1));
 
         stopGrid(2);
 
@@ -329,7 +329,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                     log.info("Unexpected future version, will retry [futVer=" + fut.topologyVersion() +
                         ", expVer=" + top + ']');
 
-                    U.sleep(100);
+                    U.sleep(1000);
 
                     break;
                 }
@@ -357,13 +357,12 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     protected void checkSupplyContextMapIsEmpty() {
         for (Ignite g : G.allGrids()) {
             for (GridCacheAdapter c : ((IgniteEx)g).context().cache().internalCaches()) {
-
                 Object supplier = U.field(c.preloader(), "supplier");
 
                 Map map = U.field(supplier, "scMap");
 
                 synchronized (map) {
-                    assert map.isEmpty() : map;
+                    assertTrue("Map is not empty [cache=" + c.name() + ", map=" + map + ']', map.isEmpty());
                 }
             }
         }

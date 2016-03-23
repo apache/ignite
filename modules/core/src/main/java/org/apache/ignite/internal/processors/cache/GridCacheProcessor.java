@@ -889,6 +889,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // No new caches should be added after this point.
         exch.onKernalStop(cancel);
 
+        GridCacheAdapter<?, ?> sysCache = caches.remove(CU.UTILITY_CACHE_NAME);
+
+        if (sysCache != null) {
+            stoppedCaches.put(sysCache.name(), sysCache);
+
+            onKernalStop(sysCache, cancel);
+        }
+
         for (String cacheName : stopSeq) {
             GridCacheAdapter<?, ?> cache = caches.remove(maskNull(cacheName));
 
@@ -1183,14 +1191,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void onKernalStop(GridCacheAdapter<?, ?> cache, boolean cancel) {
         GridCacheContext ctx = cache.context();
 
+        GridCacheAffinityManager affMgr = ctx.affinity();
+
+        affMgr.onKernalStop(cancel);
+
         if (isNearEnabled(ctx)) {
             GridDhtCacheAdapter dht = ctx.near().dht();
 
             if (dht != null) {
                 GridCacheContext<?, ?> dhtCtx = dht.context();
 
-                for (GridCacheManager mgr : dhtManagers(dhtCtx))
-                    mgr.onKernalStop(cancel);
+                for (GridCacheManager mgr : dhtManagers(dhtCtx)) {
+                    if (mgr != affMgr)
+                        mgr.onKernalStop(cancel);
+                }
 
                 dht.onKernalStop();
             }
@@ -1204,7 +1218,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (ListIterator<GridCacheManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious(); ) {
             GridCacheManager mgr = it.previous();
 
-            if (!excludes.contains(mgr))
+            if (!excludes.contains(mgr) && mgr != affMgr)
                 mgr.onKernalStop(cancel);
         }
 

@@ -2501,10 +2501,18 @@ public class IgniteConfiguration {
         this.platformCfg = platformCfg;
     }
 
+    /**
+     * @return Late affinity assignment.
+     */
     public boolean isLateAffinityAssignment() {
         return lateAffAssignment;
     }
 
+    /**
+     * Set late affinity assignment.
+     *
+     * @param lateAffAssignment Late affinity assignment.
+     */
     public void setLateAffinityAssignment(boolean lateAffAssignment) {
         this.lateAffAssignment = lateAffAssignment;
     }

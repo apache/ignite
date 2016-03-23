@@ -1157,6 +1157,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         final IgniteEx ignite0 = startGrid(0);
         final IgniteEx ignite1 = startGrid(1);
 
+        awaitPartitionMapExchange();
+
         client = true;
 
         final Ignite ignite2 = startGrid(2);

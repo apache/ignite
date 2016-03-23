@@ -43,6 +43,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -69,15 +70,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration cache = new CacheConfiguration();
-
-        cache.setCacheMode(PARTITIONED);
-        cache.setAtomicityMode(atomicityMode());
-        cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setBackups(1);
-        cache.setRebalanceMode(SYNC);
-
-        cfg.setCacheConfiguration(cache);
+        cfg.setCacheConfiguration(cacheConfiguration());
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -92,6 +85,21 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
         cfg.setDiscoverySpi(disco);
 
         return cfg;
+    }
+
+    /**
+     * @return Cache configuration.
+     */
+    private CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cache = new CacheConfiguration();
+
+        cache.setCacheMode(PARTITIONED);
+        cache.setAtomicityMode(atomicityMode());
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+        cache.setBackups(1);
+        cache.setRebalanceMode(SYNC);
+
+        return cache;
     }
 
     /**
@@ -131,45 +139,67 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     public void testEntryProcessorNodeLeave() throws Exception {
         startGrid(GRID_CNT);
 
-        int NODES = GRID_CNT + 1;
+        // TODO: IGNITE-1525 (test fails with one-phase commit).
+        boolean createCache = atomicityMode() == TRANSACTIONAL;
 
-        final int RESTART_IDX = GRID_CNT + 1;
+        String cacheName = null;
 
-        for (int iter = 0; iter < 10; iter++) {
-            log.info("Iteration: " + iter);
+        if (createCache) {
+            CacheConfiguration ccfg = cacheConfiguration();
 
-            startGrid(RESTART_IDX);
+            ccfg.setName("cache-2");
+            ccfg.setBackups(2);
 
-            awaitPartitionMapExchange();
+            ignite(0).createCache(ccfg);
 
-            final CountDownLatch latch = new CountDownLatch(1);
+            cacheName = ccfg.getName();
+        }
 
-            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    latch.await();
+        try {
+            int NODES = GRID_CNT + 1;
 
-                    stopGrid(RESTART_IDX);
+            final int RESTART_IDX = GRID_CNT + 1;
 
-                    return null;
+            for (int iter = 0; iter < 10; iter++) {
+                log.info("Iteration: " + iter);
+
+                startGrid(RESTART_IDX);
+
+                awaitPartitionMapExchange();
+
+                final CountDownLatch latch = new CountDownLatch(1);
+
+                IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        latch.await();
+
+                        stopGrid(RESTART_IDX);
+
+                        return null;
+                    }
+                }, "stop-thread");
+
+                int increments = checkIncrement(null, iter % 2 == 2, fut, latch);
+
+                assert increments >= INCREMENTS;
+
+                fut.get();
+
+                for (int i = 0; i < KEYS; i++) {
+                    for (int g = 0; g < NODES; g++) {
+                        Set<String> vals = ignite(g).<String, Set<String>>cache(null).get("set-" + i);
+
+                        assertNotNull(vals);
+                        assertEquals(increments, vals.size());
+                    }
                 }
-            }, "stop-thread");
 
-            int increments = checkIncrement(iter % 2 == 2, fut, latch);
-
-            assert increments >= INCREMENTS;
-
-            fut.get();
-
-            for (int i = 0; i < KEYS; i++) {
-                for (int g = 0; g < NODES; g++) {
-                    Set<String> vals = ignite(g).<String, Set<String>>cache(null).get("set-" + i);
-
-                    assertNotNull(vals);
-                    assertEquals(increments, vals.size());
-                }
+                ignite(0).cache(null).removeAll();
             }
-
-            ignite(0).cache(null).removeAll();
+        }
+        finally {
+            if (createCache)
+                ignite(0).destroyCache(cacheName);
         }
     }
 
@@ -199,7 +229,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
             }, 1, "starter");
 
             try {
-                checkIncrement(invokeAll, null, null);
+                checkIncrement(null, invokeAll, null, null);
             }
             finally {
                 stop.set(true);
@@ -224,16 +254,23 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
     /**
      * @param invokeAll If {@code true} tests invokeAll operation.
+     * @param fut If not null then executes updates while future is not done.
+     * @param latch Latch to count down when first update is done.
      * @throws Exception If failed.
+     * @return Number of increments.
      */
-    private int checkIncrement(boolean invokeAll, IgniteInternalFuture<?> fut, CountDownLatch latch) throws Exception {
+    private int checkIncrement(
+        String cacheName,
+        boolean invokeAll,
+        @Nullable IgniteInternalFuture<?> fut,
+        @Nullable CountDownLatch latch) throws Exception {
         int increments = 0;
 
         for (int k = 0; k < INCREMENTS || (fut != null && !fut.isDone()); k++) {
             increments++;
 
             if (invokeAll) {
-                IgniteCache<String, Set<String>> cache = ignite(0).cache(null);
+                IgniteCache<String, Set<String>> cache = ignite(0).cache(cacheName);
 
                 Map<String, Processor> procs = new LinkedHashMap<>();
 
@@ -255,7 +292,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                 }
             }
             else {
-                IgniteCache<String, Set<String>> cache = ignite(0).cache(null);
+                IgniteCache<String, Set<String>> cache = ignite(0).cache(cacheName);
 
                 for (int i = 0; i < KEYS; i++) {
                     String key = "set-" + i;
