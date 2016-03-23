@@ -17,6 +17,8 @@
 
 // ReSharper disable UnusedVariable
 // ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Local
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -77,7 +79,7 @@ namespace Apache.Ignite.Core.Tests
         {
             TestUtils.KillProcesses();
 
-            Assert.IsTrue(_grid.WaitTopology(1, 30000));
+            Assert.IsTrue(_grid.WaitTopology(1));
 
             IgniteProcess.SaveConfigurationBackup();
         }
@@ -106,7 +108,7 @@ namespace Apache.Ignite.Core.Tests
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath()
                 );
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
 
@@ -133,7 +135,7 @@ namespace Apache.Ignite.Core.Tests
                 "-assembly=test-2.dll"
                 );
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
 
@@ -153,7 +155,7 @@ namespace Apache.Ignite.Core.Tests
                 "-J-DOPT2"
                 );
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
 
@@ -173,7 +175,7 @@ namespace Apache.Ignite.Core.Tests
                 "-J-Xmx607m"
                 );
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 506*1024*1024, minMem);
@@ -195,7 +197,7 @@ namespace Apache.Ignite.Core.Tests
                 "-JvmMaxMemoryMB=863"
                 );
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 615*1024*1024, minMem);
@@ -217,7 +219,7 @@ namespace Apache.Ignite.Core.Tests
 
             var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath());
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 601*1024*1024, minMem);
@@ -227,14 +229,14 @@ namespace Apache.Ignite.Core.Tests
 
             proc.Kill();
 
-            Assert.IsTrue(_grid.WaitTopology(1, 30000));
+            Assert.IsTrue(_grid.WaitTopology(1));
 
             // Command line options overwrite config file options
             // ReSharper disable once RedundantAssignment
             proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-J-Xms605m", "-J-Xmx706m");
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 605*1024*1024, minMem);
@@ -258,7 +260,7 @@ namespace Apache.Ignite.Core.Tests
                 "-JvmMaxMemoryMB=256"
                 );
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             // Raw JVM options (Xms/Xmx) should override custom options
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
@@ -357,7 +359,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Closure which extracts configuration and passes it back.
         /// </summary>
-        public class RemoteConfigurationClosure : IComputeFunc<RemoteConfiguration>
+        private class RemoteConfigurationClosure : IComputeFunc<RemoteConfiguration>
         {
 
 #pragma warning disable 0649
@@ -396,7 +398,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Configuration.
         /// </summary>
-        public class RemoteConfiguration
+        private class RemoteConfiguration
         {
             /// <summary>
             /// GG home.
