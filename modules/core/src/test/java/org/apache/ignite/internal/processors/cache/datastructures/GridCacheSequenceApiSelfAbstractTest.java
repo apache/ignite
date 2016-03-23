@@ -316,25 +316,6 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
-    public void testEviction() throws Exception {
-        String locSeqName = UUID.randomUUID().toString();
-
-        IgniteAtomicSequence locSeq = grid().atomicSequence(locSeqName, 0, true);
-
-        locSeq.addAndGet(153);
-
-        GridCacheAdapter cache = ((IgniteKernal)grid()).internalCache(GridCacheUtils.ATOMICS_CACHE_NAME);
-
-        assertNotNull(cache);
-
-        cache.evictAll(cache.keySet());
-
-        assert null != cache.get(new GridCacheInternalKeyImpl(locSeqName));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testRemove() throws Exception {
         String locSeqName = UUID.randomUUID().toString();
 
