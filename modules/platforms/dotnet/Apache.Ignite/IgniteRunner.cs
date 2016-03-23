@@ -91,10 +91,10 @@ namespace Apache.Ignite
                 {
                     // Pick application configuration first, command line arguments second.
                     var allArgs = AppSettingsConfigurator.GetArgs(ConfigurationManager.AppSettings)
-                        .Concat(ArgsConfigurator.GetArgs(args));
+                        .Concat(ArgsConfigurator.GetArgs(args)).ToArray();
 
                     if (install)
-                        IgniteService.DoInstall(allArgs.ToArray());
+                        IgniteService.DoInstall(allArgs);
                     else
                     {
                         Ignition.Start(Configurator.GetConfiguration(allArgs));
@@ -114,7 +114,7 @@ namespace Apache.Ignite
 
             // If we are here, then this is a service call.
             // Use only arguments, not app.config.
-            var cfg = Configurator.GetConfiguration(ArgsConfigurator.GetArgs(args));
+            var cfg = Configurator.GetConfiguration(ArgsConfigurator.GetArgs(args).ToArray());
 
             ServiceBase.Run(new IgniteService(cfg));
         }

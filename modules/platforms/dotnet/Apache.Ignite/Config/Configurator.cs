@@ -53,8 +53,14 @@ namespace Apache.Ignite.Config
         /** Command line argument: JvmMaxMemoryMB. */
         private const string CmdJvmMaxMem = "JvmMaxMemoryMB";
 
+        /** Command line argument: Config section name to read config from. */
+        private const string CmdConfigSection = "ConfigSectionName";
+
+        /** Command line argument: Config file name to read config section from. */
+        private const string CmdConfigFile = "ConfigFileName";
+
         /** <inheritDoc /> */
-        public static IgniteConfiguration GetConfiguration(IEnumerable<Tuple<string, string>> args)
+        public static IgniteConfiguration GetConfiguration(Tuple<string, string>[] args)
         {
             var jvmOpts = new List<string>();
             var assemblies = new List<string>();
