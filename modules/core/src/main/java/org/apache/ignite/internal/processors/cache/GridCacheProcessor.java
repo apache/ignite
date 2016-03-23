@@ -670,6 +670,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 registeredTemplates.put(masked, desc);
             }
 
+            stopSeq.addFirst(CU.UTILITY_CACHE_NAME);
+
             if (cfg.getName() == null) { // Use cache configuration with null name as template.
                 DynamicCacheDescriptor desc0 =
                     new DynamicCacheDescriptor(ctx, cfg, cacheType, true, IgniteUuid.randomUuid());
@@ -889,13 +891,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // No new caches should be added after this point.
         exch.onKernalStop(cancel);
 
-        GridCacheAdapter<?, ?> sysCache = caches.remove(CU.UTILITY_CACHE_NAME);
-
-        if (sysCache != null) {
-            stoppedCaches.put(sysCache.name(), sysCache);
-
-            onKernalStop(sysCache, cancel);
-        }
+        cancelFutures();
 
         for (String cacheName : stopSeq) {
             GridCacheAdapter<?, ?> cache = caches.remove(maskNull(cacheName));
@@ -916,8 +912,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 onKernalStop(entry.getValue(), cancel);
             }
         }
-
-        cancelFutures();
 
         List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
 
@@ -1092,6 +1086,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
     private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel) {
+        log.info("stop cache: " + cache.name());
+
         GridCacheContext ctx = cache.context();
 
         sharedCtx.removeCacheContext(ctx);
@@ -1189,6 +1185,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     private void onKernalStop(GridCacheAdapter<?, ?> cache, boolean cancel) {
+        log.info("onKernalStop cache: " + cache.name());
+
         GridCacheContext ctx = cache.context();
 
         GridCacheAffinityManager affMgr = ctx.affinity();
