@@ -209,9 +209,10 @@ namespace Apache.Ignite.Core.Tests
         /// Test JVM memory options passing from application configuration.
         /// </summary>
         [Test]
-        public void TestJvmMemoryOptsAppConfig()
+        public void TestJvmMemoryOptsAppConfig(
+            [Values("config\\Apache.Ignite.exe.config.test", "config\\Apache.Ignite.exe.config.test2")] string config)
         {
-            IgniteProcess.ReplaceConfiguration("config\\Apache.Ignite.exe.config.test");
+            IgniteProcess.ReplaceConfiguration(config);
 
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
