@@ -3973,7 +3973,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
-        return entrySet().iterator();
+        return entrySet(new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx ex) {
+                if (ex instanceof GridCacheMapEntry)
+                    return ((GridCacheMapEntry)ex).visitable(new CacheEntryPredicate[] {});
+
+                return true;
+            }
+        }).iterator();
     }
 
     /**
