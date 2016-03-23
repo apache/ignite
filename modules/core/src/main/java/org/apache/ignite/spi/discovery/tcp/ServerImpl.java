@@ -3179,7 +3179,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 Boolean rmtMarshUseDfltSuid = node.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
                 boolean rmtMarshUseDfltSuidBool = rmtMarshUseDfltSuid == null ? true : rmtMarshUseDfltSuid;
 
-                boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
+                Boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
+                // Can be null only in tests.
+                boolean locDelayAssignBool = locDelayAssign != null ? locDelayAssign : false;
 
                 if (locMarshUseDfltSuidBool != rmtMarshUseDfltSuidBool) {
                     String errMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
@@ -3237,25 +3239,28 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                boolean rmtDelayAssign;
+                boolean rmtDelayAssignBool;
 
-                if (node.version().compareTo(CacheAffinitySharedManager.DELAY_AFF_ASSIGN_SINCE) >= 0)
-                    rmtDelayAssign = node.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
+                if (node.version().compareTo(CacheAffinitySharedManager.DELAY_AFF_ASSIGN_SINCE) >= 0) {
+                    Boolean rmtDelayAssign = node.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
+                    // Can be null only in tests.
+                    rmtDelayAssignBool = rmtDelayAssign != null ? rmtDelayAssign : false;
+                }
                 else
-                    rmtDelayAssign = false;
+                    rmtDelayAssignBool = false;
 
-                if (locDelayAssign != rmtDelayAssign) {
+                if (locDelayAssignBool != rmtDelayAssignBool) {
                     String errMsg = "Local node's cache affinity assignment mode differs from " +
                         "the same property on remote node (make sure all nodes in topology have the same " +
-                        "cache affinity assignment mode) [locDelayAssign=" + locDelayAssign +
-                        ", rmtDelayAssign=" + rmtDelayAssign +
+                        "cache affinity assignment mode) [locDelayAssign=" + locDelayAssignBool +
+                        ", rmtDelayAssign=" + rmtDelayAssignBool +
                         ", locNodeAddrs=" + U.addressesAsString(locNode) +
                         ", rmtNodeAddrs=" + U.addressesAsString(node) +
                         ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
                     String sndMsg = "Local node's cache affinity assignment mode differs from " +
                         "the same property on remote node (make sure all nodes in topology have the same " +
-                        "cache affinity assignment mode) [locDelayAssign=" + rmtDelayAssign +
+                        "cache affinity assignment mode) [locDelayAssign=" + rmtDelayAssignBool +
                         ", rmtDelayAssign=" + locDelayAssign +
                         ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
                         ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
