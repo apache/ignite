@@ -65,27 +65,27 @@ namespace Apache.Ignite.Config
 
             foreach (var arg in args)
             {
-                Func<string, bool> argStartsWith = x => arg.Item1.Equals(x, StringComparison.OrdinalIgnoreCase);
+                Func<string, bool> argIs = x => arg.Item1.Equals(x, StringComparison.OrdinalIgnoreCase);
 
-                if (argStartsWith(CmdIgniteHome))
+                if (argIs(CmdIgniteHome))
                     cfg.IgniteHome = arg.Item2;
-                else if (argStartsWith(CmdSpringCfgUrl))
+                else if (argIs(CmdSpringCfgUrl))
                     cfg.SpringConfigUrl = arg.Item2;
-                else if (argStartsWith(CmdJvmDll))
+                else if (argIs(CmdJvmDll))
                     cfg.JvmDllPath = arg.Item2;
-                else if (argStartsWith(CmdJvmClasspath))
+                else if (argIs(CmdJvmClasspath))
                     cfg.JvmClasspath = arg.Item2;
-                else if (argStartsWith(CmdSuppressWarn))
+                else if (argIs(CmdSuppressWarn))
                 {
                     cfg.SuppressWarnings = bool.TrueString.Equals(arg.Item2, StringComparison.OrdinalIgnoreCase);
                 }
-                else if (argStartsWith(CmdJvmMinMem))
+                else if (argIs(CmdJvmMinMem))
                     cfg.JvmInitialMemoryMb = ConfigValueParser.ParseInt(arg.Item2, CmdJvmMinMem);
-                else if (argStartsWith(CmdJvmMaxMem))
+                else if (argIs(CmdJvmMaxMem))
                     cfg.JvmMaxMemoryMb = ConfigValueParser.ParseInt(arg.Item2, CmdJvmMaxMem);
-                else if (argStartsWith(CmdJvmOpt))
+                else if (argIs(CmdJvmOpt))
                     jvmOpts.Add(arg.Item2);
-                else if (argStartsWith(CmdAssembly))
+                else if (argIs(CmdAssembly))
                     assemblies.Add(arg.Item2);
             }
 
