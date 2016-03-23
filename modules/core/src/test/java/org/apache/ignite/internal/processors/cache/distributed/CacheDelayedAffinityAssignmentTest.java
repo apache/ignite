@@ -32,7 +32,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
+import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -76,7 +76,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -1588,24 +1588,37 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             assertFalse(cacheNames.isEmpty());
 
             for (String cacheName : cacheNames) {
-                IgniteCache<Object, Object> cache = node.cache(cacheName);
+                try {
+                    IgniteCache<Object, Object> cache = node.cache(cacheName);
 
-                assertNotNull(cache);
+                    assertNotNull(cache);
 
-                Long val = System.currentTimeMillis();
+                    Long val = System.currentTimeMillis();
 
-                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                for (int i = 0; i < 100; i++) {
-                    int key = rnd.nextInt(100_000);
+                    for (int i = 0; i < 100; i++) {
+                        int key = rnd.nextInt(100_000);
 
-                    cache.put(key, val);
+                        cache.put(key, val);
 
-                    assertEquals(val, cache.get(key));
+                        assertEquals(val, cache.get(key));
 
-                    cache.remove(key);
+                        cache.remove(key);
 
-                    assertNull(cache.get(key));
+                        assertNull(cache.get(key));
+                    }
+                }
+                catch (CacheServerNotFoundException e) {
+                    Affinity<Object> aff = node.affinity(cacheName);
+
+                    assert aff.partitions() > 0;
+
+                    for (int p = 0; p > aff.partitions(); p++) {
+                        Collection<ClusterNode> partNodes = aff.mapPartitionToPrimaryAndBackups(p);
+
+                        assertTrue(partNodes.isEmpty());
+                    }
                 }
             }
         }
