@@ -71,7 +71,7 @@ consoleModule.controller('cachesController', [
 
         function cacheDomains(item) {
             return _.reduce($scope.domains, function (memo, domain) {
-                if (item && _.contains(item.domains, domain.value)) {
+                if (item && _.includes(item.domains, domain.value)) {
                     memo.push(domain.meta);
                 }
 
@@ -214,7 +214,7 @@ consoleModule.controller('cachesController', [
 
         function checkDataSources() {
             var clusters = _.filter($scope.clusters, function (cluster) {
-                return _.contains($scope.backupItem.clusters, cluster.value);
+                return _.includes($scope.backupItem.clusters, cluster.value);
             });
 
             var checkRes = { checked: true };

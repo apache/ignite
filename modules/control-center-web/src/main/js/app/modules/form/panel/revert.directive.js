@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-const template = `<i ng-show='form.$dirty' class='fa fa-undo pull-right' ng-click='revert($event)'></i>`;
+const template = '<i ng-show="form.$dirty" class="fa fa-undo pull-right" ng-click="revert($event)"></i>';
 
 export default ['igniteFormRevert', ['$tooltip', ($tooltip) => {
     const link = (scope, $element, $attrs, [form]) => {
@@ -26,13 +26,15 @@ export default ['igniteFormRevert', ['$tooltip', ($tooltip) => {
         scope.revert = (e) => {
             e.stopPropagation();
 
-            for (const name in form.$defaults) {
-                if ({}.hasOwnProperty.call(form.$defaults, name) && form[name]) {
-                    form[name].$setViewValue(form.$defaults[name]);
-                    form[name].$setPristine();
-                    form[name].$render();
+            _.forOwn(form.$defaults, (value, name) => {
+                const field = form[name];
+
+                if (field) {
+                    field.$setViewValue(value);
+                    field.$setPristine();
+                    field.$render();
                 }
-            }
+            });
 
             form.$setPristine();
         };

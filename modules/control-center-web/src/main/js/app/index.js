@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import jQuery from 'jquery';
 import _ from 'lodash';
 import ace from 'ace';
 import angular from 'angular';
@@ -200,6 +199,6 @@ angular
 }])
 .run(['$rootScope', ($root) => {
     $root.$on('$stateChangeStart', () => {
-        _.each(angular.element('.modal'), (m) => angular.element(m).scope().$hide());
+        _.forEach(angular.element('.modal'), (m) => angular.element(m).scope().$hide());
     });
 }]);

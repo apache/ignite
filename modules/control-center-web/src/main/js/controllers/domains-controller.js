@@ -456,7 +456,6 @@ consoleModule.controller('domainsController', [
                 $scope.importDomain.loadingOptions = LOADING_JDBC_DRIVERS;
 
                 IgniteAgentMonitor.startWatch({
-                        state: 'base.configuration.domains',
                         text: 'Back to Domain models',
                         goal: 'import domain model from database schema'
                     })
@@ -936,7 +935,7 @@ consoleModule.controller('domainsController', [
 
                         newDomain.caches = [cacheId];
 
-                        if (!_.contains(checkedCaches, cacheId)) {
+                        if (!_.includes(checkedCaches, cacheId)) {
                             var cache = _.find($scope.caches, {value: cacheId}).cache;
 
                             var change = $common.autoCacheStoreConfiguration(cache, [newDomain]);

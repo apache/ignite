@@ -18,7 +18,6 @@
 var gulp = require('gulp');
 var gulpJade = require('gulp-jade');
 var sequence = require('gulp-sequence');
-var connect = require('gulp-connect');
 
 var igniteModules = process.env.IGNITE_MODULES || './ignite_modules';
 
@@ -47,8 +46,7 @@ gulp.task('jade:source', function (cb) {
 gulp.task('jade:ignite_modules', function (cb) {
     return gulp.src(igniteModulePaths)
         .pipe(gulpJade(jadeOptions))
-        .pipe(gulp.dest('./build/ignite_modules'))
-        .pipe(connect.reload());
+        .pipe(gulp.dest('./build/ignite_modules'));
 });
 
 gulp.task('jade:watch', function (cb) {

@@ -24,7 +24,7 @@
  */
 module.exports = {
     implements: 'agent-manager',
-    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'require(apache-ignite)', 'settings', 'mongo']
+    inject: ['require(lodash)', 'require(ws)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'require(apache-ignite)', 'settings', 'mongo']
 };
 
 /**
@@ -38,7 +38,7 @@ module.exports = {
  * @param mongo
  * @returns {AgentManager}
  */
-module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, settings, mongo) {
+module.exports.factory = function(_, ws, fs, path, JSZip, socketio, apacheIgnite, settings, mongo) {
     /**
      * Creates an instance of server for Ignite.
      */
@@ -345,6 +345,17 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
             // Latest version of agent distribution.
             if (latest)
                 this.supportedAgents.latest = this.supportedAgents[latest];
+        }
+
+        attachLegacy(server) {
+            const wsSrv = new ws.Server({server});
+
+            wsSrv.on('connection', (_wsClient) => {
+                _wsClient.send(JSON.stringify({
+                    method: 'authResult',
+                    args: ['You are using an older version of the agent. Please reload agent archive']
+                }));
+            });
         }
 
         /**

@@ -187,7 +187,7 @@ consoleModule.service('$common', [
             if (isEmptyString(cls))
                 return false;
 
-            return _.contains(javaBuiltInClasses, cls) || _.contains(javaBuiltInFullNameClasses, cls);
+            return _.includes(javaBuiltInClasses, cls) || _.includes(javaBuiltInFullNameClasses, cls);
         }
 
         var SUPPORTED_JDBC_TYPES = [
@@ -272,7 +272,7 @@ consoleModule.service('$common', [
             if (isEmptyString(ident))
                 return showPopoverMessage(panels, panelId, elemId, msg + ' is invalid!');
 
-            if (_.contains(JAVA_KEYWORDS, ident))
+            if (_.includes(JAVA_KEYWORDS, ident))
                 return showPopoverMessage(panels, panelId, elemId, msg + ' could not contains reserved java keyword: "' + ident + '"!');
 
             if (!VALID_JAVA_IDENTIFIER.test(ident))
@@ -585,7 +585,7 @@ consoleModule.service('$common', [
 
                     if (!activePanels || activePanels.length < 1)
                         ui.activePanels = [idx];
-                    else if (!_.contains(activePanels, idx)) {
+                    else if (!_.includes(activePanels, idx)) {
                         var newActivePanels = angular.copy(activePanels);
 
                         newActivePanels.push(idx);

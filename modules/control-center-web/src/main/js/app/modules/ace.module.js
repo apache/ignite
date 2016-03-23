@@ -50,8 +50,7 @@ angular
             }
 
             // Ace requires loading.
-            if (angular.isDefined(opts.require))
-                opts.require.forEach((n) => window.ace.require(n));
+            _.forEach(opts.require, (n) => window.ace.require(n));
 
             // Boolean options.
             if (angular.isDefined(opts.showGutter))
@@ -80,7 +79,7 @@ angular
                         win: 'Ctrl-F',
                         mac: 'Command-F'
                     },
-                    exec: () => false,
+                    exec: _.constant(false),
                     readOnly: true
                 }]);
             }
@@ -126,10 +125,7 @@ angular
             }
 
             // onLoad callbacks.
-            angular.forEach(opts.callbacks, (cb) => {
-                if (angular.isFunction(cb))
-                    cb(acee);
-            });
+            _.forEach(opts.callbacks, (cb) => angular.isFunction(cb) && cb(acee));
         };
 
         return {

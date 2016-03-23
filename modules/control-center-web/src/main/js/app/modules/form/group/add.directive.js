@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-const template = `<i class='group-legend-btn fa fa-plus'></i>`;
+const template = '<i class="group-legend-btn fa fa-plus"></i>';
 
 export default ['igniteFormGroupAdd', ['$tooltip', ($tooltip) => {
     const link = ($scope, $element, $attrs, $ctrls, $transclude) => {

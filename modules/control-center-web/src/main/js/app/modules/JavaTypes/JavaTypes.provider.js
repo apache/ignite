@@ -35,7 +35,7 @@ angular
                  * @returns boolean 'true' if given class name non a Java built-in type.
                  */
                 nonBuiltInClass(cls) {
-                    return !(_.contains(JAVA_CLASSES, cls) || _.contains(JAVA_FULLNAME_CLASSES, cls));
+                    return !(_.includes(JAVA_CLASSES, cls) || _.includes(JAVA_FULLNAME_CLASSES, cls));
                 },
                 /**
                  * @param value text to check.
@@ -60,7 +60,7 @@ angular
                  * @returns boolean 'true' if given text non Java keyword.
                  */
                 isKeywords(value) {
-                    return _.contains(JAVA_KEYWORDS, value);
+                    return _.includes(JAVA_KEYWORDS, value);
                 }
             };
         }];

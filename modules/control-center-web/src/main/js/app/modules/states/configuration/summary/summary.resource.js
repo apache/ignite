@@ -28,8 +28,8 @@ export default ['ConfigurationSummaryResource', ['$q', '$http', ($q, $http) => {
                         return {};
 
                     _.forEach(clusters, (cluster) => {
-                        cluster.igfss = _.filter(igfss, ({_id}) => _.contains(cluster.igfss, _id));
-                        cluster.caches = _.filter(caches, ({_id}) => _.contains(cluster.caches, _id));
+                        cluster.igfss = _.filter(igfss, ({_id}) => _.includes(cluster.igfss, _id));
+                        cluster.caches = _.filter(caches, ({_id}) => _.includes(cluster.caches, _id));
                     });
 
                     return {clusters};

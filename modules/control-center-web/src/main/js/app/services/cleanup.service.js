@@ -15,45 +15,24 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-
-const isArray = angular.isArray;
-const isDefined = angular.isDefined;
-const isNumber = angular.isNumber;
-const isObject = angular.isObject;
-const isString = angular.isString;
-const isUndefined = angular.isUndefined;
-const isBoolean = (val) => typeof val === 'boolean';
-
 export default ['$cleanup', () => {
     const cleanup = (original, dist) => {
-        if (isUndefined(original))
+        if (_.isUndefined(original))
             return dist;
 
-        if (isObject(original)) {
-            let key;
+        if (_.isObject(original)) {
+            _.forOwn(original, (value, key) => {
+                const attr = cleanup(value);
 
-            for (key in original) {
-                if (original.hasOwnProperty(key)) {
-                    const attr = cleanup(original[key]);
-
-                    if (isDefined(attr)) {
-                        dist = dist || {};
-                        dist[key] = attr;
-                    }
+                if (!_.isNil(attr)) {
+                    dist = dist || {};
+                    dist[key] = attr;
                 }
-            }
-        } else if ((isString(original) && original.length) || isNumber(original) || isBoolean(original))
+            });
+        } else if ((_.isString(original) && original.length) || _.isNumber(original) || _.isBoolean(original))
             dist = original;
-        else if (isArray(original) && original.length) {
-            dist = [];
-
-            let i = 0;
-            const l = original.length;
-
-            for (; i < l; i++)
-                dist[i] = cleanup(original[i], {});
-        }
+        else if (_.isArray(original) && original.length)
+            dist = _.map(original, (value) => cleanup(value, {}));
 
         return dist;
     };

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-const template = `<div class='footer' ng-bind-html='footer.html'></div>`;
+const template = '<div class="footer" ng-bind-html="footer.html"></div>';
 
 export default ['igniteFooter', ['IgniteBranding', (branding) => {
     function controller() {

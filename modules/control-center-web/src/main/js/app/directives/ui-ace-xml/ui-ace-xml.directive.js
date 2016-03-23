@@ -50,10 +50,8 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
             switch (method) {
                 case 'clusterCaches':
                     ctrl.generator = (cluster) => {
-                        let caches;
-
-                        caches = _.reduce(scope.detail, (acc, cache) => {
-                            if (_.contains(cluster.caches, cache.value))
+                        const caches = _.reduce(scope.detail, (acc, cache) => {
+                            if (_.includes(cluster.caches, cache.value))
                                 acc.push(cache.cache);
 
                             return acc;
@@ -67,7 +65,7 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
                 case 'igfss':
                     ctrl.generator = (cluster) => {
                         const igfss = _.reduce(scope.detail, (acc, igfs) => {
-                            if (_.contains(cluster.igfss, igfs.value))
+                            if (_.includes(cluster.igfss, igfs.value))
                                 acc.push(igfs.igfs);
 
                             return acc;
@@ -81,7 +79,7 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
                 case 'cacheStore':
                     ctrl.generator = (cache) => {
                         const domains = _.reduce(scope.detail, (acc, domain) => {
-                            if (_.contains(cache.domains, domain.value))
+                            if (_.includes(cache.domains, domain.value))
                                 acc.push(domain.meta);
 
                             return acc;

@@ -84,6 +84,18 @@ Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent-manager'), fireUp(
         app.listen(server);
         browserMgr.attach(server);
 
+        // Start legacy agent server for reject connection with message.
+        if (settings.agent.legacyPort) {
+            const agentLegacySrv = settings.agent.SSLOptions
+                ? https.createServer(settings.agent.SSLOptions) : http.createServer();
+
+            agentLegacySrv.listen(settings.agent.legacyPort);
+            agentLegacySrv.on('error', _onError.bind(null, settings.agent.legacyPort));
+            agentLegacySrv.on('listening', _onListening.bind(null, agentLegacySrv.address()));
+
+            agentMgr.attachLegacy(agentLegacySrv);
+        }
+
         // Start agent server.
         const agentServer = settings.agent.SSLOptions
             ? https.createServer(settings.agent.SSLOptions) : http.createServer();

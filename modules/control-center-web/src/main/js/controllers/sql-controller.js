@@ -151,7 +151,7 @@ consoleModule.controller('sqlController', [
             var idx = _.findIndex($scope.notebook.paragraphs, {id: paragraphId});
 
             if (idx >= 0) {
-                if (!_.contains($scope.notebook.expandedParagraphs, idx))
+                if (!_.includes($scope.notebook.expandedParagraphs, idx))
                     $scope.notebook.expandedParagraphs.push(idx);
 
                 setTimeout(function () {
@@ -480,13 +480,13 @@ consoleModule.controller('sqlController', [
             'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short'];
 
         var _numberType = function(cls) {
-            return _.contains(_numberClasses, cls);
+            return _.includes(_numberClasses, cls);
         };
 
         var _intClasses = ['java.lang.Byte', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short'];
 
         function _intType(cls) {
-            return _.contains(_intClasses, cls);
+            return _.includes(_intClasses, cls);
         }
 
         var _rebuildColumns = function (paragraph) {

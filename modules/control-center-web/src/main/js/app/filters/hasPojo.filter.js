@@ -15,12 +15,4 @@
  * limitations under the License.
  */
 
-export default ['hasPojo', [() => {
-    const filter = (cache) => {
-        return cache.domains && cache.domains.length;
-    };
-
-    return ({caches} = {}) => {
-        return caches && _.chain(caches).filter(filter).first().value();
-    };
-}]];
+export default ['hasPojo', [() => ({caches}) => _.find(caches, (cache) => cache.domains && cache.domains.length)]];

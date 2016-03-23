@@ -16,10 +16,8 @@
  */
 
 export default ['igniteUiAceTabs', [() => {
-    const controller = () => {};
-
     return {
         restrict: 'AE',
-        controller
+        controller: _.noop
     };
 }]];

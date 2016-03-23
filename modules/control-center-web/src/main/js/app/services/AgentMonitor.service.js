@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import io from 'socket.io-client';
+import io from 'socket.io-client'; // eslint-disable-line no-unused-vars
 
 class IgniteAgentMonitor {
     constructor(socketFactory, $root, $q, $state, $modal, $common) {
@@ -48,7 +48,10 @@ class IgniteAgentMonitor {
          * Close dialog and go by specified link.
          */
         this._scope.back = () => {
-            $state.go(this._scope.backState);
+            this._downloadAgentModal.hide();
+
+            if (this._scope.backState)
+                this._scope.$$postDigest(() => $state.go(this._scope.backState));
         };
 
         this._scope.downloadAgent = () => {

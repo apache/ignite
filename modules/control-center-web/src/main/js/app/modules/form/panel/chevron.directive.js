@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-const template = `<i class='fa' ng-class='isOpen ? "fa-chevron-circle-down" : "fa-chevron-circle-right"'></i>`;
+const template = `<i class='fa' ng-class='isOpen ? "fa-chevron-circle-down" : "fa-chevron-circle-right"'></i>`; // eslint-disable-line quotes
 
 export default ['igniteFormPanelChevron', [() => {
     const controller = [() => {}];

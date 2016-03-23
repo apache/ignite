@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-const template = `<h1 class='title'>{{::title.text}}</h1>`;
+const template = '<h1 class="title">{{::title.text}}</h1>';
 
 export default ['igniteHeaderTitle', ['IgniteBranding', (branding) => {
     function controller() {

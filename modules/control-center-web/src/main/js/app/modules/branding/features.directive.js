@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-const template = `<div class='features' ng-bind-html='features.html'></div>`;
+const template = '<div class="features" ng-bind-html="features.html"></div>';
 
 export default ['igniteFeatures', ['IgniteBranding', (branding) => {
     function controller() {

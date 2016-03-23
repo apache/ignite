@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-const template = `<i class='tipField fa fa-arrow-up ng-scope' ng-click='up()'></i>`;
+const template = '<i class="tipField fa fa-arrow-up ng-scope" ng-click="up()"></i>';
 
 export default ['igniteFormFieldUp', ['$tooltip', ($tooltip) => {
     const link = (scope, $element) => {

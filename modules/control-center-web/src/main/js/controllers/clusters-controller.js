@@ -94,7 +94,7 @@ consoleModule.controller('clustersController', [
 
         function clusterCaches(item) {
             return _.reduce($scope.caches, function (memo, cache) {
-                if (item && _.contains(item.caches, cache.value)) {
+                if (item && _.includes(item.caches, cache.value)) {
                     memo.push(cache.cache);
                 }
 
@@ -277,7 +277,7 @@ consoleModule.controller('clustersController', [
             var caches = _.filter(_.map($scope.caches, function (scopeCache) {
                 return scopeCache.cache;
             }), function (cache) {
-                return _.contains($scope.backupItem.caches, cache._id);
+                return _.includes($scope.backupItem.caches, cache._id);
             });
 
             var checkRes = $common.checkCachesDataSources(caches);
