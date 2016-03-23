@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.util.typedef.G;
@@ -375,23 +374,6 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
                 return null;
             }
         }, IllegalStateException.class, null);
-
-        for (Object o : cache.keySet())
-            assert !(o instanceof GridCacheInternal) : "Wrong keys [key=" + o + ']';
-
-        for (Object o : cache.values())
-            assert !(o instanceof GridCacheInternal) : "Wrong values [value=" + o + ']';
-
-        for (Object o : cache.entrySet())
-            assert !(o instanceof GridCacheInternal) : "Wrong entries [entry=" + o + ']';
-
-        assert cache.keySet().isEmpty();
-
-//        assert cache.values().isEmpty();
-
-//        assert cache.entrySet().isEmpty();
-
-        assert cache.size() == 0;
 
         for (String seqName : seqNames)
             assert null != cache.get(new GridCacheInternalKeyImpl(seqName));
