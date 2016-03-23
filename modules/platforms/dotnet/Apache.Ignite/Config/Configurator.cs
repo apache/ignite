@@ -19,6 +19,9 @@ namespace Apache.Ignite.Config
 {
     using System;
     using System.Collections.Generic;
+    using System.Configuration;
+    using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core;
 
     /// <summary>
@@ -65,9 +68,7 @@ namespace Apache.Ignite.Config
             var jvmOpts = new List<string>();
             var assemblies = new List<string>();
 
-            var cfg = new IgniteConfiguration();
-
-            // TODO: Start from config section somehow
+            var cfg = ReadConfigurationSection(args) ?? new IgniteConfiguration();
 
             foreach (var arg in args)
             {
@@ -112,6 +113,56 @@ namespace Apache.Ignite.Config
             }
 
             return cfg;
+        }
+
+        /// <summary>
+        /// Reads the configuration section.
+        /// </summary>
+        private static IgniteConfiguration ReadConfigurationSection(Tuple<string, string>[] args)
+        {
+            var fileName = FindValue(args, CmdConfigFile);
+            var sectionName = FindValue(args, CmdConfigSection);
+
+            if (string.IsNullOrEmpty(fileName) && string.IsNullOrEmpty(sectionName))
+                return null;
+
+            var cfg = string.IsNullOrEmpty(fileName)
+                ? ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None)
+                : ConfigurationManager.OpenMappedExeConfiguration(GetConfigMap(fileName), ConfigurationUserLevel.None);
+
+            var section = string.IsNullOrEmpty(sectionName)
+                ? cfg.Sections.OfType<IgniteConfigurationSection>().FirstOrDefault()
+                : (IgniteConfigurationSection) cfg.GetSection(sectionName);
+
+            if (section == null)
+                throw new ConfigurationErrorsException(
+                    string.Format("Could not find {0} in current application configuration",
+                        typeof(IgniteConfigurationSection).Name));
+
+            return section.IgniteConfiguration;
+        }
+
+        /// <summary>
+        /// Gets the configuration file map.
+        /// </summary>
+        private static ExeConfigurationFileMap GetConfigMap(string fileName)
+        {
+            fileName = Path.GetFullPath(fileName);
+
+            if (!File.Exists(fileName))
+                throw new InvalidOperationException("Specified config file does not exist: " + fileName);
+
+            return new ExeConfigurationFileMap {ExeConfigFilename = fileName};
+        }
+
+        /// <summary>
+        /// Finds the config value.
+        /// </summary>
+        private static string FindValue(IEnumerable<Tuple<string, string>> args, string name)
+        {
+            return args.Where(x => name.Equals(x.Item1, StringComparison.OrdinalIgnoreCase))
+                    .Select(x => x.Item2)
+                    .FirstOrDefault();
         }
     }
 }
