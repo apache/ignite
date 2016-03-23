@@ -17,40 +17,41 @@
 
 namespace Apache.Ignite.Config
 {
+    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core;
 
     /// <summary>
     /// Configurator which uses arguments array.
     /// </summary>
-    internal class ArgsConfigurator : IConfigurator<string[]>
+    internal static class ArgsConfigurator
     {
         /** Command line argument: Ignite home. */
-        private static readonly string CmdIgniteHome = "-IgniteHome=".ToLower();
+        private static readonly string CmdIgniteHome = "-IgniteHome=";
 
         /** Command line argument: Spring config URL. */
-        private static readonly string CmdSpringCfgUrl = "-SpringConfigUrl=".ToLower();
+        private static readonly string CmdSpringCfgUrl = "-SpringConfigUrl=";
 
         /** Command line argument: Path to JVM dll. */
-        private static readonly string CmdJvmDll = "-JvmDll=".ToLower();
+        private static readonly string CmdJvmDll = "-JvmDll=";
 
         /** Command line argument: JVM classpath. */
-        private static readonly string CmdJvmClasspath = "-JvmClasspath=".ToLower();
+        private static readonly string CmdJvmClasspath = "-JvmClasspath=";
 
         /** Command line argument: suppress warnings flag. */
-        private static readonly string CmdSuppressWarn = "-SuppressWarnings=".ToLower();
+        private static readonly string CmdSuppressWarn = "-SuppressWarnings=";
 
         /** Command line argument: JVM option prefix. */
-        private static readonly string CmdJvmOpt = "-J".ToLower();
+        private static readonly string CmdJvmOpt = "-J";
 
         /** Command line argument: assembly. */
-        private static readonly string CmdAssembly = "-Assembly=".ToLower();
+        private static readonly string CmdAssembly = "-Assembly=";
 
         /** Command line argument: JvmInitialMemoryMB. */
-        private static readonly string CmdJvmMinMem = "-JvmInitialMemoryMB=".ToLower();
+        private static readonly string CmdJvmMinMem = "-JvmInitialMemoryMB=";
 
         /** Command line argument: JvmMaxMemoryMB. */
-        private static readonly string CmdJvmMaxMem = "-JvmMaxMemoryMB=".ToLower();
+        private static readonly string CmdJvmMaxMem = "-JvmMaxMemoryMB=";
 
         /// <summary>
         /// Convert configuration to arguments.
@@ -94,53 +95,39 @@ namespace Apache.Ignite.Config
             return args.ToArray();
         }
 
-        /// <summary>
-        /// Convert arguments to configuration.
-        /// </summary>
-        /// <param name="args">Arguments.</param>
-        /// <returns>Configuration.</returns>
-        internal static IgniteConfiguration FromArgs(string[] args)
-        {
-            var cfg = new IgniteConfiguration();
-
-            new ArgsConfigurator().Configure(cfg, args);
-
-            return cfg;
-        }
-
         /** <inheritDoc /> */
-        public void Configure(IgniteConfiguration cfg, string[] src)
+        public static void Configure(IgniteConfiguration cfg, string[] src)
         {
             var jvmOpts = new List<string>();
             var assemblies = new List<string>();
 
             foreach (var arg in src)
             {
-                var argLow = arg.ToLower();
+                Func<string, bool> argStartsWith = x => arg.StartsWith(x, StringComparison.OrdinalIgnoreCase);
 
-                if (argLow.StartsWith(CmdIgniteHome))
+                if (argStartsWith(CmdIgniteHome))
                     cfg.IgniteHome = arg.Substring(CmdIgniteHome.Length);
-                else if (argLow.StartsWith(CmdSpringCfgUrl))
+                else if (argStartsWith(CmdSpringCfgUrl))
                     cfg.SpringConfigUrl = arg.Substring(CmdSpringCfgUrl.Length);
-                else if (argLow.StartsWith(CmdJvmDll))
+                else if (argStartsWith(CmdJvmDll))
                     cfg.JvmDllPath = arg.Substring(CmdJvmDll.Length);
-                else if (argLow.StartsWith(CmdJvmClasspath))
+                else if (argStartsWith(CmdJvmClasspath))
                     cfg.JvmClasspath = arg.Substring(CmdJvmClasspath.Length);
-                else if (argLow.StartsWith(CmdSuppressWarn))
+                else if (argStartsWith(CmdSuppressWarn))
                 {
                     var val = arg.Substring(CmdSuppressWarn.Length);
 
-                    cfg.SuppressWarnings = bool.TrueString.ToLower().Equals(val.ToLower());
+                    cfg.SuppressWarnings = bool.TrueString.Equals(val, StringComparison.OrdinalIgnoreCase);
                 }
-                else if (argLow.StartsWith(CmdJvmMinMem))
+                else if (argStartsWith(CmdJvmMinMem))
                     cfg.JvmInitialMemoryMb = ConfigValueParser.ParseInt(arg.Substring(CmdJvmMinMem.Length),
                         CmdJvmMinMem);
-                else if (argLow.StartsWith(CmdJvmMaxMem))
+                else if (argStartsWith(CmdJvmMaxMem))
                     cfg.JvmMaxMemoryMb = ConfigValueParser.ParseInt(arg.Substring(CmdJvmMaxMem.Length),
                         CmdJvmMaxMem);
-                else if (argLow.StartsWith(CmdJvmOpt))
+                else if (argStartsWith(CmdJvmOpt))
                     jvmOpts.Add(arg.Substring(CmdJvmOpt.Length));
-                else if (argLow.StartsWith(CmdAssembly))
+                else if (argStartsWith(CmdAssembly))
                     assemblies.Add(arg.Substring(CmdAssembly.Length));
             }
 

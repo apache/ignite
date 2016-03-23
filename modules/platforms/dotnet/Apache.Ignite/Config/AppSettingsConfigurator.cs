@@ -24,7 +24,7 @@ namespace Apache.Ignite.Config
     /// <summary>
     /// Configurator which uses application configuration.
     /// </summary>
-    internal class AppSettingsConfigurator : IConfigurator<NameValueCollection>
+    internal static class AppSettingsConfigurator
     {
         /** Common configuration property prefix. */
         private static readonly string CfgPrefix = "Ignite.".ToLower();
@@ -57,14 +57,14 @@ namespace Apache.Ignite.Config
         private static readonly string CfgJvmMaxMem = "JvmMaxMemoryMB".ToLower();
 
         /** <inheritDoc /> */
-        public void Configure(IgniteConfiguration cfg, NameValueCollection src)
+        public static void Configure(IgniteConfiguration cfg, NameValueCollection src)
         {
             var jvmOpts = new List<string>();
             var assemblies = new List<string>();
 
             foreach (string key in src.Keys)
             {
-                var key0 = key.ToLower();
+                var key0 = key.ToLowerInvariant();
 
                 if (key0.StartsWith(CfgPrefix))
                 {

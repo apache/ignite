@@ -59,7 +59,7 @@ namespace Apache.Ignite
                 // Check for special cases.
                 if (args.Length > 0)
                 {
-                    string first = args[0].ToLower();
+                    string first = args[0].ToLowerInvariant();
 
                     if (Help.Contains(first))
                     {
@@ -94,10 +94,10 @@ namespace Apache.Ignite
                     // Pick application configuration.
                     cfg = new IgniteConfiguration();
 
-                    new AppSettingsConfigurator().Configure(cfg, ConfigurationManager.AppSettings);
+                    AppSettingsConfigurator.Configure(cfg, ConfigurationManager.AppSettings);
 
                     // Pick command line arguments.
-                    new ArgsConfigurator().Configure(cfg, args);
+                    ArgsConfigurator.Configure(cfg, args);
 
                     if (install)
                         IgniteService.DoInstall(cfg);
@@ -122,7 +122,7 @@ namespace Apache.Ignite
             cfg = new IgniteConfiguration();
 
             // Use only arguments, not app.config.
-            new ArgsConfigurator().Configure(cfg, args);
+            ArgsConfigurator.Configure(cfg, args);
 
             ServiceBase.Run(new IgniteService(cfg));
         }
