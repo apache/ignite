@@ -36,6 +36,9 @@ namespace Apache.Ignite.Config
         /** Configuration property: JVM option prefix. */
         private const string CfgJvmOptPrefix = "JvmOption";
 
+        /** Configuration property: assembly prefix. */
+        private const string CfgAssemblyPrefix = "Assembly";
+
         /// <summary>
         /// Gets the arguments in split form.
         /// </summary>
@@ -54,7 +57,8 @@ namespace Apache.Ignite.Config
             key = key.Substring(CfgPrefix.Length);
 
             key = key.Equals(CfgHome, StringComparison.OrdinalIgnoreCase) ? Configurator.CmdIgniteHome : key;
-            key = key.Equals(CfgJvmOptPrefix, StringComparison.OrdinalIgnoreCase) ? Configurator.CmdJvmOpt : key;
+            key = key.StartsWith(CfgJvmOptPrefix, StringComparison.OrdinalIgnoreCase) ? Configurator.CmdJvmOpt : key;
+            key = key.StartsWith(CfgAssemblyPrefix, StringComparison.OrdinalIgnoreCase) ? Configurator.CmdAssembly : key;
 
             return key;
         }

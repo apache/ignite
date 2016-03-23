@@ -45,7 +45,7 @@ namespace Apache.Ignite.Config
         public const string CmdJvmOpt = "J";
 
         /** Command line argument: assembly. */
-        private const string CmdAssembly = "Assembly";
+        public const string CmdAssembly = "Assembly";
 
         /** Command line argument: JvmInitialMemoryMB. */
         private const string CmdJvmMinMem = "JvmInitialMemoryMB";
