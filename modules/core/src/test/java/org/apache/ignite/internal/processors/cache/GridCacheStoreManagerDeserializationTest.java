@@ -142,7 +142,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     /**
      * Check whether test objects are stored correctly via stream API.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testStream() throws Exception {
         final Ignite grid = startGrid();
@@ -167,7 +167,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
      * {@link org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry#clearInternal(
      * GridCacheVersion, boolean, GridCacheObsoleteEntryExtras)}
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testPartitionMove() throws Exception {
         final Ignite grid = startGrid("binaryGrid1");

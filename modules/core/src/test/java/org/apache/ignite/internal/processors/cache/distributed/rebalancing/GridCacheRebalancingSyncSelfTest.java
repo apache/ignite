@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -351,18 +352,28 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    protected void checkSupplyContextMapIsEmpty() {
+    protected void checkSupplyContextMapIsEmpty() throws Exception {
         for (Ignite g : G.allGrids()) {
             for (GridCacheAdapter c : ((IgniteEx)g).context().cache().internalCaches()) {
                 Object supplier = U.field(c.preloader(), "supplier");
 
-                Map map = U.field(supplier, "scMap");
+                final Map map = U.field(supplier, "scMap");
+
+                GridTestUtils.waitForCondition(new PA() {
+                    @Override public boolean apply() {
+                        synchronized (map) {
+                            return map.isEmpty();
+                        }
+                    }
+                }, 10_000);
 
                 synchronized (map) {
-                    assertTrue("Map is not empty [cache=" + c.name() + ", map=" + map + ']', map.isEmpty());
+                    assertTrue("Map is not empty [cache=" + c.name() +
+                        ", node=" + g.name() +
+                        ", map=" + map + ']', map.isEmpty());
                 }
             }
         }

@@ -378,7 +378,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 cctx.cacheContext(m.cacheId).preloader().handleDemandMessage(
                                     idx, id, (GridDhtPartitionDemandMessage)m);
                             else
-                                log.error("Unsupported message type: " + m.getClass().getName());
+                                U.error(log, "Unsupported message type: " + m.getClass().getName());
                         }
                         finally {
                             leaveBusy();

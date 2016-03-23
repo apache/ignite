@@ -301,7 +301,14 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
                     Integer valsCnt = cache.invoke(key, new Processor(val));
 
-                    assertEquals(k + 1, (Object)valsCnt);
+                    Integer exp = k + 1;
+
+                    if (!exp.equals(valsCnt))
+                        log.info("Unexpected return value [valsCnt=" + valsCnt +
+                            ", exp=" + exp +
+                            ", cacheVal=" + cache.get(key) + ']');
+
+                    assertEquals(exp, valsCnt);
                 }
             }
 
