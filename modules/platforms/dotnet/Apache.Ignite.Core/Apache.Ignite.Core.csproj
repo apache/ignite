@@ -417,30 +417,24 @@
     <Compile Include="Transactions\TransactionState.cs" />
     <Compile Include="Transactions\TransactionTimeoutException.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\cpp\common\project\vs\common.vcxproj">
-      <Project>{4f7e4917-4612-4b96-9838-025711ade391}</Project>
-      <Name>common</Name>
-    </ProjectReference>
-  </ItemGroup>
   <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <EmbeddedResource Include="$(SolutionDir)\x64\Debug\ignite.common.dll">
-      <Link>resources\debug\x64\ignite.common.dll</Link>
+    <EmbeddedResource Include="$(SolutionDir)\x64\Debug\ignite.jni.dll">
+      <Link>resources\debug\x64\ignite.jni.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <EmbeddedResource Include="$(SolutionDir)\x64\Release\ignite.common.dll">
-      <Link>resources\release\x64\ignite.common.dll</Link>
+    <EmbeddedResource Include="$(SolutionDir)\x64\Release\ignite.jni.dll">
+      <Link>resources\release\x64\ignite.jni.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <EmbeddedResource Include="$(SolutionDir)\Win32\Debug\ignite.common.dll">
-      <Link>resources\debug\x86\ignite.common.dll</Link>
+    <EmbeddedResource Include="$(SolutionDir)\Win32\Debug\ignite.jni.dll">
+      <Link>resources\debug\x86\ignite.jni.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <EmbeddedResource Include="$(SolutionDir)\Win32\Release\ignite.common.dll">
-      <Link>resources\release\x86\ignite.common.dll</Link>
+    <EmbeddedResource Include="$(SolutionDir)\Win32\Release\ignite.jni.dll">
+      <Link>resources\release\x86\ignite.jni.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -455,7 +449,12 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\cpp\jni\project\vs\jni.vcxproj">
+      <Project>{d906be6e-9370-494e-b10b-f74994e68fb2}</Project>
+      <Name>jni</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
