@@ -20,7 +20,7 @@
 
 #include "ignite/jni/java.h"
 
-namespace gcj = ignite::common::java;
+namespace gcj = ignite::jni::java;
 
 extern "C" {
     int IGNITE_CALL IgniteReallocate(long long memPtr, int cap);

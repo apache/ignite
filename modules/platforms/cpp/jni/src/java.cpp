@@ -57,11 +57,11 @@ using namespace ignite::java;
 
 namespace ignite
 {
-    namespace common
+    namespace jni
     {
         namespace java
         {
-            namespace gcc = ignite::utils::concurrent;
+            namespace gcc = ignite::common::concurrent;
 
             /* --- Startup exception. --- */
             class JvmException : public std::exception {

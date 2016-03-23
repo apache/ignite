@@ -20,7 +20,7 @@
 
 #include "ignite/impl/interop/interop_external_memory.h"
 
-using namespace ignite::common::java;
+using namespace ignite::jni::java;
 
 namespace ignite
 {

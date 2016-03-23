@@ -17,7 +17,7 @@
 
 #include "ignite/impl/binary/binary_type_handler.h"
 
-using namespace ignite::utils::concurrent;
+using namespace ignite::common::concurrent;
 
 namespace ignite
 {    

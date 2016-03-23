@@ -19,11 +19,11 @@
 #include "ignite/jni/attach_helper.h"
 #include "ignite/jni/java.h"
 
-using namespace ignite::common::java;
+using namespace ignite::jni::java;
 
 namespace ignite
 {
-    namespace common
+    namespace jni
     {
         /** Key indicating that the thread is attached. */
         static pthread_key_t attachKey;

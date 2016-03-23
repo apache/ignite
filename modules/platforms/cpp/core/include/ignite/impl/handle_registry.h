@@ -61,7 +61,7 @@ namespace ignite
              * @param hnd Handle.
              * @return Associated entry or NULL if it doesn't exists.
              */
-            ignite::utils::concurrent::SharedPointer<HandleRegistryEntry> Get(int64_t hnd);
+            ignite::common::concurrent::SharedPointer<HandleRegistryEntry> Get(int64_t hnd);
 
             /**
              * Put entry into segment.
@@ -69,7 +69,7 @@ namespace ignite
              * @param hnd Handle.
              * @param entry Associated entry (cannot be NULL).
              */
-            void Put(int64_t hnd, const ignite::utils::concurrent::SharedPointer<HandleRegistryEntry>& entry);
+            void Put(int64_t hnd, const ignite::common::concurrent::SharedPointer<HandleRegistryEntry>& entry);
 
             /**
              * Remove entry from the segment.
@@ -84,10 +84,10 @@ namespace ignite
             void Clear();
         private:
             /** Map with data. */
-            std::map<int64_t, ignite::utils::concurrent::SharedPointer<HandleRegistryEntry>>* map;
+            std::map<int64_t, ignite::common::concurrent::SharedPointer<HandleRegistryEntry>>* map;
 
             /** Mutex. */
-            ignite::utils::concurrent::CriticalSection* mux;
+            ignite::common::concurrent::CriticalSection* mux;
 
             IGNITE_NO_COPY_ASSIGNMENT(HandleRegistrySegment);
         };
@@ -117,7 +117,7 @@ namespace ignite
              * @param target Target.
              * @return Handle.
              */
-            int64_t Allocate(const ignite::utils::concurrent::SharedPointer<HandleRegistryEntry>& target);
+            int64_t Allocate(const ignite::common::concurrent::SharedPointer<HandleRegistryEntry>& target);
 
             /**
              * Allocate handle in critical mode.
@@ -125,7 +125,7 @@ namespace ignite
              * @param target Target.
              * @return Handle.
              */
-            int64_t AllocateCritical(const ignite::utils::concurrent::SharedPointer<HandleRegistryEntry>& target);
+            int64_t AllocateCritical(const ignite::common::concurrent::SharedPointer<HandleRegistryEntry>& target);
 
             /**
              * Allocate handle in safe mode.
@@ -133,7 +133,7 @@ namespace ignite
              * @param target Target.
              * @return Handle.
              */
-            int64_t AllocateSafe(const ignite::utils::concurrent::SharedPointer<HandleRegistryEntry>& target);
+            int64_t AllocateSafe(const ignite::common::concurrent::SharedPointer<HandleRegistryEntry>& target);
 
             /**
              * Allocate handle in critical and safe modes.
@@ -141,7 +141,7 @@ namespace ignite
              * @param target Target.
              * @return Handle.
              */
-            int64_t AllocateCriticalSafe(const ignite::utils::concurrent::SharedPointer<HandleRegistryEntry>& target);
+            int64_t AllocateCriticalSafe(const ignite::common::concurrent::SharedPointer<HandleRegistryEntry>& target);
 
             /**
              * Release handle.
@@ -156,7 +156,7 @@ namespace ignite
              * @param hnd Handle.
              * @param Target.
              */
-            ignite::utils::concurrent::SharedPointer<HandleRegistryEntry> Get(int64_t hnd);
+            ignite::common::concurrent::SharedPointer<HandleRegistryEntry> Get(int64_t hnd);
 
             /**
              * Close the registry.
@@ -170,7 +170,7 @@ namespace ignite
             int32_t fastCtr;               
 
             /** Fast-path container. */
-            ignite::utils::concurrent::SharedPointer<HandleRegistryEntry>* fast;
+            ignite::common::concurrent::SharedPointer<HandleRegistryEntry>* fast;
 
             /** Amount of slow-path segments. */
             int32_t slowSegmentCnt;            
@@ -193,7 +193,7 @@ namespace ignite
              * @param Critical mode flag.
              * @param Safe mode flag.
              */
-            int64_t Allocate0(const ignite::utils::concurrent::SharedPointer<HandleRegistryEntry>& target,
+            int64_t Allocate0(const ignite::common::concurrent::SharedPointer<HandleRegistryEntry>& target,
                 bool critical, bool safe);
         };
     }

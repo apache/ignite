@@ -308,7 +308,7 @@ namespace ignite
 
                 if (len != -1)
                 {
-                    ignite::utils::SafeArray<char> arr(len + 1);
+                    ignite::common::SafeArray<char> arr(len + 1);
 
                     ReadString(fieldName, arr.target, len + 1);
 

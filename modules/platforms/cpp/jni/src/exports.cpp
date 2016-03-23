@@ -18,7 +18,7 @@
 #include "ignite/jni/exports.h"
 #include "ignite/jni/java.h"
 
-namespace gcj = ignite::common::java;
+namespace gcj = ignite::jni::java;
 
 /* --- Target methods. --- */
 extern "C" {

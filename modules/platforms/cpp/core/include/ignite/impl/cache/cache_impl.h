@@ -45,7 +45,7 @@ namespace ignite
                  * @param env Environment.
                  * @param javaRef Reference to java object.
                  */
-                CacheImpl(char* name, ignite::utils::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+                CacheImpl(char* name, ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
                 
                 /**
                  * Destructor.
@@ -332,7 +332,7 @@ namespace ignite
                 char* name; 
                 
                 /** Environment. */
-                ignite::utils::concurrent::SharedPointer<IgniteEnvironment> env;
+                ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
                 
                 /** Handle to Java object. */
                 jobject javaRef;                     
@@ -398,9 +398,9 @@ namespace ignite
                 template<typename T>
                 query::QueryCursorImpl* QueryInternal(const T& qry, int32_t typ, IgniteError* err)
                 {
-                    ignite::common::java::JniErrorInfo jniErr;
+                    ignite::jni::java::JniErrorInfo jniErr;
 
-                    ignite::utils::concurrent::SharedPointer<interop::InteropMemory> mem = env.Get()->AllocateMemory();
+                    ignite::common::concurrent::SharedPointer<interop::InteropMemory> mem = env.Get()->AllocateMemory();
                     interop::InteropMemory* mem0 = mem.Get();
                     interop::InteropOutputStream out(mem0);
                     binary::BinaryWriterImpl writer(&out, env.Get()->GetTypeManager());

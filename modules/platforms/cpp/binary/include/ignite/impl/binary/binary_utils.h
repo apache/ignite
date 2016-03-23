@@ -406,7 +406,7 @@ namespace ignite
                 {
                     time_t tmt = DateToCTime(date);
 
-                    return utils::IgniteGmTime(tmt, ctime);
+                    return common::IgniteGmTime(tmt, ctime);
                 }
 
                 /**
@@ -420,7 +420,7 @@ namespace ignite
                 {
                     time_t tmt = TimestampToCTime(ts);
 
-                    return utils::IgniteGmTime(tmt, ctime);
+                    return common::IgniteGmTime(tmt, ctime);
                 }
 
                 /**
@@ -454,7 +454,7 @@ namespace ignite
                  */
                 static inline Date CTmToDate(const tm& ctime)
                 {
-                    time_t time = utils::IgniteTimeGm(ctime);
+                    time_t time = common::IgniteTimeGm(ctime);
 
                     return CTimeToDate(time);
                 }
@@ -468,7 +468,7 @@ namespace ignite
                  */
                 static inline Timestamp CTmToTimestamp(const tm& ctime, int32_t ns)
                 {
-                    time_t time = utils::IgniteTimeGm(ctime);
+                    time_t time = common::IgniteTimeGm(ctime);
 
                     return CTimeToTimestamp(time, ns);
                 }

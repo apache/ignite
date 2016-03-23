@@ -262,7 +262,7 @@ namespace ignite
                 date.tm_min = min;
                 date.tm_sec = sec;
 
-                time_t localTime = utils::IgniteTimeLocal(date);
+                time_t localTime = common::IgniteTimeLocal(date);
 
                 return CTimeToDate(localTime);
             }
@@ -294,7 +294,7 @@ namespace ignite
                 date.tm_min = min;
                 date.tm_sec = sec;
 
-                time_t localTime = utils::IgniteTimeLocal(date);
+                time_t localTime = common::IgniteTimeLocal(date);
 
                 return CTimeToTimestamp(localTime, ns);
             }

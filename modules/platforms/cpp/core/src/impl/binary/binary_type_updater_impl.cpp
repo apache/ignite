@@ -20,8 +20,8 @@
 #include "ignite/impl/binary/binary_writer_impl.h"
 #include "ignite/binary/binary_raw_writer.h"
 
-using namespace ignite::utils::concurrent;
-using namespace ignite::common::java;
+using namespace ignite::common::concurrent;
+using namespace ignite::jni::java;
 using namespace ignite::java;
 using namespace ignite::impl;
 using namespace ignite::impl::interop;

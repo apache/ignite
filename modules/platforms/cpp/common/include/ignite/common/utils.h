@@ -34,7 +34,7 @@
 
 namespace ignite
 {
-    namespace utils
+    namespace common
     {
         /**
          * Replace all alphabetic symbols of the string with their lowercase

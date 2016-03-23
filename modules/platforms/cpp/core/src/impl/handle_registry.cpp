@@ -17,7 +17,7 @@
 
 #include "ignite/impl/handle_registry.h"
 
-using namespace ignite::utils::concurrent;
+using namespace ignite::common::concurrent;
 
 namespace ignite
 {

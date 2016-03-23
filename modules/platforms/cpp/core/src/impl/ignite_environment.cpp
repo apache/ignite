@@ -20,8 +20,8 @@
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/binary/binary.h"
 
-using namespace ignite::utils::concurrent;
-using namespace ignite::common::java;
+using namespace ignite::common::concurrent;
+using namespace ignite::jni::java;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 using namespace ignite::binary;

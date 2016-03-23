@@ -25,7 +25,7 @@
 
 namespace ignite
 {
-    namespace common
+    namespace jni
     {
         namespace java
         {

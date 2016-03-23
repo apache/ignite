@@ -96,7 +96,7 @@ namespace ignite
 
     int32_t Decimal::BitLength() const
     {
-        using namespace utils;
+        using namespace common;
 
         if (len == 0)
             return 0;

@@ -114,7 +114,7 @@ namespace ignite
             };
 
             typedef BinaryTypeSnapshot Snap;
-            typedef ignite::utils::concurrent::SharedPointer<Snap> SPSnap;
+            typedef ignite::common::concurrent::SharedPointer<Snap> SPSnap;
         }
     }    
 }

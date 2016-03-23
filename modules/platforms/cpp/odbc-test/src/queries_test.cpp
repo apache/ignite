@@ -42,7 +42,7 @@ using namespace test_utils;
 using namespace ignite;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
-using namespace ignite::utils;
+using namespace ignite::common;
 
 using namespace boost::unit_test;
 

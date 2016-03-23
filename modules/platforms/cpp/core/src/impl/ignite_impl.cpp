@@ -17,8 +17,8 @@
 
 #include "ignite/impl/ignite_impl.h"
 
-using namespace ignite::utils::concurrent;
-using namespace ignite::common::java;
+using namespace ignite::common::concurrent;
+using namespace ignite::jni::java;
 
 namespace ignite
 {    

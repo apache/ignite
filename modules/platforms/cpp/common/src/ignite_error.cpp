@@ -17,7 +17,7 @@
 #include <ignite/common/ignite_error.h>
 #include <ignite/common/utils.h>
 
-using namespace ignite::utils;
+using namespace ignite::common;
 using namespace ignite::java;
 
 namespace ignite

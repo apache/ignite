@@ -54,7 +54,7 @@ namespace ignite
             /**
              * Constructor.
              */
-            Cache(impl::cache::CacheImpl* impl) : impl(ignite::utils::concurrent::SharedPointer<impl::cache::CacheImpl>(impl))
+            Cache(impl::cache::CacheImpl* impl) : impl(ignite::common::concurrent::SharedPointer<impl::cache::CacheImpl>(impl))
             {
                 // No-op.
             }
@@ -1193,7 +1193,7 @@ namespace ignite
 
         private:
             /** Implementation delegate. */
-            ignite::utils::concurrent::SharedPointer<impl::cache::CacheImpl> impl;
+            ignite::common::concurrent::SharedPointer<impl::cache::CacheImpl> impl;
         };
     }
 }

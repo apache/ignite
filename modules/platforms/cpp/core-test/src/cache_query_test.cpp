@@ -38,7 +38,7 @@ using namespace boost::unit_test;
 using namespace ignite;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
-using namespace ignite::utils;
+using namespace ignite::common;
 
 using ignite::impl::binary::BinaryUtils;
 

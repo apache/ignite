@@ -21,12 +21,12 @@
 #include "ignite/common/concurrent.h"
 #include "ignite/jni/java.h"
 
-using namespace ignite::utils::concurrent;
-using namespace ignite::common::java;
+using namespace ignite::common::concurrent;
+using namespace ignite::jni::java;
 
 namespace ignite
 {
-    namespace common
+    namespace jni
     {
         void AttachHelper::OnThreadAttach()
         {

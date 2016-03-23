@@ -45,7 +45,7 @@ namespace ignite
                      * @param env Environment.
                      * @param javaRef Java reference.
                      */
-                    QueryCursorImpl(ignite::utils::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+                    QueryCursorImpl(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
 
                     /**
                      * Destructor.
@@ -86,7 +86,7 @@ namespace ignite
 
                 private:
                     /** Environment. */
-                    ignite::utils::concurrent::SharedPointer<impl::IgniteEnvironment> env;
+                    ignite::common::concurrent::SharedPointer<impl::IgniteEnvironment> env;
 
                     /** Handle to Java object. */
                     jobject javaRef;
