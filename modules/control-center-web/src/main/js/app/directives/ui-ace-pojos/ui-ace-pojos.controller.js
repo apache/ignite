@@ -69,11 +69,17 @@ export default ['$scope', 'JavaTypes', 'GeneratorJava', function($scope, JavaTyp
             return;
 
         _.forEach(ctrl.pojos, (pojo) => {
-            if (pojo.keyType === ctrl.class)
-                return ctrl.data = pojo.keyClass;
+            if (pojo.keyType === ctrl.class) {
+                ctrl.data = pojo.keyClass;
 
-            if (pojo.valueType === ctrl.class)
-                return ctrl.data = pojo.valueClass;
+                return false;
+            }
+
+            if (pojo.valueType === ctrl.class) {
+                ctrl.data = pojo.valueClass;
+
+                return false;
+            }
         });
     };
 

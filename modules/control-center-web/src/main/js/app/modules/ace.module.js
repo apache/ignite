@@ -125,7 +125,10 @@ angular
             }
 
             // onLoad callbacks.
-            _.forEach(opts.callbacks, (cb) => angular.isFunction(cb) && cb(acee));
+            _.forEach(opts.callbacks, (cb) => {
+                if (angular.isFunction(cb))
+                    cb(acee)
+            });
         };
 
         return {
