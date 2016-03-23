@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <time.h>
+
 #include <windows.h>
 
 #include <ignite/utils/utils.h>

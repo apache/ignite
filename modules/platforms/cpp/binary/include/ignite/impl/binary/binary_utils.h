@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#include "ignite/common/utils.h"
+#include "ignite/utils/utils.h"
 
 #include "ignite/guid.h"
 #include "ignite/date.h"
@@ -406,7 +406,7 @@ namespace ignite
                 {
                     time_t tmt = DateToCTime(date);
 
-                    return common::utils::IgniteGmTime(tmt, ctime);
+                    return utils::IgniteGmTime(tmt, ctime);
                 }
 
                 /**
@@ -420,7 +420,7 @@ namespace ignite
                 {
                     time_t tmt = TimestampToCTime(ts);
 
-                    return common::utils::IgniteGmTime(tmt, ctime);
+                    return utils::IgniteGmTime(tmt, ctime);
                 }
 
                 /**
@@ -454,7 +454,7 @@ namespace ignite
                  */
                 static inline Date CTmToDate(const tm& ctime)
                 {
-                    time_t time = common::utils::IgniteTimeGm(ctime);
+                    time_t time = utils::IgniteTimeGm(ctime);
 
                     return CTimeToDate(time);
                 }
@@ -468,7 +468,7 @@ namespace ignite
                  */
                 static inline Timestamp CTmToTimestamp(const tm& ctime, int32_t ns)
                 {
-                    time_t time = common::utils::IgniteTimeGm(ctime);
+                    time_t time = utils::IgniteTimeGm(ctime);
 
                     return CTimeToTimestamp(time, ns);
                 }
