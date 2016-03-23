@@ -496,6 +496,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalCache<K, V> withNoRetries() {
+        CacheOperationContext opCtx = new CacheOperationContext(false, null, false, null, true, null);
+
+        return new GridCacheProxyImpl<>(ctx, this, opCtx);
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheConfiguration configuration() {
         return ctx.config();
     }

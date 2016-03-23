@@ -428,31 +428,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /**
-     * Gets or creates entry for given key. If key belongs to local node, dht entry will be returned, otherwise
-     * if {@code allowDetached} is {@code true}, detached entry will be returned, otherwise exception will be
-     * thrown.
-     *
-     * @param key Key for which entry should be returned.
-     * @param allowDetached Whether to allow detached entries.
-     * @param touch {@code True} if entry should be passed to eviction policy.
-     * @return Cache entry.
-     * @throws GridDhtInvalidPartitionException if entry does not belong to this node and
-     *      {@code allowDetached} is {@code false}.
-     */
-    public GridCacheEntryEx entryExx(KeyCacheObject key, AffinityTopologyVersion topVer, boolean allowDetached, boolean touch) {
-        try {
-            return allowDetached && !ctx.affinity().localNode(key, topVer) ?
-                createEntry(key) : entryEx(key, touch);
-        }
-        catch (GridDhtInvalidPartitionException e) {
-            if (!allowDetached)
-                throw e;
-
-            return createEntry(key);
-        }
-    }
-
-    /**
      * @param key Key for which entry should be returned.
      * @return Cache entry.
      */

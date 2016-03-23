@@ -961,7 +961,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         IgniteOutClosureX<GridCacheQueueHeader> rmv = new IgniteOutClosureX<GridCacheQueueHeader>() {
             @Override public GridCacheQueueHeader applyx() throws IgniteCheckedException {
-                return (GridCacheQueueHeader)cctx.cache().getAndRemove(new GridCacheQueueHeaderKey(name));
+                return (GridCacheQueueHeader)cctx.cache().withNoRetries().getAndRemove(new GridCacheQueueHeaderKey(name));
             }
         };
 
@@ -1546,7 +1546,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         IgniteOutClosureX<GridCacheSetHeader> rmv = new IgniteOutClosureX<GridCacheSetHeader>() {
             @Override public GridCacheSetHeader applyx() throws IgniteCheckedException {
-                return (GridCacheSetHeader)cctx.cache().getAndRemove(new GridCacheSetHeaderKey(name));
+                return (GridCacheSetHeader)cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
             }
         };
 
