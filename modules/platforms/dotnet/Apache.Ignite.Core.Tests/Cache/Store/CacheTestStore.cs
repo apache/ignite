@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             Debug.Assert(_grid != null);
 
-            return keys.OfType<object>().ToDictionary(key => key, Load);
+            return keys.OfType<object>().ToDictionary(key => key, key => "val_" + key);
         }
 
         public void Write(object key, object val)
