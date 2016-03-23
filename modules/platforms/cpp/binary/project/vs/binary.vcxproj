@@ -95,7 +95,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\utils\include;$(ProjectDir)\..\..\..\utils\os\win\include;$(ProjectDir)\..\..\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\include</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
@@ -117,7 +117,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\utils\include;$(ProjectDir)\..\..\..\utils\os\win\include;$(ProjectDir)\..\..\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\include</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
