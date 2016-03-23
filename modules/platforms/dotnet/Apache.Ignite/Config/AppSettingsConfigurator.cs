@@ -40,7 +40,6 @@ namespace Apache.Ignite.Config
         {
             return args.AllKeys
                 .Where(x => x.StartsWith(CfgPrefix, StringComparison.OrdinalIgnoreCase))
-                .Select(x => x.Substring(CfgPrefix.Length))
                 .Select(k => Tuple.Create(Replace(k), args[k]));
         }
 
@@ -49,6 +48,8 @@ namespace Apache.Ignite.Config
         /// </summary>
         private static string Replace(string key)
         {
+            key = key.Substring(CfgPrefix.Length);
+
             return key.Equals(CfgHome, StringComparison.OrdinalIgnoreCase) ? Configurator.CmdIgniteHome : key;
         }
     }
