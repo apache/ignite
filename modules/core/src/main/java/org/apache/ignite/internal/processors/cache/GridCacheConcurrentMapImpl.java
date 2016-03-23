@@ -211,7 +211,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Override public Set keySet(final CacheEntryPredicate... filter) {
+    @Override public Set<KeyCacheObject> keySet(final CacheEntryPredicate... filter) {
         final IgnitePredicate<KeyCacheObject> p = new IgnitePredicate<KeyCacheObject>() {
             @Override public boolean apply(KeyCacheObject key) {
                 return F.isAll(map.get(key), filter);
@@ -224,7 +224,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
             }
 
             @Override public int size() {
-                return map.size();
+                return F.size(iterator());
             }
 
             @Override public boolean contains(Object o) {
