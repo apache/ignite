@@ -127,7 +127,7 @@ angular
             // onLoad callbacks.
             _.forEach(opts.callbacks, (cb) => {
                 if (angular.isFunction(cb))
-                    cb(acee)
+                    cb(acee);
             });
         };
 

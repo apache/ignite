@@ -188,8 +188,31 @@ mixin dropdown-multiple(lbl, model, name, placeholder, placeholderEmpty, options
             data-disabled='!#{options}.length'
         )
 
+//- Mixin for table text field.
+mixin table-text-field(field, items, valid, save, placeholder, newItem)
+    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
+    -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
+
+    -var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
+
+    -var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
+
+    ignite-form-field-input-text(
+        data-name=field
+        data-ng-model=field
+        data-ng-required='true'
+        data-placeholder=placeholder
+        data-ignite-unique=items
+        data-ignite-form-field-input-autofocus='true'
+        on-enter=onEnter
+        on-escape=onEscape
+        ng-blur=onBlur
+    )
+        block
+
 //- Mixin for table java class field.
-mixin table-java-class-field(field, items, save, newItem)
+mixin table-java-class-field(field, items, valid, save, newItem)
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
@@ -211,7 +234,7 @@ mixin table-java-class-field(field, items, save, newItem)
         block
 
 //- Mixin for table java package field.
-mixin table-java-package-field(field, items, save, newItem)
+mixin table-java-package-field(field, items, valid, save, newItem)
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
@@ -235,31 +258,8 @@ mixin table-java-package-field(field, items, save, newItem)
     )
         block
 
-//- Mixin for table text field.
-mixin table-text-field(field, items, save, placeholder, newItem)
-    -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
-    -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
-
-    -var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
-
-    -var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
-    -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
-
-    ignite-form-field-input-text(
-        data-name=field
-        data-ng-model=field
-        data-ng-required='true'
-        data-placeholder=placeholder
-        data-ignite-unique=items
-        data-ignite-form-field-input-autofocus='true'
-        on-enter=onEnter
-        on-escape=onEscape
-        ng-blur=onBlur
-    )
-        block
-
 //- Mixin for table address field.
-mixin table-address-field(field, items, save, newItem)
+mixin table-address-field(field, items, valid, save, newItem)
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
@@ -282,14 +282,15 @@ mixin table-address-field(field, items, save, newItem)
     )
         block
 
-//- Mixin for table save button.
+//-
+    Mixin for table save button.
+    "||" used instead of "&&" to workaround escaping of "&&" to "&amp;&amp;"
 mixin table-save-button(valid, save, newItem)
     -var reset = (newItem ? 'group.add = []' : 'field.edit = false')
-    -var onClick = valid + ' && ' + save + '; ' + valid  + ' && (' + reset + ');'
 
     i.fa.fa-floppy-o(
         ng-show=valid
-        ng-click=onClick
+        ng-click="!#{valid} || (#{save}); !#{valid} || (#{reset});"
         bs-tooltip
         data-title='Click icon or press [Enter] to save item'
     )
@@ -307,8 +308,8 @@ mixin table-remove-conditional-button(items, show, tip)
 mixin table-remove-button(items, tip)
     +table-remove-conditional-button(items, 'true', tip)
 
-//- Mixin for table feedback for unique validator.
-mixin table-error-feedback(visible, error, errorMessage)
+//- Mixin for feedback on specified error.
+mixin error-feedback(visible, error, errorMessage)
     i.fa.fa-exclamation-triangle.form-control-feedback(
         ng-if=visible
         bs-tooltip='"#{errorMessage}"'
@@ -316,6 +317,14 @@ mixin table-error-feedback(visible, error, errorMessage)
         ignite-error-message=errorMessage
     )
 
+//- Mixin for feedback on unique violation.
+mixin unique-feedback(visible, errorMessage)
+    i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-if=visible
+        bs-tooltip='"#{errorMessage}"'
+        ignite-error='igniteUnique'
+        ignite-error-message=errorMessage
+    )
 
 //- Mixin for cache mode.
 mixin cacheMode(lbl, model, name, placeholder)

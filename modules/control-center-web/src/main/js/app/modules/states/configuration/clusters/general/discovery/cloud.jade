@@ -63,9 +63,9 @@ div
                     span(ng-hide='field.edit')
                         a.labelFormField(ng-click='field.edit = true') {{ model }}
                     span(ng-if='field.edit' ng-init='#{field} = model')
-                        +table-text-field(field, regions, save, 'Region name', false)
+                        +table-text-field(field, regions, valid, save, 'Region name', false)
                             +table-save-button(valid, save, false)
-                            +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+                            +unique-feedback(unique, uniqueTip)
 
             .group-content(ng-repeat='field in group.add')
                 -var field = 'new'
@@ -74,9 +74,9 @@ div
                 -var save = regions + '.push(' + field + ')'
 
                 ignite-form-field(type='internal' name='Region')
-                    +table-text-field(field, regions, save, 'Region name', true)
+                    +table-text-field(field, regions, valid, save, 'Region name', true)
                         +table-save-button(valid, save, true)
-                        +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+                        +unique-feedback(unique, uniqueTip)
 
             .group-content-empty(ng-if='!(#{regions}.length) && !group.add.length')
                 | Not defined
@@ -106,9 +106,9 @@ div
                     span(ng-hide='field.edit')
                         a.labelFormField(ng-click='field.edit = true') {{ model }}
                     span(ng-if='field.edit' ng-init='#{field} = model')
-                        +table-text-field(field, zones, save, 'Zone name',false)
+                        +table-text-field(field, zones, valid, save, 'Zone name', false)
                             +table-save-button(valid, save, false)
-                            +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+                            +unique-feedback(unique, uniqueTip)
 
             .group-content(ng-repeat='field in group.add')
                 -var field = 'new'
@@ -117,9 +117,9 @@ div
                 -var save = zones + '.push(' + field + ')'
 
                 ignite-form-field(type='internal' name='Zone')
-                    +table-text-field(field, zones, save, 'Zone name',true)
+                    +table-text-field(field, zones, valid, save, 'Zone name', true)
                         +table-save-button(valid, save, true)
-                        +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+                        +unique-feedback(unique, uniqueTip)
 
             .group-content-empty(ng-if='!(#{zones}.length) && !group.add.length')
                 | Not defined

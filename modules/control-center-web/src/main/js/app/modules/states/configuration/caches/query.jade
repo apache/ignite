@@ -63,9 +63,9 @@ form.panel.panel-default(name='query' novalidate)
                                 span(ng-hide='field.edit')
                                     a.labelFormField(ng-click='field.edit = true') {{ model }}
                                 span(ng-if='field.edit' ng-init='#{field} = model')
-                                    +table-java-class-field(field, sqlFunctionClasses, save, false)
+                                    +table-java-class-field(field, sqlFunctionClasses, valid, save, false)
                                         +table-save-button(valid, save, false)
-                                        +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+                                        +unique-feedback(unique, uniqueTip)
 
                         .group-content(ng-repeat='field in group.add')
                             -var field = 'new'
@@ -74,9 +74,9 @@ form.panel.panel-default(name='query' novalidate)
                             -var save = sqlFunctionClasses + '.push(' + field + ')'
 
                             ignite-form-field(type='internal' name='SQL function')
-                                +table-java-class-field(field, sqlFunctionClasses, save, true)
+                                +table-java-class-field(field, sqlFunctionClasses, valid, save, true)
                                     +table-save-button(valid, save, true)
-                                    +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+                                    +unique-feedback(unique, uniqueTip)
 
                         .group-content-empty(ng-if='!(#{sqlFunctionClasses}.length) && !group.add.length')
                             | Not defined

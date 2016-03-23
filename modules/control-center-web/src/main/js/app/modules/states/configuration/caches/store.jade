@@ -50,7 +50,7 @@ mixin dialect(lbl, model, name, tipTitle, genericDialectName, placeholder)
             data-placeholder=placeholder
         )
 
-mixin hibernateField(items, field, save, newItem)
+mixin hibernateField(items, field, valid, save, newItem)
     -var reset = (newItem ? 'group.add = []' : 'field.edit = false')
 
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
@@ -196,10 +196,10 @@ form.panel.panel-default(name='store' novalidate)
                                                 span(ng-hide='field.edit')
                                                     a.labelFormField(ng-click='field.edit = true') {{ model }}
                                                 span(ng-if='field.edit' ng-init='#{field} = model')
-                                                    +hibernateField(hibernateProperties, field, save, false)
+                                                    +hibernateField(hibernateProperties, field, valid, save, false)
                                                         +table-save-button(valid, save, false)
-                                                        +table-error-feedback(unique, 'ignitePropertyUnique', tipUnique)
-                                                        +table-error-feedback(unique, 'ignitePropertyValueSpecified', tipPropertySpecified)
+                                                        +error-feedback(unique, 'ignitePropertyUnique', tipUnique)
+                                                        +error-feedback(unique, 'ignitePropertyValueSpecified', tipPropertySpecified)
 
                                         .group-content(ng-repeat='field in group.add')
                                             -var field = 'new'
@@ -209,10 +209,10 @@ form.panel.panel-default(name='store' novalidate)
                                             -var save = hibernateProperties + '.push(' + field + ')'
 
                                             ignite-form-field(type='internal' name='Hibernate property')
-                                                +hibernateField(hibernateProperties, field, save, true)
+                                                +hibernateField(hibernateProperties, field, valid, save, true)
                                                     +table-save-button(valid, save, true)
-                                                    +table-error-feedback(unique, 'ignitePropertyUnique', tipUnique)
-                                                    +table-error-feedback(unique, 'ignitePropertyValueSpecified', tipPropertySpecified)
+                                                    +error-feedback(unique, 'ignitePropertyUnique', tipUnique)
+                                                    +error-feedback(unique, 'ignitePropertyValueSpecified', tipPropertySpecified)
                                         .group-content-empty(ng-if='!(#{hibernateProperties}.length) && !group.add.length')
                                             | Not defined
 

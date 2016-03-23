@@ -84,11 +84,11 @@ form.panel.panel-default(name='deployment' novalidate)
                                 span(ng-hide='field.edit')
                                     a.labelFormField(ng-click='#{enabled} && (field.edit = true)') {{ model }}
                                 span(ng-if='field.edit' ng-init='#{field} = model')
-                                    +table-java-package-field(field, exclude, save, false)
+                                    +table-java-package-field(field, exclude, valid, save, false)
                                         +table-save-button(valid, save, false)
-                                        +table-error-feedback(unique, 'igniteUnique', uniqueTip)
-                                        +table-error-feedback(javaPackageName, 'javaPackageName', tipJavaPackageName)
-                                        +table-error-feedback(javaKeywords, 'javaKeywords', tipJavaKeyWord)
+                                        +unique-feedback(unique, uniqueTip)
+                                        +error-feedback(javaPackageName, 'javaPackageName', tipJavaPackageName)
+                                        +error-feedback(javaKeywords, 'javaKeywords', tipJavaKeyWord)
 
                         .group-content(ng-repeat='field in group.add')
                             -var field = 'new'
@@ -99,11 +99,11 @@ form.panel.panel-default(name='deployment' novalidate)
                             -var save = exclude + '.push(' + field + ')'
 
                             ignite-form-field(type='internal' name='Package name')
-                                +table-java-package-field(field, exclude, save, true)
+                                +table-java-package-field(field, exclude, valid, save, true)
                                     +table-save-button(valid, save, true)
-                                    +table-error-feedback(unique, 'igniteUnique', uniqueTip)
-                                    +table-error-feedback(javaPackageName, 'javaPackageName', tipJavaPackageName)
-                                    +table-error-feedback(javaKeywords, 'javaKeywords', tipJavaKeyWord)
+                                    +unique-feedback(unique, uniqueTip)
+                                    +error-feedback(javaPackageName, 'javaPackageName', tipJavaPackageName)
+                                    +error-feedback(javaKeywords, 'javaKeywords', tipJavaKeyWord)
 
 
                         .group-content-empty(ng-if='!(#{exclude}.length) && !group.add.length')

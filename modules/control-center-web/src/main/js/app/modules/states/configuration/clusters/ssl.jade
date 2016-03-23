@@ -72,9 +72,9 @@ form.panel.panel-default(name='sslConfiguration' novalidate)
                                 span(ng-hide='field.edit')
                                     a.labelFormField(ng-click='#{enabled} && (field.edit = true)') {{ model }}
                                 span(ng-if='field.edit' ng-init='#{field} = model')
-                                    +table-java-class-field(field, trust, save, false)
+                                    +table-java-class-field(field, trust, valid, save, false)
                                         +table-save-button(valid, save, false)
-                                        +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+                                        +unique-feedback(unique, uniqueTip)
 
                         .group-content(ng-repeat='field in group.add')
                             -var field = 'new'
@@ -83,9 +83,9 @@ form.panel.panel-default(name='sslConfiguration' novalidate)
                             -var save = trust + '.push(' + field + ')'
 
                             ignite-form-field(type='internal' name='Trust manager')
-                                +table-java-class-field(field, trust, save, true)
+                                +table-java-class-field(field, trust, valid, save, true)
                                     +table-save-button(valid, save, true)
-                                    +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+                                    +unique-feedback(unique, uniqueTip)
 
                         .group-content-empty(ng-if='!(#{trust}.length) && !group.add.length')
                             | Not defined

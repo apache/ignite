@@ -76,9 +76,9 @@ div
                     span(ng-hide='field.edit')
                         a.labelFormField(ng-click='field.edit = true') {{ model }}
                     span(ng-if='field.edit' ng-init='#{field} = model')
-                        +table-address-field(field, addresses, save, false)
+                        +table-address-field(field, addresses, valid, save, false)
                             +table-save-button(valid, save, false)
-                            +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+                            +unique-feedback(unique, uniqueTip)
 
             .group-content(ng-repeat='field in group.add')
                 -var field = 'new'
@@ -87,9 +87,9 @@ div
                 -var save = addresses + '.push(' + field + ')'
 
                 ignite-form-field(type='internal' name='Address')
-                    +table-address-field(field, addresses, save, true)
+                    +table-address-field(field, addresses, valid, save, true)
                         +table-save-button(valid, save, true)
-                        +table-error-feedback(unique, 'igniteUnique', uniqueTip)
+                        +unique-feedback(unique, uniqueTip)
 
             .group-content-empty(ng-if='!(#{addresses}.length) && !group.add.length')
                 | Not defined
