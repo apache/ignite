@@ -42,7 +42,7 @@ namespace Apache.Ignite.Config
         private const string CmdSuppressWarn = "SuppressWarnings";
 
         /** Command line argument: JVM option prefix. */
-        private const string CmdJvmOpt = "J";
+        public const string CmdJvmOpt = "J";
 
         /** Command line argument: assembly. */
         private const string CmdAssembly = "Assembly";

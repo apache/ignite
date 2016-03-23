@@ -31,7 +31,10 @@ namespace Apache.Ignite.Config
         private const string CfgPrefix = "Ignite.";
 
         /** Configuration property: Ignite home. */
-        private static readonly string CfgHome = "Home";
+        private const string CfgHome = "Home";
+
+        /** Configuration property: JVM option prefix. */
+        private const string CfgJvmOptPrefix = "JvmOption";
 
         /// <summary>
         /// Gets the arguments in split form.
@@ -50,7 +53,10 @@ namespace Apache.Ignite.Config
         {
             key = key.Substring(CfgPrefix.Length);
 
-            return key.Equals(CfgHome, StringComparison.OrdinalIgnoreCase) ? Configurator.CmdIgniteHome : key;
+            key = key.Equals(CfgHome, StringComparison.OrdinalIgnoreCase) ? Configurator.CmdIgniteHome : key;
+            key = key.Equals(CfgJvmOptPrefix, StringComparison.OrdinalIgnoreCase) ? Configurator.CmdJvmOpt : key;
+
+            return key;
         }
     }
 }
