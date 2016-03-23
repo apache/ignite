@@ -688,7 +688,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      */
     @IgniteSpiConfiguration(optional = true)
     public TcpDiscoverySpi setLocalPortRange(int locPortRange) {
-        this.locPortRange = locPortRange == 0 ? 1 : locPortRange;
+        this.locPortRange = locPortRange;
 
         return this;
     }

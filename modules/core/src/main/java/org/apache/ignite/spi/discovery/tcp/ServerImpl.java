@@ -4854,7 +4854,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             setPriority(spi.threadPri);
 
-            for (port = spi.locPort; port < spi.locPort + spi.locPortRange; port++) {
+            int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
+            for (port = spi.locPort; port <= lastPort; port++) {
                 try {
                     if (spi.isSslEnabled())
                         srvrSock = spi.sslSrvSockFactory.createServerSocket(port, 0, spi.locHost);
@@ -4878,7 +4879,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             // If free port wasn't found.
             throw new IgniteSpiException("Failed to bind TCP server socket (possibly all ports in range " +
-                "are in use) [firstPort=" + spi.locPort + ", lastPort=" + (spi.locPort + spi.locPortRange - 1) +
+                "are in use) [firstPort=" + spi.locPort + ", lastPort=" + lastPort +
                 ", addr=" + spi.locHost + ']');
         }
 
