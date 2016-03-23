@@ -179,7 +179,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
                     }
                 }, "stop-thread");
 
-                int increments = checkIncrement(null, iter % 2 == 2, fut, latch);
+                int increments = checkIncrement(cacheName, iter % 2 == 2, fut, latch);
 
                 assert increments >= INCREMENTS;
 
@@ -187,14 +187,14 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
 
                 for (int i = 0; i < KEYS; i++) {
                     for (int g = 0; g < NODES; g++) {
-                        Set<String> vals = ignite(g).<String, Set<String>>cache(null).get("set-" + i);
+                        Set<String> vals = ignite(g).<String, Set<String>>cache(cacheName).get("set-" + i);
 
                         assertNotNull(vals);
                         assertEquals(increments, vals.size());
                     }
                 }
 
-                ignite(0).cache(null).removeAll();
+                ignite(0).cache(cacheName).removeAll();
             }
         }
         finally {
