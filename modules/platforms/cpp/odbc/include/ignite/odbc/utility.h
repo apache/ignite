@@ -174,20 +174,6 @@ namespace ignite
          * @return Standard string containing the same data.
          */
         std::string SqlStringToString(const unsigned char* sqlStr, int32_t sqlStrLen);
-
-        /**
-         * Convert Date type to standard C type time_t.
-         *
-         * @return Corresponding value of time_t.
-         */
-        time_t DateToCTime(const Date& date);
-
-        /**
-         * Convert Timestamp type to standard C type time_t.
-         *
-         * @return Corresponding value of time_t.
-         */
-        time_t TimestampToCTime(const Timestamp& ts);
     }
 }
 

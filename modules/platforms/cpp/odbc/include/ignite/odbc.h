@@ -20,7 +20,6 @@
 
 #include "ignite/odbc/system/odbc_constants.h"
 
-
 /**
  * @file odbc.h
  *

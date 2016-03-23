@@ -53,7 +53,6 @@ import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_CREATED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_DELETED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_READ;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_WRITE;
-import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_PURGED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_RENAMED;
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
@@ -425,7 +424,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
     public void testTwoFiles() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
-        final int evtsCnt = 4 + 3 + 2 + 2;
+        final int evtsCnt = 4 + 3 + 1 + 1;
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
@@ -495,11 +494,9 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         assertEquals(0, evt.dataSize());
 
         assertOneToOne(
-            evtList.subList(7, 11),
+            evtList.subList(7, 9),
             new EventPredicate(EVT_IGFS_FILE_DELETED, new IgfsPath("/dir1/file1")),
-            new EventPredicate(EVT_IGFS_FILE_PURGED, new IgfsPath("/dir1/file1")),
-            new EventPredicate(EVT_IGFS_FILE_DELETED, new IgfsPath("/dir1/file2")),
-            new EventPredicate(EVT_IGFS_FILE_PURGED, new IgfsPath("/dir1/file2"))
+            new EventPredicate(EVT_IGFS_FILE_DELETED, new IgfsPath("/dir1/file2"))
         );
     }
 
@@ -683,7 +680,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
     public void testSingleFileOverwrite() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
-        final int evtsCnt = 1 + 4 + 1;
+        final int evtsCnt = 1 + 3 + 1;
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
@@ -733,27 +730,6 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         assertOneToOne(
             evtList.subList(3, evtsCnt),
-            new P1<Event>() {
-                @Override public boolean apply(Event e) {
-                    IgfsEvent e0 = (IgfsEvent)e;
-
-                    return e0.type() == EVT_IGFS_FILE_DELETED && e0.path().equals(file1);
-                }
-            },
-            new P1<Event>() {
-                @Override public boolean apply(Event e) {
-                    IgfsEvent e0 = (IgfsEvent)e;
-
-                    return e0.type() == EVT_IGFS_FILE_PURGED && e0.path().equals(file1);
-                }
-            },
-            new P1<Event>() {
-                @Override public boolean apply(Event e) {
-                    IgfsEvent e0 = (IgfsEvent)e;
-
-                    return e0.type() == EVT_IGFS_FILE_CREATED && e0.path().equals(file1);
-                }
-            },
             new P1<Event>() {
                 @Override public boolean apply(Event e) {
                     IgfsEvent e0 = (IgfsEvent)e;

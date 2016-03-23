@@ -125,16 +125,6 @@ namespace ignite
 
             return res;
         }
-
-        time_t DateToCTime(const Date& date)
-        {
-            return static_cast<time_t>(date.GetSeconds());
-        }
-
-        time_t TimestampToCTime(const Timestamp& ts)
-        {
-            return static_cast<time_t>(ts.GetSeconds());
-        }
     }
 }
 

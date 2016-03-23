@@ -172,8 +172,11 @@ struct QueriesTestSuiteFixture
     {
         SQLRETURN ret;
 
-        testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456)));
-        testCache.Put(2, TestType(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), MakeDate(1976, 1, 12), MakeTimestamp(1978, 8, 21, 23, 13, 45, 456)));
+        TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456));
+        TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), MakeDate(1976, 1, 12), MakeTimestamp(1978, 8, 21, 23, 13, 45, 456));
+
+        testCache.Put(1, in1);
+        testCache.Put(2, in2);
 
         const size_t columnsCnt = 11;
 
@@ -318,8 +321,11 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 {
     SQLRETURN ret;
 
-    testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456)));
-    testCache.Put(2, TestType(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), MakeDate(1976, 1, 12), MakeTimestamp(1978, 8, 21, 23, 13, 45, 999999999)));
+    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456));
+    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), MakeDate(1976, 1, 12), MakeTimestamp(1978, 8, 21, 23, 13, 45, 999999999));
+
+    testCache.Put(1, in1);
+    testCache.Put(2, in2);
 
     const size_t columnsCnt = 11;
 
@@ -408,7 +414,9 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 {
     SQLRETURN ret;
 
-    testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456)));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456));
+
+    testCache.Put(1, in);
 
     const size_t columnsCnt = 11;
 
@@ -467,7 +475,9 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 {
     SQLRETURN ret;
 
-    testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456)));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456));
+
+    testCache.Put(1, in);
 
     const size_t columnsCnt = 11;
 
