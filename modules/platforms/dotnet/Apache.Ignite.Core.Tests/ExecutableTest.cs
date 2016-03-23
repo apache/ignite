@@ -18,7 +18,7 @@
 // ReSharper disable UnusedVariable
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Local
-#pragma warning disable 618
+//#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -29,7 +29,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Process;
-    using Microsoft.CSharp;
     using NUnit.Framework;
 
     /// <summary>
@@ -327,21 +326,15 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="outputPath"></param>
         private static void GenerateDll(string outputPath)
         {
-            var codeProvider = new CSharpCodeProvider();
-
-#pragma warning disable 0618
-
-            var icc = codeProvider.CreateCompiler();
-
-#pragma warning restore 0618
-
-            var parameters = new CompilerParameters();
-            parameters.GenerateExecutable = false;
-            parameters.OutputAssembly = outputPath;
+            var parameters = new CompilerParameters
+            {
+                GenerateExecutable = false,
+                OutputAssembly = outputPath
+            };
 
             var src = "namespace Apache.Ignite.Client.Test { public class Foo {}}";
 
-            var results = icc.CompileAssemblyFromSource(parameters, src);
+            var results = CodeDomProvider.CreateProvider("CSharp").CompileAssemblyFromSource(parameters, src);
 
             Assert.False(results.Errors.HasErrors);
         }
