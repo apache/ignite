@@ -102,13 +102,14 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
     /** {@inheritDoc} */
     @Override public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(final AffinityTopologyVersion topVer,
-        final KeyCacheObject key,
-        @Nullable final CacheObject val, final boolean create) {
+        KeyCacheObject key, @Nullable final CacheObject val, final boolean create) {
+
+        final KeyCacheObject cacheKey = (KeyCacheObject)ctx.cacheObjects().prepareForCache(key, ctx);
 
         final AtomicReference<GridCacheMapEntry> created = new AtomicReference<>();
         final AtomicReference<GridCacheMapEntry> doomed = new AtomicReference<>();
 
-        GridCacheMapEntry cur = map.compute(key, new ConcurrentHashMap8.BiFun<KeyCacheObject, GridCacheMapEntry, GridCacheMapEntry>() {
+        GridCacheMapEntry cur = map.compute(cacheKey, new ConcurrentHashMap8.BiFun<KeyCacheObject, GridCacheMapEntry, GridCacheMapEntry>() {
             @Override public GridCacheMapEntry apply(KeyCacheObject object, GridCacheMapEntry entry) {
                 GridCacheMapEntry cur = null;
                 GridCacheMapEntry created0 = null;
@@ -116,14 +117,14 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
                 if (entry == null) {
                     if (create)
-                        entry = cur = created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                        entry = cur = created0 = factory.create(ctx, topVer, cacheKey, cacheKey.hashCode(), val);
                 }
                 else {
                     if (entry.obsolete()) {
                         doomed0 = entry;
 
                         if (create)
-                            cur = created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+                            cur = created0 = factory.create(ctx, topVer, cacheKey, cacheKey.hashCode(), val);
                     }
                     else
                         cur = entry;
