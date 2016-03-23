@@ -432,7 +432,10 @@ namespace ignite
             /**
              * Constructor.
              */
-            HandshakeResponse() : accepted(false)
+            HandshakeResponse() :
+                accepted(false),
+                protoVerSince(),
+                currentVer()
             {
                 // No-op.
             }
@@ -480,8 +483,12 @@ namespace ignite
             virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
             {
                 accepted = reader.ReadBool();
-                utility::ReadString(reader, protoVerSince);
-                utility::ReadString(reader, currentVer);
+
+                if (!accepted)
+                {
+                    utility::ReadString(reader, protoVerSince);
+                    utility::ReadString(reader, currentVer);
+                }
             }
 
             /** Handshake accepted. */

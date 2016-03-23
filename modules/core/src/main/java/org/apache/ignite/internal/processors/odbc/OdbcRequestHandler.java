@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -111,13 +112,15 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
-        long lattestVersion = OdbcMessageParser.PROTOCOL_VERSION;
-        boolean accepted = req.version() == lattestVersion;
+        long lattestVer = OdbcMessageParser.PROTO_VER;
+        boolean accepted = req.version() == lattestVer;
 
-        String lattestVersionSince = OdbcMessageParser.PROTOCOL_VERSION_SINCE;
-        String currentVersion = IgniteVersionUtils.VER_STR;
+        String lattestVerSince = OdbcMessageParser.PROTO_VER_SINCE;
 
-        OdbcHandshakeResult res = new OdbcHandshakeResult(accepted, lattestVersionSince, currentVersion);
+        IgniteProductVersion ver = ctx.grid().version();
+        String currentVerStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
+
+        OdbcHandshakeResult res = new OdbcHandshakeResult(accepted, lattestVerSince, currentVerStr);
 
         return new OdbcResponse(res);
     }

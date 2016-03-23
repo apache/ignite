@@ -41,7 +41,7 @@ namespace ignite
             friend class Environment;
         public:
             /** ODBC communication protocol version. */
-            enum { PROTOCOL_VERSION = 2 };
+            enum { PROTOCOL_VERSION = 1 };
 
             /**
              * Apache Ignite version when the current ODBC communication

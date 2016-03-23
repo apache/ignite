@@ -35,10 +35,10 @@ import java.util.Collection;
  */
 public class OdbcMessageParser {
     /** Current ODBC communication protocol version. */
-    public static final long PROTOCOL_VERSION = 1;
+    public static final long PROTO_VER = 1;
 
     /** Apache Ignite version when ODBC communication protocol version has been introduced. */
-    public static final String PROTOCOL_VERSION_SINCE = "1.6.0";
+    public static final String PROTO_VER_SINCE = "1.6.0";
 
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
@@ -50,7 +50,7 @@ public class OdbcMessageParser {
     private final IgniteLogger log;
 
     /** Protocol version confirmation flag. */
-    private boolean versionConfirmed = false;
+    private boolean verConfirmed = false;
 
     /**
      * @param ctx Context.
@@ -80,7 +80,7 @@ public class OdbcMessageParser {
 
         // This is a special case because we can not decode protocol messages until
         // we has not confirmed that the remote client uses the same protocol version.
-        if (!versionConfirmed) {
+        if (!verConfirmed) {
             if (cmd == OdbcRequest.HANDSHAKE) {
                 long version = reader.readLong();
 
@@ -186,11 +186,14 @@ public class OdbcMessageParser {
             if (log.isDebugEnabled())
                 log.debug("Handshake result: " + (res.accepted() ? "accepted" : "rejected"));
 
-            versionConfirmed = res.accepted();
+            verConfirmed = res.accepted();
 
             writer.writeBoolean(res.accepted());
-            writer.writeString(res.protoVerSince());
-            writer.writeString(res.currentVer());
+
+            if (!res.accepted()) {
+                writer.writeString(res.protoVerSince());
+                writer.writeString(res.currentVer());
+            }
         }
         else if (res0 instanceof OdbcQueryExecuteResult) {
             OdbcQueryExecuteResult res = (OdbcQueryExecuteResult) res0;
