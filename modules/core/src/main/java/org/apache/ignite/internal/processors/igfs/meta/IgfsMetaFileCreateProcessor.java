@@ -116,20 +116,24 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(createTime);
-        U.writeStringMap(out, props);
+
+        IgfsUtils.writeProperties(out, props);
+
         out.writeInt(blockSize);
-        out.writeObject(affKey);
-        out.writeObject(lockId);
+        U.writeGridUuid(out, affKey);
+        U.writeGridUuid(out, lockId);
         out.writeBoolean(evictExclude);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         createTime = in.readLong();
-        props = U.readStringMap(in);
+
+        props = IgfsUtils.readProperties(in);
+
         blockSize = in.readInt();
-        affKey = (IgniteUuid)in.readObject();
-        lockId = (IgniteUuid)in.readObject();
+        affKey = U.readGridUuid(in);
+        lockId = U.readGridUuid(in);
         evictExclude = in.readBoolean();
     }
 
