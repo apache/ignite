@@ -40,13 +40,14 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 CacheConfiguration = new[]
                 {
                     new CacheConfiguration(cacheName), 
-                }
+                },
+                GridName = "gridWithCache"
             };
 
-            using (var grid = Ignition.Start(cacheNodeCfg))
+            using (var gridWithCache = Ignition.Start(cacheNodeCfg))
             using (var gridNoCache = Ignition.Start(baseCfg))
             {
-                Assert.IsNotNull(grid.GetCache<int, int>(cacheName));
+                Assert.IsNotNull(gridWithCache.GetCache<int, int>(cacheName));
                 Assert.IsNull(gridNoCache.GetCache<int, int>(cacheName));
             }
         }
