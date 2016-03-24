@@ -715,7 +715,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                         ", tx=" + this + ']');
 
                 // Replace the entry.
-                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
+                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), topologyVersion()));
             }
         }
     }

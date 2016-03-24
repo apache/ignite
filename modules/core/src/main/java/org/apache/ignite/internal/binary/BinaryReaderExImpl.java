@@ -233,8 +233,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (typeId0 == UNREGISTERED_TYPE_ID) {
                 int off = in.position();
 
-                // Registers class by type ID, at least locally if the cache is not ready yet.
-                typeId = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false).typeId();
+                typeId = ctx.typeId(BinaryUtils.doReadClassName(in));
 
                 int clsNameLen = in.position() - off;
 

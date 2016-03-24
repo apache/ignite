@@ -586,7 +586,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    entry.cached(cacheCtx.near().entryEx(entry.key()));
+                    entry.cached(cacheCtx.near().entryEx(entry.key(), topVer));
                 }
             }
         }

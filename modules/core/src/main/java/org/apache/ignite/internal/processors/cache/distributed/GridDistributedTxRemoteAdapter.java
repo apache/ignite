@@ -317,7 +317,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     log.debug("Replacing obsolete entry in remote transaction [entry=" + entry + ", tx=" + this + ']');
 
                 // Replace the entry.
-                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
+                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), topologyVersion()));
             }
         }
     }
@@ -441,7 +441,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         if (log.isDebugEnabled())
                             log.debug("Got removed entry while committing (will retry): " + txEntry);
 
-                        txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
+                        txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), topologyVersion()));
                     }
                 }
             }
@@ -471,7 +471,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     GridCacheEntryEx cached = txEntry.cached();
 
                                     if (cached == null)
-                                        txEntry.cached(cached = cacheCtx.cache().entryEx(txEntry.key()));
+                                        txEntry.cached(cached = cacheCtx.cache().entryEx(txEntry.key(), topologyVersion()));
 
                                     if (near() && cacheCtx.dr().receiveEnabled()) {
                                         cached.markObsolete(xidVer);
@@ -664,7 +664,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                         log.debug("Attempting to commit a removed entry (will retry): " + txEntry);
 
                                     // Renew cached entry.
-                                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()));
+                                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key(), topologyVersion()));
                                 }
                             }
                         }

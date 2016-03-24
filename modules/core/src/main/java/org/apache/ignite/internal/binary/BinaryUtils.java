@@ -1406,7 +1406,7 @@ public class BinaryUtils {
      * @param in Input stream.
      * @return Class name.
      */
-    private static String doReadClassName(BinaryInputStream in) {
+    public static String doReadClassName(BinaryInputStream in) {
         byte flag = in.readByte();
 
         if (flag != GridBinaryMarshaller.STRING)

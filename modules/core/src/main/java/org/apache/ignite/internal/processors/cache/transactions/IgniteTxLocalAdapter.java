@@ -479,7 +479,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             log.debug("Got removed entry, will retry: " + key);
 
                         if (txEntry != null)
-                            txEntry.cached(cacheCtx.cache().entryEx(key));
+                            txEntry.cached(cacheCtx.cache().entryEx(key, topologyVersion()));
                     }
                 }
             }
@@ -1144,7 +1144,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 if (log.isDebugEnabled())
                                     log.debug("Got removed entry during transaction commit (will retry): " + txEntry);
 
-                                txEntry.cached(entryEx(cacheCtx, txEntry.txKey()));
+                                txEntry.cached(entryEx(cacheCtx, txEntry.txKey(), topologyVersion()));
                             }
                         }
                     }
@@ -1941,7 +1941,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         log.debug("Got removed exception in get postLock (will retry): " +
                                             cached);
 
-                                    txEntry.cached(entryEx(cacheCtx, txKey));
+                                    txEntry.cached(entryEx(cacheCtx, txKey, topologyVersion()));
                                 }
                             }
                         }
@@ -2947,7 +2947,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in putAllAsync method (will retry): " + cached);
 
-                    txEntry.cached(entryEx(cached.context(), txEntry.txKey()));
+                    txEntry.cached(entryEx(cached.context(), txEntry.txKey(), topologyVersion()));
                 }
             }
         }

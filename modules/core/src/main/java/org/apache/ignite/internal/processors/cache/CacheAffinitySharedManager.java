@@ -68,12 +68,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     public static final IgniteProductVersion DELAY_AFF_ASSIGN_SINCE = IgniteProductVersion.fromString("1.6.0");
 
     /** */
-    public static final boolean LOG_AFF_CHANGE = true;
-
-    /** */
-    public static final String LOG_AFF_CACHE = "aff_log_cache";
-
-    /** */
     private RebalancingInfo rebalancingInfo;
 
     /** Affinity information for all registered caches. */
@@ -199,12 +193,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         try {
-            if (msg != null) {
-                if (LOG_AFF_CHANGE)
-                    log.info("Rebalance finished (onCacheStopped), send affinity change message: " + msg);
-
+            if (msg != null)
                 cctx.discovery().sendCustomEvent(msg);
-            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send affinity change message.", e);
@@ -253,11 +243,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         else
                             it.remove();
                     }
-
-                    if (LOG_AFF_CHANGE) {
-                        logAffinityChange(log, cache.name(), "Cache rebalance state [cache=" + cache.name() +
-                            ", rebalanced=" + rebalanced + ']');
-                    }
                 }
 
                 if (rebalanced) {
@@ -273,12 +258,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         try {
-            if (msg != null) {
-                if (LOG_AFF_CHANGE)
-                    log.info("Rebalance finished (checkRebalanceState), send affinity change message: " + msg);
-
+            if (msg != null)
                 cctx.discovery().sendCustomEvent(msg);
-            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send affinity change message.", e);
@@ -306,16 +287,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         return new CacheAffinityChangeMessage(rebalancingInfo.topVer, assignmentsChange);
-    }
-
-    /**
-     * @param log Logger.
-     * @param cacheName Cache name.
-     * @param msg Message.
-     */
-    public static void logAffinityChange(IgniteLogger log, String cacheName, String msg) {
-        if (F.eq(cacheName, LOG_AFF_CACHE))
-            log.info(msg);
     }
 
     /**
@@ -611,13 +582,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         Integer part = e.getKey();
 
                         List<ClusterNode> nodes = toNodes(topVer, e.getValue());
-
-                        if (LOG_AFF_CHANGE) {
-                            logAffinityChange(log, aff.cacheName(), "New assignment [cache=" + aff.cacheName() +
-                                    ", part=" + part +
-                                    ", cur=" + F.nodeIds(assignment.get(part)) +
-                                    ", new=" + F.nodeIds(nodes) + ']');
-                        }
 
                         assert !nodes.equals(assignment.get(part)) : "Assignment did not change " +
                             "[cache=" + aff.cacheName() +
@@ -916,14 +880,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             this.rebalancingInfo = rebalancingInfo != null && !rebalancingInfo.empty() ? rebalancingInfo : null;
 
-            if (LOG_AFF_CHANGE) {
-                if (crd) {
-                    RebalancingInfo info = this.rebalancingInfo;
+            RebalancingInfo info = this.rebalancingInfo;
 
-                    log.info("Computed new affinity after node join [topVer=" + fut.topologyVersion() +
-                        ", waitCaches=" + (info != null ? info.waitCaches.keySet() : null)+ ']');
-                }
-            }
+            log.info("Computed new affinity after node join [topVer=" + fut.topologyVersion() +
+                ", waitCaches=" + (info != null ? info.waitCaches.keySet() : null)+ ']');
         }
     }
 
@@ -1279,18 +1239,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 nodes0.add(node);
         }
 
-        if (rebalance != null) {
-            if (LOG_AFF_CHANGE) {
-                String cacheName = aff.cacheName();
-
-                logAffinityChange(log, cacheName, "Delayed primary assignment [cache=" + cacheName +
-                    ", part=" + part +
-                    ", curPrimary=" + curPrimary.id() +
-                    ", newNodes=" + F.nodeIds(newNodes) + ']');
-            }
-
+        if (rebalance != null)
             rebalance.add(aff.cacheId(), part, newNodes.get(0).id(), newNodes);
-        }
 
         return nodes0;
     }
@@ -1415,12 +1365,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             this.rebalancingInfo = !rebalancingInfo.empty() ? rebalancingInfo : null;
 
-            if (LOG_AFF_CHANGE) {
-                RebalancingInfo info = this.rebalancingInfo;
+            RebalancingInfo info = this.rebalancingInfo;
 
-                log.info("Computed new affinity after node left [topVer=" + topVer +
-                    ", waitCaches=" + (info != null ? info.waitCaches.keySet() : null)+ ']');
-            }
+            log.info("Computed new affinity after node left [topVer=" + topVer +
+                ", waitCaches=" + (info != null ? info.waitCaches.keySet() : null)+ ']');
         }
 
         return assignment;

@@ -36,7 +36,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
-import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -296,8 +295,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /**
-     * @param exchFut
-     * @param updateSeq
+     * @param exchFut Exchange future.
+     * @param updateSeq Update sequence.
      */
     private void initPartitions0(GridDhtPartitionsExchangeFuture exchFut, long updateSeq) {
         ClusterNode loc = cctx.localNode();
@@ -332,12 +331,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 for (int p = 0; p < num; p++) {
                     if (localNode(p, aff)) {
                         GridDhtLocalPartition locPart = createPartition(p);
-
-                        if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-                            CacheAffinitySharedManager.logAffinityChange(log,
-                                cctx.name(),
-                                "Owned partition, first node [cache=" + cctx.name() + ", part=" + p + ']');
-                        }
 
                         boolean owned = locPart.own();
 
@@ -541,12 +534,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             // If there are no other owners, then become an owner.
                             if (F.isEmpty(owners)) {
-                                if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-                                    CacheAffinitySharedManager.logAffinityChange(log,
-                                        cctx.name(),
-                                        "Owned partition, no owners (exchange) [cache=" + cctx.name() + ", part=" + p + ']');
-                                }
-
                                 boolean owned = locPart.own();
 
                                 assert owned : "Failed to own partition [cacheName" + cctx.name() + ", locPart=" +

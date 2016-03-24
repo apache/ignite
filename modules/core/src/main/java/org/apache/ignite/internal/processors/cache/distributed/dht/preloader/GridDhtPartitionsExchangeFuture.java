@@ -952,10 +952,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
-    private GridDhtPartitionsFullMessage createPartitionsMessage(Collection<ClusterNode> nodes, GridDhtPartitionExchangeId id) {
-        GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(id,
+    /**
+     * @param nodes Target nodes.
+     * @return Message;
+     */
+    private GridDhtPartitionsFullMessage createPartitionsMessage(Collection<ClusterNode> nodes) {
+        GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchangeId(),
             lastVer.get(),
-            id.topologyVersion());
+            topologyVersion());
 
         boolean useOldApi = false;
 
@@ -970,7 +974,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (!cacheCtx.isLocal()) {
                 AffinityTopologyVersion startTopVer = cacheCtx.startTopologyVersion();
 
-                boolean ready = startTopVer == null || startTopVer.compareTo(id.topologyVersion()) <= 0;
+                boolean ready = startTopVer == null || startTopVer.compareTo(topologyVersion()) <= 0;
 
                 if (ready) {
                     GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
@@ -997,12 +1001,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /**
      * @param nodes Nodes.
-     * @param id ID.
      * @throws IgniteCheckedException If failed.
      */
-    private void sendAllPartitions(Collection<ClusterNode> nodes, GridDhtPartitionExchangeId id)
-        throws IgniteCheckedException {
-        GridDhtPartitionsFullMessage m = createPartitionsMessage(nodes, id);
+    private void sendAllPartitions(Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        GridDhtPartitionsFullMessage m = createPartitionsMessage(nodes);
 
         if (log.isDebugEnabled())
             log.debug("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, F.node2id()) +
@@ -1232,7 +1234,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 Map<Integer, Map<Integer, List<UUID>>> assignmentChange =
                     cctx.affinity().initAffinityOnNodeLeft(this);
 
-                GridDhtPartitionsFullMessage m = createPartitionsMessage(null, exchId);
+                GridDhtPartitionsFullMessage m = createPartitionsMessage(null);
 
                 CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
 
@@ -1250,7 +1252,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
 
                 if (!nodes.isEmpty())
-                    sendAllPartitions(nodes, exchId);
+                    sendAllPartitions(nodes);
 
                 onDone(exchangeId().topologyVersion());
             }
@@ -1269,7 +1271,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         try {
             if (n != null)
-                sendAllPartitions(F.asList(n), exchId);
+                sendAllPartitions(F.asList(n));
         }
         catch (IgniteCheckedException e) {
             if (e instanceof ClusterTopologyCheckedException || !cctx.discovery().alive(n)) {
@@ -1534,9 +1536,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         if (crd0 == null) {
                             assert cctx.kernalContext().clientNode() || cctx.localNode().isDaemon() : cctx.localNode();
 
-                            ClusterTopologyCheckedException err = new ClusterTopologyCheckedException("Failed to " +
-                                "wait for exchange future, all server nodes left.");
-
                             List<ClusterNode> empty = Collections.emptyList();
 
                             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
@@ -1548,7 +1547,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 cacheCtx.affinity().affinityCache().initialize(topologyVersion(), affAssignment);
                             }
 
-                            onDone(err);
+                            onDone(topologyVersion());
 
                             return;
                         }

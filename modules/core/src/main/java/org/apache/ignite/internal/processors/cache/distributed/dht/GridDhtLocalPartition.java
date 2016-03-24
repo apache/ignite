@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
@@ -143,12 +142,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
 
         rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
-
-        if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-            CacheAffinitySharedManager.logAffinityChange(log,
-                cctx.name(),
-                "Created partition [cache=" + cctx.name() + ", part=" + id + ']');
-        }
     }
 
     /**
@@ -477,12 +470,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 if (log.isDebugEnabled())
                     log.debug("Moved partition to RENTING state: " + this);
 
-                if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-                    CacheAffinitySharedManager.logAffinityChange(log,
-                        cctx.name(),
-                        "Moved partition to RENTING state [cache=" + cctx.name() + ", part=" + id + ']');
-                }
-
                 // Evict asynchronously, as the 'rent' method may be called
                 // from within write locks on local partition.
                 tryEvictAsync(updateSeq);
@@ -507,12 +494,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             casState(reservations, EVICTED)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
-
-            if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-                CacheAffinitySharedManager.logAffinityChange(log,
-                    cctx.name(),
-                    "Evicted partition [cache=" + cctx.name() + ", part=" + id + ']');
-            }
 
             clearSwap();
 
@@ -560,12 +541,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         if (map.isEmpty() && casState(reservations, EVICTED)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
-
-            if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-                CacheAffinitySharedManager.logAffinityChange(log,
-                    cctx.name(),
-                    "Evicted partition [cache=" + cctx.name() + ", part=" + id + ']');
-            }
 
             if (!GridQueryProcessor.isEnabled(cctx.config()))
                 clearSwap();

@@ -222,7 +222,23 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.TYPE_ID_POS);
+        int off = start + GridBinaryMarshaller.TYPE_ID_POS;
+
+        int typeId = BinaryPrimitives.readInt(arr, off);
+
+        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
+            off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
+
+            assert arr[off] == GridBinaryMarshaller.STRING : arr[off];
+
+            int len = BinaryPrimitives.readInt(arr, ++off);
+
+            String clsName = new String(arr, off + 4, len, UTF_8);
+
+            typeId = ctx.typeId(clsName);
+        }
+
+        return typeId;
     }
 
     /** {@inheritDoc} */

@@ -126,7 +126,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                 break;
                             }
                             catch (GridCacheEntryRemovedException e) {
-                                entry = ctx.cache().entryEx(entry.key());
+                                entry = ctx.cache().entryEx(entry.key(), tx.topologyVersion());
 
                                 txEntry.cached(entry);
                             }
@@ -600,7 +600,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    entry.cached(cacheCtx.near().entryEx(entry.key()));
+                    entry.cached(cacheCtx.near().entryEx(entry.key(), topVer));
                 }
             }
         }

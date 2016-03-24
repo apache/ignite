@@ -75,6 +75,9 @@ public class DynamicCacheDescriptor {
     /** */
     private Integer cacheId;
 
+    /** */
+    private UUID rcvdFrom;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -266,6 +269,20 @@ public class DynamicCacheDescriptor {
      */
     public void receivedOnDiscovery(boolean rcvdOnDiscovery) {
         this.rcvdOnDiscovery = rcvdOnDiscovery;
+    }
+
+    /**
+     * @param nodeId ID of node provided cache configuration in discovery data.
+     */
+    public void receivedFrom(UUID nodeId) {
+        rcvdFrom = nodeId;;
+    }
+
+    /**
+     * @return ID of node provided cache configuration in discovery data.
+     */
+    @Nullable public UUID receivedFrom() {
+        return rcvdFrom;
     }
 
     /** {@inheritDoc} */

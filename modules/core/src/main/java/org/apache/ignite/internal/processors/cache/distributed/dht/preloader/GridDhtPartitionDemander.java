@@ -44,7 +44,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
-import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -367,15 +366,8 @@ public class GridDhtPartitionDemander {
         GridDhtPreloaderAssignments assigns
     ) throws IgniteCheckedException {
         for (Map.Entry<ClusterNode, GridDhtPartitionDemandMessage> e : assigns.entrySet()) {
-            if (topologyChanged(fut)) {
-                if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-                    CacheAffinitySharedManager.logAffinityChange(log,
-                        cctx.name(),
-                        "Cancel request partitions, topology changed: " + fut.topologyVersion());
-                }
-
+            if (topologyChanged(fut))
                 return false;
-            }
 
             final ClusterNode node = e.getKey();
 
@@ -424,14 +416,6 @@ public class GridDhtPartitionDemander {
 
                         synchronized (fut) {
                             if (!fut.isDone()) {
-                                if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-                                    CacheAffinitySharedManager.logAffinityChange(log,
-                                        cctx.name(),
-                                        "Send demand message [node=" + node.id() +
-                                            ", parts=" + initD.partitions() +
-                                            ", topVer=" + fut.topologyVersion());
-                                }
-
                                 // Future can be already cancelled at this moment and all failovers happened.
                                 // New requests will not be covered by failovers.
                                 cctx.io().sendOrderedMessage(node,
@@ -599,12 +583,6 @@ public class GridDhtPartitionDemander {
                             // If message was last for this partition,
                             // then we take ownership.
                             if (last) {
-                                if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-                                    CacheAffinitySharedManager.logAffinityChange(log,
-                                        cctx.name(),
-                                        "Owned partition, rebalanced [cache=" + cctx.name() + ", part=" + p + ']');
-                                }
-
                                 top.own(part);
 
                                 fut.partitionDone(id, p);
@@ -619,9 +597,8 @@ public class GridDhtPartitionDemander {
                         }
                     }
                     else {
-                        if (last) {
+                        if (last)
                             fut.partitionDone(id, p);
-                        }
 
                         if (log.isDebugEnabled())
                             log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
@@ -1370,12 +1347,6 @@ public class GridDhtPartitionDemander {
                                         // then we take ownership.
                                         if (last) {
                                             fut.partitionDone(node.id(), p);
-
-                                            if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-                                                CacheAffinitySharedManager.logAffinityChange(log,
-                                                    cctx.name(),
-                                                    "Owned partition, rebalanced [cache=" + cctx.name() + ", part=" + p + ']');
-                                            }
 
                                             top.own(part);
 

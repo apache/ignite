@@ -209,7 +209,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // Retry.
-                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()));
+                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key(), tx.topologyVersion()));
                 }
             }
         }

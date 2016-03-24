@@ -1584,6 +1584,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @param topVer Topology version.
      * @throws IgniteCheckedException If failed.
+     * @return Started caches descriptors.
      */
     public Collection<DynamicCacheDescriptor> startReceivedCaches(AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
@@ -1591,6 +1592,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
             if (desc.staticallyConfigured() && !desc.locallyConfigured()) {
+                if (desc.receivedFrom() != null && ctx.discovery().node(topVer, desc.receivedFrom()) == null)
+                    continue;
+
                 if (desc.onStart()) {
                     if (started == null)
                         started = new ArrayList<>();
@@ -1986,6 +1990,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                             if (joiningNodeId.equals(ctx.localNodeId()))
                                 desc.receivedOnDiscovery(true);
+
+                            desc.receivedFrom(joiningNodeId);
 
                             DynamicCacheDescriptor old = registeredCaches.put(maskNull(req.cacheName()), desc);
 

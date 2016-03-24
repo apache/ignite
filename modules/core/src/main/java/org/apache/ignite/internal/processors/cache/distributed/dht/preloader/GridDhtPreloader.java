@@ -281,24 +281,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityTopologyVersion topVer = assigns.topologyVersion();
 
-        if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-            CacheAffinitySharedManager.logAffinityChange(log,
-                cctx.name(),
-                "Create assignments [cache=" + cctx.name() + ", topVer=" + exchFut.topologyVersion() + ']');
-        }
-
         for (int p = 0; p < partCnt; p++) {
             if (cctx.shared().exchange().hasPendingExchange()) {
                 if (log.isDebugEnabled())
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
                         exchFut.exchangeId());
-
-                if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-                    CacheAffinitySharedManager.logAffinityChange(log,
-                        cctx.name(),
-                        "Skipping assignments creation, there are pending assignments [cache=" + cctx.name() +
-                            ", topVer=" + exchFut.topologyVersion() + ']');
-                }
 
                 assigns.cancelled(true);
 
@@ -322,12 +309,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 Collection<ClusterNode> picked = pickedOwners(p, topVer);
 
                 if (picked.isEmpty()) {
-                    if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-                        CacheAffinitySharedManager.logAffinityChange(log,
-                            cctx.name(),
-                            "Own partition, no owners (assign) [part=" + part + ", topVer=" + topVer + ']');
-                    }
-
                     top.own(part);
 
                     if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
@@ -343,14 +324,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 }
                 else {
                     ClusterNode n = F.rand(picked);
-
-                    if (CacheAffinitySharedManager.LOG_AFF_CHANGE) {
-                        CacheAffinitySharedManager.logAffinityChange(log,
-                            cctx.name(),
-                            "Added rebalance assign [part=" + part +
-                                ", node=" + n.id() +
-                                ", topVer=" + topVer + ']');
-                    }
 
                     GridDhtPartitionDemandMessage msg = assigns.get(n);
 

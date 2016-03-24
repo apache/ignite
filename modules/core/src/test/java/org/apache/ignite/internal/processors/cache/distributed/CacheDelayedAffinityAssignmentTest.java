@@ -154,7 +154,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         ccfg.setName(CACHE_NAME1);
         ccfg.setNodeFilter(cacheNodeFilter);
-        ccfg.setAffinity(affinityFunction());
+        ccfg.setAffinity(affinityFunction(null));
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setBackups(0);
@@ -163,10 +163,12 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param parts Number of partitions.
      * @return Affinity function.
      */
-    protected AffinityFunction affinityFunction() {
-        return new RendezvousAffinityFunction(false, 32);
+    protected AffinityFunction affinityFunction(@Nullable Integer parts) {
+        return new RendezvousAffinityFunction(false,
+            parts == null ? RendezvousAffinityFunction.DFLT_PARTITION_COUNT : parts);
     }
 
     /** {@inheritDoc} */
@@ -1495,6 +1497,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         ccfg.setAtomicityMode(rnd.nextBoolean() ? TRANSACTIONAL : ATOMIC);
         ccfg.setBackups(rnd.nextInt(10));
         ccfg.setRebalanceMode(rnd.nextBoolean() ? SYNC : ASYNC);
+        ccfg.setAffinity(affinityFunction(rnd.nextInt(10, 2048)));
 
         if (rnd.nextBoolean()) {
             Set<String> exclude = new HashSet<>();

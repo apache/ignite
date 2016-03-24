@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 public class CacheDelayedAffinityAssignmentFairAffinityTest extends CacheDelayedAffinityAssignmentTest {
     /** {@inheritDoc} */
-    @Override protected AffinityFunction affinityFunction() {
-        return new FairAffinityFunction(false, 32);
+    @Override protected AffinityFunction affinityFunction(@Nullable Integer parts) {
+        return new FairAffinityFunction(false, parts == null ? FairAffinityFunction.DFLT_PART_CNT : parts);
     }
 }

@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
@@ -178,16 +179,27 @@ public class GridCacheVersionTopologyChangeTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @param vers Current versions.
      */
+    @SuppressWarnings("unchecked")
     private void checkVersionIncrease(IgniteCache<Object, Object> cache, Map<Integer, Comparable> vers) {
         for (Integer k : vers.keySet()) {
             cache.put(k, k);
 
             Comparable curVer = vers.get(k);
-            Comparable newVer = cache.getEntry(k).version();
 
-            assertTrue(newVer.compareTo(curVer) > 0);
+            CacheEntry entry = cache.getEntry(k);
 
-            vers.put(k, newVer);
+            if (entry != null) {
+                Comparable newVer = entry.version();
+
+                assertTrue(newVer.compareTo(curVer) > 0);
+
+                vers.put(k, newVer);
+            }
+            else {
+                CacheConfiguration ccfg = cache.getConfiguration(CacheConfiguration.class);
+
+                assertEquals(0, ccfg.getBackups());
+            }
         }
     }
 
