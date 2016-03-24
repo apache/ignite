@@ -51,12 +51,12 @@ mixin dialect(lbl, model, name, tipTitle, genericDialectName, placeholder)
         )
 
 mixin hibernateField(items, field, valid, save, newItem)
-    -var reset = (newItem ? 'group.add = []' : 'field.edit = false')
+    -var reset = newItem ? 'group.add = []' : 'field.edit = false'
 
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
-    -var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
@@ -96,7 +96,7 @@ form.panel.panel-default(name='store' novalidate)
                         ]',
                         'Factory for persistent storage for cache data'
                     )
-                    span(ng-if='#{storeFactoryKind}' ng-init='__.expanded = true')
+                    span(ng-if=storeFactoryKind ng-init='__.expanded = true')
                         a.customize(ng-show='__.expanded' ng-click='__.expanded = false') Hide settings
                         a.customize(ng-hide='__.expanded' ng-click='__.expanded = true') Show settings
                         .panel-details.col-sm-12(ng-if='__.expanded')
@@ -169,7 +169,7 @@ form.panel.panel-default(name='store' novalidate)
                                 -var hibernateProperties = hibernateStoreFactory + '.hibernateProperties'
 
                                 .details-row
-                                    ignite-form-group(ng-model='#{hibernateProperties}' ng-form='#{form}')
+                                    ignite-form-group(ng-model=hibernateProperties ng-form=form)
                                         ignite-form-field-label
                                             | Hibernate properties
                                         ignite-form-group-tooltip

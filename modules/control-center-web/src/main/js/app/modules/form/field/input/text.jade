@@ -27,11 +27,9 @@ mixin feedback(isCheckPristine, error, errorMessage)
 .input-tip
     input.form-control(
         id='{{ id }}'
-        name='{{ name }}TextInput'
-
+        name='{{ name }}'
         placeholder='{{ placeholder }}'
-
-        type='text' 
+        type='text'
 
         data-ng-model='value'
         data-ng-blur='ngBlur()'

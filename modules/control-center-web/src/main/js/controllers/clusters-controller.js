@@ -257,26 +257,29 @@ consoleModule.controller('clustersController', [
                 var firstError = errors[firstErrorKey][0];
                 var actualError = firstError.$error[firstErrorKey][0];
 
-                var errName = actualError.$name;
+                var errNameFull = actualError.$name;
+                var errNameShort = errNameFull;
 
-                if (errName.endsWith('TextInput') || errName.endsWith('JavaClass'))
-                    errName = errName.substring(0, errName.length - 9);
+                if (errNameShort.endsWith('TextInput') || errNameShort.endsWith('JavaClass'))
+                    errNameShort = errNameShort.substring(0, errNameShort.length - 9);
 
-                var msg = 'Invalid value!';
-
-                try {
-                    msg = errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
-                }
-                catch(ignored) {
+                var extractErrorMessage = function (errName) {
                     try {
-                        msg = form[firstError.$name].$errorMessages[errName][firstErrorKey];
+                        return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
                     }
-                    catch(ignited) {
-                        // No-op.
+                    catch(ignored) {
+                        try {
+                            msg = form[firstError.$name].$errorMessages[errName][firstErrorKey];
+                        }
+                        catch(ignited) {
+                            return false;
+                        }
                     }
-                }
+                };
 
-                return showPopoverMessage($scope.ui, firstError.$name, errName, msg);
+                var msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
+
+                return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
             }
 
             var caches = _.filter(_.map($scope.caches, function (scopeCache) {

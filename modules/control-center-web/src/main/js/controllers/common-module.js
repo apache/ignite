@@ -603,14 +603,18 @@ consoleModule.service('$common', [
             if (popover)
                 popover.hide();
 
-            ensureActivePanel(ui, panelId, id);
+            ensureActivePanel(ui, panelId);
 
-            var el = $('body').find('#' + id);
+            var body = $('body');
+
+            var el = body.find('#' + id);
 
             if (!el || el.length === 0)
-                el = $('body').find('[name="' + id + '"]');
+                el = body.find('[name="' + id + '"]');
 
             if (el && el.length > 0) {
+                $focus(el[0].id);
+
                 var newPopover = $popover(el, {content: message});
 
                 popover = newPopover;

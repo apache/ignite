@@ -22,16 +22,24 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
     const link = (scope, el, attrs, [ngModel, form, label]) => {
         const {id, name} = scope;
 
-        label.for = scope.id = id || guid();
-
-        scope.ngModel = ngModel;
+        scope.id = id || guid();
         scope.form = form;
-        scope.field = form[name];
-        scope.label = label;
+        scope.name = scope.ngModelName + 'TextInput';
+        scope.ngModel = ngModel;
 
-        scope.$watch('required', (required) => {
-            label.required = required || false;
+        Object.defineProperty(scope, 'field', {
+            get: () => scope.form[scope.name]
         });
+
+        if (label) {
+            label.for = scope.id;
+
+            scope.label = label;
+
+            scope.$watch('required', (required) => {
+                label.required = required || false;
+            });
+        }
 
         form.$defaults = form.$defaults || {};
 
@@ -80,7 +88,7 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
         restrict: 'E',
         scope: {
             id: '@',
-            name: '@',
+            ngModelName: '@name',
             placeholder: '@',
             required: '=ngRequired',
             disabled: '=ngDisabled',

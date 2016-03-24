@@ -21,16 +21,24 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
     const link = (scope, el, attrs, [ngModel, form, label]) => {
         const {id, name} = scope;
 
-        label.for = scope.id = id || guid();
-
-        scope.ngModel = ngModel;
+        scope.id = id || guid();
         scope.form = form;
-        scope.label = label;
         scope.name = scope.ngModelName + 'JavaClass';
+        scope.ngModel = ngModel;
 
-        scope.$watch('required', (required) => {
-            label.required = required || false;
+        Object.defineProperty(scope, 'field', {
+            get: () => scope.form[scope.name]
         });
+
+        if (label) {
+            label.for = scope.id;
+
+            scope.label = label;
+
+            scope.$watch('required', (required) => {
+                label.required = required || false;
+            });
+        }
 
         form.$defaults = form.$defaults || {};
         form.$defaults[name] = _.cloneDeep(scope.value);
@@ -52,7 +60,7 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
                 el.find('input').removeClass('ng-valid').addClass('ng-invalid');
         };
 
-        scope.ngChange = function() {
+        scope.ngChange = () => {
             ngModel.$setViewValue(scope.value);
 
             if (JSON.stringify(scope.value) !== JSON.stringify(form.$defaults[name]))
@@ -60,10 +68,10 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
             else
                 ngModel.$setPristine();
 
-            setTimeout(checkValid, 100);  // Use setTimeout() workaround of problem of two controllers.
+            setTimeout(checkValid, 100); // Use setTimeout() workaround of problem of two controllers.
         };
 
-        ngModel.$render = function() {
+        ngModel.$render = () => {
             scope.value = ngModel.$modelValue;
         };
     };

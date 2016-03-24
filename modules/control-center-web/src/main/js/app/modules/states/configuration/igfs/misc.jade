@@ -1,0 +1,118 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../app/helpers/jade/mixins.jade
+
+-var model = 'backupItem'
+-var pathModesForm = 'miscPathModes'
+-var pathModes = model + '.pathModes'
+
+mixin pathModeEditor(newItem)
+    -var field = newItem ? 'new' : 'edit'
+    -var path = field + 'Path'
+    -var mode = field + 'Mode'
+    -var reset = newItem ? 'group.add = []' : 'field.edit = false'
+    -var valid = pathModesForm + '.' + path + '.$valid && ' + pathModesForm + '.' + mode + '.$valid'
+    -var item = '{path:' + path + ', mode: ' + mode  + '}'
+    -var save = pathModes + (newItem ? '.push(' + item + ')' : '[$index] = ' + item)
+
+    .col-sm-12
+        .col-sm-8
+            label.fieldSep /
+            ignite-form-field-input-text(
+                data-id=path
+                data-name=path
+                data-ng-model=path
+                enter-focus-next=mode
+                data-ng-required='true'
+                data-placeholder='Input path'
+                data-ignite-form-field-input-autofocus='true'
+                on-escape=reset
+            )
+        .col-sm-4
+            .tipField
+                +table-save-button(valid, save, newItem)
+            ignite-form-field-dropdown(
+                data-id=mode
+                data-name=mode
+                data-ng-model=mode
+                data-options='[\
+                    {value: "PRIMARY", label: "PRIMARY"},\
+                    {value: "PROXY", label: "PROXY"},\
+                    {value: "DUAL_SYNC", label: "DUAL_SYNC"},\
+                    {value: "DUAL_ASYNC", label: "DUAL_ASYNC"}\
+                ]',
+                data-ng-required='true'
+                data-placeholder='Mode'
+                on-enter='!(#{valid}) || (#{save}); !(#{valid}) || (#{reset});'
+            )
+
+form.panel.panel-default(name='misc' novalidate)
+    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
+        ignite-form-panel-chevron
+        label Miscellaneous
+        ignite-form-field-tooltip.tipLabel
+            | Various miscellaneous IGFS settings
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id='misc')
+        .panel-body(ng-if='__show__')
+            .col-sm-6
+                .settings-row
+                    +number('Block size:', model + '.blockSize', 'blockSize', 'true', '65536', '0', 'File data block size in bytes')
+                .settings-row
+                    +number('Stream buffer size:', model + '.streamBufferSize', 'streamBufferSize', 'true', '65536', '0', 'File data block size in bytes')
+                .settings-row
+                    +number('Maximum space size:', model + '.maxSpaceSize', 'maxSpaceSize', 'true', '0', '0', 'Maximum space available for data cache to store file system entries')
+                .settings-row
+                    +number('Maximum task range length:', model + '.maximumTaskRangeLength', 'maximumTaskRangeLength', 'true', '0', '0', 'Maximum default range size of a file being split during IGFS task execution')
+                .settings-row
+                    +number-min-max('Management port:', model + '.managementPort', 'managementPort', 'true', '11400', '0', '65535', 'Port number for management endpoint')
+                .settings-row
+                    +number('Per node batch size:', model + '.perNodeBatchSize', 'perNodeBatchSize', 'true', '100', '0', 'Number of file blocks collected on local node before sending batch to remote node')
+                .settings-row
+                    +number('Per node parallel batch count:', model + '.perNodeParallelBatchCount', 'perNodeParallelBatchCount', 'true', '8', '0', 'Number of file block batches that can be concurrently sent to remote node')
+                .settings-row
+                    +number('Prefetch blocks:', model + '.prefetchBlocks', 'prefetchBlocks', 'true', '0', '0', 'Number of pre-fetched blocks if specific file chunk is requested')
+                .settings-row
+                    +number('Sequential reads before prefetch:', model + '.sequentialReadsBeforePrefetch', 'sequentialReadsBeforePrefetch', 'true', '0', '0', 'Amount of sequential block reads before prefetch is triggered')
+                .settings-row
+                    +number('Trash purge timeout:', model + '.trashPurgeTimeout', 'trashPurgeTimeout', 'true', '1000', '0', 'Maximum timeout awaiting for trash purging in case data cache oversize is detected')
+                .settings-row
+                    ignite-form-group(ng-model=pathModes ng-form=pathModesForm)
+                        ignite-form-field-label
+                            | Path modes
+                        ignite-form-group-tooltip
+                            | Map of path prefixes to IGFS modes used for them
+                        ignite-form-group-add(ng-click='field.edit = false; group.add = [{}];')
+                            | Add path mode
+
+                        .group-content(ng-if=pathModes + '.length')
+                            ignite-form-field(ng-repeat='model in #{pathModes} track by $index' type='internal' name='Path mode')
+                                +table-remove-button(pathModes, 'Remove path')
+                                span(ng-hide='field.edit')
+                                    a.labelFormField(ng-click='field.edit = true; group.add = []') {{ model.path }} [ {{ model.mode }}]
+                                span(ng-if='field.edit' ng-init='editPath = model.path; editMode = model.mode')
+                                    +pathModeEditor(false)
+
+                        .group-content(ng-repeat='field in group.add')
+                            ignite-form-field(type='internal' name='Path mode')
+                                +pathModeEditor(true)
+
+
+                        .group-content-empty(ng-if='!(#{pathModes}.length) && !group.add.length')
+                            | Not defined
+            .col-sm-6
+                +preview-xml-java(model, 'igfsMisc')

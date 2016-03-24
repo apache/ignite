@@ -22,12 +22,16 @@ export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
         const {id, name} = scope;
         const field = form[name];
 
+        scope.id = id || guid();
         scope.field = field;
-        label.for = scope.id = id || guid();
 
-        scope.$watch('required', (required) => {
-            label.required = required || false;
-        });
+        if (label) {
+            label.for = scope.id;
+
+            scope.$watch('required', (required) => {
+                label.required = required || false;
+            });
+        }
 
         form.$defaults = form.$defaults || {};
         form.$defaults[name] = _.cloneDeep(scope.value);

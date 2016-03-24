@@ -193,9 +193,9 @@ mixin table-text-field(field, items, valid, save, placeholder, newItem)
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
-    -var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
+    -var onEscape = newItem ? 'group.add = []' : 'field.edit = false'
 
-    -var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
@@ -216,9 +216,9 @@ mixin table-java-class-field(field, items, valid, save, newItem)
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
-    -var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
+    -var onEscape = newItem ? 'group.add = []' : 'field.edit = false'
 
-    -var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-java-class(
@@ -238,9 +238,9 @@ mixin table-java-package-field(field, items, valid, save, newItem)
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
-    -var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
+    -var onEscape = newItem ? 'group.add = []' : 'field.edit = false'
 
-    -var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
@@ -263,9 +263,9 @@ mixin table-address-field(field, items, valid, save, newItem)
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
-    -var onEscape = (newItem ? 'group.add = []' : 'field.edit = false')
+    -var onEscape = newItem ? 'group.add = []' : 'field.edit = false'
 
-    -var resetOnBlur = (newItem ? '!stopblur && (group.add = [])' : 'field.edit = false')
+    -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
@@ -286,11 +286,11 @@ mixin table-address-field(field, items, valid, save, newItem)
     Mixin for table save button.
     "||" used instead of "&&" to workaround escaping of "&&" to "&amp;&amp;"
 mixin table-save-button(valid, save, newItem)
-    -var reset = (newItem ? 'group.add = []' : 'field.edit = false')
+    -var reset = newItem ? 'group.add = []' : 'field.edit = false'
 
     i.fa.fa-floppy-o(
         ng-show=valid
-        ng-click="!#{valid} || (#{save}); !#{valid} || (#{reset});"
+        ng-click='!(#{valid}) || (#{save}); !(#{valid}) || (#{reset});'
         bs-tooltip
         data-title='Click icon or press [Enter] to save item'
     )

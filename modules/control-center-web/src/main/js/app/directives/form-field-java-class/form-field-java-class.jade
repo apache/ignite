@@ -14,17 +14,19 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin feedback(error, message)
+mixin feedback(isCheckPristine, error, errorMessage)
+    -var checkPristine = isCheckPristine ? '!field.$pristine && ' : ''
+
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-if='!form[name].$pristine && form[name].$error.#{error}'
-        bs-tooltip='"{{ label.name }} #{message}"'
-        ignite-error='#{error}'
-        ignite-error-message='{{ label.name }} #{message}'
+        ng-if='#{checkPristine}field.$error.#{error}'
+        bs-tooltip='"{{ label.name }} #{errorMessage}"'
+        ignite-error=error
+        ignite-error-message='{{ label.name }} #{errorMessage}'
     )
 
 .input-tip
     input.form-control(
-        id='{{ id }}JavaClass'
+        id='{{ id }}'
         name='{{ name }}'
         placeholder='Enter fully qualified class name'
         type='text'
@@ -47,11 +49,11 @@ mixin feedback(error, message)
         on-escape='onEscape()'
     )
 
+    +feedback(true, 'javaPackageSpecified', 'does not have package specified!')
+    +feedback(false, 'javaBuiltInClass', 'should not be the Java built-in class!')
+    +feedback(false, 'javaKeywords', 'could not contains reserved Java keyword!')
+    +feedback(false, 'javaIdentifier', 'is invalid Java identifier!')
+
+    +feedback(true, 'required', 'could not be empty!')
+
     span(ng-transclude='')
-
-    +feedback('javaPackageSpecified', 'does not have package specified!')
-    +feedback('javaBuiltInClass', 'should not be the Java built-in class!')
-    +feedback('javaKeywords', 'could not contains reserved Java keyword!')
-    +feedback('javaIdentifier', 'is invalid Java identifier!')
-
-    +feedback('required', 'could not be empty!')

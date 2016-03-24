@@ -28,13 +28,21 @@ include ../includes/infos
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new IGFS')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add IGFS
-                +save-remove-buttons('IGFS')
+                +save-remove-buttons-new('IGFS')
                 hr
             .bs-affix-fix
-            form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate)
-                .panel-group(bs-collapse ng-model='ui.activePanels' data-allow-multiple='true' ng-click='triggerDigest = true')
-                    +groups('general', 'backupItem')
-                    div(ng-show='ui.expanded')
-                        +advanced-options
-                        +groups('advanced', 'backupItem')
-                +advanced-options
+            div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
+                form.form-horizontal(name='ui.inputForm' ng-show='contentVisible()' novalidate)
+                    .panel-group
+                        ignite-configuration-igfs-general
+
+                        ignite-advanced-options-toggle
+
+                        div(ng-show='ui.expanded')
+                            ignite-configuration-igfs-ipc
+                            ignite-configuration-igfs-fragmentizer
+                            ignite-configuration-igfs-dual
+                            ignite-configuration-igfs-secondary
+                            ignite-configuration-igfs-misc
+
+                            ignite-advanced-options-toggle

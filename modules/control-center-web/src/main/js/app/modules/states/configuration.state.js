@@ -66,130 +66,143 @@ import cachesRebalance from './configuration/caches/rebalance.directive';
 import cachesServerNearCache from './configuration/caches/server-near-cache.directive';
 import cachesStatistics from './configuration/caches/statistics.directive';
 
+// IGFS screen.
+import igfsGeneral from './configuration/igfs/general.directive';
+import igfsIpc from './configuration/igfs/ipc.directive';
+import igfsFragmentizer from './configuration/igfs/fragmentizer.directive';
+import igfsDual from './configuration/igfs/dual.directive';
+import igfsSecondary from './configuration/igfs/secondary.directive';
+import igfsMisc from './configuration/igfs/misc.directive';
+
 // Summary screen.
 import ConfigurationSummaryCtrl from './configuration/summary/summary.controller';
 import ConfigurationSummaryResource from './configuration/summary/summary.resource';
 import summaryTabs from './configuration/summary/summary-tabs.directive';
 
-angular
-.module('ignite-console.states.configuration', [
-    'ui.router'
-])
-// Clusters screen.
-.directive(...previewPanel)
-.directive(...clustersTransactions)
-.directive(...clustersThread)
-.directive(...clustersTime)
-.directive(...clustersSwap)
-.directive(...clustersSsl)
-.directive(...clustersMetrics)
-.directive(...clustersMarshaller)
-.directive(...clustersIgfs)
-.directive(...clustersEvents)
-.directive(...clustersDiscovery)
-.directive(...clustersDeployment)
-.directive(...clustersConnector)
-.directive(...clustersCommunication)
-.directive(...clustersBinary)
-.directive(...clustersAtomic)
-.directive(...clustersGeneral)
-.directive(...clustersGeneralDiscoveryCloud)
-.directive(...clustersGeneralDiscoveryGoogle)
-.directive(...clustersGeneralDiscoveryJdbc)
-.directive(...clustersGeneralDiscoveryMulticast)
-.directive(...clustersGeneralDiscoveryS3)
-.directive(...clustersGeneralDiscoveryShared)
-.directive(...clustersGeneralDiscoveryVm)
-.directive(...clustersGeneralDiscoveryZookeeper)
-.directive(...clustersGeneralDiscoveryZookeeperRetryExponential)
-.directive(...clustersGeneralDiscoveryZookeeperRetryBoundedExponential)
-.directive(...clustersGeneralDiscoveryZookeeperRetryUntilElapsed)
-.directive(...clustersGeneralDiscoveryZookeeperRetryNTimes)
-.directive(...clustersGeneralDiscoveryZookeeperRetryOneTime)
-.directive(...clustersGeneralDiscoveryZookeeperRetryForever)
-.directive(...clustersGeneralDiscoveryZookeeperRetryCustom)
-// Caches screen
-.directive(...cachesGeneral)
-.directive(...cachesMemory)
-.directive(...cachesQuery)
-.directive(...cachesStore)
-.directive(...cachesConcurrency)
-.directive(...cachesRebalance)
-.directive(...cachesServerNearCache)
-.directive(...cachesStatistics)
-// Summary screen
-.directive(...summaryTabs)
-// Services.
-.service(...ConfigurationSummaryResource)
-.config(['$stateProvider', function($stateProvider) {
-    // Setup the states.
-    $stateProvider
-    .state('base.configuration', {
-        url: '/configuration',
-        templateUrl: '/configuration/sidebar.html'
-    })
-    .state('base.configuration.clusters', {
-        url: '/clusters',
-        templateUrl: '/configuration/clusters.html',
-        params: {
-            id: null
-        },
-        data: {
-            loading: 'Loading clusters screen...'
-        },
-        metaTags: {
-            title: 'Configure Clusters'
-        }
-    })
-    .state('base.configuration.caches', {
-        url: '/caches',
-        templateUrl: '/configuration/caches.html',
-        params: {
-            id: null
-        },
-        data: {
-            loading: 'Loading caches screen...'
-        },
-        metaTags: {
-            title: 'Configure Caches'
-        }
-    })
-    .state('base.configuration.domains', {
-        url: '/domains',
-        templateUrl: '/configuration/domains.html',
-        params: {
-            id: null
-        },
-        data: {
-            loading: 'Loading domain models screen...'
-        },
-        metaTags: {
-            title: 'Configure Domain Model'
-        }
-    })
-    .state('base.configuration.igfs', {
-        url: '/igfs',
-        templateUrl: '/configuration/igfs.html',
-        params: {
-            id: null
-        },
-        data: {
-            loading: 'Loading IGFS screen...'
-        },
-        metaTags: {
-            title: 'Configure IGFS'
-        }
-    })
-    .state('base.configuration.summary', {
-        url: '/summary',
-        templateUrl: '/configuration/summary.html',
-        controller: ConfigurationSummaryCtrl,
-        controllerAs: 'ctrl',
-        data: {
-            loading: 'Loading summary screen...'
-        },
-        metaTags: {
-            title: 'Configurations Summary'
-        }
-    });
-}]);
+angular.module('ignite-console.states.configuration', ['ui.router'])
+    // Clusters screen.
+    .directive(...previewPanel)
+    .directive(...clustersTransactions)
+    .directive(...clustersThread)
+    .directive(...clustersTime)
+    .directive(...clustersSwap)
+    .directive(...clustersSsl)
+    .directive(...clustersMetrics)
+    .directive(...clustersMarshaller)
+    .directive(...clustersIgfs)
+    .directive(...clustersEvents)
+    .directive(...clustersDiscovery)
+    .directive(...clustersDeployment)
+    .directive(...clustersConnector)
+    .directive(...clustersCommunication)
+    .directive(...clustersBinary)
+    .directive(...clustersAtomic)
+    .directive(...clustersGeneral)
+    .directive(...clustersGeneralDiscoveryCloud)
+    .directive(...clustersGeneralDiscoveryGoogle)
+    .directive(...clustersGeneralDiscoveryJdbc)
+    .directive(...clustersGeneralDiscoveryMulticast)
+    .directive(...clustersGeneralDiscoveryS3)
+    .directive(...clustersGeneralDiscoveryShared)
+    .directive(...clustersGeneralDiscoveryVm)
+    .directive(...clustersGeneralDiscoveryZookeeper)
+    .directive(...clustersGeneralDiscoveryZookeeperRetryExponential)
+    .directive(...clustersGeneralDiscoveryZookeeperRetryBoundedExponential)
+    .directive(...clustersGeneralDiscoveryZookeeperRetryUntilElapsed)
+    .directive(...clustersGeneralDiscoveryZookeeperRetryNTimes)
+    .directive(...clustersGeneralDiscoveryZookeeperRetryOneTime)
+    .directive(...clustersGeneralDiscoveryZookeeperRetryForever)
+    .directive(...clustersGeneralDiscoveryZookeeperRetryCustom)
+    // Caches screen
+    .directive(...cachesGeneral)
+    .directive(...cachesMemory)
+    .directive(...cachesQuery)
+    .directive(...cachesStore)
+    .directive(...cachesConcurrency)
+    .directive(...cachesRebalance)
+    .directive(...cachesServerNearCache)
+    .directive(...cachesStatistics)
+    // IGFS screen
+    .directive(...igfsGeneral)
+    .directive(...igfsIpc)
+    .directive(...igfsFragmentizer)
+    .directive(...igfsDual)
+    .directive(...igfsSecondary)
+    .directive(...igfsMisc)
+    // Summary screen
+    .directive(...summaryTabs)
+    // Services.
+    .service(...ConfigurationSummaryResource)
+    // Configure state provider.
+    .config(['$stateProvider', ($stateProvider) => {
+        // Setup the states.
+        $stateProvider
+            .state('base.configuration', {
+                url: '/configuration',
+                templateUrl: '/configuration/sidebar.html'
+            })
+            .state('base.configuration.clusters', {
+                url: '/clusters',
+                templateUrl: '/configuration/clusters.html',
+                params: {
+                    id: null
+                },
+                data: {
+                    loading: 'Loading clusters screen...'
+                },
+                metaTags: {
+                    title: 'Configure Clusters'
+                }
+            })
+            .state('base.configuration.caches', {
+                url: '/caches',
+                templateUrl: '/configuration/caches.html',
+                params: {
+                    id: null
+                },
+                data: {
+                    loading: 'Loading caches screen...'
+                },
+                metaTags: {
+                    title: 'Configure Caches'
+                }
+            })
+            .state('base.configuration.domains', {
+                url: '/domains',
+                templateUrl: '/configuration/domains.html',
+                params: {
+                    id: null
+                },
+                data: {
+                    loading: 'Loading domain models screen...'
+                },
+                metaTags: {
+                    title: 'Configure Domain Model'
+                }
+            })
+            .state('base.configuration.igfs', {
+                url: '/igfs',
+                templateUrl: '/configuration/igfs.html',
+                params: {
+                    id: null
+                },
+                data: {
+                    loading: 'Loading IGFS screen...'
+                },
+                metaTags: {
+                    title: 'Configure IGFS'
+                }
+            })
+            .state('base.configuration.summary', {
+                url: '/summary',
+                templateUrl: '/configuration/summary.html',
+                controller: ConfigurationSummaryCtrl,
+                controllerAs: 'ctrl',
+                data: {
+                    loading: 'Loading summary screen...'
+                },
+                metaTags: {
+                    title: 'Configurations Summary'
+                }
+            });
+    }]);

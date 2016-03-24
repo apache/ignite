@@ -23,13 +23,17 @@ export default ['igniteFormFieldDropdown', ['IgniteFormGUID', (guid) => {
     const link = (scope, $element, attrs, [form, label]) => {
         const {id, name} = scope;
 
-        label.for = scope.id = id || guid();
+        scope.id = id || guid();
 
-        scope.label = label;
+        if (label) {
+            label.for = scope.id;
 
-        scope.$watch('required', (required) => {
-            label.required = required || false;
-        });
+            scope.label = label;
+
+            scope.$watch('required', (required) => {
+                label.required = required || false;
+            });
+        }
 
         form.$defaults = form.$defaults || {};
         form.$defaults[name] = _.cloneDeep(scope.value);
@@ -51,7 +55,8 @@ export default ['igniteFormFieldDropdown', ['IgniteFormGUID', (guid) => {
             id: '@',
             name: '@',
             required: '=ngRequired',
-            value: '=ngModel'
+            value: '=ngModel',
+            onEnter: '@'
         },
         bindToController: {
             value: '=ngModel',
