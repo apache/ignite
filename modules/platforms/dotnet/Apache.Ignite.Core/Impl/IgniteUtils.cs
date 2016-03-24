@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Microsoft.Win32;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
     /// <summary>
@@ -250,27 +251,35 @@ namespace Apache.Ignite.Core.Impl
             if (!string.IsNullOrEmpty(configJvmDllPath))
                 yield return new KeyValuePair<string, string>("IgniteConfiguration.JvmDllPath", configJvmDllPath);
 
-            var javaHomeDir = GetJavaHome();
+            var javaHomeDir = Environment.GetEnvironmentVariable(EnvJavaHome);
 
             if (!string.IsNullOrEmpty(javaHomeDir))
                 foreach (var path in JvmDllLookupPaths)
                     yield return
                         new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
-        }
 
-        /// <summary>
-        /// Gets the java home dir.
-        /// </summary>
-        private static string GetJavaHome()
-        {
-            var envDir = Environment.GetEnvironmentVariable(EnvJavaHome);
+            // Get paths from Windows Registry
+            using (var jSubKey = Registry.LocalMachine.OpenSubKey(@"Software\JavaSoft\Java Runtime Environment"))
+            {
+                if (jSubKey == null)
+                    yield break;
 
-            if (!string.IsNullOrEmpty(envDir))
-                return envDir;
+                var curVer = jSubKey.GetValue("CurrentVersion") as string;
 
-            // TODO: Check registry.
+                // Current version comes first
+                var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
 
-            return null;
+                foreach (var ver in versions)
+                {
+                    using (var verKey = jSubKey.OpenSubKey(ver))
+                    {
+                        var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
+
+                        if (dllPath != null)
+                            yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                    }
+                }
+            }
         }
 
         /// <summary>
