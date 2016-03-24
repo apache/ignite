@@ -55,8 +55,10 @@ namespace Apache.Ignite.Core.Tests
         /// Tests the detection.
         /// </summary>
         [Test]
-        public void TestDetection()
+        public void TestDetection([Values(null, "c:\\invalid111")] string javaHome)
         {
+            Environment.SetEnvironmentVariable(EnvJavaHome, javaHome);
+
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 Assert.IsNotNull(ignite);
