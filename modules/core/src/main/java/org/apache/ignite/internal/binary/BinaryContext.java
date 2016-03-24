@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.internal.processors.igfs.IgfsDirectoryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
 import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
@@ -118,6 +119,7 @@ public class BinaryContext {
         // IGFS classes.
         sysClss.add(IgfsPath.class.getName());
 
+        sysClss.add(IgfsBlockKey.class.getName());
         sysClss.add(IgfsDirectoryInfo.class.getName());
         sysClss.add(IgfsFileAffinityRange.class.getName());
         sysClss.add(IgfsFileInfo.class.getName());
