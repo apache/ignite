@@ -161,6 +161,7 @@
                                         </xs:element>
                                     </xs:all>
                                     <xs:attribute name="name" type="xs:string" />
+                                    <xs:attribute name="cacheMode" type="xs:string" />
                                     <xs:attribute name="writeSynchronizationMode" type="xs:string" />
                                     <xs:attribute name="evictSynchronized" type="xs:boolean" />
                                     <xs:attribute name="evictSynchronizedKeyBufferSize" type="xs:int" />

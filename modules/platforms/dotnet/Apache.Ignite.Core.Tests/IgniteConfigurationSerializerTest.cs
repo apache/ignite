@@ -319,7 +319,7 @@ namespace Apache.Ignite.Core.Tests
                         AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Primary,
                         AtomicityMode = CacheAtomicityMode.Transactional,
                         Backups = 15,
-                        CacheMode = CacheMode.Partitioned,
+                        CacheMode = CacheMode.Replicated,
                         CacheStoreFactory = new TestCacheStoreFactory(),
                         CopyOnRead = true,
                         EagerTtl = true,
