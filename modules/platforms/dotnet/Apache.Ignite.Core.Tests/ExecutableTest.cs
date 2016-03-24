@@ -271,6 +271,24 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Tests the .NET XML configuration specified in app.config.
+        /// </summary>
+        [Test]
+        public void TestXmlConfigurationAppConfig()
+        {
+            // TODO
+        }
+
+        /// <summary>
+        /// Tests the .NET XML configuration specified in command line.
+        /// </summary>
+        [Test]
+        public void TestXmlConfigurationCmd()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Get remote node configuration.
         /// </summary>
         /// <returns>Configuration.</returns>
