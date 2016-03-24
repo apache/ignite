@@ -670,8 +670,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 registeredTemplates.put(masked, desc);
             }
 
-            stopSeq.addFirst(CU.UTILITY_CACHE_NAME);
-
             if (cfg.getName() == null) { // Use cache configuration with null name as template.
                 DynamicCacheDescriptor desc0 =
                     new DynamicCacheDescriptor(ctx, cfg, cacheType, true, IgniteUuid.randomUuid());
@@ -891,8 +889,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // No new caches should be added after this point.
         exch.onKernalStop(cancel);
 
-        cancelFutures();
-
         for (String cacheName : stopSeq) {
             GridCacheAdapter<?, ?> cache = caches.remove(maskNull(cacheName));
 
@@ -912,6 +908,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 onKernalStop(entry.getValue(), cancel);
             }
         }
+
+        cancelFutures();
 
         List<? extends GridCacheSharedManager<?, ?>> sharedMgrs = sharedCtx.managers();
 
@@ -1086,8 +1084,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
     private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel) {
-        log.info("stop cache: " + cache.name());
-
         GridCacheContext ctx = cache.context();
 
         sharedCtx.removeCacheContext(ctx);
@@ -1185,13 +1181,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     private void onKernalStop(GridCacheAdapter<?, ?> cache, boolean cancel) {
-        log.info("onKernalStop cache: " + cache.name());
-
         GridCacheContext ctx = cache.context();
-
-        GridCacheAffinityManager affMgr = ctx.affinity();
-
-        affMgr.onKernalStop(cancel);
 
         if (isNearEnabled(ctx)) {
             GridDhtCacheAdapter dht = ctx.near().dht();
@@ -1199,10 +1189,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (dht != null) {
                 GridCacheContext<?, ?> dhtCtx = dht.context();
 
-                for (GridCacheManager mgr : dhtManagers(dhtCtx)) {
-                    if (mgr != affMgr)
-                        mgr.onKernalStop(cancel);
-                }
+                for (GridCacheManager mgr : dhtManagers(dhtCtx))
+                    mgr.onKernalStop(cancel);
 
                 dht.onKernalStop();
             }
@@ -1216,7 +1204,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (ListIterator<GridCacheManager> it = mgrs.listIterator(mgrs.size()); it.hasPrevious(); ) {
             GridCacheManager mgr = it.previous();
 
-            if (!excludes.contains(mgr) && mgr != affMgr)
+            if (!excludes.contains(mgr))
                 mgr.onKernalStop(cancel);
         }
 
@@ -2472,7 +2460,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public boolean onCustomEvent(DiscoveryCustomMessage msg,
         AffinityTopologyVersion topVer) {
         if (msg instanceof CacheAffinityChangeMessage)
-            return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage) msg));
+            return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch) msg, topVer);
     }

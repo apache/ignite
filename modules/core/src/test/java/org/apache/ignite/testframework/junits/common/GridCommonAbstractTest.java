@@ -476,12 +476,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
                                         ", topVer=" + top.topologyVersion() +
-                                        ", topFut=" + topFut +
                                         ", p=" + p +
                                         ", affNodesCnt=" + exp +
                                         ", ownersCnt=" + actual +
                                         ", affNodes=" + affNodes +
                                         ", owners=" + owners +
+                                        ", topFut=" + topFut +
                                         ", locNode=" + g.cluster().localNode() + ']');
                                 }
                                 else
