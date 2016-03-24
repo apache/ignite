@@ -632,7 +632,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             warnNoAffinityNodes();
 
-            centralizedAff = cctx.affinity().onServerLeft(this, crd);
+            centralizedAff = cctx.affinity().onServerLeft(this);
         }
         else {
             assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
