@@ -34,11 +34,11 @@
         <jvmOptions>
             <string>-Xms512m</string>
             <string>-Xmx702m</string>
+            <string>-DOPT1</string>
         </jvmOptions>
 
         <cacheConfiguration>
             <cacheConfiguration name='testCache' cacheMode='Replicated' />
         </cacheConfiguration>
     </igniteConfiguration>
-
 </configuration>
