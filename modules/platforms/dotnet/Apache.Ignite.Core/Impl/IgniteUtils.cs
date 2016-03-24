@@ -250,12 +250,27 @@ namespace Apache.Ignite.Core.Impl
             if (!string.IsNullOrEmpty(configJvmDllPath))
                 yield return new KeyValuePair<string, string>("IgniteConfiguration.JvmDllPath", configJvmDllPath);
 
-            var javaHomeDir = Environment.GetEnvironmentVariable(EnvJavaHome);
+            var javaHomeDir = GetJavaHome();
 
             if (!string.IsNullOrEmpty(javaHomeDir))
                 foreach (var path in JvmDllLookupPaths)
                     yield return
                         new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
+        }
+
+        /// <summary>
+        /// Gets the java home dir.
+        /// </summary>
+        private static string GetJavaHome()
+        {
+            var envDir = Environment.GetEnvironmentVariable(EnvJavaHome);
+
+            if (!string.IsNullOrEmpty(envDir))
+                return envDir;
+
+            // TODO: Check registry.
+
+            return null;
         }
 
         /// <summary>
