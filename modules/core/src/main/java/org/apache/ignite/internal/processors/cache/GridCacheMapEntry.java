@@ -2443,12 +2443,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 recordNodeId(affNodeId, topVer);
 
-                if (hadVal) {
-                    updateCntr0 = nextPartCounter(topVer);
+                updateCntr0 = nextPartCounter(topVer);
 
-                    if (updateCntr != null)
-                        updateCntr0 = updateCntr;
-                }
+                if (updateCntr != null)
+                    updateCntr0 = updateCntr;
 
                 drReplicate(drType, null, newVer, topVer);
 

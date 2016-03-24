@@ -153,6 +153,11 @@ public class CacheLoadOnlyStoreExample {
 
                     return scanner.next();
                 }
+
+                /** {@inheritDoc} */
+                @Override public void remove() {
+                    throw new UnsupportedOperationException();
+                }
             };
         }
 
