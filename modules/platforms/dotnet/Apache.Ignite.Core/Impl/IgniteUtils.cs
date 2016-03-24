@@ -47,6 +47,13 @@ namespace Apache.Ignite.Core.Impl
         /** Lookup paths. */
         private static readonly string[] JvmDllLookupPaths = {@"jre\bin\server", @"jre\bin\default"};
 
+        /** Registry lookup paths. */
+        private static readonly string[] JreRegistryKeys =
+        {
+            @"Software\JavaSoft\Java Runtime Environment",
+            @"Software\Wow6432Node\JavaSoft\Java Runtime Environment"
+        };
+
         /** File: jvm.dll. */
         internal const string FileJvmDll = "jvm.dll";
 
@@ -258,25 +265,28 @@ namespace Apache.Ignite.Core.Impl
                     yield return
                         new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
 
-            // Get paths from Windows Registry
-            using (var jSubKey = Registry.LocalMachine.OpenSubKey(@"Software\JavaSoft\Java Runtime Environment"))
+            // Get paths from the Windows Registry
+            foreach (var regPath in JreRegistryKeys)
             {
-                if (jSubKey == null)
-                    yield break;
-
-                var curVer = jSubKey.GetValue("CurrentVersion") as string;
-
-                // Current version comes first
-                var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
-
-                foreach (var ver in versions)
+                using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
                 {
-                    using (var verKey = jSubKey.OpenSubKey(ver))
-                    {
-                        var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
+                    if (jSubKey == null)
+                        continue;
 
-                        if (dllPath != null)
-                            yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                    var curVer = jSubKey.GetValue("CurrentVersion") as string;
+
+                    // Current version comes first
+                    var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
+
+                    foreach (var ver in versions)
+                    {
+                        using (var verKey = jSubKey.OpenSubKey(ver))
+                        {
+                            var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
+
+                            if (dllPath != null)
+                                yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                        }
                     }
                 }
             }
