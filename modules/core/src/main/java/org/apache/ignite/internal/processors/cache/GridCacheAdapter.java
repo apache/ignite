@@ -357,8 +357,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }
 
-        if (ctx.config().getMaxConcurrentAsyncOperations() > 0)
+        if (ctx.config().getMaxConcurrentAsyncOperations() > 0) {
             asyncOpsSem = new Semaphore(ctx.config().getMaxConcurrentAsyncOperations());
+
+            if (name().indexOf("data") >= 0)
+                System.out.println("init data cache simaphore: " + asyncOpsSem.availablePermits());
+        }
 
         init();
 
@@ -4493,8 +4497,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     @Nullable protected <T> IgniteInternalFuture<T> asyncOpAcquire() {
         try {
-            if (asyncOpsSem != null)
+            if (asyncOpsSem != null) {
                 asyncOpsSem.acquire();
+
+                if (name().indexOf("data") >= 0)
+                    System.out.println("acquired: " + asyncOpsSem.availablePermits());
+            }
 
             return null;
         }
@@ -4510,8 +4518,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * Releases asynchronous operations permit, if limited.
      */
     protected void asyncOpRelease() {
-        if (asyncOpsSem != null)
+        if (asyncOpsSem != null) {
             asyncOpsSem.release();
+
+            if (name().indexOf("data") >= 0) {
+                System.out.println(Thread.currentThread().getName() + ": released: " + asyncOpsSem.availablePermits());
+
+                new Throwable().printStackTrace(System.out);
+            }
+        }
     }
 
     /** {@inheritDoc} */

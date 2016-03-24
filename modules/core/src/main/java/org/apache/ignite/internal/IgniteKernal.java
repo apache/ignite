@@ -2137,7 +2137,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      *
      */
     private void ackRebalanceConfiguration() throws IgniteCheckedException {
-        if (cfg.getSystemThreadPoolSize() <= cfg.getRebalanceThreadPoolSize())
+        if (cfg.getSystemThreadPoolSize() < cfg.getRebalanceThreadPoolSize()) // TODO '=' removed.
             throw new IgniteCheckedException("Rebalance thread pool size exceed or equals System thread pool size. " +
                 "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");
 
