@@ -48,9 +48,9 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<Cache.Entry<K, V>> {
      * @param c Entry collection.
      * @param filter Filter.
      */
-    public GridCacheEntrySet(GridCacheContext<K, V> ctx, Collection<? extends Cache.Entry<K, V>> c,
+    public GridCacheEntrySet(GridCacheContext<K, V> ctx, Iterable<? extends Cache.Entry<K, V>> c,
         @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
-        set = new HashSet<>(c.size(), 1.0f);
+        set = new HashSet<>();
 
         assert ctx != null;
 

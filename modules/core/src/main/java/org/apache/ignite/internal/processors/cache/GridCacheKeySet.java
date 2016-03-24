@@ -49,7 +49,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
      * @param c Entry collection.
      * @param filter Filter.
      */
-    public GridCacheKeySet(GridCacheContext<K, V> ctx, Collection<? extends Cache.Entry<K, V>> c,
+    public GridCacheKeySet(GridCacheContext<K, V> ctx, Iterable<? extends Cache.Entry<K, V>> c,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         map = new HashMap<>();
 

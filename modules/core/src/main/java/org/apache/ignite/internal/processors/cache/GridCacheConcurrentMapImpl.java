@@ -258,11 +258,11 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
             }
 
             @Override public int size() {
-                return map.size();
+                return F.size(iterator());
             }
 
             @Override public boolean contains(Object o) {
-                return o instanceof GridCacheEntryEx && map.containsKey(((GridCacheEntryEx)o).key());
+                return o instanceof GridCacheEntryEx && o.equals(map.get(((GridCacheEntryEx)o).key()));
 
             }
         };
