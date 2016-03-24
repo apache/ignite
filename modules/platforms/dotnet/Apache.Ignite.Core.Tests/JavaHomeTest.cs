@@ -60,6 +60,7 @@ namespace Apache.Ignite.Core.Tests
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 Assert.IsNotNull(ignite);
+                Console.WriteLine("Detected JVM dll path: " + ignite.GetConfiguration().JvmDllPath);
             }
         }
     }
