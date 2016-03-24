@@ -131,12 +131,12 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                         info("Acquired in separate thread.");
 
-                        // Lock is acquired silently in failoverSafe mode.
-                        if (failoverSafe) {
-                            lock0.unlock();
+                        // Lock is acquired silently only in failoverSafe mode.
+                        assertTrue(failoverSafe);
 
-                            info("Released lock in separate thread.");
-                        }
+                        lock0.unlock();
+
+                        info("Released lock in separate thread.");
                     }
                     catch (IgniteInterruptedException e) {
                         if (!failoverSafe)
