@@ -87,6 +87,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MARSH_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.P2P_POOL;
@@ -145,6 +146,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Marshaller cache pool. */
     private ExecutorService marshCachePool;
+
+    /** IGFS pool. */
+    private ExecutorService igfsPool;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -244,6 +248,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         mgmtPool = ctx.getManagementExecutorService();
         utilityCachePool = ctx.utilityCachePool();
         marshCachePool = ctx.marshallerCachePool();
+        igfsPool = ctx.getIgfsExecutorService();
         affPool = new IgniteThreadPoolExecutor(
             "aff",
             ctx.gridName(),
@@ -635,6 +640,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case AFFINITY_POOL:
                 case UTILITY_CACHE_POOL:
                 case MARSH_CACHE_POOL:
+                case IGFS_POOL:
                 {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
@@ -694,6 +700,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 assert marshCachePool != null : "Marshaller cache pool is not configured.";
 
                 return marshCachePool;
+
+            case IGFS_POOL:
+                assert igfsPool != null : "IGFS pool is not configured.";
+
+                return igfsPool;
 
             default: {
                 assert plc >= 0 : "Negative policy: " + plc;
