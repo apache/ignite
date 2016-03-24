@@ -43,7 +43,7 @@ public class CacheDeploymentCachePluginConfiguration<K, V> implements CachePlugi
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object unwrapEntry(final MutableEntry mutableEntry, final Class cls) {
+        @Nullable @Override public Object unwrapMutableEntry(final MutableEntry mutableEntry, final Class cls) {
             return null;
         }
 

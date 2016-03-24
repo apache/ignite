@@ -136,6 +136,13 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
         return key;
     }
 
+    /**
+     * @return Keep binary flag.
+     */
+    public boolean keepBinary() {
+        return keepBinary;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> cls) {

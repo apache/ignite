@@ -2974,9 +2974,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 final boolean keepBinary = txEntry.keepBinary();
 
                 CacheInvokeEntry<Object, Object> invokeEntry =
-                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0, ver,
-                        keepBinary,
-                        ctx.conflictNeedResolve() ? txEntry.cached().versionedEntry(keepBinary) : null);
+                    new CacheInvokeEntry<>(txEntry.key(), key0, cacheVal, val0, ver,
+                        keepBinary,txEntry.cached());
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 

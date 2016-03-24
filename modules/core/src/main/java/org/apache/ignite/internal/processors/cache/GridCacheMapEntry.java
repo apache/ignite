@@ -1620,8 +1620,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 assert entryProcessor != null;
 
-                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(cctx, key, old, version(), keepBinary,
-                    null);
+                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(key, old, version(), keepBinary, this);
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);
@@ -1907,9 +1906,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     // Get new value, optionally unmarshalling and/or transforming it.
                     Object writeObj0;
 
-                    // Prepare old entry for conflict resolution.
-                    GridCacheVersionedEntryEx oldEntry = versionedEntry(keepBinary);
-
                     if (op == GridCacheOperation.TRANSFORM) {
                         transformClo = writeObj;
 
@@ -1917,8 +1913,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                         oldVal = rawGetOrUnmarshalUnlocked(true);
 
-                        CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(cctx, key, oldVal, version(),
-                            keepBinary, oldEntry);
+                        CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(key, oldVal, version(),
+                            keepBinary, this);
 
                         try {
                             Object computed = entryProcessor.process(entry, invokeArgs);
@@ -1951,7 +1947,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         explicitTtl,
                         explicitExpireTime);
 
-                    // Prepare new entry for conflict resolution.
+                    // Prepare old and new entries for conflict resolution.
+                    GridCacheVersionedEntryEx oldEntry = versionedEntry(keepBinary);
                     GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry<>(
                         oldEntry.key(),
                         writeObj0,
@@ -2055,7 +2052,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                     (EntryProcessor<Object, Object, ?>)writeObj;
 
                                 CacheInvokeEntry<Object, Object> entry =
-                                    new CacheInvokeEntry<>(cctx, key, prevVal, version(), keepBinary, null);
+                                    new CacheInvokeEntry<>(key, prevVal, version(), keepBinary, this);
 
                                 try {
                                     entryProcessor.process(entry, invokeArgs);
@@ -2185,8 +2182,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
 
-                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(cctx, key, oldVal, version(), keepBinary,
-                    null);
+                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(key, oldVal, version(), keepBinary, this);
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);

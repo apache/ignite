@@ -142,9 +142,9 @@ public class CachePluginManager extends GridCacheManagerAdapter {
      * @return New instance of underlying type or {@code null} if it's not available.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <T> T unwrapEntry(MutableEntry<?, ?> mutableEntry, Class<T> cls) {
+    @Nullable public <T> T unwrapMutableEntry(MutableEntry<?, ?> mutableEntry, Class<T> cls) {
         for (final CachePluginProvider provider : providersList) {
-            final T res = (T) provider.unwrapEntry(mutableEntry, cls);
+            final T res = (T) provider.unwrapMutableEntry(mutableEntry, cls);
 
             if (res != null)
                 return res;

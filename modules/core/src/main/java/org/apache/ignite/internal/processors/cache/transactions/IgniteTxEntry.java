@@ -693,8 +693,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
             try {
                 final boolean keepBinary = keepBinary();
 
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, key, keyVal, cacheVal, val,
-                    ver, keepBinary, ctx.conflictNeedResolve() ? cached().versionedEntry(keepBinary) : null);
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(key, keyVal, cacheVal, val,
+                    ver, keepBinary, cached());
 
                 EntryProcessor processor = t.get1();
 

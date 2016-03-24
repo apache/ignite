@@ -392,9 +392,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             boolean modified = false;
 
                             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(
-                                     txEntry.context(), key, val, txEntry.cached().version(), keepBinary,
-                                     cacheCtx.conflictNeedResolve() ? txEntry.cached().versionedEntry(keepBinary) : null);
+                                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, val,
+                                     txEntry.cached().version(), keepBinary, txEntry.cached());
 
                                  try {
                                     EntryProcessor<Object, Object, Object> processor = t.get1();
