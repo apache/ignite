@@ -29,7 +29,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -344,10 +343,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param fut Exchange future.
+     * @param crd Coordinator flag.
      * @param reqs Cache change requests.
      * @throws IgniteCheckedException If failed.
+     * @return {@code True} if client-only exchange is needed.
      */
-    public boolean onCacheChangeRequest(final GridDhtPartitionsExchangeFuture fut, boolean crd, Collection<DynamicCacheChangeRequest> reqs)
+    public boolean onCacheChangeRequest(final GridDhtPartitionsExchangeFuture fut,
+        boolean crd,
+        Collection<DynamicCacheChangeRequest> reqs)
         throws IgniteCheckedException {
         assert !F.isEmpty(reqs) : fut;
 
@@ -501,6 +504,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param exchFut Exchange future.
+     * @param crd Coordinator flag.
      * @param msg Affinity change message.
      */
     public void onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture exchFut,
@@ -544,10 +548,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param exchFut Exchange future.
+     * @param crd Coordinator flag.
      * @param msg Message.
      * @throws IgniteCheckedException If failed.
      */
-    public void onChangeAffinityMessage(final GridDhtPartitionsExchangeFuture exchFut, boolean crd, final CacheAffinityChangeMessage msg)
+    public void onChangeAffinityMessage(final GridDhtPartitionsExchangeFuture exchFut,
+        boolean crd, final
+        CacheAffinityChangeMessage msg)
         throws IgniteCheckedException {
         assert affCalcVer != null || cctx.kernalContext().clientNode();
         assert msg.topologyVersion() != null && msg.exchangeId() == null: msg;
@@ -622,6 +629,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param fut Exchange future.
+     * @param crd Coordinator flag.
      * @throws IgniteCheckedException If failed.
      */
     public void onClientEvent(final GridDhtPartitionsExchangeFuture fut, boolean crd) throws IgniteCheckedException {
@@ -694,6 +702,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param c Cache closure.
      * @throws IgniteCheckedException If failed
      */
     private void forAllRegisteredCaches(IgniteInClosureX<DynamicCacheDescriptor> c) throws IgniteCheckedException {
@@ -804,6 +813,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
     }
 
+    /**
+     * @param aff Affinity.
+     * @param fut Exchange future.
+     * @param fetch Force fetch flag.
+     * @throws IgniteCheckedException If failed.
+     */
     private void initAffinity(GridAffinityAssignmentCache aff, GridDhtPartitionsExchangeFuture fut, boolean fetch)
         throws IgniteCheckedException {
         if (!fetch && canCalculateAffinity(aff, fut)) {
@@ -824,6 +839,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param aff Affinity.
+     * @param fut Exchange future.
      * @return {@code True} if local node can calculate affinity on it's own for this partition map exchange.
      */
     private boolean canCalculateAffinity(GridAffinityAssignmentCache aff, GridDhtPartitionsExchangeFuture fut) {
@@ -970,11 +986,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /**
      * @param fut Exchange future.
-     * @param crd Oldest node flag.
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if affinity should be assigned by coordinator.
      */
-    public boolean onServerLeft(final GridDhtPartitionsExchangeFuture fut, boolean crd) throws IgniteCheckedException {
+    public boolean onServerLeft(final GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         ClusterNode leftNode = fut.discoveryEvent().eventNode();
 
         assert !leftNode.isClient() : leftNode;
@@ -1085,6 +1100,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         });
     }
 
+    /**
+     * @param fut Exchange future.
+     * @param desc Cache descriptor.
+     * @return Cache holder.
+     * @throws IgniteCheckedException If failed.
+     */
     private CacheHolder cache(GridDhtPartitionsExchangeFuture fut, DynamicCacheDescriptor desc)
         throws IgniteCheckedException {
         assert lateAffAssign;
@@ -1123,7 +1144,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param fut Exchange future.
      * @param crd Coordinator flag.
      * @throws IgniteCheckedException If failed.
-     * @return
+     * @return Rabalance info.
      */
     @Nullable private RebalancingInfo initAffinityOnNodeJoin(final GridDhtPartitionsExchangeFuture fut, boolean crd)
         throws IgniteCheckedException {
@@ -1158,10 +1179,17 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         }
     }
 
+    /**
+     * @param fut Exchange future.
+     * @param aff Affinity.
+     * @param rebalanceInfo Rebalance information.
+     * @param latePrimary If {@code true} delays primary assignment if it is not owner.
+     * @throws IgniteCheckedException If failed.
+     */
     private void initAffinityOnNodeJoin(GridDhtPartitionsExchangeFuture fut,
         GridAffinityAssignmentCache aff,
         RebalancingInfo rebalanceInfo,
-        boolean delayNewPrimary)
+        boolean latePrimary)
         throws IgniteCheckedException
     {
         assert lateAffAssign;
@@ -1180,26 +1208,28 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         List<List<ClusterNode>> idealAssignment = aff.calculate(topVer, fut.discoveryEvent());
         List<List<ClusterNode>> newAssignment = null;
 
-        for (int p = 0; p < idealAssignment.size(); p++) {
-            List<ClusterNode> newNodes = idealAssignment.get(p);
-            List<ClusterNode> curNodes = curAff.get(p);
+        if (latePrimary) {
+            for (int p = 0; p < idealAssignment.size(); p++) {
+                List<ClusterNode> newNodes = idealAssignment.get(p);
+                List<ClusterNode> curNodes = curAff.get(p);
 
-            ClusterNode curPrimary = curNodes.size() > 0 ? curNodes.get(0) : null;
-            ClusterNode newPrimary = newNodes.size() > 0 ? newNodes.get(0) : null;
+                ClusterNode curPrimary = curNodes.size() > 0 ? curNodes.get(0) : null;
+                ClusterNode newPrimary = newNodes.size() > 0 ? newNodes.get(0) : null;
 
-            if (delayNewPrimary && curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
-                assert cctx.discovery().node(topVer, curPrimary.id()) != null : curPrimary;
+                if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
+                    assert cctx.discovery().node(topVer, curPrimary.id()) != null : curPrimary;
 
-                List<ClusterNode> nodes0 = delayedPrimaryAssignment(aff,
-                    p,
-                    curPrimary,
-                    newNodes,
-                    rebalanceInfo);
+                    List<ClusterNode> nodes0 = delayedPrimaryAssignment(aff,
+                        p,
+                        curPrimary,
+                        newNodes,
+                        rebalanceInfo);
 
-                if (newAssignment == null)
-                    newAssignment = new ArrayList<>(idealAssignment);
+                    if (newAssignment == null)
+                        newAssignment = new ArrayList<>(idealAssignment);
 
-                newAssignment.set(p, nodes0);
+                    newAssignment.set(p, nodes0);
+                }
             }
         }
 
@@ -1398,6 +1428,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             this.rebalanceEnabled = rebalanceEnabled;
         }
 
+        /**
+         * @return Client holder flag.
+         */
         abstract boolean client();
 
         /**

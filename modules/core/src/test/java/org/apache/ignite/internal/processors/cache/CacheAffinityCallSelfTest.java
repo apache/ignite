@@ -191,8 +191,6 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Object call() throws IgniteCheckedException {
             if (topVer != null) {
-                boolean pass = false;
-
                 GridCacheAffinityManager aff =
                     ((IgniteKernal)ignite).context().cache().internalCache(CACHE_NAME).context().affinity();
 
