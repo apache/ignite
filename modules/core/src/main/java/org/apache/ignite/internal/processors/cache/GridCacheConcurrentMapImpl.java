@@ -117,7 +117,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
                 if (entry == null) {
                     if (create)
-                        entry = cur = created0 = factory.create(ctx, topVer, cacheKey, cacheKey.hashCode(), val);
+                        cur = created0 = factory.create(ctx, topVer, cacheKey, cacheKey.hashCode(), val);
                 }
                 else {
                     if (entry.obsolete()) {
@@ -130,13 +130,16 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
                         cur = entry;
                 }
 
-                if (entry != null)
-                    synchronized (entry) {
-                        if (created0 != null && doomed0 == null)
-                            incrementPublicSize(entry);
-                        else if (doomed0 != null && created0 == null)
-                            decrementPublicSize(entry);
+                if (doomed0 != null && !doomed0.deleted() && created0 == null) {
+                    synchronized (doomed0) {
+                        decrementPublicSize(doomed0);
                     }
+                }
+                else if (created0 != null && (doomed0 == null || doomed0.deleted())) {
+                    synchronized (created0) {
+                        incrementPublicSize(created0);
+                    }
+                }
 
                 created.set(created0);
                 doomed.set(doomed0);
