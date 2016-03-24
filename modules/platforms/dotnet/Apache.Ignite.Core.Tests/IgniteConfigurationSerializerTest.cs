@@ -307,6 +307,7 @@ namespace Apache.Ignite.Core.Tests
                             Serializer = new TestSerializer()
                         }
                     },
+                    Types = new [] {typeof(string).FullName },
                     DefaultIdMapper = new IdMapper(),
                     DefaultKeepDeserialized = true,
                     DefaultNameMapper = new NameMapper(),

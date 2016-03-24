@@ -61,6 +61,13 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="types" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
                             <xs:element name="defaultNameMapper" minOccurs="0">
                                 <xs:complexType>
                                     <xs:attribute name="type" type="xs:string" use="required" />
