@@ -1385,7 +1385,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Tests type id method.
+        /// Tests type name mapper.
         /// </summary>
         [Test]
         public void TestTypeName()
