@@ -815,6 +815,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
 
         try {
+            System.out.println("pool(" + plc + ").exec(" + msg + "," + nodeId + ")");
+
             pool(plc).execute(c);
         }
         catch (RejectedExecutionException e) {
