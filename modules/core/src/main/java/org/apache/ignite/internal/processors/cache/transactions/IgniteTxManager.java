@@ -386,6 +386,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             subjId,
             taskNameHash);
 
+        if (tx.system()) {
+            AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), tx);
+
+            // If there is another system transaction in progress, use it's topology version to prevent deadlock.
+            if (topVer != null)
+                tx.topologyVersion(topVer);
+        }
+
         return onCreated(sysCacheCtx, tx);
     }
 
