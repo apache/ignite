@@ -100,13 +100,15 @@ public final class IgfsMetaDirectoryListingAddProcessor implements EntryProcesso
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, fileName);
-        out.writeObject(entry);
+
+        IgfsUtils.writeListingEntry(out, entry);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         fileName = U.readString(in);
-        entry = (IgfsListingEntry)in.readObject();
+
+        entry = IgfsUtils.readListingEntry(in);
     }
 
     /** {@inheritDoc} */

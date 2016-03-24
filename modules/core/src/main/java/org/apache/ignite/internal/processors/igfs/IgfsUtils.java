@@ -36,6 +36,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.F;
@@ -45,6 +46,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
@@ -471,6 +475,42 @@ public class IgfsUtils {
     }
 
     /**
+     * Write listing entry.
+     *
+     * @param out Writer.
+     * @param entry Entry.
+     * @throws IOException If failed.
+     */
+    public static void writeListingEntry(DataOutput out, @Nullable IgfsListingEntry entry) throws IOException {
+        if (entry != null) {
+            out.writeBoolean(true);
+
+            IgniteUtils.writeGridUuid(out, entry.fileId());
+
+            out.writeBoolean(entry.isDirectory());
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Read listing entry.
+     *
+     * @param in Reader.
+     * @return Entry.
+     */
+    @Nullable public static IgfsListingEntry readListingEntry(DataInput in) throws IOException {
+        if (in.readBoolean()) {
+            IgniteUuid id = IgniteUtils.readGridUuid(in);
+            boolean dir = in.readBoolean();
+
+            return new IgfsListingEntry(id, dir);
+        }
+        else
+            return null;
+    }
+
+    /**
      * Write entry properties. Rely on reference equality for well-known properties.
      *
      * @param out Writer.
@@ -547,6 +587,93 @@ public class IgfsUtils {
                 }
 
                 props.put(key, in.readString());
+            }
+
+            return props;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * Write entry properties. Rely on reference equality for well-known properties.
+     *
+     * @param out Writer.
+     * @param props Properties.
+     * @throws IOException If failed.
+     */
+    @SuppressWarnings("StringEquality")
+    public static void writeProperties(DataOutput out, @Nullable Map<String, String> props) throws IOException {
+        if (props != null) {
+            out.writeInt(props.size());
+
+            for (Map.Entry<String, String> entry : props.entrySet()) {
+                String key = entry.getKey();
+
+                if (key == PROP_PERMISSION)
+                    out.writeByte(PROP_PERMISSION_IDX);
+                else if (key == PROP_PREFER_LOCAL_WRITES)
+                    out.writeByte(PROP_PREFER_LOCAL_WRITES_IDX);
+                else if (key == PROP_USER_NAME)
+                    out.writeByte(PROP_USER_NAME_IDX);
+                else if (key == PROP_GROUP_NAME)
+                    out.writeByte(PROP_GROUP_NAME_IDX);
+                else {
+                    out.writeByte(PROP_IDX);
+                    U.writeString(out, key);
+                }
+
+                U.writeString(out, entry.getValue());
+            }
+        }
+        else
+            out.writeInt(-1);
+    }
+
+    /**
+     * Read entry properties.
+     *
+     * @param in Reader.
+     * @return Properties.
+     * @throws IOException If failed.
+     */
+    @Nullable public static Map<String, String> readProperties(DataInput in) throws IOException {
+        int size = in.readInt();
+
+        if (size >= 0) {
+            Map<String, String> props = new HashMap<>(size);
+
+            for (int i = 0; i < size; i++) {
+                byte idx = in.readByte();
+
+                String key;
+
+                switch (idx) {
+                    case PROP_PERMISSION_IDX:
+                        key = PROP_PERMISSION;
+
+                        break;
+
+                    case PROP_PREFER_LOCAL_WRITES_IDX:
+                        key = PROP_PREFER_LOCAL_WRITES;
+
+                        break;
+
+                    case PROP_USER_NAME_IDX:
+                        key = PROP_USER_NAME;
+
+                        break;
+
+                    case PROP_GROUP_NAME_IDX:
+                        key = PROP_GROUP_NAME;
+
+                        break;
+
+                    default:
+                        key = U.readString(in);
+                }
+
+                props.put(key, U.readString(in));
             }
 
             return props;
