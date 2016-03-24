@@ -18,17 +18,27 @@
 -->
 
 <configuration>
-    <startup>
-        <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.0"/>
-    </startup>
+    <configSections>
+        <section name="igniteConfiguration" type="Apache.Ignite.Core.IgniteConfigurationSection, Apache.Ignite.Core" />
+    </configSections>
 
-    <runtime>
-        <gcServer enabled="true" />
-    </runtime>
+    <igniteConfiguration xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection">
+        <discoverySpi type="TcpDiscoverySpi">
+            <ipFinder type="TcpDiscoveryStaticIpFinder">
+                <endpoints>
+                    <string>127.0.0.1:47500..47501</string>
+                </endpoints>
+            </ipFinder>
+        </discoverySpi>
 
-    <appSettings>
-        <add key="Ignite.ConfigFileName" value="ignite-dotnet-cfg.xml" />
-        <add key="Ignite.ConfigSectionName" value="igniteConfiguration" />
-    </appSettings>
+        <jvmOptions>
+            <string>-Xms512m</string>
+            <string>-Xmx702m</string>
+        </jvmOptions>
+
+        <cacheConfiguration>
+            <cacheConfiguration name='testCache' cacheMode='Replicated' />
+        </cacheConfiguration>
+    </igniteConfiguration>
 
 </configuration>

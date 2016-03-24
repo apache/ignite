@@ -264,6 +264,9 @@
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
     <None Include="app.config" />
+    <Content Include="Config\ignite-dotnet-cfg.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="Config\Apache.Ignite.exe.config.test3">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
