@@ -41,5 +41,12 @@
         <cacheConfiguration>
             <cacheConfiguration name='testCache' cacheMode='Replicated' />
         </cacheConfiguration>
+
+        <binaryConfiguration>
+            <types>
+                <string>Apache.Ignite.Core.Tests.ExecutableTest+RemoteConfiguration, Apache.Ignite.Core.Tests</string>
+                <string>Apache.Ignite.Core.Tests.ExecutableTest+RemoteConfigurationClosure, Apache.Ignite.Core.Tests</string>
+            </types>
+        </binaryConfiguration>
     </igniteConfiguration>
 </configuration>
