@@ -283,12 +283,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(_grid.WaitTopology(2));
 
             var remoteCfg = RemoteConfig();
-            Assert.IsTrue(remoteCfg.JvmOptions.Contains("-DOPT1"));
+            Assert.IsTrue(remoteCfg.JvmOptions.Contains("-DOPT25"));
 
             proc.Kill();
 
             Assert.IsTrue(_grid.WaitTopology(1));
-
         }
 
         /// <summary>
@@ -297,7 +296,17 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestXmlConfigurationCmd()
         {
-            // TODO
+            var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
+                "-configFileName=config\\ignite-dotnet-cfg.xml");
+
+            Assert.IsTrue(_grid.WaitTopology(2));
+
+            var remoteCfg = RemoteConfig();
+            Assert.IsTrue(remoteCfg.JvmOptions.Contains("-DOPT25"));
+
+            proc.Kill();
+
+            Assert.IsTrue(_grid.WaitTopology(1));
         }
 
         /// <summary>

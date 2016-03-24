@@ -35,7 +35,7 @@
         <jvmOptions>
             <string>-Xms512m</string>
             <string>-Xmx702m</string>
-            <string>-DOPT1</string>
+            <string>-DOPT25</string>
         </jvmOptions>
 
         <cacheConfiguration>
