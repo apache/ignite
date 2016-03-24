@@ -6487,15 +6487,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private final class KeySet<K> extends AbstractSet<K> {
 
         private final Set<KeyCacheObject> internalSet;
+        private CacheOperationContext opCtxPerCall;
 
         public KeySet(Set<KeyCacheObject> internalSet) {
             this.internalSet = internalSet;
+            opCtxPerCall = ctx.operationContextPerCall();
         }
 
         @Override public Iterator<K> iterator() {
             return F.iterator(internalSet, new IgniteClosure<KeyCacheObject, K>() {
                 @Override public K apply(KeyCacheObject object) {
-                    return (K) ctx.unwrapBinaryIfNeeded(object, ctx.keepBinary());
+                    return (K)ctx.unwrapBinaryIfNeeded(object, opCtxPerCall != null && opCtxPerCall.isKeepBinary(), true);
                 }
             }, true);
         }
