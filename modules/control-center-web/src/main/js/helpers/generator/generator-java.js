@@ -1235,7 +1235,7 @@ $generatorJava.clusterDataSources = function (caches, res) {
         if (storeFactory) {
             var beanClassName = $generatorJava.dataSourceClassName(res, storeFactory);
 
-            if (beanClassName && !_.contains(datasources, beanClassName)) {
+            if (beanClassName && !_.includes(datasources, beanClassName)) {
                 datasources.push(beanClassName);
 
                 if (factoryKind === 'CacheJdbcPojoStoreFactory' || factoryKind === 'CacheJdbcBlobStoreFactory') {
@@ -2902,7 +2902,7 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
                         }
 
                         _.forEach(desc.insertCntConsts, function (cnt) {
-                            if (!_.contains(generatedConsts, cnt.name)) {
+                            if (!_.includes(generatedConsts, cnt.name)) {
                                 res.line('/** ' + cnt.comment + ' */');
                                 res.line('private static final int ' + cnt.name + ' = ' + cnt.val + ';');
                                 res.needEmptyLine = true;
@@ -3012,7 +3012,7 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
                         _.forEach(desc.selectQuery, function (query) {
                             var cacheName = type.cache.name;
 
-                            if (!_.contains(cacheLoaded, cacheName)) {
+                            if (!_.includes(cacheLoaded, cacheName)) {
                                 res.line('ignite.cache("' + cacheName + '").loadCache(null);');
 
                                 cacheLoaded.push(cacheName);

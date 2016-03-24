@@ -71,7 +71,7 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
 
                     var beanClassName = $commonUtils.toJavaName(varType, storeFactory.dataSourceBean);
 
-                    if (!_.contains(datasources, beanClassName)) {
+                    if (!_.includes(datasources, beanClassName)) {
                         datasources.push(beanClassName);
 
                         res.needEmptyLine = true;
