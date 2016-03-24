@@ -39,6 +39,9 @@ public class GridH2Row extends Row implements GridSearchRowPointer {
     /** */
     public GridCacheVersion ver; // TODO remove
 
+    /** */
+    public int partId; // TODO remove
+
     /**
      * @param data Column values.
      */

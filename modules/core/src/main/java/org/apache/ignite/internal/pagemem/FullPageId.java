@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.pagemem;
 
+import org.apache.ignite.internal.util.typedef.internal.SB;
+
 /**
  *
  */
@@ -70,5 +72,10 @@ public class FullPageId {
         result = 31 * result + cacheId;
 
         return result;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return new SB("FullPageId [pageId=").appendHex(pageId).a(", cacheId=").a(cacheId).a(']').toString();
     }
 }

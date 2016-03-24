@@ -283,7 +283,7 @@ public class MetadataStorage {
                 if (writePos != 0)
                     buf.position(writePos);
 
-                FullPageId fullId = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_META);
+                FullPageId fullId = pageMem.allocatePage(0, 0, PageIdAllocator.FLAG_META);
 
                 buf.putInt(cacheId);
                 buf.putLong(fullId.pageId());

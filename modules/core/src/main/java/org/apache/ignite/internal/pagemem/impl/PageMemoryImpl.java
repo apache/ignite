@@ -122,9 +122,6 @@ public class  PageMemoryImpl implements PageMemory {
     /** Pages marked as dirty since the last checkpoint. */
     private Collection<FullPageId> dirtyPages = new GridConcurrentHashSet<>();
 
-    /** Pages captured for the checkpoint process. */
-    private Collection<FullPageId> checkpointPages;
-
     /**
      * @param log Logger to use.
      * @param directMemoryProvider Memory allocator to use.
@@ -359,92 +356,52 @@ public class  PageMemoryImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public Collection<FullPageId> beginCheckpoint() throws IgniteException {
-        if (checkpointPages != null)
-            throw new IgniteException("Failed to begin checkpoint (it is already in progress).");
+        Collection<FullPageId> checkpointIds = new ArrayList<>(dirtyPages.size());
 
-        checkpointPages = dirtyPages;
+        checkpointIds.addAll(dirtyPages);
 
-        dirtyPages = new GridConcurrentHashSet<>();
-
-        return checkpointPages;
+        return checkpointIds;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void finishCheckpoint() {
-        assert checkpointPages != null : "Checkpoint has not been started.";
-
-        // Split page IDs by segment.
-        Collection<FullPageId>[] segCols = new Collection[segments.length];
-
-        for (FullPageId pageId : checkpointPages) {
-            int segIdx = segmentIndex(pageId);
-
-            Collection<FullPageId> col = segCols[segIdx];
-
-            if (col == null) {
-                col = new ArrayList<>(checkpointPages.size() / segments.length + 1);
-
-                segCols[segIdx] = col;
-            }
-
-            col.add(pageId);
-        }
-
-        // Lock segment by segment and flush changes.
-        for (int i = 0; i < segCols.length; i++) {
-            Collection<FullPageId> col = segCols[i];
-
-            if (col == null)
-                continue;
-
-            Segment seg = segments[i];
-
-            seg.writeLock().lock();
-
-            try {
-                for (FullPageId pageId : col) {
-                    PageImpl page = seg.acquiredPages.get(pageId);
-
-                    if (page != null) {
-                        // We are in the segment write lock, so it is safe to remove the page if use counter is
-                        // equal to 0.
-                        if (page.flushCheckpoint(log))
-                            seg.acquiredPages.remove(pageId);
-                    }
-                    // else page was not modified since the checkpoint started.
-                    else {
-                        checkpointPages.remove(pageId);
-
-                        long relPtr = seg.loadedPages.get(pageId, INVALID_REL_PTR);
-
-                        assert relPtr != INVALID_REL_PTR;
-
-                        setDirty(pageId, absolute(relPtr), false);
-                    }
-                }
-            }
-            finally {
-                seg.writeLock().unlock();
-            }
-        }
-
-        checkpointPages = null;
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer getForCheckpoint(FullPageId pageId) {
+    @Override public void getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf) {
         Segment seg = segment(pageId);
 
         seg.readLock().lock();
 
         try {
-            long relPtr = seg.loadedPages.get(pageId, INVALID_REL_PTR);
+            PageImpl page = seg.acquiredPages.get(pageId);
 
-            assert relPtr != INVALID_REL_PTR : "Failed to get page checkpoint data (page has been evicted) " +
-                "[pageId=" + pageId + ']';
+            ByteBuffer pageBuf = null;
 
-            return wrapPointer(absolute(relPtr) + PAGE_OVERHEAD, pageSize());
+            if (page != null) {
+                assert page.isDirty();
+
+                pageBuf = page.getForRead();
+            }
+
+            try {
+                if (page == null) {
+                    long relPtr = seg.loadedPages.get(pageId, INVALID_REL_PTR);
+
+                    assert relPtr != INVALID_REL_PTR : "Failed to get page checkpoint data (page has been evicted) " +
+                        "[pageId=" + pageId + ']';
+
+                    pageBuf = wrapPointer(absolute(relPtr) + PAGE_OVERHEAD, pageSize());
+                }
+
+                tmpBuf.put(pageBuf);
+            }
+            finally {
+                if (page != null)
+                    page.releaseRead();
+            }
         }
         finally {
             seg.readLock().unlock();
@@ -462,25 +419,6 @@ public class  PageMemoryImpl implements PageMemory {
         buf.order(ByteOrder.nativeOrder());
 
         return buf;
-    }
-
-    /**
-     * @param pageId Page ID to check if it was added to the checkpoint list.
-     * @return {@code True} if it was added to the checkpoint list.
-     */
-    boolean isInCheckpoint(FullPageId pageId) {
-        Collection<FullPageId> pages0 = checkpointPages;
-
-        return pages0 != null && pages0.contains(pageId);
-    }
-
-    /**
-     * @param fullPageId Page ID to clear.
-     */
-    void clearCheckpoint(FullPageId fullPageId) {
-        assert checkpointPages != null;
-
-        checkpointPages.remove(fullPageId);
     }
 
     /**

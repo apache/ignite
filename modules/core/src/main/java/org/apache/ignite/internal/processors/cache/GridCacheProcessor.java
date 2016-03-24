@@ -73,6 +73,7 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -1039,6 +1040,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.continuous().onCacheStart(cacheCtx);
 
+        if (sharedCtx.pageStore() != null)
+            sharedCtx.pageStore().onBeforeCacheStart(cacheCtx);
+
         CacheConfiguration cfg = cacheCtx.config();
 
         // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
@@ -1815,6 +1819,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheDeploymentManager depMgr = new GridCacheDeploymentManager();
         GridCachePartitionExchangeManager exchMgr = new GridCachePartitionExchangeManager();
         IgniteCacheDatabaseSharedManager dbMgr = new IgniteCacheDatabaseSharedManager();
+        IgnitePageStoreManager pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
+
         GridCacheIoManager ioMgr = new GridCacheIoManager();
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
@@ -1825,6 +1831,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             verMgr,
             mvccMgr,
             dbMgr,
+            pageStoreMgr,
             depMgr,
             exchMgr,
             ioMgr,

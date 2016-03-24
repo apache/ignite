@@ -344,14 +344,13 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @param expLastDataPageId Expected last data page ID.
      * @return Next data page ID.
      */
-    private synchronized long nextDataPage(long expLastDataPageId) throws IgniteCheckedException {
+    private synchronized long nextDataPage(long expLastDataPageId, int partId) throws IgniteCheckedException {
         if (expLastDataPageId != lastDataPageId)
             return lastDataPageId;
 
         long pageId;
 
-        // TODO we need a partition here
-        try (Page page = allocatePage(-1, FLAG_DATA)) {
+        try (Page page = allocatePage(partId, FLAG_DATA)) {
             pageId = page.id();
 
             ByteBuffer buf = page.getForInitialWrite();
@@ -370,7 +369,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             long pageId = lastDataPageId;
 
             if (pageId == 0)
-                pageId = nextDataPage(0);
+                pageId = nextDataPage(0, row.partId);
 
             try (Page page = page(pageId)) {
                 ByteBuffer buf = page.getForWrite();
@@ -395,7 +394,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 }
             }
 
-            nextDataPage(pageId);
+            nextDataPage(pageId, row.partId);
         }
     }
 

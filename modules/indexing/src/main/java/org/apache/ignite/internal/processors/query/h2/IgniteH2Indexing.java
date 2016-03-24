@@ -2496,6 +2496,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 row.key = key;
                 row.val = val;
+                row.partId = cctx.affinity().partition(key);
             }
 
             return row;

@@ -65,6 +65,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
                 new GridCacheVersionManager(),
                 new GridCacheMvccManager(),
                 new IgniteCacheDatabaseSharedManager(),
+                null,
                 new GridCacheDeploymentManager<K, V>(),
                 new GridCachePartitionExchangeManager<K, V>(),
                 new GridCacheIoManager(),

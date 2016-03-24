@@ -119,6 +119,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
+        IgnitePageStoreManager pageStoreMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         GridCacheIoManager ioMgr,
@@ -127,7 +128,7 @@ public class GridCacheSharedContext<K, V> {
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, dbMgr, depMgr, exchMgr, ioMgr);
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, dbMgr, pageStoreMgr, depMgr, exchMgr, ioMgr);
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -170,6 +171,7 @@ public class GridCacheSharedContext<K, V> {
             verMgr,
             mvccMgr,
             dbMgr,
+            pageStoreMgr,
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
             ioMgr);
@@ -209,6 +211,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
         IgniteCacheDatabaseSharedManager dbMgr,
+        IgnitePageStoreManager pageStoreMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         GridCacheIoManager ioMgr) {
@@ -216,6 +219,7 @@ public class GridCacheSharedContext<K, V> {
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
         this.dbMgr = add(mgrs, dbMgr);
+        this.pageStoreMgr = add(mgrs, pageStoreMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
         this.exchMgr = add(mgrs, exchMgr);

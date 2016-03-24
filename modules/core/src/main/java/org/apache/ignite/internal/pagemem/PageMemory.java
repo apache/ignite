@@ -49,7 +49,7 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
     /**
      * @return Page size in bytes.
      */
-    public int pageSize() throws IgniteCheckedException;
+    public int pageSize();
 
     /**
      * Gets a collection of dirty page IDs since the last checkpoint. If a dirty page is being written after
@@ -72,8 +72,8 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      *
      * @param pageId Page ID to get byte buffer for. The page ID must be present in the collection returned by
      *      the {@link #beginCheckpoint()} method call.
-     * @return A buffer containing checkpointed page data.
+     * @param tmpBuf Temporary buffer to write changes into.
      * @throws IgniteException If failed to obtain page data.
      */
-    public ByteBuffer getForCheckpoint(FullPageId pageId);
+    public void getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf);
 }

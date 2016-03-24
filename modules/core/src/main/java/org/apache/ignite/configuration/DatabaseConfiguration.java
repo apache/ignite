@@ -29,14 +29,8 @@ public class DatabaseConfiguration implements Serializable {
     /** Default page size. */
     public static final int DFLT_PAGE_SIZE = 8 * 1024;
 
-    /** Default number of pages in file allocation block. */
-    public static final int DFLT_PAGES_IN_BLOCK = 512;
-
     /** Page size. */
     private int pageSize = DFLT_PAGE_SIZE;
-
-    /** Number of pages in file allocation block. */
-    private int pagesInBlock = DFLT_PAGES_IN_BLOCK;
 
     /** File cache allocation path. */
     private String fileCacheAllocationPath;
@@ -50,6 +44,9 @@ public class DatabaseConfiguration implements Serializable {
     /** Concurrency level. */
     private int concLvl;
 
+    /** Persistence enabled flag. */
+    private boolean persistenceEnabled;
+
     /**
      * @return Page size.
      */
@@ -62,6 +59,20 @@ public class DatabaseConfiguration implements Serializable {
      */
     public void setPageSize(int pageSize) {
         this.pageSize = pageSize;
+    }
+
+    /**
+     * @return Persistence enabled flag.
+     */
+    public boolean isPersistenceEnabled() {
+        return persistenceEnabled;
+    }
+
+    /**
+     * @param persistenceEnabled Persistence enabled flag.
+     */
+    public void setPersistenceEnabled(boolean persistenceEnabled) {
+        this.persistenceEnabled = persistenceEnabled;
     }
 
     /**
