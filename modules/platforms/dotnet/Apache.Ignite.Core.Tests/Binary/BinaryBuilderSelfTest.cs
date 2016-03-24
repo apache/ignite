@@ -17,6 +17,7 @@
 
 // ReSharper disable UnassignedField.Global
 // ReSharper disable CollectionNeverUpdated.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
