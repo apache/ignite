@@ -27,7 +27,7 @@
     </runtime>
 
     <appSettings>
-        <add key="Ignite.ConfigFileName" value="ignite-dotnet-cfg.xml" />
+        <add key="Ignite.ConfigFileName" value="config\ignite-dotnet-cfg.xml" />
         <add key="Ignite.ConfigSectionName" value="igniteConfiguration" />
     </appSettings>
 

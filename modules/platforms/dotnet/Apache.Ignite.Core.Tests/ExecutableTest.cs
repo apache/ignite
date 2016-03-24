@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests
     using System.CodeDom.Compiler;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
@@ -282,10 +281,6 @@ namespace Apache.Ignite.Core.Tests
             var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath());
 
             Assert.IsTrue(_grid.WaitTopology(2));
-
-            var cache = _grid.GetCache<int, int>("testCache");
-
-            Assert.AreEqual(CacheMode.Replicated, cache.GetConfiguration().CacheMode);
 
             var remoteCfg = RemoteConfig();
             Assert.IsTrue(remoteCfg.JvmOptions.Contains("-DOPT1"));

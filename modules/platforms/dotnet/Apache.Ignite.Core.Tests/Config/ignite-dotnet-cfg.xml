@@ -22,7 +22,8 @@
         <section name="igniteConfiguration" type="Apache.Ignite.Core.IgniteConfigurationSection, Apache.Ignite.Core" />
     </configSections>
 
-    <igniteConfiguration xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection">
+    <igniteConfiguration xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection" 
+                         localhost="127.0.0.1">
         <discoverySpi type="TcpDiscoverySpi">
             <ipFinder type="TcpDiscoveryStaticIpFinder">
                 <endpoints>
