@@ -107,7 +107,7 @@ namespace Apache.Ignite
             }
             catch (Exception e)
             {
-                Console.WriteLine("ERROR: " + e.Message);
+                Console.WriteLine("ERROR: " + e);
 
                 Environment.Exit(-1);
             }
