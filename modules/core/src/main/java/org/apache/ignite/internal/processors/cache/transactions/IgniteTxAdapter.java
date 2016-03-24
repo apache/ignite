@@ -472,14 +472,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public AffinityTopologyVersion topologyVersionSnapshot() {
+    @Override public final AffinityTopologyVersion topologyVersionSnapshot() {
         AffinityTopologyVersion ret = topVer;
 
         return AffinityTopologyVersion.NONE.equals(ret) ? null : ret;
     }
 
     /** {@inheritDoc} */
-    @Override public AffinityTopologyVersion topologyVersion(AffinityTopologyVersion topVer) {
+    @Override public final AffinityTopologyVersion topologyVersion(AffinityTopologyVersion topVer) {
         AffinityTopologyVersion topVer0 = this.topVer;
 
         if (!AffinityTopologyVersion.NONE.equals(topVer0))

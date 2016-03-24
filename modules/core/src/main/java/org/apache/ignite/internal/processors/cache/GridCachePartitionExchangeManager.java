@@ -1183,19 +1183,23 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @param topVer Exchange topology version.
+     * @param exchTopVer Exchange topology version.
      */
-    public void dumpPendingObjects(@Nullable AffinityTopologyVersion topVer) {
+    public void dumpPendingObjects(@Nullable AffinityTopologyVersion exchTopVer) {
         IgniteTxManager tm = cctx.tm();
 
         if (tm != null) {
             U.warn(log, "Pending transactions:");
 
             for (IgniteInternalTx tx : tm.activeTransactions()) {
-                if (topVer != null && tm.needWaitTransaction(tx, topVer))
-                    U.warn(log, ">>> [txVer=" + tx.topologyVersion() + ", exchWait=true, tx=" + tx + ']');
+                if (exchTopVer != null) {
+                    if (tm.needWaitTransaction(tx, exchTopVer))
+                        U.warn(log, ">>> [txVer=" + tx.topologyVersionSnapshot() + ", exchWait=true, tx=" + tx + ']');
+                    else
+                        U.warn(log, ">>> [txVer=" + tx.topologyVersionSnapshot() + ", exchWait=false, tx=" + tx + ']');
+                }
                 else
-                    U.warn(log, ">>> [txVer=" + tx.topologyVersion() + ", tx=" + tx + ']');
+                    U.warn(log, ">>> [txVer=" + tx.topologyVersionSnapshot() + ", tx=" + tx + ']');
             }
         }
 
