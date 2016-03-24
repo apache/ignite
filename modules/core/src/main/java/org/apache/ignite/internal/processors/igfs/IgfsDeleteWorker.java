@@ -357,7 +357,7 @@ public class IgfsDeleteWorker extends IgfsThread {
 
         for (ClusterNode node : nodes) {
             try {
-                igfsCtx.send(node, topic, msg, GridIoPolicy.SYSTEM_POOL);
+                igfsCtx.send(node, topic, msg, GridIoPolicy.IGFS_POOL);
             }
             catch (IgniteCheckedException e) {
                 U.warn(log, "Failed to send IGFS delete message to node [nodeId=" + node.id() +

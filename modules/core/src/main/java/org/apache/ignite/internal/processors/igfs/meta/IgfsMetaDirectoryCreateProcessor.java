@@ -116,27 +116,25 @@ public class IgfsMetaDirectoryCreateProcessor implements EntryProcessor<IgniteUu
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(createTime);
-        U.writeStringMap(out, props);
 
-        if (childName != null) {
-            out.writeBoolean(true);
+        IgfsUtils.writeProperties(out, props);
 
-            U.writeString(out, childName);
-            out.writeObject(childEntry);
-        }
-        else
-            out.writeBoolean(false);
+        U.writeString(out, childName);
+
+        if (childName != null)
+            IgfsUtils.writeListingEntry(out, childEntry);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         createTime = in.readLong();
-        props = U.readStringMap(in);
 
-        if (in.readBoolean()) {
-            childName = U.readString(in);
-            childEntry = (IgfsListingEntry)in.readObject();
-        }
+        props = IgfsUtils.readProperties(in);
+
+        childName = U.readString(in);
+
+        if (childName != null)
+            childEntry = IgfsUtils.readListingEntry(in);
     }
 
     /** {@inheritDoc} */
