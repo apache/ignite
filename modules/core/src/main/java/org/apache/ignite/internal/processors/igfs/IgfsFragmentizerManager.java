@@ -59,7 +59,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.RANGE_STATUS_INITIAL;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.RANGE_STATUS_MOVED;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.RANGE_STATUS_MOVING;
@@ -186,7 +186,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
     private void sendWithRetries(UUID nodeId, IgfsCommunicationMessage msg) throws IgniteCheckedException {
         for (int i = 0; i < MESSAGE_SEND_RETRY_COUNT; i++) {
             try {
-                igfsCtx.send(nodeId, topic, msg, SYSTEM_POOL);
+                igfsCtx.send(nodeId, topic, msg, IGFS_POOL);
 
                 return;
             }

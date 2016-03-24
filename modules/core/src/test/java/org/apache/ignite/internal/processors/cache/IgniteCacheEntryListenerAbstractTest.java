@@ -60,11 +60,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -114,6 +116,18 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         cfg.setEagerTtl(eagerTtl());
 
         cfg.setMemoryMode(memoryMode());
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
+        eventSpi.setExpireCount(50);
+
+        cfg.setEventStorageSpi(eventSpi);
 
         return cfg;
     }
@@ -421,7 +435,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
                 barrier.await();
 
-                for (int i = 0; i < 200; i++) {
+                for (int i = 0; i < 100; i++) {
                     cache.registerCacheEntryListener(cfg);
 
                     cache.deregisterCacheEntryListener(cfg);

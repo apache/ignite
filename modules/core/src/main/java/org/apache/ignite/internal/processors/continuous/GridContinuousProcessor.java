@@ -915,7 +915,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             if (proc != null) {
                 GridCacheAdapter cache = ctx.cache().internalCache(hnd0.cacheName());
 
-                if (cache != null && !cache.isLocal())
+                if (cache != null && !cache.isLocal() && cache.context().userCache())
                     req.addUpdateCounters(ctx.localNodeId(), cache.context().topology().updateCounters());
             }
         }
