@@ -850,8 +850,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         // If local node did not initiate exchange or local node is the only cache node in grid.
         Collection<ClusterNode> affNodes = cctx.discovery().cacheAffinityNodes(aff.cacheName(), fut.topologyVersion());
 
+        DynamicCacheDescriptor cacheDesc = registeredCaches.get(aff.cacheId());
+
+        assert cacheDesc != null : aff.cacheName();
+
         return fut.cacheStarted(aff.cacheId()) ||
             !fut.exchangeId().nodeId().equals(cctx.localNodeId()) ||
+            cctx.localNodeId().equals(cacheDesc.receivedFrom()) ||
             (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
     }
 
