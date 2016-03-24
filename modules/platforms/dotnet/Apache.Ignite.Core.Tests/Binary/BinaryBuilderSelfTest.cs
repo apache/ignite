@@ -1393,7 +1393,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var bin = _marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
 
-            var t = bin.GetBinaryType();
+            var binType = bin.GetBinaryType();
+
+            Assert.AreEqual(BinaryUtils.GetStringHashCode(NameMapper.TestTypeName + "_"), binType.TypeId);
+            Assert.AreEqual(17, bin.GetField<int>(NameMapper.TestFieldName));
         }
 
         /// <summary>
@@ -1814,13 +1817,19 @@ namespace Apache.Ignite.Core.Tests.Binary
         /** <inheritdoc /> */
         public string GetTypeName(string name)
         {
-            return name == TestTypeName ? name + "_" : name;
+            if (name == TestTypeName)
+                return name + "_";
+
+            return name;
         }
 
         /** <inheritdoc /> */
         public string GetFieldName(string name)
         {
-            return name == TestFieldName ? name + "_" : name;
+            if (name == TestFieldName)
+                return name + "_";
+
+            return name;
         }
     }
 
