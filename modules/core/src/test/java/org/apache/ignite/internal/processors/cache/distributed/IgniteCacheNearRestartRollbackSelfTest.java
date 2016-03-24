@@ -77,8 +77,11 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 
-        if (getTestGridName(3).equals(gridName))
+        if (getTestGridName(3).equals(gridName)) {
             cfg.setClientMode(true);
+
+            discoSpi.setForceServerMode(true);
+        }
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
