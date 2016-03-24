@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.query.h2.database;
 
 import java.nio.ByteBuffer;
@@ -17,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
@@ -49,19 +67,97 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     private CacheObjectContext coctx;
 
     /** */
-    private final long rootPageId;
+    private final long metaPageId;
 
     /** */
     private volatile long lastDataPageId;
 
+    /** */
+    private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
+        /** */
+        private boolean lr;
+
+        /** */
+        private boolean keys;
+
+        @Override protected List<Long> getChildren(Long pageId) {
+            if (pageId == null || pageId.equals(0L))
+                return null;
+
+            try (Page page = page(pageId)) {
+                ByteBuffer buf = page.getForRead();
+
+                try {
+                    IndexPageIO io = IndexPageIO.forPage(buf);
+
+                    if (io.isLeaf())
+                        return null;
+
+                    int cnt = io.getCount(buf);
+
+                    if (cnt == 0)
+                        return null;
+
+                    List<Long> res = new ArrayList<>(cnt);
+
+                    for (int i = 0; i < cnt; i++)
+                         res.add(inner(io).getLeft(buf, i));
+
+                    res.add(inner(io).getRight(buf, cnt - 1));
+
+                    return res;
+                }
+                finally {
+                    page.releaseRead();
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        @Override protected String formatTreeNode(Long pageId) {
+            if (pageId == null)
+                return ">NPE<";
+
+            if (pageId.equals(0L))
+                return "<Zero>";
+
+            try (Page page = page(pageId)) {
+                ByteBuffer buf = page.getForRead();
+
+                try {
+                    IndexPageIO io = IndexPageIO.forPage(buf);
+
+                    return printPage(io, buf, lr, keys);
+                }
+                finally {
+                    page.releaseRead();
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+    };
+
     /**
+     * @param cctx Cache context.
+     * @param pageMem Page memory.
+     * @param metaPageId Meta page ID.
+     * @param initNew Initilize new index.
      * @param keyCol Key column.
      * @param valCol Value column.
+     * @param tbl Table.
+     * @param name Index name.
+     * @param pk Primary key.
+     * @param cols Index columns.
+     * @throws IgniteCheckedException If failed.
      */
     public BPlusTreeRefIndex(
         GridCacheContext<?,?> cctx,
         PageMemory pageMem,
-        FullPageId rootPageId,
+        FullPageId metaPageId,
         boolean initNew,
         int keyCol,
         int valCol,
@@ -72,7 +168,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     ) throws IgniteCheckedException {
         super(keyCol, valCol);
 
-        assert cctx.cacheId() == rootPageId.cacheId();
+        assert cctx.cacheId() == metaPageId.cacheId();
 
         if (!pk) {
             // For other indexes we add primary key at the end to avoid conflicts.
@@ -90,12 +186,12 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
         if (initNew) { // Init new index.
-            try (Page meta = pageMem.page(rootPageId)) {
+            try (Page meta = pageMem.page(metaPageId)) {
                 ByteBuffer buf = meta.getForInitialWrite();
 
                 MetaPageIO io = MetaPageIO.latest();
 
-                io.initNewPage(buf, rootPageId.pageId());
+                io.initNewPage(buf, metaPageId.pageId());
 
                 try (Page root = allocatePage(-1, FLAG_IDX)) {
                     LeafPageIO.latest().initNewPage(root.getForInitialWrite(), root.id());
@@ -106,15 +202,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             }
         }
 
-        this.rootPageId = rootPageId.pageId();
-    }
-
-    /**
-     * @param meta Meta page.
-     * @return Root page ID.
-     */
-    private long getRootPageId(Page meta) {
-        return getLeftmostPageId(meta, Integer.MIN_VALUE);
+        this.metaPageId = metaPageId.pageId();
     }
 
     /**
@@ -133,8 +221,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /**
      * @param meta Meta page.
-     * @param lvl Level.
-     * @return Root page ID.
+     * @param lvl Level, if {@code 0} then it is a bottom level, if {@link Integer#MIN_VALUE}, then root.
+     * @return Page ID.
      */
     private long getLeftmostPageId(Page meta, int lvl) {
         ByteBuffer buf = meta.getForRead();
@@ -188,7 +276,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         long firstPageId;
 
-        try (Page meta = page(rootPageId)) {
+        try (Page meta = page(metaPageId)) {
             firstPageId = getLeftmostPageId(meta, 0); // Level 0 is always bottom.
         }
 
@@ -249,7 +337,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      */
     private void initOperation(Get g) throws IgniteCheckedException {
         if (g.meta == null)
-            g.meta = page(rootPageId);
+            g.meta = page(metaPageId);
 
         int rootLvl;
         long rootId;
@@ -399,67 +487,19 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     }
 
     /**
-     * @param keys Print keys.
-     * @return Tree structure as a string.
+     * @return Tree as {@link String}.
      */
-    private String printTree(boolean keys) {
-        StringBuilder b = new StringBuilder();
+    private String printTree() {
+        long rootPageId;
 
-        try (Page meta = page(rootPageId)) {
-            printTree(getRootPageId(meta), "", true, b, keys);
+        try (Page meta = page(metaPageId)) {
+            rootPageId = getLeftmostPageId(meta, Integer.MIN_VALUE);
         }
         catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
 
-        return b.toString();
-    }
-
-    /**
-     * @param pageId Page ID.
-     * @param prefix Prefix.
-     * @param tail Tail.
-     */
-    private void printTree(long pageId, String prefix, boolean tail, StringBuilder b, boolean keys)
-        throws IgniteCheckedException {
-        try (Page page = page(pageId)) {
-            ByteBuffer buf = page.getForRead();
-
-            try {
-                IndexPageIO io = IndexPageIO.forPage(buf);
-
-                int cnt = io.getCount(buf);
-
-                b.append(prefix).append(tail ? "└── " : "├── ").append(printPage(io, buf, true, keys));
-
-                b.append('\n');
-
-                if (!io.isLeaf()) {
-                    for (int i = 0; i < cnt - 1; i++) {
-                        long leftPageId = inner(io).getLeft(buf, i);
-
-                        if (leftPageId != 0)
-                            printTree(leftPageId, prefix + (tail ? "    " : "│   "), false, b, keys);
-                    }
-
-                    if (cnt > 0) {
-                        int i = cnt - 1;
-
-                        long leftPageId = inner(io).getLeft(buf, i);
-                        long rightPageId = inner(io).getRight(buf, i);
-
-                        if (leftPageId != 0)
-                            printTree(leftPageId, prefix + (tail ? "    " : "│   "), rightPageId == 0, b, keys);
-
-                        if (rightPageId != 0)
-                            printTree(rightPageId, prefix + (tail ? "    " : "│   "), true, b, keys);
-                    }
-                }
-            }
-            finally {
-                page.releaseRead();
-            }
-        }
+        return treePrinter.print(rootPageId);
     }
 
     /**
@@ -703,12 +743,10 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             p.releaseMeta();
         }
 
-//        if (p.split && "iVal_idx".equals(getName())) {
+//        if (p.split) {
 //            X.println(getName() + ": " + p.oldRow + " -> " + row);
-//            X.println("============old==========");
-//            X.println(oldTree);
 //            X.println("============new==========");
-//            X.println(printTree(true));
+//            X.println(printTree());
 //            X.println("=========================");
 //        }
 
@@ -1831,6 +1869,11 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         return res;
     }
 
+    /**
+     * @param pageId Page ID.
+     * @return Page.
+     * @throws IgniteCheckedException If failed.
+     */
     private Page page(long pageId) throws IgniteCheckedException {
         return pageMem.page(new FullPageId(pageId, cctx.cacheId()));
     }
