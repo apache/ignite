@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 Ignition.Stop(gridWithCache.Name, true);
 
-                Thread.Sleep(1);  // Wait for node to stop
+                Thread.Sleep(500);  // Wait for node to stop
 
                 streamer.AddData(2, 3);
                 streamer.Flush();
