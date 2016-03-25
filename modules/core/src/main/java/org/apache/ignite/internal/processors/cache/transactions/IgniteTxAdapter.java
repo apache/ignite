@@ -465,8 +465,19 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @Override public AffinityTopologyVersion topologyVersion() {
         AffinityTopologyVersion res = topVer;
 
-        if (res.equals(AffinityTopologyVersion.NONE))
+        if (res.equals(AffinityTopologyVersion.NONE)) {
+            if (system()) {
+                AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), this);
+
+                if (topVer != null) {
+                    this.topVer = topVer;
+
+                    return topVer;
+                }
+            }
+
             return cctx.exchange().topologyVersion();
+        }
 
         return res;
     }

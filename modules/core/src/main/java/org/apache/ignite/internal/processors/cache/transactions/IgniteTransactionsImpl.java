@@ -126,18 +126,11 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
         TransactionConfiguration cfg = CU.transactionConfiguration(ctx, cctx.kernalContext().config());
 
-        IgniteInternalTx tx = txStart0(concurrency,
+        return txStart0(concurrency,
             isolation,
             cfg.getDefaultTxTimeout(),
             0,
             ctx.systemTx() ? ctx : null);
-
-        AffinityTopologyVersion topVer = ctx.shared().lockedTopologyVersion(null);
-
-        if (topVer != null)
-            tx.topologyVersion(topVer);
-
-        return tx;
     }
 
     /**
