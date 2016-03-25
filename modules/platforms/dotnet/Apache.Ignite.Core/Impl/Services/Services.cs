@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Reflection;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
@@ -348,9 +349,10 @@ namespace Apache.Ignite.Core.Impl.Services
                 return locInst;
 
             var javaProxy = UU.ServicesGetServiceProxy(Target, name, sticky);
+            var platform = GetServiceDescriptors().Single(x => x.Name == name).Platform;
 
-            return new ServiceProxy<T>((method, args) => InvokeProxyMethod(javaProxy, method, args))
-                .GetTransparentProxy();
+            return new ServiceProxy<T>((method, args) =>
+                InvokeProxyMethod(javaProxy, method, args, platform)).GetTransparentProxy();
         }
 
         /// <summary>
@@ -359,13 +361,15 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="proxy">Unmanaged proxy.</param>
         /// <param name="method">Method to invoke.</param>
         /// <param name="args">Arguments.</param>
+        /// <param name="platform">The platform.</param>
         /// <returns>
         /// Invocation result.
         /// </returns>
-        private unsafe object InvokeProxyMethod(IUnmanagedTarget proxy, MethodBase method, object[] args)
+        private unsafe object InvokeProxyMethod(IUnmanagedTarget proxy, MethodBase method, object[] args, 
+            Platform platform)
         {
             return DoOutInOp(OpInvokeMethod,
-                writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args),
+                writer => ServiceProxySerializer.WriteProxyMethod(writer, method, args, platform),
                 stream => ServiceProxySerializer.ReadInvocationResult(stream, Marshaller, _keepBinary), proxy.Target);
         }
     }
