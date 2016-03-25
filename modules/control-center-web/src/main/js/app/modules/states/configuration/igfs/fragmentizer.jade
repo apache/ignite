@@ -28,15 +28,15 @@ form.panel.panel-default(name='fragmentizer' novalidate)
     .panel-collapse(role='tabpanel' bs-collapse-target id='fragmentizer')
         .panel-body(ng-if='__show__')
             .col-sm-6
-                -var fragmentizerEnabled = model + '.fragmentizerEnabled'
+                -var enabled = model + '.fragmentizerEnabled'
 
                 .settings-row
-                    +checkbox('Enabled', fragmentizerEnabled, 'fragmentizerEnabled', 'Fragmentizer enabled flag')
+                    +checkbox('Enabled', enabled, 'fragmentizerEnabled', 'Fragmentizer enabled flag')
                 .settings-row
-                    +number('Concurrent files:', model + '.fragmentizerConcurrentFiles', 'fragmentizerConcurrentFiles', fragmentizerEnabled, '0', '0', 'Number of files to process concurrently by fragmentizer')
+                    +number('Concurrent files:', model + '.fragmentizerConcurrentFiles', 'fragmentizerConcurrentFiles', enabled, '0', '0', 'Number of files to process concurrently by fragmentizer')
                 .settings-row
-                    +number('Throttling block length:', model + '.fragmentizerThrottlingBlockLength', 'fragmentizerThrottlingBlockLength', fragmentizerEnabled, '16777216', '1', 'Length of file chunk to transmit before throttling is delayed')
+                    +number('Throttling block length:', model + '.fragmentizerThrottlingBlockLength', 'fragmentizerThrottlingBlockLength', enabled, '16777216', '1', 'Length of file chunk to transmit before throttling is delayed')
                 .settings-row
-                    +number('Throttling delay:', model + '.fragmentizerThrottlingDelay', 'fragmentizerThrottlingDelay', fragmentizerEnabled, '200', '0', 'Delay in milliseconds for which fragmentizer is paused')
+                    +number('Throttling delay:', model + '.fragmentizerThrottlingDelay', 'fragmentizerThrottlingDelay', enabled, '200', '0', 'Delay in milliseconds for which fragmentizer is paused')
             .col-sm-6
                 +preview-xml-java(model, 'igfsFragmentizer')

@@ -29,12 +29,12 @@ form.panel.panel-default(name='ipc' novalidate)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 -var ipcEndpointConfiguration = model + '.ipcEndpointConfiguration'
-                -var ipcEndpointEnabled = model + '.ipcEndpointEnabled'
+                -var enabled = model + '.ipcEndpointEnabled'
 
                 .settings-row
-                    +checkbox('Enabled', model + '.ipcEndpointEnabled', 'ipcEndpointEnabled', 'IPC endpoint enabled flag')
+                    +checkbox('Enabled', enabled, 'ipcEndpointEnabled', 'IPC endpoint enabled flag')
                 .settings-row
-                    +dropdown('Type:', ipcEndpointConfiguration + '.type', 'ipcEndpointConfigurationType', ipcEndpointEnabled, 'TCP',
+                    +dropdown('Type:', ipcEndpointConfiguration + '.type', 'ipcEndpointConfigurationType', enabled, 'TCP',
                         '[\
                             {value: "SHMEM", label: "SHMEM"},\
                             {value: "TCP", label: "TCP"}\
@@ -45,12 +45,12 @@ form.panel.panel-default(name='ipc' novalidate)
                             <li>TCP - TCP endpoint</li>\
                         </ul>')
                 .settings-row
-                    +text-ip-address('Host:', ipcEndpointConfiguration + '.host', 'ipcEndpointConfigurationHost', ipcEndpointEnabled, '127.0.0.1', 'Host name')
+                    +text-ip-address('Host:', ipcEndpointConfiguration + '.host', 'ipcEndpointConfigurationHost', enabled, '127.0.0.1', 'Host name')
                 .settings-row
-                    +number-min-max('Port:', ipcEndpointConfiguration + '.port', 'ipcEndpointConfigurationPort', ipcEndpointEnabled, '10500', '1', '65535', 'Port number')
+                    +number-min-max('Port:', ipcEndpointConfiguration + '.port', 'ipcEndpointConfigurationPort', enabled, '10500', '1', '65535', 'Port number')
                 .settings-row
-                    +number('Memory size:', ipcEndpointConfiguration + '.memorySize', 'ipcEndpointConfigurationMemorySize', ipcEndpointEnabled, '262144', '1', 'Shared memory size in bytes allocated for endpoint communication')
+                    +number('Memory size:', ipcEndpointConfiguration + '.memorySize', 'ipcEndpointConfigurationMemorySize', enabled, '262144', '1', 'Shared memory size in bytes allocated for endpoint communication')
                 .settings-row
-                    +text-enabled('Token directory:', ipcEndpointConfiguration + '.tokenDirectoryPath', 'ipcEndpointConfigurationTokenDirectoryPath', ipcEndpointEnabled, 'false', 'ipc/shmem', 'Directory where shared memory tokens are stored')
+                    +text-enabled('Token directory:', ipcEndpointConfiguration + '.tokenDirectoryPath', 'ipcEndpointConfigurationTokenDirectoryPath', enabled, 'false', 'ipc/shmem', 'Directory where shared memory tokens are stored')
             .col-sm-6
                 +preview-xml-java(model, 'igfsIPC')

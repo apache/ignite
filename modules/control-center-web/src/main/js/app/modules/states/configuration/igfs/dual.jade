@@ -23,7 +23,8 @@ form.panel.panel-default(name='dualMode' novalidate)
         ignite-form-panel-chevron
         label Dual mode
         ignite-form-field-tooltip.tipLabel
-            | Dual mode settings
+            | IGFS supports dual-mode that allows it to work as either a standalone file system in Hadoop cluster, or work in tandem with HDFS, providing a primary caching layer for the secondary HDFS#[br]
+            | As a caching layer it provides highly configurable read-through and write-through behaviour
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='dualMode')
         .panel-body(ng-if='__show__')

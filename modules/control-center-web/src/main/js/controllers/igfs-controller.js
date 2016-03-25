@@ -221,10 +221,6 @@ consoleModule.controller('igfsController', [
                 return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
             }
 
-            if (!$common.isEmptyString(item.dualModePutExecutorService) &&
-                !$common.isValidJavaClass('Put executor service', item.dualModePutExecutorService, false, 'dualModePutExecutorService', false, $scope.ui, 'dualMode'))
-                return false;
-
             if (!item.secondaryFileSystemEnabled && (item.defaultMode === 'PROXY'))
                 return showPopoverMessage($scope.ui, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for "PROXY" IGFS mode!');
 
