@@ -279,11 +279,13 @@ namespace ignite
                 QueryGetColumnsMetaRequest req(schema, table, column);
                 QueryGetColumnsMetaResponse rsp;
 
-                bool success = connection.SyncMessage(req, rsp);
-
-                if (!success)
+                try
                 {
-                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, "Connection terminated.");
+                    connection.SyncMessage(req, rsp);
+                }
+                catch (const IgniteError& err)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
 
                     return SQL_RESULT_ERROR;
                 }

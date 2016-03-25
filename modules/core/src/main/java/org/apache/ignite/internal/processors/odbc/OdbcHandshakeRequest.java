@@ -17,42 +17,33 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
- * ODBC command request.
+ * ODBC handshake request.
  */
-public class OdbcRequest {
-    /** Handshake request. */
-    public static final int HANDSHAKE = 1;
-
-    /** Execute sql query. */
-    public static final int EXECUTE_SQL_QUERY = 2;
-
-    /** Fetch query results. */
-    public static final int FETCH_SQL_QUERY = 3;
-
-    /** Close query. */
-    public static final int CLOSE_SQL_QUERY = 4;
-
-    /** Get columns meta query. */
-    public static final int GET_COLUMNS_META = 5;
-
-    /** Get columns meta query. */
-    public static final int GET_TABLES_META = 6;
-
-    /** Command. */
-    private final int cmd;
+public class OdbcHandshakeRequest extends OdbcRequest {
+    /** Protocol version. */
+    private final long ver;
 
     /**
-     * @param cmd Command type.
+     * @param ver Protocol version.
      */
-    public OdbcRequest(int cmd) {
-        this.cmd = cmd;
+    public OdbcHandshakeRequest(long ver) {
+        super(HANDSHAKE);
+
+        this.ver = ver;
     }
 
     /**
-     * @return Command.
+     * @return Protocol version.
      */
-    public int command() {
-        return cmd;
+    public long version() {
+        return ver;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcHandshakeRequest.class, this);
     }
 }
