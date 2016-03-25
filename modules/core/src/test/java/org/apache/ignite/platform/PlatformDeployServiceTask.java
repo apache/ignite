@@ -31,6 +31,8 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -219,7 +221,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         public byte[] testArray(byte[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
-                    arg[i] = (byte) (arg[i] + 1);
+                    arg[i] += 1;
 
             return arg;
         }
@@ -228,7 +230,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         public short[] testArray(short[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
-                    arg[i] = (short) (arg[i] + 1);
+                    arg[i] += 1;
 
             return arg;
         }
@@ -237,7 +239,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         public int[] testArray(int[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
-                    arg[i] = arg[i] + 1;
+                    arg[i] += 1;
 
             return arg;
         }
@@ -246,7 +248,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         public long[] testArray(long[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
-                    arg[i] = arg[i] + 1;
+                    arg[i] += 1;
 
             return arg;
         }
@@ -255,7 +257,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         public double[] testArray(double[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
-                    arg[i] = arg[i] + 1;
+                    arg[i] += 1;
 
             return arg;
         }
@@ -264,7 +266,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         public float[] testArray(float[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
-                    arg[i] = arg[i] + 1;
+                    arg[i] += 1;
 
             return arg;
         }
@@ -273,7 +275,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         public String[] testArray(String[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
-                    arg[i] = arg[i] + 1;
+                    arg[i] += 1;
 
             return arg;
         }
@@ -282,7 +284,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         public char[] testArray(char[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
-                    arg[i] = (char) (arg[i] + 1);
+                    arg[i] += 1;
 
             return arg;
         }
@@ -328,6 +330,19 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
             for (int i = 0; i < arg.length; i++)
                 arg[i] = arg[i] == null ? null : new PlatformComputeBinarizable(arg[i].field + 1);
+
+            return arg;
+        }
+
+        /** */
+        public Collection testBinarizableCollection(Collection arg) {
+            if (arg == null)
+                return null;
+
+            Collection<PlatformComputeBinarizable> res = new ArrayList<>(arg.size());
+
+            for(Object x : arg)
+                res.add(new PlatformComputeBinarizable(((PlatformComputeBinarizable)x).field + 1));
 
             return arg;
         }
