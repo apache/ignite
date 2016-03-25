@@ -1010,6 +1010,54 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Wait for rebalance, cache is destroyed and created again.
+     *
+     * @throws Exception If failed.
+     */
+    public void _testDelayAssignmentCacheDestroyCreate() throws Exception {
+        Ignite ignite0 = startServer(0, 1);
+
+        CacheConfiguration ccfg = cacheConfiguration();
+
+        ccfg.setName(CACHE_NAME2);
+
+        ignite0.createCache(ccfg);
+
+        TestTcpDiscoverySpi discoSpi0 =
+            (TestTcpDiscoverySpi)ignite0.configuration().getDiscoverySpi();
+        TestRecordingCommunicationSpi spi =
+            (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
+
+        blockSupplySend(spi, CACHE_NAME2);
+
+        discoSpi0.blockCustomEvent();
+
+        startServer(1, 2);
+
+        startServer(2, 3);
+
+        checkAffinity(3, topVer(3, 0), false);
+
+        spi.stopBlock();
+
+        discoSpi0.waitCustomEvent();
+
+        ignite0.destroyCache(CACHE_NAME2);
+
+        ccfg = cacheConfiguration();
+        ccfg.setName(CACHE_NAME2);
+        ccfg.setAffinity(affinityFunction(10));
+
+        ignite0.createCache(ccfg);
+
+        discoSpi0.stopBlock();
+
+        checkAffinity(3, topVer(3, 1), false);
+        checkAffinity(3, topVer(3, 2), false);
+        checkAffinity(3, topVer(3, 3), true);
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testClientCacheStartClose() throws Exception {

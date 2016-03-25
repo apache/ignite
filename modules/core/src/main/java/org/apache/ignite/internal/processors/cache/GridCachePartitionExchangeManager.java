@@ -371,14 +371,18 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             return;
 
                         try {
-                            if (m instanceof GridDhtPartitionSupplyMessageV2)
-                                cctx.cacheContext(m.cacheId).preloader().handleSupplyMessage(
-                                    idx, id, (GridDhtPartitionSupplyMessageV2)m);
-                            else if (m instanceof GridDhtPartitionDemandMessage)
-                                cctx.cacheContext(m.cacheId).preloader().handleDemandMessage(
-                                    idx, id, (GridDhtPartitionDemandMessage)m);
-                            else
-                                U.error(log, "Unsupported message type: " + m.getClass().getName());
+                            GridCacheContext cacheCtx = cctx.cacheContext(m.cacheId);
+
+                            if (cacheCtx != null) {
+                                if (m instanceof GridDhtPartitionSupplyMessageV2)
+                                    cacheCtx.preloader().handleSupplyMessage(
+                                        idx, id, (GridDhtPartitionSupplyMessageV2)m);
+                                else if (m instanceof GridDhtPartitionDemandMessage)
+                                    cacheCtx.preloader().handleDemandMessage(
+                                        idx, id, (GridDhtPartitionDemandMessage)m);
+                                else
+                                    U.error(log, "Unsupported message type: " + m.getClass().getName());
+                            }
                         }
                         finally {
                             leaveBusy();

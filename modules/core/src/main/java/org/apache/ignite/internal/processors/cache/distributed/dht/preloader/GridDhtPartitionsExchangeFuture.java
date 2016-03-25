@@ -1043,7 +1043,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         cacheCtx.topology().initPartitions(this);
                 }
                 catch (IgniteInterruptedCheckedException e) {
-                    U.error(log, "", e);
+                    U.error(log, "Failed to initialize partitions.", e);
                 }
 
                 GridCacheContext drCacheCtx = cacheCtx.isNear() ? cacheCtx.near().dht().context() : cacheCtx;
