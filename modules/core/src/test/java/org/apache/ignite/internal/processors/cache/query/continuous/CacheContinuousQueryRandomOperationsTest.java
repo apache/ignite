@@ -197,7 +197,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, CLIENT);
+        doTestContinuousQuery(ccfg, CLIENT);
     }
 
     /**
@@ -210,7 +210,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -223,7 +223,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, ALL);
+        doTestContinuousQuery(ccfg, ALL);
     }
 
     /**
@@ -236,7 +236,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -249,7 +249,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, ALL);
+        doTestContinuousQuery(ccfg, ALL);
     }
 
     /**
@@ -262,7 +262,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, CLIENT);
+        doTestContinuousQuery(ccfg, CLIENT);
     }
 
     /**
@@ -275,7 +275,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_VALUES,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -288,7 +288,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_VALUES,
             false);
 
-        testContinuousQuery(ccfg, ALL);
+        doTestContinuousQuery(ccfg, ALL);
     }
 
     /**
@@ -301,7 +301,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_VALUES,
             false);
 
-        testContinuousQuery(ccfg, CLIENT);
+        doTestContinuousQuery(ccfg, CLIENT);
     }
 
     /**
@@ -314,7 +314,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -327,7 +327,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, ALL);
+        doTestContinuousQuery(ccfg, ALL);
     }
 
     /**
@@ -340,7 +340,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, CLIENT);
+        doTestContinuousQuery(ccfg, CLIENT);
     }
 
     /**
@@ -353,7 +353,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -366,7 +366,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, ALL);
+        doTestContinuousQuery(ccfg, ALL);
     }
 
     /**
@@ -379,7 +379,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, CLIENT);
+        doTestContinuousQuery(ccfg, CLIENT);
     }
 
     /**
@@ -392,7 +392,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -405,7 +405,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, ALL);
+        doTestContinuousQuery(ccfg, ALL);
     }
 
     /**
@@ -418,7 +418,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -431,7 +431,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testNotModifyOperation(ccfg);
+        doTestNotModifyOperation(ccfg);
     }
 
     /**
@@ -444,7 +444,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testNotModifyOperation(ccfg);
+        doTestNotModifyOperation(ccfg);
     }
 
     /**
@@ -457,7 +457,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testNotModifyOperation(ccfg);
+        doTestNotModifyOperation(ccfg);
     }
 
     /**
@@ -470,7 +470,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             true);
 
-        testNotModifyOperation(ccfg);
+        doTestNotModifyOperation(ccfg);
     }
 
     /**
@@ -483,7 +483,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_TIERED,
             false);
 
-        testNotModifyOperation(ccfg);
+        doTestNotModifyOperation(ccfg);
     }
 
     /**
@@ -496,7 +496,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_TIERED,
             true);
 
-        testNotModifyOperation(ccfg);
+        doTestNotModifyOperation(ccfg);
     }
 
     /**
@@ -509,7 +509,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testNotModifyOperation(ccfg);
+        doTestNotModifyOperation(ccfg);
     }
 
     /**
@@ -522,7 +522,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testNotModifyOperation(ccfg);
+        doTestNotModifyOperation(ccfg);
     }
 
     /**
@@ -535,7 +535,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testNotModifyOperation(ccfg);
+        doTestNotModifyOperation(ccfg);
     }
 
     /**
@@ -548,7 +548,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testNotModifyOperation(ccfg);
+        doTestNotModifyOperation(ccfg);
     }
 
     /**
@@ -561,7 +561,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testNotModifyOperation(ccfg);
+        doTestNotModifyOperation(ccfg);
     }
 
     /**
@@ -574,13 +574,13 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             true);
 
-        testNotModifyOperation(ccfg);
+        doTestNotModifyOperation(ccfg);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testNotModifyOperation(CacheConfiguration ccfg) throws Exception {
+    private void doTestNotModifyOperation(CacheConfiguration ccfg) throws Exception {
         singleOperation(ccfg);
         batchOperation(ccfg);
     }
@@ -835,7 +835,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, CLIENT);
+        doTestContinuousQuery(ccfg, CLIENT);
     }
 
     /**
@@ -848,7 +848,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, CLIENT);
+        doTestContinuousQuery(ccfg, CLIENT);
     }
 
     /**
@@ -861,7 +861,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -874,7 +874,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, CLIENT);
+        doTestContinuousQuery(ccfg, CLIENT);
     }
 
     /**
@@ -887,7 +887,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_VALUES,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -900,7 +900,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_VALUES,
             false);
 
-        testContinuousQuery(ccfg, ALL);
+        doTestContinuousQuery(ccfg, ALL);
     }
 
     /**
@@ -913,7 +913,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_VALUES,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -926,7 +926,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_VALUES,
             false);
 
-        testContinuousQuery(ccfg, CLIENT);
+        doTestContinuousQuery(ccfg, CLIENT);
     }
 
     /**
@@ -939,7 +939,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -952,7 +952,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, ALL);
+        doTestContinuousQuery(ccfg, ALL);
     }
 
     /**
@@ -965,7 +965,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, CLIENT);
+        doTestContinuousQuery(ccfg, CLIENT);
     }
 
     /**
@@ -978,7 +978,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, CLIENT);
+        doTestContinuousQuery(ccfg, CLIENT);
     }
 
     /**
@@ -991,7 +991,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -1004,7 +1004,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, ALL);
+        doTestContinuousQuery(ccfg, ALL);
     }
 
     /**
@@ -1017,7 +1017,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, SERVER);
+        doTestContinuousQuery(ccfg, SERVER);
     }
 
     /**
@@ -1030,7 +1030,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testContinuousQuery(ccfg, CLIENT);
+        doTestContinuousQuery(ccfg, CLIENT);
     }
 
     /**
@@ -1038,7 +1038,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      * @param deploy The place where continuous query will be started.
      * @throws Exception If failed.
      */
-    protected void testContinuousQuery(CacheConfiguration<Object, Object> ccfg, ContinuousDeploy deploy)
+    protected void doTestContinuousQuery(CacheConfiguration<Object, Object> ccfg, ContinuousDeploy deploy)
         throws Exception {
         ignite(0).createCache(ccfg);
 
