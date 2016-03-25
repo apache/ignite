@@ -61,6 +61,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -72,6 +73,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static javax.cache.event.EventType.CREATED;
+import static javax.cache.event.EventType.REMOVED;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -428,7 +431,20 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testDoubleRemove(ccfg);
+        testNotModifyOperation(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDoubleRemoveAtomicWithoutBackupWithStore() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+            0,
+            ATOMIC,
+            ONHEAP_TIERED,
+            false);
+
+        testNotModifyOperation(ccfg);
     }
 
     /**
@@ -441,7 +457,20 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testDoubleRemove(ccfg);
+        testNotModifyOperation(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDoubleRemoveAtomicWithStore() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+            1,
+            ATOMIC,
+            ONHEAP_TIERED,
+            true);
+
+        testNotModifyOperation(ccfg);
     }
 
     /**
@@ -454,7 +483,20 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             OFFHEAP_TIERED,
             false);
 
-        testDoubleRemove(ccfg);
+        testNotModifyOperation(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDoubleRemoveAtomicOffheapWithStore() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+            0,
+            ATOMIC,
+            OFFHEAP_TIERED,
+            true);
+
+        testNotModifyOperation(ccfg);
     }
 
     /**
@@ -467,7 +509,20 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testDoubleRemove(ccfg);
+        testNotModifyOperation(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDoubleRemoveTxWithStore() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+            1,
+            TRANSACTIONAL,
+            ONHEAP_TIERED,
+            false);
+
+        testNotModifyOperation(ccfg);
     }
 
     /**
@@ -480,7 +535,20 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testDoubleRemove(ccfg);
+        testNotModifyOperation(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDoubleRemoveReplicatedTxWithStore() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+            0,
+            TRANSACTIONAL,
+            ONHEAP_TIERED,
+            false);
+
+        testNotModifyOperation(ccfg);
     }
 
     /**
@@ -493,13 +561,35 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             ONHEAP_TIERED,
             false);
 
-        testDoubleRemove(ccfg);
+        testNotModifyOperation(ccfg);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testDoubleRemove(CacheConfiguration ccfg) throws Exception {
+    public void testDoubleRemoveReplicatedAtomicWithStore() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+            0,
+            ATOMIC,
+            ONHEAP_TIERED,
+            true);
+
+        testNotModifyOperation(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNotModifyOperation(CacheConfiguration ccfg) throws Exception {
+        singleOperation(ccfg);
+        batchOperation(ccfg);
+    }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @throws Exception If failed.
+     */
+    private void singleOperation(CacheConfiguration ccfg) throws Exception {
         IgniteCache<QueryTestKey, QueryTestValue> cache = grid(getClientIndex()).createCache(ccfg);
 
         try {
@@ -521,37 +611,78 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             try (QueryCursor qryCur = cache.query(qry)) {
                 for (int i = 0; i < ITERATION_CNT; i++) {
                     log.info("Start iteration: " + i);
+                    // Not events.
+                    cache.invoke(key, (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
+                        (Object)new EntrySetValueProcessor(true));
 
+                    // Get events.
                     cache.put(key, new QueryTestValue(1));
-
                     cache.remove(key);
+
+                    // Not events.
                     cache.invoke(key, (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
                         (Object)new EntrySetValueProcessor(null, false));
                     cache.invoke(key, (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
                         (Object)new EntrySetValueProcessor(null, false));
+                    cache.invoke(key, (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
+                        (Object)new EntrySetValueProcessor(true));
                     cache.remove(key);
 
+                    // Get events.
                     cache.put(key, new QueryTestValue(2));
 
+                    // Not events.
+                    cache.invoke(key, (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
+                        (Object)new EntrySetValueProcessor(true));
+
+                    // Get events.
                     cache.invoke(key, (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
                         (Object)new EntrySetValueProcessor(null, false));
+
+                    // Not events.
                     cache.remove(key);
 
+                    // Get events.
                     cache.put(key, new QueryTestValue(3));
                     cache.put(key, new QueryTestValue(4));
 
+                    // Not events.
+                    cache.invoke(key, (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
+                        (Object)new EntrySetValueProcessor(true));
+                    cache.putIfAbsent(key, new QueryTestValue(5));
+                    cache.putIfAbsent(key, new QueryTestValue(5));
+                    cache.putIfAbsent(key, new QueryTestValue(5));
+                    cache.invoke(key, (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
+                        (Object)new EntrySetValueProcessor(true));
+                    cache.remove(key, new QueryTestValue(5));
+
+                    // Get events.
+                    cache.remove(key, new QueryTestValue(4));
+                    cache.putIfAbsent(key, new QueryTestValue(5));
+
+                    // Not events.
+                    cache.replace(key, new QueryTestValue(3), new QueryTestValue(2));
+                    cache.replace(key, new QueryTestValue(3), new QueryTestValue(2));
+                    cache.replace(key, new QueryTestValue(3), new QueryTestValue(2));
+
+                    // Get events.
+                    cache.replace(key, new QueryTestValue(5), new QueryTestValue(6));
+
                     assert GridTestUtils.waitForCondition(new PA() {
                         @Override public boolean apply() {
-                            return evts.size() == 6;
+                            return evts.size() == 9;
                         }
                     }, 5_000);
 
-                    checkSingleEvent(evts.get(0), EventType.CREATED, new QueryTestValue(1), null);
-                    checkSingleEvent(evts.get(1), EventType.REMOVED, null, new QueryTestValue(1));
-                    checkSingleEvent(evts.get(2), EventType.CREATED, new QueryTestValue(2), null);
-                    checkSingleEvent(evts.get(3), EventType.REMOVED, null, new QueryTestValue(2));
-                    checkSingleEvent(evts.get(4), EventType.CREATED, new QueryTestValue(3), null);
+                    checkSingleEvent(evts.get(0), CREATED, new QueryTestValue(1), null);
+                    checkSingleEvent(evts.get(1), REMOVED, null, new QueryTestValue(1));
+                    checkSingleEvent(evts.get(2), CREATED, new QueryTestValue(2), null);
+                    checkSingleEvent(evts.get(3), REMOVED, null, new QueryTestValue(2));
+                    checkSingleEvent(evts.get(4), CREATED, new QueryTestValue(3), null);
                     checkSingleEvent(evts.get(5), EventType.UPDATED, new QueryTestValue(4), new QueryTestValue(3));
+                    checkSingleEvent(evts.get(6), REMOVED, null, new QueryTestValue(4));
+                    checkSingleEvent(evts.get(7), CREATED, new QueryTestValue(5), null);
+                    checkSingleEvent(evts.get(8), EventType.UPDATED, new QueryTestValue(6), new QueryTestValue(5));
 
                     cache.remove(key);
                     cache.remove(key);
@@ -566,6 +697,117 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             grid(getClientIndex()).destroyCache(ccfg.getName());
         }
     }
+
+    /**
+     * @param ccfg Cache configuration.
+     * @throws Exception If failed.
+     */
+    private void batchOperation(CacheConfiguration ccfg) throws Exception {
+        IgniteCache<QueryTestKey, QueryTestValue> cache = grid(getClientIndex()).createCache(ccfg);
+
+        try {
+            ContinuousQuery<QueryTestKey, QueryTestValue> qry = new ContinuousQuery<>();
+
+            final List<CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> evts =
+                new CopyOnWriteArrayList<>();
+
+            qry.setLocalListener(new CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>() {
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
+                    ? extends QueryTestValue>> events) throws CacheEntryListenerException {
+                    for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
+                        evts.add(e);
+                }
+            });
+
+            Map<QueryTestKey, QueryTestValue> map = new TreeMap<>();
+
+            for (int i = 0; i < KEYS; i++)
+                map.put(new QueryTestKey(i), new QueryTestValue(i));
+
+            try (QueryCursor qryCur = cache.query(qry)) {
+                for (int i = 0; i < ITERATION_CNT / 2; i++) {
+                    log.info("Start iteration: " + i);
+                    // Not events.
+                    cache.removeAll(map.keySet());
+                    cache.invokeAll(map.keySet(), (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
+                        (Object)new EntrySetValueProcessor(null, false));
+                    cache.invokeAll(map.keySet(), (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
+                        (Object)new EntrySetValueProcessor(true));
+
+                    // Get events.
+                    cache.putAll(map);
+
+                    assert GridTestUtils.waitForCondition(new PA() {
+                        @Override public boolean apply() {
+                            return evts.size() == KEYS;
+                        }
+                    }, 5_000);
+
+                    checkEvents(evts, CREATED);
+
+                    evts.clear();
+
+                    // Not events.
+                    cache.invokeAll(map.keySet(), (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
+                        (Object)new EntrySetValueProcessor(true));
+
+                    U.sleep(100);
+
+                    assertEquals(0, evts.size());
+
+                    // Get events.
+                    cache.invokeAll(map.keySet(), (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
+                        (Object)new EntrySetValueProcessor(null, false));
+
+                    // Not events.
+                    cache.removeAll(map.keySet());
+                    cache.removeAll(map.keySet());
+
+                    assert GridTestUtils.waitForCondition(new PA() {
+                        @Override public boolean apply() {
+                            return evts.size() == KEYS;
+                        }
+                    }, 5_000);
+
+                    checkEvents(evts, REMOVED);
+
+                    evts.clear();
+
+                    log.info("Finish iteration: " + i);
+                }
+            }
+        }
+        finally {
+            grid(getClientIndex()).destroyCache(ccfg.getName());
+        }
+    }
+
+    /**
+     * @param evts Events.
+     * @param evtType Event type.
+     */
+    private void checkEvents(List<CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> evts,
+        EventType evtType) {
+        for (int key = 0; key < KEYS; key++) {
+            QueryTestKey keyVal = new QueryTestKey(key);
+
+            for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : evts) {
+                if (e.getKey().equals(keyVal)) {
+                    checkSingleEvent(e,
+                        evtType,
+                        evtType == CREATED ? new QueryTestValue(key) : null,
+                        evtType == REMOVED ? new QueryTestValue(key) : null);
+
+                    keyVal = null;
+
+                    break;
+                }
+            }
+
+            assertNull("Event for key not found.", keyVal);
+        }
+    }
+
 
     /**
      * @param event Event.
@@ -1508,6 +1750,16 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         /** */
         private boolean retOld;
 
+        /** */
+        private boolean skipModify;
+
+        /**
+         * @param skipModify If {@code true} then entry will not be modified.
+         */
+        public EntrySetValueProcessor(boolean skipModify) {
+            this.skipModify = skipModify;
+        }
+
         /**
          * @param val Value to set.
          * @param retOld Return old value flag.
@@ -1519,6 +1771,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
         /** {@inheritDoc} */
         @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
+            if (skipModify)
+                return null;
+
             Object old = retOld ? e.getValue() : null;
 
             if (val != null)

@@ -2430,6 +2430,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 updRes.newTtl(),
                                 CU.EXPIRE_TIME_CALCULATE);
                     }
+                    else if (lsnrs != null && updRes.updateCounter() != 0) {
+                        ctx.continuousQueries().onEntryUpdated(
+                            lsnrs,
+                            entry.key(),
+                            updRes.newValue(),
+                            updRes.oldValue(),
+                            entry.isInternal() || !context().userCache(),
+                            entry.partition(),
+                            primary,
+                            false,
+                            updRes.updateCounter(),
+                            topVer);
+                    }
 
                     if (hasNear) {
                         if (primary) {
