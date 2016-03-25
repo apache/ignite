@@ -56,10 +56,12 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
         scope.$watch('value', setAsDefault);
 
         const checkValid = () => {
-            if (ngModel.$invalid)
-                el.find('input').removeClass('ng-valid').addClass('ng-invalid');
-            else
-                el.find('input').addClass('ng-valid').removeClass('ng-invalid');
+            const input = el.find('input');
+
+            const invalid = ngModel.$invalid || (input[0].required && !input[0].value);
+
+            input.removeClass(invalid ? 'ng-valid' : 'ng-invalid');
+            input.addClass(invalid ? 'ng-invalid' : 'ng-valid');
         };
 
         scope.ngChange = () => {
