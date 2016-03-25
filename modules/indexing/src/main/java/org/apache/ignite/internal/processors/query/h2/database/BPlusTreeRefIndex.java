@@ -354,7 +354,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             g.meta.releaseRead();
         }
 
-        g.restart(rootId, rootLvl);
+        g.restartFromRoot(rootId, rootLvl);
     }
 
     /**
@@ -730,10 +730,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 checkInterrupted();
             }
 
-            // Go up and finish if needed (root got concurrently splitted).
-            if (!p.isFinished())
-                putUp(p, p.rootLvl + 1);
-
             assert p.isFinished();
         }
         catch (IgniteCheckedException e) {
@@ -751,46 +747,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 //        }
 
         return p.oldRow;
-    }
-
-    /**
-     * @param p Put.
-     * @param lvl Level.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void putUp(Put p, int lvl) throws IgniteCheckedException {
-        PageHandler<Put> handler = p.oldRow == null ? insert : replace;
-
-        long pageId = getLeftmostPageId(p.meta, lvl);
-
-        for (;;) {
-            try (Page page = page(pageId)) {
-                int res = writePage(page, handler, p, lvl);
-
-                switch (res) {
-                    case Put.FINISH:
-                        if (p.isFinished())
-                            return; // We are done.
-
-                        pageId = getLeftmostPageId(p.meta, ++lvl); // Go up to new root.
-
-                        break;
-
-                    case Put.NOT_FOUND:
-                        // Go forward.
-                        assert p.pageId != pageId;
-
-                        pageId = p.pageId;
-
-                        break;
-
-                    default:
-                        throw new IllegalStateException("Illegal result: " + res);
-                }
-            }
-
-            checkInterrupted();
-        }
     }
 
     /**
@@ -976,6 +932,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     /** */
     private final PageHandler<Put> replace = new PageHandler<Put>() {
         @Override public int run(Page page, ByteBuffer buf, Put p, int lvl) throws IgniteCheckedException {
+            assert p.bottomLevel == 0 : "split is impossible with replace";
+
             IndexPageIO io = IndexPageIO.forPage(buf);
 
             int cnt = io.getCount(buf);
@@ -1030,63 +988,33 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     /** */
     private final PageHandler<Put> insert = new PageHandler<Put>() {
         @Override public int run(Page page, ByteBuffer buf, Put p, int lvl) throws IgniteCheckedException {
+            assert p.bottomLevel == lvl: "we must always insert at the bottom level: " + p.bottomLevel + " " + lvl;
+
             IndexPageIO io = IndexPageIO.forPage(buf);
 
             int cnt = io.getCount(buf);
-            int idx = findInsertionPoint(io, buf, cnt, p.row);
+
+            int idx = cnt == 0 ? -1 : findInsertionPoint(io, buf, cnt, p.row);
 
             if (idx >= 0)
                 throw new IllegalStateException("Duplicate row in index.");
 
             idx = -idx - 1;
 
-            // Possible split.
-            if (idx == cnt) {
-                if (io.isLeaf()) { // For leaf we recheck expected forward page.
-                    if (io.getForward(buf) != p.expFwdId)
-                        return Put.RETRY; // Go up and retry.
-                }
-                else {
-                    // This is an upper insert after split downstairs.
-                    assert p.split : "split";
-                    assert p.tailLock != null : "tail lock must be kept";
-                    assert cnt > 0 : cnt; // We have a locked tailLock which is our child, we can't become empty.
-
-                    // `tailLock` page (the page that we've splitted downstairs) must be the rightmost child to insert
-                    // split row here.
-                    // Proof:
-                    // - `tailLock` page is locked and can't be removed from this page other way than split;
-                    // - our split key is known to be greater than all the other keys in this page, then there are two
-                    //   possible cases:
-                    //     1. `tailLock` page is the rightmost child. It means that we went right last time, because
-                    //        insertion key was already greater than all the keys in this page. Or it became like this
-                    //        after split of this page, but we don't care because `triangle` invariant guaranties
-                    //        that all the keys that were moved to `forward` at this level are greater than our split
-                    //        key, thus it is safe to insert split key here (moreover we can't insert it into `forward`
-                    //        because we have `right` reference but there we will need `left`).
-                    //     2. `tailLock` page is not the rightmost child. It can't be in this page, because then this
-                    //        page must contain key which is greater than all keys in our splitted `tailLock` page
-                    //        including our split key (which was in the middle of two splitted pages), but this is
-                    //        impossible because the split key is known to be greater than everyone here.
-                    //        Thus we know that `tailLock` reference was moved to the `forward` page (may be already
-                    //        multiple times) due to split and we need to go forward and catch up.
-                    if (p.tailLock.id() != inner(io).getRight(buf, cnt - 1)) {
-                        p.pageId = io.getForward(buf);
-
-                        assert p.pageId != 0;
-
-                        return Put.NOT_FOUND; // Go forward.
-                    }
-                }
-            }
+            // Possible split or merge.
+            if (idx == cnt && io.getForward(buf) != p.expFwdId)
+                return Put.RETRY; // Go up and retry.
 
             // Do insert.
             GridH2Row moveUpRow = insert(p.meta, io, buf, p.row(), idx, p.rightId, lvl);
 
             // Check if split happened.
             if (moveUpRow != null) {
-                p.split = true;
+                p.bottomLevel++; // Get high.
                 p.row = moveUpRow;
+
+                // Here `forward` can't be concurrently removed because we keep `tailLock` which is the only
+                // page who knows about the `forward` page, because it was just produced by split.
                 p.rightId = io.getForward(buf);
                 p.tailLock(page);
 
@@ -1133,13 +1061,11 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 if (idx == cnt && io.getForward(buf) != g.expFwdId)
                     return Get.RETRY;
 
-                if (io.isLeaf()) { // No way down, stop here.
-                    assert g.pageId == page.id();
-
-                    g.notFound(io, buf, idx);
-
+                if (!g.notFound(io, buf, idx, lvl)) // No way down, stop here.
                     return Get.NOT_FOUND;
-                }
+
+                assert !io.isLeaf();
+                assert lvl > 0 : lvl;
             }
 
             // If idx == cnt then we go right down, else left down.
@@ -1155,14 +1081,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 long fwdId = io.getForward(buf);
 
                 g.expFwdId = fwdId == 0L ? 0L : getLeftmostChild(fwdId);
-            }
-
-            if (found && g.isPut()) {
-                // This is a replace on inner page.
-                assert !io.isLeaf();
-                assert g instanceof Put;
-
-                return Put.REPLACE_AND_GO_DOWN;
             }
 
             return Get.GO_DOWN;
@@ -1206,43 +1124,44 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         throws IgniteCheckedException {
         assert lvl >= 0 : lvl;
 
-        PageHandler<Put> handler;
+        for (;;) {
+            final Page page = page(pageId);
 
-        Page page = page(pageId);
+            if (page == null)
+                return true; // Page was removed, retry.
 
-        try {
-            int res;
-
-            for (;;) {
+            try {
                 // Init args.
                 p.pageId = pageId;
                 p.expFwdId = expFwdId;
 
-                res = readPage(page, search, p, lvl);
+                int res = readPage(page, search, p, lvl);
 
                 switch (res) {
                     case Put.RETRY:
-                        return true; // Retry.
-
-                    case Put.REPLACE_AND_GO_DOWN:
-                        int res0 = writePage(page, replace, p, lvl);
-
-                        switch (res0) {
-                            case Put.NOT_FOUND:
-                                return true; // Retry.
-
-                            case Put.FOUND:
-                                break;
-
-                            default:
-                                throw new IllegalStateException("Illegal operation result: " + res0);
-                        }
-
-                        // Intentional fallthrough.
+                        return true; // Our page was splitted or merged, retry.
 
                     case Put.GO_DOWN:
+                        assert lvl > 0 : lvl;
                         assert p.pageId != pageId;
                         assert p.expFwdId != expFwdId || expFwdId == 0;
+
+                        if (p.foundInner) { // Need to replace ref in inner page.
+                            p.foundInner = false;
+
+                            int res0 = writePage(page, replace, p, lvl);
+
+                            switch (res0) {
+                                case Put.NOT_FOUND:
+                                    return true; // Our page was splitted or merged, retry.
+
+                                case Put.FOUND:
+                                    break; // Successfully replaced in inner page.
+
+                                default:
+                                    assert false : res0;
+                            }
+                        }
 
                         // Go down recursively.
                         if (putDown(p, p.pageId, p.expFwdId, lvl - 1)) {
@@ -1257,67 +1176,73 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                             return false; // Successfully inserted or replaced down the stack.
                         }
 
-                        assert p.split : "if we did not finish here, it must be a split.";
+                        assert p.bottomLevel == lvl : "it must be a split: " + p.bottomLevel + " == " + lvl;
 
-                        res = Put.NOT_FOUND; // Insert after split.
+                        checkInterrupted();
+
+                        continue; // We have to insert split row to the upper level.
+
+                    case Put.FOUND: // Do replace.
+                        assert lvl == 0 : "This replace can happen only at the bottom level.";
+
+                        // Init args.
+                        p.pageId = pageId;
+                        p.expFwdId = expFwdId;
+
+                        res = writePage(page, replace, p, lvl);
+
+                        switch (res) {
+                            case Put.NOT_FOUND:
+                                return true; // Retry.
+
+                            case Put.FINISH:
+                                assert p.isFinished();
+
+                                return false;
+
+                            default:
+                                assert false : res;
+                        }
+
+                        break;
+
+                    case Put.NOT_FOUND: // Do insert.
+                        assert lvl == p.bottomLevel : "must insert at the bottom level";
+
+                        // Init args.
+                        p.pageId = pageId;
+                        p.expFwdId = expFwdId;
+
+                        res = writePage(page, insert, p, lvl);
+
+                        switch (res) {
+                            case Put.RETRY:
+                                return true; // Our page was splitted or merged, retry.
+
+                            case Put.FINISH:
+                                if (p.isFinished())
+                                    return false;
+
+                                assert p.bottomLevel > lvl;
+
+                                return true; // Go insert to the upper level.
+
+                            default:
+                                assert false: res;
+                        }
+
+                        break;
+
+                    default:
+                        assert false : res;
                 }
-
-                break;
             }
-
-            // Insert or replace row in our page.
-            assert res == Put.FOUND || res == Put.NOT_FOUND : res;
-
-            handler = res == Put.FOUND ? replace : insert;
-
-            // Init args.
-            p.pageId = pageId;
-            p.expFwdId = expFwdId;
-
-            res = writePage(page, handler, p, lvl);
-
-            switch (res) {
-                case Put.FINISH:
-                    return false;
-
-                case Put.RETRY: {
-                    assert lvl == 0 : "we must be at leaf level";
-
-                    return true;
-                }
-            }
-
-            assert res == Put.NOT_FOUND: res; // Split happened, need to go forward.
-        }
-        finally {
-            if (p.tailLock != page)
-                page.close();
-        }
-
-        // We've failed to insert/replace in this page, need to go forward until we catch up with split.
-        for (;;) {
-            assert p.pageId != pageId;
-
-            page = page(p.pageId);
-
-            try {
-                int res = writePage(page, handler, p, lvl);
-
-                if (res == Put.FINISH)
-                    return false;
-
-                assert res == Put.NOT_FOUND: res;
-
-                if (p.pageId == expFwdId) {
-                    assert handler == replace;
-
-                    return false; // Go up and try to replace there.
-                }
-            }
-            finally {
+            finally{
                 if (p.tailLock != page)
                     page.close();
             }
+
+            checkInterrupted();
         }
     }
 
@@ -1368,16 +1293,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * @param rootId Root page ID.
          * @param rootLvl Root level.
          */
-        void restart(long rootId, int rootLvl) {
+        void restartFromRoot(long rootId, int rootLvl) {
             this.rootId = rootId;
             this.rootLvl = rootLvl;
-        }
-
-        /**
-         * @return {@code true} If this is a {@link Put} operation.
-         */
-        boolean isPut() {
-            return false;
         }
 
         /**
@@ -1393,9 +1311,13 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * @param io IO.
          * @param buf Buffer.
          * @param idx Insertion point.
+         * @param lvl Level.
+         * @return {@code true} If we can go down.
          */
-        void notFound(IndexPageIO io, ByteBuffer buf, int idx) throws IgniteCheckedException {
-            // No-op.
+        boolean notFound(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+            assert lvl >= 0;
+
+            return lvl != 0; // We are not at the bottom.
         }
 
         /**
@@ -1455,10 +1377,17 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         /** {@inheritDoc} */
-        @Override void notFound(IndexPageIO io, ByteBuffer buf, int idx) throws IgniteCheckedException {
+        @Override boolean notFound(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+            assert lvl >= 0 : lvl;
+
+            if (lvl != 0)
+                return true;
+
             assert io.isLeaf();
 
             cursor.bootstrap(buf, idx);
+
+            return false;
         }
     }
 
@@ -1466,9 +1395,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * Put operation.
      */
     private static class Put extends Get {
-        /** */
-        static final int REPLACE_AND_GO_DOWN = 3;
-
         /** */
         static final int FINISH = Integer.MAX_VALUE;
 
@@ -1487,8 +1413,13 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          */
         Page tailLock;
 
-        /** Split happened. */
-        boolean split;
+        /**
+         * Bottom level on insertion. Will be incremented on split on each level.
+         */
+        int bottomLevel;
+
+        /** */
+        boolean foundInner;
 
         /**
          * @param row Row.
@@ -1505,13 +1436,21 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         /** {@inheritDoc} */
-        @Override boolean isPut() {
-            return true;
+        @Override boolean found(IndexPageIO io, ByteBuffer buf, int idx) throws IgniteCheckedException {
+            if (io.isLeaf())
+                return true;
+
+            foundInner = true;
+
+            return false;
         }
 
         /** {@inheritDoc} */
-        @Override boolean found(IndexPageIO io, ByteBuffer buf, int idx) throws IgniteCheckedException {
-            return io.isLeaf();
+        @Override boolean notFound(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+            assert bottomLevel >= 0 : bottomLevel;
+            assert lvl >= 0 : lvl;
+
+            return lvl > bottomLevel;
         }
 
         /**
@@ -1586,10 +1525,12 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         /** {@inheritDoc} */
-        @Override void notFound(IndexPageIO io, ByteBuffer buf, int idx) throws IgniteCheckedException {
+        @Override boolean notFound(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
             assert io.isLeaf();
 
             row = null; // Finish.
+
+            return false;
         }
 
         /**
