@@ -45,7 +45,7 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
     }
 
     @Nullable @Override public GridCacheMapEntry getEntry(Object key) {
-        throw new AssertionError();
+        return null;
     }
 
     @Override
