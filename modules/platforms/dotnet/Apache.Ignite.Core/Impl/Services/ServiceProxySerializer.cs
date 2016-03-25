@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Impl.Services
                     Debug.Assert(methodArgs.Length == arguments.Length);
 
                     for (int i = 0; i < arguments.Length; i++)
-                        WriteArgForPlatforms(writer, methodArgs[i], platform, arguments[i]);
+                        WriteArgForPlatforms(writer, methodArgs[i], arguments[i]);
                 }
             }
             else
@@ -157,9 +157,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <summary>
         /// Writes the argument in platform-compatible format.
         /// </summary>
-        private static void WriteArgForPlatforms(BinaryWriter writer, ParameterInfo param, Platform platform, object arg)
+        private static void WriteArgForPlatforms(BinaryWriter writer, ParameterInfo param, object arg)
         {
-            var hnd = GetPlatformArgWriter(param, platform, arg);
+            var hnd = GetPlatformArgWriter(param, arg);
 
             if (hnd != null)
                 hnd(writer, arg);
@@ -170,7 +170,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <summary>
         /// Gets arg writer for platform-compatible service calls.
         /// </summary>
-        private static Action<BinaryWriter, object> GetPlatformArgWriter(ParameterInfo param, Platform platform, object arg)
+        private static Action<BinaryWriter, object> GetPlatformArgWriter(ParameterInfo param, object arg)
         {
             var type = param.ParameterType;
 
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Impl.Services
 
             var handler = BinarySystemHandlers.GetWriteHandler(type);
 
-            if (handler == null || !handler.IsSerializable)
+            if (handler != null && !handler.IsSerializable)
                 return null;
 
             if (type.IsArray)
@@ -191,9 +191,7 @@ namespace Apache.Ignite.Core.Impl.Services
             if (arg is ICollection)
                 return (writer, o) => writer.WriteCollection((ICollection) o);
 
-            throw new IgniteException(string.Format("Failed to invoke proxy method '{0}' for '{1}' platform. " +
-                                                    "Argument of type '{2}' is not supported by '{1}' platform",
-                                                    param.Member.Name, platform, type));
+            return null;
         }
     }
 }
