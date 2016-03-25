@@ -23,7 +23,6 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
-import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -4905,7 +4904,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param deserializeBinary Deserialize binary flag.
      * @return Public API iterator.
      */
-    protected Iterator<Cache.Entry<K, V>> iterator(final Iterator<? extends GridCacheEntryEx> it,
+    protected Iterator<Cache.Entry<K, V>> iterator(final Iterator<GridCacheEntryEx> it,
         final boolean deserializeBinary) {
         return new Iterator<Cache.Entry<K, V>>() {
             {
@@ -6484,33 +6483,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
             return null;
-        }
-    }
-
-    private final class KeySet<K> extends AbstractSet<K> {
-
-        private final Set<KeyCacheObject> internalSet;
-        private CacheOperationContext opCtxPerCall;
-
-        public KeySet(Set<KeyCacheObject> internalSet) {
-            this.internalSet = internalSet;
-            opCtxPerCall = ctx.operationContextPerCall();
-        }
-
-        @Override public Iterator<K> iterator() {
-            return F.iterator(internalSet, new IgniteClosure<KeyCacheObject, K>() {
-                @Override public K apply(KeyCacheObject object) {
-                    return (K)ctx.unwrapBinaryIfNeeded(object, opCtxPerCall != null && opCtxPerCall.isKeepBinary(), true);
-                }
-            }, true);
-        }
-
-        @Override public int size() {
-            return internalSet.size();
-        }
-
-        @Override public boolean contains(Object o) {
-            return internalSet.contains(ctx.toCacheKeyObject(o));
         }
     }
 }

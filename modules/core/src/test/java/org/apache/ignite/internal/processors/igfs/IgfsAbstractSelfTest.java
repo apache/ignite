@@ -3206,9 +3206,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     private static void dumpCache(String cacheName, GridCacheAdapter<?,?> cache) {
         X.println("=============================== " + cacheName + " cache dump: ");
 
-        Iterable<GridCacheEntryEx> set = cache.entries();
+        Iterable<GridCacheEntryEx> entries = cache.entries();
 
-        for (GridCacheEntryEx e: set)
+        for (GridCacheEntryEx e: entries)
             X.println("Lost " + cacheName + " entry = " + e);
     }
 
