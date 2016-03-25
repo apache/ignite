@@ -49,7 +49,13 @@ namespace Apache.Ignite.Core.Impl.Services
                 writer.WriteInt(arguments.Length);
 
                 foreach (var arg in arguments)
-                    writer.WriteObject(arg);
+                {
+                    // TODO
+                    //if (arg != null && arg.GetType().IsArray)
+                    //    writer.WriteArrayInternal((Array) arg);
+                    //else
+                        writer.WriteObject(arg);
+                }
             }
             else
                 writer.WriteBoolean(false);

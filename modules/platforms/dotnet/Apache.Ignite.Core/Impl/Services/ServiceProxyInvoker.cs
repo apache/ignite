@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Impl.Services
     /// </summary>
     internal static class ServiceProxyInvoker
     {
+        /** Cached method info. */
         private static readonly CopyOnWriteConcurrentDictionary<Tuple<Type, string, int>, MethodInfo> Methods =
             new CopyOnWriteConcurrentDictionary<Tuple<Type, string, int>, MethodInfo>();
 
