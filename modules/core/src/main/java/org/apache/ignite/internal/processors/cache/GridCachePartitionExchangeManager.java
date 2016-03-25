@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridListSet;
@@ -1126,7 +1127,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        dumpPendingObjects();
+        dumpPendingObjects(topologyVersion());
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts())
             cacheCtx.preloader().dumpDebugInfo();
@@ -1135,8 +1136,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      *
      */
-    public void dumpPendingObjects() {
+    public void dumpPendingObjects(AffinityTopologyVersion topVer) {
         IgniteTxManager tm = cctx.tm();
+
+        U.warn(log, "??? start");
+
+        for (IgniteTxKey key : cctx.mvcc().lockedKeys())
+            U.warn(log, "Locked key: " + key);
+
+        for (IgniteTxKey key : cctx.mvcc().nearLockedKeys())
+            U.warn(log, "Locked near key: " + key);
+
+        Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> locks =
+            cctx.mvcc().unfinishedLocks(topVer);
+
+        for (Map.Entry<IgniteTxKey, Collection<GridCacheMvccCandidate>> e : locks.entrySet())
+            U.warn(log, "Awaited locked entry [key=" + e.getKey() + ", mvcc=" + e.getValue() + ']');
 
         if (tm != null) {
             U.warn(log, "Pending transactions:");
@@ -1144,6 +1159,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             for (IgniteInternalTx tx : tm.activeTransactions())
                 U.warn(log, ">>> " + tx);
         }
+
+        U.warn(log, "??? finish");
 
         GridCacheMvccManager mvcc = cctx.mvcc();
 
@@ -1166,6 +1183,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         for (GridCacheContext ctx : cctx.cacheContexts()) {
             if (ctx.isLocal())
+
                 continue;
 
             GridCacheContext ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
@@ -1632,7 +1650,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (log.isDebugEnabled())
                 log.debug("Received message from node [node=" + nodeId + ", msg=" + msg + ']');
 
-            onMessage(node , msg);
+            onMessage(node, msg);
         }
 
         /**
