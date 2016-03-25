@@ -31,12 +31,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.event.EventType;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessor;
@@ -56,6 +58,8 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -121,11 +125,11 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(NODES - 1);
+        startGridsMultiThreaded(getServerNodeCount());
 
         client = true;
 
-        startGrid(NODES - 1);
+        startGrid(getServerNodeCount());
     }
 
     /** {@inheritDoc} */
@@ -417,6 +421,171 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
+    public void testDoubleRemoveAtomicWithoutBackup() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+            0,
+            ATOMIC,
+            ONHEAP_TIERED,
+            false);
+
+        testDoubleRemove(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDoubleRemoveAtomic() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+            1,
+            ATOMIC,
+            ONHEAP_TIERED,
+            false);
+
+        testDoubleRemove(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDoubleRemoveAtomicOffheap() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+            0,
+            ATOMIC,
+            OFFHEAP_TIERED,
+            false);
+
+        testDoubleRemove(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDoubleRemoveTx() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+            1,
+            TRANSACTIONAL,
+            ONHEAP_TIERED,
+            false);
+
+        testDoubleRemove(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDoubleRemoveReplicatedTx() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+            0,
+            TRANSACTIONAL,
+            ONHEAP_TIERED,
+            false);
+
+        testDoubleRemove(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDoubleRemoveReplicatedAtomic() throws Exception {
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+            0,
+            ATOMIC,
+            ONHEAP_TIERED,
+            false);
+
+        testDoubleRemove(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDoubleRemove(CacheConfiguration ccfg) throws Exception {
+        IgniteCache<QueryTestKey, QueryTestValue> cache = grid(getClientIndex()).createCache(ccfg);
+
+        try {
+            ContinuousQuery<QueryTestKey, QueryTestValue> qry = new ContinuousQuery<>();
+
+            final List<CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> evts =
+                new CopyOnWriteArrayList<>();
+
+            qry.setLocalListener(new CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>() {
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
+                    ? extends QueryTestValue>> events) throws CacheEntryListenerException {
+                    for (CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> e : events)
+                        evts.add(e);
+                }
+            });
+
+            QueryTestKey key = new QueryTestKey(1);
+
+            try (QueryCursor qryCur = cache.query(qry)) {
+                for (int i = 0; i < ITERATION_CNT; i++) {
+                    log.info("Start iteration: " + i);
+
+                    cache.put(key, new QueryTestValue(1));
+
+                    cache.remove(key);
+                    cache.invoke(key, (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
+                        (Object)new EntrySetValueProcessor(null, false));
+                    cache.invoke(key, (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
+                        (Object)new EntrySetValueProcessor(null, false));
+                    cache.remove(key);
+
+                    cache.put(key, new QueryTestValue(2));
+
+                    cache.invoke(key, (EntryProcessor<QueryTestKey, QueryTestValue, ? extends Object>)
+                        (Object)new EntrySetValueProcessor(null, false));
+                    cache.remove(key);
+
+                    cache.put(key, new QueryTestValue(3));
+                    cache.put(key, new QueryTestValue(4));
+
+                    assert GridTestUtils.waitForCondition(new PA() {
+                        @Override public boolean apply() {
+                            return evts.size() == 6;
+                        }
+                    }, 5_000);
+
+                    checkSingleEvent(evts.get(0), EventType.CREATED, new QueryTestValue(1), null);
+                    checkSingleEvent(evts.get(1), EventType.REMOVED, null, new QueryTestValue(1));
+                    checkSingleEvent(evts.get(2), EventType.CREATED, new QueryTestValue(2), null);
+                    checkSingleEvent(evts.get(3), EventType.REMOVED, null, new QueryTestValue(2));
+                    checkSingleEvent(evts.get(4), EventType.CREATED, new QueryTestValue(3), null);
+                    checkSingleEvent(evts.get(5), EventType.UPDATED, new QueryTestValue(4), new QueryTestValue(3));
+
+                    cache.remove(key);
+                    cache.remove(key);
+
+                    evts.clear();
+
+                    log.info("Finish iteration: " + i);
+                }
+            }
+        }
+        finally {
+            grid(getClientIndex()).destroyCache(ccfg.getName());
+        }
+    }
+
+    /**
+     * @param event Event.
+     * @param type Event type.
+     * @param val Value.
+     * @param oldVal Old value.
+     */
+    private void checkSingleEvent(
+        CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> event,
+        EventType type,
+        QueryTestValue val,
+        QueryTestValue oldVal) {
+        assertEquals(event.getEventType(), type);
+        assertEquals(event.getValue(), val);
+        assertEquals(event.getOldValue(), oldVal);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testTxClient() throws Exception {
         CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
@@ -656,7 +825,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
                 evtsQueues.add(evtsQueue);
 
-                QueryCursor<?> cur = grid(NODES - 1).cache(ccfg.getName()).query(qry);
+                QueryCursor<?> cur = grid(getClientIndex()).cache(ccfg.getName()).query(qry);
 
                 curs.add(cur);
             }
@@ -674,12 +843,12 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
                 evtsQueues.add(evtsQueue);
 
-                QueryCursor<?> cur = grid(rnd.nextInt(NODES - 1)).cache(ccfg.getName()).query(qry);
+                QueryCursor<?> cur = grid(rnd.nextInt(getServerNodeCount())).cache(ccfg.getName()).query(qry);
 
                 curs.add(cur);
             }
             else {
-                for (int i = 0; i < NODES - 1; i++) {
+                for (int i = 0; i <= getServerNodeCount(); i++) {
                     ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
                     final BlockingQueue<CacheEntryEvent<?, ?>> evtsQueue = new ArrayBlockingQueue<>(50_000);
@@ -708,7 +877,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     if (i % 20 == 0)
                         log.info("Iteration: " + i);
 
-                    for (int idx = 0; idx < NODES; idx++)
+                    for (int idx = 0; idx < getServerNodeCount(); idx++)
                         randomUpdate(rnd, evtsQueues, expData, partCntr, grid(idx).cache(ccfg.getName()));
                 }
             }
@@ -720,6 +889,20 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         finally {
             ignite(0).destroyCache(ccfg.getName());
         }
+    }
+
+    /**
+     * @return Client node index.
+     */
+    private int getClientIndex() {
+        return getServerNodeCount() - 1;
+    }
+
+    /**
+     * @return Count nodes.
+     */
+    protected int getServerNodeCount() {
+        return NODES;
     }
 
     /**
@@ -1272,9 +1455,11 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      */
     public static class QueryTestValue implements Serializable {
         /** */
+        @GridToStringInclude
         protected final Integer val1;
 
         /** */
+        @GridToStringInclude
         protected final String val2;
 
         /**
