@@ -273,36 +273,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
-     * @param entry Entry to add.
-     */
-    void onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry entry) {
-        GridDhtPartitionState state = state();
-
-        if (state == EVICTED)
-            throw new GridDhtInvalidPartitionException(id, "Adding entry to invalid partition " +
-                "(often may be caused by inconsistent 'key.hashCode()' implementation) [part=" + id + ']');
-
-        try {
-            CacheObject value = entry.hasValue() ? entry.versionedValue(topVer).get2() : null;
-            map.putEntryIfObsoleteOrAbsent(topVer, entry.key(), value, false);
-        }
-        catch (GridCacheEntryRemovedException e) {
-            throw new RuntimeException(e);
-        }
-
-        if (!entry.isInternal()) {
-            assert !entry.deleted() : entry;
-        }
-    }
-
-    /**
      * @param entry Entry to remove.
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter") void onRemoved(GridDhtCacheEntry entry) {
         assert entry.obsolete() : entry;
 
         // Make sure to remove exactly this entry.
-            map.removeEntry(entry);
+        map.removeEntry(entry);
 
         // Attempt to evict.
         tryEvict();
