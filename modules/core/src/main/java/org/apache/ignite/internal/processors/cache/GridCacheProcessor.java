@@ -847,12 +847,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheAdapter<?, ?> cache = stoppedCaches.remove(maskNull(cacheName));
 
             if (cache != null)
-                stopCache(cache, cancel);
+                stopCache(cache, cancel, false);
         }
 
         for (GridCacheAdapter<?, ?> cache : stoppedCaches.values()) {
             if (cache == stoppedCaches.remove(maskNull(cache.name())))
-                stopCache(cache, cancel);
+                stopCache(cache, cancel, false);
         }
 
         List<? extends GridCacheSharedManager<?, ?>> mgrs = sharedCtx.managers();
@@ -994,7 +994,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 IgniteInternalFuture<?> fut = ctx.closure().runLocalSafe(new Runnable() {
                     @Override public void run() {
                         onKernalStop(cache, true);
-                        stopCache(cache, true);
+                        stopCache(cache, true, false);
                     }
                 });
 
@@ -1088,7 +1088,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cancel Cancel flag.
      */
     @SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
-    private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel) {
+    private void stopCache(GridCacheAdapter<?, ?> cache, boolean cancel, boolean destroy) {
         GridCacheContext ctx = cache.context();
 
         sharedCtx.removeCacheContext(ctx);
@@ -1133,6 +1133,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (log.isInfoEnabled())
             log.info("Stopped cache: " + cache.name());
+
+        if (destroy && sharedCtx.pageStore() != null) {
+            try {
+                sharedCtx.pageStore().onAfterCacheDestroy(ctx);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to gracefully clean page store resources for destroyed cache " +
+                    "[cache=" + ctx.name() + "]", e);
+            }
+        }
 
         cleanup(ctx);
     }
@@ -1728,7 +1738,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ", ctxDepId=" + ctx.dynamicDeploymentId() + ']';
 
             onKernalStop(cache, true);
-            stopCache(cache, true);
+            stopCache(cache, true, true);
         }
     }
 

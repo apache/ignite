@@ -285,6 +285,9 @@ public class MetadataStorage {
 
                 FullPageId fullId = pageMem.allocatePage(0, 0, PageIdAllocator.FLAG_META);
 
+                assert !fullId.equals(meta.fullId()) : "Duplicate page allocated " +
+                    "[metaId=" + meta.fullId() + ", allocated=" + fullId + ']';
+
                 buf.putInt(cacheId);
                 buf.putLong(fullId.pageId());
 

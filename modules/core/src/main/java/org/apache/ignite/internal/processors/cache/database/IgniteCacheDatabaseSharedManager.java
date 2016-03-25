@@ -61,7 +61,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStop0(boolean cancel) {
+    @Override protected void stop0(boolean cancel) {
         if (pageMem != null)
             pageMem.stop();
     }

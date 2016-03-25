@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -562,6 +563,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param updateSeq Update sequence.
      * @return Local partition.
      */
+    @SuppressWarnings("TooBroadScope")
     private GridDhtLocalPartition localPartition(int p,
         AffinityTopologyVersion topVer,
         boolean create,
@@ -591,6 +593,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
 
+                boolean created = false;
+
                 lock.writeLock().lock();
 
                 try {
@@ -603,12 +607,24 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (updateSeq)
                             this.updateSeq.incrementAndGet();
 
+                        created = true;
+
                         if (log.isDebugEnabled())
                             log.debug("Created local partition: " + loc);
                     }
                 }
                 finally {
                     lock.writeLock().unlock();
+                }
+
+                if (created && cctx.shared().pageStore() != null) {
+                    try {
+                        cctx.shared().pageStore().onPartitionCreated(cctx.cacheId(), p);
+                    }
+                    catch (IgniteCheckedException e) {
+                        // TODO ignite-db
+                        throw new IgniteException(e);
+                    }
                 }
             }
 

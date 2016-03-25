@@ -489,6 +489,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
             clearSwap();
 
+            clearPageStore();
+
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(id);
 
@@ -502,6 +504,20 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         }
         else
             cctx.preloader().evictPartitionAsync(this);
+    }
+
+    /**
+     *
+     */
+    private void clearPageStore() {
+        try {
+            if (cctx.shared().pageStore() != null)
+                cctx.shared().pageStore().onPartitionDestroyed(cctx.cacheId(), id);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to gracefully clean resources for evicted partition " +
+                "[cache=" + cctx.name() + ", partId=" + id + ']');
+        }
     }
 
     /**
