@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 {
     using System;
     using System.Threading;
+    using System.Threading.Tasks;
     using NUnit.Framework;
 
     /// <summary>
@@ -58,10 +59,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 var task = streamer.AddData(2, 3);
                 streamer.Flush();
 
-                var ex = Assert.Throws<AggregateException>(() => task.Wait());
-                Assert.IsTrue(ex.InnerException.Message.Contains(
-                    "Failed to find server node for cache " +
-                    "(all affinity nodes have left the grid or cache was stopped): " + cacheName));
+                AssertThrowsCacheStopped(task);
             }
         }
 
@@ -87,8 +85,20 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 task = streamer.AddData(2, 3);
                 streamer.Flush();
-                task.Wait();
+
+                AssertThrowsCacheStopped(task);
             }
+        }
+
+        /// <summary>
+        /// Asserts that cache stopped error is thrown.
+        /// </summary>
+        private static void AssertThrowsCacheStopped(Task task)
+        {
+            var ex = Assert.Throws<AggregateException>(task.Wait);
+            Assert.IsTrue(ex.InnerException.Message.Contains(
+                "Failed to find server node for cache " +
+                "(all affinity nodes have left the grid or cache was stopped):"));
         }
     }
 }
