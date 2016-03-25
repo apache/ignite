@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Dataload
 {
+    using System;
     using NUnit.Framework;
 
     /// <summary>
@@ -40,7 +41,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
             using (var gridNoCache = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                Assert.IsNull(gridNoCache.GetCache<int, int>(cacheName));
+                Assert.Throws<ArgumentException>(() => gridNoCache.GetCache<int, int>(cacheName));
 
                 var gridWithCache = Ignition.Start(cacheNodeCfg);
 

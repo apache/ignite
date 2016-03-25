@@ -23,9 +23,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 /**
  * Node filter that allows only local nodes.
  */
-public class PlatformLocalNodeFilter implements IgnitePredicate<ClusterNode> {
+public class PlatformAttributeNodeFilter implements IgnitePredicate<ClusterNode> {
     /** {@inheritDoc} */
     @Override public boolean apply(ClusterNode node) {
-        return node.isLocal();
+        return node.attributes().containsKey("platformAttributeNode");
     }
 }
