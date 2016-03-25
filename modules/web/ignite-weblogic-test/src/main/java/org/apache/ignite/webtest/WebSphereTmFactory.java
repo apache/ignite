@@ -20,16 +20,7 @@ package org.apache.ignite.webtest;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import javax.cache.configuration.Factory;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.InvalidTransactionException;
-import javax.transaction.NotSupportedException;
-import javax.transaction.RollbackException;
-import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
-import javax.transaction.xa.XAResource;
 import org.apache.ignite.IgniteException;
 
 /**
@@ -38,25 +29,6 @@ import org.apache.ignite.IgniteException;
 public class WebSphereTmFactory implements Factory<TransactionManager> {
     /** */
     private static final long serialVersionUID = 0;
-
-    /** */
-    private static final Class<?> onePhaseXAResourceClass;
-
-    static {
-        Class cl;
-
-        try {
-             cl = Class.forName("com.ibm.tx.jta.OnePhaseXAResource");
-        }
-        catch (final ClassNotFoundException e) {
-//            throw new IgniteException(e);
-            e.printStackTrace();
-
-            cl = null;
-        }
-
-        onePhaseXAResourceClass = cl;
-    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -75,129 +47,6 @@ public class WebSphereTmFactory implements Factory<TransactionManager> {
         catch (SecurityException | ClassNotFoundException | IllegalArgumentException | NoSuchMethodException
             | InvocationTargetException | IllegalAccessException e) {
             throw new IgniteException(e);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class WebSphereTransactionManager implements TransactionManager {
-        /** */
-        private TransactionManager mgr;
-
-        /**
-         * @param mgr Transaction Manager.
-         */
-        WebSphereTransactionManager(TransactionManager mgr) {
-            System.out.println(">>>>> DEBUG_INFO: created WS_MGR");
-
-            this.mgr = mgr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void begin() throws NotSupportedException, SystemException {
-            mgr.begin();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void commit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException,
-            SecurityException, IllegalStateException, SystemException {
-            mgr.commit();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getStatus() throws SystemException {
-            return mgr.getStatus();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Transaction getTransaction() throws SystemException {
-            System.out.println(">>>>> DEBUG_INFO: getting transaction");
-
-            return new WebSphereTransaction(mgr.getTransaction());
-//            return mgr.getTransaction();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void resume(Transaction tobj) throws InvalidTransactionException, IllegalStateException,
-            SystemException {
-            mgr.resume(tobj);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void rollback() throws IllegalStateException, SecurityException, SystemException {
-            mgr.rollback();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setRollbackOnly() throws IllegalStateException, SystemException {
-            mgr.setRollbackOnly();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setTransactionTimeout(int seconds) throws SystemException {
-            mgr.setTransactionTimeout(seconds);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Transaction suspend() throws SystemException {
-            return mgr.suspend();
-        }
-    }
-
-    /**
-     *
-     */
-    private static class WebSphereTransaction implements Transaction {
-        /** */
-        private Transaction tx;
-
-        /**
-         * @param tx Transaction.
-         */
-        WebSphereTransaction(Transaction tx) {
-            this.tx = tx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void commit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException,
-            SecurityException, IllegalStateException, SystemException {
-            tx.commit();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean delistResource(XAResource xaRes,
-            int flag) throws IllegalStateException, SystemException {
-            return tx.delistResource(xaRes, flag);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean enlistResource(XAResource xaRes) throws RollbackException, IllegalStateException,
-            SystemException {
-            System.out.println(">>>>> DEBUG_INFO enlisting tx");
-
-            return tx.enlistResource(xaRes);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getStatus() throws SystemException {
-            return tx.getStatus();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void registerSynchronization(Synchronization sync) throws RollbackException,
-            IllegalStateException, SystemException {
-            tx.registerSynchronization(sync);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void rollback() throws IllegalStateException, SystemException {
-            tx.rollback();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setRollbackOnly() throws IllegalStateException, SystemException {
-            tx.setRollbackOnly();
         }
     }
 }

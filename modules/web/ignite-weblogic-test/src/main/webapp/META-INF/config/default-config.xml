@@ -47,6 +47,9 @@
                 <property name="txManagerFactory">
                     <bean class="org.apache.ignite.webtest.WebSphereTmFactory"/>
                 </property>
+
+                <property name="defaultTxIsolation" value="REPEATABLE_READ"/>
+                <property name="defaultTxConcurrency" value="PESSIMISTIC"/>
             </bean>
         </property>
 

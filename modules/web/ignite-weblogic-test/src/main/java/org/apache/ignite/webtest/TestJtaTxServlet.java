@@ -23,6 +23,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.transaction.TransactionManager;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 
 /**
  * Servlet to test working of Ignite transactions inside web-aplication environment.
@@ -45,24 +49,24 @@ public class TestJtaTxServlet extends HttpServlet {
             Class onePhaseXAResourceClass = Class.forName("com.ibm.tx.jta.OnePhaseXAResource");
 
             writer.println("Got onePhaseXAResourceClass: " + onePhaseXAResourceClass);
-//
-//            final Ignite ignite = Ignition.ignite();
-//
-//            writer.println("Got ignite");
-//
-//            final IgniteCache<Integer, String> cache = ignite.cache("tx");
-//
-//            writer.println("Got cache");
-//
-//            TransactionManager tmMgr = com.ibm.tx.jta.TransactionManagerFactory.getTransactionManager();
-//
-//            writer.println("Got txMgr");
-//
-//            tmMgr.begin();
+
+            final Ignite ignite = Ignition.ignite();
+
+            writer.println("Got ignite");
+
+            final IgniteCache<Integer, String> cache = ignite.cache("tx");
+
+            writer.println("Got cache");
+
+            TransactionManager tmMgr = com.ibm.tx.jta.TransactionManagerFactory.getTransactionManager();
+
+            writer.println("Got txMgr");
+
+            tmMgr.begin();
 //            cache.put(key, correctVal);
 //            writer.println(String.format("Transaction #1. Writing value [%s]", cache.get(key)));
 //            writer.println();
-//            tmMgr.commit();
+            tmMgr.commit();
 //
 //            try {
 //                tmMgr.begin();
