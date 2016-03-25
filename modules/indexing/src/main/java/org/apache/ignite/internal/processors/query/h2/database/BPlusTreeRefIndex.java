@@ -141,11 +141,223 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
     };
 
+    /** */
+    private final PageHandler<Get> search = new PageHandler<Get>() {
+        @Override public int run(Page page, ByteBuffer buf, Get g, int lvl) throws IgniteCheckedException {
+            IndexPageIO io = IndexPageIO.forPage(buf);
+
+            int cnt = io.getCount(buf);
+            int idx = findInsertionPoint(io, buf, cnt, g.row);
+
+            boolean found = idx >= 0;
+
+            if (found) { // Found exact match.
+                if (g.found(io, buf, idx))
+                    return Get.FOUND;
+
+                assert !io.isLeaf();
+
+                // Else we need to reach leaf, go left down.
+            }
+            else {
+                idx = -idx - 1;
+
+                // If we are on the right edge, then check for expected forward page and retry of it does match.
+                // It means that concurrent split happened. This invariant is referred as `triangle`.
+                if (idx == cnt && io.getForward(buf) != g.expFwdId)
+                    return Get.RETRY;
+
+                if (!g.notFound(io, buf, idx, lvl)) // No way down, stop here.
+                    return Get.NOT_FOUND;
+
+                assert !io.isLeaf();
+                assert lvl > 0 : lvl;
+            }
+
+            // If idx == cnt then we go right down, else left down.
+            g.pageId = inner(io).getLeft(buf, idx);
+
+            // If we see the tree in consistent state, then our right down page must be forward for our left down page.
+            if (idx < cnt)
+                g.expFwdId = inner(io).getRight(buf, idx);
+            else {
+                assert idx == cnt;
+                // But here we are actually going to right and child forward is unknown to us, need to ask our forward.
+                // This is ok from the locking standpoint because we take all locks in the forward direction.
+                long fwdId = io.getForward(buf);
+
+                g.expFwdId = fwdId == 0L ? 0L : getLeftmostChild(fwdId);
+            }
+
+            return Get.GO_DOWN;
+        }
+
+        @Override public String toString() {
+            return "search";
+        }
+    };
+
+    /** */
+    private final PageHandler<Put> replace = new PageHandler<Put>() {
+        @Override public int run(Page page, ByteBuffer buf, Put p, int lvl) throws IgniteCheckedException {
+            assert p.bottomLevel == 0 : "split is impossible with replace";
+
+            IndexPageIO io = IndexPageIO.forPage(buf);
+
+            int cnt = io.getCount(buf);
+            int idx = findInsertionPoint(io, buf, cnt, p.row);
+
+            if (idx < 0) { // Not found, split happened.
+                idx = -idx - 1;
+
+                assert idx == cnt;
+
+                long fwdId = io.getForward(buf);
+
+                assert fwdId != 0;
+
+                p.pageId = fwdId;
+
+                return Put.NOT_FOUND;
+            }
+
+            // Replace link at idx with new one.
+            // Need to read link here because `p.finish()` will clear row.
+            long newLink = p.row().link;
+
+            assert newLink != 0;
+
+            if (io.isLeaf()) { // Get old row in leaf page to reduce contention at upper level.
+                assert p.oldRow == null;
+
+                long oldLink = io.getLink(buf, idx);
+
+                p.oldRow = getRow(oldLink);
+                p.oldRow.link = oldLink;
+
+                p.finish();
+                // We can't erase data page here because it can be referred from other indexes.
+            }
+
+            io.setLink(buf, idx, newLink);
+
+            return io.isLeaf() ? Put.FINISH : Put.FOUND;
+        }
+
+        @Override protected boolean releaseAfterWrite(Page page, Put p) {
+            return p.tailLock != page;
+        }
+
+        @Override public String toString() {
+            return "replace";
+        }
+    };
+
+    /** */
+    private final PageHandler<Put> insert = new PageHandler<Put>() {
+        @Override public int run(Page page, ByteBuffer buf, Put p, int lvl) throws IgniteCheckedException {
+            assert p.bottomLevel == lvl: "we must always insert at the bottom level: " + p.bottomLevel + " " + lvl;
+
+            IndexPageIO io = IndexPageIO.forPage(buf);
+
+            int cnt = io.getCount(buf);
+
+            int idx = cnt == 0 ? -1 : findInsertionPoint(io, buf, cnt, p.row);
+
+            if (idx >= 0)
+                throw new IllegalStateException("Duplicate row in index.");
+
+            idx = -idx - 1;
+
+            // Possible split or merge.
+            if (idx == cnt && io.getForward(buf) != p.expFwdId)
+                return Put.RETRY; // Go up and retry.
+
+            // Do insert.
+            GridH2Row moveUpRow = insert(p.meta, io, buf, p.row(), idx, p.rightId, lvl);
+
+            // Check if split happened.
+            if (moveUpRow != null) {
+                p.bottomLevel++; // Get high.
+                p.row = moveUpRow;
+
+                // Here `forward` can't be concurrently removed because we keep `tailLock` which is the only
+                // page who knows about the `forward` page, because it was just produced by split.
+                p.rightId = io.getForward(buf);
+                p.tailLock(page);
+
+                assert p.rightId != 0;
+            }
+            else
+                p.finish();
+
+            return Put.FINISH;
+        }
+
+        @Override protected boolean releaseAfterWrite(Page page, Put p) {
+            return p.tailLock != page;
+        }
+
+        @Override public String toString() {
+            return "insert";
+        }
+    };
+
+    /** */
+    private final PageHandler<GridH2Row> dataWrite = new PageHandler<GridH2Row>() {
+        @Override int run(Page page, ByteBuffer buf, GridH2Row row, int lvl) throws IgniteCheckedException {
+            DataPageIO io = DataPageIO.forPage(buf);
+
+            int idx = io.addRow(coctx, buf, row.key, row.val, row.ver);
+
+            if (idx != -1) {
+                row.link = linkFromDwordOffset(page.id(), idx);
+
+                assert row.link != 0;
+            }
+
+            return idx;
+        }
+
+        @Override public String toString() {
+            return "dataWrite";
+        }
+    };
+
+    /** */
+    private final PageHandler<Long> updateRoot = new PageHandler<Long>() {
+        @Override int run(Page page, ByteBuffer buf, Long rootPageId, int lvl) throws IgniteCheckedException {
+            MetaPageIO io = MetaPageIO.forPage(buf);
+
+            if (rootPageId != null) {
+                // Increase tree level.
+                if (io.getLevelsCount(buf) != lvl)
+                    return 0;
+
+                io.setLevelsCount(buf, lvl + 1);
+                io.setLeftmostPageId(buf, lvl, rootPageId);
+            }
+            else {
+                // Decrease tree level.
+                if (io.getLevelsCount(buf) != lvl + 1)
+                    return 0;
+
+                io.setLevelsCount(buf, lvl);
+            }
+
+            return 1;
+        }
+
+        @Override public String toString() {
+            return "updateRoot";
+        }
+    };
+
     /**
      * @param cctx Cache context.
      * @param pageMem Page memory.
      * @param metaPageId Meta page ID.
-     * @param initNew Initilize new index.
+     * @param initNew Initialize new index.
      * @param keyCol Key column.
      * @param valCol Value column.
      * @param tbl Table.
@@ -239,31 +451,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
         finally {
             meta.releaseRead();
-        }
-    }
-
-    /**
-     * Must be called inside of write lock on the current root page.
-     *
-     * @param meta Meta.
-     * @param lvl Level.
-     * @param rootPageId Root page ID.
-     */
-    private void setRootPageId(Page meta, int lvl, long rootPageId) {
-        ByteBuffer buf = meta.getForWrite();
-
-        boolean ok = false;
-
-        try {
-            MetaPageIO io = MetaPageIO.forPage(buf);
-
-            io.setLevelsCount(buf, lvl + 1);
-            io.setLeftmostPageId(buf, lvl, rootPageId);
-
-            ok = true;
-        }
-        finally {
-            meta.releaseWrite(ok);
         }
     }
 
@@ -460,26 +647,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 pageId = nextDataPage(0, row.partId);
 
             try (Page page = page(pageId)) {
-                ByteBuffer buf = page.getForWrite();
-
-                boolean ok = false;
-
-                try {
-                    DataPageIO io = DataPageIO.forPage(buf);
-
-                    int idx = io.addRow(coctx, buf, row.key, row.val, row.ver);
-
-                    if (idx != -1) {
-                        ok = true;
-
-                        row.link = linkFromDwordOffset(pageId, idx);
-
-                        break;
-                    }
-                }
-                finally {
-                    page.releaseWrite(ok);
-                }
+                if (writePage(page, dataWrite, row, -1) >= 0)
+                    return; // Successful write.
             }
 
             nextDataPage(pageId, row.partId);
@@ -859,7 +1028,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                     inner(io).setRight(newRootBuf, 0, fwdPage.id());
                 }
 
-                setRootPageId(meta, lvl + 1, newRootId);
+                int res = writePage(meta, updateRoot, newRootId, lvl + 1);
+
+                assert res != 0 : "failed to update meta page";
 
                 return null; // We've just moved link up to root, nothing to return here.
             }
@@ -895,201 +1066,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         return null;
     }
-
-    /**
-     * @param dataPage Data page.
-     * @param idx Index.
-     * @return {@code true} If replaced.
-     */
-    private boolean updateDataInPlace(Page dataPage, int idx, GridH2Row row) throws IgniteCheckedException {
-        boolean ok = false;
-
-        ByteBuffer buf = dataPage.getForWrite();
-
-        try {
-            DataPageIO io = DataPageIO.forPage(buf);
-
-            int oldKeyValLen = io.getKeyValueSize(buf, idx);
-
-            int newKeyValLen = row.key.valueBytesLength(coctx) + row.val.valueBytesLength(coctx);
-
-            // Can replace in place.
-            if (oldKeyValLen >= newKeyValLen) {
-                int dataOff = io.getDataOffset(buf, idx);
-
-                io.writeRowDataInPlace(coctx, buf, dataOff, oldKeyValLen, row.key, row.val, row.ver);
-
-                ok = true;
-            }
-        }
-        finally {
-            dataPage.releaseWrite(ok);
-        }
-
-        return ok;
-    }
-
-    /** */
-    private final PageHandler<Put> replace = new PageHandler<Put>() {
-        @Override public int run(Page page, ByteBuffer buf, Put p, int lvl) throws IgniteCheckedException {
-            assert p.bottomLevel == 0 : "split is impossible with replace";
-
-            IndexPageIO io = IndexPageIO.forPage(buf);
-
-            int cnt = io.getCount(buf);
-            int idx = findInsertionPoint(io, buf, cnt, p.row);
-
-            if (idx < 0) { // Not found, split happened.
-                idx = -idx - 1;
-
-                assert idx == cnt;
-
-                long fwdId = io.getForward(buf);
-
-                assert fwdId != 0;
-
-                p.pageId = fwdId;
-
-                return Put.NOT_FOUND;
-            }
-
-            // Replace link at idx with new one.
-            // Need to read link here because `p.finish()` will clear row.
-            long newLink = p.row().link;
-
-            assert newLink != 0;
-
-            if (io.isLeaf()) { // Get old row in leaf page to reduce contention at upper level.
-                assert p.oldRow == null;
-
-                long oldLink = io.getLink(buf, idx);
-
-                p.oldRow = getRow(oldLink);
-                p.oldRow.link = oldLink;
-
-                p.finish();
-                // We can't erase data page here because it can be referred from other indexes.
-            }
-
-            io.setLink(buf, idx, newLink);
-
-            return io.isLeaf() ? Put.FINISH : Put.FOUND;
-        }
-
-        @Override protected boolean releaseAfterWrite(Page page, Put p) {
-            return p.tailLock != page;
-        }
-
-        @Override public String toString() {
-            return "replace";
-        }
-    };
-
-    /** */
-    private final PageHandler<Put> insert = new PageHandler<Put>() {
-        @Override public int run(Page page, ByteBuffer buf, Put p, int lvl) throws IgniteCheckedException {
-            assert p.bottomLevel == lvl: "we must always insert at the bottom level: " + p.bottomLevel + " " + lvl;
-
-            IndexPageIO io = IndexPageIO.forPage(buf);
-
-            int cnt = io.getCount(buf);
-
-            int idx = cnt == 0 ? -1 : findInsertionPoint(io, buf, cnt, p.row);
-
-            if (idx >= 0)
-                throw new IllegalStateException("Duplicate row in index.");
-
-            idx = -idx - 1;
-
-            // Possible split or merge.
-            if (idx == cnt && io.getForward(buf) != p.expFwdId)
-                return Put.RETRY; // Go up and retry.
-
-            // Do insert.
-            GridH2Row moveUpRow = insert(p.meta, io, buf, p.row(), idx, p.rightId, lvl);
-
-            // Check if split happened.
-            if (moveUpRow != null) {
-                p.bottomLevel++; // Get high.
-                p.row = moveUpRow;
-
-                // Here `forward` can't be concurrently removed because we keep `tailLock` which is the only
-                // page who knows about the `forward` page, because it was just produced by split.
-                p.rightId = io.getForward(buf);
-                p.tailLock(page);
-
-                assert p.rightId != 0;
-            }
-            else
-                p.finish();
-
-            return Put.FINISH;
-        }
-
-        @Override protected boolean releaseAfterWrite(Page page, Put p) {
-            return p.tailLock != page;
-        }
-
-        @Override public String toString() {
-            return "insert";
-        }
-    };
-
-    /** */
-    private final PageHandler<Get> search = new PageHandler<Get>() {
-        @Override public int run(Page page, ByteBuffer buf, Get g, int lvl) throws IgniteCheckedException {
-            IndexPageIO io = IndexPageIO.forPage(buf);
-
-            int cnt = io.getCount(buf);
-            int idx = findInsertionPoint(io, buf, cnt, g.row);
-
-            boolean found = idx >= 0;
-
-            if (found) { // Found exact match.
-                if (g.found(io, buf, idx))
-                    return Get.FOUND;
-
-                assert !io.isLeaf();
-
-                // Else we need to reach leaf, go left down.
-            }
-            else {
-                idx = -idx - 1;
-
-                // If we are on the right edge, then check for expected forward page and retry of it does match.
-                // It means that concurrent split happened. This invariant is referred as `triangle`.
-                if (idx == cnt && io.getForward(buf) != g.expFwdId)
-                    return Get.RETRY;
-
-                if (!g.notFound(io, buf, idx, lvl)) // No way down, stop here.
-                    return Get.NOT_FOUND;
-
-                assert !io.isLeaf();
-                assert lvl > 0 : lvl;
-            }
-
-            // If idx == cnt then we go right down, else left down.
-            g.pageId = inner(io).getLeft(buf, idx);
-
-            // If we see the tree in consistent state, then our right down page must be forward for our left down page.
-            if (idx < cnt)
-                g.expFwdId = inner(io).getRight(buf, idx);
-            else {
-                assert idx == cnt;
-                // But here we are actually going to right and child forward is unknown to us, need to ask our forward.
-                // This is ok from the locking standpoint because we take all locks in the forward direction.
-                long fwdId = io.getForward(buf);
-
-                g.expFwdId = fwdId == 0L ? 0L : getLeftmostChild(fwdId);
-            }
-
-            return Get.GO_DOWN;
-        }
-
-        @Override public String toString() {
-            return "search";
-        }
-    };
 
     /**
      * @param pageId Inner page ID.
