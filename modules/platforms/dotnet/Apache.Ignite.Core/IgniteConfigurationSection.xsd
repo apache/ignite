@@ -61,6 +61,13 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="types" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
                             <xs:element name="defaultNameMapper" minOccurs="0">
                                 <xs:complexType>
                                     <xs:attribute name="type" type="xs:string" use="required" />
@@ -161,6 +168,7 @@
                                         </xs:element>
                                     </xs:all>
                                     <xs:attribute name="name" type="xs:string" />
+                                    <xs:attribute name="cacheMode" type="xs:string" />
                                     <xs:attribute name="writeSynchronizationMode" type="xs:string" />
                                     <xs:attribute name="evictSynchronized" type="xs:boolean" />
                                     <xs:attribute name="evictSynchronizedKeyBufferSize" type="xs:int" />

@@ -320,22 +320,6 @@ public class BinaryUtils {
     }
 
     /**
-     * @param typeName Field type name.
-     * @return Field type ID;
-     */
-    @SuppressWarnings("StringEquality")
-    public static int fieldTypeId(String typeName) {
-        for (int i = 0; i < FIELD_TYPE_NAMES.length; i++) {
-            String typeName0 = FIELD_TYPE_NAMES[i];
-
-            if (typeName.equals(typeName0))
-                return i;
-        }
-
-        throw new IllegalArgumentException("Invalid metadata type name: " + typeName);
-    }
-
-    /**
      * @param typeId Field type ID.
      * @return Field type name.
      */
