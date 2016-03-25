@@ -50,7 +50,7 @@ mixin lbl(txt)
                             i.fa(
                             ng-click='expandedToken = !expandedToken'
                             ng-class='expandedToken ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
-                            a(ng-click='expandedToken = !expandedToken') {{expandedToken ? 'Hide security token...' : 'Show security token...'}}
+                            a(ng-click='expandedToken = !expandedToken') {{expandedToken ? 'Cancel security token changing...' : 'Show security token...'}}
                         div(ng-show='expandedToken')
                             +lbl('Security token:')
                             label {{user.token}}
@@ -63,7 +63,7 @@ mixin lbl(txt)
                             ng-click='expandedPassword = !expandedPassword'
                             ng-class='expandedPassword ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
                             a(ng-click='expandedPassword = !expandedPassword') {{expandedPassword ? 'Cancel password changing...' : 'Change password...'}}
-                        div(ng-show='expandedPassword')
+                        div(ng-if='expandedPassword')
                             .details-row
                                 +lbl('New password:')
                                 .col-xs-5.col-sm-4
