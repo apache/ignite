@@ -380,13 +380,13 @@ public class PlatformServices extends PlatformAbstractTarget {
             else {
                 assert proxy instanceof GridServiceProxy;
 
-                Method mtd = getMethod(serviceClass, mthdName, args);
-
                 // Deserialize arguments for Java service when not in binary mode
                 if (!srvKeepBinary)
                     for (int i = 0; i < args.length; i++)
                         if (args[i] instanceof BinaryObject)
                             args[i] = ((BinaryObject) args[i]).deserialize();
+
+                Method mtd = getMethod(serviceClass, mthdName, args);
 
                 return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
             }
