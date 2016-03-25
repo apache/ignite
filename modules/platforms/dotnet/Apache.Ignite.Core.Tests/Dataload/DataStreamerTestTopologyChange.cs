@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Dataload
 {
-    using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
 
     /// <summary>
@@ -31,24 +30,18 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestNoCacheNode()
         {
-            const string cacheName = "streamerCache";
+            const string cacheName = "cache";
 
-            var baseCfg = TestUtils.GetTestConfiguration();
-
-            var cacheNodeCfg = new IgniteConfiguration(baseCfg)
+            var noCacheNodeCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                CacheConfiguration = new[]
-                {
-                    new CacheConfiguration(cacheName), 
-                },
-                GridName = "gridWithCache"
+                SpringConfigUrl = @"Config\cache-local-node.cfg"
             };
 
-            using (var gridWithCache = Ignition.Start(cacheNodeCfg))
-            using (var gridNoCache = Ignition.Start(baseCfg))
+            using (var gridWithCache = Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var gridNoCache = Ignition.Start(noCacheNodeCfg))
             {
                 Assert.IsNotNull(gridWithCache.GetCache<int, int>(cacheName));
-                Assert.IsNull(gridNoCache.GetCache<int, int>(cacheName));
+                Assert.IsNotNull(gridNoCache.GetCache<int, int>(cacheName));
             }
         }
 
