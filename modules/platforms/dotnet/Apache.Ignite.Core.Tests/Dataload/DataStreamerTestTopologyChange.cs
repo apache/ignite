@@ -62,12 +62,6 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Assert.IsTrue(ex.InnerException.Message.Contains(
                     "Failed to find server node for cache " +
                     "(all affinity nodes have left the grid or cache was stopped): " + cacheName));
-
-                //streamer.Close(false);
-                //streamer.Task.Wait();
-
-                //var cache = gridNoCache.GetCache<int, int>(cacheName);
-                //Assert.AreEqual(3, cache[2]);
             }
         }
 
@@ -77,7 +71,24 @@ namespace Apache.Ignite.Core.Tests.Dataload
         [Test]
         public void TestDestroyCache()
         {
-            // TODO
+            const string cacheName = "cache";
+
+            using (var grid = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                grid.CreateCache<int, int>(cacheName);
+
+                var streamer = grid.GetDataStreamer<int, int>(cacheName);
+
+                var task = streamer.AddData(1, 2);
+                streamer.Flush();
+                task.Wait();
+
+                grid.DestroyCache(cacheName);
+
+                task = streamer.AddData(2, 3);
+                streamer.Flush();
+                task.Wait();
+            }
         }
     }
 }
