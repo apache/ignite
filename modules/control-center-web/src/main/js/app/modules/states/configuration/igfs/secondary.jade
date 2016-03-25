@@ -21,7 +21,7 @@ include ../../../../../app/helpers/jade/mixins.jade
 form.panel.panel-default(name='secondaryFileSystem' novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
         ignite-form-panel-chevron
-        label Secondary file system
+        label(id="secondaryFileSystem-title") Secondary file system
         ignite-form-field-tooltip.tipLabel
             | Secondary file system is provided for pass-through, write-through, and read-through purposes
         ignite-form-revert
