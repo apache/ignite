@@ -58,7 +58,10 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 var task = streamer.AddData(2, 3);
                 streamer.Flush();
 
-                task.Wait();
+                var ex = Assert.Throws<AggregateException>(() => task.Wait());
+                Assert.AreEqual(ex.InnerException.Message, "Failed to find server node for cache (all affinity nodes" +
+                                                           " have left the grid or cache was stopped): " + cacheName);
+
                 streamer.Close(false);
                 streamer.Task.Wait();
 
