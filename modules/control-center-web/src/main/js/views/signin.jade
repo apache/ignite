@@ -56,11 +56,11 @@ header#header.header
                             .settings-row(ng-show='action == "signup"')
                                 +lblRequired('Company:')
                                 .col-xs-9.col-md-8
-                                    input#company.form-control(enter-focus-next='country' type='text' ng-model='user_info.company' placeholder='Input company name' ng-required='action=="signup"')
+                                    input#company.form-control(enter-focus-next='country' type='search' ng-model='user_info.company' placeholder='Input company name' ng-required='action=="signup"')
                             .settings-row(ng-show='action == "signup"')
                                 +lblRequired('Country:')
                                 .col-xs-9.col-md-8
-                                    button#country.select-toggle.form-control(bs-select bs-options='item for item in countries' enter-focus-next='user_password' type='text' ng-model='user_info.country' placeholder='Choose your country' ng-required='action=="signup"')
+                                    button#country.select-toggle.form-control(bs-select bs-options='item for item in countries' enter-focus-next='user_password' type='search' ng-model='user_info.country' placeholder='Choose your country' ng-required='action=="signup"')
                             .settings-row(ng-show='action != "password/forgot"')
                                 +lblRequired('Password:')
                                 .col-xs-9.col-md-8
