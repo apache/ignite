@@ -55,8 +55,12 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 Thread.Sleep(500);  // Wait for node to stop
 
-                streamer.AddData(2, 3);
+                var task = streamer.AddData(2, 3);
                 streamer.Flush();
+
+                task.Wait();
+                streamer.Close(false);
+                streamer.Task.Wait();
 
                 var cache = gridNoCache.GetCache<int, int>(cacheName);
                 Assert.AreEqual(3, cache[2]);
