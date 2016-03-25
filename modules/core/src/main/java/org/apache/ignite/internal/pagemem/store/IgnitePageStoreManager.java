@@ -53,7 +53,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * @param partId ID of the partition being created.
      * @throws IgniteCheckedException If failed to handle partition create callback.
      */
-    public void onBeforePartitionCreated(int cacheId, int partId) throws IgniteCheckedException;
+    public void onPartitionCreated(int cacheId, int partId) throws IgniteCheckedException;
 
     /**
      * Callback called when a partition for the given cache is evicted from the local node.
@@ -63,7 +63,7 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
      * @param partId Partition ID.
      * @throws IgniteCheckedException If failed to handle partition destroy callback.
      */
-    public void onAfterPartitionDestroyed(int cacheId, int partId) throws IgniteCheckedException;
+    public void onPartitionDestroyed(int cacheId, int partId) throws IgniteCheckedException;
 
     /**
      * Reads a page for the given cache ID. Cache ID may be {@code 0} if the page is a meta page.

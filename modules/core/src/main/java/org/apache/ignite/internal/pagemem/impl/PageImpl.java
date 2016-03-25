@@ -25,11 +25,12 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
  */
-public class PageImpl extends AbstractQueuedSynchronizer implements Page {
+class PageImpl extends AbstractQueuedSynchronizer implements Page {
     /** */
     private static final AtomicIntegerFieldUpdater<PageImpl> refCntUpd =
         AtomicIntegerFieldUpdater.newUpdater(PageImpl.class, "refCnt");
@@ -38,7 +39,7 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
     private final FullPageId fullId;
 
     /** */
-    public final long ptr;
+    private final long ptr;
 
     /** */
     @SuppressWarnings("unused")
@@ -57,7 +58,7 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
      * @param fullId Full page ID.
      * @param pageMem Page memory.
      */
-    public PageImpl(FullPageId fullId, long ptr, PageMemoryImpl pageMem) {
+    PageImpl(FullPageId fullId, long ptr, PageMemoryImpl pageMem) {
         this.fullId = fullId;
         this.ptr = ptr;
         this.pageMem = pageMem;
@@ -174,9 +175,19 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
     }
 
     /**
+     * @return Pointer.
+     */
+    long pointer() {
+        return ptr;
+    }
+
+    /**
      * Mark dirty.
      */
     private void markDirty() {
+        if (fullId.pageId() == 0x0001000000010001L)
+            U.dumpStack();
+
         pageMem.setDirty(fullId, ptr, true);
     }
 

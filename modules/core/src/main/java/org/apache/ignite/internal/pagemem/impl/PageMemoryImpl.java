@@ -170,6 +170,10 @@ public class  PageMemoryImpl implements PageMemory {
     /** {@inheritDoc} */
     @SuppressWarnings("OverlyStrongTypeCast")
     @Override public void stop() throws IgniteException {
+        if (log.isDebugEnabled())
+            log.debug("Stopping page memory.");
+        U.debug(log, "Stopping page memory.");
+
         if (directMemoryProvider instanceof LifecycleAware)
             ((LifecycleAware)directMemoryProvider).stop();
 
@@ -371,40 +375,59 @@ public class  PageMemoryImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public void getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf) {
+        assert tmpBuf.remaining() == pageSize();
+
         Segment seg = segment(pageId);
+
+        PageImpl page = null;
 
         seg.readLock().lock();
 
         try {
-            PageImpl page = seg.acquiredPages.get(pageId);
-
-            ByteBuffer pageBuf = null;
+            page = seg.acquiredPages.get(pageId);
 
             if (page != null) {
-                assert page.isDirty();
+                assert page.isDirty() : "Page is acquired for a checkpoint, but is not dirty: " + page;
 
-                pageBuf = page.getForRead();
+                page.acquireReference();
             }
+            else {
+                long relPtr = seg.loadedPages.get(pageId, INVALID_REL_PTR);
 
-            try {
-                if (page == null) {
-                    long relPtr = seg.loadedPages.get(pageId, INVALID_REL_PTR);
+                assert relPtr != INVALID_REL_PTR : "Failed to get page checkpoint data (page has been evicted) " +
+                    "[pageId=" + pageId + ']';
 
-                    assert relPtr != INVALID_REL_PTR : "Failed to get page checkpoint data (page has been evicted) " +
-                        "[pageId=" + pageId + ']';
+                long absPtr = absolute(relPtr);
 
-                    pageBuf = wrapPointer(absolute(relPtr) + PAGE_OVERHEAD, pageSize());
-                }
+                ByteBuffer pageBuf = wrapPointer(absPtr + PAGE_OVERHEAD, pageSize());
 
                 tmpBuf.put(pageBuf);
-            }
-            finally {
-                if (page != null)
-                    page.releaseRead();
+
+                setDirty(pageId, absPtr, false);
+
+                return;
             }
         }
         finally {
             seg.readLock().unlock();
+        }
+
+        assert page != null;
+
+        try {
+            ByteBuffer pageBuf = page.getForRead();
+
+            try {
+                tmpBuf.put(pageBuf);
+
+                setDirty(pageId, page.pointer(), false);
+            }
+            finally {
+                page.releaseRead();
+            }
+        }
+        finally {
+            releasePage(page);
         }
     }
 
@@ -530,6 +553,8 @@ public class  PageMemoryImpl implements PageMemory {
 
         if (!wasDirty && dirty)
             dirtyPages.add(pageId);
+        else if (wasDirty && !dirty)
+            dirtyPages.remove(pageId);
     }
 
     /**
