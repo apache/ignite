@@ -227,7 +227,7 @@ consoleModule.controller('igfsController', [
             if (item.pathModes) {
                 for (var pathIx = 0; pathIx < item.pathModes.length; pathIx++) {
                     if (!item.secondaryFileSystemEnabled && item.pathModes[pathIx].mode === 'PROXY')
-                        return showPopoverMessage($scope.ui, 'misc', 'secondaryFileSystem-title', 'Secondary file system should be configured for "PROXY" path mode!');
+                        return showPopoverMessage($scope.ui, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for "PROXY" path mode!');
                 }
             }
 
