@@ -21,7 +21,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Node filter that allows only local nodes.
+ * Node filter that allows nodes with an attribute.
  */
 public class PlatformAttributeNodeFilter implements IgnitePredicate<ClusterNode> {
     /** {@inheritDoc} */
