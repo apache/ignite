@@ -174,6 +174,9 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             var type = param.ParameterType;
 
+            // Unwrap nullable
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
             if (arg == null || type.IsPrimitive)
                 return null;
 
