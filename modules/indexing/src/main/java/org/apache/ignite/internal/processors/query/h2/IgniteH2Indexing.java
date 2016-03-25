@@ -2055,7 +2055,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             IndexColumn... cols
         ) {
             try {
-                if (ctx.cache().context().database().enabled()) {
+                if (ctx.cache().context().database().enabled() && !ctx.clientNode()) {
                     IgniteCacheH2DatabaseManager dbMgr = ctx.cache().context().cacheContext(cacheId).database();
 
                     return dbMgr.createIndex(name, tbl, pk, keyCol, valCol, cols);
