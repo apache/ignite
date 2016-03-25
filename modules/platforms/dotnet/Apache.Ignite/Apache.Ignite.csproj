@@ -51,8 +51,8 @@
   <ItemGroup>
     <Compile Include="Config\AppSettingsConfigurator.cs" />
     <Compile Include="Config\ArgsConfigurator.cs" />
+    <Compile Include="Config\Configurator.cs" />
     <Compile Include="Config\ConfigValueParser.cs" />
-    <Compile Include="Config\IConfigurator.cs" />
     <Compile Include="IgniteRunner.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Service\IgniteService.cs">

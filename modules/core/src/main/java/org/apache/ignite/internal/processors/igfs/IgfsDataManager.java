@@ -91,7 +91,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -1014,26 +1014,18 @@ public class IgfsDataManager extends IgfsManager {
         if (!node.isLocal()) {
             final IgfsBlocksMessage msg = new IgfsBlocksMessage(fileId, batchId, blocks);
 
-            callIgfsLocalSafe(new GridPlainCallable<Object>() {
-                @Override @Nullable public Object call() throws Exception {
-                    try {
-                        igfsCtx.send(nodeId, topic, msg, SYSTEM_POOL);
-                    } catch (IgniteCheckedException e) {
-                        completionFut.onError(nodeId, e);
-                    }
-
-                    return null;
-                }
-            });
+            try {
+                igfsCtx.send(nodeId, topic, msg, IGFS_POOL);
+            }
+            catch (IgniteCheckedException e) {
+                completionFut.onError(nodeId, e);
+            }
         }
         else {
             callIgfsLocalSafe(new GridPlainCallable<Object>() {
-                @Override
-                @Nullable
-                public Object call() throws Exception {
+                @Override @Nullable public Object call() throws Exception {
                     storeBlocksAsync(blocks).listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override
-                        public void apply(IgniteInternalFuture<?> fut) {
+                        @Override public void apply(IgniteInternalFuture<?> fut) {
                             try {
                                 fut.get();
 
@@ -1276,8 +1268,7 @@ public class IgfsDataManager extends IgfsManager {
 
                 try {
                     // Send reply back to node.
-                    igfsCtx.send(nodeId, topic, new IgfsAckMessage(blocksMsg.fileId(), blocksMsg.id(), err),
-                        SYSTEM_POOL);
+                    igfsCtx.send(nodeId, topic, new IgfsAckMessage(blocksMsg.fileId(), blocksMsg.id(), err), IGFS_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     U.warn(log, "Failed to send batch acknowledgement (did node leave the grid?) [nodeId=" + nodeId +

@@ -15,20 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Config
-{
-    using Apache.Ignite.Core;
+package org.apache.ignite.internal.processors.igfs;
 
-    /// <summary>
-    /// Configurator which is capable of setting configuration properties taken from somewhere.
-    /// </summary>
-    internal interface IConfigurator<in T>
-    {
-        /// <summary>
-        /// Set configuration.
-        /// </summary>
-        /// <param name="cfg">Configuration.</param>
-        /// <param name="src">Source.</param>
-        void Configure(IgniteConfiguration cfg, T src);
+/**
+ * Tests for PRIMARY mode with optimized marshaller.
+ */
+public class IgfsPrimaryOptimziedMarshallerSelfTest extends IgfsPrimarySelfTest {
+    /** {@inheritDoc} */
+    @Override protected boolean useOptimizedMarshaller() {
+        return true;
     }
 }
