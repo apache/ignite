@@ -55,7 +55,7 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         GridCacheVersion ver,
         boolean keepBinary,
         GridCacheEntryEx cacheEntryEx
-    ) throws GridCacheEntryRemovedException {
+    ) {
         super(cacheEntryEx.context(), keyObj, valObj, keepBinary);
 
         this.hadVal = valObj != null;
@@ -79,7 +79,7 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         GridCacheVersion ver,
         boolean keepBinary,
         GridCacheEntryEx cacheEntryEx
-    ) throws GridCacheEntryRemovedException {
+    ) {
         super(cacheEntryEx.context(), keyObj, key, valObj, val, keepBinary);
 
         this.hadVal = valObj != null || val != null;
