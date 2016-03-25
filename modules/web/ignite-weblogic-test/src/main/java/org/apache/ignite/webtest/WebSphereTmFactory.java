@@ -114,8 +114,8 @@ public class WebSphereTmFactory implements Factory<TransactionManager> {
         @Override public Transaction getTransaction() throws SystemException {
             System.out.println(">>>>> DEBUG_INFO: getting transaction");
 
-//            return new WebSphereTransaction(mgr.getTransaction());
-            return mgr.getTransaction();
+            return new WebSphereTransaction(mgr.getTransaction());
+//            return mgr.getTransaction();
         }
 
         /** {@inheritDoc} */
@@ -150,19 +150,7 @@ public class WebSphereTmFactory implements Factory<TransactionManager> {
      */
     private static class WebSphereTransaction implements Transaction {
         /** */
-//        private static final Class<?> onePhaseXAResourceClass;
-
-        /** */
         private Transaction tx;
-
-//        static {
-//            try {
-//                onePhaseXAResourceClass = Class.forName("com.ibm.tx.jta.OnePhaseXAResource");
-//            }
-//            catch (final ClassNotFoundException e) {
-//                throw new IgniteException(e);
-//            }
-//        }
 
         /**
          * @param tx Transaction.
@@ -187,26 +175,6 @@ public class WebSphereTmFactory implements Factory<TransactionManager> {
         @Override public boolean enlistResource(XAResource xaRes) throws RollbackException, IllegalStateException,
             SystemException {
             System.out.println(">>>>> DEBUG_INFO enlisting tx");
-
-//            if (xaRes == null)
-//                return false;
-//
-//            Object o = newProxyInstance(currentThread().getContextClassLoader(),
-//                new Class<?>[] {onePhaseXAResourceClass}, new InvocationHandler() {
-//                    @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
-//                        return mtd.invoke(tx, args);
-//                    }
-//                });
-//
-//            return tx.enlistResource((XAResource)o);
-//            try {
-//                System.out.println("DEBUG_INFO got resource: " + Class.forName("com.ibm.tx.jta.OnePhaseXAResource"));
-//            }
-//            catch (ClassNotFoundException e) {
-//                e.printStackTrace(); // TODO implement.
-//
-//                System.out.println("DEBUG_INFO got exception in process of gettin resource: " + e);
-//            }
 
             return tx.enlistResource(xaRes);
         }
