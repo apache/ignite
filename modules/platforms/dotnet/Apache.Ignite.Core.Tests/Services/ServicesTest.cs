@@ -581,7 +581,7 @@ namespace Apache.Ignite.Core.Tests.Services
             // Binary
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
             Assert.AreEqual(new[] {11, 12, 13},
-                svc.testBinarizable(
+                svc.testBinarizableArray(
                     new[] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x}).ToArray()
                     ).Select(x => x.Field).ToArray());
 
@@ -1043,7 +1043,7 @@ namespace Apache.Ignite.Core.Tests.Services
             PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
 
             /** */
-            PlatformComputeBinarizable[] testBinarizable(PlatformComputeBinarizable[] x);
+            PlatformComputeBinarizable[] testBinarizableArray(PlatformComputeBinarizable[] x);
 
             /** */
             IBinaryObject testBinaryObject(IBinaryObject x);
