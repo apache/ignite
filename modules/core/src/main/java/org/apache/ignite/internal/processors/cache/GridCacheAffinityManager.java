@@ -82,10 +82,17 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
+        cancelFutures();
+    }
+
+    /**
+     *
+     */
+    public void cancelFutures() {
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
-        aff.onKernalStop(err);
+        aff.cancelFutures(err);
     }
 
     /** {@inheritDoc} */
@@ -93,7 +100,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         IgniteCheckedException err = new IgniteClientDisconnectedCheckedException(reconnectFut,
             "Failed to wait for topology update, client disconnected.");
 
-        aff.onKernalStop(err);
+        aff.cancelFutures(err);
     }
 
     /**

@@ -22,7 +22,6 @@ import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -93,6 +92,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(null);
 
+        cfg.setLateAffinityAssignment(false);
+
         return cfg;
     }
 
@@ -134,8 +135,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Ignite g0 = startGrid(GRID_NAME);
 
-            awaitPartitionMapExchange();
-
             ClassLoader ldr = getExternalClassLoader();
 
             Class cls = ldr.loadClass(TEST_TASK_1);
@@ -161,8 +160,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g2 = startGrid(2);
 
             Ignite g0 = startGrid(GRID_NAME);
-
-            awaitPartitionMapExchange();
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -198,8 +195,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g2 = startGrid(2);
 
             Ignite g0 = startGrid(GRID_NAME);
-
-            awaitPartitionMapExchange();
 
             ClassLoader ldr = getExternalClassLoader();
 
@@ -259,8 +254,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Ignite g0 = startGrid(GRID_NAME);
 
-            awaitPartitionMapExchange();
-
             info("Started grids:");
             info("g0: " + g0.cluster().localNode().id());
             info("g1: " + g1.cluster().localNode().id());
@@ -270,28 +263,19 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Class cls = ldr.loadClass(TEST_TASK_3);
 
-            String key = null;
-
-            Affinity<Object> aff = g1.affinity(null);
+            String key = "";
 
             for (int i = 0; i < 1000; i++) {
-                String key0 = "1" + i;
+                key = "1" + i;
 
-                if (aff.isPrimary(g2.cluster().localNode(), key0) &&
-                    aff.isBackup((backupLeavesGrid ? g0 : g1).cluster().localNode(), key0)) {
-                    key = key0;
-
+                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()) &&
+                    g1.affinity(null).isBackup((backupLeavesGrid ? g0 : g1).cluster().localNode(), key))
                     break;
-                }
             }
-
-            assertNotNull(key);
 
             g0.compute().execute(cls, new T2<>(g1.cluster().localNode(), key));
 
             stopGrid(GRID_NAME);
-
-            awaitPartitionMapExchange();
 
             assertEquals(1, g1.cache(null).localSize(CachePeekMode.ALL));
 
@@ -319,8 +303,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             Ignite g0 = startGrid(0);
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
-
-            awaitPartitionMapExchange();
 
             info(">>>>>>> Grid 0: " + g0.cluster().localNode().id());
             info(">>>>>>> Grid 1: " + g1.cluster().localNode().id());

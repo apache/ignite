@@ -889,6 +889,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         // No new caches should be added after this point.
         exch.onKernalStop(cancel);
 
+        for (GridCacheAdapter<?, ?> cache : caches.values()) {
+            GridCacheAffinityManager aff = cache.context().affinity();
+
+            if (aff != null)
+                aff.cancelFutures();
+        }
+
         for (String cacheName : stopSeq) {
             GridCacheAdapter<?, ?> cache = caches.remove(maskNull(cacheName));
 

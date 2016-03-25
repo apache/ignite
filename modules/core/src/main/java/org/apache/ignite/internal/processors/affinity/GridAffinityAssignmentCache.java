@@ -197,7 +197,7 @@ public class GridAffinityAssignmentCache {
      *
      * @param err Error.
      */
-    public void onKernalStop(IgniteCheckedException err) {
+    public void cancelFutures(IgniteCheckedException err) {
         stopErr = err;
 
         for (AffinityReadyFuture fut : readyFuts.values())
