@@ -1060,9 +1060,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Collection of values cached on this node. You can remove
-     * elements from this collection, but you cannot add elements to this collection.
-     * All removal operation will be reflected on the cache itself.
+     * Collection of values cached on this node. You cannot modify this collection.
      * <p>
      * Iterator over this collection will not fail if collection was
      * concurrently updated by another thread. This means that iterator may or
