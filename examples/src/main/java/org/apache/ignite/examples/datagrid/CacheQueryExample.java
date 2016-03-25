@@ -63,10 +63,10 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  */
 public class CacheQueryExample {
     /** Organizations cache name. */
-    private static final String ORG_CACHE =  "Organizations";
+    private static final String ORG_CACHE = CacheQueryExample.class.getSimpleName() + "Organizations";
 
     /** Persons cache name. */
-    private static final String PERSON_CACHE =  "Persons";
+    private static final String PERSON_CACHE = CacheQueryExample.class.getSimpleName() + "Persons";
 
     /**
      * Executes example.
@@ -118,10 +118,6 @@ public class CacheQueryExample {
 
                 // Example for SQL-based fields queries that uses joins.
                 sqlFieldsQueryWithJoin();
-
-                synchronized (PERSON_CACHE) {
-                    PERSON_CACHE.wait();
-                }
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
