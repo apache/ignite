@@ -34,14 +34,23 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
             var noCacheNodeCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"Config\cache-local-node.cfg"
+                SpringConfigUrl = @"Config\cache-local-node.xml",
+                GridName = "cacheGrid"
             };
 
-            using (var gridWithCache = Ignition.Start(TestUtils.GetTestConfiguration()))
             using (var gridNoCache = Ignition.Start(noCacheNodeCfg))
             {
-                Assert.IsNotNull(gridWithCache.GetCache<int, int>(cacheName));
-                Assert.IsNotNull(gridNoCache.GetCache<int, int>(cacheName));
+                var gridWithCache = Ignition.Start(TestUtils.GetTestConfiguration());
+
+                var streamer = gridNoCache.GetDataStreamer<int, int>(cacheName);
+
+                streamer.AddData(1, 2);
+                streamer.Flush();
+
+                Ignition.Stop(gridWithCache.Name, true);
+
+                streamer.AddData(2, 3);
+                streamer.Flush();
             }
         }
 
