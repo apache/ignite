@@ -131,8 +131,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /** */
     private volatile boolean stopping;
 
-    public static final Set<String> RESET_CALLS = new HashSet<>();
-
     /** Lock callback. */
     @GridToStringExclude
     private final GridCacheMvccCallback cb = new GridCacheMvccCallback() {
@@ -793,18 +791,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      */
     public void contextReset() {
         pending.set(null);
-
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-
-        StringBuilder sb = new StringBuilder();
-
-        for (int i = 0; i < Math.min(20, stackTrace.length); i++) {
-            sb.append(stackTrace[i].toString() + "\n");
-        }
-
-        synchronized (RESET_CALLS) {
-            RESET_CALLS.add(sb.toString());
-        }
     }
 
     /**
