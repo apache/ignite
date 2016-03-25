@@ -193,6 +193,5 @@ namespace Apache.Ignite.Core.Impl.Services
                                                     "Argument of type '{2}' is not supported by '{1}' platform",
                                                     method.Name, platform, type));
         }
-
     }
 }
