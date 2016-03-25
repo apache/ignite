@@ -304,7 +304,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     };
 
     /** */
-    private final PageHandler<GridH2Row> dataWrite = new PageHandler<GridH2Row>() {
+    private final PageHandler<GridH2Row> writeRow = new PageHandler<GridH2Row>() {
         @Override int run(Page page, ByteBuffer buf, GridH2Row row, int lvl) throws IgniteCheckedException {
             DataPageIO io = DataPageIO.forPage(buf);
 
@@ -320,7 +320,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         @Override public String toString() {
-            return "dataWrite";
+            return "writeRow";
         }
     };
 
@@ -648,7 +648,10 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 pageId = nextDataPage(0, row.partId);
 
             try (Page page = page(pageId)) {
-                if (writePage(page, dataWrite, row, -1) >= 0)
+                if (page == null)
+                    continue;
+
+                if (writePage(page, writeRow, row, -1) >= 0)
                     return; // Successful write.
             }
 
