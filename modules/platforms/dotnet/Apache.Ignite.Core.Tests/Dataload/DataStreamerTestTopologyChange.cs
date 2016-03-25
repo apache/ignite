@@ -32,15 +32,17 @@ namespace Apache.Ignite.Core.Tests.Dataload
         {
             const string cacheName = "cache";
 
-            var noCacheNodeCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            var cacheNodeCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = @"Config\cache-local-node.xml",
                 GridName = "cacheGrid"
             };
 
-            using (var gridNoCache = Ignition.Start(noCacheNodeCfg))
+            using (var gridNoCache = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                var gridWithCache = Ignition.Start(TestUtils.GetTestConfiguration());
+                Assert.IsNull(gridNoCache.GetCache<int, int>(cacheName));
+
+                var gridWithCache = Ignition.Start(cacheNodeCfg);
 
                 var streamer = gridNoCache.GetDataStreamer<int, int>(cacheName);
 
@@ -51,6 +53,9 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 streamer.AddData(2, 3);
                 streamer.Flush();
+
+                var cache = gridNoCache.GetCache<int, int>(cacheName);
+                Assert.AreEqual(3, cache[2]);
             }
         }
 
