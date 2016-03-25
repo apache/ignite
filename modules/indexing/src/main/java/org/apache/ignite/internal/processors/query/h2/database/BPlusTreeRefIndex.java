@@ -157,7 +157,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
                 assert !io.isLeaf();
 
-                // Else we need to reach leaf, go left down.
+                // Else we need to reach leaf page, go left down.
             }
             else {
                 idx = -idx - 1;
@@ -167,7 +167,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 if (idx == cnt && io.getForward(buf) != g.expFwdId)
                     return Get.RETRY;
 
-                if (!g.notFound(io, buf, idx, lvl)) // No way down, stop here.
+                if (g.notFound(io, buf, idx, lvl)) // No way down, stop here.
                     return Get.NOT_FOUND;
 
                 assert !io.isLeaf();
@@ -1210,13 +1210,13 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * @param buf Buffer.
          * @param idx Insertion point.
          * @param lvl Level.
-         * @return {@code true} If we can go down.
+         * @return {@code true} If we need to stop.
          * @throws IgniteCheckedException If failed.
          */
         boolean notFound(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
             assert lvl >= 0;
 
-            return lvl != 0; // We are not at the bottom.
+            return lvl == 0; // We are not at the bottom.
         }
 
         /**
@@ -1280,13 +1280,13 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             assert lvl >= 0 : lvl;
 
             if (lvl != 0)
-                return true;
+                return false;
 
             assert io.isLeaf();
 
             cursor.bootstrap(buf, idx);
 
-            return false;
+            return true;
         }
     }
 
@@ -1347,9 +1347,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         /** {@inheritDoc} */
         @Override boolean notFound(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
             assert btmLvl >= 0 : btmLvl;
-            assert lvl >= 0 : lvl;
+            assert lvl >= btmLvl : lvl;
 
-            return lvl > btmLvl;
+            return lvl == btmLvl;
         }
 
         /**
@@ -1411,10 +1411,10 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 lockedLvls = null;
                 row = null; // Finish.
 
-                return false;
+                return true;
             }
 
-            return true;
+            return false;
         }
 
         /**

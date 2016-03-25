@@ -251,7 +251,7 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(1, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival = 7899")).getAll().size());
-        assertEquals(5000, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 5000 and ival < 10000"))
+        assertEquals(2000, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 5000 and ival < 7000"))
             .getAll().size());
     }
 
