@@ -48,6 +48,9 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     private Map<Integer, Map<Integer, List<UUID>>> assignmentChange;
 
     /** */
+    private Map<Integer, IgniteUuid> cacheDeploymentIds;
+
+    /** */
     private GridDhtPartitionsFullMessage partsMsg;
 
     /** */
@@ -56,11 +59,34 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     /**
      * @param topVer Topology version.
      * @param assignmentChange Assignment change.
+     * @param cacheDeploymentIds Cache deployment ID.
      */
     public CacheAffinityChangeMessage(AffinityTopologyVersion topVer,
-        Map<Integer, Map<Integer, List<UUID>>> assignmentChange) {
+        Map<Integer, Map<Integer, List<UUID>>> assignmentChange,
+        Map<Integer, IgniteUuid> cacheDeploymentIds) {
         this.topVer = topVer;
         this.assignmentChange = assignmentChange;
+        this.cacheDeploymentIds = cacheDeploymentIds;
+    }
+
+    /**
+     * @param exchId Exchange ID.
+     * @param partsMsg Partitions messages.
+     * @param assignmentChange Assignment change.
+     */
+    public CacheAffinityChangeMessage(GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionsFullMessage partsMsg,
+        Map<Integer, Map<Integer, List<UUID>>> assignmentChange) {
+        this.exchId = exchId;
+        this.partsMsg = partsMsg;
+        this.assignmentChange = assignmentChange;
+    }
+
+    /**
+     * @return Cache deployment IDs.
+     */
+    public Map<Integer, IgniteUuid> cacheDeploymentIds() {
+        return cacheDeploymentIds;
     }
 
     /**
@@ -78,17 +104,8 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @param exchId Exchange ID.
-     * @param assignmentChange Assignment change.
+     * @return Partitions message.
      */
-    public CacheAffinityChangeMessage(GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsFullMessage partsMsg,
-        Map<Integer, Map<Integer, List<UUID>>> assignmentChange) {
-        this.exchId = exchId;
-        this.partsMsg = partsMsg;
-        this.assignmentChange = assignmentChange;
-    }
-
     public GridDhtPartitionsFullMessage partitionsMessage() {
         return partsMsg;
     }

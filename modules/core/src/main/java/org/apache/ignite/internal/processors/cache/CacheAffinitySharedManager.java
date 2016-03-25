@@ -49,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -285,7 +286,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             assignmentsChange.put(cacheId, assignment0);
         }
 
-        return new CacheAffinityChangeMessage(rebalancingInfo.topVer, assignmentsChange);
+        return new CacheAffinityChangeMessage(rebalancingInfo.topVer, assignmentsChange, rebalancingInfo.deploymentIds);
     }
 
     /**
@@ -1603,6 +1604,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         /** */
         private Map<Integer, Map<Integer, List<ClusterNode>>> assignments;
+
+        /** */
+        private Map<Integer, IgniteUuid> deploymentIds;
 
         /**
          * @param topVer Topology version.
