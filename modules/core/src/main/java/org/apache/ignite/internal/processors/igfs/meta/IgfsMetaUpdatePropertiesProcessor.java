@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 import javax.cache.processor.EntryProcessor;
@@ -93,12 +92,12 @@ public class IgfsMetaUpdatePropertiesProcessor implements EntryProcessor<IgniteU
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeStringMap(out, props);
+        IgfsUtils.writeProperties(out, props);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        props = U.readStringMap(in);
+        props = IgfsUtils.readProperties(in);
     }
 
     /** {@inheritDoc} */

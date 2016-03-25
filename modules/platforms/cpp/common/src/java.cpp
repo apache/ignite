@@ -788,7 +788,7 @@ namespace ignite
             /**
              * Create JVM.
              */
-            void CreateJvm(char** opts, int optsLen, JavaVM** jvm, JNIEnv** env) {
+            jint CreateJvm(char** opts, int optsLen, JavaVM** jvm, JNIEnv** env) {
                 JavaVMOption* opts0 = new JavaVMOption[optsLen];
 
                 for (int i = 0; i < optsLen; i++)
@@ -805,8 +805,7 @@ namespace ignite
 
                 delete[] opts0;
 
-                if (res != JNI_OK)
-                    throw JvmException();
+                return res;
             }
 
             void RegisterNatives(JNIEnv* env) {
@@ -903,6 +902,40 @@ namespace ignite
                 return Create(opts, optsLen, hnds, NULL);
             }
 
+            void GetJniErrorMessage(std::string& errMsg, jint res)
+            {
+                switch (res)
+                {
+                    case JNI_ERR:
+                        errMsg = "Unknown error (JNI_ERR).";
+                        break;
+
+                    case JNI_EDETACHED:
+                        errMsg = "Thread detached from the JVM.";
+                        break;
+
+                    case JNI_EVERSION:
+                        errMsg = "JNI version error.";
+                        break;
+
+                    case JNI_ENOMEM:
+                        errMsg = "Could not reserve enough space for object heap. Check Xmx option.";
+                        break;
+
+                    case JNI_EEXIST:
+                        errMsg = "JVM already created.";
+                        break;
+
+                    case JNI_EINVAL:
+                        errMsg = "Invalid JVM arguments.";
+                        break;
+
+                    default:
+                        errMsg = "Unexpected JNI_CreateJavaVM result.";
+                        break;
+                }
+            }
+
             JniContext* JniContext::Create(char** opts, int optsLen, JniHandlers hnds, JniErrorInfo* errInfo)
             {
                 // Acquire global lock to instantiate the JVM.
@@ -926,25 +959,36 @@ namespace ignite
                 int errMsgLen = 0;
 
                 try {
-                    if (!JVM.GetJvm()) {
+                    if (!JVM.GetJvm()) 
+                    {
                         // 1. Create JVM itself.
-                        CreateJvm(opts, optsLen, &jvm, &env);
+                        jint res = CreateJvm(opts, optsLen, &jvm, &env);
 
-                        // 2. Populate members;
-                        javaMembers.Initialize(env);
-                        members.Initialize(env);
+                        if (res == JNI_OK)
+                        {
+                            // 2. Populate members;
+                            javaMembers.Initialize(env);
+                            members.Initialize(env);
 
-                        // 3. Register native functions.
-                        RegisterNatives(env);
+                            // 3. Register native functions.
+                            RegisterNatives(env);
 
-                        // 4. Create JNI JVM.
-                        JVM = JniJvm(jvm, javaMembers, members);
+                            // 4. Create JNI JVM.
+                            JVM = JniJvm(jvm, javaMembers, members);
 
-                        char* printStack = getenv("IGNITE_CPP_PRINT_STACK");
-                        PRINT_EXCEPTION = printStack && strcmp("true", printStack) == 0;
+                            char* printStack = getenv("IGNITE_CPP_PRINT_STACK");
+                            PRINT_EXCEPTION = printStack && strcmp("true", printStack) == 0;
+                        }
+                        else
+                        {
+                            GetJniErrorMessage(errMsg, res);
+
+                            errMsgLen = errMsg.length();
+                        }
                     }
 
-                    ctx = new JniContext(&JVM, hnds);
+                    if (JVM.GetJvm())
+                        ctx = new JniContext(&JVM, hnds);
                 }
                 catch (JvmException)
                 {
