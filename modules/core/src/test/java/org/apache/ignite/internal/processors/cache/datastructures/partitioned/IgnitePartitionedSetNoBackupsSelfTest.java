@@ -57,7 +57,7 @@ public class IgnitePartitionedSetNoBackupsSelfTest extends GridCachePartitionedS
         for (int i = 0; i < gridCount(); i++) {
             IgniteKernal grid = (IgniteKernal)grid(i);
 
-            Iterator<? extends GridCacheEntryEx> entries =
+            Iterator<GridCacheEntryEx> entries =
                 grid.context().cache().internalCache(cctx.name()).map().entries().iterator();
 
             if (entries.hasNext()) {

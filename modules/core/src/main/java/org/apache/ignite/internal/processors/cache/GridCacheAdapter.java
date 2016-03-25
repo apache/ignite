@@ -1010,14 +1010,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * @return Set of internal cached entry representations, excluding {@link GridCacheInternal} keys.
      */
-    public Iterable<? extends GridCacheEntryEx> entries() {
+    public Iterable<GridCacheEntryEx> entries() {
         return map.entries();
     }
 
     /**
      * @return Set of internal cached entry representations, including {@link GridCacheInternal} keys.
      */
-    public Iterable<? extends GridCacheEntryEx> allEntries() {
+    public Iterable<GridCacheEntryEx> allEntries() {
         return map.entries();
     }
 
@@ -3972,14 +3972,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
-        return entrySet(new CacheEntryPredicateAdapter() {
+        CacheEntryPredicate p = new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx ex) {
                 if (ex instanceof GridCacheMapEntry)
-                    return ((GridCacheMapEntry)ex).visitable(new CacheEntryPredicate[] {});
-
-                return true;
+                    return ((GridCacheMapEntry)ex).visitable(CU.empty0());
+                else
+                    return !ex.deleted();
             }
-        }).iterator();
+        };
+
+        return entrySet(p).iterator();
     }
 
     /**
@@ -4413,8 +4415,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                             try {
                                 return op.op(tx0).chain(new CX1<IgniteInternalFuture<T>, T>() {
-                                    @Override
-                                    public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
+                                    @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
                                         try {
                                             return tFut.get();
                                         }

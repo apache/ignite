@@ -63,6 +63,7 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.NotNull;
@@ -337,7 +338,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             @Override public boolean apply(GridCacheEntryEx entry) {
                 GridNearCacheEntry nearEntry = (GridNearCacheEntry)entry;
 
-                return !nearEntry.deleted() && nearEntry.valid(topVer);
+                return !nearEntry.deleted() && nearEntry.visitable(CU.empty0()) && nearEntry.valid(topVer);
             }
         });
     }
@@ -356,7 +357,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> primaryEntrySet(
         @Nullable final CacheEntryPredicate... filter) {
-
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         Collection<Cache.Entry<K, V>> entries =
@@ -540,16 +540,16 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      */
     private class EntrySet extends AbstractSet<Cache.Entry<K, V>> {
         /** Near entry set. */
-        private Iterable<Cache.Entry<K, V>> nearSet;
+        private Set<Cache.Entry<K, V>> nearSet;
 
         /** Dht entry set. */
-        private Iterable<Cache.Entry<K, V>> dhtSet;
+        private Set<Cache.Entry<K, V>> dhtSet;
 
         /**
          * @param nearSet Near entry set.
          * @param dhtSet Dht entry set.
          */
-        private EntrySet(Iterable<Cache.Entry<K, V>> nearSet, Iterable<Cache.Entry<K, V>> dhtSet) {
+        private EntrySet(Set<Cache.Entry<K, V>> nearSet, Set<Cache.Entry<K, V>> dhtSet) {
             assert nearSet != null;
             assert dhtSet != null;
 

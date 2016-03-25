@@ -635,14 +635,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             });
         else {
-            C1<Cache.Entry<BinaryMetadataKey, BinaryMetadata>, BinaryType> c1 = new C1<Cache.Entry<BinaryMetadataKey, BinaryMetadata>, BinaryType>() {
-                private static final long serialVersionUID = 0L;
+            return F.viewReadOnly(metaDataCache.entrySetx(metaPred),
+                new C1<Cache.Entry<BinaryMetadataKey, BinaryMetadata>, BinaryType>() {
+                    private static final long serialVersionUID = 0L;
 
-                @Override public BinaryType apply(Cache.Entry<BinaryMetadataKey, BinaryMetadata> e) {
-                    return e.getValue().wrap(binaryCtx);
-                }
-            };
-            return F.viewReadOnly(metaDataCache.entrySetx(metaPred), c1);
+                    @Override public BinaryType apply(Cache.Entry<BinaryMetadataKey, BinaryMetadata> e) {
+                        return e.getValue().wrap(binaryCtx);
+                    }
+                });
         }
     }
 

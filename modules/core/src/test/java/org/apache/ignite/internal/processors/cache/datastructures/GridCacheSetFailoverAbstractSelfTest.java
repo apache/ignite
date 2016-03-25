@@ -174,7 +174,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
             Set<IgniteUuid> setIds = new HashSet<>();
 
             for (int i = 0; i < gridCount(); i++) {
-                Iterator<? extends GridCacheEntryEx> entries =
+                Iterator<GridCacheEntryEx> entries =
                     ((IgniteKernal)grid(i)).context().cache().internalCache().map().entries().iterator();
 
                 while (entries.hasNext()) {

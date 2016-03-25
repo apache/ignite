@@ -1102,7 +1102,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             final GridDhtLocalPartition part = ctx.topology().localPartition(partId,
                 ctx.discovery().topologyVersionEx(), false);
 
-            Iterator<? extends GridCacheEntryEx> partIt = part == null ? null : part.entries().iterator();
+            Iterator<GridCacheEntryEx> partIt = part == null ? null : part.entries().iterator();
 
             return new PartitionEntryIterator(partIt);
         }
@@ -1160,7 +1160,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             GridDhtLocalPartition part = ctx.topology().localPartition(partId,
                 new AffinityTopologyVersion(ctx.discovery().topologyVersion()), false);
 
-            return part != null ? part.size() : 0;
+            return part != null ? part.publicSize() : 0;
         }
 
         /** {@inheritDoc} */
@@ -1226,7 +1226,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             Iterator<GridCacheEntryEx> it = new Iterator<GridCacheEntryEx>() {
                 private GridCacheEntryEx next;
 
-                private Iterator<? extends GridCacheEntryEx> curIt;
+                private Iterator<GridCacheEntryEx> curIt;
 
                 {
                     advance();
@@ -1299,12 +1299,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         private Cache.Entry<K, V> last;
 
         /** Partition iterator. */
-        private final Iterator<? extends GridCacheEntryEx> partIt;
+        private final Iterator<GridCacheEntryEx> partIt;
 
         /**
          * @param partIt Partition iterator.
          */
-        private PartitionEntryIterator(@Nullable Iterator<? extends GridCacheEntryEx> partIt) {
+        private PartitionEntryIterator(@Nullable Iterator<GridCacheEntryEx> partIt) {
             this.partIt = partIt;
 
             advance();
@@ -1341,9 +1341,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         private void advance() {
             if (partIt != null) {
                 while (partIt.hasNext()) {
-                    GridDhtCacheEntry next = (GridDhtCacheEntry) partIt.next();
+                    GridCacheEntryEx next = partIt.next();
 
-                    if (next.isInternal() || !next.visitable(CU.empty0()))
+                    if (next instanceof GridCacheMapEntry && (!((GridCacheMapEntry)next).visitable(CU.empty0())))
                         continue;
 
                     entry = next.wrapLazyValue();

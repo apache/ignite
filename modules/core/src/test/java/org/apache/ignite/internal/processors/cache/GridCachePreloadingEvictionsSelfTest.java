@@ -129,7 +129,6 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                         info("Started evicting...");
 
                         for (int i = 0; i < 3000 && !done.get(); i++) {
-                            // TODO
                             Cache.Entry<Integer, Object> entry = cache1.getEntry(i);
 
                             if (entry != null)

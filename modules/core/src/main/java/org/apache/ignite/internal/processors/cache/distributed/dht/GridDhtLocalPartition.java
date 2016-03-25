@@ -650,7 +650,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
-        Iterator<GridCacheEntryEx> it = (Iterator<GridCacheEntryEx>) map.entries().iterator();
+        Iterator<GridCacheEntryEx> it = map.entries().iterator();
 
         GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
 

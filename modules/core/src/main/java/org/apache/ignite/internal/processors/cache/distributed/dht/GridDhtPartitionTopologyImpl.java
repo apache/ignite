@@ -655,8 +655,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         assert loc != null;
 
-//        loc.onAdded(topVer, e);
-
         return loc;
     }
 

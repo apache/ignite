@@ -296,7 +296,7 @@ class GridDhtPartitionSupplier {
                         phase = SupplyContextPhase.ONHEAP;
 
                     if (phase == SupplyContextPhase.ONHEAP) {
-                        Iterator<? extends GridCacheEntryEx> entIt = sctx != null ?
+                        Iterator<GridCacheEntryEx> entIt = sctx != null ?
                             (Iterator<GridCacheEntryEx>)sctx.entryIt : loc.entries().iterator();
 
                         while (entIt.hasNext()) {

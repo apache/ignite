@@ -191,7 +191,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
                     GridCacheAdapter<Object, Object> cache =
                         ((IgniteKernal)grid(i)).context().cache().internalCache(queueCacheName);
 
-                    Iterator<? extends GridCacheEntryEx> entries = cache.map().entries().iterator();
+                    Iterator<GridCacheEntryEx> entries = cache.map().entries().iterator();
 
                     while (entries.hasNext()) {
                         cnt++;

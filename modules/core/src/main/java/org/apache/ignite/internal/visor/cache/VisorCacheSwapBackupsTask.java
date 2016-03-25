@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.visor.cache;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.Cache;
@@ -79,12 +78,7 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
                 Affinity<Object> aff = g.affinity(c.name());
 
                 if (names.contains(cacheName)) {
-                    Set<Cache.Entry> entries = new HashSet<>();
-
-                    for (Object o : c.entrySet()) {
-                        entries.add((Cache.Entry) o);
-                    }
-//                    Set<Cache.Entry> entries = c.entrySet();
+                    Set<Cache.Entry> entries = c.entrySet();
 
                     int before = entries.size(), after = before;
 

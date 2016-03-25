@@ -798,7 +798,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
 
         for (int i = 0; i < gridCount(); i++) {
-            Iterator<? extends GridCacheEntryEx> entries =
+            Iterator<GridCacheEntryEx> entries =
                 (grid(i)).context().cache().internalCache(cctx.name()).map().entries().iterator();
 
             while (entries.hasNext()) {
