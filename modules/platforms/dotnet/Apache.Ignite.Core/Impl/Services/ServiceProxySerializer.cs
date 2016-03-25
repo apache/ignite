@@ -61,8 +61,11 @@ namespace Apache.Ignite.Core.Impl.Services
                 else
                 {
                     // Other platforms do not support Serializable, need to convert arrays and collections
-                    foreach (var arg in arguments)
-                        WriteArgForPlatforms(writer, method, platform, arg);
+                    var methodArgs = method.GetParameters();
+                    Debug.Assert(methodArgs.Length == arguments.Length);
+
+                    for (int i = 0; i < arguments.Length; i++)
+                        WriteArgForPlatforms(writer, methodArgs[i], platform, arguments[i]);
                 }
             }
             else
@@ -154,10 +157,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <summary>
         /// Writes the argument in platform-compatible format.
         /// </summary>
-        private static void WriteArgForPlatforms(BinaryWriter writer, MethodBase method, 
-            Platform platform, object arg)
+        private static void WriteArgForPlatforms(BinaryWriter writer, ParameterInfo param, Platform platform, object arg)
         {
-            var hnd = GetPlatformArgWriter(method, platform, arg);
+            var hnd = GetPlatformArgWriter(param, platform, arg);
 
             if (hnd != null)
                 hnd(writer, arg);
@@ -168,14 +170,11 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <summary>
         /// Gets arg writer for platform-compatible service calls.
         /// </summary>
-        private static Action<BinaryWriter, object> GetPlatformArgWriter(MethodBase method, Platform platform, object arg)
+        private static Action<BinaryWriter, object> GetPlatformArgWriter(ParameterInfo param, Platform platform, object arg)
         {
-            if (arg == null)
-                return null;
+            var type = param.ParameterType;
 
-            var type = arg.GetType();
-
-            if (type.IsPrimitive)
+            if (arg == null || type.IsPrimitive)
                 return null;
 
             var handler = BinarySystemHandlers.GetWriteHandler(type);
@@ -191,7 +190,7 @@ namespace Apache.Ignite.Core.Impl.Services
 
             throw new IgniteException(string.Format("Failed to invoke proxy method '{0}' for '{1}' platform. " +
                                                     "Argument of type '{2}' is not supported by '{1}' platform",
-                                                    method.Name, platform, type));
+                                                    param.Member.Name, platform, type));
         }
     }
 }
