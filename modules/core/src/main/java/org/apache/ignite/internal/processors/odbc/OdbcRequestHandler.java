@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -110,11 +111,19 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
-        if (req.version() != OdbcMessageParser.PROTOCOL_VERSION)
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC communication protocol version: " +
-                    "[ver=" + req.version() + ", current_ver=" + OdbcMessageParser.PROTOCOL_VERSION + ']');
+        OdbcHandshakeResult res;
 
-        return new OdbcResponse(null);
+        if (req.version() == OdbcMessageParser.PROTO_VER)
+            res = new OdbcHandshakeResult(true, null, null);
+        else {
+            IgniteProductVersion ver = ctx.grid().version();
+
+            String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
+
+            res = new OdbcHandshakeResult(false, OdbcMessageParser.PROTO_VER_SINCE, verStr);
+        }
+
+        return new OdbcResponse(res);
     }
 
     /**

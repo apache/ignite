@@ -109,7 +109,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         if (bCfg == null) {
             bCfg = new BinaryConfiguration();
 
-            bCfg.setCompactFooter(false);
             bCfg.setNameMapper(new BinaryBasicNameMapper(true));
             bCfg.setIdMapper(new BinaryBasicIdMapper(true));
 
@@ -141,10 +140,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                     + " (other nodes must have the same binary ID mapper type)."));
             }
         }
-
-        if (bCfg.isCompactFooter())
-            throw new IgniteException("Unsupported " + BinaryMarshaller.class.getName() +
-                " \"compactFooter\" flag: must be false when running Apache Ignite.NET.");
 
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();

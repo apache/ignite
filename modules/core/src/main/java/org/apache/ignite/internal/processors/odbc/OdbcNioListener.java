@@ -136,12 +136,12 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /**
      * Connection-related data.
      */
-    private class ConnectionData {
+    private static class ConnectionData {
         /** Request handler. */
-        private OdbcRequestHandler handler;
+        private final OdbcRequestHandler handler;
 
         /** Message parser. */
-        private OdbcMessageParser parser;
+        private final OdbcMessageParser parser;
 
         /**
          * @param ctx Context.
@@ -149,7 +149,6 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
          */
         public ConnectionData(GridKernalContext ctx, GridSpinBusyLock busyLock) {
             handler = new OdbcRequestHandler(ctx, busyLock);
-
             parser = new OdbcMessageParser(ctx);
         }
 

@@ -230,6 +230,13 @@ namespace ignite
                 double GetDouble() const;
 
                 /**
+                 * Get value of type GUID.
+                 *
+                 * @return Value of type Guid.
+                 */
+                Guid GetGuid() const;
+
+                /**
                  * Get value of type Date.
                  *
                  * @return Value of type Date.

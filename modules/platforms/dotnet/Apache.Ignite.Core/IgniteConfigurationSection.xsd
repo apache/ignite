@@ -61,6 +61,13 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="types" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
                             <xs:element name="defaultNameMapper" minOccurs="0">
                                 <xs:complexType>
                                     <xs:attribute name="type" type="xs:string" use="required" />
@@ -78,6 +85,7 @@
                             </xs:element>
                         </xs:all>
                         <xs:attribute name="defaultKeepDeserialized" type="xs:boolean" />
+                        <xs:attribute name="compactFooter" type="xs:boolean" />
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="cacheConfiguration" minOccurs="0">
@@ -160,6 +168,7 @@
                                         </xs:element>
                                     </xs:all>
                                     <xs:attribute name="name" type="xs:string" />
+                                    <xs:attribute name="cacheMode" type="xs:string" />
                                     <xs:attribute name="writeSynchronizationMode" type="xs:string" />
                                     <xs:attribute name="evictSynchronized" type="xs:boolean" />
                                     <xs:attribute name="evictSynchronizedKeyBufferSize" type="xs:int" />
@@ -189,6 +198,8 @@
                                     <xs:attribute name="longQueryWarningTimeout" type="xs:string" />
                                     <xs:attribute name="sqlEscapeAll" type="xs:boolean" />
                                     <xs:attribute name="sqlOnheapRowCacheSize" type="xs:int" />
+                                    <xs:attribute name="readThrough" type="xs:boolean" />
+                                    <xs:attribute name="writeThrough" type="xs:boolean" />
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>

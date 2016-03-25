@@ -109,6 +109,11 @@ namespace ignite
                     }
 
                     case SQL_TINYINT:
+                    {
+                        writer.WriteInt8(buffer.GetInt8());
+                        break;
+                    }
+
                     case SQL_BIT:
                     {
                         writer.WriteBool(buffer.GetInt8() != 0);
@@ -143,8 +148,19 @@ namespace ignite
                     }
 
                     case SQL_GUID:
+                    {
+                        writer.WriteGuid(buffer.GetGuid());
+
+                        break;
+                    }
+
+                    case SQL_DECIMAL:
+                    {
+                        //TODO: Add Decimal type support.
+                        break;
+                    }
+
                     default:
-                        //TODO: Add GUID type support.
                         break;
                 }
             }

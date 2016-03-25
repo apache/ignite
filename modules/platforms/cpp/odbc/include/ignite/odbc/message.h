@@ -423,6 +423,83 @@ namespace ignite
             std::string error;
         };
 
+        /**
+         * Handshake response.
+         */
+        class HandshakeResponse : public QueryResponse
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            HandshakeResponse() :
+                accepted(false),
+                protoVerSince(),
+                currentVer()
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~HandshakeResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Check if the handshake has been accepted.
+             * @return True if the handshake has been accepted.
+             */
+            bool IsAccepted() const
+            {
+                return accepted;
+            }
+
+            /**
+             * Get host Apache Ignite version when protocol version has been introduced.
+             * @return Host Apache Ignite version when protocol version has been introduced.
+             */
+            const std::string& ProtoVerSince() const
+            {
+                return protoVerSince;
+            }
+
+            /**
+             * Current host Apache Ignite version.
+             * @return Current host Apache Ignite version.
+             */
+            const std::string& CurrentVer() const
+            {
+                return currentVer;
+            }
+
+        private:
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                accepted = reader.ReadBool();
+
+                if (!accepted)
+                {
+                    utility::ReadString(reader, protoVerSince);
+                    utility::ReadString(reader, currentVer);
+                }
+            }
+
+            /** Handshake accepted. */
+            bool accepted;
+
+            /** Host Apache Ignite version when protocol version has been introduced. */
+            std::string protoVerSince;
+
+            /** Current host Apache Ignite version. */
+            std::string currentVer;
+        };
 
         /**
          * Query close response.

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,6 +19,8 @@
 #include <string>
 #include <sstream>
 
+#include "ignite/impl/binary/binary_utils.h"
+
 #include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/app/application_data_buffer.h"
 #include "ignite/odbc/utility.h"
@@ -29,6 +31,8 @@ namespace ignite
     {
         namespace app
         {
+            using ignite::impl::binary::BinaryUtils;
+
             ApplicationDataBuffer::ApplicationDataBuffer() :
                 type(type_traits::IGNITE_ODBC_C_TYPE_UNSUPPORTED), buffer(0), buflen(0), reslen(0), offset(0)
             {
@@ -150,13 +154,12 @@ namespace ignite
                             SQL_NUMERIC_STRUCT* out =
                                 reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
 
-                            out->precision = 0;
+                            out->precision = 20; // Max int64_t precision
                             out->scale = 0;
-                            out->sign = value > 0 ? 1 : 0;
+                            out->sign = value < 0 ? 2 : 1;
 
                             memset(out->val, 0, SQL_MAX_NUMERIC_LEN);
 
-                            // TODO: implement propper conversation to numeric type.
                             int64_t intVal = static_cast<int64_t>(std::abs(value));
 
                             memcpy(out->val, &intVal, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(intVal)));
@@ -547,24 +550,9 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_DOUBLE:
                     case IGNITE_ODBC_C_TYPE_CHAR:
                     case IGNITE_ODBC_C_TYPE_WCHAR:
-                    {
-                        PutNum<double>(static_cast<double>(value));
-
-                        break;
-                    }
-
                     case IGNITE_ODBC_C_TYPE_NUMERIC:
                     {
-                        if (GetData())
-                        {
-                            SQL_NUMERIC_STRUCT* numeric =
-                                reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
-
-                            numeric->sign = value.IsNegative() ? 1 : 0;
-                            numeric->precision = 0;
-                            numeric->scale = value.GetScale();
-                            memcpy(numeric->val, value.GetMagnitude(), std::min<size_t>(SQL_MAX_NUMERIC_LEN, value.GetLength()));
-                        }
+                        PutNum<double>(static_cast<double>(value));
 
                         break;
                     }
@@ -593,9 +581,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                time_t time = utility::DateToCTime(value);
+                tm tmTime;
 
-                tm* tmTime = std::gmtime(&time);
+                BinaryUtils::DateToCTm(value, tmTime);
 
                 switch (type)
                 {
@@ -605,13 +593,13 @@ namespace ignite
 
                         if (buffer)
                         {
-                            strftime(buffer, GetSize(), "%Y-%m-%d", tmTime);
+                            strftime(buffer, GetSize(), "%Y-%m-%d", &tmTime);
 
                             if (GetResLen())
                                 *GetResLen() = strlen(buffer);
                         }
                         else if (GetResLen())
-                            *GetResLen() = sizeof("HHHH-MM-DD");
+                            *GetResLen() = sizeof("HHHH-MM-DD") - 1;
 
                         break;
                     }
@@ -624,7 +612,7 @@ namespace ignite
                         {
                             std::string tmp(GetSize(), 0);
 
-                            strftime(&tmp[0], GetSize(), "%Y-%m-%d", tmTime);
+                            strftime(&tmp[0], GetSize(), "%Y-%m-%d", &tmTime);
 
                             SqlLen toCopy = std::min(static_cast<SqlLen>(strlen(tmp.c_str()) + 1), GetSize());
 
@@ -637,7 +625,7 @@ namespace ignite
                                 *GetResLen() = toCopy;
                         }
                         else if (GetResLen())
-                            *GetResLen() = sizeof("HHHH-MM-DD");
+                            *GetResLen() = sizeof("HHHH-MM-DD") - 1;
 
                         break;
                     }
@@ -646,9 +634,9 @@ namespace ignite
                     {
                         SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(GetData());
 
-                        buffer->year = tmTime->tm_year + 1900;
-                        buffer->month = tmTime->tm_mon + 1;
-                        buffer->day = tmTime->tm_mday;
+                        buffer->year = tmTime.tm_year + 1900;
+                        buffer->month = tmTime.tm_mon + 1;
+                        buffer->day = tmTime.tm_mday;
 
                         break;
                     }
@@ -657,12 +645,12 @@ namespace ignite
                     {
                         SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(GetData());
 
-                        buffer->year = tmTime->tm_year + 1900;
-                        buffer->month = tmTime->tm_mon + 1;
-                        buffer->day = tmTime->tm_mday;
-                        buffer->hour = tmTime->tm_hour;
-                        buffer->minute = tmTime->tm_min;
-                        buffer->second = tmTime->tm_sec;
+                        buffer->year = tmTime.tm_year + 1900;
+                        buffer->month = tmTime.tm_mon + 1;
+                        buffer->day = tmTime.tm_mday;
+                        buffer->hour = tmTime.tm_hour;
+                        buffer->minute = tmTime.tm_min;
+                        buffer->second = tmTime.tm_sec;
                         buffer->fraction = 0;
 
                         break;
@@ -704,9 +692,9 @@ namespace ignite
             {
                 using namespace type_traits;
 
-                time_t time = utility::TimestampToCTime(value);
+                tm tmTime;
 
-                tm* tmTime = std::gmtime(&time);
+                BinaryUtils::TimestampToCTm(value, tmTime);
 
                 switch (type)
                 {
@@ -716,13 +704,13 @@ namespace ignite
 
                         if (buffer)
                         {
-                            strftime(buffer, GetSize(), "%Y-%m-%d %H:%M:%S", tmTime);
+                            strftime(buffer, GetSize(), "%Y-%m-%d %H:%M:%S", &tmTime);
 
                             if (GetResLen())
                                 *GetResLen() = strlen(buffer);
                         }
                         else if (GetResLen())
-                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS");
+                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS") - 1;
 
                         break;
                     }
@@ -735,7 +723,7 @@ namespace ignite
                         {
                             std::string tmp(GetSize(), 0);
 
-                            strftime(&tmp[0], GetSize(), "%Y-%m-%d %H:%M:%S", tmTime);
+                            strftime(&tmp[0], GetSize(), "%Y-%m-%d %H:%M:%S", &tmTime);
 
                             SqlLen toCopy = std::min(static_cast<SqlLen>(strlen(tmp.c_str()) + 1), GetSize());
 
@@ -748,7 +736,7 @@ namespace ignite
                                 *GetResLen() = toCopy;
                         }
                         else if (GetResLen())
-                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS");
+                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS") - 1;
 
                         break;
                     }
@@ -757,9 +745,9 @@ namespace ignite
                     {
                         SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(GetData());
 
-                        buffer->year = tmTime->tm_year + 1900;
-                        buffer->month = tmTime->tm_mon + 1;
-                        buffer->day = tmTime->tm_mday;
+                        buffer->year = tmTime.tm_year + 1900;
+                        buffer->month = tmTime.tm_mon + 1;
+                        buffer->day = tmTime.tm_mday;
 
                         break;
                     }
@@ -768,12 +756,12 @@ namespace ignite
                     {
                         SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(GetData());
 
-                        buffer->year = tmTime->tm_year + 1900;
-                        buffer->month = tmTime->tm_mon + 1;
-                        buffer->day = tmTime->tm_mday;
-                        buffer->hour = tmTime->tm_hour;
-                        buffer->minute = tmTime->tm_min;
-                        buffer->second = tmTime->tm_sec;
+                        buffer->year = tmTime.tm_year + 1900;
+                        buffer->month = tmTime.tm_mon + 1;
+                        buffer->day = tmTime.tm_mday;
+                        buffer->hour = tmTime.tm_hour;
+                        buffer->minute = tmTime.tm_min;
+                        buffer->second = tmTime.tm_sec;
                         buffer->fraction = value.GetSecondFraction();
 
                         break;
@@ -914,6 +902,50 @@ namespace ignite
                 return GetNum<double>();
             }
 
+            Guid ApplicationDataBuffer::GetGuid() const
+            {
+                using namespace type_traits;
+
+                Guid res;
+
+                switch (type)
+                {
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    {
+                        std::string str(reinterpret_cast<const char*>(GetData()), static_cast<size_t>(buflen));
+
+                        std::stringstream converter(str);
+
+                        converter >> res;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_GUID:
+                    {
+                        const SQLGUID* guid = reinterpret_cast<const SQLGUID*>(GetData());
+
+                        uint64_t msb = static_cast<uint64_t>(guid->Data1) << 32 |
+                                       static_cast<uint64_t>(guid->Data2) << 16 |
+                                       static_cast<uint64_t>(guid->Data3);
+
+                        uint64_t lsb = 0;
+
+                        for (size_t i = 0; i < sizeof(guid->Data4); ++i)
+                            lsb = guid->Data4[i] << (sizeof(guid->Data4) - i - 1) * 8;
+
+                        res = Guid(msb, lsb);
+
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                return res;
+            }
+
             const void* ApplicationDataBuffer::GetData() const
             {
                 return ApplyOffset(buffer);
@@ -1036,7 +1068,7 @@ namespace ignite
                         // TODO: implement propper conversation from numeric type.
                         memcpy(&resInt, numeric->val, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(resInt)));
 
-                        if (numeric->sign)
+                        if (numeric->sign == 2)
                             resInt *= -1;
 
                         double resDouble = static_cast<double>(resInt);
@@ -1108,9 +1140,7 @@ namespace ignite
                         break;
                 }
 
-                time_t cTime = mktime(&tmTime) - timezone;
-
-                return Date(cTime * 1000);
+                return BinaryUtils::CTmToDate(tmTime);
             }
 
             Timestamp ApplicationDataBuffer::GetTimestamp() const
@@ -1169,9 +1199,7 @@ namespace ignite
                         break;
                 }
 
-                time_t cTime = mktime(&tmTime) - timezone;
-
-                return Timestamp(cTime, nanos);
+                return BinaryUtils::CTmToTimestamp(tmTime, nanos);
             }
 
             template<typename T>

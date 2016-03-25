@@ -20,6 +20,7 @@
 // ReSharper disable PossibleInvalidOperationException
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedMember.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
@@ -28,16 +29,18 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
+    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
-    /// 
+    /// Binary tests.
     /// </summary>
     [TestFixture]
     public class BinarySelfTest { 
@@ -50,7 +53,16 @@ namespace Apache.Ignite.Core.Tests.Binary
         [TestFixtureSetUp]
         public void BeforeTest()
         {
-            _marsh = new Marshaller(null);
+            _marsh = new Marshaller(GetBinaryConfiguration());
+        }
+
+        /// <summary>
+        /// Gets the binary configuration.
+        /// </summary>
+        /// <returns></returns>
+        protected virtual BinaryConfiguration GetBinaryConfiguration()
+        {
+            return new BinaryConfiguration { CompactFooter = true };
         }
         
         /**
@@ -1246,6 +1258,87 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.RawInner);
         }
 
+        [Test]
+        public void TestHandlesCollections()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration(typeof (HandleCollection))
+                }
+            });
+
+            // Collection in collection dependency loop
+            var collection = new ArrayList {1, 2};
+            collection.Add(collection);
+
+            var collectionRaw = new ArrayList(collection);
+            collectionRaw.Add(collectionRaw);
+
+            var collectionObj = new ArrayList(collectionRaw);
+            collectionObj.Add(collectionObj);
+
+            var dict = new Hashtable { { 1, 1 }, { 2, 2 } };
+            dict.Add(3, dict);
+
+            var arr = collectionObj.ToArray();
+            arr[1] = arr;
+
+            object entry = new DictionaryEntry(1, 2);
+            var dictionaryEntryValSetter = DelegateConverter.CompileFieldSetter(typeof (DictionaryEntry)
+                .GetField("_value", BindingFlags.Instance | BindingFlags.NonPublic));
+            dictionaryEntryValSetter(entry, entry);  // modify boxed copy to create reference loop
+
+            var data = new HandleCollection
+            {
+                Collection = collection,
+                CollectionRaw = collectionRaw,
+                Object = collectionObj,
+                Dictionary = dict,
+                Array = arr,
+                DictionaryEntry = (DictionaryEntry) entry
+            };
+
+            var res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
+
+            var resCollection = (ArrayList) res.Collection;
+            Assert.AreEqual(collection[0], resCollection[0]);
+            Assert.AreEqual(collection[1], resCollection[1]);
+            Assert.AreSame(resCollection, resCollection[2]);
+
+            var resCollectionRaw = (ArrayList) res.CollectionRaw;
+            Assert.AreEqual(collectionRaw[0], resCollectionRaw[0]);
+            Assert.AreEqual(collectionRaw[1], resCollectionRaw[1]);
+            Assert.AreSame(resCollection, resCollectionRaw[2]);
+            Assert.AreSame(resCollectionRaw, resCollectionRaw[3]);
+
+            var resCollectionObj = (ArrayList) res.Object;
+            Assert.AreEqual(collectionObj[0], resCollectionObj[0]);
+            Assert.AreEqual(collectionObj[1], resCollectionObj[1]);
+            Assert.AreSame(resCollection, resCollectionObj[2]);
+            Assert.AreSame(resCollectionRaw, resCollectionObj[3]);
+            Assert.AreSame(resCollectionObj, resCollectionObj[4]);
+
+            var resDict = (Hashtable) res.Dictionary;
+            Assert.AreEqual(1, resDict[1]);
+            Assert.AreEqual(2, resDict[2]);
+            Assert.AreSame(resDict, resDict[3]);
+
+            var resArr = res.Array;
+            Assert.AreEqual(arr[0], resArr[0]);
+            Assert.AreSame(resArr, resArr[1]);
+            Assert.AreSame(resCollection, resArr[2]);
+            Assert.AreSame(resCollectionRaw, resArr[3]);
+            Assert.AreSame(resCollectionObj, resArr[4]);
+
+            var resEntry = res.DictionaryEntry;
+            var innerEntry = (DictionaryEntry) resEntry.Value;
+            Assert.AreEqual(1, resEntry.Key);
+            Assert.AreEqual(1, innerEntry.Key);
+            Assert.IsTrue(ReferenceEquals(innerEntry.Value, ((DictionaryEntry) innerEntry.Value).Value));
+        }
+
         ///
         /// <summary>Test KeepSerialized property</summary>
         ///
@@ -1416,6 +1509,15 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // ReSharper disable once ObjectCreationAsStatement
             Assert.Throws<BinaryObjectException>(() => new Marshaller(cfg));
+        }
+
+        /// <summary>
+        /// Tests the compact footer setting.
+        /// </summary>
+        [Test]
+        public void TestCompactFooterSetting()
+        {
+            Assert.AreEqual(GetBinaryConfiguration().CompactFooter, _marsh.CompactFooter);
         }
 
         private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
@@ -2164,6 +2266,36 @@ namespace Apache.Ignite.Core.Tests.Binary
                 RawInner = rawReader.ReadObject<HandleInner>();
 
                 RawAfter = rawReader.ReadString();
+            }
+        }
+
+        public class HandleCollection : IBinarizable
+        {
+            public ICollection Collection { get; set; }
+            public IDictionary Dictionary { get; set; }
+            public DictionaryEntry DictionaryEntry { get; set; }
+            public ICollection CollectionRaw { get; set; }
+            public object Object { get; set; }
+            public object[] Array { get; set; }
+
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteCollection("col", Collection);
+                writer.WriteDictionary("dict", Dictionary);
+                writer.WriteObject("dictEntry", DictionaryEntry);
+                writer.WriteObject("obj", Object);
+                writer.WriteArray("arr", Array);
+                writer.GetRawWriter().WriteCollection(CollectionRaw);
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                Collection = reader.ReadCollection("col");
+                Dictionary = reader.ReadDictionary("dict");
+                DictionaryEntry = reader.ReadObject<DictionaryEntry>("dictEntry");
+                Object = reader.ReadObject<object>("obj");
+                Array = reader.ReadArray<object>("arr");
+                CollectionRaw = reader.GetRawReader().ReadCollection();
             }
         }
 

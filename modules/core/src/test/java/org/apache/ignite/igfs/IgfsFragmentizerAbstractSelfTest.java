@@ -22,8 +22,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
+import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
-import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsMetaManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -139,7 +139,7 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
         if (fileId == null)
             throw new IgfsPathNotFoundException("File not found: " + path);
 
-        IgfsFileInfo fileInfo = meta.info(fileId);
+        IgfsEntryInfo fileInfo = meta.info(fileId);
 
         do {
             if (fileInfo == null)

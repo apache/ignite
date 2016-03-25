@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.nio.ByteBuffer;
-import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.Callable;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -43,6 +37,13 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+
+import java.nio.ByteBuffer;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -168,8 +169,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             long t = System.currentTimeMillis();
 
-            IgfsFileInfo info = new IgfsFileInfo(200, 0L, null, IgfsMetaManager.DELETE_LOCK_ID,
-                    false, null, t, t);
+            IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), 200, 0L, null,
+                IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
 
@@ -181,11 +182,11 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             expectsStoreFail(info, data, "Not enough space reserved to store data");
 
-            info = new IgfsFileInfo(info, info.length() + data.length - 3);
+            info = info.length(info.length() + data.length - 3);
 
             expectsStoreFail(info, data, "Not enough space reserved to store data");
 
-            info = new IgfsFileInfo(info, info.length() + 3);
+            info = info.length(info.length() + 3);
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
@@ -253,8 +254,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             long t = System.currentTimeMillis();
 
-            IgfsFileInfo info = new IgfsFileInfo(blockSize, 0L, null, IgfsMetaManager.DELETE_LOCK_ID,
-                false, null, t, t);
+            IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 0L, null,
+                IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
 
@@ -266,7 +267,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             rnd.nextBytes(remainder);
 
-            info = new IgfsFileInfo(info, info.length() + data.length + remainder.length);
+            info = info.length(info.length() + data.length + remainder.length);
 
             IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
 
@@ -279,7 +280,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             byte[] remainder2 = new byte[blockSize / 2];
 
-            info = new IgfsFileInfo(info, info.length() + remainder2.length);
+            info = info.length(info.length() + remainder2.length);
 
             byte[] left2 = mgr.storeDataBlocks(info, info.length(), left, left.length, ByteBuffer.wrap(remainder2),
                 false, range, null);
@@ -344,9 +345,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             long t = System.currentTimeMillis();
 
-            IgfsFileInfo info =
-                new IgfsFileInfo(blockSize, 0L, null, IgfsMetaManager.DELETE_LOCK_ID,
-                    false, null, t, t);
+            IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 0L, null,
+                IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
@@ -356,7 +356,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             byte[] data = new byte[chunkSize];
 
-            info = new IgfsFileInfo(info, info.length() + data.length * writesCnt);
+            info = info.length(info.length() + data.length * writesCnt);
 
             IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
 
@@ -416,7 +416,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         long t = System.currentTimeMillis();
 
         //IgfsFileInfo info = new IgfsFileInfo(blockSize, 0);
-        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null, t, t);
+        IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 1024 * 1024, null, null, false,
+            null, t, t);
 
         for (int pos = 0; pos < 5 * grpSize; pos++) {
             assertEquals("Expects no affinity for zero length.", Collections.<IgfsBlockLocation>emptyList(),
@@ -466,7 +467,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         long t = System.currentTimeMillis();
 
-        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null, t, t);
+        IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 1024 * 1024, null, null, false,
+            null, t, t);
 
         Collection<IgfsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
 
@@ -499,7 +501,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         long t = System.currentTimeMillis();
 
-        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null, t, t);
+        IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 1024 * 1024, null, null, false,
+            null, t, t);
 
         IgniteUuid affKey = IgniteUuid.randomUuid();
 
@@ -508,7 +511,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         map.addRange(new IgfsFileAffinityRange(3 * BLOCK_SIZE, 5 * BLOCK_SIZE - 1, affKey));
         map.addRange(new IgfsFileAffinityRange(13 * BLOCK_SIZE, 17 * BLOCK_SIZE - 1, affKey));
 
-        info.fileMap(map);
+        info = info.fileMap(map);
 
         Collection<IgfsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
 
@@ -542,7 +545,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param info File info.
      * @param affinity Affinity block locations to check.
      */
-    private void checkAffinity(int blockSize, IgfsFileInfo info, Iterable<IgfsBlockLocation> affinity) {
+    private void checkAffinity(int blockSize, IgfsEntryInfo info, Iterable<IgfsBlockLocation> affinity) {
         for (IgfsBlockLocation loc : affinity) {
             info("Going to check IGFS block location: " + loc);
 
@@ -574,7 +577,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param data Data to store.
      * @param msg Expected failure message.
      */
-    private void expectsStoreFail(final IgfsFileInfo reserved, final byte[] data, @Nullable String msg) {
+    private void expectsStoreFail(final IgfsEntryInfo reserved, final byte[] data, @Nullable String msg) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
                 IgfsFileAffinityRange range = new IgfsFileAffinityRange();
@@ -592,7 +595,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param fileInfo File to delete data for.
      * @param msg Expected failure message.
      */
-    private void expectsDeleteFail(final IgfsFileInfo fileInfo, @Nullable String msg) {
+    private void expectsDeleteFail(final IgfsEntryInfo fileInfo, @Nullable String msg) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
                 mgr.delete(fileInfo);
@@ -610,7 +613,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param len File part length to get affinity for.
      * @param msg Expected failure message.
      */
-    private void expectsAffinityFail(final IgfsFileInfo info, final long start, final long len,
+    private void expectsAffinityFail(final IgfsEntryInfo info, final long start, final long len,
         @Nullable String msg) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {

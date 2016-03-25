@@ -86,6 +86,12 @@ namespace ignite
             {
                 ArgumentMap connect_attributes;
 
+                // Ignoring terminating zero byte if present.
+                // Some Driver Managers pass zero-terminated connection string
+                // while others don't.
+                if (len && !str[len - 1])
+                    --len;
+
                 ParseAttributeList(str, len, ';', connect_attributes);
 
                 ArgumentMap::const_iterator it;

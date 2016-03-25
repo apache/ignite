@@ -17,6 +17,8 @@
 #ifndef _IGNITE_COMMON_UTILS
 #define _IGNITE_COMMON_UTILS
 
+#include <stdint.h>
+
 #include <cstring>
 #include <string>
 #include <sstream>
@@ -81,6 +83,70 @@ namespace ignite
             inline int ParseInt(const std::string& str)
             {
                 return atoi(str.c_str());
+            }
+
+            /**
+             * Convert struct tm to time_t (UTC).
+             *
+             * @param time Standard C type struct tm value.
+             * @return Standard C type time_t value.
+             */
+            IGNITE_IMPORT_EXPORT time_t IgniteTimeGm(const tm& time);
+
+            /**
+             * Convert struct tm to time_t (Local time).
+             *
+             * @param time Standard C type struct tm value.
+             * @return Standard C type time_t value.
+             */
+            IGNITE_IMPORT_EXPORT time_t IgniteTimeLocal(const tm& time);
+
+            /**
+             * Convert time_t to struct tm (UTC).
+             *
+             * @param in Standard C type time_t value.
+             * @param out Standard C type struct tm value.
+             * @return True on success.
+             */
+            IGNITE_IMPORT_EXPORT bool IgniteGmTime(time_t in, tm& out);
+
+            /**
+             * Convert time_t to struct tm (Local time).
+             *
+             * @param in Standard C type time_t value.
+             * @param out Standard C type struct tm value.
+             * @return True on success.
+             */
+            IGNITE_IMPORT_EXPORT bool IgniteLocalTime(time_t in, tm& out);
+
+            /**
+             * Get number of leading zeroes in octet.
+             *
+             * @param octet Octet.
+             * @return Number of leading zero-bits.
+             */
+            IGNITE_IMPORT_EXPORT int LeadingZeroesForOctet(int8_t octet);
+
+            /**
+             * Get number of significant bits in octet.
+             *
+             * @param octet Octet.
+             * @return Number of significant bits.
+             */
+            inline int BitLengthForOctet(int8_t octet)
+            {
+                return 8 - LeadingZeroesForOctet(octet);
+            }
+
+            /**
+             * Check if the number is power of two.
+             *
+             * @param num Integer number.
+             * @return True if the number is power of two.
+             */
+            inline bool PowerOfTwo(int num)
+            {
+                return (num & (num - 1)) == 0;
             }
 
             /**

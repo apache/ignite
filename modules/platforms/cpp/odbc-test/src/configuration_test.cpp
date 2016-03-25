@@ -103,6 +103,24 @@ BOOST_AUTO_TEST_CASE(TestConnectStringLowercase)
     CheckConnectionConfig(cfg);
 }
 
+BOOST_AUTO_TEST_CASE(TestConnectStringZeroTerminated)
+{
+    Configuration cfg;
+
+    std::stringstream constructor;
+
+    constructor << "driver={" << testDriverName << "};"
+                << "server=" << testServerHost << ";"
+                << "port=" << testServerPort << ";"
+                << "cache=" << testCacheName;
+
+    const std::string& connectStr = constructor.str();
+
+    cfg.FillFromConnectString(connectStr.c_str(), connectStr.size() + 1);
+
+    CheckConnectionConfig(cfg);
+}
+
 BOOST_AUTO_TEST_CASE(TestConnectStringMixed)
 {
     Configuration cfg;

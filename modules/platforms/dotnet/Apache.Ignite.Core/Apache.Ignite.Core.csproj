@@ -67,6 +67,8 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Binary\Package-Info.cs" />
+    <Compile Include="Cache\Affinity\AffinityKey.cs" />
+    <Compile Include="Cache\Affinity\AffinityKeyMappedAttribute.cs" />
     <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
     <Compile Include="Cache\CacheException.cs" />
@@ -191,6 +193,8 @@
     <Compile Include="Ignition.cs" />
     <Compile Include="IIgnite.cs" />
     <Compile Include="Impl\Binary\BinaryEnum.cs" />
+    <Compile Include="Impl\Binary\BinaryObjectSchemaSerializer.cs" />
+    <Compile Include="Impl\Binary\ReferenceEqualityComparer.cs" />
     <Compile Include="Impl\Binary\JavaTypes.cs" />
     <Compile Include="Impl\Cache\CacheAffinityImpl.cs" />
     <Compile Include="Impl\Cache\CacheEntry.cs" />

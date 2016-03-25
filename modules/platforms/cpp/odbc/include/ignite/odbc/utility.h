@@ -159,6 +159,14 @@ namespace ignite
         void ReadDecimal(ignite::impl::binary::BinaryReaderImpl& reader, Decimal& decimal);
 
         /**
+         * Write decimal value using writer.
+         *
+         * @param writer Writer.
+         * @param decimal Decimal value.
+         */
+        void WriteDecimal(ignite::impl::binary::BinaryWriterImpl& writer, const Decimal& decimal);
+
+        /**
          * Convert SQL string buffer to std::string.
          *
          * @param sqlStr SQL string buffer.
@@ -166,20 +174,6 @@ namespace ignite
          * @return Standard string containing the same data.
          */
         std::string SqlStringToString(const unsigned char* sqlStr, int32_t sqlStrLen);
-
-        /**
-         * Convert Date type to standard C type time_t.
-         *
-         * @return Corresponding value of time_t.
-         */
-        time_t DateToCTime(const Date& date);
-
-        /**
-         * Convert Timestamp type to standard C type time_t.
-         *
-         * @return Corresponding value of time_t.
-         */
-        time_t TimestampToCTime(const Timestamp& ts);
     }
 }
 

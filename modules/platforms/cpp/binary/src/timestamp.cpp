@@ -75,40 +75,40 @@ namespace ignite
         return Date(GetMilliseconds());
     }
 
-    bool operator==(Timestamp& val1, Timestamp& val2)
+    bool operator==(const Timestamp& val1, const Timestamp& val2)
     {
         return val1.seconds == val2.seconds &&
             val1.fractionNs == val2.fractionNs;
     }
 
-    bool operator!=(Timestamp& val1, Timestamp& val2)
+    bool operator!=(const Timestamp& val1, const Timestamp& val2)
     {
         return val1.seconds != val2.seconds ||
             val1.fractionNs != val2.fractionNs;
     }
 
-    bool operator<(Timestamp& val1, Timestamp& val2)
+    bool operator<(const Timestamp& val1, const Timestamp& val2)
     {
         return val1.seconds < val2.seconds ||
             (val1.seconds == val2.seconds &&
                 val1.fractionNs < val2.fractionNs);
     }
 
-    bool operator<=(Timestamp& val1, Timestamp& val2)
+    bool operator<=(const Timestamp& val1, const Timestamp& val2)
     {
         return val1.seconds < val2.seconds ||
             (val1.seconds == val2.seconds &&
                 val1.fractionNs <= val2.fractionNs);
     }
 
-    bool operator>(Timestamp& val1, Timestamp& val2)
+    bool operator>(const Timestamp& val1, const Timestamp& val2)
     {
         return val1.seconds > val2.seconds ||
             (val1.seconds == val2.seconds &&
                 val1.fractionNs > val2.fractionNs);
     }
 
-    bool operator>=(Timestamp& val1, Timestamp& val2)
+    bool operator>=(const Timestamp& val1, const Timestamp& val2)
     {
         return val1.seconds > val2.seconds ||
             (val1.seconds == val2.seconds &&

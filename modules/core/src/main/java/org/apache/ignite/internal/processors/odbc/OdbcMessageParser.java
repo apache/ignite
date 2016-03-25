@@ -34,8 +34,11 @@ import java.util.Collection;
  * ODBC message parser.
  */
 public class OdbcMessageParser {
-    /** Current ODBC communication protocol version */
-    public static final long PROTOCOL_VERSION = 1;
+    /** Current ODBC communication protocol version. */
+    public static final long PROTO_VER = 1;
+
+    /** Apache Ignite version when ODBC communication protocol version has been introduced. */
+    public static final String PROTO_VER_SINCE = "1.6.0";
 
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
@@ -47,7 +50,7 @@ public class OdbcMessageParser {
     private final IgniteLogger log;
 
     /** Protocol version confirmation flag. */
-    private boolean versionConfirmed = false;
+    private boolean verConfirmed = false;
 
     /**
      * @param ctx Context.
@@ -75,21 +78,14 @@ public class OdbcMessageParser {
 
         byte cmd = reader.readByte();
 
-        // This is a special case because we can not decode
-        // protocol messages until we has not confirmed that
-        // the remote client uses the same protocol version.
-        if (!versionConfirmed) {
-            if (cmd == OdbcRequest.HANDSHAKE) {
-                long version = reader.readLong();
-
-                if (version == PROTOCOL_VERSION)
-                    versionConfirmed = true;
-
-                return new OdbcHandshakeRequest(version);
-            }
+        // This is a special case because we can not decode protocol messages until
+        // we has not confirmed that the remote client uses the same protocol version.
+        if (!verConfirmed) {
+            if (cmd == OdbcRequest.HANDSHAKE)
+                return new OdbcHandshakeRequest(reader.readLong());
             else
-                throw new IgniteException("Unexpected ODBC command " +
-                        "(First message is not a handshake request): [cmd=" + cmd + ']');
+                throw new IgniteException("Unexpected ODBC command (first message is not a handshake request): [cmd=" +
+                    cmd + ']');
         }
 
         OdbcRequest res;
@@ -128,7 +124,6 @@ public class OdbcMessageParser {
             }
 
             case OdbcRequest.GET_COLUMNS_META: {
-
                 String cache = reader.readString();
                 String table = reader.readString();
                 String column = reader.readString();
@@ -179,11 +174,24 @@ public class OdbcMessageParser {
 
         Object res0 = msg.response();
 
-        if (res0 instanceof OdbcHandshakeRequest) {
-            if (log.isDebugEnabled())
-                log.debug("Responding to handshake");
+        if (res0 instanceof OdbcHandshakeResult) {
+            OdbcHandshakeResult res = (OdbcHandshakeResult) res0;
 
-            // Write nothing. Just send response with success status.
+            if (log.isDebugEnabled())
+                log.debug("Handshake result: " + (res.accepted() ? "accepted" : "rejected"));
+
+            verConfirmed = res.accepted();
+
+            if (res.accepted()) {
+                verConfirmed = true;
+
+                writer.writeBoolean(true);
+            }
+            else {
+                writer.writeBoolean(false);
+                writer.writeString(res.protoVerSince());
+                writer.writeString(res.currentVer());
+            }
         }
         else if (res0 instanceof OdbcQueryExecuteResult) {
             OdbcQueryExecuteResult res = (OdbcQueryExecuteResult) res0;

@@ -84,6 +84,7 @@
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>
+        <module>modules/web/ignite-weblogic-test</module>
     </modules>
 
     <profiles>

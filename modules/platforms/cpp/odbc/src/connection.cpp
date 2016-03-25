@@ -40,6 +40,8 @@ namespace ignite
 {
     namespace odbc
     {
+        const std::string Connection::PROTOCOL_VERSION_SINCE = "1.6.0";
+
         Connection::Connection() : socket(), connected(false), cache(), parser()
         {
             // No-op.
@@ -295,8 +297,8 @@ namespace ignite
 
         SqlResult Connection::MakeRequestHandshake()
         {
-            HandshakeRequest req(Parser::PROTOCOL_VERSION);
-            QueryResponse rsp;
+            HandshakeRequest req(PROTOCOL_VERSION);
+            HandshakeResponse rsp;
 
             try
             {
@@ -314,6 +316,24 @@ namespace ignite
                 LOG_MSG("Error: %s\n", rsp.GetError().c_str());
 
                 AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, rsp.GetError());
+
+                InternalRelease();
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (!rsp.IsAccepted())
+            {
+                LOG_MSG("Hanshake message has been rejected.\n");
+
+                std::stringstream constructor;
+
+                constructor << "Node rejected handshake message. "
+                    << "Current node Apache Ignite version: " << rsp.CurrentVer() << ", "
+                    << "node protocol version introduced in version: " << rsp.ProtoVerSince() << ", "
+                    << "driver protocol version introduced in version: " << PROTOCOL_VERSION_SINCE << ".";
+
+                AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, constructor.str());
 
                 InternalRelease();
 
