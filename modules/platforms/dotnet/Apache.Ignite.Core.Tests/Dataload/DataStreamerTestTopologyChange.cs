@@ -51,5 +51,14 @@ namespace Apache.Ignite.Core.Tests.Dataload
                 Assert.IsNull(gridNoCache.GetCache<int, int>(cacheName));
             }
         }
+
+        /// <summary>
+        /// Streamer test with destroyed cache.
+        /// </summary>
+        [Test]
+        public void TestDestroyCache()
+        {
+            // TODO
+        }
     }
 }
