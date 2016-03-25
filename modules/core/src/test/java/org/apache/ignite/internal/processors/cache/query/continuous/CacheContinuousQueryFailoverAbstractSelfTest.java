@@ -175,7 +175,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 5 * 60_000;
+        return 8 * 60_000;
     }
 
     /** {@inheritDoc} */
@@ -243,6 +243,12 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
             qryClnCache.put(keys.get(0), 100);
         }
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return lsnr.evts.size() == 1;
+            }
+        }, 5000);
 
         assertEquals(lsnr.evts.size(), 1);
     }
@@ -807,11 +813,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             return;
 
         checkBackupQueue(3, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isDebug() {
-        return true;
     }
 
     /**
