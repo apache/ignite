@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 var streamer = gridNoCache.GetDataStreamer<int, int>(cacheName);
 
-                streamer.AddData(1, 2).Wait();
+                streamer.AddData(1, 2);
                 streamer.Flush();
 
                 Ignition.Stop(gridWithCache.Name, true);
