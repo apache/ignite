@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Dataload
 {
     using System;
+    using System.Threading;
     using NUnit.Framework;
 
     /// <summary>
@@ -47,10 +48,12 @@ namespace Apache.Ignite.Core.Tests.Dataload
 
                 var streamer = gridNoCache.GetDataStreamer<int, int>(cacheName);
 
-                streamer.AddData(1, 2);
+                streamer.AddData(1, 2).Wait();
                 streamer.Flush();
 
                 Ignition.Stop(gridWithCache.Name, true);
+
+                Thread.Sleep(1);  // Wait for node to stop
 
                 streamer.AddData(2, 3);
                 streamer.Flush();
