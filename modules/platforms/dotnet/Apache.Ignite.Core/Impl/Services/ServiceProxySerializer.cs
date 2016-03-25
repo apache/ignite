@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
+    using System.Collections;
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
@@ -51,13 +52,17 @@ namespace Apache.Ignite.Core.Impl.Services
                 writer.WriteBoolean(true);
                 writer.WriteInt(arguments.Length);
 
-                foreach (var arg in arguments)
+                if (platform == Platform.DotNet)
                 {
-                    // TODO
-                    //if (arg != null && arg.GetType().IsArray)
-                    //    writer.WriteArrayInternal((Array) arg);
-                    //else
+                    // Write as is
+                    foreach (var arg in arguments)
                         writer.WriteObject(arg);
+                }
+                else
+                {
+                    // Other platforms do not support Serializable, need to convert arrays and collections
+                    foreach (var arg in arguments)
+                        WriteArgForPlatforms(writer, method, platform, arg);
                 }
             }
             else
@@ -145,5 +150,39 @@ namespace Apache.Ignite.Core.Impl.Services
                 : new ServiceInvocationException("Proxy method invocation failed with an exception. " +
                                                  "Examine InnerException for details.", (Exception) err);
         }
+
+        /// <summary>
+        /// Writes the argument in platform-compatible format.
+        /// </summary>
+        private static void WriteArgForPlatforms(BinaryWriter writer, MethodBase method, Platform platform, object arg)
+        {
+            var type = arg != null ? arg.GetType() : null;
+
+            if (arg == null || !BinarySystemHandlers.GetWriteHandler(type).IsSerializable)
+            {
+                writer.WriteObject(arg);
+                return;
+            }
+
+            if (type.IsArray)
+            {
+                writer.WriteArrayInternal((Array)arg);
+                return;
+            }
+
+            var col = arg as ICollection;
+
+            if (col != null)
+            {
+                writer.WriteCollection(col);
+                return;
+            }
+
+            throw new IgniteException(string.Format("Failed to invoke proxy method '{0}' for '{1}' platform. " +
+                                                    "Argument of type '{2}' is not supported by '{1}' platform",
+                                                    method.Name, platform, type));
+        }
+
+
     }
 }
