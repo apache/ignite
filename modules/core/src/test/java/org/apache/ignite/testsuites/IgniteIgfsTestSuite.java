@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsAttributesSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBackupsDualAsyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBackupsDualSyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBackupsPrimarySelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockMessageSystemPoolStarvationSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsCachePerBlockLruEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsCacheSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsClientCacheSelfTest;
@@ -40,6 +41,8 @@ import org.apache.ignite.internal.processors.igfs.IgfsModesSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsOneClientNodeTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOffheapValuesSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOptimziedMarshallerSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsPrimaryRelaxedSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorValidationSelfTest;
@@ -67,6 +70,8 @@ public class IgniteIgfsTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite FS Test Suite For Platform Independent Tests");
 
         suite.addTest(new TestSuite(IgfsPrimarySelfTest.class));
+        suite.addTest(new TestSuite(IgfsPrimaryRelaxedSelfTest.class));
+        suite.addTest(new TestSuite(IgfsPrimaryOptimziedMarshallerSelfTest.class));
         suite.addTest(new TestSuite(IgfsPrimaryOffheapTieredSelfTest.class));
         suite.addTest(new TestSuite(IgfsPrimaryOffheapValuesSelfTest.class));
         suite.addTest(new TestSuite(IgfsDualSyncSelfTest.class));
@@ -113,6 +118,8 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTestSuite(IgfsBackupsPrimarySelfTest.class);
         suite.addTestSuite(IgfsBackupsDualSyncSelfTest.class);
         suite.addTestSuite(IgfsBackupsDualAsyncSelfTest.class);
+
+        suite.addTestSuite(IgfsBlockMessageSystemPoolStarvationSelfTest.class);
 
         // TODO: Enable when IGFS failover is fixed.
         //suite.addTestSuite(IgfsBackupFailoverSelfTest.class);

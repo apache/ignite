@@ -49,7 +49,7 @@ namespace Apache.Ignite.Examples.Compute
             var cfg = new IgniteConfiguration
             {
                 SpringConfigUrl = @"platforms\dotnet\examples\config\examples-config.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
+                JvmOptions = new List<string> { "-Xms512m", "-Xmx512m" }
             };
 
             using (var ignite = Ignition.Start(cfg))

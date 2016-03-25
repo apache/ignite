@@ -17,6 +17,7 @@
 
 // ReSharper disable UnassignedField.Global
 // ReSharper disable CollectionNeverUpdated.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
@@ -83,9 +84,11 @@ namespace Apache.Ignite.Core.Tests.Binary
                         new BinaryTypeConfiguration(typeof (BuilderCollectionItem)),
                         new BinaryTypeConfiguration(typeof (DecimalHolder)),
                         new BinaryTypeConfiguration(TypeEmpty),
-                        new BinaryTypeConfiguration(typeof(TestEnumRegistered))
+                        new BinaryTypeConfiguration(typeof(TestEnumRegistered)),
+                        new BinaryTypeConfiguration(typeof(NameMapperTestType))
                     },
                     DefaultIdMapper = new IdMapper(),
+                    DefaultNameMapper = new NameMapper(),
                     CompactFooter = GetCompactFooter()
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
@@ -1382,6 +1385,22 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
+        /// Tests type name mapper.
+        /// </summary>
+        [Test]
+        public void TestTypeName()
+        {
+            var bytes = _marsh.Marshal(new NameMapperTestType {NameMapperTestField = 17});
+
+            var bin = _marsh.Unmarshal<IBinaryObject>(bytes, BinaryMode.ForceBinary);
+
+            var binType = bin.GetBinaryType();
+
+            Assert.AreEqual(BinaryUtils.GetStringHashCode(NameMapper.TestTypeName + "_"), binType.TypeId);
+            Assert.AreEqual(17, bin.GetField<int>(NameMapper.TestFieldName));
+        }
+
+        /// <summary>
         /// Tests metadata methods.
         /// </summary>
         [Test]
@@ -1783,5 +1802,44 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             return 0;
         }
+    }
+
+    /// <summary>
+    /// Test name mapper.
+    /// </summary>
+    public class NameMapper : IBinaryNameMapper
+    {
+        /** */
+        public const string TestTypeName = "NameMapperTestType";
+
+        /** */
+        public const string TestFieldName = "NameMapperTestField";
+
+        /** <inheritdoc /> */
+        public string GetTypeName(string name)
+        {
+            if (name == TestTypeName)
+                return name + "_";
+
+            return name;
+        }
+
+        /** <inheritdoc /> */
+        public string GetFieldName(string name)
+        {
+            if (name == TestFieldName)
+                return name + "_";
+
+            return name;
+        }
+    }
+
+    /// <summary>
+    /// Name mapper test type.
+    /// </summary>
+    public class NameMapperTestType
+    {
+        /** */
+        public int NameMapperTestField { get; set; }
     }
 }

@@ -221,11 +221,20 @@ public class IgfsPathIds {
      * Add existing IDs to provided collection.
      *
      * @param col Collection.
+     * @param relaxed Relaxed mode flag.
      */
     @SuppressWarnings("ManualArrayToCollectionCopy")
-    public void addExistingIds(Collection<IgniteUuid> col) {
-        for (int i = 0; i <= lastExistingIdx; i++)
-            col.add(ids[i]);
+    public void addExistingIds(Collection<IgniteUuid> col, boolean relaxed) {
+        if (relaxed) {
+            col.add(ids[lastExistingIdx]);
+
+            if (lastExistingIdx == ids.length - 1 && lastExistingIdx > 0)
+                col.add(ids[lastExistingIdx - 1]);
+        }
+        else {
+            for (int i = 0; i <= lastExistingIdx; i++)
+                col.add(ids[i]);
+        }
     }
 
     /**
@@ -265,24 +274,39 @@ public class IgfsPathIds {
      * Verify that observed paths are found in provided infos in the right order.
      *
      * @param infos Info.
+     * @param relaxed Whether to perform check in relaxed mode.
      * @return {@code True} if full integrity is preserved.
      */
-    public boolean verifyIntegrity(Map<IgniteUuid, IgfsEntryInfo> infos) {
-        for (int i = 0; i <= lastExistingIdx; i++) {
-            IgniteUuid curId = ids[i];
-            IgfsEntryInfo curInfo = infos.get(curId);
+    public boolean verifyIntegrity(Map<IgniteUuid, IgfsEntryInfo> infos, boolean relaxed) {
+        if (relaxed) {
+            // Relaxed mode ensures that the last element is there. If this element is the last in the path, then
+            // existence of it's parent and link between them are checked as well.
+            IgfsEntryInfo info = infos.get(ids[lastExistingIdx]);
 
-            // Check if required ID is there.
-            if (curInfo == null)
+            if (info == null)
                 return false;
 
-            // For non-leaf entry we check if child exists.
-            if (i < lastExistingIdx) {
-                String childName = parts[i + 1];
-                IgniteUuid childId = ids[i + 1];
+            if (lastExistingIdx == ids.length - 1 && lastExistingIdx > 0) {
+                IgfsEntryInfo parentInfo = infos.get(ids[lastExistingIdx - 1]);
 
-                if (!curInfo.hasChild(childName, childId))
+                if (parentInfo == null || !parentInfo.hasChild(parts[lastExistingIdx], ids[lastExistingIdx]))
                     return false;
+            }
+        }
+        else {
+            // Strict mode ensures that all participants are in place and are still linked.
+            for (int i = 0; i <= lastExistingIdx; i++) {
+                IgfsEntryInfo info = infos.get(ids[i]);
+
+                // Check if required ID is there.
+                if (info == null)
+                    return false;
+
+                // For non-leaf entry we check if child exists.
+                if (i < lastExistingIdx) {
+                    if (!info.hasChild(parts[i + 1], ids[i + 1]))
+                        return false;
+                }
             }
         }
 
