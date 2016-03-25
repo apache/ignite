@@ -26,7 +26,7 @@
         data-multiple='1'
 
         ng-model='dropdown.value'
-        ng-disabled='dropdown.ngDisabled'
+        ng-disabled='dropdown.ngDisabled || !dropdown.options || !dropdown.options.length'
 
         data-ng-required='required || false'
 
@@ -45,7 +45,7 @@
         bs-options='item.value as item.label for item in dropdown.options' 
 
         ng-model='dropdown.value'
-        ng-disabled='dropdown.ngDisabled'
+        ng-disabled='dropdown.ngDisabled || !dropdown.options || !dropdown.options.length'
 
         data-ng-required='required || false'
 
