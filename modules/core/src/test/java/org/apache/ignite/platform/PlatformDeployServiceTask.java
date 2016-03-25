@@ -322,6 +322,17 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         /** */
+        public PlatformComputeBinarizable[] testBinarizable(PlatformComputeBinarizable[] arg) {
+            if (arg == null)
+                return null;
+
+            for (int i = 0; i < arg.length; i++)
+                arg[i] = arg[i] == null ? null : new PlatformComputeBinarizable(arg[i].field + 1);
+
+            return arg;
+        }
+
+        /** */
         public BinaryObject testBinaryObject(BinaryObject o) {
             if (o == null)
                 return null;
