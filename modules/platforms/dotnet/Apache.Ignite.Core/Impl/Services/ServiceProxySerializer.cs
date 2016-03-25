@@ -154,35 +154,45 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <summary>
         /// Writes the argument in platform-compatible format.
         /// </summary>
-        private static void WriteArgForPlatforms(BinaryWriter writer, MethodBase method, Platform platform, object arg)
+        private static void WriteArgForPlatforms(BinaryWriter writer, MethodBase method, 
+            Platform platform, object arg)
         {
-            var type = arg != null ? arg.GetType() : null;
+            var hnd = GetPlatformArgWriter(method, platform, arg);
 
-            if (arg == null || !BinarySystemHandlers.GetWriteHandler(type).IsSerializable)
-            {
+            if (hnd != null)
+                hnd(writer, arg);
+            else
                 writer.WriteObject(arg);
-                return;
-            }
+        }
+
+        /// <summary>
+        /// Gets arg writer for platform-compatible service calls.
+        /// </summary>
+        private static Action<BinaryWriter, object> GetPlatformArgWriter(MethodBase method, Platform platform, object arg)
+        {
+            if (arg == null)
+                return null;
+
+            var type = arg.GetType();
+
+            if (type.IsPrimitive)
+                return null;
+
+            var handler = BinarySystemHandlers.GetWriteHandler(type);
+
+            if (handler == null || !handler.IsSerializable)
+                return null;
 
             if (type.IsArray)
-            {
-                writer.WriteArrayInternal((Array)arg);
-                return;
-            }
+                return (writer, o) => writer.WriteArrayInternal((Array) o);
 
-            var col = arg as ICollection;
-
-            if (col != null)
-            {
-                writer.WriteCollection(col);
-                return;
-            }
+            if (arg is ICollection)
+                return (writer, o) => writer.WriteCollection((ICollection) o);
 
             throw new IgniteException(string.Format("Failed to invoke proxy method '{0}' for '{1}' platform. " +
                                                     "Argument of type '{2}' is not supported by '{1}' platform",
                                                     method.Name, platform, type));
         }
-
 
     }
 }
