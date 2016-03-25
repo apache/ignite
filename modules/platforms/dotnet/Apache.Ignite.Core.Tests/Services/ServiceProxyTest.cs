@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Services;
@@ -269,7 +270,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 // 1) Write to a stream
                 inStream.WriteBool(SrvKeepBinary);  // WriteProxyMethod does not do this, but Java does
 
-                ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method, args);
+                ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method, args, Platform.DotNet);
 
                 inStream.SynchronizeOutput();
 
