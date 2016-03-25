@@ -252,13 +252,13 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return (F) reader(null).unmarshalField(fieldName);
+        return (F) reader(null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return (F) reader(null).unmarshalField(fieldId);
+        return (F) reader(null, false).unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -403,12 +403,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
-        return (F)reader(rCtx).unmarshalField(fieldName);
+        return (F)reader(rCtx, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        return reader(null).findFieldByName(fieldName);
+        return reader(null, false).findFieldByName(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -439,7 +439,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Override protected BinarySchema createSchema() {
-        return reader(null).getOrCreateSchema();
+        return reader(null, false).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -553,7 +553,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      */
     private Object deserializeValue(@Nullable CacheObjectContext coCtx) {
         BinaryReaderExImpl reader = reader(null,
-            coCtx != null ? coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader());
+            coCtx != null ? coCtx.kernalContext().config().getClassLoader() : ctx.configuration().getClassLoader(), true);
 
         Object obj0 = reader.deserialize();
 
@@ -579,25 +579,29 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * Create new reader for this object.
      *
      * @param rCtx Reader context.
+     * @param ldr Class loader.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, @Nullable ClassLoader ldr, boolean forUnmarshal) {
         if (ldr == null)
             ldr = ctx.configuration().getClassLoader();
 
         return new BinaryReaderExImpl(ctx,
             BinaryHeapInputStream.create(arr, start),
             ldr,
-            rCtx);
+            rCtx,
+            forUnmarshal);
     }
 
     /**
      * Create new reader for this object.
      *
      * @param rCtx Reader context.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx) {
-        return reader(rCtx, null);
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
+        return reader(rCtx, null, forUnmarshal);
     }
 }

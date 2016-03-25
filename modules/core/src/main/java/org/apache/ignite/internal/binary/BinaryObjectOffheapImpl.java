@@ -91,7 +91,17 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.TYPE_ID_POS);
+        int typeId = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.TYPE_ID_POS);
+
+        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
+            int off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
+
+            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(off, size));
+
+            typeId = ctx.typeId(clsName);
+        }
+
+        return typeId;
     }
 
     /** {@inheritDoc} */
@@ -111,7 +121,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Override protected BinarySchema createSchema() {
-        return reader(null).getOrCreateSchema();
+        return reader(null, false).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -145,13 +155,13 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
-        return (F) reader(null).unmarshalField(fieldName);
+        return (F) reader(null, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
-        return (F) reader(null).unmarshalField(fieldId);
+        return (F) reader(null, false).unmarshalField(fieldId);
     }
 
     /** {@inheritDoc} */
@@ -301,12 +311,12 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
-        return (F)reader(rCtx).unmarshalField(fieldName);
+        return (F)reader(rCtx, false).unmarshalField(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasField(String fieldName) {
-        return reader(null).findFieldByName(fieldName);
+        return reader(null, false).findFieldByName(fieldName);
     }
 
     /** {@inheritDoc} */
@@ -401,16 +411,17 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * @return Deserialized value.
      */
     private Object deserializeValue() {
-        return reader(null).deserialize();
+        return reader(null, true).deserialize();
     }
 
     /**
      * Create new reader for this object.
      *
      * @param rCtx Reader context.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      * @return Reader.
      */
-    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx) {
+    private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {
         BinaryOffheapInputStream stream = new BinaryOffheapInputStream(ptr, size, false);
 
         stream.position(start);
@@ -418,6 +429,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         return new BinaryReaderExImpl(ctx,
             stream,
             ctx.configuration().getClassLoader(),
-            rCtx);
+            rCtx,
+            forUnmarshal);
     }
 }

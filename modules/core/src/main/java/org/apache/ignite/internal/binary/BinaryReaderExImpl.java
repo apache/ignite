@@ -148,8 +148,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param in Input stream.
      * @param ldr Class loader.
      */
-    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr) {
-        this(ctx, in, ldr, null);
+    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
+        this(ctx, in, ldr, null, forUnmarshal);
     }
 
     /**
@@ -159,10 +159,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param in Input stream.
      * @param ldr Class loader.
      * @param hnds Context.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
-    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr,
-        @Nullable BinaryReaderHandles hnds) {
-        this(ctx, in, ldr, hnds, false);
+    public BinaryReaderExImpl(BinaryContext ctx,
+        BinaryInputStream in,
+        ClassLoader ldr,
+        @Nullable BinaryReaderHandles hnds,
+        boolean forUnmarshal) {
+        this(ctx, in, ldr, hnds, false, forUnmarshal);
     }
 
     /**
@@ -173,9 +177,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param ldr Class loader.
      * @param hnds Context.
      * @param skipHdrCheck Whether to skip header check.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
-    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr,
-        @Nullable BinaryReaderHandles hnds, boolean skipHdrCheck) {
+    public BinaryReaderExImpl(BinaryContext ctx,
+        BinaryInputStream in,
+        ClassLoader ldr,
+        @Nullable BinaryReaderHandles hnds,
+        boolean skipHdrCheck,
+        boolean forUnmarshal) {
         // Initialize base members.
         this.ctx = ctx;
         this.in = in;
@@ -233,7 +242,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (typeId0 == UNREGISTERED_TYPE_ID) {
                 int off = in.position();
 
-                typeId = ctx.typeId(BinaryUtils.doReadClassName(in));
+                if (forUnmarshal) {
+                    // Registers class by type ID, at least locally if the cache is not ready yet.
+                    typeId = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false).typeId();
+                }
+                else
+                    typeId = ctx.typeId(BinaryUtils.doReadClassName(in));
 
                 int clsNameLen = in.position() - off;
 
@@ -1646,7 +1660,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         if (!findFieldById(fieldId))
             return null;
 
-        return new BinaryReaderExImpl(ctx, in, ldr, hnds).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, true).deserialize();
     }
 
     /**
