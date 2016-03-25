@@ -165,8 +165,6 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
         AffinityTopologyVersion topVer = discoMgr.topologyVersionEx();
         int topSize = discoMgr.cacheNodes(cacheName, topVer).size();
 
-        assert topSize > 0;
-
         platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer.topologyVersion(), topSize);
     }
 
