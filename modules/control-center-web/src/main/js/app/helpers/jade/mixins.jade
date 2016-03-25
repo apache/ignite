@@ -14,6 +14,23 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+//- Mixin for feedback on specified error.
+mixin error-feedback(visible, error, errorMessage)
+    i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-if=visible
+        bs-tooltip='"#{errorMessage}"'
+        ignite-error=error
+        ignite-error-message=errorMessage
+    )
+
+//- Mixin for feedback on unique violation.
+mixin unique-feedback(visible, errorMessage)
+    +error-feedback(visible, 'igniteUnique', errorMessage)
+
+//- Mixin for feedback on IP address violation.
+mixin ipaddress-feedback(visible)
+    +error-feedback(visible, 'ipaddress', 'Invalid address!')
+
 //- Mixin for checkbox.
 mixin checkbox(lbl, model, name, tip)
     ignite-form-field.checkbox
@@ -55,7 +72,7 @@ mixin java-class(lbl, model, name, enabled, required, tip)
         )
 
 //- Mixin for text field.
-mixin text-ip-address(lbl, model, name, enabled, placeholder, tip)
+mixin text-ip-address(lbl, form, model, name, enabled, placeholder, tip)
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
@@ -69,6 +86,7 @@ mixin text-ip-address(lbl, model, name, enabled, placeholder, tip)
             data-ng-disabled='!(#{enabled})'
             data-placeholder=placeholder
         )
+            +ipaddress-feedback(form + '.' + name + '.$error.ipaddress')
 
 //- Mixin for text field.
 mixin text-enabled(lbl, model, name, enabled, required, placeholder, tip)
@@ -307,24 +325,6 @@ mixin table-remove-conditional-button(items, show, tip)
 //- Mixin for table remove button.
 mixin table-remove-button(items, tip)
     +table-remove-conditional-button(items, 'true', tip)
-
-//- Mixin for feedback on specified error.
-mixin error-feedback(visible, error, errorMessage)
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-if=visible
-        bs-tooltip='"#{errorMessage}"'
-        ignite-error=error
-        ignite-error-message=errorMessage
-    )
-
-//- Mixin for feedback on unique violation.
-mixin unique-feedback(visible, errorMessage)
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-if=visible
-        bs-tooltip='"#{errorMessage}"'
-        ignite-error='igniteUnique'
-        ignite-error-message=errorMessage
-    )
 
 //- Mixin for cache mode.
 mixin cacheMode(lbl, model, name, placeholder)

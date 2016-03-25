@@ -16,20 +16,21 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'discovery'
 -var model = 'backupItem.discovery'
 
-form.panel.panel-default(name='discovery' novalidate)
+form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Discovery
         ignite-form-field-tooltip.tipLabel
             | Discovery properties configuration
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='discovery')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    +text-ip-address('Local address:', model + '.localAddress', 'discoLocalAddress', 'true', '228.1.2.4', 'Local address')
+                    +text-ip-address('Local address:', form, model + '.localAddress', 'discoLocalAddress', 'true', '228.1.2.4', 'Local address')
                 .settings-row
                     +number-min-max('Local port:', model + '.localPort', 'discoLocalPort', 'true', '47500', '1024', '65535', 'Local port which node uses')
                 .settings-row

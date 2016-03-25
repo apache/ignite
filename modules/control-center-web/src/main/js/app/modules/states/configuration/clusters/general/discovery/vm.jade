@@ -46,6 +46,7 @@ include ../../../../../../../app/helpers/jade/mixins.jade
             -var field = 'edit'
             -var valid = form + '.' + field + '.$valid'
             -var unique = form + '.' + field + '.$error.igniteUnique'
+            -var ipaddress = form + '.' + field + '.$error.ipaddress'
             -var save = addresses + '[$index] = ' + field
 
             ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal' name='Address')
@@ -62,17 +63,20 @@ include ../../../../../../../app/helpers/jade/mixins.jade
                     +table-address-field(field, addresses, valid, save, false)
                         +table-save-button(valid, save, false)
                         +unique-feedback(unique, uniqueTip)
+                        +ipaddress-feedback(ipaddress)
 
         .group-content(ng-repeat='field in group.add')
             -var field = 'new'
             -var valid = form + '.' + field + '.$valid'
             -var unique = form + '.' + field + '.$error.igniteUnique'
+            -var ipaddress = form + '.' + field + '.$error.ipaddress'
             -var save = addresses + '.push(' + field + ')'
 
             ignite-form-field(type='internal' name='Address')
                 +table-address-field(field, addresses, valid, save, true)
                     +table-save-button(valid, save, true)
                     +unique-feedback(unique, uniqueTip)
+                    +ipaddress-feedback(ipaddress)
 
         .group-content-empty(id='addresses' ng-if='!(#{addresses}.length) && !group.add.length')
                 | Not defined

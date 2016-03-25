@@ -16,14 +16,15 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'general'
 -var model = 'backupItem'
 
-form.panel.panel-default(name='general' novalidate)
+form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle)
         ignite-form-panel-chevron
         label General
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='general')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body
             .col-sm-6
                 .settings-row
@@ -34,7 +35,7 @@ form.panel.panel-default(name='general' novalidate)
                         model + '.caches', 'caches', 'Choose caches', 'No caches configured', 'caches',
                         'Select caches to start in cluster or add a new cache')
                 .settings-row
-                    +text-ip-address('Local host:', model + '.localHost', 'localHost', 'true', '0.0.0.0', 'System-wide local address or host for all Ignite components to bind to')
+                    +text-ip-address('Local host:', form, model + '.localHost', 'localHost', 'true', '0.0.0.0', 'System-wide local address or host for all Ignite components to bind to')
                 .settings-row
                     +dropdown('Discovery:', model + '.discovery.kind', 'discovery', 'true', 'Choose discovery', 'discoveries',
                         'Discovery allows to discover remote nodes in grid\

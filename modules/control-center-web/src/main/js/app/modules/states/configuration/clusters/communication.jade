@@ -16,17 +16,18 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'communication'
 -var model = 'backupItem'
 -var communication = model + '.communication'
 
-form.panel.panel-default(name='communication' novalidate)
+form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Communication
         ignite-form-field-tooltip.tipLabel
             | Cluster communication network properties
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='communication')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
@@ -40,7 +41,7 @@ form.panel.panel-default(name='communication' novalidate)
                 .settings-row
                     +java-class('Communication listener:', communication + '.listener', 'comListener', 'true', 'false', 'Communication listener')
                 .settings-row
-                    +text-ip-address('Local IP address:', communication + '.localAddress', 'comLocalAddress', 'true', '228.1.2.4', 'Local host address for socket binding')
+                    +text-ip-address('Local IP address:', form, communication + '.localAddress', 'comLocalAddress', 'true', '228.1.2.4', 'Local host address for socket binding')
                 .settings-row
                     +number-min-max('Local port:', communication + '.localPort', 'comLocalPort', 'true', '47100', '1024', '65535', 'Local port for socket binding')
                 .settings-row

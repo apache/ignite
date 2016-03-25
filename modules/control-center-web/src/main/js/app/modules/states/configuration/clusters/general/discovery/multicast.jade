@@ -16,13 +16,13 @@
 
 include ../../../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'general'
 -var model = 'backupItem.discovery.Multicast';
 -var addresses = model + '.addresses';
--var form = 'discoveryMulticastAddresses';
 
 div
     .details-row
-        +text-ip-address('IP address:', model + '.multicastGroup', 'multicastGroup', 'true', '228.1.2.4', 'IP address of multicast group')
+        +text-ip-address('IP address:', form, model + '.multicastGroup', 'multicastGroup', 'true', '228.1.2.4', 'IP address of multicast group')
     .details-row
         +number-min-max('Port number:', model + '.multicastPort', 'multicastPort', 'true', '47400', '0', '65535', 'Port number which multicast messages are sent to')
     .details-row
@@ -33,11 +33,13 @@ div
             'Number of attempts to send multicast address request<br/>\
             IP finder re - sends request only in case if no reply for previous request is received')
     .details-row
-        +text-ip-address('Local address:', model + '.localAddress', 'localAddress', 'true', '0.0.0.0',
+        +text-ip-address('Local address:', form, model + '.localAddress', 'localAddress', 'true', '0.0.0.0',
             'Local host address used by this IP finder<br/>\
             If provided address is non - loopback then multicast socket is bound to this interface<br/>\
             If local address is not set or is any local address then IP finder creates multicast sockets for all found non - loopback addresses')
     .details-row
+        -var form = 'discoveryMulticastAddresses';
+
         ignite-form-group(ng-model=addresses ng-form=form)
             -var uniqueTip = 'Such IP address already exists!'
             -var ipAddressTip = 'Invalid IP address!'
@@ -63,6 +65,7 @@ div
                 -var field = 'edit'
                 -var valid = form + '.' + field + '.$valid'
                 -var unique = form + '.' + field + '.$error.igniteUnique'
+                -var ipaddress = form + '.' + field + '.$error.ipaddress'
                 -var save = addresses + '[$index] = ' + field
 
                 ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal' name='Address')
@@ -79,17 +82,20 @@ div
                         +table-address-field(field, addresses, valid, save, false)
                             +table-save-button(valid, save, false)
                             +unique-feedback(unique, uniqueTip)
+                            +ipaddress-feedback(ipaddress)
 
             .group-content(ng-repeat='field in group.add')
                 -var field = 'new'
                 -var valid = form + '.' + field + '.$valid'
                 -var unique = form + '.' + field + '.$error.igniteUnique'
+                -var ipaddress = form + '.' + field + '.$error.ipaddress'
                 -var save = addresses + '.push(' + field + ')'
 
                 ignite-form-field(type='internal' name='Address')
                     +table-address-field(field, addresses, valid, save, true)
                         +table-save-button(valid, save, true)
                         +unique-feedback(unique, uniqueTip)
+                        +ipaddress-feedback(ipaddress)
 
             .group-content-empty(ng-if='!(#{addresses}.length) && !group.add.length')
                 | Not defined

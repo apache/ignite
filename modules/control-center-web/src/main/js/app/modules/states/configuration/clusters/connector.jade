@@ -16,18 +16,19 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'connector'
 -var model = 'backupItem.connector'
 -var enabled = model + '.enabled'
 -var sslEnabled = enabled + ' && ' + model + '.sslEnabled'
 
-form.panel.panel-default(name='connector' novalidate)
+form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Connector configuration
         ignite-form-field-tooltip.tipLabel
             | REST access configuration
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='connector')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
@@ -38,7 +39,7 @@ form.panel.panel-default(name='connector' novalidate)
                         Jetty is used to support REST over HTTP protocol for accessing Ignite APIs remotely<br/>\
                         If not provided, Jetty instance with default configuration will be started picking IgniteSystemProperties.IGNITE_JETTY_HOST and IgniteSystemProperties.IGNITE_JETTY_PORT as host and port respectively')
                 .settings-row
-                    +text-ip-address('TCP host:', model + '.host', 'connectorHost', enabled, 'IgniteConfiguration#getLocalHost()',
+                    +text-ip-address('TCP host:', form, model + '.host', 'connectorHost', enabled, 'IgniteConfiguration#getLocalHost()',
                         'Host for TCP binary protocol server<br/>\
                         This can be either an IP address or a domain name<br/>\
                         If not defined, system - wide local address will be used IgniteConfiguration#getLocalHost()<br/>\

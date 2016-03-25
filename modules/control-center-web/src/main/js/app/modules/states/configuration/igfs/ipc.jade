@@ -16,16 +16,17 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'ipc'
 -var model = 'backupItem'
 
-form.panel.panel-default(name='ipc' novalidate)
+form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
         ignite-form-panel-chevron
         label IPC
         ignite-form-field-tooltip.tipLabel
             | IGFS Inter-process communication properties
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='ipc')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 -var ipcEndpointConfiguration = model + '.ipcEndpointConfiguration'
@@ -45,7 +46,7 @@ form.panel.panel-default(name='ipc' novalidate)
                             <li>TCP - TCP endpoint</li>\
                         </ul>')
                 .settings-row
-                    +text-ip-address('Host:', ipcEndpointConfiguration + '.host', 'ipcEndpointConfigurationHost', enabled, '127.0.0.1', 'Host name')
+                    +text-ip-address('Host:', form, ipcEndpointConfiguration + '.host', 'ipcEndpointConfigurationHost', enabled, '127.0.0.1', 'Host name')
                 .settings-row
                     +number-min-max('Port:', ipcEndpointConfiguration + '.port', 'ipcEndpointConfigurationPort', enabled, '10500', '1', '65535', 'Port number')
                 .settings-row
