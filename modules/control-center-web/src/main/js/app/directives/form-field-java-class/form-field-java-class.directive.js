@@ -19,11 +19,13 @@ import template from './form-field-java-class.jade!';
 
 export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
     const link = (scope, el, attrs, [ngModel, form, label]) => {
-        const {id, name} = scope;
+        const {id, ngModelName} = scope;
+
+        const name = ngModelName;
 
         scope.id = id || guid();
         scope.form = form;
-        scope.name = scope.ngModelName + 'JavaClass';
+        scope.name = ngModelName + 'JavaClass';
         scope.ngModel = ngModel;
 
         Object.defineProperty(scope, 'field', {

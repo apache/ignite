@@ -199,7 +199,7 @@ form.panel.panel-default(name='store' novalidate)
                                                     +hibernateField(hibernateProperties, field, valid, save, false)
                                                         +table-save-button(valid, save, false)
                                                         +error-feedback(unique, 'ignitePropertyUnique', tipUnique)
-                                                        +error-feedback(unique, 'ignitePropertyValueSpecified', tipPropertySpecified)
+                                                        +error-feedback(prop, 'ignitePropertyValueSpecified', tipPropertySpecified)
 
                                         .group-content(ng-repeat='field in group.add')
                                             -var field = 'new'
@@ -212,7 +212,7 @@ form.panel.panel-default(name='store' novalidate)
                                                 +hibernateField(hibernateProperties, field, valid, save, true)
                                                     +table-save-button(valid, save, true)
                                                     +error-feedback(unique, 'ignitePropertyUnique', tipUnique)
-                                                    +error-feedback(unique, 'ignitePropertyValueSpecified', tipPropertySpecified)
+                                                    +error-feedback(prop, 'ignitePropertyValueSpecified', tipPropertySpecified)
                                         .group-content-empty(ng-if='!(#{hibernateProperties}.length) && !group.add.length')
                                             | Not defined
 

@@ -28,6 +28,7 @@ mixin pathModeEditor(newItem)
     -var valid = pathModesForm + '.' + path + '.$valid && ' + pathModesForm + '.' + mode + '.$valid'
     -var item = '{path:' + path + ', mode: ' + mode  + '}'
     -var save = pathModes + (newItem ? '.push(' + item + ')' : '[$index] = ' + item)
+    -var unique = pathModesForm + '.' + path + '.$error.igniteIgfsPathUnique'
 
     .col-sm-12
         .col-sm-8
@@ -38,10 +39,12 @@ mixin pathModeEditor(newItem)
                 data-ng-model=path
                 enter-focus-next=mode
                 data-ng-required='true'
+                data-ignite-igfs-path-unique=pathModes
                 data-placeholder='Input path'
                 data-ignite-form-field-input-autofocus='true'
                 on-escape=reset
             )
+                +error-feedback(unique, 'igfsPathUnique', 'Such path already exists!')
         .col-sm-4
             .tipField
                 +table-save-button(valid, save, newItem)

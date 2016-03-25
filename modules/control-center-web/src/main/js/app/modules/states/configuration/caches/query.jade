@@ -62,7 +62,7 @@ form.panel.panel-default(name='query' novalidate)
 
                                 span(ng-hide='field.edit')
                                     a.labelFormField(ng-click='field.edit = true') {{ model }}
-                                span(ng-if='field.edit' ng-init='edit = model')
+                                span(ng-if='field.edit' ng-init='#{field} = model')
                                     +table-java-class-field(field, sqlFunctionClasses, valid, save, false)
                                         +table-save-button(valid, save, false)
                                         +unique-feedback(unique, uniqueTip)

@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-export default ['igniteUnique', ['$parse', ($parse) => {
+export default ['igniteIgfsPathUnique', ['$parse', ($parse) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (typeof attrs.igniteUnique === 'undefined' || !attrs.igniteUnique)
+        if (typeof attrs.igniteIgfsPathUnique === 'undefined' || !attrs.igniteIgfsPathUnique)
             return;
 
-        ngModel.$validators.igniteUnique = (value) => {
-            const arr = $parse(attrs.igniteUnique)(scope);
+        ngModel.$validators.igniteIgfsPathUnique = (value) => {
+            const arr = $parse(attrs.igniteIgfsPathUnique)(scope);
 
             // Return true in case if array not exist, array empty.
-            if (!arr || !arr.length)
+            if (!value || !arr || !arr.length)
                 return true;
 
-            const idx = arr.indexOf(value);
+            const idx = _.findIndex(arr, (item) => item.path === value);
 
             // In case of new element check all items.
-            if (attrs.name === 'new')
+            if (attrs.name === 'newPath')
                 return idx < 0;
 
             // Check for $index in case of editing in-place.

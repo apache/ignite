@@ -28,11 +28,14 @@ export default ['ignitePropertyUnique', ['$parse', ($parse) => {
                 return true;
 
             const key = value.split('=')[0];
-            const name = attrs.name;
+            const idx = _.findIndex(arr, (item) => item.split('=')[0] === key);
+
+            // In case of new element check all items.
+            if (attrs.name === 'new')
+                return idx < 0;
 
             // Check for $index in case of editing in-place.
-            return _.isNumber(scope.$index) &&
-                !_.find(arr, (checkedVal, ix) => (name === 'new' || scope.$index !== ix) && checkedVal.split('=')[0] === key);
+            return (_.isNumber(scope.$index) && (idx < 0 || scope.$index === idx));
         };
     };
 
