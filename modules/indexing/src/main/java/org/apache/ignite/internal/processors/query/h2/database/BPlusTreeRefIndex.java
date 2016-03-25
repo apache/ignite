@@ -573,15 +573,16 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      */
     private boolean findDown(final Get g, final long pageId, final long expFwdId, final int lvl)
         throws IgniteCheckedException {
-        try (Page page = page(pageId)) {
-            int res;
+        for (;;) {
+            try (Page page = page(pageId)) {
+                if (page == null)
+                    return true; // Page was removed, retry.
 
-            for (;;) {
                 // Init args.
                 g.pageId = pageId;
                 g.expFwdId = expFwdId;
 
-                res = readPage(page, search, g, lvl);
+                int res = readPage(page, search, g, lvl);
 
                 switch (res) {
                     case Get.RETRY:
@@ -601,7 +602,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         return false;
 
                     case Get.FOUND:
-                        return false;
+                        return false; // We are done.
 
                     case Get.NOT_FOUND:
                         g.row = null; // Mark not found result.
@@ -609,7 +610,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         return false;
 
                     default:
-                        throw new IllegalStateException("Invalid result: " + res);
+                        assert false: res;
                 }
             }
         }
