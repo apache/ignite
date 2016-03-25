@@ -23,11 +23,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.transaction.RollbackException;
-import javax.transaction.TransactionManager;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 
 /**
  * Servlet to test working of Ignite transactions inside web-aplication environment.
@@ -47,32 +42,43 @@ public class TestJtaTxServlet extends HttpServlet {
         final PrintWriter writer = res.getWriter();
 
         try {
-            final Ignite ignite = Ignition.ignite();
-            final IgniteCache<Integer, String> cache = ignite.cache("tx");
+            Class onePhaseXAResourceClass = Class.forName("com.ibm.tx.jta.OnePhaseXAResource");
 
-            TransactionManager tmMgr = com.ibm.tx.jta.TransactionManagerFactory.getTransactionManager();
-
-            tmMgr.begin();
-            cache.put(key, correctVal);
-            writer.println(String.format("Transaction #1. Writing value [%s]", cache.get(key)));
-            writer.println();
-            tmMgr.commit();
-
-            try {
-                tmMgr.begin();
-                writer.println(String.format("Transaction #2. Current value [%s]", cache.get(key)));
-                cache.put(key, incorrectVal);
-                writer.println(String.format("Transaction #2. Writing value [%s]", cache.get(key)));
-                tmMgr.setRollbackOnly();
-                tmMgr.commit();
-            } catch (final RollbackException ignored) {
-                writer.println(String.format("Transaction #2. setRollbackOnly", cache.get(key)));
-            }
-            writer.println();
-
-            tmMgr.begin();
-            writer.println(String.format("Transaction #3. Current value [%s]", cache.get(key)));
-            tmMgr.commit();
+            writer.println("Got onePhaseXAResourceClass: " + onePhaseXAResourceClass);
+//
+//            final Ignite ignite = Ignition.ignite();
+//
+//            writer.println("Got ignite");
+//
+//            final IgniteCache<Integer, String> cache = ignite.cache("tx");
+//
+//            writer.println("Got cache");
+//
+//            TransactionManager tmMgr = com.ibm.tx.jta.TransactionManagerFactory.getTransactionManager();
+//
+//            writer.println("Got txMgr");
+//
+//            tmMgr.begin();
+//            cache.put(key, correctVal);
+//            writer.println(String.format("Transaction #1. Writing value [%s]", cache.get(key)));
+//            writer.println();
+//            tmMgr.commit();
+//
+//            try {
+//                tmMgr.begin();
+//                writer.println(String.format("Transaction #2. Current value [%s]", cache.get(key)));
+//                cache.put(key, incorrectVal);
+//                writer.println(String.format("Transaction #2. Writing value [%s]", cache.get(key)));
+//                tmMgr.setRollbackOnly();
+//                tmMgr.commit();
+//            } catch (final RollbackException ignored) {
+//                writer.println(String.format("Transaction #2. setRollbackOnly", cache.get(key)));
+//            }
+//            writer.println();
+//
+//            tmMgr.begin();
+//            writer.println(String.format("Transaction #3. Current value [%s]", cache.get(key)));
+//            tmMgr.commit();
         } catch (final Throwable e) {
             e.printStackTrace(writer);
         }
