@@ -318,12 +318,14 @@
 
         /// <summary>
         /// URL to Spring configuration file.
+        /// <para />
+        /// Ignite.NET can be configured natively without Spring. 
+        /// Setting this property will ignore all other properties except <see cref="IgniteHome"/>, 
+        /// <see cref="Assemblies"/>, <see cref="SuppressWarnings"/>, <see cref="LifecycleBeans"/>, 
+        /// <see cref="JvmOptions"/>, <see cref="JvmDllPath"/>, <see cref="IgniteHome"/>, 
+        /// <see cref="JvmInitialMemoryMb"/>, <see cref="JvmMaxMemoryMb"/>.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
-        [Obsolete("Ignite.NET can be configured natively without Spring. " +
-                  "Setting this property will ignore all other properties except " +
-                  "IgniteHome, Assemblies, SuppressWarnings, LifecycleBeans, JvmOptions, JvmdllPath, IgniteHome, " +
-                  "JvmInitialMemoryMb, JvmMaxMemoryMb.")]
         public string SpringConfigUrl { get; set; }
 
         /// <summary>

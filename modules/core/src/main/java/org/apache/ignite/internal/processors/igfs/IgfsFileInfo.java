@@ -17,6 +17,13 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,7 +40,7 @@ import java.util.Map;
 /**
  * IGFS file info.
  */
-public final class IgfsFileInfo extends IgfsEntryInfo {
+public final class IgfsFileInfo extends IgfsEntryInfo implements Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -226,6 +233,34 @@ public final class IgfsFileInfo extends IgfsEntryInfo {
         lockId = U.readGridUuid(in);
         affKey = U.readGridUuid(in);
         fileMap = (IgfsFileMap)in.readObject();
+        evictExclude = in.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
+
+        writeBinary(out);
+
+        out.writeInt(blockSize);
+        out.writeLong(len);
+        BinaryUtils.writeIgniteUuid(out, lockId);
+        BinaryUtils.writeIgniteUuid(out, affKey);
+        out.writeObject(fileMap);
+        out.writeBoolean(evictExclude);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
+        readBinary(in);
+
+        blockSize = in.readInt();
+        len = in.readLong();
+        lockId = BinaryUtils.readIgniteUuid(in);
+        affKey = BinaryUtils.readIgniteUuid(in);
+        fileMap = in.readObject();
         evictExclude = in.readBoolean();
     }
 

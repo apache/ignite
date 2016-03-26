@@ -39,7 +39,6 @@ import java.util.concurrent.CyclicBarrier;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
 
 /**
  * Tests for IGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
@@ -973,10 +972,12 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         checkExist(igfs, igfsSecondary, SUBSUBDIR);
 
         // Check only permissions because user and group will always be present in Hadoop secondary filesystem.
-        assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(SUBSUBDIR.toString()).get(PROP_PERMISSION));
+        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+            igfsSecondary.properties(SUBSUBDIR.toString()).get(IgfsUtils.PROP_PERMISSION));
 
         // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
+        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+            igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
     }
 
     /**
@@ -998,10 +999,12 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         checkExist(igfs, igfsSecondary, SUBSUBDIR);
 
         // Check only permission because in case of Hadoop secondary Fs user and group will always be present:
-        assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(SUBSUBDIR.toString()).get(PROP_PERMISSION));
+        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+            igfsSecondary.properties(SUBSUBDIR.toString()).get(IgfsUtils.PROP_PERMISSION));
 
         // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
+        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+            igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
     }
 
     /**

@@ -55,6 +55,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -72,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
 
@@ -146,10 +148,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient int cacheId;
 
     /** */
-    private Map<Integer, Long> initUpdCntrs;
+    private transient volatile Map<Integer, Long> initUpdCntrs;
 
     /** */
-    private AffinityTopologyVersion initTopVer;
+    private transient volatile Map<UUID, Map<Integer, Long>> initUpdCntrsPerNode;
+
+    /** */
+    private transient volatile AffinityTopologyVersion initTopVer;
 
     /** */
     private transient boolean ignoreClsNotFound;
@@ -264,9 +269,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<Integer, Long> cntrs) {
-        this.initTopVer = topVer;
+    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, Long>> cntrsPerNode,
+        Map<Integer, Long> cntrs) {
+        this.initUpdCntrsPerNode = cntrsPerNode;
         this.initUpdCntrs = cntrs;
+        this.initTopVer = topVer;
     }
 
     /** {@inheritDoc} */
@@ -295,20 +302,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
         assert !skipPrimaryCheck || loc;
-
-        final GridCacheContext<K, V> cctx = cacheContext(ctx);
-
-        if (!internal && cctx != null && initUpdCntrs != null) {
-            Map<Integer, Long> map = cctx.topology().updateCounters();
-
-            for (Map.Entry<Integer, Long> e : map.entrySet()) {
-                Long cntr0 = initUpdCntrs.get(e.getKey());
-                Long cntr1 = e.getValue();
-
-                if (cntr0 == null || cntr1 > cntr0)
-                    initUpdCntrs.put(e.getKey(), cntr1);
-            }
-        }
 
         CacheContinuousQueryListener<K, V> lsnr = new CacheContinuousQueryListener<K, V>() {
             @Override public void onExecution() {
@@ -561,6 +554,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             entry.prepareMarshal(cctx);
     }
 
+    /**
+     * Wait topology.
+     */
+    public void waitTopologyFuture(GridKernalContext ctx) throws IgniteCheckedException {
+        GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+        if (!cctx.isLocal()) {
+            cacheContext(ctx).affinity().affinityReadyFuture(initTopVer).get();
+
+            for (int partId = 0; partId < cacheContext(ctx).affinity().partitions(); partId++)
+                getOrCreatePartitionRecovery(ctx, partId);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
         // No-op.
@@ -668,19 +675,54 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         if (e.updateCounter() == -1L)
             return F.asList(e);
 
-        PartitionRecovery rec = rcvs.get(e.partition());
+        PartitionRecovery rec = getOrCreatePartitionRecovery(ctx, e.partition());
+
+        return rec.collectEntries(e);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param partId Partition id.
+     * @return Partition recovery.
+     */
+    @NotNull private PartitionRecovery getOrCreatePartitionRecovery(GridKernalContext ctx, int partId) {
+        PartitionRecovery rec = rcvs.get(partId);
 
         if (rec == null) {
-            rec = new PartitionRecovery(ctx.log(getClass()), initTopVer,
-                initUpdCntrs == null ? null : initUpdCntrs.get(e.partition()));
+            Long partCntr = null;
 
-            PartitionRecovery oldRec = rcvs.putIfAbsent(e.partition(), rec);
+            AffinityTopologyVersion initTopVer0 = initTopVer;
+
+            if (initTopVer0 != null) {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                GridCacheAffinityManager aff = cctx.affinity();
+
+                if (initUpdCntrsPerNode != null) {
+                    for (ClusterNode node : aff.nodes(partId, initTopVer)) {
+                        Map<Integer, Long> map = initUpdCntrsPerNode.get(node.id());
+
+                        if (map != null) {
+                            partCntr = map.get(partId);
+
+                            break;
+                        }
+                    }
+                }
+                else if (initUpdCntrs != null) {
+                    partCntr = initUpdCntrs.get(partId);
+                }
+            }
+
+            rec = new PartitionRecovery(ctx.log(getClass()), initTopVer0, partCntr);
+
+            PartitionRecovery oldRec = rcvs.putIfAbsent(partId, rec);
 
             if (oldRec != null)
                 rec = oldRec;
         }
 
-        return rec.collectEntries(e);
+        return rec;
     }
 
     /**

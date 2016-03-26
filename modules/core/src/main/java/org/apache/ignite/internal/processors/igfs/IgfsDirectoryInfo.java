@@ -17,9 +17,16 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,12 +35,13 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
  * IGFS directory info.
  */
-public class IgfsDirectoryInfo extends IgfsEntryInfo {
+public class IgfsDirectoryInfo extends IgfsEntryInfo implements Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -174,7 +182,19 @@ public class IgfsDirectoryInfo extends IgfsEntryInfo {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        out.writeObject(listing);
+        if (listing != null) {
+            out.writeBoolean(true);
+
+            out.writeInt(listing.size());
+
+            for (Map.Entry<String, IgfsListingEntry> entry : listing.entrySet()) {
+                U.writeString(out, entry.getKey());
+
+                IgfsUtils.writeListingEntry(out, entry.getValue());
+            }
+        }
+        else
+            out.writeBoolean(false);
     }
 
     /** {@inheritDoc} */
@@ -182,7 +202,61 @@ public class IgfsDirectoryInfo extends IgfsEntryInfo {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        listing = (Map<String, IgfsListingEntry>)in.readObject();
+        if (in.readBoolean()) {
+            int listingSize = in.readInt();
+
+            listing = new HashMap<>(listingSize);
+
+            for (int i = 0; i < listingSize; i++) {
+                String key = U.readString(in);
+
+                IgfsListingEntry val = IgfsUtils.readListingEntry(in);
+
+                listing.put(key, val);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
+
+        writeBinary(out);
+
+        if (listing != null) {
+            out.writeBoolean(true);
+
+            out.writeInt(listing.size());
+
+            for (Map.Entry<String, IgfsListingEntry> entry : listing.entrySet()) {
+                out.writeString(entry.getKey());
+
+                IgfsUtils.writeListingEntry(out, entry.getValue());
+            }
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
+        readBinary(in);
+
+        if (in.readBoolean()) {
+            int listingSize = in.readInt();
+
+            listing = new HashMap<>(listingSize);
+
+            for (int i = 0; i < listingSize; i++) {
+                String key = in.readString();
+
+                IgfsListingEntry val = IgfsUtils.readListingEntry(in);
+
+                listing.put(key, val);
+            }
+        }
     }
 
     /** {@inheritDoc} */
