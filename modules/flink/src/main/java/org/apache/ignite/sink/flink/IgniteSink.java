@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 import java.util.Map;
@@ -47,9 +46,6 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
     /** Flag for stopped state. */
     private static volatile boolean stopped = true;
 
-    /**Configuration for Ignite collections. */
-    private static CollectionConfiguration colCfg;
-
     /**Ignite grid configuration file. */
     private static String igniteCfgFile;
 
@@ -61,7 +57,7 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      *
      * @return {@link IgniteDataStreamer} streamer.
      */
-    public static IgniteDataStreamer getStreamer() {
+    private static IgniteDataStreamer getStreamer() {
         return SinkContext.getStreamer();
     }
 
@@ -141,14 +137,11 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      *
      * @param cacheName
      * @param igniteCfgFile
-     * @param colCfg
      */
     public IgniteSink(String cacheName,
-                      String igniteCfgFile,
-                      CollectionConfiguration colCfg) {
+                      String igniteCfgFile) {
         this.cacheName = cacheName;
         this.igniteCfgFile = igniteCfgFile;
-        this.colCfg = colCfg;
         this.log = SinkContext.getIgnite().log();
     }
 
@@ -179,6 +172,7 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
 
         stopped = true;
 
+        SinkContext.getStreamer().close();
         SinkContext.getIgnite().cache(cacheName).close();
         SinkContext.getIgnite().close();
     }
@@ -205,7 +199,7 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
     /**
      * Streamer context initializing grid and data streamer instances on demand.
      */
-    public static class SinkContext {
+    private static class SinkContext {
         /** Constructor. */
         private SinkContext() {
         }
@@ -221,7 +215,7 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
          *
          * @return Grid instance.
          */
-        public static Ignite getIgnite() {
+        private static Ignite getIgnite() {
             return Holder.IGNITE;
         }
 
@@ -230,7 +224,7 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
          *
          * @return Data streamer instance.
          */
-        public static IgniteDataStreamer getStreamer() {
+        private static IgniteDataStreamer getStreamer() {
             return Holder.STREAMER;
         }
     }
