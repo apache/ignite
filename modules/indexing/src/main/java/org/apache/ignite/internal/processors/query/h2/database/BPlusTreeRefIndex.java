@@ -24,7 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -214,18 +214,14 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             int cnt = io.getCount(buf);
             int idx = findInsertionPoint(io, buf, cnt, p.row);
 
-            if (idx < 0) { // Not found, split happened.
-                idx = -idx - 1;
-
-                assert idx == cnt;
-
+            if (idx < 0) { // Not found, split or merge happened.
                 long fwdId = io.getForward(buf);
 
                 assert fwdId != 0;
 
                 p.pageId = fwdId;
 
-                return Put.NOT_FOUND;
+                return Put.RETRY;
             }
 
             // Replace link at idx with new one.
@@ -252,7 +248,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         @Override protected boolean releaseAfterWrite(Page page, Put p, int lvl) {
-            return p.tailLock != page;
+            return p.tail != page;
         }
 
         @Override public String toString() {
@@ -276,7 +272,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
             // Possible split or merge.
             if (idx == cnt && io.getForward(buf) != p.fwdId)
-                return Put.RETRY; // Go up and retry.
+                return Put.RETRY;
 
             // Do insert.
             GridH2Row moveUpRow = insert(p.meta, io, buf, p.row(), idx, p.rightId, lvl);
@@ -286,10 +282,10 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 p.btmLvl++; // Get high.
                 p.row = moveUpRow;
 
-                // Here `forward` can't be concurrently removed because we keep `tailLock` which is the only
+                // Here `forward` can't be concurrently removed because we keep `tail` which is the only
                 // page who knows about the `forward` page, because it was just produced by split.
                 p.rightId = io.getForward(buf);
-                p.tailLock(page);
+                p.tail(page);
 
                 assert p.rightId != 0;
             }
@@ -300,7 +296,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         @Override protected boolean releaseAfterWrite(Page page, Put p, int lvl) {
-            return p.tailLock != page;
+            return p.tail != page;
         }
 
         @Override public String toString() {
@@ -807,10 +803,11 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /**
      * Check if interrupted.
+     * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    private static void checkInterrupted() {
+    private static void checkInterrupted() throws IgniteInterruptedCheckedException {
         if (Thread.currentThread().isInterrupted())
-            throw new IgniteInterruptedException("Interrupted.");
+            throw new IgniteInterruptedCheckedException("Interrupted.");
     }
 
     /** {@inheritDoc} */
@@ -870,36 +867,52 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
                 int res = readPage(page, search, r, lvl);
 
-                final long backId = r.backId; // Read out parameter.
-
                 switch (res) {
                     case Remove.RETRY:
                         return true; // Our page was splitted or merged, retry.
 
                     case Remove.GO_DOWN:
-                        if (removeDown(r, r.pageId, r.fwdId, lvl - 1)) {
+                        final long childBackId = r.backId;
+                        final long childPageId = r.pageId;
+                        final long childFwdId = r.fwdId;
+
+                        if (removeDown(r, childPageId, childFwdId, lvl - 1)) {
                             checkInterrupted();
 
                             continue;
                         }
 
                         if (r.mergeBack) {
-
-
+                            assert childBackId != 0;
+                            // TODO
                         }
 
-                        // We need to collect all the pages.
-                        if (r.lockedLvls != null) {
+                        if (r.lockedLvls == null)
+                            return false; // Finish.
 
-
-                        }
-
-                        return false;
-
+                        // Intentional fallthrough.
                     case Remove.FOUND:
-                        assert lvl == 0: "must be at the bottom";
+                        if (r.lockedLvls != null) {
+                            // Here we need to lock the needed page.
+                            // TODO
 
+                        }
 
+                        // We must be at the bottom here, just need to remove row from the current page.
+                        assert lvl == 0: lvl;
+
+                        res = writePage(page, removeSimple, r, lvl);
+
+                        switch (res) {
+                            case Remove.RETRY:
+                                return true;
+
+                            case Remove.FOUND:
+                                return false;
+
+                            default:
+                                assert false: res;
+                        }
 
                     case Remove.NOT_FOUND:
                         assert lvl == 0: "must be at the bottom";
@@ -1168,7 +1181,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                             int res0 = writePage(page, replace, p, lvl);
 
                             switch (res0) {
-                                case Put.NOT_FOUND:
+                                case Put.RETRY:
                                     return true; // Our page was splitted or merged, retry.
 
                                 case Put.FOUND:
@@ -1187,7 +1200,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         }
 
                         if (p.isFinished()) {
-                            assert p.tailLock == null;
+                            assert p.tail == null;
 
                             return false; // Successfully inserted or replaced down the stack.
                         }
@@ -1208,7 +1221,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         res = writePage(page, replace, p, lvl);
 
                         switch (res) {
-                            case Put.NOT_FOUND:
+                            case Put.RETRY:
                                 return true; // Retry.
 
                             case Put.FOUND:
@@ -1254,7 +1267,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 }
             }
             finally{
-                if (p.tailLock != page)
+                if (p.tail != page)
                     page.close();
             }
 
@@ -1296,7 +1309,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         /** In/Out parameter: expected forward page ID. */
         long fwdId;
 
-        /** In/Out parameter: expected backward page ID for the rightmost pages merge if fwdId is 0. */
+        /** Out parameter: expected backward page ID for the rightmost pages merge if fwdId is 0. */
         long backId;
 
         /**
@@ -1424,12 +1437,10 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         /**
          * This page is kept locked after split until insert to the upper level will not be finished.
-         * It is needed to avoid excessive spinning which will happen while the following `triangle` invariant
-         * of page split is not met: parent page must have `right` child reference the same as `forward`
-         * reference of `left` child.
-         * Some other split invariants rely on this locking behavior.
+         * It is needed because split row will be "in flight" and if we'll release tail, remove on
+         * split row may fail.
          */
-        Page tailLock;
+        Page tail;
 
         /**
          * Bottom level for insertion (insert can't go deeper). Will be incremented on split on each level.
@@ -1472,14 +1483,14 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         /**
-         * @param tailLock Tail lock.
+         * @param tail Tail lock.
          */
-        private void tailLock(Page tailLock) {
-            if (this.tailLock != null) {
-                this.tailLock.releaseWrite(true);
-                this.tailLock.close();
+        private void tail(Page tail) {
+            if (this.tail != null) {
+                this.tail.releaseWrite(true);
+                this.tail.close();
             }
-            this.tailLock = tailLock;
+            this.tail = tail;
         }
 
         /**
@@ -1488,7 +1499,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         private void finish() {
             row = null;
             rightId = 0;
-            tailLock(null);
+            tail(null);
         }
 
         /**
