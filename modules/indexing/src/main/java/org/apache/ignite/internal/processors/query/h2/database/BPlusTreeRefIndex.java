@@ -606,16 +606,18 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      */
     private boolean findDown(final Get g, final long pageId, final long fwdId, final int lvl)
         throws IgniteCheckedException {
-        for (;;) {
-            try (Page page = page(pageId)) {
-                if (page == null)
-                    return true; // Page was removed, retry.
+        Page page = page(pageId);
 
+        if (page == null)
+            return true; // Page was removed, retry.
+
+        try {
+            for (;;) {
                 // Init args.
                 g.pageId = pageId;
                 g.fwdId = fwdId;
 
-                int res = readPage(page, search, g, lvl);
+                int res = readPage(page, search, g, lvl, Get.RETRY);
 
                 switch (res) {
                     case Get.RETRY:
@@ -646,6 +648,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         assert false: res;
                 }
             }
+        }
+        finally {
+            page.close();
         }
     }
 
@@ -684,7 +689,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 if (page == null)
                     continue;
 
-                if (writePage(page, writeRow, row, -1) >= 0)
+                if (writePage(page, writeRow, row, -1, -1) >= 0)
                     return; // Successful write.
             }
 
@@ -827,9 +832,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 checkInterrupted();
             }
 
-            if (!r.isFinished()) {
-                // TODO
-            }
+            assert r.isFinished();
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -848,24 +851,24 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @param fwdId Expected forward page ID.
      * @param lvl Level.
      * @return {@code true} If we need to retry.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     private boolean removeDown(final Remove r, final long pageId, final long fwdId, final int lvl)
         throws IgniteCheckedException {
         assert lvl >= 0 : lvl;
 
-        for (;;) {
-            final Page page = page(pageId);
+        final Page page = page(pageId);
 
-            if (page == null)
-                return true; // Page was removed, retry.
+        if (page == null)
+            return true; // Page was removed, retry.
 
-            try {
+        try {
+            for (;;) {
                 // Init args.
                 r.pageId = pageId;
                 r.fwdId = fwdId;
 
-                int res = readPage(page, search, r, lvl);
+                int res = readPage(page, search, r, lvl, Remove.RETRY);
 
                 switch (res) {
                     case Remove.RETRY:
@@ -901,7 +904,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         // We must be at the bottom here, just need to remove row from the current page.
                         assert lvl == 0: lvl;
 
-                        res = writePage(page, removeSimple, r, lvl);
+                        res = writePage(page, removeSimple, r, lvl, Remove.RETRY);
 
                         switch (res) {
                             case Remove.RETRY:
@@ -923,10 +926,10 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         assert false: res;
                 }
             }
-            finally {
-                if (r.canReleasePage(page, lvl))
-                    page.close();
-            }
+        }
+        finally {
+            if (r.canReleasePage(page, lvl))
+                page.close();
         }
     }
 
@@ -1079,7 +1082,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                     inner(io).setRight(newRootBuf, 0, fwdPage.id());
                 }
 
-                int res = writePage(meta, updateRoot, newRootId, lvl + 1);
+                int res = writePage(meta, updateRoot, newRootId, lvl + 1, 0);
 
                 assert res != 0 : "failed to update meta page";
 
@@ -1153,18 +1156,18 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         throws IgniteCheckedException {
         assert lvl >= 0 : lvl;
 
-        for (;;) {
-            final Page page = page(pageId);
+        final Page page = page(pageId);
 
-            if (page == null)
-                return true; // Page was removed, retry.
+        if (page == null)
+            return true; // Page was removed, retry.
 
-            try {
+        try {
+            for (;;) {
                 // Init args.
                 p.pageId = pageId;
                 p.fwdId = fwdId;
 
-                int res = readPage(page, search, p, lvl);
+                int res = readPage(page, search, p, lvl, Put.RETRY);
 
                 switch (res) {
                     case Put.RETRY:
@@ -1178,7 +1181,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         if (p.foundInner) { // Need to replace ref in inner page.
                             p.foundInner = false;
 
-                            int res0 = writePage(page, replace, p, lvl);
+                            int res0 = writePage(page, replace, p, lvl, Put.RETRY);
 
                             switch (res0) {
                                 case Put.RETRY:
@@ -1218,7 +1221,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         p.pageId = pageId;
                         p.fwdId = fwdId;
 
-                        res = writePage(page, replace, p, lvl);
+                        res = writePage(page, replace, p, lvl, Put.RETRY);
 
                         switch (res) {
                             case Put.RETRY:
@@ -1242,7 +1245,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         p.pageId = pageId;
                         p.fwdId = fwdId;
 
-                        res = writePage(page, insert, p, lvl);
+                        res = writePage(page, insert, p, lvl, Put.RETRY);
 
                         switch (res) {
                             case Put.RETRY:
@@ -1265,13 +1268,13 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                     default:
                         assert false : res;
                 }
-            }
-            finally{
-                if (p.tail != page)
-                    page.close();
-            }
 
-            checkInterrupted();
+                checkInterrupted();
+            }
+        }
+        finally{
+            if (p.tail != page)
+                page.close();
         }
     }
 
@@ -1716,11 +1719,16 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @param h Handler.
      * @param arg Argument.
      * @param lvl Level.
+     * @param dfltRes Default result in case of page invalidation.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    private static <X> int readPage(Page page, PageHandler<X> h, X arg, int lvl) throws IgniteCheckedException {
+    private static <X> int readPage(Page page, PageHandler<X> h, X arg, int lvl, int dfltRes)
+        throws IgniteCheckedException {
         ByteBuffer buf = page.getForRead();
+
+        if (buf == null)
+            return dfltRes;
 
         try {
             return h.run(page, buf, arg, lvl);
@@ -1735,15 +1743,20 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @param h Handler.
      * @param arg Argument.
      * @param lvl Level.
+     * @param dfltRes Default result in case of page invalidation.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    private static <X> int writePage(Page page, PageHandler<X> h, X arg, int lvl) throws IgniteCheckedException {
+    private static <X> int writePage(Page page, PageHandler<X> h, X arg, int lvl, int dfltRes)
+        throws IgniteCheckedException {
         int res;
 
         boolean ok = false;
 
         ByteBuffer buf = page.getForWrite();
+
+        if (buf == null)
+            return dfltRes;
 
         try {
             // TODO we need a set of CRC markers: LOADED, UPDATING, DIRTY
