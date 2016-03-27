@@ -268,11 +268,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             IndexPageIO io = IndexPageIO.forPage(buf);
 
             int cnt = io.getCount(buf);
+            int idx = findInsertionPoint(io, buf, cnt, p.row);
 
-            int idx = cnt == 0 ? -1 : findInsertionPoint(io, buf, cnt, p.row);
-
-            if (idx >= 0)
-                throw new IllegalStateException("Duplicate row in index.");
+            assert idx < 0: "Duplicate row in index.";
 
             idx = -idx - 1;
 
@@ -318,10 +316,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             IndexPageIO io = IndexPageIO.forPage(buf);
 
             int cnt = io.getCount(buf);
-
-            if (cnt == 0)
-                return Remove.RETRY;
-
             int idx = findInsertionPoint(io, buf, cnt, r.row);
 
             if (idx < 0)
