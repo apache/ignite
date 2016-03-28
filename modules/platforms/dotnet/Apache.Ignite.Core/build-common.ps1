@@ -1,6 +1,7 @@
 param([string]$configuration="Debug", [string]$msbuildexe = "MSBuild.exe")
 
 $x64 = [System.Environment]::Is64BitOperatingSystem
+$jdkRegKey = 'Software\JavaSoft\Java Development Kit'
 
 # Fisrt, check if JAVA_HOME is set
 if (Test-Path Env:\JAVA_HOME) {
@@ -34,11 +35,11 @@ Function GetJavaHome([string]$path, [Microsoft.Win32.RegistryView] $mode) {
     return $key.OpenSubKey($curVer).GetValue("JavaHome")
 }
 
+$env:JAVA_HOME32 = GetJavaHome $jdkRegKey Registry32
+
+
 if ($x64) {
-    $env:JAVA_HOME64 = GetJavaHome 'Software\JavaSoft\Java Development Kit' Registry64
-    $env:JAVA_HOME32 = GetJavaHome 'Software\Wow6432Node\JavaSoft\Java Development Kit' Registry32
-} else {
-    $env:JAVA_HOME32 = GetJavaHome 'Software\JavaSoft\Java Development Kit' Registry32
+    $env:JAVA_HOME64 = GetJavaHome $jdkRegKey Registry64
 }
 
 echo "JAVA_HOME64: $env:JAVA_HOME64"
