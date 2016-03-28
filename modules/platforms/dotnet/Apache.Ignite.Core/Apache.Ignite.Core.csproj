@@ -446,7 +446,7 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
-    <None Include="detect-java.ps1" />
+    <None Include="build-common.ps1" />
     <None Include="NuGet\Uninstall.ps1" />
     <None Include="NuGet\PostBuild.ps1" />
     <None Include="NuGet\Install.ps1" />
@@ -473,6 +473,9 @@ IF EXIST '%25JAVA_HOME%25' "$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cp
 
 set JAVA_HOME = %25OLD_JAVA_HOME%25
 	</PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>PowerShell.exe -executionpolicy remotesigned -File $(ProjectDir)build-common.ps1 -Dir $(ProjectDir)</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
