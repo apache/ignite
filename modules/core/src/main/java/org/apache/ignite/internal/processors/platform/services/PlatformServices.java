@@ -382,7 +382,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 // Deserialize arguments for Java service when not in binary mode
                 if (!srvKeepBinary) {
-                    PlatformUtils.unwrapBinariesInArrayIfNeeded(args);
+                    args = PlatformUtils.unwrapBinariesInArrayIfNeeded(args);
                     /*for (int i = 0; i < args.length; i++)
                         if (args[i] instanceof BinaryObject)
                             args[i] = ((BinaryObject)args[i]).deserialize();*/
