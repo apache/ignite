@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.igfs;
 /**
  * Tests for PRIMARY mode and relaxed consistency model.
  */
-public class IgfsPrimaryRelaxedSelfTest extends IgfsPrimarySelfTest {
+public class IgfsPrimaryRelaxedConsistencySelfTest extends IgfsPrimarySelfTest {
     /** {@inheritDoc} */
     @Override protected boolean relaxedConsistency() {
         return true;
