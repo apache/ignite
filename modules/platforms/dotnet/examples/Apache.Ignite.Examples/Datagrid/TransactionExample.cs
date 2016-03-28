@@ -41,6 +41,9 @@ namespace Apache.Ignite.Examples.Datagrid
     /// </summary>
     class TransactionExample
     {
+        /// <summary>Cache name.</summary>
+        private const string CacheName = "dotnet_cache_tx";
+
         /// <summary>
         /// Runs the example.
         /// </summary>
@@ -60,7 +63,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 var cache = ignite.GetOrCreateCache<int, Account>(new CacheConfiguration
                 {
-                    Name = "tx",
+                    Name = CacheName,
                     AtomicityMode = CacheAtomicityMode.Transactional
                 });
 

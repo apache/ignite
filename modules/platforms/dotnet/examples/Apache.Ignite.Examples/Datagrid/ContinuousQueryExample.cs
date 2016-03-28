@@ -41,6 +41,9 @@ namespace Apache.Ignite.Examples.Datagrid
     /// </summary>
     public class ContinuousQueryExample
     {
+        /// <summary>Cache name.</summary>
+        private const string CacheName = "dotnet_cache_continuous_query";
+
         /// <summary>
         /// Runs the example.
         /// </summary>
@@ -58,7 +61,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache continuous query example started.");
 
-                var cache = ignite.GetOrCreateCache<int, string>("cache_continuous_query");
+                var cache = ignite.GetOrCreateCache<int, string>(CacheName);
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();

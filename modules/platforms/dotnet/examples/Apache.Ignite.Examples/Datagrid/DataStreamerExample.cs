@@ -47,7 +47,7 @@ namespace Apache.Ignite.Examples.Datagrid
         private const int EntryCount = 500000;
 
         /// <summary>Cache name.</summary>
-        private const string CacheName = "cache_data_streamer";
+        private const string CacheName = "dotnet_cache_data_streamer";
 
         /// <summary>
         /// Runs the example.

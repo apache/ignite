@@ -44,6 +44,9 @@ namespace Apache.Ignite.Examples.Datagrid
     /// </summary>
     public class QueryExample
     {
+        /// <summary>Cache name.</summary>
+        private const string CacheName = "dotnet_cache_query";
+
         [STAThread]
         public static void Main()
         {
@@ -60,6 +63,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 var cache = ignite.GetOrCreateCache<object, object>(new CacheConfiguration
                 {
+                    Name = CacheName,
                     QueryEntities = new[]
                     {
                         new QueryEntity(typeof(int), typeof(Organization)),

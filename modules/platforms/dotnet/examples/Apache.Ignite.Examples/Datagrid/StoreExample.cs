@@ -41,6 +41,9 @@ namespace Apache.Ignite.Examples.Datagrid
     /// </summary>
     class StoreExample
     {
+        /// <summary>Cache name.</summary>
+        private const string CacheName = "dotnet_cache_with_store";
+
         /// <summary>
         /// Runs the example.
         /// </summary>
@@ -60,7 +63,7 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 var cache = ignite.GetOrCreateCache<int, Employee>(new CacheConfiguration
                 {
-                    Name = "cache_with_store",
+                    Name = CacheName,
                     ReadThrough = true,
                     WriteThrough = true,
                     CacheStoreFactory = new EmployeeStoreFactory()

@@ -44,7 +44,7 @@ namespace Apache.Ignite.Examples.Datagrid
     public class PutGetExample
     {
         /// <summary>Cache name.</summary>
-        private const string CacheName = "cache_put_get";
+        private const string CacheName = "dotnet_cache_put_get";
 
         /// <summary>
         /// Runs the example.
