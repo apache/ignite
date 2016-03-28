@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.dr.GridOsCacheDrManager;
 import org.apache.ignite.internal.processors.cache.store.CacheOsStoreManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
@@ -143,8 +144,11 @@ public class CachePluginManager extends GridCacheManagerAdapter {
      */
     @SuppressWarnings("unchecked")
     @Nullable public <T> T unwrapMutableEntry(MutableEntry<?, ?> mutableEntry, Class<T> cls) {
-        for (final CachePluginProvider provider : providersList) {
-            final T res = (T) provider.unwrapMutableEntry(mutableEntry, cls);
+        if (F.isEmpty(providersList))
+            return null;
+
+        for (int i = 0; i < providersList.size(); i++) {
+            final T res = (T) providersList.get(i).unwrapMutableEntry(mutableEntry, cls);
 
             if (res != null)
                 return res;
