@@ -17,6 +17,7 @@
 
 package org.apache.ignite.sink.flink;
 
+import java.util.Map;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
@@ -24,8 +25,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.typedef.internal.A;
-
-import java.util.Map;
 
 /**
  * Apache Flink Ignite sink implemented as a RichSinkFunction.
@@ -46,20 +45,11 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
     /** Flag for stopped state. */
     private static volatile boolean stopped = true;
 
-    /**Ignite grid configuration file. */
+    /** Ignite grid configuration file. */
     private static String igniteCfgFile;
 
     /** Cache name. */
     private static String cacheName;
-
-    /**
-     * Gets the {@link IgniteDataStreamer} streamer.
-     *
-     * @return {@link IgniteDataStreamer} streamer.
-     */
-    private static IgniteDataStreamer getStreamer() {
-        return SinkContext.getStreamer();
-    }
 
     /**
      * Gets the cache name.
@@ -69,14 +59,6 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
     public String getCacheName() {
         return cacheName;
     }
-    /**
-     * Sets the cache name.
-     *
-     * @param cacheName Cache name.
-     */
-    public void setCacheName(String cacheName) {
-        this.cacheName = cacheName;
-    }
 
     /**
      * Gets Ignite configuration file.
@@ -85,15 +67,6 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
      */
     public String getIgniteConfigFile() {
         return igniteCfgFile;
-    }
-
-    /**
-     * Specifies Ignite configuration file.
-     *
-     * @param igniteConfigFile Ignite config file.
-     */
-    public void setIgniteConfigFile(String igniteConfigFile) {
-        this.igniteCfgFile = igniteConfigFile;
     }
 
     /**
@@ -135,11 +108,10 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
     /**
      * Default IgniteSink constructor.
      *
-     * @param cacheName
-     * @param igniteCfgFile
+     * @param cacheName Cache name.
+     * @param igniteCfgFile Ignite configuration file.
      */
-    public IgniteSink(String cacheName,
-                      String igniteCfgFile) {
+    public IgniteSink(String cacheName, String igniteCfgFile) {
         this.cacheName = cacheName;
         this.igniteCfgFile = igniteCfgFile;
         this.log = SinkContext.getIgnite().log();
@@ -187,11 +159,12 @@ public class IgniteSink<IN> extends RichSinkFunction<IN> {
     @Override
     public void invoke(IN in) {
         try {
-            if(!(in instanceof Map))
+            if (!(in instanceof Map))
                 throw new IgniteException("Map as a streamer input is expected!");
 
             SinkContext.getStreamer().addData((Map)in);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.error("Error while processing IN of " + cacheName, e);
         }
     }

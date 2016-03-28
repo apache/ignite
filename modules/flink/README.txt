@@ -1,9 +1,9 @@
 Apache Ignite Flink Sink Module
 -----------------------------------
 
-Apache Ignite Flink Sink module provides sink via Ignite queue.
+Apache Ignite Flink Sink module is a streaming connector to inject Flink data into Ignite cache.
 
-Starting data transfer to Ignite queue can be done with the following steps.
+Starting data transfer to Ignite can be done with the following steps.
 
 1. Import Ignite Flink Sink Module in Maven Project
 

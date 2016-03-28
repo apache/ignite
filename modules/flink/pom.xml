@@ -153,6 +153,7 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-log4j</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
