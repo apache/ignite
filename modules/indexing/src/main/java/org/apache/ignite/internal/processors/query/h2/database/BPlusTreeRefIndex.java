@@ -46,6 +46,7 @@ import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.table.Table;
 import org.h2.table.TableFilter;
+import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
@@ -57,6 +58,15 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
  * B+Tree index over references to data stored in data pages ({@link DataPageIO}).
  */
 public class BPlusTreeRefIndex extends PageMemoryIndex {
+    /** */
+    private static final byte TRUE = 1;
+
+    /** */
+    private static final byte FALSE = -1;
+
+    /** */
+    private static final byte NONE = 0;
+
     /** */
     private PageMemory pageMem;
 
@@ -81,7 +91,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         private boolean keys;
 
         @Override protected List<Long> getChildren(Long pageId) {
-            if (pageId == null || pageId.equals(0L))
+            if (pageId == null || pageId == 0L)
                 return null;
 
             try (Page page = page(pageId)) {
@@ -144,8 +154,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     /** */
     private final PageHandler<Get> search = new PageHandler<Get>() {
         @Override public int run(Page page, ByteBuffer buf, Get g, int lvl) throws IgniteCheckedException {
-            g.backId = 0; // Usually we don't need it, so just reset.
-
             IndexPageIO io = IndexPageIO.forPage(buf);
 
             int cnt = io.getCount(buf);
@@ -188,12 +196,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 // This is ok from the locking standpoint because we take all locks in the forward direction.
                 long fwdId = io.getForward(buf);
 
-                if (fwdId == 0) {
-                    g.fwdId = 0L;
-                    g.backId = inner(io).getLeft(buf, cnt - 1); // If it is the rightmost page, then we need backward.
-                }
-                else
-                    g.fwdId = getLeftmostChild(fwdId);
+                g.fwdId = fwdId == 0 ? 0 : getLeftmostChild(fwdId);
             }
 
             return Get.GO_DOWN;
@@ -248,7 +251,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         @Override protected boolean releaseAfterWrite(Page page, Put p, int lvl) {
-            return p.tail != page;
+            return p.canRelease(page, lvl);
         }
 
         @Override public String toString() {
@@ -311,6 +314,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
             IndexPageIO io = IndexPageIO.forPage(buf);
 
+            assert io.isLeaf();
+
             int cnt = io.getCount(buf);
             int idx = findInsertionPoint(io, buf, cnt, r.row);
 
@@ -324,7 +329,18 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
             io.setCount(buf, cnt);
 
-            return Remove.FOUND;
+            // Randomization is for smoothing worst case scenarios. Probability of merge attempt
+            // is proportional to free space in our page.
+            if (cnt > 0 && ThreadLocalRandom8.current().nextInt(io.getMaxCount(buf)) <= cnt)
+                return Remove.FOUND;
+
+            // Init tail.
+            assert r.tail == null;
+            r.tail = new Object[4];
+
+            r.addTail(page, buf, 0);
+
+            return Remove.MERGE;
         }
 
         @Override protected boolean releaseAfterWrite(Page page, Remove r, int lvl) {
@@ -333,6 +349,54 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         @Override public String toString() {
             return "removeSimple";
+        }
+    };
+
+    /** */
+    private final PageHandler<Remove> lockParent = new PageHandler<Remove>() {
+        @Override int run(Page page, ByteBuffer buf, Remove r, int lvl) throws IgniteCheckedException {
+            assert lvl > 0: lvl;
+            assert r.needParentForMerge == TRUE || r.needReplaceInner == TRUE;
+            assert r.tailPage(lvl - 1) != null;
+
+            IndexPageIO io = IndexPageIO.forPage(buf);
+
+            int cnt = io.getCount(buf);
+            int idx = findInsertionPoint(io, buf, cnt, r.row);
+
+            assert cnt > 0: cnt; // Our tail is not empty -> the page can't become empty.
+
+            boolean found = idx >= 0;
+
+            if (found) {
+                assert r.needReplaceInner == TRUE : r.needReplaceInner;
+
+                r.needReplaceInner = FALSE;
+            }
+            else
+                idx = -idx - 1;
+
+            // Check that we have a correct view of the world.
+            if (inner(io).getLeft(buf, idx) != r.tailPage(lvl - 1).id()) {
+                assert !found;
+
+                return Remove.RETRY;
+            }
+
+            r.addTail(page, buf, lvl);
+
+            if (r.needParentForMerge == TRUE)
+                r.needParentForMerge = FALSE;
+
+            return Remove.FOUND;
+        }
+
+        @Override protected boolean releaseAfterWrite(Page page, Remove r, int lvl) {
+            return r.canRelease(page, lvl);
+        }
+
+        @Override public String toString() {
+            return "lockParent";
         }
     };
 
@@ -858,6 +922,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         throws IgniteCheckedException {
         assert lvl >= 0 : lvl;
 
+        if (r.isTail(pageId, lvl))
+            return false; // We've already handled this page.
+
         final Page page = page(pageId);
 
         if (page == null)
@@ -876,25 +943,37 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         return true; // Our page was splitted or merged, retry.
 
                     case Remove.GO_DOWN:
-                        final long childBackId = r.backId;
-                        final long childPageId = r.pageId;
-                        final long childFwdId = r.fwdId;
-
-                        if (removeDown(r, childPageId, childFwdId, lvl - 1)) {
+                        if (removeDown(r, r.pageId, r.fwdId, lvl - 1)) {
                             checkInterrupted();
 
                             continue;
                         }
 
-                        if (r.mergeBack) {
-                            assert childBackId != 0;
-                            // TODO
-                        }
-
-                        if (r.tail == null)
+                        if (r.isFinished())
                             return false; // Finish.
 
-                        // Intentional fallthrough.
+                        if (r.needReplaceInner == TRUE || r.needParentForMerge == TRUE) {
+                            res = writePage(page, lockParent, r, lvl, Remove.RETRY);
+
+                            switch (res) {
+                                case Remove.RETRY:
+                                    return true;
+
+                                case Remove.FOUND:
+                                    return false;
+
+                                default:
+                                    assert false: res;
+                            }
+                        }
+                        else {
+                            r.finishTail();
+
+                            return false;
+                        }
+
+                        assert false;
+
                     case Remove.FOUND:
                         if (r.tail == null) {
                             // We must be at the bottom here, just need to remove row from the current page.
@@ -907,7 +986,15 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                                     return true;
 
                                 case Remove.FOUND:
+                                    r.finish();
+
                                     return false; // Finished.
+
+                                case Remove.MERGE:
+
+
+                                    // TODO
+                                    break;
 
                                 default:
                                     assert false : res;
@@ -922,9 +1009,11 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         }
 
                     case Remove.NOT_FOUND:
-                        assert lvl == 0: "must be at the bottom";
+                        assert lvl == 0: lvl;
 
+                        r.finish();
 
+                        return false; // Finish with not found.
 
                     default:
                         assert false: res;
@@ -1149,6 +1238,25 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     }
 
     /**
+     * @param page Page.
+     * @return Number of row links in the given index page.
+     */
+    private long getLinksCount(Page page) throws IgniteCheckedException {
+        assert page != null;
+
+        ByteBuffer buf = page.getForRead();
+
+        try {
+            IndexPageIO io = IndexPageIO.forPage(buf);
+
+            return io.getCount(buf);
+        }
+        finally {
+            page.releaseRead();
+        }
+    }
+
+    /**
      * @param p Put.
      * @param pageId Page ID.
      * @param fwdId Expected forward page ID.
@@ -1287,13 +1395,16 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         static final int GO_DOWN = 1;
 
         /** */
-        static final int RETRY = 5;
+        static final int RETRY = 2;
 
         /** */
-        static final int NOT_FOUND = 7;
+        static final int NOT_FOUND = 3;
 
         /** */
-        static final int FOUND = 8;
+        static final int FOUND = 4;
+
+        /** */
+        static final int MERGE = 5;
 
         /** Starting point root level. May be outdated. Must be modified only in {@link #initOperation(Get)}. */
         int rootLvl;
@@ -1312,9 +1423,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         /** In/Out parameter: expected forward page ID. */
         long fwdId;
-
-        /** Out parameter: expected backward page ID for the rightmost pages merge if fwdId is 0. */
-        long backId;
 
         /**
          * @param row Row.
@@ -1374,6 +1482,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * @return {@code true} If we can release the given page.
          */
         boolean canRelease(Page page, int lvl) {
+            assert page != null;
+
             return true;
         }
     }
@@ -1458,7 +1568,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         /**
          * Bottom level for insertion (insert can't go deeper). Will be incremented on split on each level.
          */
-        int btmLvl;
+        short btmLvl;
 
         /** */
         boolean foundInner;
@@ -1508,6 +1618,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         /** {@inheritDoc} */
         @Override boolean canRelease(Page page, int lvl) {
+            assert page != null;
+
             return tail != page;
         }
 
@@ -1536,7 +1648,10 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         Object[] tail;
 
         /** */
-        boolean mergeBack;
+        byte needReplaceInner = NONE;
+
+        /** */
+        byte needParentForMerge = NONE;
 
         /** Removed row. */
         GridH2Row removed;
@@ -1550,8 +1665,11 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         /** {@inheritDoc} */
         @Override boolean found(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
-            if (!io.isLeaf() && tail == null)
+            if (!io.isLeaf() && tail == null) {
+                needReplaceInner = TRUE;
+
                 tail = new Object[(lvl + 1) * 2]; // We'll need to lock all the pages up to our parent.
+            }
 
             return io.isLeaf();
         }
@@ -1559,8 +1677,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         /** {@inheritDoc} */
         @Override boolean notFound(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
             if (io.isLeaf()) {
-                tail = null;
-                row = null; // Finish.
+                assert tail == null;
 
                 return true;
             }
@@ -1569,16 +1686,38 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         /**
+         * Finish the operation.
+         */
+        void finish() {
+            assert tail == null;
+
+            row = null;
+        }
+
+        /**
+         * Process tail and finish.
+         */
+        void finishTail() {
+            assert needParentForMerge != NONE || needReplaceInner != NONE;
+            assert tail != null;
+
+            // TODO
+
+            tail = null;
+            finish();
+        }
+
+        /**
          * @return {@code true} If finished.
          */
-        public boolean isFinished() {
-            return row == null; // TODO
+        boolean isFinished() {
+            return row == null;
         }
 
         /**
          * Release pages for all locked levels at the tail.
          */
-        public void releaseTail() {
+        void releaseTail() {
             if (tail == null)
                 return;
 
@@ -1594,7 +1733,50 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         /** {@inheritDoc} */
         @Override boolean canRelease(Page page, int lvl) {
-            return tail == null || tail[lvl* 2] != page;
+            assert page != null;
+
+            return !isTail(page.id(), lvl);
+        }
+
+        /**
+         * @param page Page locked for write.
+         * @param buf Buffer.
+         * @param lvl Level.
+         */
+        void addTail(Page page, ByteBuffer buf, int lvl) {
+            assert tail != null;
+
+            int idx = lvl * 2;
+
+            if (idx >= tail.length)
+                tail = Arrays.copyOf(tail, idx * 2);
+
+            assert tail[idx] == null;
+
+            tail[idx] = page;
+            tail[idx + 1] = buf;
+        }
+
+        /**
+         * @param pageId Page ID.
+         * @param lvl Level.
+         * @return {@code true} If is a tail page.
+         */
+        boolean isTail(long pageId, int lvl) {
+            if (tail == null)
+                return false;
+
+            Page page = tailPage(lvl);
+
+            return page != null &&  page.id() == pageId;
+        }
+
+        /**
+         * @param lvl Level.
+         * @return Page.
+         */
+        Page tailPage(int lvl) {
+            return (Page)tail[lvl * 2];
         }
     }
 
