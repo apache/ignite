@@ -204,7 +204,6 @@ namespace ignite
                     LOG_MSG("[%d] SchemaName:     %s\n", i, rsp.GetMeta()[i].GetSchemaName().c_str());
                     LOG_MSG("[%d] TypeName:       %s\n", i, rsp.GetMeta()[i].GetTableName().c_str());
                     LOG_MSG("[%d] ColumnName:     %s\n", i, rsp.GetMeta()[i].GetColumnName().c_str());
-                    LOG_MSG("[%d] ColumnTypeName: %s\n", i, rsp.GetMeta()[i].GetColumnTypeName().c_str());
                     LOG_MSG("[%d] ColumnType:     %d\n", i, rsp.GetMeta()[i].GetDataType());
                     LOG_MSG("\n");
                 }
