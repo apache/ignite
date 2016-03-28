@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -831,6 +832,8 @@ public class PlatformUtils {
             return unwrapBinariesIfNeeded((Map<Object, Object>)o);
         else if (o instanceof Object[])
             return unwrapBinariesInArrayIfNeeded((Object[])o);
+        else if (o instanceof BinaryObject)
+            return ((BinaryObject)o).deserialize();
 
         return o;
     }
