@@ -53,8 +53,11 @@ import org.jetbrains.annotations.Nullable;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
+import java.math.BigDecimal;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -813,6 +816,9 @@ public class PlatformUtils {
      * @return Unwrapped object.
      */
     private static Object unwrapBinary(Object o) {
+        if (knownArray(o))
+            return o;
+
         if (o instanceof Map.Entry) {
             Map.Entry entry = (Map.Entry)o;
 
@@ -836,6 +842,23 @@ public class PlatformUtils {
             return ((BinaryObject)o).deserialize();
 
         return o;
+    }
+
+    /**
+     * @param obj Obj.
+     * @return True is obj is a known simple type array.
+     */
+    private static boolean knownArray(Object obj) {
+        return obj instanceof String[] ||
+            obj instanceof boolean[] ||
+            obj instanceof byte[] ||
+            obj instanceof int[] ||
+            obj instanceof long[] ||
+            obj instanceof short[] ||
+            obj instanceof Date[] ||
+            obj instanceof double[] ||
+            obj instanceof float[] ||
+            obj instanceof BigDecimal[];
     }
 
     /**
