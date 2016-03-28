@@ -1892,7 +1892,7 @@ consoleModule.directive('onEnter', function ($timeout) {
             }
         });
 
-        // Removes bound events in the element itself when the scope is destroyed
+        // Removes bound events in the element itself when the scope is destroyed.
         scope.$on('$destroy', function () {
             elem.off('keydown keypress');
         });

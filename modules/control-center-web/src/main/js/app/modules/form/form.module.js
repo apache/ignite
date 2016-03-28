@@ -40,7 +40,6 @@ import igniteFormGroupAdd from './group/add.directive';
 import igniteFormGroupTooltip from './group/tooltip.directive';
 
 // Validators.
-import igfsPathUnique from './validator/igfs-path-unique.directive';
 import ipaddress from './validator/ipaddress.directive';
 import javaKeywords from './validator/java-keywords.directive';
 import javaPackageSpecified from './validator/java-package-specified.directive';
@@ -80,7 +79,6 @@ angular
 .directive(...igniteFormGroupAdd)
 .directive(...igniteFormGroupTooltip)
 // Validators.
-.directive(...igfsPathUnique)
 .directive(...ipaddress)
 .directive(...javaKeywords)
 .directive(...javaPackageSpecified)

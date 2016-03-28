@@ -166,10 +166,6 @@ consoleModule.controller('igfsController', [
             };
         }
 
-        $scope.zzz = function () {
-            console.log("TEST on enter!")
-        };
-
         // Add new IGFS.
         $scope.createItem = function (id) {
             $timeout(function () {

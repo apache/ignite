@@ -20,6 +20,9 @@ export default ['igniteUnique', ['$parse', ($parse) => {
         if (typeof attrs.igniteUnique === 'undefined' || !attrs.igniteUnique)
             return;
 
+        const isNew = _.startsWith(attrs.name, 'new');
+        const property = attrs.igniteUniqueProperty;
+
         ngModel.$validators.igniteUnique = (value) => {
             const arr = $parse(attrs.igniteUnique)(scope);
 
@@ -27,10 +30,10 @@ export default ['igniteUnique', ['$parse', ($parse) => {
             if (!arr || !arr.length)
                 return true;
 
-            const idx = arr.indexOf(value);
+            const idx = _.findIndex(arr, (item) => (property ? item[property] : item) === value);
 
             // In case of new element check all items.
-            if (attrs.name === 'new')
+            if (isNew)
                 return idx < 0;
 
             // Check for $index in case of editing in-place.
