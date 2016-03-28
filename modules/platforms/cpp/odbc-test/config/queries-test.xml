@@ -29,6 +29,11 @@
         <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
+        <!-- Enabling ODBC. -->
+        <property name="odbcConfiguration">
+            <bean class="org.apache.ignite.configuration.OdbcConfiguration"></bean>
+        </property>
+
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
