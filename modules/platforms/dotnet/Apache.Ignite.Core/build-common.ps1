@@ -44,6 +44,7 @@ if ($x64) {
 echo "JAVA_HOME64: $env:JAVA_HOME64"
 echo "JAVA_HOME32: $env:JAVA_HOME32"
 echo "msbuildexe: $msbuildexe"
+echo "x64: $x64"
 
 # build common project
 if ($env:JAVA_HOME64) {
