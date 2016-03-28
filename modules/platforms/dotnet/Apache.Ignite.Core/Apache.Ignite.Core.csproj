@@ -475,7 +475,7 @@ set JAVA_HOME = %25OLD_JAVA_HOME%25
 	</PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>PowerShell.exe -executionpolicy remotesigned -File $(ProjectDir)build-common.ps1 -Dir $(ProjectDir)</PreBuildEvent>
+    <PreBuildEvent>PowerShell.exe -executionpolicy remotesigned -File $(ProjectDir)build-common.ps1 -Dir $(ProjectDir) -Msbuild $(MSBuildBinPath)\msbuild.exe -Configuration $(ConfigurationName)</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

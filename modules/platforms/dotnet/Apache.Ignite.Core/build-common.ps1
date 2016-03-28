@@ -1,3 +1,5 @@
+param([string]$dir = ".\", [string]$msbuild = "C:\Program Files (x86)\MSBuild\14.0\Bin\amd64\MSBuild.exe", [string]$configuration="Debug")
+
 $x64 = [System.Environment]::Is64BitOperatingSystem
 
 # Fisrt, check if JAVA_HOME is set
@@ -30,11 +32,26 @@ Function GetJavaHome([string]$path) {
 }
 
 if ($x64) {
-    $env:JAVA_HOME64 = GetJavaHome 'HKLM:\Software\JavaSoft\Java Runtime Environment'
-    $env:JAVA_HOME32 = GetJavaHome 'HKLM:\Software\Wow6432Node\JavaSoft\Java Runtime Environment'
+    $env:JAVA_HOME64 = GetJavaHome 'HKLM:\Software\JavaSoft\Java Development Kit'
+    $env:JAVA_HOME32 = GetJavaHome 'HKLM:\Software\Wow6432Node\JavaSoft\Java Development Kit'
 } else {
-    $env:JAVA_HOME32 = GetJavaHome 'HKLM:\Software\JavaSoft\Java Runtime Environment'
+    $env:JAVA_HOME32 = GetJavaHome 'HKLM:\Software\JavaSoft\Java Development Kit'
 }
 
 echo "JAVA_HOME64: $env:JAVA_HOME64"
 echo "JAVA_HOME32: $env:JAVA_HOME32"
+
+$env:JAVA_HOME = $null
+
+# build common project
+if ($env:JAVA_HOME64) {
+    $env:JAVA_HOME = $env:JAVA_HOME64
+
+    & $msbuild "$dir..\..\cpp\common\project\vs\common.vcxproj" /p:Platform=x64 /p:Configuration=$Configuration /t:Rebuild
+}
+
+if ($env:JAVA_HOME32) {
+    $env:JAVA_HOME = $env:JAVA_HOME32
+
+    & $msbuild "$dir..\..\cpp\common\project\vs\common.vcxproj" /p:Platform=Win32 /p:Configuration=$Configuration /t:Rebuild
+}
