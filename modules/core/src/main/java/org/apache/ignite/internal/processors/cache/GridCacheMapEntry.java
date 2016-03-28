@@ -940,6 +940,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     final GridCacheVersion updVer = nextVer != null ? nextVer : nextVersion();
 
+                    assert updVer != null && ATOMIC_VER_COMPARATOR.compare(this.ver, updVer,
+                        cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY) <= 0:
+                        "Bad version [curVer=" + this.ver + ", newVer=" + ver + "]";
+
                     CacheObject prevVal = rawGetOrUnmarshalUnlocked(false);
 
                     long expTime = CU.toExpireTime(ttl);
@@ -2939,7 +2943,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     protected final void update(@Nullable CacheObject val, long expireTime, long ttl, GridCacheVersion ver, boolean addTracked) {
         assert ver != null && ATOMIC_VER_COMPARATOR.compare(this.ver, ver, cctx.config().getAtomicWriteOrderMode()
-            == CacheAtomicWriteOrderMode.PRIMARY) < 0: "Bad version [curVer=" + this.ver + ", newVer=" + ver + "]";
+            == CacheAtomicWriteOrderMode.PRIMARY) <= 0: "Bad version [curVer=" + this.ver + ", newVer=" + ver + "]";
         assert Thread.holdsLock(this);
         assert ttl != CU.TTL_ZERO && ttl != CU.TTL_NOT_CHANGED && ttl >= 0 : ttl;
 
