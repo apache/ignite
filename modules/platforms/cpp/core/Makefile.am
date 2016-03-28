@@ -19,6 +19,9 @@ ACLOCAL_AMFLAGS =-I m4
 
 lib_LTLIBRARIES = libignite.la
 
+DIST_SUBDIRS = \
+    include
+
 AM_CPPFLAGS = \
     -I$(srcdir)/include \
     -I@top_srcdir@/common/include \

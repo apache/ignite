@@ -15,32 +15,33 @@
 ## limitations under the License.
 ##
 
-ACLOCAL_AMFLAGS = "-Im4"
+ACLOCAL_AMFLAGS =-I m4
 
-nobase_include_HEADERS = ignite/ignite_configuration.h \
-                         ignite/ignite.h \
-                         ignite/impl/binary/binary_type_updater_impl.h \
-                         ignite/impl/operations.h \
-                         ignite/impl/ignite_environment.h \
-                         ignite/impl/ignite_impl.h \
-                         ignite/impl/cache/query/query_fields_row_impl.h \
-                         ignite/impl/cache/query/query_impl.h \
-                         ignite/impl/cache/cache_impl.h \
-                         ignite/impl/interop/interop_external_memory.h \
-                         ignite/impl/handle_registry.h \
-                         ignite/cache/query/query_fields_row.h \
-                         ignite/cache/query/query_fields_cursor.h \
-                         ignite/cache/query/query_scan.h \
-                         ignite/cache/query/query_cursor.h \
-                         ignite/cache/query/query_sql.h \
-                         ignite/cache/query/query.h \
-                         ignite/cache/query/query_argument.h \
-                         ignite/cache/query/query_sql_fields.h \
-                         ignite/cache/query/query_text.h \
-                         ignite/cache/cache.h \
-                         ignite/cache/cache_entry.h \
-                         ignite/cache/cache_peek_mode.h \
-                         ignite/ignition.h
+nobase_include_HEADERS = \
+    ignite/ignite_configuration.h \
+    ignite/ignite.h \
+    ignite/impl/binary/binary_type_updater_impl.h \
+    ignite/impl/operations.h \
+    ignite/impl/ignite_environment.h \
+    ignite/impl/ignite_impl.h \
+    ignite/impl/cache/query/query_fields_row_impl.h \
+    ignite/impl/cache/query/query_impl.h \
+    ignite/impl/cache/cache_impl.h \
+    ignite/impl/interop/interop_external_memory.h \
+    ignite/impl/handle_registry.h \
+    ignite/cache/query/query_fields_row.h \
+    ignite/cache/query/query_fields_cursor.h \
+    ignite/cache/query/query_scan.h \
+    ignite/cache/query/query_cursor.h \
+    ignite/cache/query/query_sql.h \
+    ignite/cache/query/query.h \
+    ignite/cache/query/query_argument.h \
+    ignite/cache/query/query_sql_fields.h \
+    ignite/cache/query/query_text.h \
+    ignite/cache/cache.h \
+    ignite/cache/cache_entry.h \
+    ignite/cache/cache_peek_mode.h \
+    ignite/ignition.h
 
 uninstall-hook:
 	find ${includedir}/ignite -type d -empty -delete

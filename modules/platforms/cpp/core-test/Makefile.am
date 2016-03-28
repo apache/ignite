@@ -19,6 +19,9 @@ ACLOCAL_AMFLAGS =-I m4
 
 noinst_PROGRAMS = ignite-tests
 
+DIST_SUBDIRS = \
+    include
+
 AM_CPPFLAGS = \
     -I$(srcdir)/include \
     -I@top_srcdir@/core/include \

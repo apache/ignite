@@ -15,8 +15,12 @@
 ## limitations under the License.
 ##
 
-ACLOCAL_AMFLAGS = "-Im4"
+ACLOCAL_AMFLAGS =-I m4
 
-nobase_include_HEADERS = teamcity_messages.h \
-                         ignite/binary_test_defs.h \
-                         ignite/binary_test_utils.h
+nobase_include_HEADERS = \
+    ignite/binary_test_defs.h \
+    ignite/binary_test_utils.h \
+    teamcity_messages.h
+
+uninstall-hook:
+	find ${includedir}/ignite -type d -empty -delete

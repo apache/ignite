@@ -18,8 +18,9 @@
 ACLOCAL_AMFLAGS =-I m4
 
 nobase_include_HEADERS = \
-    ignite/common/common.h \
-    ignite/common/concurrent_os.h
+    teamcity/teamcity_messages.h \
+    test_type.h \
+    test_utils.h
 
 uninstall-hook:
 	find ${includedir}/ignite -type d -empty -delete

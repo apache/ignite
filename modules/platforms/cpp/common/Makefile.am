@@ -19,6 +19,10 @@ ACLOCAL_AMFLAGS =-I m4
 
 noinst_LTLIBRARIES = libignite-common.la
 
+DIST_SUBDIRS = \
+    include \
+    os/linux/include
+
 AM_CPPFLAGS = \
     -I$(srcdir)/include \
     -I$(srcdir)/os/linux/include \

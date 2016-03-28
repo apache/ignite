@@ -15,7 +15,7 @@
 ## limitations under the License.
 ##
 
-ACLOCAL_AMFLAGS = "-Im4"
+ACLOCAL_AMFLAGS =-I m4
 
 nobase_include_HEADERS = ignite/jni/attach_helper.h
 

@@ -85,15 +85,25 @@ LT_INIT
 
 AC_CONFIG_FILES([ \
     Makefile \
-    common/Makefile \
-    binary/Makefile \
-    jni/Makefile \
-    odbc/Makefile \
-    core/Makefile \
-    core/ignite.pc \
-    ignite/Makefile \
+    core-test/include/Makefile \
     core-test/Makefile \
-    odbc-test/Makefile
+    common/os/linux/include/Makefile \
+    common/include/Makefile \
+    common/Makefile \
+    binary/include/Makefile \
+    binary/Makefile \
+    odbc/include/Makefile \
+    odbc/Makefile \
+    odbc-test/include/Makefile \
+    odbc-test/Makefile \
+    core/include/Makefile \
+    core/Makefile \
+    jni/os/linux/include/Makefile \
+    jni/include/Makefile \
+    jni/Makefile \
+    examples/putget-example/Makefile \
+    examples/odbc-example/Makefile \
+    ignite/Makefile \
 ])
 
 AC_OUTPUT

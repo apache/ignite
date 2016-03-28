@@ -17,6 +17,10 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
+DIST_SUBDIRS = \
+    include \
+    os/linux/include
+
 lib_LTLIBRARIES = libignite-jni.la
 
 AM_CPPFLAGS = \
@@ -56,6 +60,4 @@ clean-local:
 clean-docs:
 	$(RM) $(DX_CLEANFILES)
 
-#SUBDIRS = . include os/linux/include
-#DIST_SUBDIRS = . include os/linux/include
 
