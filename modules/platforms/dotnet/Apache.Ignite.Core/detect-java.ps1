@@ -1,6 +1,8 @@
+$x64 = [System.Environment]::Is64BitOperatingSystem
+
 # Fisrt, check if JAVA_HOME is set
 If (Test-Path Env:\JAVA_HOME) {
-    If ([System.Environment]::Is64BitOperatingSystem) {
+    If ($x64) {
         $env:JAVA_HOME64 = $env:JAVA_HOME
     }
     Else {
@@ -9,4 +11,8 @@ If (Test-Path Env:\JAVA_HOME) {
 }
 
 # Next, check registry
-#If (Test-Path 'Software\JavaSoft\Java Runtime Environment')
+if ($x64) {
+    If (Test-Path 'Software\JavaSoft\Java Runtime Environment') {
+        
+    }
+}
