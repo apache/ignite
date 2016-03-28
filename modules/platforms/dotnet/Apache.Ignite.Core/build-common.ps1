@@ -41,8 +41,6 @@ if ($x64) {
 echo "JAVA_HOME64: $env:JAVA_HOME64"
 echo "JAVA_HOME32: $env:JAVA_HOME32"
 
-$env:JAVA_HOME = $null
-
 # build common project
 if ($env:JAVA_HOME64) {
     $env:JAVA_HOME = $env:JAVA_HOME64
