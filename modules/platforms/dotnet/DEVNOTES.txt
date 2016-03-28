@@ -3,15 +3,14 @@ Apache Ignite.NET Build Instructions
 
 Requirements:
 * Windows (XP and up), Windows Server (2008 and up)
-* Oracle JDK 7 and above, both x86 and x66 should be installed
+* Oracle JDK 7 and above
 * .NET Framework 4.0
 * Visual Studio 2010 (later versions require upgrading "common" C++ project, see below)
-* JAVA_HOME32 and JAVA_HOME64 environment variables set to the corresponding JDK. These are needed during the build.
-* JAVA_HOME environment variable set to the corresponding JDK (x64 or x86). This is needed during runtime and should be set depending on execution mode.
 
 Building binaries:
-  msbuild Apache.Ignite.sln /p:Configuration=Release /p:Platform=x64
+  msbuild Apache.Ignite.sln /p:Configuration=Release
 Resulting binaries will be in Apache.Ignite\bin folder
+NOTE: To build truly AnyCPU binaries (suitable for x86 and x64 modes), two Oracle JDKs should be installed, both x64 and x86.
 
 Building in later versions of Visual Studio:
 * Open Apache.Ignite.sln in Visual Studio
