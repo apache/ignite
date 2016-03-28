@@ -13,29 +13,32 @@ if (Test-Path Env:\JAVA_HOME) {
 }
 
 # Next, check registry
-Function GetJavaHome([string]$path) {
-    if (Test-Path $path) {
-        $key = Get-Item $path
-        $subKeys = $key.GetSubKeyNames()
-        $curVer = $key.GetValue("CurrentVersion")
+Function GetJavaHome([string]$path, [Microsoft.Win32.RegistryView] $mode) {
+    $key = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, $mode).OpenSubKey($path)
 
-        if ($subKeys.Length -eq 0) {
-            return $null
-        }
-
-        If ($curVer -eq $null -or !$subKeys.Contains($curVer)) {
-            $curVer = $subKeys[0]
-        }
-            
-        return $key.OpenSubKey($curVer).GetValue("JavaHome")
+    if ($key -eq $null) {
+        return $null
     }
+
+    $subKeys = $key.GetSubKeyNames()
+    $curVer = $key.GetValue("CurrentVersion")
+
+    if ($subKeys.Length -eq 0) {
+        return $null
+    }
+
+    if ($curVer -eq $null -or !$subKeys.Contains($curVer)) {
+        $curVer = $subKeys[0]
+    }
+            
+    return $key.OpenSubKey($curVer).GetValue("JavaHome")
 }
 
 if ($x64) {
-    $env:JAVA_HOME64 = GetJavaHome 'HKLM:\Software\JavaSoft\Java Development Kit'
-    $env:JAVA_HOME32 = GetJavaHome 'HKLM:\Software\Wow6432Node\JavaSoft\Java Development Kit'
+    $env:JAVA_HOME64 = GetJavaHome 'Software\JavaSoft\Java Development Kit' Registry64
+    $env:JAVA_HOME32 = GetJavaHome 'Software\Wow6432Node\JavaSoft\Java Development Kit' Registry32
 } else {
-    $env:JAVA_HOME32 = GetJavaHome 'HKLM:\Software\JavaSoft\Java Development Kit'
+    $env:JAVA_HOME32 = GetJavaHome 'Software\JavaSoft\Java Development Kit' Registry32
 }
 
 echo "JAVA_HOME64: $env:JAVA_HOME64"
