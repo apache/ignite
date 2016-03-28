@@ -72,6 +72,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -87,6 +88,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -200,6 +202,9 @@ public final class IgfsImpl implements IgfsEx {
         data = igfsCtx.data();
         secondaryFs = cfg.getSecondaryFileSystem();
 
+        if (secondaryFs instanceof LifecycleAware)
+            ((LifecycleAware) secondaryFs).start();
+
         /* Default IGFS mode. */
         IgfsMode dfltMode;
 
@@ -215,12 +220,14 @@ public final class IgfsImpl implements IgfsEx {
         Map<String, IgfsMode> cfgModes = new LinkedHashMap<>();
         Map<String, IgfsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
 
-        dfltModes.put("/ignite/primary", PRIMARY);
+        if (cfg.isInitializeDefaultPathModes()) {
+            dfltModes.put("/ignite/primary", PRIMARY);
 
-        if (secondaryFs != null) {
-            dfltModes.put("/ignite/proxy", PROXY);
-            dfltModes.put("/ignite/sync", DUAL_SYNC);
-            dfltModes.put("/ignite/async", DUAL_ASYNC);
+            if (secondaryFs != null) {
+                dfltModes.put("/ignite/proxy", PROXY);
+                dfltModes.put("/ignite/sync", DUAL_SYNC);
+                dfltModes.put("/ignite/async", DUAL_ASYNC);
+            }
         }
 
         cfgModes.putAll(dfltModes);
@@ -254,8 +261,12 @@ public final class IgfsImpl implements IgfsEx {
 
         modeRslvr = new IgfsModeResolver(dfltMode, modes);
 
-        secondaryPaths = new IgfsPaths(secondaryFs == null ? null : secondaryFs.properties(), dfltMode,
-            modeRslvr.modesOrdered());
+        Object secondaryFsPayload = null;
+
+        if (secondaryFs instanceof HadoopPayloadAware)
+            secondaryFsPayload = ((HadoopPayloadAware) secondaryFs).getPayload();
+
+        secondaryPaths = new IgfsPaths(secondaryFsPayload, dfltMode, modeRslvr.modesOrdered());
 
         // Check whether IGFS LRU eviction policy is set on data cache.
         String dataCacheName = igfsCtx.configuration().getDataCacheName();
@@ -303,7 +314,8 @@ public final class IgfsImpl implements IgfsEx {
                 batch.cancel();
 
             try {
-                secondaryFs.close();
+                if (secondaryFs instanceof LifecycleAware)
+                    ((LifecycleAware)secondaryFs).stop();
             }
             catch (Exception e) {
                 log.error("Failed to close secondary file system.", e);
@@ -564,12 +576,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                IgfsFileInfo info = resolveFileInfo(path, mode);
-
-                if (info == null)
-                    return null;
-
-                return new IgfsFileImpl(path, info, data.groupBlockSize());
+                return resolveFileInfo(path, mode);
             }
         });
     }
@@ -844,10 +851,9 @@ public final class IgfsImpl implements IgfsEx {
                     Collection<IgfsFile> children = secondaryFs.listFiles(path);
 
                     for (IgfsFile child : children) {
-                        IgfsFileInfo fsInfo = new IgfsFileInfo(
-                            child.blockSize(), child.length(), evictExclude(path, false), child.properties());
+                        IgfsFileImpl impl = new IgfsFileImpl(child, data.groupBlockSize());
 
-                        files.add(new IgfsFileImpl(child.path(), fsInfo, data.groupBlockSize()));
+                        files.add(impl);
                     }
                 }
 
@@ -1545,7 +1551,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return File info or {@code null} in case file is not found.
      * @throws IgniteCheckedException If failed.
      */
-    private IgfsFileInfo resolveFileInfo(IgfsPath path, IgfsMode mode) throws IgniteCheckedException {
+    private IgfsFileImpl resolveFileInfo(IgfsPath path, IgfsMode mode) throws IgniteCheckedException {
         assert path != null;
         assert mode != null;
 
@@ -1565,9 +1571,7 @@ public final class IgfsImpl implements IgfsEx {
                     IgfsFile status = secondaryFs.info(path);
 
                     if (status != null)
-                        info = status.isDirectory() ? new IgfsFileInfo(true, status.properties()) :
-                            new IgfsFileInfo(status.blockSize(), status.length(), null, null, false,
-                            status.properties());
+                        return new IgfsFileImpl(status, data.groupBlockSize());
                 }
 
                 break;
@@ -1576,7 +1580,10 @@ public final class IgfsImpl implements IgfsEx {
                 assert false : "Unknown mode: " + mode;
         }
 
-        return info;
+        if (info == null)
+            return null;
+
+        return new IgfsFileImpl(path, info, data.groupBlockSize());
     }
 
     /** {@inheritDoc} */

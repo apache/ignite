@@ -458,7 +458,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
         pluginCfgs = cc.getPluginConfigurations();
-        qryEntities = cc.getQueryEntities();
+        qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
         readFromBackup = cc.isReadFromBackup();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
         rebalanceBatchesPrefetchCount = cc.getRebalanceBatchesPrefetchCount();

@@ -36,6 +36,9 @@ public class BinaryTypeConfiguration {
     /** ID mapper. */
     private BinaryIdMapper idMapper;
 
+    /** Name mapper. */
+    private BinaryNameMapper nameMapper;
+
     /** Serializer. */
     private BinarySerializer serializer;
 
@@ -104,6 +107,24 @@ public class BinaryTypeConfiguration {
      */
     public void setIdMapper(BinaryIdMapper idMapper) {
         this.idMapper = idMapper;
+    }
+
+    /**
+     * Gets name mapper.
+     *
+     * @return Name mapper.
+     */
+    public BinaryNameMapper getNameMapper() {
+        return nameMapper;
+    }
+
+    /**
+     * Sets name mapper.
+     *
+     * @param nameMapper Name mapper.
+     */
+    public void setNameMapper(BinaryNameMapper nameMapper) {
+        this.nameMapper = nameMapper;
     }
 
     /**

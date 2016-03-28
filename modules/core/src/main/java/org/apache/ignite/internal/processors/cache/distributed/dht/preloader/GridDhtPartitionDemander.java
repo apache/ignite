@@ -549,6 +549,8 @@ public class GridDhtPartitionDemander {
 
                     assert part != null;
 
+                    boolean last = supply.last().contains(p);
+
                     if (part.state() == MOVING) {
                         boolean reserved = part.reserve();
 
@@ -578,8 +580,6 @@ public class GridDhtPartitionDemander {
                                 }
                             }
 
-                            boolean last = supply.last().contains(p);
-
                             // If message was last for this partition,
                             // then we take ownership.
                             if (last) {
@@ -597,7 +597,9 @@ public class GridDhtPartitionDemander {
                         }
                     }
                     else {
-                        fut.partitionDone(id, p);
+                        if (last) {
+                            fut.partitionDone(id, p);
+                        }
 
                         if (log.isDebugEnabled())
                             log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
@@ -696,9 +698,14 @@ public class GridDhtPartitionDemander {
                                 (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
                                 false, null, null, null, true);
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
-                            ", part=" + p + ']');
+                    else {
+                        if (cctx.isSwapOrOffheapEnabled())
+                            cctx.evicts().touch(cached, topVer); // Start tracking.
+
+                        if (log.isDebugEnabled())
+                            log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
+                                ", part=" + p + ']');
+                    }
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + entry);

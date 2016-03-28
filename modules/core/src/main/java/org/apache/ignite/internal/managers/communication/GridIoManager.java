@@ -113,6 +113,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** Direct protocol version. */
     public static final byte DIRECT_PROTO_VER = 2;
 
+    /** Current IO policy. */
+    private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
+
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap8<>();
 
@@ -585,7 +588,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (msg.topic() == null) {
                 int topicOrd = msg.topicOrdinal();
 
-                msg.topic(topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) : marsh.unmarshal(msg.topicBytes(), null));
+                msg.topic(topicOrd >= 0 ? GridTopic.fromOrdinal(topicOrd) :
+                    marsh.unmarshal(msg.topicBytes(), U.resolveClassLoader(ctx.config())));
             }
 
             if (!started) {
@@ -741,7 +745,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     assert obj != null;
 
-                    lsnr.onMessage(nodeId, obj);
+                    invokeListener(msg.policy(), lsnr, nodeId, obj);
                 }
                 finally {
                     threadProcessingMessage(false);
@@ -818,7 +822,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         assert obj != null;
 
-        lsnr.onMessage(nodeId, obj);
+        invokeListener(msg.policy(), lsnr, nodeId, obj);
     }
 
     /**
@@ -1021,6 +1025,38 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return;
             }
         }
+    }
+
+    /**
+     * Invoke message listener.
+     *
+     * @param plc Policy.
+     * @param lsnr Listener.
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg) {
+        Byte oldPlc = CUR_PLC.get();
+
+        boolean change = F.eq(oldPlc, plc);
+
+        if (change)
+            CUR_PLC.set(plc);
+
+        try {
+            lsnr.onMessage(nodeId, msg);
+        }
+        finally {
+            if (change)
+                CUR_PLC.set(oldPlc);
+        }
+    }
+
+    /**
+     * @return Current IO policy
+     */
+    @Nullable public static Byte currentPolicy() {
+        return CUR_PLC.get();
     }
 
     /**
@@ -1781,6 +1817,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         return getSpi().getOutboundMessagesQueueSize();
     }
 
+    /**
+     * Dumps SPI stats to logs in case TcpCommunicationSpi is used, no-op otherwise.
+     */
+    public void dumpStats() {
+        CommunicationSpi spi = getSpi();
+
+        if (spi instanceof TcpCommunicationSpi)
+            ((TcpCommunicationSpi)spi).dumpStats();
+    }
+
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
@@ -1980,7 +2026,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     // Unmarshall message topic if needed.
                     if (msgTopic == null && msgTopicBytes != null) {
-                        msgTopic = marsh.unmarshal(msgTopicBytes, dep != null ? dep.classLoader() : null);
+                        msgTopic = marsh.unmarshal(msgTopicBytes,
+                            U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config()));
 
                         ioMsg.topic(msgTopic); // Save topic to avoid future unmarshallings.
                     }
@@ -1989,7 +2036,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         return;
 
                     if (msgBody == null) {
-                        msgBody = marsh.unmarshal(ioMsg.bodyBytes(), dep != null ? dep.classLoader() : null);
+                        msgBody = marsh.unmarshal(ioMsg.bodyBytes(),
+                            U.resolveClassLoader(dep != null ? dep.classLoader() : null, ctx.config()));
 
                         ioMsg.body(msgBody); // Save body to avoid future unmarshallings.
                     }
@@ -2233,9 +2281,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             for (GridTuple3<GridIoMessage, Long, IgniteRunnable> t = msgs.poll(); t != null; t = msgs.poll()) {
                 try {
-                    lsnr.onMessage(
-                        nodeId,
-                        t.get1().message());
+                    invokeListener(plc, lsnr, nodeId, t.get1().message());
                 }
                 finally {
                     if (t.get3() != null)

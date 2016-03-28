@@ -110,7 +110,8 @@ class GridAffinityUtils {
             throw new IgniteDeploymentCheckedException("Failed to obtain affinity object (is peer class loading turned on?): " +
                 msg);
 
-        Object src = ctx.config().getMarshaller().unmarshal(msg.source(), dep.classLoader());
+        Object src = ctx.config().getMarshaller().unmarshal(msg.source(),
+            U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
         // Resource injection.
         ctx.resource().inject(dep, dep.deployedClass(msg.sourceClassName()), src);
