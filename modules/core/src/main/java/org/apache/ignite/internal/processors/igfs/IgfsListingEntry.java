@@ -17,20 +17,27 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+
 /**
  * Directory listing entry.
  */
-public class IgfsListingEntry implements Externalizable {
+public class IgfsListingEntry implements Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,7 +59,7 @@ public class IgfsListingEntry implements Externalizable {
      *
      * @param fileInfo File info to construct listing entry from.
      */
-    public IgfsListingEntry(IgfsFileInfo fileInfo) {
+    public IgfsListingEntry(IgfsEntryInfo fileInfo) {
         id = fileInfo.id();
         dir = fileInfo.isDirectory();
     }
@@ -98,6 +105,22 @@ public class IgfsListingEntry implements Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         id = U.readGridUuid(in);
+        dir = in.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
+
+        BinaryUtils.writeIgniteUuid(out, id);
+        out.writeBoolean(dir);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
+        id = BinaryUtils.readIgniteUuid(in);
         dir = in.readBoolean();
     }
 
