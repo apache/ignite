@@ -278,7 +278,7 @@ namespace Apache.Ignite.Core.Impl
                     // Current version comes first
                     var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
 
-                    foreach (var ver in versions)
+                    foreach (var ver in versions.Where(v => !string.IsNullOrEmpty(v)))
                     {
                         using (var verKey = jSubKey.OpenSubKey(ver))
                         {
