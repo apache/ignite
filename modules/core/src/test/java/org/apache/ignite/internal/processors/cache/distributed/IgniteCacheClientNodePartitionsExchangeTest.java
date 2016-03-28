@@ -332,10 +332,10 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
         assertEquals(exchangeAfterRebalance ? 2 : 1, spi1.partitionsSingleMessages());
         assertEquals(0, spi1.partitionsFullMessages());
 
-        assertEquals(exchangeAfterRebalance ? 2 : 1, spi2.partitionsSingleMessages());
+        assertEquals(exchangeAfterRebalance ? 1 : 0, spi2.partitionsSingleMessages());
         assertEquals(0, spi2.partitionsFullMessages());
 
-        assertEquals(exchangeAfterRebalance ? 2 : 1, spi3.partitionsSingleMessages());
+        assertEquals(exchangeAfterRebalance ? 1 : 0, spi3.partitionsSingleMessages());
         assertEquals(0, spi3.partitionsFullMessages());
 
         spi0.reset();

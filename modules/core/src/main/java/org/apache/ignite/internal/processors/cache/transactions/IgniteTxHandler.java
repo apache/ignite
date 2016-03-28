@@ -350,6 +350,7 @@ public class IgniteTxHandler {
 
                 tx = new GridDhtTxLocal(
                     ctx,
+                    req.topologyVersion(),
                     nearNode.id(),
                     req.version(),
                     req.futureId(),

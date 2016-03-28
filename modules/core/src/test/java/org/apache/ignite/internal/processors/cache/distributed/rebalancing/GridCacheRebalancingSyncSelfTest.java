@@ -368,7 +368,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                             return map.isEmpty();
                         }
                     }
-                }, 10_000);
+                }, 15_000);
 
                 synchronized (map) {
                     assertTrue("Map is not empty [cache=" + c.name() +

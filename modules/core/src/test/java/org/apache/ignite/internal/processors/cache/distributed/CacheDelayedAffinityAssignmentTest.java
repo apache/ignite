@@ -32,14 +32,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -52,6 +53,7 @@ import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -69,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -83,6 +86,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
@@ -123,6 +129,9 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
     /** Expected ideal affinity assignments. */
     private Map<Long, Map<Integer, List<List<ClusterNode>>>> idealAff = new HashMap<>();
+
+    /** */
+    private boolean skipCheckOrder;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -469,6 +478,78 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testCacheDestroyAndCreate1() throws Exception {
+        cacheDestroyAndCreate(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheDestroyAndCreate2() throws Exception {
+        cacheDestroyAndCreate(false);
+    }
+
+    /**
+     * @param cacheOnCrd If {@code false} does not create cache on coordinator.
+     * @throws Exception If failed.
+     */
+    private void cacheDestroyAndCreate(boolean cacheOnCrd) throws Exception {
+        if (!cacheOnCrd)
+            cacheNodeFilter = new CacheNodeFilter(Collections.singletonList(getTestGridName(0)));
+
+        startServer(0, 1);
+
+        startServer(1, 2);
+
+        startServer(2, 3);
+
+        startClient(3, 4);
+
+        checkAffinity(4, topVer(4, 1), true);
+
+        CacheConfiguration ccfg = cacheConfiguration();
+        ccfg.setName(CACHE_NAME2);
+
+        ignite(1).createCache(ccfg);
+
+        calculateAffinity(4);
+
+        checkAffinity(4, topVer(4, 2), true);
+
+        ignite(1).destroyCache(CACHE_NAME2);
+
+        idealAff.get(4L).remove(CU.cacheId(CACHE_NAME2));
+
+        ccfg = cacheConfiguration();
+        ccfg.setName(CACHE_NAME2);
+        ccfg.setAffinity(affinityFunction(10));
+
+        ignite(1).createCache(ccfg);
+
+        calculateAffinity(4);
+
+        checkAffinity(4, topVer(4, 4), true);
+
+        checkCaches();
+
+        ignite(1).destroyCache(CACHE_NAME2);
+
+        idealAff.get(4L).remove(CU.cacheId(CACHE_NAME2));
+
+        ccfg = cacheConfiguration();
+        ccfg.setName(CACHE_NAME2);
+        ccfg.setAffinity(affinityFunction(20));
+
+        ignite(1).createCache(ccfg);
+
+        calculateAffinity(4);
+
+        checkAffinity(4, topVer(4, 6), true);
+    }
+
+    /**
      * Simple test, node leaves.
      *
      * @throws Exception If failed.
@@ -512,6 +593,44 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         checkAffinity(2, topVer(4, 0), true);
 
         awaitPartitionMapExchange();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNodeLeaveExchangeWaitAffinityMessage() throws Exception {
+        Ignite ignite0 = startServer(0, 1);
+
+        startServer(1, 2);
+
+        startServer(2, 3);
+
+        checkAffinity(3, topVer(3, 1), true);
+
+        checkOrderCounters(3, topVer(3, 1));
+
+        startClient(3, 4);
+
+        checkAffinity(4, topVer(4, 0), true);
+
+        TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)ignite0.configuration().getDiscoverySpi();
+
+        discoSpi.blockCustomEvent();
+
+        stopGrid(1);
+
+        List<IgniteInternalFuture<?>> futs = affFutures(3, topVer(5, 0));
+
+        U.sleep(1000);
+
+        for (IgniteInternalFuture<?> fut : futs)
+            assertFalse(fut.isDone());
+
+        discoSpi.stopBlock();
+
+        checkAffinity(3, topVer(5, 0), false);
+
+        checkOrderCounters(3, topVer(5, 0));
     }
 
     /**
@@ -1248,7 +1367,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         final int MAX_SRVS = 10;
         final int MAX_CLIENTS = 10;
-        final int MAX_CACHES = 20;
+        final int MAX_CACHES = 15;
 
         List<String> srvs = new ArrayList<>();
         List<String> clients = new ArrayList<>();
@@ -1455,6 +1574,8 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testServiceReassign() throws Exception {
+        skipCheckOrder = true;
+
         Ignite ignite0 = startServer(0, 1);
 
         IgniteServices svcs = ignite0.services();
@@ -1466,20 +1587,20 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         startServer(2, 3);
 
-        Map<String, List<List<ClusterNode>>> assigments = checkAffinity(3, topVer(3, 1), true);
+        Map<String, List<List<ClusterNode>>> assignments = checkAffinity(3, topVer(3, 1), true);
 
-        checkServicesDeploy(ignite(0), assigments.get(CACHE_NAME1));
+        checkServicesDeploy(ignite(0), assignments.get(CACHE_NAME1));
 
         stopGrid(0);
 
-        boolean primaryChanged = calculateAffinity(4, assigments);
+        boolean primaryChanged = calculateAffinity(4, assignments);
 
-        assigments = checkAffinity(2, topVer(4, 0), !primaryChanged);
+        assignments = checkAffinity(2, topVer(4, 0), !primaryChanged);
 
         if (primaryChanged)
             checkAffinity(2, topVer(4, 1), true);
 
-        checkServicesDeploy(ignite(1), assigments.get(CACHE_NAME1));
+        checkServicesDeploy(ignite(1), assignments.get(CACHE_NAME1));
     }
 
     /**
@@ -1626,6 +1747,26 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             cache.replace(rnd.nextInt(KEYS), rnd.nextInt(10), rnd.nextInt(10));
 
             cache.invoke(rnd.nextInt(KEYS), new TestEntryProcessor(rnd.nextInt(10)));
+
+            if (cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() == TRANSACTIONAL) {
+                IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
+
+                for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                    for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                        try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                            Integer key = rnd.nextInt(KEYS);
+
+                            cache.getAndPut(key, rnd.nextInt(10));
+
+                            cache.invoke(key + 1, new TestEntryProcessor(rnd.nextInt(10)));
+
+                            cache.get(key + 2);
+
+                            tx.commit();
+                        }
+                    }
+                }
+            }
         }
         catch (Exception e) {
             log.info("Cache operation failed: " + e);
@@ -1860,7 +2001,9 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
                         assertNull(cache.get(key));
                     }
                 }
-                catch (CacheServerNotFoundException e) {
+                catch (Exception e) {
+                    assertTrue("Unexpected error: " + e, X.hasCause(e, ClusterTopologyServerNotFoundException.class));
+
                     Affinity<Object> aff = node.affinity(cacheName);
 
                     assert aff.partitions() > 0;
@@ -1887,6 +2030,40 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         for (IgniteInternalFuture<?> fut : futs)
             assertFalse(fut.isDone());
+    }
+
+    /**
+     * @param expNodes Expected nodes number.
+     * @param topVer Topology version.
+     * @throws Exception If failed.
+     */
+    private void checkOrderCounters(int expNodes, AffinityTopologyVersion topVer) throws Exception {
+        List<Ignite> nodes = G.allGrids();
+
+        Long order = null;
+
+        for (Ignite node : nodes) {
+            IgniteKernal node0 = (IgniteKernal)node;
+
+            if (node0.configuration().isClientMode())
+                continue;
+
+            IgniteInternalFuture<?> fut = node0.context().cache().context().exchange().affinityReadyFuture(topVer);
+
+            if (fut != null)
+                fut.get();
+
+            AtomicLong orderCntr = GridTestUtils.getFieldValue(node0.context().cache().context().versions(), "order");
+
+            log.info("Order [node=" + node0.name() + ", order=" + orderCntr.get() + ']');
+
+            if (order == null)
+                order = orderCntr.get();
+            else
+                assertEquals(order, (Long)orderCntr.get());
+        }
+
+        assertEquals(expNodes, nodes.size());
     }
 
     /**
@@ -1966,6 +2143,9 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         }
 
         assertEquals(expNodes, nodes.size());
+
+        if (!skipCheckOrder)
+            checkOrderCounters(expNodes, topVer);
 
         return aff;
     }
@@ -2226,11 +2406,11 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         if (topVer == 1)
             return null;
 
-        Map<Integer, List<List<ClusterNode>>> assigments = idealAff.get(topVer - 1);
+        Map<Integer, List<List<ClusterNode>>> assignments = idealAff.get(topVer - 1);
 
-        assertNotNull(assigments);
+        assertNotNull(assignments);
 
-        return assigments.get(cacheId);
+        return assignments.get(cacheId);
     }
 
     /**

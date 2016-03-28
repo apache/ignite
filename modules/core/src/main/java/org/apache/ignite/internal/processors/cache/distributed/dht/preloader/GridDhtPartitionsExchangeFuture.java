@@ -964,8 +964,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @return Message;
      */
     private GridDhtPartitionsFullMessage createPartitionsMessage(Collection<ClusterNode> nodes) {
+        CacheVersion last = lastVer.get();
+
         GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchangeId(),
-            lastVer.get(),
+            last != null ? last : cctx.versions().last(),
             topologyVersion());
 
         boolean useOldApi = false;
@@ -1165,7 +1167,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert msg.exchangeId().equals(exchId) : msg;
         assert msg.lastVersion() != null : msg;
 
-        updateLastVersion(msg.lastVersion());
+        if (!msg.client())
+            updateLastVersion(msg.lastVersion());
 
         if (isDone()) {
             if (log.isDebugEnabled())
@@ -1525,7 +1528,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             if (!srvNodes.remove(node))
                                 return;
 
-                            remaining.remove(node.id());
+                            boolean rmvd = remaining.remove(node.id());
 
                             if (node.equals(crd)) {
                                 crdChanged = true;
@@ -1533,7 +1536,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 crd = srvNodes.size() > 0 ? srvNodes.get(0) : null;
                             }
 
-                            if (crd != null && crd.isLocal())
+                            if (crd != null && crd.isLocal() && rmvd)
                                 allReceived = remaining.isEmpty();
 
                             crd0 = crd;

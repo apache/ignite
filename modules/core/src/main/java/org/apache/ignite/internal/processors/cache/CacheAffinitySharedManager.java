@@ -1349,7 +1349,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 AffinityTopologyVersion affTopVer = cache.affinity().lastVersion();
 
-                assert affTopVer.topologyVersion() > 0 && !affTopVer.equals(topVer): affTopVer;
+                assert affTopVer.topologyVersion() > 0 && !affTopVer.equals(topVer): "Invalid affinity version " +
+                    "[last=" + affTopVer + ", futVer=" + topVer + ", cache=" + cache.name() + ']';
 
                 List<List<ClusterNode>> curAssignment = cache.affinity().assignments(affTopVer);
                 List<List<ClusterNode>> newAssignment = cache.affinity().idealAssignment();

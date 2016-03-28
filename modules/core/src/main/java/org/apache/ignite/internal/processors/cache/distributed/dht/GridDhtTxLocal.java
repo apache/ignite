@@ -118,6 +118,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      */
     public GridDhtTxLocal(
         GridCacheSharedContext cctx,
+        AffinityTopologyVersion topVer,
         UUID nearNodeId,
         CacheVersion nearXidVer,
         IgniteUuid nearFutId,
@@ -157,7 +158,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             subjId,
             taskNameHash);
 
-        assert cctx != null;
         assert nearNodeId != null;
         assert nearFutId != null;
         assert nearMiniId != null;
@@ -174,6 +174,10 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         assert !F.eq(xidVer, nearXidVer);
 
         initResult();
+
+        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
+
+        topologyVersion(topVer);
     }
 
     /** {@inheritDoc} */
