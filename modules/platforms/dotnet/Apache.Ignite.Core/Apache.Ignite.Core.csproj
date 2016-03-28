@@ -436,18 +436,17 @@
     <Compile Include="Transactions\TransactionTimeoutException.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)' == 'AnyCPU'">
-    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\x64\$(Configuration)\ignite.common.dll"
-            Condition="Exists('$(ProjectDir)..\..\cpp\common\project\vs\x64\$(Configuration)\ignite.common.dll')">
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\x64\$(Configuration)\ignite.common.dll" Condition="Exists('$(ProjectDir)..\..\cpp\common\project\vs\x64\$(Configuration)\ignite.common.dll')">
       <Link>resources\$(Configuration)\x64\ignite.common.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll"
-            Condition="Exists('$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll')">
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll" Condition="Exists('$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll')">
       <Link>resources\$(Configuration)\x86\ignite.common.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
+    <None Include="detect-java.ps1" />
     <None Include="NuGet\Uninstall.ps1" />
     <None Include="NuGet\PostBuild.ps1" />
     <None Include="NuGet\Install.ps1" />
