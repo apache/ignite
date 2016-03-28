@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class CacheDelayedAffinityAssignmentFairAffinityTest extends CacheDelayedAffinityAssignmentTest {
+public class CacheLateAffinityAssignmentFairAffinityTest extends CacheLateAffinityAssignmentTest {
     /** {@inheritDoc} */
     @Override protected AffinityFunction affinityFunction(@Nullable Integer parts) {
         return new FairAffinityFunction(false, parts == null ? FairAffinityFunction.DFLT_PART_CNT : parts);

@@ -102,7 +102,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 /**
  *
  */
-public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
+public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -505,9 +505,11 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         startServer(2, 3);
 
+        checkAffinity(3, topVer(3, 1), true);
+
         startClient(3, 4);
 
-        checkAffinity(4, topVer(4, 1), true);
+        checkAffinity(4, topVer(4, 0), true);
 
         CacheConfiguration ccfg = cacheConfiguration();
         ccfg.setName(CACHE_NAME2);
@@ -516,7 +518,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         calculateAffinity(4);
 
-        checkAffinity(4, topVer(4, 2), true);
+        checkAffinity(4, topVer(4, 1), true);
 
         ignite(1).destroyCache(CACHE_NAME2);
 
@@ -530,7 +532,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         calculateAffinity(4);
 
-        checkAffinity(4, topVer(4, 4), true);
+        checkAffinity(4, topVer(4, 3), true);
 
         checkCaches();
 
@@ -546,7 +548,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         calculateAffinity(4);
 
-        checkAffinity(4, topVer(4, 6), true);
+        checkAffinity(4, topVer(4, 5), true);
     }
 
     /**

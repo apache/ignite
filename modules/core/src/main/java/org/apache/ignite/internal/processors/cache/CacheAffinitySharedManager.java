@@ -34,6 +34,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -42,12 +43,16 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAssign
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -270,7 +275,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param rebalancingInfo Cache rebalance information.
      * @return Message.
      */
-    private CacheAffinityChangeMessage affinityChangeMessage(RebalancingInfo rebalancingInfo) {
+    @Nullable private CacheAffinityChangeMessage affinityChangeMessage(RebalancingInfo rebalancingInfo) {
+        if (rebalancingInfo.assignments.isEmpty()) // Possible if all awaited caches are destroyed.
+            return null;
+
         Map<Integer, Map<Integer, List<UUID>>> assignmentsChange = U.newHashMap(rebalancingInfo.assignments.size());
 
         for (Map.Entry<Integer, Map<Integer, List<ClusterNode>>> e : rebalancingInfo.assignments.entrySet()) {
@@ -1086,7 +1094,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param fut Exchange future.
      * @throws IgniteCheckedException If failed.
      */
-    private void initCoordinatorCaches(final GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+    private IgniteInternalFuture<?> initCoordinatorCaches(final GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+        final List<IgniteInternalFuture<AffinityTopologyVersion>> futs = new ArrayList<>();
+
         forAllRegisteredCaches(new IgniteInClosureX<DynamicCacheDescriptor>() {
             @Override public void applyx(DynamicCacheDescriptor desc) throws IgniteCheckedException {
                 CacheHolder cache = caches.get(desc.cacheId());
@@ -1113,7 +1123,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     cache = CacheHolder2.create(cctx, desc, fut, null);
 
-                    GridAffinityAssignmentCache aff = cache.affinity();
+                    final GridAffinityAssignmentCache aff = cache.affinity();
 
                     List<GridDhtPartitionsExchangeFuture> exchFuts = cctx.exchange().exchangeFutures();
 
@@ -1122,7 +1132,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     assert idx >= 0 && idx < exchFuts.size() - 1 : "Invalid exchange futures state [cur=" + idx +
                         ", total=" + exchFuts.size() + ']';
 
-                    GridDhtPartitionsExchangeFuture prev = exchFuts.get(idx + 1);
+                    final GridDhtPartitionsExchangeFuture prev = exchFuts.get(idx + 1);
 
                     assert prev.topologyVersion().compareTo(fut.topologyVersion()) < 0 : prev;
 
@@ -1132,9 +1142,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     fetchFut.init();
 
-                    fetchAffinity(prev, aff, fetchFut);
+                    final GridFutureAdapter<AffinityTopologyVersion> affFut = new GridFutureAdapter<>();
 
-                    aff.calculate(fut.topologyVersion(), fut.discoveryEvent());
+                    fetchFut.listen(new IgniteInClosureX<IgniteInternalFuture<GridDhtAffinityAssignmentResponse>>() {
+                        @Override public void applyx(IgniteInternalFuture<GridDhtAffinityAssignmentResponse> fetchFut) throws IgniteCheckedException {
+                            fetchAffinity(prev, aff, (GridDhtAssignmentFetchFuture)fetchFut);
+
+                            aff.calculate(fut.topologyVersion(), fut.discoveryEvent());
+
+                            affFut.onDone(fut.topologyVersion());
+                        }
+                    });
+
+                    futs.add(affFut);
                 }
                 else
                     cache = new CacheHolder1(cacheCtx, null);
@@ -1144,6 +1164,19 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assert old == null : old;
             }
         });
+
+        if (!futs.isEmpty()) {
+            GridCompoundFuture<AffinityTopologyVersion, ?> affFut = new GridCompoundFuture<>();
+
+            for (IgniteInternalFuture<AffinityTopologyVersion> f : futs)
+                affFut.add(f);
+
+            affFut.markInitialized();
+
+            return affFut;
+        }
+
+        return null;
     }
 
     /**
@@ -1326,12 +1359,39 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @return Affinity assignment.
      * @throws IgniteCheckedException If failed.
      */
-    public Map<Integer, Map<Integer, List<UUID>>> initAffinityOnNodeLeft(final GridDhtPartitionsExchangeFuture fut)
+    public IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> initAffinityOnNodeLeft(final GridDhtPartitionsExchangeFuture fut)
         throws IgniteCheckedException {
         assert lateAffAssign;
 
-        initCoordinatorCaches(fut);
+        IgniteInternalFuture<?> initFut = initCoordinatorCaches(fut);
 
+        if (initFut != null && !initFut.isDone()) {
+            final GridFutureAdapter<Map<Integer, Map<Integer, List<UUID>>>> resFut = new GridFutureAdapter<>();
+
+            initFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> initFut) {
+                    try {
+                        resFut.onDone(initAffinityOnNodeLeft0(fut));
+                    }
+                    catch (IgniteCheckedException e) {
+                        resFut.onDone(e);
+                    }
+                }
+            });
+
+            return resFut;
+        }
+        else
+            return new GridFinishedFuture<>(initAffinityOnNodeLeft0(fut));
+    }
+
+    /**
+     * @param fut Exchange future.
+     * @return Affinity assignment.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Map<Integer, Map<Integer, List<UUID>>> initAffinityOnNodeLeft0(final GridDhtPartitionsExchangeFuture fut)
+        throws IgniteCheckedException {
         final AffinityTopologyVersion topVer = fut.topologyVersion();
 
         final RebalancingInfo rebalancingInfo = new RebalancingInfo(topVer);

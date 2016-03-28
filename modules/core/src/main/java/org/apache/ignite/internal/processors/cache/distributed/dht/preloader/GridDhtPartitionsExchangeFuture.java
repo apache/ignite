@@ -68,6 +68,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -1222,6 +1223,25 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             onAllReceived();
     }
 
+    private void onAffinityInitialized(IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut) {
+        try {
+            assert fut.isDone();
+
+            Map<Integer, Map<Integer, List<UUID>>> assignmentChange = fut.get();
+
+            GridDhtPartitionsFullMessage m = createPartitionsMessage(null);
+
+            CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
+
+            log.info("Centralized affinity exchange, send affinity change message: " + msg);
+
+            cctx.discovery().sendCustomEvent(msg);
+        }
+        catch (IgniteCheckedException e) {
+            onDone(e);
+        }
+    }
+
     /**
      *
      */
@@ -1241,15 +1261,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cctx.versions().onExchange(topologyVersion(), lastVer.get().order());
 
             if (centralizedAff) {
-                Map<Integer, Map<Integer, List<UUID>>> assignmentChange = cctx.affinity().initAffinityOnNodeLeft(this);
+                IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut = cctx.affinity().initAffinityOnNodeLeft(this);
 
-                GridDhtPartitionsFullMessage m = createPartitionsMessage(null);
-
-                CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
-
-                log.info("Centralized affinity exchange, send affinity change message: " + msg);
-
-                cctx.discovery().sendCustomEvent(msg);
+                if (!fut.isDone()) {
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>>>() {
+                        @Override public void apply(IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut) {
+                            onAffinityInitialized(fut);
+                        }
+                    });
+                }
+                else
+                    onAffinityInitialized(fut);
             }
             else {
                 List<ClusterNode> nodes;
