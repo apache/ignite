@@ -78,7 +78,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 PopulateCache(cache);
 
                 // Create cache that will work with specific types.
-                var employeeCache = ignite.GetCache<EmployeeKey, Employee>(null);
+                var employeeCache = ignite.GetCache<EmployeeKey, Employee>(CacheName);
 
                 // Run SQL query example.
                 SqlQueryExample(employeeCache);
