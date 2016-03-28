@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -31,10 +34,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
-import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;

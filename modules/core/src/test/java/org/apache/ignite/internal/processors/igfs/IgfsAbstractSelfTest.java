@@ -17,6 +17,26 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -60,37 +80,12 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 
 /**
  * Test fo regular igfs operations.
@@ -1024,9 +1019,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 }
             }
         }, 10_000)) {
-            Set<GridCacheEntryEx> set = dataCache.allEntries();
+            Iterable<GridCacheEntryEx> entries = dataCache.allEntries();
 
-            for (GridCacheEntryEx e: set) {
+            for (GridCacheEntryEx e: entries) {
                 X.println("deleted = " + e.deleted());
                 X.println("detached = " + e.detached());
                 X.println("info = " + e.info());
@@ -3235,9 +3230,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     private static void dumpCache(String cacheName, GridCacheAdapter<?,?> cache) {
         X.println("=============================== " + cacheName + " cache dump: ");
 
-        Set<GridCacheEntryEx> set = cache.entries();
+        Iterable<GridCacheEntryEx> entries = cache.entries();
 
-        for (GridCacheEntryEx e: set)
+        for (GridCacheEntryEx e: entries)
             X.println("Lost " + cacheName + " entry = " + e);
     }
 
