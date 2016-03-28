@@ -17,12 +17,14 @@
 
 package org.apache.ignite.webtest;
 
+import com.ibm.tx.jta.TransactionManagerFactory;
 import java.io.IOException;
 import java.io.PrintWriter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.transaction.RollbackException;
 import javax.transaction.TransactionManager;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -39,50 +41,62 @@ public class TestJtaTxServlet extends HttpServlet {
     /** {@inheritDoc} */
     @Override protected void doGet(final HttpServletRequest req, final HttpServletResponse res)
         throws ServletException, IOException {
-        final int key = 2;
-        final String correctVal = "correct_val";
-        final String incorrectVal = "incorrect_val";
+        final int key1 = 1;
+        final int key2 = 2;
+
+        final String correctVal1 = "correct_val1";
+        final String correctVal2 = "correct_val1";
+        final String incorrectVal1 = "incorrect_val2";
+        final String incorrectVal2 = "incorrect_val2";
 
         final PrintWriter writer = res.getWriter();
 
         try {
-            Class onePhaseXAResourceClass = Class.forName("com.ibm.tx.jta.OnePhaseXAResource");
-
-            writer.println("Got onePhaseXAResourceClass: " + onePhaseXAResourceClass);
-
             final Ignite ignite = Ignition.ignite();
-
-            writer.println("Got ignite");
 
             final IgniteCache<Integer, String> cache = ignite.cache("tx");
 
-            writer.println("Got cache");
-
-            TransactionManager tmMgr = com.ibm.tx.jta.TransactionManagerFactory.getTransactionManager();
-
-            writer.println("Got txMgr");
+            TransactionManager tmMgr = TransactionManagerFactory.getTransactionManager();
 
             tmMgr.begin();
-//            cache.put(key, correctVal);
-//            writer.println(String.format("Transaction #1. Writing value [%s]", cache.get(key)));
-//            writer.println();
+
+            cache.put(key1, correctVal1);
+            cache.put(key2, correctVal2);
+
+            writer.println("Transaction #1. Put values [key1=" + key1 + ", val1=" + cache.get(key1)
+                + ", key2=" + key2 + ", val2=" + cache.get(key2) + "]");
+            writer.println();
+
             tmMgr.commit();
-//
-//            try {
-//                tmMgr.begin();
-//                writer.println(String.format("Transaction #2. Current value [%s]", cache.get(key)));
-//                cache.put(key, incorrectVal);
-//                writer.println(String.format("Transaction #2. Writing value [%s]", cache.get(key)));
-//                tmMgr.setRollbackOnly();
-//                tmMgr.commit();
-//            } catch (final RollbackException ignored) {
-//                writer.println(String.format("Transaction #2. setRollbackOnly", cache.get(key)));
-//            }
-//            writer.println();
-//
-//            tmMgr.begin();
-//            writer.println(String.format("Transaction #3. Current value [%s]", cache.get(key)));
-//            tmMgr.commit();
+
+            try {
+                tmMgr.begin();
+
+                writer.println("Transaction #2. Current values [key1=" + key1 + ", val1=" + cache.get(key1)
+                    + ", key2=" + key2 + ", val2=" + cache.get(key2) + "]");
+
+                cache.put(key1, incorrectVal1);
+                cache.put(key2, incorrectVal2);
+
+                writer.println("Transaction #2. Put values [key1=" + key1 + ", val1=" + cache.get(key1)
+                    + ", key2=" + key2 + ", val2=" + cache.get(key2) + "]");
+
+                tmMgr.setRollbackOnly();
+
+                tmMgr.commit();
+            } catch (final RollbackException ignored) {
+                writer.println("Transaction #2. setRollbackOnly [key1=" + key1 + ", val1=" + cache.get(key1)
+                    + ", key2=" + key2 + ", val2=" + cache.get(key2) + "]");
+            }
+
+            writer.println();
+
+            tmMgr.begin();
+
+            writer.println("Transaction #2. Current values [key1=" + key1 + ", val1=" + cache.get(key1)
+                + ", key2=" + key2 + ", val2=" + cache.get(key2) + "]");
+
+            tmMgr.commit();
         } catch (final Throwable e) {
             e.printStackTrace(writer);
         }
