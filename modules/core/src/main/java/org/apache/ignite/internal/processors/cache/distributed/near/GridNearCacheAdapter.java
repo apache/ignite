@@ -344,9 +344,17 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> entrySet(
-        @Nullable CacheEntryPredicate... filter) {
-        return new EntrySet(super.entrySet(filter), dht().entrySet(filter));
+    @Override public Set<Cache.Entry<K, V>> entrySet(@Nullable final CacheEntryPredicate... filter) {
+        CacheEntryPredicate p = new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx ex) {
+                if (ex instanceof GridCacheMapEntry)
+                    return ((GridCacheMapEntry)ex).visitable(filter);
+                else
+                    return !ex.deleted() && F.isAll(ex, filter);
+            }
+        };
+
+        return new EntrySet(super.entrySet(p), dht().entrySet(p));
     }
 
     /** {@inheritDoc} */
