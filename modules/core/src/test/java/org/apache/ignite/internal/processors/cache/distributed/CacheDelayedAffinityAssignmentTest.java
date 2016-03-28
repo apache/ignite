@@ -25,13 +25,20 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -53,6 +60,8 @@ import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -98,16 +107,19 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     private boolean forceSrvMode;
 
     /** */
-    private static final String CACHE_NAME1 = "aff_log_cache";
+    private static final String CACHE_NAME1 = "testCache1";
 
     /** */
-    private static final String CACHE_NAME2 = "cache2";
+    private static final String CACHE_NAME2 = "testCache2";
 
     /** */
     private IgniteClosure<String, CacheConfiguration> cacheC;
 
     /** */
     private IgnitePredicate<ClusterNode> cacheNodeFilter;
+
+    /** */
+    private IgniteClosure<String, TestRecordingCommunicationSpi> spiC;
 
     /** Expected ideal affinity assignments. */
     private Map<Long, Map<Integer, List<List<ClusterNode>>>> idealAff = new HashMap<>();
@@ -116,7 +128,12 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
+        TestRecordingCommunicationSpi commSpi;
+
+        if (spiC != null)
+            commSpi = spiC.apply(gridName);
+        else
+            commSpi = new TestRecordingCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
 
@@ -943,9 +960,13 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             });
         }
 
+        final CountDownLatch latch = new CountDownLatch(1);
+
         IgniteInternalFuture<?> stopFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                U.sleep(1000);
+                latch.await();
+
+                U.sleep(5000);
 
                 for (int i = 0; i < NODES; i++)
                     stopGrid(i);
@@ -954,7 +975,12 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             }
         }, "stop-thread");
 
-        startGrid(NODES);
+
+        latch.countDown();
+
+        Ignite node = startGrid(NODES);
+
+        assertEquals(NODES + 1, node.cluster().localNode().order());
 
         stopFut.get();
 
@@ -1014,7 +1040,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void _testDelayAssignmentCacheDestroyCreate() throws Exception {
+    public void testDelayAssignmentCacheDestroyCreate() throws Exception {
         Ignite ignite0 = startServer(0, 1);
 
         CacheConfiguration ccfg = cacheConfiguration();
@@ -1034,7 +1060,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         startServer(1, 2);
 
-        startServer(2, 3);
+        startGrid(3);
 
         checkAffinity(3, topVer(3, 0), false);
 
@@ -1054,6 +1080,11 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(3, topVer(3, 1), false);
         checkAffinity(3, topVer(3, 2), false);
+
+        idealAff.get(2L).remove(CU.cacheId(CACHE_NAME2));
+
+        calculateAffinity(3);
+
         checkAffinity(3, topVer(3, 3), true);
     }
 
@@ -1228,7 +1259,11 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         List<String> caches = new ArrayList<>();
 
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        long seed = System.currentTimeMillis();
+
+        Random rnd = new Random(seed);
+
+        log.info("Random seed: " + seed);
 
         long topVer = 0;
 
@@ -1253,10 +1288,10 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
                             log.info("Cache for joining node: " + cacheName);
 
-                            cacheClosure(caches, cacheName, srvs, srvIdx);
+                            cacheClosure(rnd, caches, cacheName, srvs, srvIdx);
                         }
                         else
-                            cacheClosure(caches, null, srvs, srvIdx);
+                            cacheClosure(rnd, caches, null, srvs, srvIdx);
 
                         startNode(srvName, ++topVer, false);
 
@@ -1299,10 +1334,10 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
                             log.info("Cache for joining node: " + cacheName);
 
-                            cacheClosure(caches, cacheName, srvs, srvIdx);
+                            cacheClosure(rnd, caches, cacheName, srvs, srvIdx);
                         }
                         else
-                            cacheClosure(caches, null, srvs, srvIdx);
+                            cacheClosure(rnd, caches, null, srvs, srvIdx);
 
                         startNode(clientName, ++topVer, true);
 
@@ -1334,7 +1369,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
                     if (caches.size() > 0) {
                         String cacheName = caches.get(rnd.nextInt(caches.size()));
 
-                        Ignite node = randomNode(srvs, clients);
+                        Ignite node = randomNode(rnd, srvs, clients);
 
                         log.info("Destroy cache [cache=" + cacheName + ", node=" + node.name() + ']');
 
@@ -1354,11 +1389,11 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
                         String cacheName = "cache-" + cacheIdx;
 
-                        Ignite node = randomNode(srvs, clients);
+                        Ignite node = randomNode(rnd, srvs, clients);
 
                         log.info("Create cache [cache=" + cacheName + ", node=" + node.name() + ']');
 
-                        node.createCache(randomCacheConfiguration(cacheName, srvs, srvIdx));
+                        node.createCache(randomCacheConfiguration(rnd, cacheName, srvs, srvIdx));
 
                         calculateAffinity(topVer);
 
@@ -1376,7 +1411,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
                             String cacheName = caches.get(rnd.nextInt(caches.size()));
 
                             for (int k = 0; k < 3; k++) {
-                                Ignite node = randomNode(srvs, clients);
+                                Ignite node = randomNode(rnd, srvs, clients);
 
                                 log.info("Get/closes cache [cache=" + cacheName + ", node=" + node.name() + ']');
 
@@ -1407,7 +1442,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
         log.info("Start server: " + srvName);
 
-        cacheClosure(caches, null, srvs, srvIdx);
+        cacheClosure(rnd, caches, null, srvs, srvIdx);
 
         startNode(srvName, ++topVer, false);
 
@@ -1448,6 +1483,172 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testNoForceKeysRequests() throws Exception {
+        cacheC = new IgniteClosure<String, CacheConfiguration>() {
+            @Override public CacheConfiguration apply(String s) {
+                return null;
+            }
+        };
+
+        final AtomicBoolean fail = new AtomicBoolean();
+
+        spiC = new IgniteClosure<String, TestRecordingCommunicationSpi>() {
+            @Override public TestRecordingCommunicationSpi apply(String s) {
+                TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
+
+                spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
+                    @Override public boolean apply(GridIoMessage msg) {
+                        Message msg0 = msg.message();
+
+                        if (msg0 instanceof GridDhtForceKeysRequest || msg0 instanceof GridDhtForceKeysResponse) {
+                            fail.set(true);
+
+                            U.dumpStack(log, "Unexpected message: " + msg0);
+                        }
+
+                        return false;
+                    }
+                });
+
+                return spi;
+            }
+        };
+
+        final int SRVS = 3;
+
+        for (int i = 0; i < SRVS; i++)
+            startGrid(i);
+
+        client = true;
+
+        startGrid(SRVS);
+
+        client = false;
+
+        final List<CacheConfiguration> ccfgs = new ArrayList<>();
+
+        ccfgs.add(cacheConfiguration("ac1", ATOMIC, 0));
+        ccfgs.add(cacheConfiguration("ac2", ATOMIC, 1));
+        ccfgs.add(cacheConfiguration("ac3", ATOMIC, 2));
+
+        ccfgs.add(cacheConfiguration("tc1", TRANSACTIONAL, 0));
+        ccfgs.add(cacheConfiguration("tc2", TRANSACTIONAL, 1));
+        ccfgs.add(cacheConfiguration("tc3", TRANSACTIONAL, 2));
+
+        for (CacheConfiguration ccfg : ccfgs)
+            ignite(0).createCache(ccfg);
+
+        final int NODES = SRVS + 1;
+
+        final AtomicInteger nodeIdx = new AtomicInteger();
+
+        final long stopTime = System.currentTimeMillis() + 60_000;
+
+        IgniteInternalFuture<?> updateFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                int idx = nodeIdx.getAndIncrement();
+
+                Ignite node = grid(idx);
+
+                List<IgniteCache<Object, Object>> caches = new ArrayList<>();
+
+                for (CacheConfiguration ccfg : ccfgs)
+                    caches.add(node.cache(ccfg.getName()));
+
+                while (!fail.get() && System.currentTimeMillis() < stopTime) {
+                    for (IgniteCache<Object, Object> cache : caches)
+                        cacheOperations(cache);
+                }
+
+                return null;
+            }
+        }, NODES, "update-thread");
+
+        IgniteInternalFuture<?> srvRestartFut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                while (!fail.get() && System.currentTimeMillis() < stopTime) {
+                    Ignite node = startGrid(NODES);
+
+                    List<IgniteCache<Object, Object>> caches = new ArrayList<>();
+
+                    for (CacheConfiguration ccfg : ccfgs)
+                        caches.add(node.cache(ccfg.getName()));
+
+                    for (int i = 0; i < 2; i++) {
+                        for (IgniteCache<Object, Object> cache : caches)
+                            cacheOperations(cache);
+                    }
+
+                    U.sleep(500);
+
+                    stopGrid(NODES);
+
+                    U.sleep(500);
+                }
+
+                return null;
+            }
+        }, "srv-restart");
+
+        srvRestartFut.get();
+        updateFut.get();
+
+        assertFalse("Unexpected messages.", fail.get());
+    }
+
+    /**
+     * @param cache Cache
+     */
+    private void cacheOperations(IgniteCache<Object, Object> cache) {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        final int KEYS = 10_000;
+
+        try {
+            cache.get(rnd.nextInt(KEYS));
+
+            cache.put(rnd.nextInt(KEYS), rnd.nextInt(10));
+
+            cache.getAndPut(rnd.nextInt(KEYS), rnd.nextInt(10));
+
+            cache.remove(rnd.nextInt(KEYS));
+
+            cache.getAndRemove(rnd.nextInt(KEYS));
+
+            cache.remove(rnd.nextInt(KEYS), rnd.nextInt(10));
+
+            cache.putIfAbsent(rnd.nextInt(KEYS), rnd.nextInt(10));
+
+            cache.replace(rnd.nextInt(KEYS), rnd.nextInt(10));
+
+            cache.replace(rnd.nextInt(KEYS), rnd.nextInt(10), rnd.nextInt(10));
+
+            cache.invoke(rnd.nextInt(KEYS), new TestEntryProcessor(rnd.nextInt(10)));
+        }
+        catch (Exception e) {
+            log.info("Cache operation failed: " + e);
+        }
+    }
+
+    /**
+     * @param name Cache name.
+     * @param atomicityMode Cache atomicity mode.
+     * @param backups Number of backups.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration cacheConfiguration(String name, CacheAtomicityMode atomicityMode, int backups) {
+        CacheConfiguration ccfg = cacheConfiguration();
+
+        ccfg.setName(name);
+        ccfg.setAtomicityMode(atomicityMode);
+        ccfg.setBackups(backups);
+
+        return ccfg;
+    }
+
+    /**
      * @param ignite Node.
      * @param affinity Affinity.
      * @throws Exception If failed.
@@ -1480,13 +1681,12 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param rnd Random generator.
      * @param srvs Server.
      * @param clients Clients.
      * @return Random node.
      */
-    private Ignite randomNode(List<String> srvs, List<String> clients) {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
+    private Ignite randomNode(Random rnd, List<String> srvs, List<String> clients) {
         String name = null;
 
         if (rnd.nextBoolean()) {
@@ -1505,14 +1705,15 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param rnd Random generator.
      * @param caches Caches list.
      * @param cacheName Cache name.
      * @param srvs Server nodes.
      * @param srvIdx Current servers index.
      */
-    private void cacheClosure(List<String> caches, String cacheName, List<String> srvs, int srvIdx) {
+    private void cacheClosure(Random rnd, List<String> caches, String cacheName, List<String> srvs, int srvIdx) {
         if (cacheName != null) {
-            final CacheConfiguration ccfg = randomCacheConfiguration(cacheName, srvs, srvIdx);
+            final CacheConfiguration ccfg = randomCacheConfiguration(rnd, cacheName, srvs, srvIdx);
 
             cacheC = new IgniteClosure<String, CacheConfiguration>() {
                 @Override public CacheConfiguration apply(String s) {
@@ -1532,20 +1733,19 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param rnd Random generator.
      * @param name Cache name.
      * @param srvs Server nodes.
      * @param srvIdx Current servers index.
      * @return Cache configuration.
      */
-    private CacheConfiguration randomCacheConfiguration(String name, List<String> srvs, int srvIdx) {
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
+    private CacheConfiguration randomCacheConfiguration(Random rnd, String name, List<String> srvs, int srvIdx) {
         CacheConfiguration ccfg = cacheConfiguration();
 
         ccfg.setAtomicityMode(rnd.nextBoolean() ? TRANSACTIONAL : ATOMIC);
         ccfg.setBackups(rnd.nextInt(10));
         ccfg.setRebalanceMode(rnd.nextBoolean() ? SYNC : ASYNC);
-        ccfg.setAffinity(affinityFunction(rnd.nextInt(10, 2048)));
+        ccfg.setAffinity(affinityFunction(rnd.nextInt(2048) + 10));
 
         if (rnd.nextBoolean()) {
             Set<String> exclude = new HashSet<>();
@@ -1898,7 +2098,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      * @return {@code True} if some primary node changed comparing to given affinity.
      */
-    private boolean calculateAffinity(long topVer, @Nullable  Map<String, List<List<ClusterNode>>> cur) throws Exception {
+    private boolean calculateAffinity(long topVer, @Nullable Map<String, List<List<ClusterNode>>> cur) throws Exception {
         List<Ignite> all = G.allGrids();
 
         IgniteKernal ignite = (IgniteKernal)Collections.min(all, new Comparator<Ignite>() {
@@ -1975,7 +2175,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
             AffinityFunctionContext affCtx = new GridAffinityFunctionContextImpl(
                 affNodes,
-                    previousAssignment(topVer, cacheDesc.cacheId()),
+                previousAssignment(topVer, cacheDesc.cacheId()),
                 evt,
                 topVer0,
                 cacheDesc.cacheConfiguration().getBackups());
@@ -2047,6 +2247,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
      *
      */
     private static class TestServiceImpl implements Service, TestService {
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -2177,6 +2378,28 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
 
                 super.sendCustomEvent(msg);
             }
+        }
+    }
+
+    /**
+     *
+     */
+    static class TestEntryProcessor implements EntryProcessor<Object, Object, Object> {
+        /** */
+        private Object val;
+
+        /**
+         * @param val Value.
+         */
+        public TestEntryProcessor(Object val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
+            e.setValue(val);
+
+            return null;
         }
     }
 }

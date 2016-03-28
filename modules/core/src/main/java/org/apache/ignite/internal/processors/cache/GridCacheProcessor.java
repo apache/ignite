@@ -1962,12 +1962,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CacheConfiguration ccfg = req.startCacheConfiguration();
 
                         if (existing != null) {
-                            if (joiningNodeId.equals(ctx.localNodeId()))
+                            if (joiningNodeId.equals(ctx.localNodeId())) {
                                 existing.receivedFrom(req.receivedFrom());
 
-                            if (existing.locallyConfigured()) {
                                 existing.deploymentId(req.deploymentId());
+                            }
 
+                            if (existing.locallyConfigured()) {
                                 existing.addRemoteConfiguration(rmtNodeId, req.startCacheConfiguration());
 
                                 ctx.discovery().setCacheFilter(

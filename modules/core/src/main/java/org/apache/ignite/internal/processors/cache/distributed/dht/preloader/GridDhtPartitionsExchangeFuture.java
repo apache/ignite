@@ -46,6 +46,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
@@ -684,16 +685,22 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
             else {
-                sendLocalPartitions(crd, exchId);
+                if (!centralizedAff)
+                    sendLocalPartitions(crd, exchId);
 
                 initDone();
 
                 return;
             }
         }
-        else if (centralizedAff) {
-            for (GridCacheContext cacheCtx : cctx.cacheContexts())
-                cacheCtx.affinity().affinityCache().initialize(topologyVersion(), cacheCtx.affinity().affinityCache().idealAssignment());
+        else {
+            if (centralizedAff) { // Last server node failed.
+                for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                    GridAffinityAssignmentCache aff = cacheCtx.affinity().affinityCache();
+
+                    aff.initialize(topologyVersion(), aff.idealAssignment());
+                }
+            }
         }
 
         onDone(topologyVersion());
@@ -1231,8 +1238,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cctx.versions().onExchange(topologyVersion(), lastVer.get().order());
 
             if (centralizedAff) {
-                Map<Integer, Map<Integer, List<UUID>>> assignmentChange =
-                    cctx.affinity().initAffinityOnNodeLeft(this);
+                Map<Integer, Map<Integer, List<UUID>>> assignmentChange = cctx.affinity().initAffinityOnNodeLeft(this);
 
                 GridDhtPartitionsFullMessage m = createPartitionsMessage(null);
 

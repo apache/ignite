@@ -571,11 +571,21 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         assert !F.isEmpty(affChange) : msg;
 
+        final Map<Integer, IgniteUuid> deploymentIds = msg.cacheDeploymentIds();
+
         forAllCaches(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
                 AffinityTopologyVersion affTopVer = aff.lastVersion();
 
                 assert affTopVer.topologyVersion() > 0 : affTopVer;
+
+                IgniteUuid deploymentId = registeredCaches.get(aff.cacheId()).deploymentId();
+
+                if (!deploymentId.equals(deploymentIds.get(aff.cacheId()))) {
+                    aff.clientEventTopologyChange(exchFut.discoveryEvent(), topVer);
+
+                    return;
+                }
 
                 Map<Integer, List<UUID>> change = affChange.get(aff.cacheId());
 
@@ -903,8 +913,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             RebalancingInfo info = this.rebalancingInfo;
 
-            log.info("Computed new affinity after node join [topVer=" + fut.topologyVersion() +
-                ", waitCaches=" + (info != null ? cacheNames(info.waitCaches.keySet()) : null)+ ']');
+            if (crd && lateAffAssign) {
+                log.info("Computed new affinity after node join [topVer=" + fut.topologyVersion() +
+                    ", waitCaches=" + (info != null ? cacheNames(info.waitCaches.keySet()) : null)+ ']');
+            }
         }
     }
 
@@ -1253,7 +1265,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (curPrimary != null && newPrimary != null && !curPrimary.equals(newPrimary)) {
                     assert cctx.discovery().node(topVer, curPrimary.id()) != null : curPrimary;
 
-                    List<ClusterNode> nodes0 = delayedPrimaryAssignment(aff,
+                    List<ClusterNode> nodes0 = latePrimaryAssignment(aff,
                         p,
                         curPrimary,
                         newNodes,
@@ -1281,7 +1293,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param rebalance Rabalance information holder.
      * @return Assignment.
      */
-    private List<ClusterNode> delayedPrimaryAssignment(
+    private List<ClusterNode> latePrimaryAssignment(
         GridAffinityAssignmentCache aff,
         int part,
         ClusterNode curPrimary,
@@ -1367,7 +1379,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                             GridDhtPartitionState state = top.partitionState(newPrimary.id(), p);
 
                             if (state != GridDhtPartitionState.OWNING) {
-                                newNodes0 = delayedPrimaryAssignment(cache.affinity(),
+                                newNodes0 = latePrimaryAssignment(cache.affinity(),
                                     p,
                                     curPrimary,
                                     newNodes,
@@ -1382,7 +1394,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                                     ClusterNode curNode = curNodes.get(i);
 
                                     if (top.partitionState(curNode.id(), p) == GridDhtPartitionState.OWNING) {
-                                        newNodes0 = delayedPrimaryAssignment(cache.affinity(),
+                                        newNodes0 = latePrimaryAssignment(cache.affinity(),
                                             p,
                                             curNode,
                                             newNodes,
@@ -1397,7 +1409,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                                     for (ClusterNode owner : owners) {
                                         if (aliveNodes.contains(owner)) {
-                                            newNodes0 = delayedPrimaryAssignment(cache.affinity(),
+                                            newNodes0 = latePrimaryAssignment(cache.affinity(),
                                                 p,
                                                 owner,
                                                 newNodes,
@@ -1623,7 +1635,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      *
      */
-    static class RebalancingInfo {
+    class RebalancingInfo {
         /** */
         private final AffinityTopologyVersion topVer;
 
@@ -1669,12 +1681,16 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (waitCaches == null) {
                 waitCaches = new HashMap<>();
                 assignments = new HashMap<>();
+                deploymentIds = new HashMap<>();
             }
 
             Map<Integer, UUID> cacheWaitParts = waitCaches.get(cacheId);
 
-            if (cacheWaitParts == null)
+            if (cacheWaitParts == null) {
                 waitCaches.put(cacheId, cacheWaitParts = new HashMap<>());
+
+                deploymentIds.put(cacheId, registeredCaches.get(cacheId).deploymentId());
+            }
 
             cacheWaitParts.put(part, waitNode);
 

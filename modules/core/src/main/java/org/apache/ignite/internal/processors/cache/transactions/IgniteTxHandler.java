@@ -1259,6 +1259,7 @@ public class IgniteTxHandler {
             if (tx == null) {
                 tx = new GridNearTxRemote(
                     ctx,
+                    req.topologyVersion(),
                     ldr,
                     nodeId,
                     req.nearNodeId(),

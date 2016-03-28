@@ -146,7 +146,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                     synchronized (this) {
                         checkObsolete();
 
-                        if (!e.version().equals(dhtVer) && (isNew() || !valid(topVer))) {
+                        if (isNew() || !valid(topVer)) {
                             // Version does not change for load ops.
                             update(e.value(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version(), true);
 
@@ -292,6 +292,11 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /** {@inheritDoc} */
     @Override protected void recordNodeId(UUID primaryNodeId, AffinityTopologyVersion topVer) {
         assert Thread.holdsLock(this);
+
+        assert topVer.compareTo(cctx.affinity().affinityTopologyVersion()) <= 0 : "Affinity not ready [" +
+            "topVer=" + topVer +
+            ", readyVer=" + cctx.affinity().affinityTopologyVersion() +
+            ", cache=" + cctx.name() + ']';
 
         primaryNode(primaryNodeId, topVer);
     }
