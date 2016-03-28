@@ -103,9 +103,9 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         assertTrue(MAX_VALS_AMOUNT - 5 <= cache.size(CachePeekMode.ONHEAP));
         assertEquals(cache.size(CachePeekMode.ALL) - cache.size(CachePeekMode.ONHEAP), cache.size(CachePeekMode.SWAP));
 
-        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
-        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
-        assertTrue(cache.metrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.ONHEAP) * VAL_SIZE);
+        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.localMetrics().getOffHeapAllocatedSize());
+        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.localMetrics().getOffHeapAllocatedSize());
+        assertTrue(cache.localMetrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.ONHEAP) * VAL_SIZE);
     }
 
     /**
@@ -143,9 +143,9 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         assertEquals(cache.size(CachePeekMode.ALL) - cache.size(CachePeekMode.ONHEAP) - cache.size(CachePeekMode.OFFHEAP),
             cache.size(CachePeekMode.SWAP));
 
-        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
-        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
-        assertTrue(cache.metrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.OFFHEAP) * VAL_SIZE);
+        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.localMetrics().getOffHeapAllocatedSize());
+        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.localMetrics().getOffHeapAllocatedSize());
+        assertTrue(cache.localMetrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.OFFHEAP) * VAL_SIZE);
     }
 
     /**
@@ -181,9 +181,9 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         assertTrue(MAX_VALS_AMOUNT >= cache.size(CachePeekMode.OFFHEAP));
         assertTrue(MAX_VALS_AMOUNT - 5 <= cache.size(CachePeekMode.OFFHEAP));
 
-        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
-        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
-        assertTrue(cache.metrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.OFFHEAP) * VAL_SIZE);
+        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.localMetrics().getOffHeapAllocatedSize());
+        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.localMetrics().getOffHeapAllocatedSize());
+        assertTrue(cache.localMetrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.OFFHEAP) * VAL_SIZE);
     }
 
     /** Fill cache with values. */

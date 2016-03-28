@@ -56,7 +56,7 @@ public class VisorCacheResetMetricsTask extends VisorOneNodeTask<String, Void> {
             IgniteInternalCache cache = ignite.cachex(cacheName);
 
             if (cache != null)
-                cache.mxBean().clear();
+                cache.localMxBean().clear();
 
             return null;
         }
