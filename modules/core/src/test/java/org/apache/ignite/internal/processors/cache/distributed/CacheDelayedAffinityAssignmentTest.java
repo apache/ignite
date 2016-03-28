@@ -1734,16 +1734,25 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
                     Affinity<Object> cacheAff = node.affinity(cctx.name());
 
                     for (int i = 0; i < 10; i++) {
-                        ClusterNode primary = cacheAff.mapKeyToNode(i);
-
                         int part = cacheAff.partition(i);
 
                         List<ClusterNode> partNodes = ideal.get(part);
 
-                        if (primary == null)
-                            assertTrue(partNodes.isEmpty());
-                        else
+                        if (partNodes.isEmpty()) {
+                            try {
+                                ClusterNode primary = cacheAff.mapKeyToNode(i);
+
+                                fail();
+                            }
+                            catch (IgniteException ignore) {
+                                // No-op.
+                            }
+                        }
+                        else {
+                            ClusterNode primary = cacheAff.mapKeyToNode(i);
+
                             assertEquals(primary, partNodes.get(0));
+                        }
                     }
 
                     for (int p = 0; p < ideal.size(); p++) {
@@ -1761,6 +1770,13 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         return aff;
     }
 
+    /**
+     * @param aff1 Affinity 1.
+     * @param aff2 Affinity 2.
+     * @param node Node.
+     * @param cacheName Cache name.
+     * @param topVer Topology version.
+     */
     private void assertAffinity(List<List<ClusterNode>> aff1,
         List<List<ClusterNode>> aff2,
         Ignite node,

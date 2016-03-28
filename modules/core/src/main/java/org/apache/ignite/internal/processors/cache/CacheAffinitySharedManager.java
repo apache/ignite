@@ -857,7 +857,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         return fut.cacheStarted(aff.cacheId()) ||
             !fut.exchangeId().nodeId().equals(cctx.localNodeId()) ||
-            cctx.localNodeId().equals(cacheDesc.receivedFrom()) ||
             (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
     }
 
@@ -905,8 +904,27 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             RebalancingInfo info = this.rebalancingInfo;
 
             log.info("Computed new affinity after node join [topVer=" + fut.topologyVersion() +
-                ", waitCaches=" + (info != null ? info.waitCaches.keySet() : null)+ ']');
+                ", waitCaches=" + (info != null ? cacheNames(info.waitCaches.keySet()) : null)+ ']');
         }
+    }
+
+    /**
+     * @param cacheIds Cache IDs.
+     * @return Cache names.
+     */
+    private String cacheNames(Collection<Integer> cacheIds) {
+        StringBuilder names = new StringBuilder();
+
+        for (Integer cacheId : cacheIds) {
+            String name = registeredCaches.get(cacheId).cacheConfiguration().getName();
+
+            if (names.length() != 0)
+                names.append(", ");
+
+            names.append(name);
+        }
+
+        return names.toString();
     }
 
     /**
@@ -932,13 +950,23 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (cacheCtx.isLocal())
                 continue;
 
-            GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
-                cacheCtx.name(),
-                topVer);
+            DynamicCacheDescriptor cacheDesc = registeredCaches.get(cacheCtx.cacheId());
 
-            fetchFut.init();
+            if (cctx.localNodeId().equals(cacheDesc.receivedFrom())) {
+                List<List<ClusterNode>> assignment =
+                    cacheCtx.affinity().affinityCache().calculate(fut.topologyVersion(), fut.discoveryEvent());
 
-            fetchFuts.add(fetchFut);
+                cacheCtx.affinity().affinityCache().initialize(fut.topologyVersion(), assignment);
+            }
+            else {
+                GridDhtAssignmentFetchFuture fetchFut = new GridDhtAssignmentFetchFuture(cctx,
+                    cacheCtx.name(),
+                    topVer);
+
+                fetchFut.init();
+
+                fetchFuts.add(fetchFut);
+            }
         }
 
         for (int i = 0; i < fetchFuts.size(); i++) {
@@ -1161,9 +1189,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (cacheCtx.isLocal())
                     continue;
 
-                boolean delay = cacheCtx.rebalanceEnabled();
+                boolean latePrimary = cacheCtx.rebalanceEnabled();
 
-                initAffinityOnNodeJoin(fut, cacheCtx.affinity().affinityCache(), null, delay);
+                initAffinityOnNodeJoin(fut, cacheCtx.affinity().affinityCache(), null, latePrimary);
             }
 
             return null;
@@ -1175,9 +1203,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 @Override public void applyx(DynamicCacheDescriptor cacheDesc) throws IgniteCheckedException {
                     CacheHolder cache = cache(fut, cacheDesc);
 
-                    boolean delay = cache.rebalanceEnabled;
+                    boolean latePrimary = cache.rebalanceEnabled;
 
-                    initAffinityOnNodeJoin(fut, cache.affinity(), rebalancingInfo, delay);
+                    initAffinityOnNodeJoin(fut, cache.affinity(), rebalancingInfo, latePrimary);
                 }
             });
 
@@ -1404,7 +1432,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             RebalancingInfo info = this.rebalancingInfo;
 
             log.info("Computed new affinity after node left [topVer=" + topVer +
-                ", waitCaches=" + (info != null ? info.waitCaches.keySet() : null)+ ']');
+                ", waitCaches=" + (info != null ? cacheNames(info.waitCaches.keySet()) : null)+ ']');
         }
 
         return assignment;

@@ -644,6 +644,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             desc.locallyConfigured(true);
             desc.staticallyConfigured(true);
+            desc.receivedFrom(ctx.localNodeId());
 
             if (!template) {
                 registeredCaches.put(masked, desc);
@@ -1859,6 +1860,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 req.deploymentId(desc.deploymentId());
 
+                req.receivedFrom(desc.receivedFrom());
+
                 reqs.add(req);
 
                 Boolean nearEnabled = cache.isNear();
@@ -1881,6 +1884,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 req.cacheType(desc.cacheType());
 
                 req.deploymentId(desc.deploymentId());
+
+                req.receivedFrom(desc.receivedFrom());
 
                 reqs.add(req);
             }
@@ -1957,6 +1962,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CacheConfiguration ccfg = req.startCacheConfiguration();
 
                         if (existing != null) {
+                            if (joiningNodeId.equals(ctx.localNodeId()))
+                                existing.receivedFrom(req.receivedFrom());
+
                             if (existing.locallyConfigured()) {
                                 existing.deploymentId(req.deploymentId());
 
@@ -1986,7 +1994,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             if (joiningNodeId.equals(ctx.localNodeId()))
                                 desc.receivedOnDiscovery(true);
 
-                            desc.receivedFrom(joiningNodeId);
+                            desc.receivedFrom(req.receivedFrom());
 
                             DynamicCacheDescriptor old = registeredCaches.put(maskNull(req.cacheName()), desc);
 

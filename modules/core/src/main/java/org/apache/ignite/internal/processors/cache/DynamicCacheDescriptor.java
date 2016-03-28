@@ -275,7 +275,7 @@ public class DynamicCacheDescriptor {
      * @param nodeId ID of node provided cache configuration in discovery data.
      */
     public void receivedFrom(UUID nodeId) {
-        rcvdFrom = nodeId;;
+        rcvdFrom = nodeId;
     }
 
     /**
