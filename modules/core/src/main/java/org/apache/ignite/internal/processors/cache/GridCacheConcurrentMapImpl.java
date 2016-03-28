@@ -130,16 +130,19 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
                         cur = entry;
                 }
 
-                if (doomed0 != null && !doomed0.deleted() && created0 == null) {
+                int sizeChange = 0;
+
+                if (doomed0 != null) {
                     synchronized (doomed0) {
-                        decrementPublicSize(doomed0);
+                        if (!doomed0.deleted())
+                            sizeChange--;
                     }
                 }
-                else if (created0 != null && (doomed0 == null || doomed0.deleted())) {
-                    synchronized (created0) {
-                        incrementPublicSize(created0);
-                    }
-                }
+
+                if (created0 != null)
+                    sizeChange++;
+
+                pubSize.addAndGet(sizeChange);
 
                 created.set(created0);
                 doomed.set(doomed0);
