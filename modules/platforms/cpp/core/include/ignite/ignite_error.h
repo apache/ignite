@@ -23,8 +23,10 @@
 #ifndef _IGNITE_ERROR
 #define _IGNITE_ERROR
 
-#include <sstream>
 #include <stdint.h>
+
+#include <exception>
+#include <sstream>
 
 #include <ignite/common/common.h>
 
@@ -75,7 +77,7 @@ namespace ignite
     /**
      * Ignite error information.
      */
-    class IGNITE_IMPORT_EXPORT IgniteError
+    class IGNITE_IMPORT_EXPORT IgniteError : public std::exception
     {
     public:
         /** Success. */
@@ -243,7 +245,14 @@ namespace ignite
          * @return Error message.
          */
         const char* GetText() const;
-        
+
+        /**
+         * Get error message. Synonim for GetText().
+         *
+         * @return Error message.
+         */
+        virtual const char* what() const;
+
         /**
          * Set error.
          *
