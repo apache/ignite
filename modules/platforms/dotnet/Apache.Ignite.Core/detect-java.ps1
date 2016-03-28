@@ -1,29 +1,39 @@
 $x64 = [System.Environment]::Is64BitOperatingSystem
 
 # Fisrt, check if JAVA_HOME is set
-If (Test-Path Env:\JAVA_HOME) {
-    If ($x64) {
+if (Test-Path Env:\JAVA_HOME) {
+    if ($x64) {
         $env:JAVA_HOME64 = $env:JAVA_HOME
     }
-    Else {
+    else {
         $env:JAVA_HOME32 = $env:JAVA_HOME
     }
 }
 
 # Next, check registry
-
-if ($x64) {
-    If (Test-Path 'HKLM:\Software\JavaSoft\Java Runtime Environment') {
-        $key = Get-Item 'HKLM:\Software\JavaSoft\Java Runtime Environment'
+Function GetJavaHome([string]$path) {
+    if (Test-Path $path) {
+        $key = Get-Item $path
         $subKeys = $key.GetSubKeyNames()
         $curVer = $key.GetValue("CurrentVersion")
+
+        if ($subKeys.Length -eq 0) {
+            return $null
+        }
 
         If ($curVer -eq $null -or !$subKeys.Contains($curVer)) {
             $curVer = $subKeys[0]
         }
             
-        $env:JAVA_HOME64 = $key.OpenSubKey($curVer).GetValue("JavaHome")
+        return $key.OpenSubKey($curVer).GetValue("JavaHome")
     }
+}
+
+if ($x64) {
+    $env:JAVA_HOME64 = GetJavaHome 'HKLM:\Software\JavaSoft\Java Runtime Environment'
+    $env:JAVA_HOME32 = GetJavaHome 'HKLM:\Software\Wow6432Node\JavaSoft\Java Runtime Environment'
+} else {
+    $env:JAVA_HOME32 = GetJavaHome 'HKLM:\Software\JavaSoft\Java Runtime Environment'
 }
 
 echo "JAVA_HOME64: $env:JAVA_HOME64"
