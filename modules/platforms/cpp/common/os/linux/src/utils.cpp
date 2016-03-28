@@ -25,7 +25,7 @@
 
 namespace ignite
 {
-    namespace utils
+    namespace common
     {
         const char* JAVA_HOME = "JAVA_HOME";
         const char* JAVA_DLL = "/jre/lib/amd64/server/libjvm.so";

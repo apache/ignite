@@ -21,16 +21,79 @@
 AC_PREREQ([2.69])
 AC_INIT([Apache Ignite C++], [1.6.0.8653], [dev@ignite.apache.org], [ignite], [ignite.apache.org])
 
-AC_CONFIG_AUX_DIR([.])
+AC_CANONICAL_SYSTEM
+AC_CONFIG_MACRO_DIR([m4])
+AC_LANG([C++])
 
-AC_PROG_CC
+AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
+AC_CONFIG_HEADER(config.h)
 
-AC_CONFIG_SUBDIRS([binary
-                   common
-                   core
-                   core-test
-                   ignite
-                   jni
-                   odbc
-                   odbc-test])
+AM_SILENT_RULES([yes])
+
+AC_ARG_ENABLE( odbc,
+    [  --enable-odbc        build included ODBC driver [default=no]],
+    [ case "${enableval}" in
+        yes) odbc=true ;;
+        no) odbc=false ;;
+        *) AC_MSG_ERROR(bad value ${enableval} for --enable-odbc) ;;
+        esac
+    ],
+    [odbc=false]
+)
+
+AC_ARG_ENABLE( core,
+    [  --enable-core        build Ignite core library [default=yes]],
+    [ case "${enableval}" in
+        yes) core=true ;;
+        no) core=false ;;
+        *) AC_MSG_ERROR(bad value ${enableval} for --enable-core) ;;
+        esac],
+    [core=true]
+)
+
+AC_ARG_ENABLE( node,
+    [  --enable-node       build stand-alone node binary [default=yes]],
+    [ case "${enableval}" in
+        yes) node=true ;;
+        no) node=false ;;
+        *) AC_MSG_ERROR(bad value ${enableval} for --enable-node) ;;
+        esac],
+    [node=true]
+)
+
+AC_ARG_ENABLE( tests,
+    [  --enable-tests      build tests for enabled components [default=no]],
+    [ case "${enableval}" in
+        yes) tests=true ;;
+        no) tests=false ;;
+        *) AC_MSG_ERROR(bad value ${enableval} for --enable-tests) ;;
+        esac],
+    [tests=false]
+)
+
+AM_CONDITIONAL([COND_ODBC], [test "x$odbc" = "xtrue"])
+AM_CONDITIONAL([COND_CORE], [test "x$core" = "xtrue"])
+AM_CONDITIONAL([COND_NODE], [test "x$node" = "xtrue"])
+AM_CONDITIONAL([COND_TESTS], [test "x$tests" = "xtrue"])
+
+# Checks for programs.
+AC_PROG_CPP
+AM_PROG_AR
+
+# Initialize Libtool
+LT_INIT
+
+AC_CONFIG_FILES([ \
+    Makefile \
+    common/Makefile \
+    binary/Makefile \
+    jni/Makefile \
+    odbc/Makefile \
+    core/Makefile \
+    core/ignite.pc \
+    ignite/Makefile \
+    core-test/Makefile \
+    odbc-test/Makefile
+])
+
 AC_OUTPUT

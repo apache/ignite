@@ -20,7 +20,7 @@
 
 namespace ignite
 {
-    namespace common
+    namespace jni
     {
         /**
          * Helper class to manage attached threads.

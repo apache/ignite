@@ -15,29 +15,47 @@
 ## limitations under the License.
 ##
 
-ACLOCAL_AMFLAGS = "-Im4"
-
-SUBDIRS = . include os/linux/include
-DIST_SUBDIRS = . include os/linux/include
-
-AM_CPPFLAGS = -I$(srcdir)/include -I$(srcdir)/os/linux/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
-AM_CXXFLAGS = -Wall -std=c++0x
-LIB_LDFLAGS = -no-undefined -version-info 1
-
-COMMON_SRC = os/linux/src/attach_helper.cpp \
-             src/java.cpp \
-             src/exports.cpp
+ACLOCAL_AMFLAGS =-I m4
 
 lib_LTLIBRARIES = libignite-jni.la
-libignite_jni_la_SOURCES = $(COMMON_SRC)
-libignite_jni_la_LIBADD = -L$(JAVA_HOME)/jre/lib/amd64/server
-libignite_jni_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -ljvm -lignite-common -version-info 0:0:0 -release $(PACKAGE_VERSION)
 
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = ignite-jni.pc
+AM_CPPFLAGS = \
+    -I$(srcdir)/include \
+    -I$(srcdir)/os/linux/include \
+    -I@top_srcdir@/common/include \
+    -I@top_srcdir@/common/os/linux/include \
+    -I$(JAVA_HOME)/include \
+    -I$(JAVA_HOME)/include/linux \
+    -DIGNITE_IMPL
+
+AM_CXXFLAGS = \
+    -Wall \
+    -std=c++0x
+
+libignite_jni_la_LIBADD = \
+    -L$(JAVA_HOME)/jre/lib/amd64/server \
+    @top_srcdir@/common/libignite-common.la
+
+libignite_jni_la_LDFLAGS = \
+    -no-undefined \
+    -ljvm \
+    -version-info 0:0:0 \
+    -release $(PACKAGE_VERSION)
+
+libignite_jni_la_DEPENDENCIES = \
+    @top_srcdir@/common/libignite-common.la
+
+libignite_jni_la_SOURCES = \
+    os/linux/src/attach_helper.cpp \
+    src/java.cpp \
+    src/exports.cpp
 
 clean-local:
 	$(RM) *.gcno *.gcda
 
 clean-docs:
 	$(RM) $(DX_CLEANFILES)
+
+#SUBDIRS = . include os/linux/include
+#DIST_SUBDIRS = . include os/linux/include
+

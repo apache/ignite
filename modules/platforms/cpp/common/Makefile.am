@@ -15,26 +15,31 @@
 ## limitations under the License.
 ##
 
-ACLOCAL_AMFLAGS = "-Im4"
+ACLOCAL_AMFLAGS =-I m4
 
-SUBDIRS = . include os/linux/include
-DIST_SUBDIRS = . include os/linux/include
+noinst_LTLIBRARIES = libignite-common.la
 
-AM_CPPFLAGS = -I$(srcdir)/include -I$(srcdir)/os/linux/include -DIGNITE_IMPL
-AM_CXXFLAGS = -Wall -std=c++0x
-LIB_LDFLAGS = -no-undefined -version-info 1
+AM_CPPFLAGS = \
+    -I$(srcdir)/include \
+    -I$(srcdir)/os/linux/include \
+    -DIGNITE_IMPL
 
-COMMON_SRC = os/linux/src/concurrent_os.cpp \
-             os/linux/src/utils.cpp         \
-             src/ignite_error.cpp           \
-             src/concurrent.cpp
+AM_CXXFLAGS = \
+    -Wall \
+    -std=c++0x
 
-lib_LTLIBRARIES = libignite-common.la
-libignite_common_la_SOURCES = $(COMMON_SRC)
-libignite_common_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -ldl -version-info 0:0:0 -release $(PACKAGE_VERSION)
+libignite_common_la_LDFLAGS = \
+    -no-undefined \
+    -L/usr/local/lib \
+    -ldl \
+    -version-info 0:0:0 \
+    -release $(PACKAGE_VERSION)
 
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = ignite-common.pc
+libignite_common_la_SOURCES = \
+    os/linux/src/concurrent_os.cpp \
+    os/linux/src/utils.cpp \
+    src/ignite_error.cpp \
+    src/concurrent.cpp
 
 clean-local:
 	$(RM) *.gcno *.gcda

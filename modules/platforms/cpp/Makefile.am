@@ -15,7 +15,48 @@
 ## limitations under the License.
 ##
 
-ACLOCAL_AMFLAGS = "-Im4"
+ACLOCAL_AMFLAGS =-I m4
 
-SUBDIRS = common binary odbc jni core ignite core-test odbc-test
+if COND_ODBC
+  MAYBE_ODBC = odbc
 
+if COND_TESTS
+    MAYBE_ODBC_TESTS = odbc-test
+endif
+
+endif
+
+if COND_CORE
+  MAYBE_CORE = core
+
+if COND_TESTS
+    MAYBE_CORE_TESTS = core-test
+endif
+
+endif
+
+if COND_NODE
+  MAYBE_NODE = ignite
+endif
+
+
+
+SUBDIRS = \
+    common \
+    binary \
+    jni \
+    $(MAYBE_ODBC) \
+    $(MAYBE_CORE) \
+    $(MAYBE_NODE) \
+    $(MAYBE_ODBC_TESTS) \
+    $(MAYBE_CORE_TESTS)
+
+DIST_SUBDIRS = \
+    common \
+    binary \
+    jni \
+    odbc \
+    core \
+    ignite \
+    core-test \
+    odbc-test
