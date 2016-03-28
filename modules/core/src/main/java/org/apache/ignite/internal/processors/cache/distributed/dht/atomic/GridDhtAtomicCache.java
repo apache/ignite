@@ -335,16 +335,23 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final boolean skipStore = opCtx != null && opCtx.skipStore();
 
-        return getAsync0(ctx.toCacheKeyObject(key),
-            !ctx.config().isReadFromBackup(),
-            subjId,
-            taskName,
-            deserializeBinary,
-            expiryPlc,
-            false,
-            skipStore,
-            true,
-            needVer).get();
+        try {
+            return getAsync0(ctx.toCacheKeyObject(key),
+                !ctx.config().isReadFromBackup(),
+                subjId,
+                taskName,
+                deserializeBinary,
+                expiryPlc,
+                false,
+                skipStore,
+                true,
+                needVer).get();
+        } catch (IgniteException e) {
+            if (e.getCause(IgniteCheckedException.class) != null)
+                throw e.getCause(IgniteCheckedException.class);
+            else
+                throw e;
+        }
     }
 
     /** {@inheritDoc} */
