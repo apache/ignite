@@ -132,7 +132,7 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
     /**
      * @return Cache entry instance.
      */
-    public GridCacheEntryEx cacheEntryEx() {
+    public GridCacheEntryEx entry() {
         return cacheEntryEx;
     }
 
@@ -142,7 +142,7 @@ public class CacheInvokeEntry<K, V> extends CacheLazyEntry<K, V> implements Muta
         if (cls.isAssignableFrom(CacheEntry.class) && ver != null)
             return (T)new CacheEntryImplEx<>(getKey(), getValue(), ver);
 
-        final T res = cctx.plugin().unwrapMutableEntry(this, cls);
+        final T res = cctx.plugin().unwrapCacheEntry(this, cls);
 
         if (res != null)
             return res;

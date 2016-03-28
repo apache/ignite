@@ -25,6 +25,7 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.jetbrains.annotations.Nullable;
 
+import javax.cache.Cache;
 import javax.cache.processor.MutableEntry;
 
 /**
@@ -43,7 +44,7 @@ public class CacheDeploymentCachePluginConfiguration<K, V> implements CachePlugi
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object unwrapMutableEntry(final MutableEntry mutableEntry, final Class cls) {
+        @Nullable @Override public Object unwrapCacheEntry(final Cache.Entry mutableEntry, final Class cls) {
             return null;
         }
 

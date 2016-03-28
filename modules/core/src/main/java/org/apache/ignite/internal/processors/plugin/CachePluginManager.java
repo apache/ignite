@@ -41,7 +41,7 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.jetbrains.annotations.Nullable;
 
-import javax.cache.processor.MutableEntry;
+import javax.cache.Cache;
 
 /**
  * Cache plugin manager.
@@ -135,20 +135,22 @@ public class CachePluginManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Unwrap entry to specified type. For details see {@link MutableEntry#unwrap(Class)}.
+     * Unwrap entry to specified type. For details see {@link Cache.Entry#unwrap(Class)}.
      *
-     * @param mutableEntry Mutable entry to unwrap.
+     * @param entry Entry to unwrap.
      * @param cls Type of the expected component.
      * @param <T> Return type.
      * @return New instance of underlying type or {@code null} if it's not available.
      */
-    @SuppressWarnings("unchecked")
-    @Nullable public <T> T unwrapMutableEntry(MutableEntry<?, ?> mutableEntry, Class<T> cls) {
-        if (F.isEmpty(providersList))
+    @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
+    @Nullable public <T> T unwrapCacheEntry(Cache.Entry<?, ?> entry, Class<T> cls) {
+        int size = providersList.size();
+
+        if (size == 0)
             return null;
 
-        for (int i = 0; i < providersList.size(); i++) {
-            final T res = (T) providersList.get(i).unwrapMutableEntry(mutableEntry, cls);
+        for (int i = 0; i < size; i++) {
+            final T res = (T)providersList.get(i).unwrapCacheEntry(entry, cls);
 
             if (res != null)
                 return res;
