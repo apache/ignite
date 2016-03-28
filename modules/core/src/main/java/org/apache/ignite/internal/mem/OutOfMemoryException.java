@@ -24,6 +24,9 @@ import org.apache.ignite.IgniteException;
  *
  */
 public class OutOfMemoryException extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      *
      */

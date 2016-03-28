@@ -844,6 +844,9 @@ public class  PageMemoryImpl implements PageMemory {
      *
      */
     private class Segment extends ReentrantReadWriteLock {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Page ID to relative pointer map. */
         private final FullPageIdTable loadedPages;
 
