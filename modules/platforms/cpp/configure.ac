@@ -101,8 +101,6 @@ AC_CONFIG_FILES([ \
     jni/os/linux/include/Makefile \
     jni/include/Makefile \
     jni/Makefile \
-    examples/putget-example/Makefile \
-    examples/odbc-example/Makefile \
     ignite/Makefile \
 ])
 
