@@ -162,10 +162,11 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
         GridDiscoveryManager discoMgr = platformCtx.kernalContext().discovery();
 
-        long topVer = discoMgr.topologyVersion();
-        int topSize = discoMgr.cacheNodes(cacheName, new AffinityTopologyVersion(topVer)).size();
+        AffinityTopologyVersion topVer = discoMgr.topologyVersionEx();
 
-        platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer, topSize);
+        int topSize = discoMgr.cacheNodes(cacheName, topVer).size();
+
+        platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer.topologyVersion(), topSize);
     }
 
     /**

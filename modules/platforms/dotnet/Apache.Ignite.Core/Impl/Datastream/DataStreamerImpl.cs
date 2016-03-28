@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
@@ -86,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private long _topVer;
 
         /** Topology size. */
-        private int _topSize;
+        private int _topSize = 1;
         
         /** Buffer send size. */
         private volatile int _bufSndSize;
@@ -568,9 +569,9 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 if (_topVer < topVer)
                 {
                     _topVer = topVer;
-                    _topSize = topSize;
+                    _topSize = topSize > 0 ? topSize : 1;  // Do not set to 0 to avoid 0 buffer size.
 
-                    _bufSndSize = topSize * UU.DataStreamerPerNodeBufferSizeGet(Target);
+                    _bufSndSize = _topSize * UU.DataStreamerPerNodeBufferSizeGet(Target);
                 }
             }
             finally
@@ -589,6 +590,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private Task Add0(object val, int cnt)
         {
             int bufSndSize0 = _bufSndSize;
+
+            Debug.Assert(bufSndSize0 > 0);
 
             while (true)
             {
