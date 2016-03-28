@@ -17,10 +17,30 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeDeleteProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeUpdateProcessor;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -34,38 +54,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.GridSpinReadWriteLock;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.thread.IgniteThread;
-import org.jetbrains.annotations.Nullable;
-
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.RANGE_STATUS_INITIAL;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.RANGE_STATUS_MOVED;
 import static org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange.RANGE_STATUS_MOVING;
@@ -192,7 +186,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
     private void sendWithRetries(UUID nodeId, IgfsCommunicationMessage msg) throws IgniteCheckedException {
         for (int i = 0; i < MESSAGE_SEND_RETRY_COUNT; i++) {
             try {
-                igfsCtx.send(nodeId, topic, msg, SYSTEM_POOL);
+                igfsCtx.send(nodeId, topic, msg, IGFS_POOL);
 
                 return;
             }
@@ -274,7 +268,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
         Collection<IgfsFileAffinityRange> ranges = req.fragmentRanges();
         IgniteUuid fileId = req.fileId();
 
-        IgfsFileInfo fileInfo = igfsCtx.meta().info(fileId);
+        IgfsEntryInfo fileInfo = igfsCtx.meta().info(fileId);
 
         if (fileInfo == null) {
             if (log.isDebugEnabled())
@@ -288,13 +282,13 @@ public class IgfsFragmentizerManager extends IgfsManager {
 
         for (IgfsFileAffinityRange range : ranges) {
             try {
-                IgfsFileInfo updated;
+                IgfsEntryInfo updated;
 
                 switch (range.status()) {
                     case RANGE_STATUS_INITIAL: {
                         // Mark range as moving.
                         updated = igfsCtx.meta().updateInfo(
-                            fileId, new RangeUpdateProcessor(range, RANGE_STATUS_MOVING));
+                            fileId, new IgfsMetaFileRangeUpdateProcessor(range, RANGE_STATUS_MOVING));
 
                         if (updated == null) {
                             igfsCtx.data().cleanBlocks(fileInfo, range, true);
@@ -311,7 +305,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
 
                         // Mark range as moved.
                         updated = igfsCtx.meta().updateInfo(
-                            fileId, new RangeUpdateProcessor(range, RANGE_STATUS_MOVED));
+                            fileId, new IgfsMetaFileRangeUpdateProcessor(range, RANGE_STATUS_MOVED));
 
                         if (updated == null) {
                             igfsCtx.data().cleanBlocks(fileInfo, range, true);
@@ -327,7 +321,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                         igfsCtx.data().cleanBlocks(fileInfo, range, false);
 
                         // Remove range from map.
-                        updated = igfsCtx.meta().updateInfo(fileId, new RangeDeleteProcessor(range));
+                        updated = igfsCtx.meta().updateInfo(fileId, new IgfsMetaFileRangeDeleteProcessor(range));
 
                         if (updated == null)
                             igfsCtx.data().cleanBlocks(fileInfo, range, true);
@@ -339,135 +333,6 @@ public class IgfsFragmentizerManager extends IgfsManager {
                     log.debug("Failed to update file range " +
                         "[range=" + range + "fileId=" + fileId + ", err=" + e.getMessage() + ']');
             }
-        }
-    }
-
-    /**
-     * Update range processor.
-     */
-    private static class RangeUpdateProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Range. */
-        private IgfsFileAffinityRange range;
-
-        /** Status. */
-        private int status;
-
-        /**
-         * Constructor.
-         */
-        public RangeUpdateProcessor() {
-            // No-op.
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param range Range.
-         * @param status Status.
-         */
-        public RangeUpdateProcessor(IgfsFileAffinityRange range, int status) {
-            this.range = range;
-            this.status = status;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
-            throws EntryProcessorException {
-            IgfsFileInfo oldInfo = entry.getValue();
-
-            IgfsFileMap newMap = new IgfsFileMap(oldInfo.fileMap());
-
-            newMap.updateRangeStatus(range, status);
-
-            IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, oldInfo.length());
-
-            newInfo.fileMap(newMap);
-
-            entry.setValue(newInfo);
-
-            return newInfo;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(range);
-            out.writeInt(status);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            range = (IgfsFileAffinityRange)in.readObject();
-            status = in.readInt();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(RangeUpdateProcessor.class, this);
-        }
-    }
-
-    /**
-     * Delete range processor.
-     */
-    private static class RangeDeleteProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Range. */
-        private IgfsFileAffinityRange range;
-
-        /**
-         * Constructor.
-         */
-        public RangeDeleteProcessor() {
-            // No-op.
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param range Range.
-         */
-        public RangeDeleteProcessor(IgfsFileAffinityRange range) {
-            this.range = range;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
-            throws EntryProcessorException {
-            IgfsFileInfo oldInfo = entry.getValue();
-
-            IgfsFileMap newMap = new IgfsFileMap(oldInfo.fileMap());
-
-            newMap.deleteRange(range);
-
-            IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, oldInfo.length());
-
-            newInfo.fileMap(newMap);
-
-            entry.setValue(newInfo);
-
-            return newInfo;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(range);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            range = (IgfsFileAffinityRange)in.readObject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(RangeDeleteProcessor.class, this);
         }
     }
 
@@ -507,7 +372,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
                 // If we have room for files, add them to fragmentizer.
                 try {
                     while (fragmentingFiles.size() < igfsCtx.configuration().getFragmentizerConcurrentFiles()) {
-                        IgfsFileInfo fileInfo = fileForFragmentizer(fragmentingFiles.keySet());
+                        IgfsEntryInfo fileInfo = fileForFragmentizer(fragmentingFiles.keySet());
 
                         // If no colocated files found, exit loop.
                         if (fileInfo == null)
@@ -715,7 +580,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
          *
          * @param fileInfo File info to process.
          */
-        private void requestFragmenting(IgfsFileInfo fileInfo) {
+        private void requestFragmenting(IgfsEntryInfo fileInfo) {
             IgfsFileMap map = fileInfo.fileMap();
 
             assert map != null && !map.ranges().isEmpty();
@@ -789,7 +654,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
      * @return File ID to process or {@code null} if there are no such files.
      * @throws IgniteCheckedException In case of error.
      */
-    @Nullable private IgfsFileInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws IgniteCheckedException {
+    @Nullable private IgfsEntryInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws IgniteCheckedException {
         return fragmentizerEnabled ? igfsCtx.meta().fileForFragmentizer(exclude) : null;
     }
 
