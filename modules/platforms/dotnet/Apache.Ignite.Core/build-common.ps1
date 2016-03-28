@@ -47,11 +47,11 @@ $env:JAVA_HOME = $null
 if ($env:JAVA_HOME64) {
     $env:JAVA_HOME = $env:JAVA_HOME64
 
-    & $msbuild "$dir..\..\cpp\common\project\vs\common.vcxproj" /p:Platform=x64 /p:Configuration=$Configuration /t:Rebuild
+    & "$msbuild" "$dir..\..\cpp\common\project\vs\common.vcxproj" /p:Platform=x64 /p:Configuration=$Configuration /t:Rebuild
 }
 
 if ($env:JAVA_HOME32) {
     $env:JAVA_HOME = $env:JAVA_HOME32
 
-    & $msbuild "$dir..\..\cpp\common\project\vs\common.vcxproj" /p:Platform=Win32 /p:Configuration=$Configuration /t:Rebuild
+    & "$msbuild" "$dir..\..\cpp\common\project\vs\common.vcxproj" /p:Platform=Win32 /p:Configuration=$Configuration /t:Rebuild
 }
