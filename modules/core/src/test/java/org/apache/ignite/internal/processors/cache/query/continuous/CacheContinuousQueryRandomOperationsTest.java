@@ -146,13 +146,13 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testFilterAndFactoryProvided() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+        final CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
             1,
             ATOMIC,
             ONHEAP_TIERED,
             false);
 
-        final IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(ccfg);
+        grid(0).createCache(ccfg);
 
         try {
             final ContinuousQuery qry = new ContinuousQuery();
@@ -177,13 +177,13 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    return cache.query(qry);
+                    return grid(0).cache(ccfg.getName()).query(qry);
                 }
             }, IgniteException.class, null);
 
         }
         finally {
-            cache.destroy();
+            grid(0).destroyCache(ccfg.getName());
         }
     }
 
