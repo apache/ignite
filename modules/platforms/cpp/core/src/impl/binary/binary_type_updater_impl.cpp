@@ -80,6 +80,8 @@ namespace ignite
 
                 rawWriter.WriteBool(false); // Enums are not supported for now.
 
+                rawWriter.WriteInt32(0); // Schema size. Compact schema footer is not yet supported.
+
                 out.Synchronize();
 
                 long long res = env.Get()->Context()->TargetInStreamOutLong(javaRef, OP_METADATA, mem.Get()->PointerLong(), &jniErr);
