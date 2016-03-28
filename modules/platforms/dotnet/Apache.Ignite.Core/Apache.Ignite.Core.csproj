@@ -460,16 +460,17 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
-    <PreBuildEvent>set OLD_JAVA_HOME = %25JAVA_HOME%25
+    <PreBuildEvent>IF NOT EXIST '%25JAVA_HOME64%25' IF NOT EXIST '%25JAVA_HOME32%25' EXIT 1
+set OLD_JAVA_HOME = %25JAVA_HOME%25
 set JAVA_HOME=%25JAVA_HOME64%25
 echo JHOME: %25JAVA_HOME%25
 
-IF EXIST %25JAVA_HOME%25 "$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=$(Configuration) /t:Rebuild
+IF EXIST '%25JAVA_HOME%25' "$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=x64 /p:Configuration=$(Configuration) /t:Rebuild
 
 set JAVA_HOME=%25JAVA_HOME32%25
 echo JHOME: %25JAVA_HOME%25
 
-IF EXIST %25JAVA_HOME%25 "$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=$(Configuration) /t:Rebuild
+IF EXIST '%25JAVA_HOME%25' "$(MSBuildBinPath)\msbuild.exe" $(ProjectDir)..\..\cpp\common\project\vs\common.vcxproj /p:Platform=Win32 /p:Configuration=$(Configuration) /t:Rebuild
 
 set JAVA_HOME = %25OLD_JAVA_HOME%25
 	</PreBuildEvent>
