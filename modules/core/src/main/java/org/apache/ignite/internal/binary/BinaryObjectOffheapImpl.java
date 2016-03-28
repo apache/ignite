@@ -170,20 +170,20 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         Object val;
 
         // Calculate field position.
-        int schemaOffset = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        int schemaOff = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
         short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
         int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
 
-        int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
+        int fieldOffsetPos = start + schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
         int fieldPos;
 
-        if (fieldOffsetLen == BinaryUtils.OFFSET_1)
+        if (fieldOffLen == BinaryUtils.OFFSET_1)
             fieldPos = start + ((int)BinaryPrimitives.readByte(ptr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffsetLen == BinaryUtils.OFFSET_2)
+        else if (fieldOffLen == BinaryUtils.OFFSET_2)
             fieldPos = start + ((int)BinaryPrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + BinaryPrimitives.readInt(ptr, fieldOffsetPos);
@@ -418,7 +418,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
      * Create new reader for this object.
      *
      * @param rCtx Reader context.
-     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      * @return Reader.
      */
     private BinaryReaderExImpl reader(@Nullable BinaryReaderHandles rCtx, boolean forUnmarshal) {

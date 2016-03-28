@@ -27,7 +27,7 @@ import java.io.Externalizable;
  */
 public interface CacheVersion extends Comparable<CacheVersion>, Message, Externalizable {
     /**
-     * @return Topology version plus number of seconds from the start time of the first grid node..
+     * @return Topology version plus number of seconds from the start time of the first grid node.
      */
     public int topologyVersion();
 

@@ -69,7 +69,7 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     protected static final String CACHE_NAME = "cache_name";
 
     /**
-     * @return cache mode.
+     * @return Cache mode.
      */
     protected CacheMode cacheMode() {
         return PARTITIONED;

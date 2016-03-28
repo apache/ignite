@@ -463,6 +463,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     public GridAffinityAssignmentCache affinityCache() {
         return aff;
     }
+
     /**
      * @param part Partition.
      * @param startVer Start version.

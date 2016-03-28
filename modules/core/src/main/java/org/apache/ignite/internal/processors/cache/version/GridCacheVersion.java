@@ -35,13 +35,13 @@ public class GridCacheVersion implements CacheVersion, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Node order mask. */
-    public static final int NODE_ORDER_MASK = 0x07_FF_FF_FF;
+    private static final int NODE_ORDER_MASK = 0x07_FF_FF_FF;
 
     /** DR center ID shift. */
-    public static final int DR_ID_SHIFT = 27;
+    private static final int DR_ID_SHIFT = 27;
 
     /** DR center ID mask. */
-    public static final int DR_ID_MASK = 0x1F;
+    private static final int DR_ID_MASK = 0x1F;
 
     /** Topology version. */
     private int topVer;
@@ -102,32 +102,32 @@ public class GridCacheVersion implements CacheVersion, Externalizable {
     /**
      * @return Topology version plus number of seconds from the start time of the first grid node..
      */
-    @Override public int topologyVersion() {
+    @Override public final int topologyVersion() {
         return topVer;
     }
 
     /** {@inheritDoc} */
-    @Override public int nodeOrderAndDrIdRaw() {
+    @Override public final int nodeOrderAndDrIdRaw() {
         return nodeOrderDrId;
     }
 
     /** {@inheritDoc} */
-    @Override public long globalTime() {
+    @Override public final long globalTime() {
         return globalTime;
     }
 
     /** {@inheritDoc} */
-    @Override public long order() {
+    @Override public final long order() {
         return order;
     }
 
     /** {@inheritDoc} */
-    @Override public int nodeOrder() {
+    @Override public final int nodeOrder() {
         return nodeOrderDrId & NODE_ORDER_MASK;
     }
 
     /** {@inheritDoc} */
-    @Override public byte dataCenterId() {
+    @Override public final byte dataCenterId() {
         return (byte)((nodeOrderDrId >> DR_ID_SHIFT) & DR_ID_MASK);
     }
 
@@ -146,12 +146,12 @@ public class GridCacheVersion implements CacheVersion, Externalizable {
     /**
      * @return Version represented as {@code GridUuid}
      */
-    @Override public IgniteUuid asGridUuid() {
+    @Override public final IgniteUuid asGridUuid() {
         return new IgniteUuid(new UUID(((long)topVer << 32) | nodeOrderDrId, globalTime), order);
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
+    @Override public final void onAckReceived() {
         // No-op.
     }
 
@@ -205,7 +205,7 @@ public class GridCacheVersion implements CacheVersion, Externalizable {
         if (res != 0)
             return res;
 
-        res = Long.compare(order, other.order());
+        res = Long.compare(order, ((GridCacheVersion)other).order);
 
         if (res != 0)
             return res;

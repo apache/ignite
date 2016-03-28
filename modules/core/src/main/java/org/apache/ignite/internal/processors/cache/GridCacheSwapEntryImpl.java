@@ -113,6 +113,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
 
     /**
      * @param bytes Entry bytes.
+     * @param cctx Context.
      * @return Version.
      */
     public static CacheVersion version(byte[] bytes, GridCacheSharedContext cctx) {
@@ -257,6 +258,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     }
 
     /**
+     * @param cctx Context.
      * @param arr Entry bytes.
      * @param valOnly If {@code true} unmarshalls only entry value.
      * @return Entry.

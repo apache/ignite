@@ -192,7 +192,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         GridDhtPartitionsExchangeFuture initFut = null;
 
                         if (readyTopVer.get().equals(AffinityTopologyVersion.NONE)) {
-                            initFut = exchangeFuture(initExchangeId(), null, null, null);
+                            initFut = exchangeFuture(initialExchangeId(), null, null, null);
 
                             initFut.onNodeLeft(n);
                         }
@@ -327,7 +327,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @return Initial exchange ID.
      */
-    private GridDhtPartitionExchangeId initExchangeId() {
+    private GridDhtPartitionExchangeId initialExchangeId() {
         DiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
 
         assert discoEvt != null;
@@ -352,7 +352,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         // Generate dummy discovery event for local node joining.
         DiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
 
-        GridDhtPartitionExchangeId exchId = initExchangeId();
+        GridDhtPartitionExchangeId exchId = initialExchangeId();
 
         GridDhtPartitionsExchangeFuture fut = exchangeFuture(exchId, discoEvt, null, null);
 
@@ -517,7 +517,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @param exchFut Exchange future.
      * @return Topology.
      */
-    public GridClientPartitionTopology clientTopology(int cacheId, GridDhtPartitionsExchangeFuture exchFut) {
+    public GridDhtPartitionTopology clientTopology(int cacheId, GridDhtPartitionsExchangeFuture exchFut) {
         GridClientPartitionTopology top = clientTops.get(cacheId);
 
         if (top != null)
@@ -1197,10 +1197,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             for (IgniteInternalTx tx : tm.activeTransactions()) {
                 if (exchTopVer != null) {
-                    if (tm.needWaitTransaction(tx, exchTopVer))
-                        U.warn(log, ">>> [txVer=" + tx.topologyVersionSnapshot() + ", exchWait=true, tx=" + tx + ']');
-                    else
-                        U.warn(log, ">>> [txVer=" + tx.topologyVersionSnapshot() + ", exchWait=false, tx=" + tx + ']');
+                    U.warn(log, ">>> [txVer=" + tx.topologyVersionSnapshot() +
+                        ", exchWait=" + tm.needWaitTransaction(tx, exchTopVer) +
+                        ", tx=" + tx + ']');
                 }
                 else
                     U.warn(log, ">>> [txVer=" + tx.topologyVersionSnapshot() + ", tx=" + tx + ']');

@@ -80,6 +80,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
      * @param cacheId Cache ID.
      * @param topVer Topology version.
      * @param affAssignment Affinity assignment.
+     * @param sndNodeIds If {@code true} sends only node IDs instead of nodes.
      */
     public GridDhtAffinityAssignmentResponse(int cacheId,
         @NotNull AffinityTopologyVersion topVer,
@@ -107,6 +108,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     }
 
     /**
+     * @param disco Discovery manager.
      * @return Affinity assignment.
      */
     public List<List<ClusterNode>> affinityAssignment(GridDiscoveryManager disco) {
@@ -126,6 +128,11 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
         return nodes(disco, idealAffAssignment);
     }
 
+    /**
+     * @param disco Discovery manager.
+     * @param assignmentIds Assignment node IDs.
+     * @return Assignment nodes.
+     */
     private List<List<ClusterNode>> nodes(GridDiscoveryManager disco, List<List<UUID>> assignmentIds) {
         if (assignmentIds != null) {
             List<List<ClusterNode>> assignment = new ArrayList<>(assignmentIds.size());

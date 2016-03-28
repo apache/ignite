@@ -267,20 +267,20 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         Object val;
 
         // Calculate field position.
-        int schemaOffset = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        int schemaOff = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
         short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
 
         int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
 
-        int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
+        int fieldOffsetPos = start + schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
         int fieldPos;
 
-        if (fieldOffsetLen == BinaryUtils.OFFSET_1)
+        if (fieldOffLen == BinaryUtils.OFFSET_1)
             fieldPos = start + ((int)BinaryPrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffsetLen == BinaryUtils.OFFSET_2)
+        else if (fieldOffLen == BinaryUtils.OFFSET_2)
             fieldPos = start + ((int)BinaryPrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
         else
             fieldPos = start + BinaryPrimitives.readInt(arr, fieldOffsetPos);

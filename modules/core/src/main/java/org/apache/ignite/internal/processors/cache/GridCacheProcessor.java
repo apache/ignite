@@ -1799,6 +1799,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param kernalCtx Kernal context.
      * @param storeSesLsnrs Store session listeners.
      * @return Shared context.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     private GridCacheSharedContext createSharedContext(GridKernalContext kernalCtx,

@@ -58,9 +58,13 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
      * @param obsoleteVer Obsolete version.
      * @param id Mod for the given runnable.
      * @param totalCnt Mods count across all spawned clearLocally runnables.
+     * @param readers Clear readers flag.
      */
-    public GridCacheClearAllRunnable(GridCacheAdapter<K, V> cache, CacheVersion obsoleteVer,
-        int id, int totalCnt, boolean readers) {
+    public GridCacheClearAllRunnable(GridCacheAdapter<K, V> cache,
+        CacheVersion obsoleteVer,
+        int id,
+        int totalCnt,
+        boolean readers) {
         assert cache != null;
         assert obsoleteVer != null;
         assert id >= 0;

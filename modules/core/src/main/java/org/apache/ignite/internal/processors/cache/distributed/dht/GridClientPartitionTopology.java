@@ -218,7 +218,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         return stopping;
     }
 
-    @Override public void initPartitions(GridDhtPartitionsExchangeFuture exchFut) throws IgniteInterruptedCheckedException {
+    /** {@inheritDoc} */
+    @Override public void initPartitions(GridDhtPartitionsExchangeFuture exchFut) {
         // No-op.
     }
 

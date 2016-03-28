@@ -147,6 +147,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param ctx Context.
      * @param in Input stream.
      * @param ldr Class loader.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
     public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
         this(ctx, in, ldr, null, forUnmarshal);
@@ -1653,6 +1654,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     /**
+     * @param fieldId Field ID.
      * @return Deserialized object.
      * @throws BinaryObjectException If failed.
      */

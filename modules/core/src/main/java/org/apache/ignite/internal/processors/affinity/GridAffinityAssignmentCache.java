@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
@@ -102,7 +101,9 @@ public class GridAffinityAssignmentCache {
      * @param ctx Kernal context.
      * @param cacheName Cache name.
      * @param aff Affinity function.
+     * @param nodeFilter Node filter.
      * @param backups Number of backups.
+     * @param locCache Local cache flag.
      */
     @SuppressWarnings("unchecked")
     public GridAffinityAssignmentCache(GridKernalContext ctx,
@@ -488,6 +489,9 @@ public class GridAffinityAssignmentCache {
         return true;
     }
 
+    /**
+     * @param aff Affinity cache.
+     */
     public void init(GridAffinityAssignmentCache aff) {
         assert aff.lastVersion().compareTo(lastVersion()) >= 0;
         assert aff.idealAssignment() != null;

@@ -413,11 +413,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      * @return New lock order.
      */
     private CacheVersion next(long topVer, boolean addTime, boolean forLoad, byte dataCenterId) {
-        if (topVer == -1L) {
-            AffinityTopologyVersion topVer0 = cctx.kernalContext().discovery().topologyVersionEx();
-
-            topVer = topVer0.topologyVersion();
-        }
+        if (topVer == -1L)
+            topVer = cctx.kernalContext().discovery().topologyVersion();
 
         long globalTime = cctx.kernalContext().clockSync().adjustedTime(topVer);
 

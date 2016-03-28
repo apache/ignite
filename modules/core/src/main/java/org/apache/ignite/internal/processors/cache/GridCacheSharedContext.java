@@ -196,6 +196,7 @@ public class GridCacheSharedContext<K, V> {
      * @param mvccMgr MVCC manager.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
+     * @param affMgr Affinity manager.
      * @param ioMgr IO manager.
      * @param jtaMgr JTA manager.
      */
@@ -206,7 +207,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheMvccManager mvccMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
-        CacheAffinitySharedManager topMgr,
+        CacheAffinitySharedManager affMgr,
         GridCacheIoManager ioMgr) {
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
@@ -214,7 +215,7 @@ public class GridCacheSharedContext<K, V> {
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
         this.exchMgr = add(mgrs, exchMgr);
-        this.affMgr = add(mgrs, topMgr);
+        this.affMgr = add(mgrs, affMgr);
         this.ioMgr = add(mgrs, ioMgr);
     }
 

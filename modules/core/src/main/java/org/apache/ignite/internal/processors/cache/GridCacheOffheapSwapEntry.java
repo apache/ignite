@@ -56,6 +56,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
     /**
      * @param ptr Value pointer.
      * @param size Value size.
+     * @param cctx Context.
      */
     public GridCacheOffheapSwapEntry(long ptr, int size, GridCacheSharedContext cctx) {
         assert ptr > 0 : ptr;
@@ -116,6 +117,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
 
     /**
      * @param ptr Marshaled swap entry address.
+     * @param cctx Context.
      * @return Version.
      */
     public static CacheVersion version(long ptr, GridCacheSharedContext cctx) {
