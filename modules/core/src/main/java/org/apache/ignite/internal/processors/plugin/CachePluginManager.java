@@ -143,7 +143,7 @@ public class CachePluginManager extends GridCacheManagerAdapter {
      * @return New instance of underlying type or {@code null} if it's not available.
      */
     @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
-    @Nullable public <T> T unwrapCacheEntry(Cache.Entry<?, ?> entry, Class<T> cls) {
+    @Nullable public <T, K, V> T unwrapCacheEntry(Cache.Entry<K, V> entry, Class<T> cls) {
         int size = providersList.size();
 
         if (size == 0)

@@ -75,7 +75,7 @@ public interface CachePluginProvider<C extends CachePluginConfiguration> {
      * @param <T> Return type.
      * @return New instance of underlying type or {@code null} if it's not available.
      */
-    @Nullable public <T> T unwrapCacheEntry(Cache.Entry<?, ?> entry, Class<T> cls);
+    @Nullable public <T, K, V> T unwrapCacheEntry(Cache.Entry<K, V> entry, Class<T> cls);
 
     /**
      * Validates cache plugin configuration in process of cache creation. Throw exception if validation failed.
