@@ -73,6 +73,8 @@ public interface CachePluginProvider<C extends CachePluginConfiguration> {
      * @param entry Mutable entry to unwrap.
      * @param cls Type of the expected component.
      * @param <T> Return type.
+     * @param <K> Key type.
+     * @param <V> Value type.
      * @return New instance of underlying type or {@code null} if it's not available.
      */
     @Nullable public <T, K, V> T unwrapCacheEntry(Cache.Entry<K, V> entry, Class<T> cls);

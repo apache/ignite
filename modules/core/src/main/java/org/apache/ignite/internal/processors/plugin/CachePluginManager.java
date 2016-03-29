@@ -140,6 +140,8 @@ public class CachePluginManager extends GridCacheManagerAdapter {
      * @param entry Entry to unwrap.
      * @param cls Type of the expected component.
      * @param <T> Return type.
+     * @param <K> Key type.
+     * @param <V> Value type.
      * @return New instance of underlying type or {@code null} if it's not available.
      */
     @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
