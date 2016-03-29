@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                     IsDaemon = true
                 }))
                 {
-                    Assert.IsTrue(daemon.GetCluster().ForLocal().GetNode().IsDaemon);
+                    Assert.IsTrue(daemon.GetCluster().GetLocalNode().IsDaemon);
 
                     var daemons = cluster.ForDaemons().GetNodes();
 
