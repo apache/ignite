@@ -38,8 +38,8 @@ AM_PROG_AR
 # Initialize Libtool
 LT_INIT
 
-AC_ARG_ENABLE( odbc,
-    [  --enable-odbc        build included ODBC driver [default=yes]],
+AC_ARG_ENABLE([odbc],
+    [AS_HELP_STRING([--enable-odbc],[build included ODBC driver [default=yes]])],
     [ case "${enableval}" in
         yes) odbc=true ;;
         no) odbc=false ;;
@@ -49,8 +49,8 @@ AC_ARG_ENABLE( odbc,
     [odbc=true]
 )
 
-AC_ARG_ENABLE( core,
-    [  --enable-core        build Ignite core library [default=yes]],
+AC_ARG_ENABLE([core],
+    [AS_HELP_STRING([--enable-core],[build Ignite core library [default=yes]])],
     [ case "${enableval}" in
         yes) core=true ;;
         no) core=false ;;
@@ -59,8 +59,8 @@ AC_ARG_ENABLE( core,
     [core=true]
 )
 
-AC_ARG_ENABLE( node,
-    [  --enable-node        build stand-alone node binary [default=yes]],
+AC_ARG_ENABLE([node],
+    [AS_HELP_STRING([--enable-node],[build stand-alone node binary [default=yes]])],
     [ case "${enableval}" in
         yes) node=true ;;
         no) node=false ;;
@@ -69,8 +69,8 @@ AC_ARG_ENABLE( node,
     [node=true]
 )
 
-AC_ARG_ENABLE( tests,
-    [  --enable-tests       build tests for enabled components [default=yes]],
+AC_ARG_ENABLE([tests],
+    [AS_HELP_STRING([--enable-tests],[build tests for enabled components [default=yes]])],
     [ case "${enableval}" in
         yes) tests=true ;;
         no) tests=false ;;

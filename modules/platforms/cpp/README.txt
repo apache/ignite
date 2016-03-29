@@ -57,17 +57,19 @@ Development:
  * Update Include Directories in Project Properties with paths to:
    * $(IGNITE_HOME)\platforms\cpp\common\include
    * $(IGNITE_HOME)\platforms\cpp\common\os\win\include
+   * $(IGNITE_HOME)\platforms\cpp\jni\include
+   * $(IGNITE_HOME)\platforms\cpp\jni\os\win\include
    * $(IGNITE_HOME)\platforms\cpp\binary\include
    * $(IGNITE_HOME)\platforms\cpp\core\include
-   * $(IGNITE_HOME)\platforms\cpp\core\os\win\include
    * $(JAVA_HOME)\include
    * $(JAVA_HOME)\include\win32
  * Update Library Directories with path to the built binaries
  * Update Linker\Input\Additional Dependencies in Project Properties with path to
    * ignite.common.lib
+   * ignite.jni.lib
    * ignite.binary.lib
    * ignite.core.lib
- * Make sure that your application is aware about ignite.common.dll and ignite.core.dll
+ * Make sure that your application is aware about ignite.jni.dll and ignite.core.dll
    libraries. The easiest way to achieve this is to either make sure these files are in
    %PATH%, or to put them into the output directory of your project with help of
    PostBuild events.

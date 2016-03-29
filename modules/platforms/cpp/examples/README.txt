@@ -15,18 +15,11 @@ Running examples on Linux
 Prerequisites:
  * GCC, g++, autotools, automake, and libtool must be installed.
 
-To build any example execute the following commands one by one from example root directory.
-(e.g. to build putget-example you should run these commands from the 
-$IGNITE_HOME/platforms/cpp/examples/putget-example directory):
- * libtoolize
- * aclocal
- * autoheader
- * automake --add-missing
- * autoreconf
+To build examples execute the following commands one by one from examples root directory:
  * ./configure
  * make
 
-As a result executable will appear in example's directory.
+As a result executables will appear in every example's directory.
 
 Before running examples ensure that:
  * LD_LIBRARY_PATH environment variable is set and pointing to a directory with "libjvm.so" library. Typically this
