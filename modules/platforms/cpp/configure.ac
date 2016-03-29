@@ -21,14 +21,22 @@
 AC_PREREQ([2.69])
 AC_INIT([Apache Ignite C++], [1.6.0.8653], [dev@ignite.apache.org], [ignite], [ignite.apache.org])
 
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_HOST
 AC_CONFIG_MACRO_DIR([m4])
 AC_LANG([C++])
 
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 
+# Enable silent rules by default
 AM_SILENT_RULES([yes])
+
+# Checks for programs.
+AC_PROG_CPP
+AM_PROG_AR
+
+# Initialize Libtool
+LT_INIT
 
 AC_ARG_ENABLE( odbc,
     [  --enable-odbc        build included ODBC driver [default=no]],
@@ -52,7 +60,7 @@ AC_ARG_ENABLE( core,
 )
 
 AC_ARG_ENABLE( node,
-    [  --enable-node       build stand-alone node binary [default=yes]],
+    [  --enable-node        build stand-alone node binary [default=yes]],
     [ case "${enableval}" in
         yes) node=true ;;
         no) node=false ;;
@@ -62,7 +70,7 @@ AC_ARG_ENABLE( node,
 )
 
 AC_ARG_ENABLE( tests,
-    [  --enable-tests      build tests for enabled components [default=no]],
+    [  --enable-tests       build tests for enabled components [default=no]],
     [ case "${enableval}" in
         yes) tests=true ;;
         no) tests=false ;;
@@ -75,13 +83,6 @@ AM_CONDITIONAL([COND_ODBC], [test "x$odbc" = "xtrue"])
 AM_CONDITIONAL([COND_CORE], [test "x$core" = "xtrue"])
 AM_CONDITIONAL([COND_NODE], [test "x$node" = "xtrue"])
 AM_CONDITIONAL([COND_TESTS], [test "x$tests" = "xtrue"])
-
-# Checks for programs.
-AC_PROG_CPP
-AM_PROG_AR
-
-# Initialize Libtool
-LT_INIT
 
 AC_CONFIG_FILES([ \
     Makefile \

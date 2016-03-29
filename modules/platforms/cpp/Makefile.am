@@ -23,7 +23,6 @@ if COND_ODBC
 if COND_TESTS
     MAYBE_ODBC_TESTS = odbc-test
 endif
-
 endif
 
 if COND_CORE
@@ -32,14 +31,11 @@ if COND_CORE
 if COND_TESTS
     MAYBE_CORE_TESTS = core-test
 endif
-
 endif
 
 if COND_NODE
   MAYBE_NODE = ignite
 endif
-
-
 
 SUBDIRS = \
     common \
