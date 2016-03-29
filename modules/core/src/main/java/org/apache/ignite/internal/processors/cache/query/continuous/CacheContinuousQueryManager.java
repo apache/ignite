@@ -489,7 +489,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             false,
             false,
             loc,
-            keepBinary);
+            keepBinary,
+            false);
     }
 
     /**
@@ -528,6 +529,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             true,
             notifyExisting,
             loc,
+            false,
             false);
     }
 
@@ -608,6 +610,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param internal Internal flag.
      * @param notifyExisting Notify existing flag.
      * @param loc Local flag.
+     * @param onStart Waiting topology exchange.
      * @return Continuous routine ID.
      * @throws IgniteCheckedException In case of error.
      */
@@ -619,7 +622,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         boolean internal,
         boolean notifyExisting,
         boolean loc,
-        final boolean keepBinary) throws IgniteCheckedException
+        final boolean keepBinary,
+        boolean onStart) throws IgniteCheckedException
     {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
@@ -648,6 +652,18 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
             timeInterval,
             autoUnsubscribe,
             pred).get();
+
+        try {
+            if (hnd.isQuery() && cctx.userCache() && !onStart)
+                hnd.waitTopologyFuture(cctx.kernalContext());
+        }
+        catch (IgniteCheckedException e) {
+            log.warning("Failed to start continuous query.", e);
+
+            cctx.kernalContext().continuous().stopRoutine(id);
+
+            throw new IgniteCheckedException("Failed to start continuous query.", e);
+        }
 
         if (notifyExisting) {
             final Iterator<GridCacheEntryEx> it = cctx.cache().allEntries().iterator();
@@ -893,7 +909,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 false,
                 false,
                 false,
-                keepBinary
+                keepBinary,
+                onStart
             );
         }
 

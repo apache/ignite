@@ -314,15 +314,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 {
                     var columnName = attr.Name ?? memberInfo.Key.Name;
 
+                    // No dot notation for indexes
+                    if (attr.IsIndexed)
+                        indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,
+                            attr.IndexGroups));
+
                     // Dot notation is required for nested SQL fields
                     if (parentPropName != null)
                         columnName = parentPropName + "." + columnName;
 
                     fields.Add(new QueryField(columnName, memberInfo.Value));
-
-                    if (attr.IsIndexed)
-                        indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,
-                            attr.IndexGroups));
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes);
                 }

@@ -288,6 +288,23 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public void LoadAll(IEnumerable<TK> keys, bool replaceExistingValues)
+        {
+            LoadAllAsync(keys, replaceExistingValues).Wait();
+        }
+
+        /** <inheritDoc /> */
+        public Task LoadAllAsync(IEnumerable<TK> keys, bool replaceExistingValues)
+        {
+            return GetFuture<object>((futId, futTyp) => DoOutOp((int) CacheOp.LoadAll, writer =>
+            {
+                writer.WriteLong(futId);
+                writer.WriteBoolean(replaceExistingValues);
+                WriteEnumerable(writer, keys);
+            })).Task;
+        }
+
+        /** <inheritDoc /> */
         public bool ContainsKey(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");

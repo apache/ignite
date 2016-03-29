@@ -740,7 +740,7 @@ public class GridUnsafeMap implements GridOffHeapMap {
                 if (tblAddr == 0)
                     return;
 
-                for (long binAddr = tblAddr; binAddr < memCap; binAddr += 8) {
+                for (long binAddr = tblAddr, tblEnd = (tblAddr + memCap); binAddr < tblEnd; binAddr += 8) {
                     long entryAddr = Bin.first(binAddr, mem);
 
                     if (entryAddr == 0)

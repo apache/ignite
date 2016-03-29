@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests.Examples
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using Apache.Ignite.Core.Tests.Process;
     using Apache.Ignite.ExamplesDll.Compute;
     using NUnit.Framework;
