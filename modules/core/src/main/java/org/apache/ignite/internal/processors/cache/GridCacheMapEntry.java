@@ -724,7 +724,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantTypeArguments", "TooBroadScope"})
-    private Object innerGet0(GridCacheVersion nextVer,
+    private Object innerGet0(
+        GridCacheVersion nextVer,
         IgniteInternalTx tx,
         boolean readSwap,
         boolean readThrough,
@@ -938,9 +939,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     // Detach value before index update.
                     ret = cctx.kernalContext().cacheObjects().prepareForCache(ret, cctx);
 
-                    final GridCacheVersion updVer = nextVer != null ? nextVer : nextVersion();
+                    nextVer = nextVer != null ? nextVer : nextVersion();
 
-                    assert updVer != null && ATOMIC_VER_COMPARATOR.compare(this.ver, updVer,
+                    assert nextVer != null && ATOMIC_VER_COMPARATOR.compare(this.ver, nextVer,
                         cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY) <= 0:
                         "Bad version [curVer=" + this.ver + ", newVer=" + ver + "]";
 
@@ -950,12 +951,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     if (loadedFromStore)
                         // Update indexes before actual write to entry.
-                        updateIndex(ret, expTime, updVer, prevVal);
+                        updateIndex(ret, expTime, nextVer, prevVal);
 
                     boolean hadValPtr = hasOffHeapPointer();
 
                     // Don't change version for read-through.
-                    update(ret, expTime, ttl, updVer, true);
+                    update(ret, expTime, ttl, nextVer, true);
 
                     if (hadValPtr && cctx.offheapTiered())
                         cctx.swap().removeOffheap(key);
