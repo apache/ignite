@@ -15,26 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.ExamplesDll.Binary
-{
-    /// <summary>
-    /// Organization type.
-    /// </summary>
-    public enum OrganizationType
-    {
-        /// <summary>
-        /// Non-profit organization.
-        /// </summary>
-        NonProfit,
+package org.apache.ignite.internal.processors.cache.query.continuous;
 
-        /// <summary>
-        /// Private organization.
-        /// </summary>
-        Private,
-
-        /// <summary>
-        /// Government organization.
-        /// </summary>
-        Government
+/**
+ *
+ */
+public class CacheContinuousQueryRandomOperationsTwoNodesTest extends CacheContinuousQueryRandomOperationsTest {
+    /** {@inheritDoc} */
+    @Override protected int getServerNodeCount() {
+        return 1;
     }
 }

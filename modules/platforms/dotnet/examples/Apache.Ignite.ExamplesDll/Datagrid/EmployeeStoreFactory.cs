@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,26 +15,24 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.ExamplesDll.Binary
+namespace Apache.Ignite.ExamplesDll.Datagrid
 {
+    using System;
+    using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Common;
+
     /// <summary>
-    /// Organization type.
+    /// Employee store factory.
     /// </summary>
-    public enum OrganizationType
+    [Serializable]
+    public class EmployeeStoreFactory : IFactory<ICacheStore>
     {
         /// <summary>
-        /// Non-profit organization.
+        /// Creates an instance of the cache store.
         /// </summary>
-        NonProfit,
-
-        /// <summary>
-        /// Private organization.
-        /// </summary>
-        Private,
-
-        /// <summary>
-        /// Government organization.
-        /// </summary>
-        Government
+        public ICacheStore CreateInstance()
+        {
+            return new EmployeeStore();
+        }
     }
 }

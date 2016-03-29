@@ -95,7 +95,7 @@ public class CacheContinuousQueryFactoryFilterTest extends CacheContinuousQueryR
             ONHEAP_TIERED,
             false);
 
-        final IgniteCache<Object, Object> cache = grid(0).getOrCreateCache(ccfg);
+        final IgniteCache<Object, Object> cache = grid(0).createCache(ccfg);
 
         UUID uuid = null;
 
@@ -128,12 +128,12 @@ public class CacheContinuousQueryFactoryFilterTest extends CacheContinuousQueryR
                 grid(0).context().cache().cache(cache.getName()).context().continuousQueries()
                     .cancelInternalQuery(uuid);
 
-            cache.destroy();
+            grid(0).destroyCache(ccfg.getName());
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected void testContinuousQuery(CacheConfiguration<Object, Object> ccfg, ContinuousDeploy deploy)
+    @Override protected void doTestContinuousQuery(CacheConfiguration<Object, Object> ccfg, ContinuousDeploy deploy)
         throws Exception {
         ignite(0).createCache(ccfg);
 

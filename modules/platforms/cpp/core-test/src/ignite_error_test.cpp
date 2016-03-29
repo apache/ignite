@@ -15,26 +15,31 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.ExamplesDll.Binary
+#ifndef _MSC_VER
+    #define BOOST_TEST_DYN_LINK
+#endif
+
+#include <boost/test/unit_test.hpp>
+
+#include "ignite/ignite_error.h"
+
+using namespace ignite;
+using namespace boost::unit_test;
+
+BOOST_AUTO_TEST_SUITE(IgniteErrorTestSuite)
+
+BOOST_AUTO_TEST_CASE(TestIgniteErrorDerivesStdException)
 {
-    /// <summary>
-    /// Organization type.
-    /// </summary>
-    public enum OrganizationType
+    const std::string testMsg = "Lorem ipsum dolor sit amet";
+
+    try
     {
-        /// <summary>
-        /// Non-profit organization.
-        /// </summary>
-        NonProfit,
-
-        /// <summary>
-        /// Private organization.
-        /// </summary>
-        Private,
-
-        /// <summary>
-        /// Government organization.
-        /// </summary>
-        Government
+        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, testMsg.c_str());
+    }
+    catch (std::exception& e)
+    {
+        BOOST_REQUIRE_EQUAL(testMsg, std::string(e.what()));
     }
 }
+
+BOOST_AUTO_TEST_SUITE_END()
