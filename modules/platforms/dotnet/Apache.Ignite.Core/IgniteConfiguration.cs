@@ -27,6 +27,7 @@
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Events;
@@ -465,5 +466,18 @@
         /// It is strongly recommended to set this parameter for all production environments.
         /// </summary>
         public string Localhost { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this node should be a daemon node.
+        /// <para />
+        /// Daemon nodes are the usual grid nodes that participate in topology but not visible on the main APIs, 
+        /// i.e. they are not part of any cluster groups.
+        /// The only way to see daemon nodes is to use <see cref="IClusterGroup.ForDaemons"/> method. 
+        /// <para />
+        /// Daemon nodes are used primarily for management and monitoring functionality that is built on Ignite 
+        /// and needs to participate in the topology, but also needs to be excluded from the "normal" topology, 
+        /// so that it won't participate in the task execution or in-memory data grid storage.
+        /// </summary>
+        public bool IsDaemon { get; set; }
     }
 }

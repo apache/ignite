@@ -136,10 +136,24 @@ namespace Apache.Ignite.Core.Cluster
         IClusterGroup ForClientNodes(string name);
 
         /// <summary>
-        /// Gets grid projection consisting from the nodes in this projection excluding the local node.
+        /// Gets grid projection consisting of the nodes in this projection excluding the local node.
         /// </summary>
-        /// <returns>Grid projection consisting from the nodes in this projection excluding the local node.</returns>
+        /// <returns>Grid projection consisting of the nodes in this projection excluding the local node.</returns>
         IClusterGroup ForRemotes();
+
+        /// <summary>
+        /// Gets grid projection consisting of daemon nodes.
+        /// <para />
+        /// Daemon nodes are the usual grid nodes that participate in topology but not visible on the main APIs, 
+        /// i.e. they are not part of any cluster groups.
+        /// The only way to see daemon nodes is to use this method. 
+        /// <para />
+        /// Daemon nodes are used primarily for management and monitoring functionality that is built on Ignite 
+        /// and needs to participate in the topology, but also needs to be excluded from the "normal" topology, 
+        /// so that it won't participate in the task execution or in-memory data grid storage.
+        /// </summary>
+        /// <returns>Grid projection consisting of daemon nodes.</returns>
+        IClusterGroup ForDaemons();
 
         /// <summary>
         /// Gets grid projection consisting from the nodes in this projection residing on the
