@@ -55,6 +55,7 @@
     <Compile Include="Compute\AverageSalaryTask.cs" />
     <Compile Include="Compute\CharacterCountClosure.cs" />
     <Compile Include="Compute\CharacterCountReducer.cs" />
+    <Compile Include="Datagrid\EmployeeStoreFactory.cs" />
     <Compile Include="Datagrid\EmployeeStorePredicate.cs" />
     <Compile Include="Datagrid\ContinuousQueryFilter.cs" />
     <Compile Include="Datagrid\EmployeeStore.cs" />

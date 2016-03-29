@@ -2127,7 +2127,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 "[entry=" + entry + ", filter=" + Arrays.toString(req.filter()) + ']');
                     }
                 }
-                else if (lsnrs != null && updRes.success()) {
+                else if (lsnrs != null && updRes.updateCounter() != 0) {
                     ctx.continuousQueries().onEntryUpdated(
                         lsnrs,
                         entry.key(),
@@ -2438,6 +2438,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 entryProcessor,
                                 updRes.newTtl(),
                                 CU.EXPIRE_TIME_CALCULATE);
+                    }
+                    else if (lsnrs != null && updRes.updateCounter() != 0) {
+                        ctx.continuousQueries().onEntryUpdated(
+                            lsnrs,
+                            entry.key(),
+                            updRes.newValue(),
+                            updRes.oldValue(),
+                            entry.isInternal() || !context().userCache(),
+                            entry.partition(),
+                            primary,
+                            false,
+                            updRes.updateCounter(),
+                            topVer);
                     }
 
                     if (hasNear) {
@@ -2880,7 +2893,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (updRes.removeVersion() != null)
                             ctx.onDeferredDelete(entry, updRes.removeVersion());
 
-                        if (lsnrs != null && updRes.success()) {
+                        if (lsnrs != null && updRes.updateCounter() != 0) {
                             ctx.continuousQueries().onEntryUpdated(
                                 lsnrs,
                                 entry.key(),

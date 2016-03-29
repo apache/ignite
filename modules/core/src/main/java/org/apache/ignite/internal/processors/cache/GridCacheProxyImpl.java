@@ -35,6 +35,7 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -143,16 +144,11 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public CacheConfiguration configuration() {
-        return delegate.configuration();
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheMetrics metrics() {
+    @Override public CacheMetrics clusterMetrics() {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            return delegate.metrics();
+            return delegate.clusterMetrics();
         }
         finally {
             gate.leave(prev);
@@ -160,11 +156,52 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean mxBean() {
+    @Override public CacheMetrics clusterMetrics(ClusterGroup grp) {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            return delegate.mxBean();
+            return delegate.clusterMetrics(grp);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheConfiguration configuration() {
+        return delegate.configuration();
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheMetrics localMetrics() {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return delegate.localMetrics();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheMetricsMXBean clusterMxBean() {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return delegate.clusterMxBean();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheMetricsMXBean localMxBean() {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return delegate.localMxBean();
         }
         finally {
             gate.leave(prev);
