@@ -49,6 +49,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -354,7 +355,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         stopGrid(0); // Kill coordinator, now coordinator node1 without cache.
 
-        boolean primaryChanged = calculateAffinity(5, aff);
+        boolean primaryChanged = calculateAffinity(5, false, aff);
 
         checkAffinity(3, topVer(5, 0), !primaryChanged);
 
@@ -1053,7 +1054,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         topVer++;
 
-        boolean primaryChanged = calculateAffinity(nodes + 2, aff);
+        boolean primaryChanged = calculateAffinity(nodes + 2, false, aff);
 
         checkAffinity(nodes - 2, topVer(topVer, 0), !primaryChanged);
 
@@ -1638,10 +1639,13 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             startGridsMultiThreaded(NODES);
 
             for (int t = 0; t < NODES; t++)
-                calculateAffinity(t + 1);
+                calculateAffinity(t + 1, true, null);
 
-            if (withClients)
+            if (withClients) {
+                skipCheckOrder = true;
+
                 checkAffinity(NODES, topVer(NODES, 0), false);
+            }
             else
                 checkAffinity(NODES, topVer(NODES, 1), true);
 
@@ -1680,7 +1684,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         stopGrid(0);
 
-        boolean primaryChanged = calculateAffinity(4, assignments);
+        boolean primaryChanged = calculateAffinity(4, false, assignments);
 
         assignments = checkAffinity(2, topVer(4, 0), !primaryChanged);
 
@@ -2356,16 +2360,19 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void calculateAffinity(long topVer) throws Exception {
-        calculateAffinity(topVer, null);
+        calculateAffinity(topVer, false, null);
     }
 
     /**
      * @param topVer Topology version.
+     * @param filterByRcvd If {@code true} filters caches by 'receivedFrom' property.
      * @param cur Optional current affinity.
      * @throws Exception If failed.
      * @return {@code True} if some primary node changed comparing to given affinity.
      */
-    private boolean calculateAffinity(long topVer, @Nullable Map<String, List<List<ClusterNode>>> cur) throws Exception {
+    private boolean calculateAffinity(long topVer,
+        boolean filterByRcvd,
+        @Nullable Map<String, List<List<ClusterNode>>> cur) throws Exception {
         List<Ignite> all = G.allGrids();
 
         IgniteKernal ignite = (IgniteKernal)Collections.min(all, new Comparator<Ignite>() {
@@ -2381,7 +2388,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         if (assignments == null)
             idealAff.put(topVer, assignments = new HashMap<>());
 
-        GridCacheSharedContext cctx = ignite.context().cache().context();
+        GridKernalContext ctx = ignite.context();
+
+        GridCacheSharedContext cctx = ctx.cache().context();
 
         AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer);
 
@@ -2417,10 +2426,14 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         assertNotNull("Failed to find exchange future:", evt);
 
-        List<ClusterNode> allNodes = ignite.context().discovery().serverNodes(topVer0);
+        List<ClusterNode> allNodes = ctx.discovery().serverNodes(topVer0);
 
-        for (DynamicCacheDescriptor cacheDesc : ignite.context().cache().cacheDescriptors()) {
+        for (DynamicCacheDescriptor cacheDesc : ctx.cache().cacheDescriptors()) {
             if (assignments.get(cacheDesc.cacheId()) != null)
+                continue;
+
+            if (filterByRcvd && cacheDesc.receivedFrom() != null &&
+                ctx.discovery().node(topVer0, cacheDesc.receivedFrom()) == null)
                 continue;
 
             AffinityFunction func = cacheDesc.cacheConfiguration().getAffinity();
