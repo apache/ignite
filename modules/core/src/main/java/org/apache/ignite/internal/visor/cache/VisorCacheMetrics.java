@@ -179,7 +179,7 @@ public class VisorCacheMetrics implements Serializable {
         mode = cacheProcessor.cacheMode(cacheName);
         sys = cacheProcessor.systemCache(cacheName);
 
-        CacheMetrics m = c.metrics();
+        CacheMetrics m = c.localMetrics();
 
         size = m.getSize();
         keySize = m.getKeySize();

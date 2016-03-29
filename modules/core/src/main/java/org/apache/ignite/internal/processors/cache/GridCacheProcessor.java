@@ -549,8 +549,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cleanup(cfg, cfg.getAffinityMapper(), false);
         cleanup(cfg, cctx.store().configuredStore(), false);
 
-        if (!CU.isUtilityCache(cfg.getName()) && !CU.isSystemCache(cfg.getName()))
-            unregisterMbean(cctx.cache().mxBean(), cfg.getName(), false);
+        if (!CU.isUtilityCache(cfg.getName()) && !CU.isSystemCache(cfg.getName())) {
+            unregisterMbean(cctx.cache().localMxBean(), cfg.getName(), false);
+            unregisterMbean(cctx.cache().clusterMxBean(), cfg.getName(), false);
+        }
 
         NearCacheConfiguration nearCfg = cfg.getNearConfiguration();
 
@@ -1488,8 +1490,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheCtx.cache(dht);
         }
 
-        if (!CU.isUtilityCache(cache.name()) && !CU.isSystemCache(cache.name()))
-            registerMbean(cache.mxBean(), cache.name(), false);
+        if (!CU.isUtilityCache(cache.name()) && !CU.isSystemCache(cache.name())) {
+            registerMbean(cache.localMxBean(), cache.name(), false);
+            registerMbean(cache.clusterMxBean(), cache.name(), false);
+        }
 
         return ret;
     }
@@ -1721,7 +1725,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheContext<?, ?> cacheCtx = cache.context();
 
             if (F.eq(cacheCtx.startTopologyVersion(), topVer)) {
-                cacheCtx.preloader().onInitialExchangeComplete(err);
+                if (cacheCtx.preloader() != null)
+                    cacheCtx.preloader().onInitialExchangeComplete(err);
 
                 String masked = maskNull(cacheCtx.name());
 

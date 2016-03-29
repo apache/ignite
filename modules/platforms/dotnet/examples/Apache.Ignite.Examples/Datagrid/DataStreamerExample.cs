@@ -38,7 +38,7 @@ namespace Apache.Ignite.Examples.Datagrid
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-cache.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class DataStreamerExample
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Examples.Datagrid
         private const int EntryCount = 500000;
 
         /// <summary>Cache name.</summary>
-        private const string CacheName = "cache_data_streamer";
+        private const string CacheName = "dotnet_cache_data_streamer";
 
         /// <summary>
         /// Runs the example.
@@ -57,8 +57,8 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-cache.xml",
-                JvmOptions = new List<string> {"-Xms512m", "-Xmx512m" }
+                SpringConfigUrl = @"platforms\dotnet\examples\config\examples-config.xml",
+                JvmOptions = new List<string> { "-Xms512m", "-Xmx512m" }
             };
 
             using (var ignite = Ignition.Start(cfg))

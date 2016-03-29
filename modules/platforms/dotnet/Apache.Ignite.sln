@@ -28,10 +28,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Apache.Ignite.sln.TeamCity.DotSettings = Apache.Ignite.sln.TeamCity.DotSettings
 		build.bat = build.bat
 		DEVNOTES.txt = DEVNOTES.txt
-		examples\Config\example-cache-query.xml = examples\Config\example-cache-query.xml
-		examples\Config\example-cache-store.xml = examples\Config\example-cache-store.xml
-		examples\Config\example-cache.xml = examples\Config\example-cache.xml
-		examples\Config\example-compute.xml = examples\Config\example-compute.xml
+		examples\Config\examples-config.xml = examples\Config\examples-config.xml
 		README.txt = README.txt
 	EndProjectSection
 EndProject

@@ -439,8 +439,16 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
+    @Override public CacheMetrics localMetrics() {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
     /** {@inheritDoc} */
     @Override public CacheMetricsMXBean mxBean() {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    @Override public CacheMetricsMXBean localMxBean() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
