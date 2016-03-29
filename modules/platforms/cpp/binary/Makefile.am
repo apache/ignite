@@ -60,10 +60,7 @@ libignite_binary_la_SOURCES = \
     src/impl/binary/binary_type_snapshot.cpp \
     src/impl/interop/interop_memory.cpp \
     src/impl/interop/interop_output_stream.cpp \
-    src/impl/interop/interop_input_stream.cpp \
-    src/guid.cpp \
-    src/date.cpp \
-    src/timestamp.cpp
+    src/impl/interop/interop_input_stream.cpp
 
 clean-local:
 	$(RM) *.gcno *.gcda

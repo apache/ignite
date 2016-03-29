@@ -88,15 +88,6 @@
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h">
       <Filter>Code\impl\interop</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\guid.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\date.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\timestamp.h">
-      <Filter>Code</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary\binary_containers.cpp">
@@ -149,15 +140,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\impl\interop\interop_output_stream.cpp">
       <Filter>Code\impl\interop</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\guid.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\date.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\timestamp.cpp">
-      <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

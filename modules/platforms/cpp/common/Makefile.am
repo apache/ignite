@@ -40,11 +40,14 @@ libignite_common_la_LDFLAGS = \
     -release $(PACKAGE_VERSION)
 
 libignite_common_la_SOURCES = \
-    os/linux/src/concurrent_os.cpp \
-    os/linux/src/utils.cpp \
-    src/ignite_error.cpp \
-    src/concurrent.cpp
-
+    os/linux/src/common/concurrent_os.cpp \
+    os/linux/src/common/utils.cpp \
+    src/common/ignite_error.cpp \
+    src/common/concurrent.cpp \
+    src/date.cpp \
+    src/guid.cpp \
+    src/timestamp.cpp
+	
 clean-local:
 	$(RM) *.gcno *.gcda
 
