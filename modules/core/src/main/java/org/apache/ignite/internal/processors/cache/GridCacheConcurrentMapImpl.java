@@ -106,8 +106,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
         final KeyCacheObject cacheKey = (KeyCacheObject)ctx.cacheObjects().prepareForCache(key, ctx);
 
-        final AtomicReference<GridCacheMapEntry> created = new AtomicReference<>();
-        final AtomicReference<GridCacheMapEntry> doomed = new AtomicReference<>();
+        final GridTriple<GridCacheMapEntry> result = new GridTriple<>();
 
         GridCacheMapEntry cur = map.compute(cacheKey, new ConcurrentHashMap8.BiFun<KeyCacheObject, GridCacheMapEntry, GridCacheMapEntry>() {
             @Override public GridCacheMapEntry apply(KeyCacheObject object, GridCacheMapEntry entry) {
@@ -144,13 +143,15 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
 
                 pubSize.addAndGet(sizeChange);
 
-                created.set(created0);
-                doomed.set(doomed0);
+                result.set1(cur);
+                result.set2(created0);
+                result.set3(doomed0);
+
                 return cur;
             }
         });
 
-        return new GridTriple<>(cur, created.get(), doomed.get());
+        return result;
     }
 
     /** {@inheritDoc} */
