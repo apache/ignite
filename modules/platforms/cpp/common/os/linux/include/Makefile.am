@@ -22,4 +22,4 @@ nobase_include_HEADERS = \
     ignite/common/concurrent_os.h
 
 uninstall-hook:
-	find ${includedir}/ignite -type d -empty -delete
+	if [ -d ${includedir}/ignite ]; then find ${includedir}/ignite -type d -empty -delete; fi

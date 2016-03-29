@@ -19,7 +19,7 @@ ACLOCAL_AMFLAGS =-I m4
 
 noinst_PROGRAMS = ignite-odbc-tests
 
-DIST_SUBDIRS = \
+SUBDIRS = \
     include
 
 AM_CPPFLAGS = \

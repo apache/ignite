@@ -17,9 +17,9 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
-noinst_LTLIBRARIES = libignite-binary.la
+lib_LTLIBRARIES = libignite-binary.la
 
-DIST_SUBDIRS = \
+SUBDIRS = \
     include
 
 AM_CPPFLAGS = \

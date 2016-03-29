@@ -17,7 +17,7 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
-nobase_include_HEADERS = \
+noinst_HEADERS = \
     ignite/odbc.h \
     ignite/odbc/query/table_metadata_query.h \
     ignite/odbc/query/special_columns_query.h \
@@ -54,6 +54,5 @@ nobase_include_HEADERS = \
     ignite/odbc/decimal.h \
     ignite/odbc/type_traits.h
 
-
 uninstall-hook:
-	find ${includedir}/ignite -type d -empty -delete
+	if [ -d ${includedir}/ignite ]; then find ${includedir}/ignite -type d -empty -delete; fi

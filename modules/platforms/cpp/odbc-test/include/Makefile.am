@@ -17,10 +17,8 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
-nobase_include_HEADERS = \
+noinst_HEADERS = \
     teamcity/teamcity_messages.h \
     test_type.h \
     test_utils.h
 
-uninstall-hook:
-	find ${includedir}/ignite -type d -empty -delete

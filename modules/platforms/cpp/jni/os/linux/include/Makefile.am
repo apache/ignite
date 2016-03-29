@@ -17,7 +17,8 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
-nobase_include_HEADERS = ignite/jni/attach_helper.h
+nobase_include_HEADERS = \
+    ignite/jni/attach_helper.h
 
 uninstall-hook:
-	find ${includedir}/ignite -type d -empty -delete
+	if [ -d ${includedir}/ignite ]; then find ${includedir}/ignite -type d -empty -delete; fi

@@ -18,7 +18,7 @@
 ACLOCAL_AMFLAGS =-I m4
 
 noinst_HEADERS = \
-    ignite/binary_test_defs.h \
-    ignite/binary_test_utils.h \
-    teamcity_messages.h
+    ignite/examples/address.h \
+    ignite/examples/organization.h \
+    ignite/examples/person.h
 

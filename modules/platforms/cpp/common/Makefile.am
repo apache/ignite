@@ -17,9 +17,9 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
-noinst_LTLIBRARIES = libignite-common.la
+lib_LTLIBRARIES = libignite-common.la
 
-DIST_SUBDIRS = \
+SUBDIRS = \
     include \
     os/linux/include
 
