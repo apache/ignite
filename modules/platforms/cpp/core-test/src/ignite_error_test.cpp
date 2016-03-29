@@ -30,17 +30,15 @@ BOOST_AUTO_TEST_SUITE(IgniteErrorTestSuite)
 
 BOOST_AUTO_TEST_CASE(TestIgniteErrorDerivesStdException)
 {
+    const std::string testMsg = "Lorem ipsum dolor sit amet";
+
     try
     {
-        throw IgniteError();
+        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, testMsg.c_str());
     }
-    catch (std::exception&)
+    catch (std::exception& e)
     {
-        // No operations.
-    }
-    catch (IgniteError&)
-    {
-        BOOST_FAIL("Should not reach here if implements std::exception");
+        BOOST_REQUIRE_EQUAL(testMsg, std::string(e.what()));
     }
 }
 
