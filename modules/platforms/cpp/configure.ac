@@ -39,14 +39,14 @@ AM_PROG_AR
 LT_INIT
 
 AC_ARG_ENABLE( odbc,
-    [  --enable-odbc        build included ODBC driver [default=no]],
+    [  --enable-odbc        build included ODBC driver [default=yes]],
     [ case "${enableval}" in
         yes) odbc=true ;;
         no) odbc=false ;;
         *) AC_MSG_ERROR(bad value ${enableval} for --enable-odbc) ;;
         esac
     ],
-    [odbc=false]
+    [odbc=true]
 )
 
 AC_ARG_ENABLE( core,
@@ -70,13 +70,13 @@ AC_ARG_ENABLE( node,
 )
 
 AC_ARG_ENABLE( tests,
-    [  --enable-tests       build tests for enabled components [default=no]],
+    [  --enable-tests       build tests for enabled components [default=yes]],
     [ case "${enableval}" in
         yes) tests=true ;;
         no) tests=false ;;
         *) AC_MSG_ERROR(bad value ${enableval} for --enable-tests) ;;
         esac],
-    [tests=false]
+    [tests=true]
 )
 
 AM_CONDITIONAL([COND_ODBC], [test "x$odbc" = "xtrue"])
