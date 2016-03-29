@@ -48,7 +48,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- *
+ * Tests consistency of entry's versions after invokeAll.
  */
 public class EnryVersionConsistencyTest extends GridCommonAbstractTest {
     /** */
