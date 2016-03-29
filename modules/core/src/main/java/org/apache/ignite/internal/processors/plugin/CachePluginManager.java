@@ -135,7 +135,7 @@ public class CachePluginManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Unwrap entry to specified type. For details see {@link Cache.Entry#unwrap(Class)}.
+     * Unwrap entry to specified type. For details see {@code javax.cache.Cache.Entry.unwrap(Class)}.
      *
      * @param entry Entry to unwrap.
      * @param cls Type of the expected component.

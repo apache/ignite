@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
-import javax.cache.processor.MutableEntry;
 
 /**
  * Cache plugin provider is a point for processing of properties 
@@ -68,7 +67,7 @@ public interface CachePluginProvider<C extends CachePluginConfiguration> {
     @Nullable public <T> T createComponent(Class<T> cls);
 
     /**
-     * Unwrap entry to specified type. For details see {@link Cache.Entry#unwrap(Class)}.
+     * Unwrap entry to specified type. For details see {@code javax.cache.Cache.Entry.unwrap(Class)}.
      *
      * @param entry Mutable entry to unwrap.
      * @param cls Type of the expected component.
