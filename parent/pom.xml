@@ -840,6 +840,7 @@
                                         <exclude>**/*.sln</exclude>
                                         <exclude>**/*.snk</exclude>
                                         <exclude>**/*.slnrel</exclude>
+                                        <exclude>**/*.ini</exclude>
                                         <exclude>**/*.DotSettings</exclude>
                                         <exclude>**/*.FxCop</exclude>
                                         <exclude>**/*.ruleset</exclude>
