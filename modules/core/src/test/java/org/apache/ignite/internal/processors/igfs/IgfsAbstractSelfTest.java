@@ -64,7 +64,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1019,9 +1019,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 }
             }
         }, 10_000)) {
-            Iterable<GridCacheMapEntry> entries = dataCache.allEntries();
+            Iterable<? extends GridCacheEntryEx> entries = dataCache.allEntries();
 
-            for (GridCacheMapEntry e: entries) {
+            for (GridCacheEntryEx e: entries) {
                 X.println("deleted = " + e.deleted());
                 X.println("detached = " + e.detached());
                 X.println("info = " + e.info());
@@ -3230,9 +3230,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     private static void dumpCache(String cacheName, GridCacheAdapter<?,?> cache) {
         X.println("=============================== " + cacheName + " cache dump: ");
 
-        Iterable<GridCacheMapEntry> entries = cache.entries();
+        Iterable<? extends GridCacheEntryEx> entries = cache.entries();
 
-        for (GridCacheMapEntry e: entries)
+        for (GridCacheEntryEx e: entries)
             X.println("Lost " + cacheName + " entry = " + e);
     }
 
