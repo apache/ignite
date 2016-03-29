@@ -178,6 +178,7 @@
             writer.WriteLong((long) NetworkTimeout.TotalMilliseconds);
             writer.WriteString(WorkDirectory);
             writer.WriteString(Localhost);
+            writer.WriteBoolean(IsDaemon);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -237,6 +238,7 @@
             NetworkTimeout = r.ReadLongAsTimespan();
             WorkDirectory = r.ReadString();
             Localhost = r.ReadString();
+            IsDaemon = r.ReadBoolean();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();

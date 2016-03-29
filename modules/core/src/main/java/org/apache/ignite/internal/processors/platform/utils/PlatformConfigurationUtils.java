@@ -259,6 +259,7 @@ import java.util.Map;
         cfg.setNetworkTimeout(in.readLong());
         cfg.setWorkDirectory(in.readString());
         cfg.setLocalHost(in.readString());
+        cfg.setDaemon(in.readBoolean());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -542,6 +543,7 @@ import java.util.Map;
         w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
         w.writeString(cfg.getLocalHost());
+        w.writeBoolean(cfg.isDaemon());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
