@@ -941,9 +941,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     nextVer = nextVer != null ? nextVer : nextVersion();
 
-                    assert nextVer != null && ATOMIC_VER_COMPARATOR.compare(this.ver, nextVer,
+                    assert nextVer != null && ATOMIC_VER_COMPARATOR.compare(ver, nextVer,
                         cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY) <= 0:
-                        "Bad version [curVer=" + this.ver + ", newVer=" + nextVer + "]";
+                        "Bad version [this=" + this + ", newVer=" + nextVer + "]";
 
                     CacheObject prevVal = rawGetOrUnmarshalUnlocked(false);
 
