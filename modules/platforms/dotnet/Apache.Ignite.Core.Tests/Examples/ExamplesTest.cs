@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618  // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Examples
 {
     using System;
@@ -71,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Examples
             // Exclude LifecycleExample
             if (string.IsNullOrEmpty(example.SpringConfigUrl))
             {
-                Assert.IsTrue(new[] {"LifecycleExample", "LinqCodeConfigurationExample"}.Contains(example.Name));
+                Assert.AreEqual("LifecycleExample", example.Name);
 
                 return;
             }

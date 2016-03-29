@@ -24,7 +24,7 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>Apache.Ignite.Examples.Datagrid.LinqCodeConfigurationExample</StartupObject>
+    <StartupObject>Apache.Ignite.Examples.Compute.TaskExample</StartupObject>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -63,7 +63,6 @@
     <Compile Include="Compute\TaskExample.cs" />
     <Compile Include="Datagrid\ContinuousQueryExample.cs" />
     <Compile Include="Datagrid\DataStreamerExample.cs" />
-    <Compile Include="Datagrid\LinqCodeConfigurationExample.cs" />
     <Compile Include="Datagrid\PutGetExample.cs" />
     <Compile Include="Datagrid\LinqExample.cs" />
     <Compile Include="Datagrid\QueryExample.cs" />
