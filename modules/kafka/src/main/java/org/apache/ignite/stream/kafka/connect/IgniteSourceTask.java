@@ -70,6 +70,7 @@ public class IgniteSourceTask extends SourceTask {
     /** Listener id. */
     private static UUID rmtLsnrId;
 
+    /** User-defined filter. */
     private static IgnitePredicate<CacheEvent> filter;
 
     /** Topic. */
@@ -78,6 +79,7 @@ public class IgniteSourceTask extends SourceTask {
     /** Offset. */
     private static final Map<String, Long> offset = Collections.singletonMap("offset", 0L);
 
+    /** Partition. */
     private static final Map<String, String> srcPartition = Collections.singletonMap("cache", null);
 
     /** {@inheritDoc} */
@@ -159,6 +161,7 @@ public class IgniteSourceTask extends SourceTask {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public List<SourceRecord> poll() throws InterruptedException {
         ArrayList<SourceRecord> records = new ArrayList<>(evtBatchSize);
         ArrayList<CacheEvent> evts = new ArrayList<>(evtBatchSize);
@@ -232,9 +235,9 @@ public class IgniteSourceTask extends SourceTask {
     }
 
     /**
-     * Buffer as an unbounded queue with a random name.
+     * Makes a buffer for events to be transferred to Kafka.
      *
-     * @return
+     * @return Buffer as a bounded queue with a random name.
      * @throws IgniteException
      */
     private static IgniteQueue<CacheEvent> makeBuffer() throws IgniteException {
