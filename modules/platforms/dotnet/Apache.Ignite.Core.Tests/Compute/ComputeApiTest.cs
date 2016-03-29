@@ -524,6 +524,29 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Tests daemons projection.
+        /// </summary>
+        [Test]
+        public void TestForDaemons()
+        {
+            var cluster = _grid1.GetCluster();
+
+            Assert.AreEqual(0, cluster.ForDaemons().GetNodes().Count);
+
+            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                GridName = "daemon",
+                IsDaemon = true
+            }))
+            {
+                var daemons = cluster.ForDaemons().GetNodes();
+
+                Assert.AreEqual(1, daemons.Count);
+                Assert.IsTrue(daemons.Single().IsDaemon);
+            }
+        }
+
+        /// <summary>
         /// Test for host nodes projection.
         /// </summary>
         [Test]
