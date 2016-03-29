@@ -35,9 +35,13 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.dr.GridOsCacheDrManager;
 import org.apache.ignite.internal.processors.cache.store.CacheOsStoreManager;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
+import org.jetbrains.annotations.Nullable;
+
+import javax.cache.Cache;
 
 /**
  * Cache plugin manager.
@@ -128,6 +132,33 @@ public class CachePluginManager extends GridCacheManagerAdapter {
             return (T)new CacheOsStoreManager(ctx, cfg);
 
         throw new IgniteException("Unsupported component type: " + cls);
+    }
+
+    /**
+     * Unwrap entry to specified type. For details see {@code javax.cache.Cache.Entry.unwrap(Class)}.
+     *
+     * @param entry Entry to unwrap.
+     * @param cls Type of the expected component.
+     * @param <T> Return type.
+     * @param <K> Key type.
+     * @param <V> Value type.
+     * @return New instance of underlying type or {@code null} if it's not available.
+     */
+    @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
+    @Nullable public <T, K, V> T unwrapCacheEntry(Cache.Entry<K, V> entry, Class<T> cls) {
+        int size = providersList.size();
+
+        if (size == 0)
+            return null;
+
+        for (int i = 0; i < size; i++) {
+            final T res = (T)providersList.get(i).unwrapCacheEntry(entry, cls);
+
+            if (res != null)
+                return res;
+        }
+
+        return null;
     }
 
     /**
