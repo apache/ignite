@@ -642,23 +642,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry e) {
-        /*
-         * Make sure not to acquire any locks here as this method
-         * may be called from sensitive synchronization blocks.
-         * ===================================================
-         */
-
-        int p = cctx.affinity().partition(e.key());
-
-        GridDhtLocalPartition loc = localPartition(p, topVer, true);
-
-        assert loc != null;
-
-        return loc;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onRemoved(GridDhtCacheEntry e) {
         /*
          * Make sure not to acquire any locks here as this method
