@@ -43,8 +43,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheEntrySet;
-import org.apache.ignite.internal.processors.cache.GridCacheKeySet;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
@@ -54,12 +52,10 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -365,62 +361,25 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> primaryEntrySet(
         @Nullable final CacheEntryPredicate... filter) {
-        final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
-
-        Collection<Cache.Entry<K, V>> entries =
-            F.flatCollections(
-                F.viewReadOnly(
-                    dht().topology().currentLocalPartitions(),
-                    new C1<GridDhtLocalPartition, Collection<Cache.Entry<K, V>>>() {
-                        @Override public Collection<Cache.Entry<K, V>> apply(GridDhtLocalPartition p) {
-                            Collection<GridCacheMapEntry> entries0 = p.entrySet();
-
-                            if (!F.isEmpty(filter))
-                                entries0 = F.view(entries0, new CacheEntryPredicateAdapter() {
-                                    @Override public boolean apply(GridCacheEntryEx e) {
-                                        return F.isAll(e, filter);
-                                    }
-                                });
-
-                            return F.viewReadOnly(
-                                entries0,
-                                new C1<GridCacheEntryEx, Cache.Entry<K, V>>() {
-                                    @Override public Cache.Entry<K, V> apply(GridCacheEntryEx e) {
-                                        return e.wrapLazyValue();
-                                    }
-                                },
-                                new P1<GridCacheEntryEx>() {
-                                    @Override public boolean apply(GridCacheEntryEx e) {
-                                        return !e.obsoleteOrDeleted();
-                                    }
-                                });
-                        }
-                    },
-                    new P1<GridDhtLocalPartition>() {
-                        @Override public boolean apply(GridDhtLocalPartition p) {
-                            return p.primary(topVer);
-                        }
-                    }));
-
-        return new GridCacheEntrySet<>(ctx, entries, null);
+        return dht().primaryEntrySet(filter);
     }
 
     /** {@inheritDoc} */
     @Override public Set<K> keySet(@Nullable CacheEntryPredicate[] filter) {
-        return new GridCacheKeySet<>(ctx, entrySet(filter), null);
+        return new KeySet(nearKeySet(filter), dht().keySet(filter));
     }
 
     /**
      * @param filter Entry filter.
      * @return Keys for near cache only.
      */
-    public Set<K> nearKeySet(@Nullable CacheEntryPredicate filter) {
+    public Set<K> nearKeySet(@Nullable CacheEntryPredicate[] filter) {
         return super.keySet(filter);
     }
 
     /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet(@Nullable CacheEntryPredicate... filter) {
-        return new GridCacheKeySet<>(ctx, primaryEntrySet(filter), null);
+        return dht().primaryKeySet(filter);
     }
 
     /** {@inheritDoc} */
@@ -541,6 +500,97 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         }
         else
             return super.splitClearLocally(srv, near, readers);
+    }
+
+    private final class KeySet extends AbstractSet<K> {
+
+        private final Set<K> nearSet;
+
+        private final Set<K> dhtSet;
+
+        private KeySet(Set<K> nearSet, Set<K> dhtSet) {
+            this.nearSet = nearSet;
+            this.dhtSet = dhtSet;
+        }
+
+        @Override public Iterator<K> iterator() {
+            return new KeySetIterator(nearSet.iterator(),
+                F.iterator0(dhtSet, false, new P1<K>() {
+                    @Override public boolean apply(K key) {
+                        try {
+                            return GridNearCacheAdapter.super.localPeek(key, NEAR_PEEK_MODE, null) == null;
+                        }
+                        catch (IgniteCheckedException ex) {
+                            throw new IgniteException(ex);
+                        }
+                    }
+                }));
+        }
+
+        @Override public int size() {
+            return F.size(iterator());
+        }
+    }
+
+    private final class KeySetIterator implements Iterator<K> {
+        /** */
+        private Iterator<K> dhtIter;
+
+        /** */
+        private Iterator<K> nearIter;
+
+        /** */
+        private Iterator<K> currIter;
+
+        /** */
+        private K current;
+
+        /**
+         * @param nearIter Near set iterator.
+         * @param dhtIter Dht set iterator.
+         */
+        private KeySetIterator(Iterator<K> nearIter, Iterator<K> dhtIter) {
+            assert nearIter != null;
+            assert dhtIter != null;
+
+            this.nearIter = nearIter;
+            this.dhtIter = dhtIter;
+
+            currIter = nearIter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return nearIter.hasNext() || dhtIter.hasNext();
+        }
+
+        /** {@inheritDoc} */
+        @Override public K next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            if (!currIter.hasNext())
+                currIter = dhtIter;
+
+            return current = currIter.next();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            if (current == null)
+                throw new IllegalStateException();
+
+            assert currIter != null;
+
+            currIter.remove();
+
+            try {
+                GridNearCacheAdapter.this.getAndRemove(current);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
     }
 
     /**

@@ -257,7 +257,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     @Override public Set<GridCacheMapEntry> entrySet(final CacheEntryPredicate... filter) {
         return new AbstractSet<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {
-                return F.<GridCacheMapEntry>iterator0(map.values(), true, filter);
+                return F.iterator0(map.values(), true, filter);
             }
 
             @Override public int size() {
@@ -265,8 +265,12 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
             }
 
             @Override public boolean contains(Object o) {
-                return o instanceof GridCacheMapEntry && o.equals(map.get(((GridCacheMapEntry)o).key()));
+                if (!(o instanceof GridCacheMapEntry))
+                    return false;
 
+                GridCacheMapEntry entry = (GridCacheMapEntry) o;
+
+                return entry.equals(map.get(entry.key())) && F.isAll(entry, filter);
             }
         };
     }

@@ -23,6 +23,7 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1032,11 +1033,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySetx(final CacheEntryPredicate... filter) {
-        return new GridCacheEntrySet<>(ctx, F.map(map.entries(filter), new IgniteClosure<GridCacheMapEntry, Cache.Entry<K, V>>() {
-            @Override public Cache.Entry<K, V> apply(GridCacheMapEntry ex) {
-                return ex.wrapLazyValue();
+        CacheEntryPredicate p = new CacheEntryPredicateAdapter() {
+            @Override public boolean apply(GridCacheEntryEx ex) {
+                if (ex instanceof GridCacheMapEntry)
+                    return ((GridCacheMapEntry)ex).visitable(filter);
+                else
+                    return false;
             }
-        }), null);
+        };
+
+        return new EntrySet(map.entrySet(p));
     }
 
     /** {@inheritDoc} */
@@ -4445,7 +4451,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                             try {
                                 return op.op(tx0).chain(new CX1<IgniteInternalFuture<T>, T>() {
-                                    @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
+                                    @Override
+                                    public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
                                         try {
                                             return tFut.get();
                                         }
@@ -4730,7 +4737,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param filter Filters to evaluate.
      * @return Primary entry set.
      */
-    public Iterable<Cache.Entry<K, V>> primaryEntrySet(
+    public Set<Cache.Entry<K, V>> primaryEntrySet(
         @Nullable CacheEntryPredicate... filter) {
         return entrySet(
             F0.and0(
@@ -4752,11 +4759,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         };
 
-        return new GridCacheKeySet<>(ctx, F.map(map.entries(p), new IgniteClosure<GridCacheMapEntry, Cache.Entry<K, V>>() {
-            @Override public Cache.Entry<K, V> apply(GridCacheMapEntry ex) {
-                return ex.wrapLazyValue();
-            }
-        }), null);
+        return new KeySet(map.entrySet(p));
     }
 
     /**
@@ -4816,7 +4819,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 false,
             /*can remap*/true,
                 needVer).get();
-        } catch (IgniteException e) {
+        }
+        catch (IgniteException e) {
             if (e.getCause(IgniteCheckedException.class) != null)
                 throw e.getCause(IgniteCheckedException.class);
             else
@@ -6521,6 +6525,108 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** {@inheritDoc} */
         @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
             return null;
+        }
+    }
+
+    private final class KeySetIterator implements Iterator<K> {
+        private final Iterator<GridCacheMapEntry> internalIterator;
+
+        private GridCacheMapEntry current;
+
+        private KeySetIterator(Iterator<GridCacheMapEntry> internalIterator) {
+            this.internalIterator = internalIterator;
+        }
+
+        @Override public boolean hasNext() {
+            return internalIterator.hasNext();
+        }
+
+        @Override public K next() {
+            current = internalIterator.next();
+
+            return (K)current.keyValue(false);
+        }
+
+        @Override public void remove() {
+            if (current == null)
+                throw new IllegalStateException();
+
+            removeEntry(current);
+
+            current = null;
+        }
+    }
+
+    private final class KeySet extends AbstractSet<K> {
+        private final Set<GridCacheMapEntry> internalSet;
+
+        private KeySet(Set<GridCacheMapEntry> internalSet) {
+            this.internalSet = internalSet;
+        }
+
+        @Override public Iterator<K> iterator() {
+            return new KeySetIterator(internalSet.iterator());
+        }
+
+        @Override public int size() {
+            return F.size(iterator());
+        }
+
+        @Override public boolean contains(Object o) {
+            GridCacheMapEntry entry = map.getEntry(ctx.toCacheKeyObject(o));
+
+            return entry != null && internalSet.contains(entry);
+        }
+    }
+
+    private final class EntryIterator implements Iterator<Cache.Entry<K, V>> {
+        private final Iterator<GridCacheMapEntry> internalIterator;
+
+        private GridCacheMapEntry current;
+
+        private EntryIterator(Iterator<GridCacheMapEntry> internalIterator) {
+            this.internalIterator = internalIterator;
+        }
+
+        @Override public boolean hasNext() {
+            return internalIterator.hasNext();
+        }
+
+        @Override public Cache.Entry<K, V> next() {
+            current = internalIterator.next();
+
+            return current.wrapLazyValue();
+        }
+
+        @Override public void remove() {
+            if (current == null)
+                throw new IllegalStateException();
+
+            removeEntry(current);
+
+            current = null;
+        }
+    }
+
+    private final class EntrySet extends AbstractSet<Cache.Entry<K, V>> {
+        private final Set<GridCacheMapEntry> internalSet;
+
+        private EntrySet(Set<GridCacheMapEntry> internalSet) {
+            this.internalSet = internalSet;
+        }
+
+        @Override public Iterator<Cache.Entry<K, V>> iterator() {
+            return new EntryIterator(internalSet.iterator());
+        }
+
+        @Override public int size() {
+            return F.size(iterator());
+        }
+
+        @Override public boolean contains(Object o) {
+            GridCacheMapEntry entry = map.getEntry(ctx.toCacheKeyObject(o));
+
+            return entry != null && internalSet.contains(entry);
         }
     }
 }
