@@ -99,6 +99,7 @@ AC_CONFIG_FILES([ \
     odbc-test/Makefile \
     core/include/Makefile \
     core/Makefile \
+    core/ignite.pc \
     jni/os/linux/include/Makefile \
     jni/include/Makefile \
     jni/Makefile \
