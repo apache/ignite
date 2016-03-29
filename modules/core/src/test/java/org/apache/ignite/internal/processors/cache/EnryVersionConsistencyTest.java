@@ -112,25 +112,40 @@ public class EnryVersionConsistencyTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTransactionalCache() throws Exception {
-        checkEntryVersionConsistency(createCacheConfiguration(TRANSACTIONAL));
+    public void testInvokeAllTransactionalCache() throws Exception {
+        check(false, createCacheConfiguration(TRANSACTIONAL));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testAtomicCache() throws Exception {
-        checkEntryVersionConsistency(createCacheConfiguration(ATOMIC));
+    public void testInvokeAllAtomicCache() throws Exception {
+        check(false, createCacheConfiguration(ATOMIC));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAtomicCache() throws Exception {
+        check(true, createCacheConfiguration(ATOMIC));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeTransactionalCache() throws Exception {
+        check(true, createCacheConfiguration(TRANSACTIONAL));
     }
 
     /**
      * Tests entry's versions consistency after invokeAll.
      *
+     * @param single Single invoke or invokeAll.
      * @param cc Cache configuration.
      * @throws GridCacheEntryRemovedException
      */
     @SuppressWarnings("serial")
-    private void checkEntryVersionConsistency(CacheConfiguration cc) throws GridCacheEntryRemovedException {
+    private void check(boolean single, CacheConfiguration cc) throws GridCacheEntryRemovedException {
         grid(0).getOrCreateCache(cc);
 
         try {
@@ -146,7 +161,11 @@ public class EnryVersionConsistencyTest extends GridCommonAbstractTest {
 
                 final IgniteCache<String, Integer> cache = grid.cache(null);
 
-                cache.invokeAll(keys, new DummyEntryProcessor());
+                if (single)
+                    for (String key : keys)
+                        cache.invoke(key, new DummyEntryProcessor());
+                else
+                    cache.invokeAll(keys, new DummyEntryProcessor());
 
                 // Check entry versions concistency.
                 for (String key : keys) {
