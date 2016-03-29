@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,14 +78,17 @@ public class OdbcRequestHandler {
 
         try {
             switch (req.command()) {
+                case HANDSHAKE:
+                    return performHandshake((OdbcHandshakeRequest) req);
+
                 case EXECUTE_SQL_QUERY:
-                    return executeQuery((OdbcQueryExecuteRequest)req);
+                    return executeQuery((OdbcQueryExecuteRequest) req);
 
                 case FETCH_SQL_QUERY:
-                    return fetchQuery((OdbcQueryFetchRequest)req);
+                    return fetchQuery((OdbcQueryFetchRequest) req);
 
                 case CLOSE_SQL_QUERY:
-                    return closeQuery((OdbcQueryCloseRequest)req);
+                    return closeQuery((OdbcQueryCloseRequest) req);
 
                 case GET_COLUMNS_META:
                     return getColumnsMeta((OdbcQueryGetColumnsMetaRequest) req);
@@ -98,6 +102,28 @@ public class OdbcRequestHandler {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    /**
+     * {@link OdbcHandshakeRequest} command handler.
+     *
+     * @param req Handshake request.
+     * @return Response.
+     */
+    private OdbcResponse performHandshake(OdbcHandshakeRequest req) {
+        OdbcHandshakeResult res;
+
+        if (req.version() == OdbcMessageParser.PROTO_VER)
+            res = new OdbcHandshakeResult(true, null, null);
+        else {
+            IgniteProductVersion ver = ctx.grid().version();
+
+            String verStr = Byte.toString(ver.major()) + '.' + ver.minor() + '.' + ver.maintenance();
+
+            res = new OdbcHandshakeResult(false, OdbcMessageParser.PROTO_VER_SINCE, verStr);
+        }
+
+        return new OdbcResponse(res);
     }
 
     /**

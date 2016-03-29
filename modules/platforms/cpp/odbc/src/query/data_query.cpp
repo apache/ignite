@@ -173,11 +173,13 @@ namespace ignite
                 QueryExecuteRequest req(cacheName, sql, params);
                 QueryExecuteResponse rsp;
 
-                bool success = connection.SyncMessage(req, rsp);
-
-                if (!success)
+                try
                 {
-                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, "Connection terminated.");
+                    connection.SyncMessage(req, rsp);
+                }
+                catch (const IgniteError& err)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
 
                     return SQL_RESULT_ERROR;
                 }
@@ -202,7 +204,6 @@ namespace ignite
                     LOG_MSG("[%d] SchemaName:     %s\n", i, rsp.GetMeta()[i].GetSchemaName().c_str());
                     LOG_MSG("[%d] TypeName:       %s\n", i, rsp.GetMeta()[i].GetTableName().c_str());
                     LOG_MSG("[%d] ColumnName:     %s\n", i, rsp.GetMeta()[i].GetColumnName().c_str());
-                    LOG_MSG("[%d] ColumnTypeName: %s\n", i, rsp.GetMeta()[i].GetColumnTypeName().c_str());
                     LOG_MSG("[%d] ColumnType:     %d\n", i, rsp.GetMeta()[i].GetDataType());
                     LOG_MSG("\n");
                 }
@@ -215,11 +216,13 @@ namespace ignite
                 QueryCloseRequest req(cursor->GetQueryId());
                 QueryCloseResponse rsp;
 
-                bool success = connection.SyncMessage(req, rsp);
-
-                if (!success)
+                try
                 {
-                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, "Connection terminated.");
+                    connection.SyncMessage(req, rsp);
+                }
+                catch (const IgniteError& err)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
 
                     return SQL_RESULT_ERROR;
                 }
@@ -245,14 +248,13 @@ namespace ignite
                 QueryFetchRequest req(cursor->GetQueryId(), ResultPage::DEFAULT_SIZE);
                 QueryFetchResponse rsp(*resultPage);
 
-                bool success = connection.SyncMessage(req, rsp);
-
-                LOG_MSG("Query id: %lld\n", rsp.GetQueryId());
-                LOG_MSG("Request status: %s\n", success ? "Success" : "Failure");
-
-                if (!success)
+                try
                 {
-                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, "Connection terminated.");
+                    connection.SyncMessage(req, rsp);
+                }
+                catch (const IgniteError& err)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
 
                     return SQL_RESULT_ERROR;
                 }

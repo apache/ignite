@@ -35,7 +35,7 @@ namespace Apache.Ignite.Examples.Compute
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
     /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class TaskExample
@@ -48,8 +48,8 @@ namespace Apache.Ignite.Examples.Compute
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
+                SpringConfigUrl = @"platforms\dotnet\examples\config\examples-config.xml",
+                JvmOptions = new List<string> { "-Xms512m", "-Xmx512m" }
             };
 
             using (var ignite = Ignition.Start(cfg))

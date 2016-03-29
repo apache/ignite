@@ -36,15 +36,17 @@ namespace ignite
     {
         enum RequestType
         {
-            REQUEST_TYPE_EXECUTE_SQL_QUERY = 1,
+            REQUEST_TYPE_HANDSHAKE = 1,
 
-            REQUEST_TYPE_FETCH_SQL_QUERY = 2,
+            REQUEST_TYPE_EXECUTE_SQL_QUERY = 2,
 
-            REQUEST_TYPE_CLOSE_SQL_QUERY = 3,
+            REQUEST_TYPE_FETCH_SQL_QUERY = 3,
 
-            REQUEST_TYPE_GET_COLUMNS_METADATA = 4,
+            REQUEST_TYPE_CLOSE_SQL_QUERY = 4,
 
-            REQUEST_TYPE_GET_TABLES_METADATA = 5
+            REQUEST_TYPE_GET_COLUMNS_METADATA = 5,
+
+            REQUEST_TYPE_GET_TABLES_METADATA = 6
         };
 
         enum ResponseStatus
@@ -52,6 +54,46 @@ namespace ignite
             RESPONSE_STATUS_SUCCESS = 0,
 
             RESPONSE_STATUS_FAILED = 1
+        };
+
+        /**
+         * Handshake request.
+         */
+        class HandshakeRequest
+        {
+        public:
+            /**
+             * Constructor.
+             *
+             * @param version Protocol version.
+             */
+            HandshakeRequest(int64_t version) : version(version)
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~HandshakeRequest()
+            {
+                // No-op.
+            }
+
+            /**
+             * Write request using provided writer.
+             * @param writer Writer.
+             */
+            void Write(ignite::impl::binary::BinaryWriterImpl& writer) const
+            {
+                writer.WriteInt8(REQUEST_TYPE_HANDSHAKE);
+
+                writer.WriteInt64(version);
+            }
+
+        private:
+            /** Protocol version. */
+            int64_t version;
         };
 
         /**
@@ -367,9 +409,11 @@ namespace ignite
         protected:
             /**
              * Read data if response status is RESPONSE_STATUS_SUCCESS.
-             * @param reader Reader.
              */
-            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader) = 0;
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl&)
+            {
+                // No-op.
+            }
 
         private:
             /** Request processing status. */
@@ -379,6 +423,83 @@ namespace ignite
             std::string error;
         };
 
+        /**
+         * Handshake response.
+         */
+        class HandshakeResponse : public QueryResponse
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            HandshakeResponse() :
+                accepted(false),
+                protoVerSince(),
+                currentVer()
+            {
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            ~HandshakeResponse()
+            {
+                // No-op.
+            }
+
+            /**
+             * Check if the handshake has been accepted.
+             * @return True if the handshake has been accepted.
+             */
+            bool IsAccepted() const
+            {
+                return accepted;
+            }
+
+            /**
+             * Get host Apache Ignite version when protocol version has been introduced.
+             * @return Host Apache Ignite version when protocol version has been introduced.
+             */
+            const std::string& ProtoVerSince() const
+            {
+                return protoVerSince;
+            }
+
+            /**
+             * Current host Apache Ignite version.
+             * @return Current host Apache Ignite version.
+             */
+            const std::string& CurrentVer() const
+            {
+                return currentVer;
+            }
+
+        private:
+            /**
+             * Read response using provided reader.
+             * @param reader Reader.
+             */
+            virtual void ReadOnSuccess(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                accepted = reader.ReadBool();
+
+                if (!accepted)
+                {
+                    utility::ReadString(reader, protoVerSince);
+                    utility::ReadString(reader, currentVer);
+                }
+            }
+
+            /** Handshake accepted. */
+            bool accepted;
+
+            /** Host Apache Ignite version when protocol version has been introduced. */
+            std::string protoVerSince;
+
+            /** Current host Apache Ignite version. */
+            std::string currentVer;
+        };
 
         /**
          * Query close response.

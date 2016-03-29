@@ -42,6 +42,9 @@ namespace ignite
             /** Default initial size of operational memory. */
             enum { DEFAULT_MEM_ALLOCATION = 4096 };
 
+            /** ODBC communication protocol version. */
+            enum { PROTOCOL_VERSION = 1 };
+
             /**
              * Constructor.
              */
@@ -91,9 +94,6 @@ namespace ignite
             void Decode(MsgT& msg, const std::vector<int8_t>& buf)
             {
                 using namespace ignite::impl::binary;
-
-                //for (size_t i = 0; i < buf.size(); ++i)
-                //    LOG_MSG("Data[%0.4d] : %0.3d, %c\n", i, (int)buf[i], buf[i] > 64 && buf[i] < 128 ? buf[i] : '.');
 
                 if (inMem.Capacity() < static_cast<int32_t>(buf.size()))
                     inMem.Reallocate(static_cast<int32_t>(buf.size()));

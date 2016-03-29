@@ -72,11 +72,11 @@ namespace ignite
                 const std::string sch("");
                 const std::string tbl("");
 
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",   SqlTypeName::VARCHAR, IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM", SqlTypeName::VARCHAR, IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_NAME",  SqlTypeName::VARCHAR, IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_TYPE",  SqlTypeName::VARCHAR, IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "REMARKS",     SqlTypeName::VARCHAR, IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",   IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM", IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_NAME",  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_TYPE",  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "REMARKS",     IGNITE_TYPE_STRING));
             }
 
             TableMetadataQuery::~TableMetadataQuery()
@@ -205,11 +205,13 @@ namespace ignite
                 QueryGetTablesMetaRequest req(catalog, schema, table, tableType);
                 QueryGetTablesMetaResponse rsp;
 
-                bool success = connection.SyncMessage(req, rsp);
-
-                if (!success)
+                try
                 {
-                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, "Connection terminated.");
+                    connection.SyncMessage(req, rsp);
+                }
+                catch (const IgniteError& err)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
 
                     return SQL_RESULT_ERROR;
                 }
