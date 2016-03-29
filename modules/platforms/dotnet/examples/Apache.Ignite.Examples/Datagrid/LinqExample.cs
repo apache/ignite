@@ -22,12 +22,12 @@ using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.Linq;
 using Apache.Ignite.Core.Cache;
+using Apache.Ignite.Core.Cache.Configuration;
+using Apache.Ignite.Core.Cache.Query;
 using Apache.Ignite.ExamplesDll.Binary;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
-    using Apache.Ignite.Core.Cache.Query;
-
     /// <summary>
     /// This example populates cache with sample data and runs several LINQ queries over this data.
     /// <para />
@@ -44,6 +44,9 @@ namespace Apache.Ignite.Examples.Datagrid
     /// </summary>
     public class LinqExample
     {
+        /// <summary>Cache name.</summary>
+        private const string CacheName = "dotnet_cache_query";
+
         [STAThread]
         public static void Main()
         {
@@ -58,7 +61,15 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache LINQ example started.");
 
-                var cache = ignite.GetCache<object, object>(null);
+                var cache = ignite.GetOrCreateCache<object, object>(new CacheConfiguration
+                {
+                    Name = CacheName,
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity(typeof(int), typeof(Organization)),
+                        new QueryEntity(typeof(EmployeeKey), typeof(Employee))
+                    }
+                });
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();
@@ -67,8 +78,8 @@ namespace Apache.Ignite.Examples.Datagrid
                 PopulateCache(cache);
 
                 // Create cache that will work with specific types.
-                var employeeCache = ignite.GetCache<EmployeeKey, Employee>(null);
-                var organizationCache = ignite.GetCache<int, Organization>(null);
+                var employeeCache = ignite.GetCache<EmployeeKey, Employee>(CacheName);
+                var organizationCache = ignite.GetCache<int, Organization>(CacheName);
 
                 // Run SQL query example.
                 QueryExample(employeeCache);
