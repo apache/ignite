@@ -482,7 +482,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 break;
 
             case OP_METRICS:
-                CacheMetrics metrics = cache.metrics();
+                CacheMetrics metrics = cache.localMetrics();
 
                 writer.writeLong(metrics.getCacheGets());
                 writer.writeLong(metrics.getCachePuts());

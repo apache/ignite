@@ -38,6 +38,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -1543,18 +1544,40 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public Affinity<K> affinity();
 
     /**
-     * Gets metrics (statistics) for this cache.
+     * Gets whole cluster metrics (statistics) for this cache.
      *
      * @return Cache metrics.
      */
-    public CacheMetrics metrics();
+    public CacheMetrics clusterMetrics();
 
     /**
-     * Gets metrics (statistics) for this cache.
+     * Gets cluster group metrics (statistics) for this cache.
+     *
+     * @param grp Cluster group.
+     * @return Cache metrics.
+     */
+    public CacheMetrics clusterMetrics(ClusterGroup grp);
+
+    /**
+     * Gets local metrics (statistics) for this cache.
      *
      * @return Cache metrics.
      */
-    public CacheMetricsMXBean mxBean();
+    public CacheMetrics localMetrics();
+
+    /**
+     * Gets whole cluster metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public CacheMetricsMXBean clusterMxBean();
+
+    /**
+     * Gets local metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public CacheMetricsMXBean localMxBean();
 
     /**
      * Gets size (in bytes) of all entries swapped to disk.

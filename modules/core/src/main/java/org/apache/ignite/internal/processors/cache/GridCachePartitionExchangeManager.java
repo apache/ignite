@@ -1316,7 +1316,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     boolean preloadFinished = true;
 
                     for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                        preloadFinished &= cacheCtx.preloader().syncFuture().isDone();
+                        preloadFinished &= cacheCtx.preloader() != null && cacheCtx.preloader().syncFuture().isDone();
 
                         if (!preloadFinished)
                             break;
