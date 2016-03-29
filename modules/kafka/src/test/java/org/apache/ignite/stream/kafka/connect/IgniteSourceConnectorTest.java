@@ -173,7 +173,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         // Ugh! To be sure Kafka Connect's worker thread is properly started...
         Thread.sleep(5000);
 
-        final CountDownLatch latch = new CountDownLatch(EVENT_CNT * TOPICS.length);
+        final CountDownLatch latch = new CountDownLatch(EVENT_CNT);
 
         final IgnitePredicate<CacheEvent> locLsnr = new IgnitePredicate<CacheEvent>() {
             @Override public boolean apply(CacheEvent evt) {
@@ -191,18 +191,16 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
 
         assertEquals(0, cache.size(CachePeekMode.PRIMARY));
 
-        Map<String, String> keyValMap = new HashMap<>(EVENT_CNT * TOPICS.length);
+        Map<String, String> keyValMap = new HashMap<>(EVENT_CNT);
 
-        // Produces events for the specified number of topics
-        for (String topic : TOPICS)
-            keyValMap.putAll(sendData(topic));
+        keyValMap.putAll(sendData());
 
         // Checks all events are processed.
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
         grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).stopLocalListen(locLsnr);
 
-        assertEquals(EVENT_CNT * TOPICS.length, cache.size(CachePeekMode.PRIMARY));
+        assertEquals(EVENT_CNT, cache.size(CachePeekMode.PRIMARY));
 
         // Checks the events are transferred to Kafka broker.
         checkDataDelivered(conditioned);
@@ -211,16 +209,15 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     /**
      * Sends messages to the grid.
      *
-     * @param topic Topic name.
      * @return Map of key value messages.
      */
-    private Map<String, String> sendData(String topic) throws IOException {
+    private Map<String, String> sendData() throws IOException {
         Map<String, String> keyValMap = new HashMap<>();
 
         for (int evt = 0; evt < EVENT_CNT; evt++) {
             long runtime = System.currentTimeMillis();
 
-            String key = topic + "_" + String.valueOf(evt);
+            String key = "test_" + String.valueOf(evt);
             String msg = runtime + String.valueOf(evt);
 
             if (evt >= EVENT_CNT / 2)
@@ -260,22 +257,13 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         long start = System.currentTimeMillis();
 
         try {
-            while (false || (System.currentTimeMillis() - start) < 20000) {
-                ConsumerRecords<String, CacheEvent> records = consumer.poll(100);
+            while (false || (System.currentTimeMillis() - start) < 10000) {
+                ConsumerRecords<String, CacheEvent> records = consumer.poll(10);
                 for (ConsumerRecord<String, CacheEvent> record : records) {
                     System.out.println("Event: offset = " + record.offset() + ", key = " + record.key()
                         + ", value = " + record.value().toString());
 
-                    if (conditioned) {
-                        if (++evtCnt == (EVENT_CNT * TOPICS.length) / 2) {
-                            return;
-                        }
-                    }
-                    else {
-                        if (++evtCnt == EVENT_CNT * TOPICS.length) {
-                            return;
-                        }
-                    }
+                    evtCnt++;
                 }
             }
         }

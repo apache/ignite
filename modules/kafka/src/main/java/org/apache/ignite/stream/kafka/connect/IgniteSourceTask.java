@@ -22,22 +22,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Task to consume remote cluster cache events from the grid and inject them into Kafka.
@@ -49,11 +50,11 @@ public class IgniteSourceTask extends SourceTask {
     /** Logger. */
     private static final Logger log = LoggerFactory.getLogger(IgniteSourceTask.class);
 
-    /** Event buffer. */
-    private static IgniteQueue<CacheEvent> evtBuf;
-
     /** Event buffer size. */
     private static int evtBufSize = 100000;
+
+    /** Event buffer. */
+    private static BlockingQueue<CacheEvent> evtBuf = new LinkedBlockingQueue<>(evtBufSize);
 
     /** Max number of events taken from the buffer at once. */
     private static int evtBatchSize = 100;
@@ -123,25 +124,35 @@ public class IgniteSourceTask extends SourceTask {
             }
         }
 
-        try {
-            evtBuf = makeBuffer();
-        }
-        catch (IgniteException e) {
-            log.error("Failed to create an event buffer", e);
+        IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
+            @Override public boolean apply(UUID id, CacheEvent evt) {
+                try {
+                    if (!evtBuf.offer(evt, 10, TimeUnit.MILLISECONDS))
+                        log.error("Failed to buffer event {}", evt.name());
+                }
+                catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
 
-            throw new ConnectException(e);
-        }
+                return true;
+            }
+        };
 
         IgnitePredicate<CacheEvent> rmtLsnr = new IgnitePredicate<CacheEvent>() {
             @Override public boolean apply(CacheEvent evt) {
 
-                if (filter != null && !filter.apply(evt))
+                Affinity affinity = IgniteGrid.getIgnite().affinity(cacheName);
+                ClusterNode evtNode = evt.eventNode();
+
+                if (affinity.isPrimary(evtNode, evt.key())) {
+                    // Process this event. Ignored on backups.
+                    if (filter != null && filter.apply(evt))
+                        return false;
+
                     return true;
+                }
 
-                if (!evtBuf.offer(evt, 10, TimeUnit.MILLISECONDS))
-                    log.error("Failed to buffer event {}", evt.name());
-
-                return true;
+                return false;
             }
         };
 
@@ -149,7 +160,7 @@ public class IgniteSourceTask extends SourceTask {
             int[] evts = cacheEvents(props.get(IgniteSourceConstants.CACHE_EVENTS));
 
             rmtLsnrId = IgniteGrid.getIgnite().events(IgniteGrid.getIgnite().cluster().forCacheNodes(cacheName))
-                .remoteListen(null, rmtLsnr, evts);
+                .remoteListen(locLsnr, rmtLsnr, evts);
         }
         catch (Exception e) {
             log.error("Failed to register event listener!", e);
@@ -224,28 +235,18 @@ public class IgniteSourceTask extends SourceTask {
 
         stopped = true;
 
-        if (evtBuf != null)
-            evtBuf.close();
-
-        if (rmtLsnrId != null)
-            IgniteGrid.getIgnite().events(IgniteGrid.getIgnite().cluster().forCacheNodes(cacheName))
-                .stopRemoteListen(rmtLsnrId);
+        stopRemoteListen();
 
         IgniteGrid.getIgnite().close();
     }
 
     /**
-     * Makes a buffer for events to be transferred to Kafka.
-     *
-     * @return Buffer as a bounded queue with a random name.
-     * @throws IgniteException
+     * Stops the remote listener.
      */
-    private static IgniteQueue<CacheEvent> makeBuffer() throws IgniteException {
-        CollectionConfiguration colCfg = new CollectionConfiguration();
-
-        colCfg.setCacheMode(PARTITIONED);
-
-        return IgniteGrid.getIgnite().queue(UUID.randomUUID().toString(), evtBufSize, colCfg);
+    protected void stopRemoteListen() {
+        if (rmtLsnrId != null)
+            IgniteGrid.getIgnite().events(IgniteGrid.getIgnite().cluster().forCacheNodes(cacheName))
+                .stopRemoteListen(rmtLsnrId);
     }
 
     /**
