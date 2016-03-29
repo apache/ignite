@@ -108,6 +108,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
                 Assert.IsTrue(File.Exists(resCfg.JvmDllPath));
                 Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
+                Assert.AreEqual(cfg.IsDaemon, resCfg.IsDaemon);
             }
         }
 
@@ -349,7 +350,8 @@ namespace Apache.Ignite.Core.Tests
                 WorkDirectory = Path.GetTempPath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                Localhost = "127.0.0.1"
+                Localhost = "127.0.0.1",
+                IsDaemon = true
             };
         }
     }
