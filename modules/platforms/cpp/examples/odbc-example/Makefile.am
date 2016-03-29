@@ -15,19 +15,37 @@
 ## limitations under the License.
 ##
 
-ACLOCAL_AMFLAGS = "-Im4"
-
-SUBDIRS = .
-DIST_SUBDIRS = .
-
-AM_CPPFLAGS = -I$(srcdir)/../include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
-AM_CXXFLAGS = -Wall -std=c++0x
+ACLOCAL_AMFLAGS =-I m4
 
 noinst_PROGRAMS = ignite-odbcexample
 
-ignite_odbcexample_SOURCES = src/odbc_example.cpp
+AM_CPPFLAGS = \
+    -I@top_srcdir@/include \
+    -I@top_srcdir@/../core/include \
+    -I@top_srcdir@/../core/os/linux/include \
+    -I@top_srcdir@/../common/include \
+    -I@top_srcdir@/../common/os/linux/include \
+    -I@top_srcdir@/../binary/include \
+    -I@top_srcdir@/../jni/include \
+    -I@top_srcdir@/../jni/os/linux/include \
+    -I$(JAVA_HOME)/include \
+    -I$(JAVA_HOME)/include/linux \
+    -DIGNITE_IMPL
 
-ignite_odbcexample_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lodbc
+AM_CXXFLAGS = \
+    -Wall \
+    -std=c++0x
+
+ignite_odbcexample_LDADD = \
+    @top_srcdir@/../core/libignite.la \
+    -lodbc \
+    -lpthread
+
+ignite_odbcexample_LDFLAGS = \
+    -static-libtool-libs
+
+ignite_odbcexample_SOURCES = \
+    src/odbc_example.cpp
 
 run-check: check
 	./ignite-odbcexample -p

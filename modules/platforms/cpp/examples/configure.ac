@@ -19,30 +19,30 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([Ingnite C++ Put-Get examples],[1.6.0.8653],[dec@ignite.apache.org],[ignite-examples],[ignite.apache.org])
-AC_CONFIG_SRCDIR(src)
+AC_INIT([Apache Ignite C++ Examples], [1.6.0.8653], [dev@ignite.apache.org], [ignite-examples], [ignite.apache.org])
 
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_HOST
 AC_CONFIG_MACRO_DIR([m4])
 AC_LANG([C++])
 
-# Initialize automake
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 
-AM_PROG_AR
+# Enable silent rules by default
+AM_SILENT_RULES([yes])
 
 # Checks for programs.
-GXX="-g -O2"
-
 AC_PROG_CXX
+AM_PROG_AR
 
 # Initialize Libtool
 LT_INIT
 
 AC_ARG_ENABLE([debug],
- [AS_HELP_STRING([--enable-debug],[enable debug build [default=no]])],
- [],[enable_debug=no])
+    [AS_HELP_STRING([--enable-debug],[enable debug build [default=no]])],
+    [],
+    [enable_debug=no]
+)
 
 if test "x$enable_debug" = xyes; then
     CXXFLAGS="-g -O0"
@@ -50,6 +50,10 @@ else
     CXXFLAGS="-g -O3"
 fi
 
-AC_CONFIG_FILES(Makefile)
+AC_CONFIG_FILES([ \
+    Makefile \
+    putget-example/Makefile \
+    odbc-example/Makefile \
+])
 
 AC_OUTPUT
