@@ -26,7 +26,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -79,7 +79,7 @@ public class IgnitePartitionedQueueNoBackupsTest extends GridCachePartitionedQue
         for (int i = 0; i < gridCount(); i++) {
             IgniteKernal grid = (IgniteKernal)grid(i);
 
-            Iterator<GridCacheEntryEx> entries =
+            Iterator<GridCacheMapEntry> entries =
                 grid.context().cache().internalCache(cctx.name()).map().entries().iterator();
 
             if (entries.hasNext()) {

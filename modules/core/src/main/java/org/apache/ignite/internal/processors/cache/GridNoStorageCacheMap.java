@@ -86,7 +86,7 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
         // noop
     }
 
-    @Nullable @Override public GridCacheEntryEx randomEntry() {
+    @Nullable @Override public GridCacheMapEntry randomEntry() {
         return null;
     }
 
@@ -94,11 +94,11 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
         return Collections.emptySet();
     }
 
-    @Override public Iterable<GridCacheEntryEx> entries(CacheEntryPredicate... filter) {
+    @Override public Iterable<GridCacheMapEntry> entries(CacheEntryPredicate... filter) {
         return Collections.emptySet();
     }
 
-    @Override public Set<GridCacheEntryEx> entrySet(CacheEntryPredicate... filter) {
+    @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
         return Collections.emptySet();
     }
 }

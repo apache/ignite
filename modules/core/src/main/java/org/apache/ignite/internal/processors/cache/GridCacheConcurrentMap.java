@@ -83,7 +83,7 @@ public interface GridCacheConcurrentMap {
 
     void decrementPublicSize(GridCacheEntryEx e);
 
-    @Nullable GridCacheEntryEx randomEntry();
+    @Nullable GridCacheMapEntry randomEntry();
 
     /**
      * @return Random entry out of hash map.
@@ -94,11 +94,11 @@ public interface GridCacheConcurrentMap {
      * @param filter Filter.
      * @return Iterable of the mappings contained in this map.
      */
-    Iterable<GridCacheEntryEx> entries(CacheEntryPredicate... filter);
+    Iterable<GridCacheMapEntry> entries(CacheEntryPredicate... filter);
 
     /**
      * @param filter Filter.
      * @return Set of the mappings contained in this map.
      */
-    Set<GridCacheEntryEx> entrySet(CacheEntryPredicate... filter);
+    Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter);
 }

@@ -137,7 +137,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryEx entryEx(KeyCacheObject key, boolean touch) {
+    @Override public GridCacheMapEntry entryEx(KeyCacheObject key, boolean touch) {
         GridNearCacheEntry entry = null;
 
         while (true) {
@@ -156,7 +156,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntryEx entryEx(KeyCacheObject key, AffinityTopologyVersion topVer) {
+    @Override public GridCacheMapEntry entryEx(KeyCacheObject key, AffinityTopologyVersion topVer) {
         GridNearCacheEntry entry = null;
 
         while (true) {
@@ -373,7 +373,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                     dht().topology().currentLocalPartitions(),
                     new C1<GridDhtLocalPartition, Collection<Cache.Entry<K, V>>>() {
                         @Override public Collection<Cache.Entry<K, V>> apply(GridDhtLocalPartition p) {
-                            Collection<GridCacheEntryEx> entries0 = p.entrySet();
+                            Collection<GridCacheMapEntry> entries0 = p.entrySet();
 
                             if (!F.isEmpty(filter))
                                 entries0 = F.view(entries0, new CacheEntryPredicateAdapter() {

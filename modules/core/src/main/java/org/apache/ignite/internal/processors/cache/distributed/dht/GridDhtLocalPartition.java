@@ -245,12 +245,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return map.removeEntry(entry);
     }
 
-    public Iterable<GridCacheEntryEx> entries(
+    public Iterable<GridCacheMapEntry> entries(
         CacheEntryPredicate... filter) {
         return map.entries(filter);
     }
 
-    public Set<GridCacheEntryEx> entrySet(CacheEntryPredicate... filter) {
+    public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
         return map.entrySet(filter);
     }
 
@@ -258,7 +258,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return map.removeEntryIfObsolete(key);
     }
 
-    @Nullable public GridCacheEntryEx randomEntry() {
+    @Nullable public GridCacheMapEntry randomEntry() {
         return map.randomEntry();
     }
 
@@ -650,12 +650,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
-        Iterator<GridCacheEntryEx> it = map.entries().iterator();
+        Iterator<GridDhtCacheEntry> it = (Iterator) map.entries().iterator();
 
         GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
 
         if (swap && GridQueryProcessor.isEnabled(cctx.config())) { // Indexing needs to unswap cache values.
-            Iterator<GridCacheEntryEx> unswapIt = null;
+            Iterator<GridDhtCacheEntry> unswapIt = null;
 
             try {
                 swapIt = cctx.swap().iterator(id);
@@ -673,15 +673,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         try {
             while (it.hasNext()) {
-                GridCacheEntryEx cached = null;
+                GridDhtCacheEntry cached = null;
 
                 try {
                     cached = it.next();
 
-                    if (!(cached instanceof GridDhtCacheEntry))
-                        continue;
-
-                    if (((GridDhtCacheEntry)cached).clearInternal(clearVer, swap, extras)) {
+                    if ((cached).clearInternal(clearVer, swap, extras)) {
                         map.removeEntry(cached);
 
                         if (!cached.isInternal()) {
@@ -747,12 +744,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param it Swap iterator.
      * @return Unswapping iterator over swapped entries.
      */
-    private Iterator<GridCacheEntryEx> unswapIterator(
+    private Iterator<GridDhtCacheEntry> unswapIterator(
         final GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it) {
         if (it == null)
             return null;
 
-        return new Iterator<GridCacheEntryEx>() {
+        return new Iterator<GridDhtCacheEntry>() {
             /** */
             GridDhtCacheEntry lastEntry;
 

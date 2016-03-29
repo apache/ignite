@@ -395,7 +395,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      *
      * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
      */
-    @Override public GridCacheEntryEx entryEx(KeyCacheObject key, boolean touch)
+    @Override public GridCacheMapEntry entryEx(KeyCacheObject key, boolean touch)
         throws GridDhtInvalidPartitionException {
         return super.entryEx(key, touch);
     }
@@ -405,7 +405,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      *
      * @throws GridDhtInvalidPartitionException If partition for the key is no longer valid.
      */
-    @Override public GridCacheEntryEx entryEx(KeyCacheObject key,
+    @Override public GridCacheMapEntry entryEx(KeyCacheObject key,
         AffinityTopologyVersion topVer) throws GridDhtInvalidPartitionException {
         return super.entryEx(key, topVer);
     }
@@ -1102,7 +1102,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             final GridDhtLocalPartition part = ctx.topology().localPartition(partId,
                 ctx.discovery().topologyVersionEx(), false);
 
-            Iterator<GridCacheEntryEx> partIt = part == null ? null : part.entries().iterator();
+            Iterator<GridCacheMapEntry> partIt = part == null ? null : part.entries().iterator();
 
             return new PartitionEntryIterator(partIt);
         }
@@ -1223,10 +1223,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             final Iterator<GridDhtLocalPartition> partIt = topology().currentLocalPartitions().iterator();
 
-            Iterator<GridCacheEntryEx> it = new Iterator<GridCacheEntryEx>() {
-                private GridCacheEntryEx next;
+            Iterator<GridCacheMapEntry> it = new Iterator<GridCacheMapEntry>() {
+                private GridCacheMapEntry next;
 
-                private Iterator<GridCacheEntryEx> curIt;
+                private Iterator<GridCacheMapEntry> curIt;
 
                 {
                     advance();
@@ -1236,11 +1236,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     return next != null;
                 }
 
-                @Override public GridCacheEntryEx next() {
+                @Override public GridCacheMapEntry next() {
                     if (next == null)
                         throw new NoSuchElementException();
 
-                    GridCacheEntryEx e = next;
+                    GridCacheMapEntry e = next;
 
                     advance();
 
@@ -1299,12 +1299,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         private Cache.Entry<K, V> last;
 
         /** Partition iterator. */
-        private final Iterator<GridCacheEntryEx> partIt;
+        private final Iterator<GridCacheMapEntry> partIt;
 
         /**
          * @param partIt Partition iterator.
          */
-        private PartitionEntryIterator(@Nullable Iterator<GridCacheEntryEx> partIt) {
+        private PartitionEntryIterator(@Nullable Iterator<GridCacheMapEntry> partIt) {
             this.partIt = partIt;
 
             advance();

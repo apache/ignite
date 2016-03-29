@@ -31,6 +31,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -174,7 +175,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
             Set<IgniteUuid> setIds = new HashSet<>();
 
             for (int i = 0; i < gridCount(); i++) {
-                Iterator<GridCacheEntryEx> entries =
+                Iterator<GridCacheMapEntry> entries =
                     ((IgniteKernal)grid(i)).context().cache().internalCache().map().entries().iterator();
 
                 while (entries.hasNext()) {

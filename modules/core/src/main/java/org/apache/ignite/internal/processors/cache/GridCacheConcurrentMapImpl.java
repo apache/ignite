@@ -243,21 +243,21 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheEntryEx> entries(CacheEntryPredicate... filter) {
-        return F.viewReadOnly(map.values(), F.<GridCacheEntryEx>identity(), filter);
+    @Override public Collection<GridCacheMapEntry> entries(CacheEntryPredicate... filter) {
+        return F.viewReadOnly(map.values(), F.<GridCacheMapEntry>identity(), filter);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheEntryEx randomEntry() {
+    @Nullable @Override public GridCacheMapEntry randomEntry() {
         // TODO
         return map.values().iterator().next();
     }
 
     /** {@inheritDoc} */
-    @Override public Set<GridCacheEntryEx> entrySet(final CacheEntryPredicate... filter) {
-        return new AbstractSet<GridCacheEntryEx>() {
-            @Override public Iterator<GridCacheEntryEx> iterator() {
-                return F.<GridCacheEntryEx>iterator0(map.values(), true, filter);
+    @Override public Set<GridCacheMapEntry> entrySet(final CacheEntryPredicate... filter) {
+        return new AbstractSet<GridCacheMapEntry>() {
+            @Override public Iterator<GridCacheMapEntry> iterator() {
+                return F.<GridCacheMapEntry>iterator0(map.values(), true, filter);
             }
 
             @Override public int size() {
@@ -265,7 +265,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
             }
 
             @Override public boolean contains(Object o) {
-                return o instanceof GridCacheEntryEx && o.equals(map.get(((GridCacheEntryEx)o).key()));
+                return o instanceof GridCacheMapEntry && o.equals(map.get(((GridCacheMapEntry)o).key()));
 
             }
         };

@@ -326,7 +326,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheEntryEx entryExSafe(
+    @Override protected GridCacheMapEntry entryExSafe(
         KeyCacheObject key,
         AffinityTopologyVersion topVer
     ) {

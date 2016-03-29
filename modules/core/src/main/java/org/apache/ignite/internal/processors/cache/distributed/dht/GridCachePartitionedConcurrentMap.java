@@ -111,7 +111,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         return part.removeEntry(entry);
     }
 
-    @Nullable @Override public GridCacheEntryEx randomEntry() {
+    @Nullable @Override public GridCacheMapEntry randomEntry() {
         return entries().iterator().next();
     }
 
@@ -125,22 +125,22 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         return set;
     }
 
-    @Override public Iterable<GridCacheEntryEx> entries(CacheEntryPredicate... filter) {
-        final List<Iterator<GridCacheEntryEx>> iterators = new ArrayList<>();
+    @Override public Iterable<GridCacheMapEntry> entries(CacheEntryPredicate... filter) {
+        final List<Iterator<GridCacheMapEntry>> iterators = new ArrayList<>();
 
         for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
             iterators.add(partition.entries(filter).iterator());
         }
 
-        return new Iterable<GridCacheEntryEx>() {
-            @Override public Iterator<GridCacheEntryEx> iterator() {
+        return new Iterable<GridCacheMapEntry>() {
+            @Override public Iterator<GridCacheMapEntry> iterator() {
                 return F.flatIterators(iterators);
             }
         };
     }
 
-    @Override public Set<GridCacheEntryEx> entrySet(CacheEntryPredicate... filter) {
-        Collection<Set<GridCacheEntryEx>> sets = new ArrayList<>();
+    @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
+        Collection<Set<GridCacheMapEntry>> sets = new ArrayList<>();
 
         for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
             sets.add(partition.entrySet(filter));
