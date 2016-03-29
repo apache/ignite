@@ -139,6 +139,7 @@ import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
@@ -757,10 +758,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (ctx.config().isDaemon() && !CU.isMarshallerCache(desc.cacheConfiguration().getName()))
                     continue;
 
-                boolean started = desc.onStart();
-
-                assert started : "Failed to change started flag for locally configured cache: " + desc;
-
                 desc.clearRemoteConfigurations();
 
                 CacheConfiguration ccfg = desc.cacheConfiguration();
@@ -770,6 +767,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 boolean loc = desc.locallyConfigured();
 
                 if (loc || (desc.receivedOnDiscovery() && CU.affinityNode(locNode, filter))) {
+                    boolean started = desc.onStart();
+
+                    assert started : "Failed to change started flag for locally configured cache: " + desc;
+
                     CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(ccfg);
 
                     CachePluginManager pluginMgr = desc.pluginManager();
@@ -1555,7 +1556,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return desc != null ? desc.cacheConfiguration().getCacheMode() : null;
     }
 
-    public void prepareCacheStart(DynamicCacheChangeRequest req, AffinityTopologyVersion topVer) throws IgniteCheckedException {
+    /**
+     * @param req Cache start request.
+     * @param topVer Topology version.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void prepareCacheStart(DynamicCacheChangeRequest req, AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
         assert req.start() : req;
         assert req.cacheType() != null : req;
 
@@ -1587,9 +1594,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         List<DynamicCacheDescriptor> started = null;
 
         for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-            if (desc.staticallyConfigured() && !desc.locallyConfigured()) {
-                if (desc.receivedFrom() != null && ctx.discovery().node(topVer, desc.receivedFrom()) == null)
-                    continue;
+            if (!desc.started() && desc.staticallyConfigured() && !desc.locallyConfigured()) {
+                if (desc.receivedFrom() != null) {
+                    AffinityTopologyVersion startVer = desc.receivedFromStartVersion();
+
+                    if (startVer == null || startVer.compareTo(topVer) > 0)
+                        continue;
+                }
 
                 if (desc.onStart()) {
                     if (started == null)
@@ -2465,6 +2476,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return res;
+    }
+
+    /**
+     * @param type Event type.
+     * @param node Event node.
+     * @param topVer Topology version.
+     */
+    public void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer) {
+        if (type == EVT_NODE_JOINED) {
+            for (DynamicCacheDescriptor cacheDesc : registeredCaches.values()) {
+                if (node.id().equals(cacheDesc.receivedFrom()))
+                    cacheDesc.receivedFromStartVersion(topVer);
+            }
+        }
+
+        sharedCtx.affinity().onDiscoveryEvent(type, node, topVer);
     }
 
     /**

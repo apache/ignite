@@ -119,13 +119,16 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME2 = "testCache2";
 
     /** */
-    private IgniteClosure<String, CacheConfiguration> cacheC;
+    private IgniteClosure<String, CacheConfiguration[]> cacheC;
 
     /** */
     private IgnitePredicate<ClusterNode> cacheNodeFilter;
 
     /** */
     private IgniteClosure<String, TestRecordingCommunicationSpi> spiC;
+
+    /** */
+    private IgniteClosure<String, Boolean> clientC;
 
     /** Expected ideal affinity assignments. */
     private Map<Long, Map<Integer, List<List<ClusterNode>>>> idealAff = new HashMap<>();
@@ -157,15 +160,21 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        CacheConfiguration ccfg;
+        CacheConfiguration[] ccfg;
 
         if (cacheC != null)
             ccfg = cacheC.apply(gridName);
         else
-            ccfg = cacheConfiguration();
+            ccfg = new CacheConfiguration[]{cacheConfiguration()};
 
         if (ccfg != null)
             cfg.setCacheConfiguration(ccfg);
+
+        if (clientC != null) {
+            client = clientC.apply(gridName);
+
+            discoSpi.setJoinTimeout(30_000);
+        }
 
         cfg.setClientMode(client);
 
@@ -300,12 +309,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinitySimpleSequentialStartNoCacheOnCoordinator() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration>() {
-            @Override public CacheConfiguration apply(String gridName) {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String gridName) {
                 if (gridName.equals(getTestGridName(0)))
                     return null;
 
-                return cacheConfiguration();
+                return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
@@ -320,12 +329,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinitySimpleNoCacheOnCoordinator1() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration>() {
-            @Override public CacheConfiguration apply(String gridName) {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String gridName) {
                 if (gridName.equals(getTestGridName(1)))
                     return null;
 
-                return cacheConfiguration();
+                return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
@@ -359,12 +368,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinitySimpleNoCacheOnCoordinator2() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration>() {
-            @Override public CacheConfiguration apply(String gridName) {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String gridName) {
                 if (gridName.equals(getTestGridName(1)) || gridName.equals(getTestGridName(2)))
                     return null;
 
-                return cacheConfiguration();
+                return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
@@ -410,8 +419,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateCloseClientCacheOnCoordinator1() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration>() {
-            @Override public CacheConfiguration apply(String gridName) {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String gridName) {
                 return null;
             }
         };
@@ -435,12 +444,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCreateCloseClientCacheOnCoordinator2() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration>() {
-            @Override public CacheConfiguration apply(String gridName) {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String gridName) {
                 if (gridName.equals(getTestGridName(0)))
                     return null;
 
-                return cacheConfiguration();
+                return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
@@ -807,8 +816,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         startServer(2, 3);
 
-        cacheC = new IgniteClosure<String, CacheConfiguration>() {
-            @Override public CacheConfiguration apply(String nodeName) {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String nodeName) {
                 return null;
             }
         };
@@ -1213,12 +1222,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientCacheStartClose() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration>() {
-            @Override public CacheConfiguration apply(String gridName) {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String gridName) {
                 if (gridName.equals(getTestGridName(1)))
                     return null;
 
-                return cacheConfiguration();
+                return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
@@ -1275,8 +1284,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInitCacheReceivedOnJoin() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration>() {
-            @Override public CacheConfiguration apply(String s) {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String s) {
                 return null;
             }
         };
@@ -1287,9 +1296,9 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(2, topVer(2, 1), true);
 
-        cacheC = new IgniteClosure<String, CacheConfiguration>() {
-            @Override public CacheConfiguration apply(String s) {
-                return cacheConfiguration();
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String s) {
+                return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
@@ -1299,13 +1308,13 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         checkAffinity(3, topVer(3, 1), true);
 
-        cacheC = new IgniteClosure<String, CacheConfiguration>() {
-            @Override public CacheConfiguration apply(String s) {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String s) {
                 CacheConfiguration ccfg = cacheConfiguration();
 
                 ccfg.setName(CACHE_NAME2);
 
-                return ccfg;
+                return new CacheConfiguration[]{ccfg};
             }
         };
 
@@ -1340,8 +1349,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         for (int i = 0; i < clients; i++)
             startClient(topVer, ++topVer);
 
-        cacheC = new IgniteClosure<String, CacheConfiguration>() {
-            @Override public CacheConfiguration apply(String nodeName) {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String nodeName) {
                 return null;
             }
         };
@@ -1575,6 +1584,82 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testConcurrentStartStaticCaches() throws Exception {
+        concurrentStartStaticCaches(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentStartStaticCachesWithClientNodes() throws Exception {
+        concurrentStartStaticCaches(true);
+    }
+
+    /**
+     * @param withClients If {@code true} also starts client nodes.
+     * @throws Exception If failed.
+     */
+    private void concurrentStartStaticCaches(boolean withClients) throws Exception {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String gridName) {
+                int caches = getTestGridIndex(gridName) + 1;
+
+                CacheConfiguration[] ccfgs = new CacheConfiguration[caches];
+
+                for (int i = 0; i < caches; i++) {
+                    CacheConfiguration ccfg = cacheConfiguration();
+
+                    ccfg.setName("cache-" + i);
+
+                    ccfgs[i] = ccfg;
+                }
+
+                return ccfgs;
+            }
+        };
+
+        if (withClients) {
+            clientC = new IgniteClosure<String, Boolean>() {
+                @Override public Boolean apply(String gridName) {
+                    int idx = getTestGridIndex(gridName);
+
+                    return idx % 3 == 2;
+                }
+            };
+        }
+
+        int ITERATIONS = 3;
+
+        int NODES = withClients ? 8 : 5;
+
+        for (int i = 0; i < ITERATIONS; i++) {
+            log.info("Iteration: " + i);
+
+            startGridsMultiThreaded(NODES);
+
+            for (int t = 0; t < NODES; t++)
+                calculateAffinity(t + 1);
+
+            if (withClients)
+                checkAffinity(NODES, topVer(NODES, 0), false);
+            else
+                checkAffinity(NODES, topVer(NODES, 1), true);
+
+            if (i < ITERATIONS - 1) {
+                checkCaches();
+
+                awaitPartitionMapExchange();
+
+                stopAllGrids();
+
+                idealAff.clear();
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testServiceReassign() throws Exception {
         skipCheckOrder = true;
 
@@ -1609,8 +1694,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoForceKeysRequests() throws Exception {
-        cacheC = new IgniteClosure<String, CacheConfiguration>() {
-            @Override public CacheConfiguration apply(String s) {
+        cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+            @Override public CacheConfiguration[] apply(String s) {
                 return null;
             }
         };
@@ -1858,17 +1943,17 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         if (cacheName != null) {
             final CacheConfiguration ccfg = randomCacheConfiguration(rnd, cacheName, srvs, srvIdx);
 
-            cacheC = new IgniteClosure<String, CacheConfiguration>() {
-                @Override public CacheConfiguration apply(String s) {
-                    return ccfg;
+            cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+                @Override public CacheConfiguration[] apply(String s) {
+                    return new CacheConfiguration[]{ccfg};
                 }
             };
 
             caches.add(cacheName);
         }
         else {
-            cacheC = new IgniteClosure<String, CacheConfiguration>() {
-                @Override public CacheConfiguration apply(String s) {
+            cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
+                @Override public CacheConfiguration[] apply(String s) {
                     return null;
                 }
             };

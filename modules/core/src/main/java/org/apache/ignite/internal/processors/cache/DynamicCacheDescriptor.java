@@ -78,6 +78,9 @@ public class DynamicCacheDescriptor {
     /** */
     private UUID rcvdFrom;
 
+    /** */
+    private AffinityTopologyVersion rcvdFromVer;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -276,6 +279,20 @@ public class DynamicCacheDescriptor {
      */
     public void receivedFrom(UUID nodeId) {
         rcvdFrom = nodeId;
+    }
+
+    /**
+     * @return Topology version when node provided cache configuration was started.
+     */
+    @Nullable public AffinityTopologyVersion receivedFromStartVersion() {
+        return rcvdFromVer;
+    }
+
+    /**
+     * @param rcvdFromVer Topology version when node provided cache configuration was started.
+     */
+    public void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
+        this.rcvdFromVer = rcvdFromVer;
     }
 
     /**
