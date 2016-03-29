@@ -435,6 +435,32 @@
     <Compile Include="Transactions\TransactionState.cs" />
     <Compile Include="Transactions\TransactionTimeoutException.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\cpp\common\project\vs\common.vcxproj">
+      <Project>{4f7e4917-4612-4b96-9838-025711ade391}</Project>
+      <Name>common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <EmbeddedResource Include="$(SolutionDir)\x64\Debug\ignite.common.dll">
+      <Link>resources\debug\x64\ignite.common.dll</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <EmbeddedResource Include="$(SolutionDir)\x64\Release\ignite.common.dll">
+      <Link>resources\release\x64\ignite.common.dll</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <EmbeddedResource Include="$(SolutionDir)\Win32\Debug\ignite.common.dll">
+      <Link>resources\debug\x86\ignite.common.dll</Link>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <EmbeddedResource Include="$(SolutionDir)\Win32\Release\ignite.common.dll">
+      <Link>resources\release\x86\ignite.common.dll</Link>
+    </EmbeddedResource>
+  </ItemGroup>
   <ItemGroup Condition="'$(Platform)' == 'AnyCPU'">
     <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\x64\$(Configuration)\ignite.common.dll">
       <Link>resources\$(Configuration)\x64\ignite.common.dll</Link>

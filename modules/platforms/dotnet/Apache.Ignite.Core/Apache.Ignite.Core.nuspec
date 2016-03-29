@@ -21,9 +21,9 @@
 
 Creating NuGet package:
 1) Build Java: mvn clean package -DskipTests -U -Plgpl
-2) Build Apache.Ignite.sln
+2) Build Apache.Ignite.sln (AnyCPU configuration)
 3) Create package (use csproj instead of nuspec so that template substitution works): 
-   nuget pack Apache.Ignite.Core.csproj -Prop Configuration=Release
+   nuget pack Apache.Ignite.Core.csproj -Prop Configuration=Release -Prop Platform=AnyCPU
 
 -->
 

@@ -6,6 +6,7 @@ Requirements:
 * Oracle JDK 7 and above
 * .NET Framework 4.0
 * Visual Studio 2010 (later versions require upgrading "common" C++ project, see below)
+* JAVA_HOME environment variable set to the corresponding JDK (x64 or x86).
 
 Building binaries:
   msbuild Apache.Ignite.sln /p:Configuration=Release
