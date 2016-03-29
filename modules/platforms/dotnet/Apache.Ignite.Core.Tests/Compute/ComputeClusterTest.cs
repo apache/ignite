@@ -37,12 +37,14 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 Assert.AreEqual(0, cluster.ForDaemons().GetNodes().Count);
 
-                using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                using (var daemon = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
                     GridName = "daemon",
                     IsDaemon = true
                 }))
                 {
+                    Assert.IsTrue(daemon.GetCluster().ForLocal().GetNode().IsDaemon);
+
                     var daemons = cluster.ForDaemons().GetNodes();
 
                     Assert.AreEqual(1, daemons.Count);
