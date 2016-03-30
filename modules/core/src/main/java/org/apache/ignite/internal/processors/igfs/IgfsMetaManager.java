@@ -1807,7 +1807,7 @@ public class IgfsMetaManager extends IgfsManager {
     IgfsSecondaryOutputStreamDescriptor onSuccessCreate(IgfsSecondaryFileSystem fs, IgfsPath path,
         boolean simpleCreate, @Nullable final Map<String, String> props, boolean overwrite,
         int bufSize, short replication, long blockSize, IgniteUuid affKey, Map<IgfsPath, IgfsEntryInfo> infos,
-        Deque<IgfsEvent> pendingEvts, T1<OutputStream> t1) throws Exception {
+        final Deque<IgfsEvent> pendingEvts, final T1<OutputStream> t1) throws Exception {
         validTxState(true);
 
         assert !infos.isEmpty();
@@ -1942,25 +1942,18 @@ public class IgfsMetaManager extends IgfsManager {
 
                 SynchronizationTask<IgfsSecondaryOutputStreamDescriptor> task =
                     new SynchronizationTask<IgfsSecondaryOutputStreamDescriptor>() {
-                        /** Output stream to the secondary file system. */
-                        private OutputStream out;
+                        /** Container for the secondary file system output stream. */
+                        private final T1<OutputStream> outT1 = new T1<>(null);
 
                         @Override public IgfsSecondaryOutputStreamDescriptor onSuccess(Map<IgfsPath,
                             IgfsEntryInfo> infos) throws Exception {
-
-                            T1<OutputStream> t1 = new T1<>();
-
-                            IgfsSecondaryOutputStreamDescriptor outDesc = onSuccessCreate(fs, path, simpleCreate, props,
-                                overwrite, bufSize, replication, blockSize, affKey, infos, pendingEvts, t1);
-
-                            out = t1.get();
-
-                            return outDesc;
+                            return onSuccessCreate(fs, path, simpleCreate, props,
+                                overwrite, bufSize, replication, blockSize, affKey, infos, pendingEvts, outT1);
                         }
 
                         @Override public IgfsSecondaryOutputStreamDescriptor onFailure(Exception err)
                             throws IgniteCheckedException {
-                            U.closeQuiet(out);
+                            U.closeQuiet(outT1.get());
 
                             U.error(log, "File create in DUAL mode failed [path=" + path + ", simpleCreate=" +
                                 simpleCreate + ", props=" + props + ", overwrite=" + overwrite + ", bufferSize=" +
@@ -2008,8 +2001,8 @@ public class IgfsMetaManager extends IgfsManager {
 
                 SynchronizationTask<IgfsSecondaryOutputStreamDescriptor> task =
                     new SynchronizationTask<IgfsSecondaryOutputStreamDescriptor>() {
-                        /** Output stream to the secondary file system. */
-                        private OutputStream out;
+                        /** Container for the secondary file system output stream. */
+                        private final T1<OutputStream> outT1 = new T1<>(null);
 
                         @Override public IgfsSecondaryOutputStreamDescriptor onSuccess(Map<IgfsPath,
                             IgfsEntryInfo> infos) throws Exception {
@@ -2017,24 +2010,17 @@ public class IgfsMetaManager extends IgfsManager {
 
                             final IgfsEntryInfo info = infos.get(path);
 
-                            IgfsEntryInfo lockedInfo;
+                            final IgfsEntryInfo lockedInfo;
 
-                            if (info == null) {
-                                T1<OutputStream> t1 = new T1<>();
-
-                                IgfsSecondaryOutputStreamDescriptor outDesc = onSuccessCreate(fs, path, true, null,
-                                    false, bufSize, (short)0, 0, affKey, infos, pendingEvts, t1);
-
-                                out = t1.get();
-
-                                return outDesc;
-                            }
+                            if (info == null)
+                                return onSuccessCreate(fs, path, true/*simpleCreate*/, null,
+                                        false/*overwrite*/, bufSize, (short)0, 0, affKey, infos, pendingEvts, outT1);
                             else {
                                 if (info.isDirectory())
                                     throw fsException("Failed to open output stream to the file in the " +
                                         "secondary file system because the path points to a directory: " + path);
 
-                                out = fs.append(path, bufSize, false, null);
+                                outT1.set(fs.append(path, bufSize, false, null));
 
                                 // Synchronize file ending.
                                 long len = info.length();
@@ -2067,12 +2053,12 @@ public class IgfsMetaManager extends IgfsManager {
                             if (evts.isRecordable(EventType.EVT_IGFS_FILE_OPENED_WRITE))
                                 pendingEvts.add(new IgfsEvent(path, locNode, EventType.EVT_IGFS_FILE_OPENED_WRITE));
 
-                            return new IgfsSecondaryOutputStreamDescriptor(lockedInfo, out);
+                            return new IgfsSecondaryOutputStreamDescriptor(lockedInfo, outT1.get());
                         }
 
                         @Override public IgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
                             throws IgniteCheckedException {
-                            U.closeQuiet(out);
+                            U.closeQuiet(outT1.get());
 
                             U.error(log, "File append in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
                                 ']', err);
