@@ -60,6 +60,7 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -1786,194 +1787,123 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Create synchronization task implementation.
+     * A delegate method that performs file creation in the synchronization task.
+     *
+     * @param fs File system.
+     * @param path Path.
+     * @param simpleCreate "Simple create" flag.
+     * @param props Properties..
+     * @param overwrite Overwrite flag.
+     * @param bufSize Buffer size.
+     * @param replication Replication factor.
+     * @param blockSize Block size.
+     * @param affKey Affinity key.
+     * @param infos Map from paths to corresponding infos.
+     * @param pendingEvts A non-null collection the events are to be accumulated in.
+     * @param t1 A signle-object tuple to hold the created output stream.
+     * @return Output stream descriptor.
+     * @throws Exception On error.
      */
-    class CreateSynchronizationTask implements SynchronizationTask<IgfsSecondaryOutputStreamDescriptor> {
-        /** Events to be sent. */
-        protected final Deque<IgfsEvent> pendingEvts = new LinkedList<>();
+    IgfsSecondaryOutputStreamDescriptor onSuccessCreate(IgfsSecondaryFileSystem fs, IgfsPath path,
+        boolean simpleCreate, @Nullable final Map<String, String> props, boolean overwrite,
+        int bufSize, short replication, long blockSize, IgniteUuid affKey, Map<IgfsPath, IgfsEntryInfo> infos,
+        Deque<IgfsEvent> pendingEvts, T1<OutputStream> t1) throws Exception {
+        validTxState(true);
 
-        /** Secondary file system. */
-        protected final IgfsSecondaryFileSystem fs;
+        assert !infos.isEmpty();
 
-        /** Igfs Path to be created. */
-        protected final IgfsPath path;
+        // Determine the first existing parent.
+        IgfsPath parentPath = null;
 
-        /** If the 2-arg create mathos should be used. */
-        final boolean simpleCreate;
-
-        /** The properties to use. */
-        @Nullable protected final Map<String, String> props;
-
-        /** If to overwrite existing file. */
-        protected final boolean overwrite;
-
-        /** The buffer size. */
-        protected final int bufSize;
-
-        /** The replication factor (backups). */
-        protected final short replication;
-
-        /** The block size. */
-        protected final long blockSize;
-
-        /** The affinity key */
-        protected final IgniteUuid affKey;
-
-        /** Output stream to the secondary file system. */
-        protected OutputStream out;
-
-        /**
-         * Constructor.
-         *
-         * @param fs The secondary file syatem.
-         * @param path The path.
-         * @param simpleCreate If to use 2-arg create method.
-         * @param props The props to use.
-         * @param overwrite If to overwrite existing file.
-         * @param bufSize The size of the buffer.
-         * @param replication The replication factor.
-         * @param blockSize The block size.
-         * @param affKey The affinity key.
-         */
-        CreateSynchronizationTask(final IgfsSecondaryFileSystem fs,
-                                  final IgfsPath path,
-                                  final boolean simpleCreate,
-                                  @Nullable final Map<String, String> props,
-                                  final boolean overwrite,
-                                  final int bufSize,
-                                  final short replication,
-                                  final long blockSize,
-                                  final IgniteUuid affKey) {
-            this.fs = fs;
-            this.path = path;
-            this.simpleCreate = simpleCreate;
-            this.props = props;
-            this.overwrite = overwrite;
-            this.bufSize = bufSize;
-            this.replication = replication;
-            this.blockSize = blockSize;
-            this.affKey = affKey;
+        for (IgfsPath curPath : infos.keySet()) {
+            if (parentPath == null || curPath.isSubDirectoryOf(parentPath))
+                parentPath = curPath;
         }
 
-        /** {@inheritDoc} */
-        @Override public IgfsSecondaryOutputStreamDescriptor onSuccess(Map<IgfsPath,
-            IgfsEntryInfo> infos) throws Exception {
-            validTxState(true);
+        assert parentPath != null;
 
-            assert !infos.isEmpty(); // At least root must exist there.
+        IgfsEntryInfo parentInfo = infos.get(parentPath);
 
-            // Determine the deepest existing path from the 'infos':
-            IgfsPath parentPath = null;
+        // Delegate to the secondary file system.
+        OutputStream out = simpleCreate ? fs.create(path, overwrite) :
+            fs.create(path, bufSize, overwrite, replication, blockSize, props);
 
-            for (IgfsPath curPath : infos.keySet()) {
-                if (parentPath == null || curPath.isSubDirectoryOf(parentPath))
-                    parentPath = curPath;
-            }
+        t1.set(out);
 
-            assert parentPath != null; // At least root must exist. (?)
+        IgfsPath parent0 = path.parent();
 
-            IgfsEntryInfo parentInfo = infos.get(parentPath);
+        assert parent0 != null : "path.parent() is null (are we creating ROOT?): " + path;
 
-            // Delegate to the secondary file system.
-            out = simpleCreate ? fs.create(path, overwrite) :
-                fs.create(path, bufSize, overwrite, replication, blockSize, props);
+        // If some of the parent directories were missing, synchronize again.
+        if (!parentPath.equals(parent0)) {
+            parentInfo = synchronize(fs, parentPath, parentInfo, parent0, true, null);
 
-            IgfsPath parent0 = path.parent();
+            // Fire notification about missing directories creation.
+            if (evts.isRecordable(EventType.EVT_IGFS_DIR_CREATED)) {
+                IgfsPath evtPath = parent0;
 
-            assert parent0 != null : "path.parent() is null (are we creating ROOT?): " + path;
+                while (!parentPath.equals(evtPath)) {
+                    pendingEvts.addFirst(new IgfsEvent(evtPath, locNode,
+                        EventType.EVT_IGFS_DIR_CREATED));
 
-            // If some of the parent directories were missing, synchronize again.
-            if (!parentPath.equals(parent0)) {
-                parentInfo = synchronize(fs, parentPath, parentInfo, parent0, true, null);
+                    evtPath = evtPath.parent();
 
-                // Fire notification about missing directories creation.
-                if (evts.isRecordable(EventType.EVT_IGFS_DIR_CREATED)) {
-                    IgfsPath evtPath = parent0;
-
-                    while (!parentPath.equals(evtPath)) {
-                        pendingEvts.addFirst(new IgfsEvent(evtPath, locNode,
-                            EventType.EVT_IGFS_DIR_CREATED));
-
-                        evtPath = evtPath.parent();
-
-                        assert evtPath != null; // If this fails, then ROOT does not exist.
-                    }
+                    assert evtPath != null; // If this fails, then ROOT does not exist.
                 }
             }
-
-            // Get created file info.
-            IgfsFile status = fs.info(path);
-
-            if (status == null)
-                throw fsException("Failed to open output stream to the file created in " +
-                    "the secondary file system because it no longer exists: " + path);
-            else if (status.isDirectory())
-                throw fsException("Failed to open output stream to the file created in " +
-                    "the secondary file system because the path points to a directory: " + path);
-
-            IgfsEntryInfo newInfo = IgfsUtils.createFile(
-                IgniteUuid.randomUuid(),
-                status.blockSize(),
-                status.length(),
-                affKey,
-                createFileLockId(false),
-                igfsCtx.igfs().evictExclude(path, false),
-                status.properties(),
-                status.accessTime(),
-                status.modificationTime()
-            );
-
-            // Add new file info to the listing optionally removing the previous one.
-            assert parentInfo != null;
-
-            IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
-
-            if (oldId != null) {
-                IgfsEntryInfo oldInfo = info(oldId);
-
-                assert oldInfo != null; // Otherwise cache is in inconsistent state.
-
-                // The contact is that we cannot overwrite a file locked for writing:
-                if (oldInfo.lockId() != null)
-                    throw fsException("Failed to overwrite file (file is opened for writing) [path=" +
-                        path + ", fileId=" + oldId + ", lockId=" + oldInfo.lockId() + ']');
-
-                id2InfoPrj.remove(oldId); // Remove the old one.
-                id2InfoPrj.invoke(parentInfo.id(), new IgfsMetaDirectoryListingRemoveProcessor(
-                    path.name(), parentInfo.listing().get(path.name()).fileId()));
-
-                createNewEntry(newInfo, parentInfo.id(), path.name()); // Put new one.
-
-                igfsCtx.data().delete(oldInfo);
-            }
-
-            // Record CREATE event if needed.
-            if (oldId == null && evts.isRecordable(EventType.EVT_IGFS_FILE_CREATED))
-                pendingEvts.add(new IgfsEvent(path, locNode, EventType.EVT_IGFS_FILE_CREATED));
-
-            return new IgfsSecondaryOutputStreamDescriptor(newInfo, out);
         }
 
-        /** {@inheritDoc} */
-        @Override public final IgfsSecondaryOutputStreamDescriptor onFailure(Exception err)
-            throws IgniteCheckedException {
-            U.closeQuiet(out);
+        // Get created file info.
+        IgfsFile status = fs.info(path);
 
-            U.error(log, "File create in DUAL mode failed [path=" + path + ", simpleCreate=" +
-                simpleCreate + ", props=" + props + ", overwrite=" + overwrite + ", bufferSize=" +
-                bufSize + ", replication=" + replication + ", blockSize=" + blockSize + ']', err);
+        if (status == null)
+            throw fsException("Failed to open output stream to the file created in " +
+                "the secondary file system because it no longer exists: " + path);
+        else if (status.isDirectory())
+            throw fsException("Failed to open output stream to the file created in " +
+                "the secondary file system because the path points to a directory: " + path);
 
-            throw new IgniteCheckedException("Failed to create the file due to secondary file system " +
-                "exception: " + path, err);
+        IgfsEntryInfo newInfo = IgfsUtils.createFile(
+            IgniteUuid.randomUuid(),
+            status.blockSize(),
+            status.length(),
+            affKey,
+            createFileLockId(false),
+            igfsCtx.igfs().evictExclude(path, false),
+            status.properties(),
+            status.accessTime(),
+            status.modificationTime()
+        );
+
+        // Add new file info to the listing optionally removing the previous one.
+        assert parentInfo != null;
+
+        IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
+
+        if (oldId != null) {
+            IgfsEntryInfo oldInfo = info(oldId);
+
+            assert oldInfo != null; // Otherwise cache is in inconsistent state.
+
+            // The contact is that we cannot overwrite a file locked for writing:
+            if (oldInfo.lockId() != null)
+                throw fsException("Failed to overwrite file (file is opened for writing) [path=" +
+                    path + ", fileId=" + oldId + ", lockId=" + oldInfo.lockId() + ']');
+
+            id2InfoPrj.remove(oldId); // Remove the old one.
+            id2InfoPrj.invoke(parentInfo.id(), new IgfsMetaDirectoryListingRemoveProcessor(
+                path.name(), parentInfo.listing().get(path.name()).fileId()));
+
+            createNewEntry(newInfo, parentInfo.id(), path.name()); // Put new one.
+
+            igfsCtx.data().delete(oldInfo);
         }
 
-        /**
-         * Sends accumulated events.
-         */
-        final void sendEvents() {
-            for (IgfsEvent evt : pendingEvts)
-                evts.record(evt);
-        }
+        // Record CREATE event if needed.
+        if (oldId == null && evts.isRecordable(EventType.EVT_IGFS_FILE_CREATED))
+            pendingEvts.add(new IgfsEvent(path, locNode, EventType.EVT_IGFS_FILE_CREATED));
+
+        return new IgfsSecondaryOutputStreamDescriptor(newInfo, out);
     }
 
     /**
@@ -1999,7 +1929,7 @@ public class IgfsMetaManager extends IgfsManager {
         final int bufSize,
         final short replication,
         final long blockSize,
-        @Nullable final IgniteUuid affKey)
+        final IgniteUuid affKey)
         throws IgniteCheckedException
     {
         if (busyLock.enterBusy()) {
@@ -2007,14 +1937,46 @@ public class IgfsMetaManager extends IgfsManager {
                 assert fs != null;
                 assert path != null;
 
-                CreateSynchronizationTask task = new CreateSynchronizationTask(fs,
-                    path, simpleCreate, props, overwrite, bufSize, replication, blockSize, affKey);
+                // Events to fire (can be done outside of a transaction).
+                final Deque<IgfsEvent> pendingEvts = new LinkedList<>();
+
+                SynchronizationTask<IgfsSecondaryOutputStreamDescriptor> task =
+                    new SynchronizationTask<IgfsSecondaryOutputStreamDescriptor>() {
+                        /** Output stream to the secondary file system. */
+                        private OutputStream out;
+
+                        @Override public IgfsSecondaryOutputStreamDescriptor onSuccess(Map<IgfsPath,
+                            IgfsEntryInfo> infos) throws Exception {
+
+                            T1<OutputStream> t1 = new T1<>();
+
+                            IgfsSecondaryOutputStreamDescriptor outDesc = onSuccessCreate(fs, path, simpleCreate, props,
+                                overwrite, bufSize, replication, blockSize, affKey, infos, pendingEvts, t1);
+
+                            out = t1.get();
+
+                            return outDesc;
+                        }
+
+                        @Override public IgfsSecondaryOutputStreamDescriptor onFailure(Exception err)
+                            throws IgniteCheckedException {
+                            U.closeQuiet(out);
+
+                            U.error(log, "File create in DUAL mode failed [path=" + path + ", simpleCreate=" +
+                                simpleCreate + ", props=" + props + ", overwrite=" + overwrite + ", bufferSize=" +
+                                bufSize + ", replication=" + replication + ", blockSize=" + blockSize + ']', err);
+
+                            throw new IgniteCheckedException("Failed to create the file due to secondary file system " +
+                                "exception: " + path, err);
+                        }
+                    };
 
                 try {
                     return synchronizeAndExecute(task, fs, false, path.parent());
                 }
                 finally {
-                    task.sendEvents();
+                    for (IgfsEvent evt : pendingEvts)
+                        evts.record(evt);
                 }
             }
             finally {
@@ -2041,56 +2003,82 @@ public class IgfsMetaManager extends IgfsManager {
                 assert fs != null;
                 assert path != null;
 
-                CreateSynchronizationTask task = new CreateSynchronizationTask(fs,
-                    path, true/*simpleCreate*/, null, false/*overwrite*/, bufSize, (short)0, 0, affKey) {
-                    @Override public IgfsSecondaryOutputStreamDescriptor onSuccess(Map<IgfsPath, IgfsEntryInfo> infos) throws Exception {
-                        validTxState(true);
+                // Events to fire (can be done outside of a transaction).
+                final Deque<IgfsEvent> pendingEvts = new LinkedList<>();
 
-                        final IgfsEntryInfo info = infos.get(path);
+                SynchronizationTask<IgfsSecondaryOutputStreamDescriptor> task =
+                    new SynchronizationTask<IgfsSecondaryOutputStreamDescriptor>() {
+                        /** Output stream to the secondary file system. */
+                        private OutputStream out;
 
-                        if (info == null) {
-                            // Create:
-                            return super.onSuccess(infos);
-                        }
-                        else {
-                            if (info.isDirectory())
-                                throw fsException("Failed to open output stream to the file in the " +
-                                    "secondary file system because the path points to a directory: " + path);
+                        @Override public IgfsSecondaryOutputStreamDescriptor onSuccess(Map<IgfsPath,
+                            IgfsEntryInfo> infos) throws Exception {
+                            validTxState(true);
 
-                            out = fs.append(path, bufSize, false, null);
+                            final IgfsEntryInfo info = infos.get(path);
 
-                            // Synchronize file ending.
-                            long len = info.length();
-                            int blockSize = info.blockSize();
+                            IgfsEntryInfo lockedInfo;
 
-                            int remainder = (int)(len % blockSize);
+                            if (info == null) {
+                                T1<OutputStream> t1 = new T1<>();
 
-                            if (remainder > 0) {
-                                int blockIdx = (int)(len / blockSize);
+                                IgfsSecondaryOutputStreamDescriptor outDesc = onSuccessCreate(fs, path, true, null,
+                                    false, bufSize, (short)0, 0, affKey, infos, pendingEvts, t1);
 
-                                try (IgfsSecondaryFileSystemPositionedReadable reader = fs.open(path, bufSize)) {
-                                    IgniteInternalFuture<byte[]> fut =
-                                        igfsCtx.data().dataBlock(info, path, blockIdx, reader);
+                                out = t1.get();
 
-                                    assert fut != null;
+                                return outDesc;
+                            }
+                            else {
+                                if (info.isDirectory())
+                                    throw fsException("Failed to open output stream to the file in the " +
+                                        "secondary file system because the path points to a directory: " + path);
 
-                                    fut.get();
+                                out = fs.append(path, bufSize, false, null);
+
+                                // Synchronize file ending.
+                                long len = info.length();
+                                int blockSize = info.blockSize();
+
+                                int remainder = (int) (len % blockSize);
+
+                                if (remainder > 0) {
+                                    int blockIdx = (int) (len / blockSize);
+
+                                    try (IgfsSecondaryFileSystemPositionedReadable reader = fs.open(path, bufSize)) {
+                                        IgniteInternalFuture<byte[]> fut =
+                                            igfsCtx.data().dataBlock(info, path, blockIdx, reader);
+
+                                        assert fut != null;
+
+                                        fut.get();
+                                    }
                                 }
-                            }
 
-                            if (info.lockId() != null) {
-                                throw fsException("Failed to open file (file is opened for writing) [path=" +
-                                    path + ", fileId=" + info.id() + ", lockId=" + info.lockId() + ']');
-                            }
+                                if (info.lockId() != null) {
+                                    throw fsException("Failed to open file (file is opened for writing) [path=" +
+                                        path + ", fileId=" + info.id() + ", lockId=" + info.lockId() + ']');
+                                }
 
-                            // Set lock and return.
-                            IgfsEntryInfo lockedInfo = invokeLock(info.id(), false);
+                                // Set lock and return.
+                                lockedInfo = invokeLock(info.id(), false);
+                            }
 
                             if (evts.isRecordable(EventType.EVT_IGFS_FILE_OPENED_WRITE))
                                 pendingEvts.add(new IgfsEvent(path, locNode, EventType.EVT_IGFS_FILE_OPENED_WRITE));
 
                             return new IgfsSecondaryOutputStreamDescriptor(lockedInfo, out);
                         }
+
+                        @Override public IgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
+                            throws IgniteCheckedException {
+                            U.closeQuiet(out);
+
+                            U.error(log, "File append in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
+                                ']', err);
+
+                            throw new IgniteCheckedException("Failed to append to the file due to secondary file " +
+                                "system exception: " + path, err);
                     }
                 };
 
@@ -2098,7 +2086,8 @@ public class IgfsMetaManager extends IgfsManager {
                     return synchronizeAndExecute(task, fs, !create/*strict*/, path);
                 }
                 finally {
-                    task.sendEvents();
+                    for (IgfsEvent evt : pendingEvts)
+                        evts.record(evt);
                 }
             }
             finally {
