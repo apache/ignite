@@ -89,6 +89,8 @@ namespace Apache.Ignite.Core.Impl.Common
                 WriteBasicProperty(obj, writer, valueType, property);
             else if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof (ICollection<>))
                 WriteCollectionProperty(obj, writer, valueType, property);
+            else if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof (IDictionary<,>))
+                WriteDictionaryProperty(obj, writer, valueType, property);
             else
                 WriteComplexProperty(obj, writer, valueType);
 
@@ -118,6 +120,17 @@ namespace Apache.Ignite.Core.Impl.Common
 
             foreach (var element in (IEnumerable)obj)
                 WriteElement(element, writer, elementTypeName, elementType, property);
+        }
+
+        /// <summary>
+        /// Writes the dictionary property.
+        /// </summary>
+        private static void WriteDictionaryProperty(object obj, XmlWriter writer, Type valueType, PropertyInfo property)
+        {
+            var elementType = typeof (KeyValuePair<,>).MakeGenericType(valueType.GetGenericArguments());
+
+            foreach (var element in (IEnumerable)obj)
+                WriteElement(element, writer, "keyValuePair", elementType, property);
         }
 
         /// <summary>
@@ -344,6 +357,9 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             Debug.Assert(propertyType != null);
 
+            if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof (KeyValuePair<,>))
+                return false;
+
             return propertyType.IsValueType || propertyType == typeof(string) || propertyType == typeof(Type);
         }
 
@@ -366,6 +382,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
             if (property.DeclaringType == typeof (IgniteConfiguration) && property.Name == "IncludedEventTypes")
                 return EventTypeConverter.Instance;
+
+            //if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
+            //    return 
 
             var converter = TypeDescriptor.GetConverter(propertyType);
 
