@@ -6498,7 +6498,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 throw new IllegalStateException();
 
             try {
-                GridCacheAdapter.this.remove((K)current.keyValue(false));
+                GridCacheAdapter.this.getAndRemove((K)current.keyValue(false));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -6554,7 +6554,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 throw new IllegalStateException();
 
             try {
-                GridCacheAdapter.this.remove((K)current.keyValue(false));
+                GridCacheAdapter.this.getAndRemove((K)current.keyValue(false));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
