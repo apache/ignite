@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.platform.services;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
@@ -40,12 +39,12 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.HashMap;
-import java.util.Collection;
-import java.util.ArrayList;
 
 /**
  * Interop services.
@@ -382,7 +381,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 // Deserialize arguments for Java service when not in binary mode
                 if (!srvKeepBinary)
-                    args = PlatformUtils.unwrapBinariesInArrayIfNeeded(args);
+                    args = PlatformUtils.unwrapBinariesInArray(args);
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
 
