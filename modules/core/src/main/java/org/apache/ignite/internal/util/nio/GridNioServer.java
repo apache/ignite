@@ -1481,8 +1481,7 @@ public class GridNioServer<T> {
                                     sb.append("]").append(U.nl());
                                 }
 
-                                if (log.isInfoEnabled())
-                                    log.info(sb.toString());
+                                U.warn(log, sb.toString());
 
                                 // Complete the request just in case (none should wait on this future).
                                 req.onDone(true);
