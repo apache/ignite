@@ -1,11 +1,17 @@
+$ng = (Get-Item .).FullName + '\nuget.exe'
+
+if (!(Test-Path $ng)) {
+    $ng = 'nuget'
+}
+
 rmdir nupkg -Force -Recurse
 rmdir pkg -Force -Recurse
 
 mkdir nupkg
 mkdir pkg
 
-& nuget pack ..\Apache.Ignite.Core\Apache.Ignite.Core.csproj -Prop Configuration=Release -Prop Platform=x64 -OutputDirectory nupkg
-& nuget pack ..\Apache.Ignite.Linq\Apache.Ignite.Linq.csproj -Prop Configuration=Release -Prop Platform=x64 -OutputDirectory nupkg
+& $ng pack ..\Apache.Ignite.Core\Apache.Ignite.Core.csproj -Prop Configuration=Release -Prop Platform="Any CPU" -OutputDirectory nupkg
+& $ng pack ..\Apache.Ignite.Linq\Apache.Ignite.Linq.csproj -Prop Configuration=Release -Prop Platform="Any CPU" -OutputDirectory nupkg
 
 $ver = (Get-ChildItem nupkg\Apache.Ignite.Linq*)[0].Name -replace '\D+([\d.]+)\.\D+','$1'
 
