@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-var consoleModule = angular.module('ignite-web-console',
+const consoleModule = angular.module('ignite-console.legacy',
     [
         'darthwade.dwLoading',
         'smart-table',
@@ -28,50 +28,48 @@ var consoleModule = angular.module('ignite-web-console',
         'ui.grid.exporter',
         'nvd3',
         'dndLists'
-        /* ignite:modules */
-        , 'ignite-console'
-        /* endignite */
-
         /* ignite:plugins */
         /* endignite */
-    ])
-    .run(function ($rootScope, $http, $state, $common, Auth, User, IgniteGettingStarted) {
-        $rootScope.gettingStarted = IgniteGettingStarted;
+    ]);
 
-        $rootScope.revertIdentity = function () {
-            $http
-                .get('/api/v1/admin/revert/identity')
-                .then(User.read)
-                .then(function (user) {
-                    $rootScope.$broadcast('user', user);
+consoleModule.run(['$rootScope', '$http', '$state', '$common', 'Auth', 'User', 'gettingStarted',
+    ($root, $http, $state, $common, Auth, User, gettingStarted) => {
+    $root.gettingStarted = gettingStarted;
 
-                    $state.go('settings.admin');
-                })
-                .catch(function (errMsg) {
-                    $common.showError($common.errorMessage(errMsg));
-                });
-        };
-    });
+    $root.revertIdentity = function () {
+        $http
+            .get('/api/v1/admin/revert/identity')
+            .then(User.read)
+            .then(function (user) {
+                $root.$broadcast('user', user);
+
+                $state.go('settings.admin');
+            })
+            .catch(function (errMsg) {
+                $common.showError($common.errorMessage(errMsg));
+            });
+    };
+}]);
 
 // Modal popup configuration.
-consoleModule.config(function ($modalProvider) {
+consoleModule.config(['$modalProvider', ($modalProvider) => {
     angular.extend($modalProvider.defaults, {
         html: true
     });
-});
+}]);
 
 // Comboboxes configuration.
-consoleModule.config(function ($popoverProvider) {
+consoleModule.config(['$popoverProvider', ($popoverProvider) => {
     angular.extend($popoverProvider.defaults, {
         trigger: 'manual',
         placement: 'right',
         container: 'body',
         templateUrl: '/templates/validation-error.html'
     });
-});
+}]);
 
 // Tooltips configuration.
-consoleModule.config(function ($tooltipProvider) {
+consoleModule.config(['$tooltipProvider', ($tooltipProvider) => {
     angular.extend($tooltipProvider.defaults, {
         container: 'body',
         delay: 150,
@@ -79,10 +77,10 @@ consoleModule.config(function ($tooltipProvider) {
         html: 'true',
         trigger: 'click hover'
     });
-});
+}]);
 
 // Comboboxes configuration.
-consoleModule.config(function ($selectProvider) {
+consoleModule.config(['$selectProvider', ($selectProvider) => {
     angular.extend($selectProvider.defaults, {
         container: 'body',
         maxLength: '5',
@@ -92,35 +90,35 @@ consoleModule.config(function ($selectProvider) {
         iconCheckmark: 'fa fa-check',
         caretHtml: ''
     });
-});
+}]);
 
 // Alerts configuration.
-consoleModule.config(function ($alertProvider) {
+consoleModule.config(['$alertProvider', ($alertProvider) => {
     angular.extend($alertProvider.defaults, {
         container: 'body',
         placement: 'top-right',
         duration: '5',
         type: 'danger'
     });
-});
+}]);
 
 // Modals configuration.
-consoleModule.config(function($modalProvider) {
+consoleModule.config(['$modalProvider', ($modalProvider) => {
     angular.extend($modalProvider.defaults, {
         animation: 'am-fade-and-scale'
     });
-});
+}]);
 
 // Dropdowns configuration.
-consoleModule.config(function($dropdownProvider) {
+consoleModule.config(['$dropdownProvider', ($dropdownProvider) => {
     angular.extend($dropdownProvider.defaults, {
         templateUrl: 'templates/dropdown.html'
     });
-});
+}]);
 
 // Common functions to be used in controllers.
-consoleModule.service('$common', [
-    '$alert', '$popover', '$anchorScroll', '$location', '$timeout', '$focus', '$window', function ($alert, $popover, $anchorScroll, $location, $timeout, $focus, $window) {
+consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$location', '$timeout', '$focus', '$window',
+    ($alert, $popover, $anchorScroll, $location, $timeout, $focus, $window) => {
         $anchorScroll.yOffset = 55;
 
         function isDefined(v) {
@@ -1146,8 +1144,8 @@ consoleModule.service('$common', [
     }]);
 
 // Confirm popup service.
-consoleModule.service('$confirm', function ($modal, $rootScope, $q) {
-    var scope = $rootScope.$new();
+consoleModule.service('$confirm', ['$modal', '$rootScope', '$q', ($modal, $root, $q) => {
+    var scope = $root.$new();
 
     var deferred;
 
@@ -1176,17 +1174,17 @@ consoleModule.service('$confirm', function ($modal, $rootScope, $q) {
     };
 
     return confirmModal;
-});
+}]);
 
 // Confirm change location.
-consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
+consoleModule.service('$unsavedChangesGuard', ['$rootScope', ($root) => {
     return {
         install: function ($scope) {
             $scope.$on("$destroy", function() {
                 window.onbeforeunload = null;
             });
 
-            var unbind = $rootScope.$on('$stateChangeStart', function(event) {
+            var unbind = $root.$on('$stateChangeStart', function(event) {
                 if ($scope.ui && ($scope.ui.isDirty() || ($scope.ui.angularWay && $scope.ui.inputForm && $scope.ui.inputForm.$dirty))) {
                     if (!confirm('You have unsaved changes.\n\nAre you sure you want to discard them?')) {
                         event.preventDefault();
@@ -1203,11 +1201,11 @@ consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
             };
         }
     };
-});
+}]);
 
 // Service for confirm or skip several steps.
-consoleModule.service('$confirmBatch', function ($rootScope, $modal,  $q) {
-    var scope = $rootScope.$new();
+consoleModule.service('$confirmBatch', ['$modal', '$rootScope', '$q', ($modal, $root, $q) => {
+    var scope = $root.$new();
 
     scope.confirmModal = $modal({templateUrl: '/templates/batch-confirm.html', scope: scope, placement: 'center', show: false});
 
@@ -1272,11 +1270,11 @@ consoleModule.service('$confirmBatch', function ($rootScope, $modal,  $q) {
             return scope.deferred.promise;
         }
     };
-});
+}]);
 
 // 'Clone' popup service.
-consoleModule.service('$clone', function ($modal, $rootScope, $q) {
-    var scope = $rootScope.$new();
+consoleModule.service('$clone', ['$modal', '$rootScope', '$q', ($modal, $root, $q) => {
+    var scope = $root.$new();
 
     var deferred;
     var _names = [];
@@ -1321,7 +1319,7 @@ consoleModule.service('$clone', function ($modal, $rootScope, $q) {
     };
 
     return cloneModal;
-});
+}]);
 
 // Tables support service.
 consoleModule.service('$table', ['$common', '$focus', function ($common, $focus) {
@@ -1878,7 +1876,7 @@ consoleModule.directive('match', function ($parse) {
 });
 
 // Directive to bind ENTER key press with some user action.
-consoleModule.directive('onEnter', function ($timeout) {
+consoleModule.directive('onEnter', ['$timeout', ($timeout) => {
     return function (scope, elem, attrs) {
         elem.on('keydown keypress', function (event) {
             if (event.which === 13) {
@@ -1897,10 +1895,10 @@ consoleModule.directive('onEnter', function ($timeout) {
             elem.off('keydown keypress');
         });
     };
-});
+}]);
 
 // Directive to bind ESC key press with some user action.
-consoleModule.directive('onEscape', function () {
+consoleModule.directive('onEscape', () => {
     return function (scope, elem, attrs) {
         elem.on('keydown keypress', function (event) {
             if (event.which === 27) {
@@ -1920,7 +1918,7 @@ consoleModule.directive('onEscape', function () {
 });
 
 // Directive to retain selection. To fix angular-strap typeahead bug with setting cursor to the end of text.
-consoleModule.directive('retainSelection', function ($timeout) {
+consoleModule.directive('retainSelection', ['$timeout', ($timeout) => {
     var promise;
 
     return function (scope, elem) {
@@ -1968,10 +1966,10 @@ consoleModule.directive('retainSelection', function ($timeout) {
             elem.off('keydown');
         });
     };
-});
+}]);
 
 // Factory function to focus element.
-consoleModule.factory('$focus', function ($timeout) {
+consoleModule.factory('$focus', ['$timeout', ($timeout) => {
     return function (id) {
         // Timeout makes sure that is invoked after any other event has been triggered.
         // E.g. click events that need to run before the focus or inputs elements that are
@@ -1983,10 +1981,10 @@ consoleModule.factory('$focus', function ($timeout) {
                 elem[0].focus();
         }, 100);
     };
-});
+}]);
 
 // Directive to auto-focus element.
-consoleModule.directive('autoFocus', function($timeout) {
+consoleModule.directive('autoFocus', ['$timeout', ($timeout) => {
     return {
         restrict: 'AC',
         link: function(scope, element) {
@@ -1995,10 +1993,10 @@ consoleModule.directive('autoFocus', function($timeout) {
             });
         }
     };
-});
+}]);
 
 // Directive to focus next element on ENTER key.
-consoleModule.directive('enterFocusNext', function ($focus) {
+consoleModule.directive('enterFocusNext', ['$focus', ($focus) => {
     return function (scope, elem, attrs) {
         elem.on('keydown keypress', function (event) {
             if (event.which === 13) {
@@ -2008,10 +2006,10 @@ consoleModule.directive('enterFocusNext', function ($focus) {
             }
         });
     };
-});
+}]);
 
 // Directive to mark elements to focus.
-consoleModule.directive('onClickFocus', function ($focus) {
+consoleModule.directive('onClickFocus', ['$focus', ($focus) => {
     return function (scope, elem, attr) {
         elem.on('click', function () {
             $focus(attr.onClickFocus);
@@ -2022,11 +2020,11 @@ consoleModule.directive('onClickFocus', function ($focus) {
             elem.off('click');
         });
     };
-});
+}]);
 
 consoleModule.controller('resetPassword', [
     '$scope', '$modal', '$http', '$common', '$focus', 'Auth', '$state',
-    function ($scope, $modal, $http, $common, $focus, Auth, $state) {
+    ($scope, $modal, $http, $common, $focus, Auth, $state) => {
         if ($state.params.token)
             $http.post('/api/v1/password/validate/token', {token: $state.params.token})
                 .success(function (res) {
@@ -2058,7 +2056,7 @@ consoleModule.controller('resetPassword', [
 
 // Sign in controller.
 // TODO IGNITE-1936 Refactor this controller.
-consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries', function ($scope, $focus, Auth, countries) {
+consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries', ($scope, $focus, Auth, countries) => {
     $scope.auth = Auth.auth;
 
     $scope.action = 'signin';
@@ -2069,7 +2067,7 @@ consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries',
 
 // Navigation bar controller.
 consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$common',
-    function ($scope, $modal, $state, $http, $common) {
+    ($scope, $modal, $state, $http, $common) => {
     $scope.$root.notebooks = [];
 
     // Pre-fetch modal dialogs.
@@ -2127,3 +2125,5 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
 
     $scope.$root.reloadNotebooks();
 }]);
+
+export default consoleModule;

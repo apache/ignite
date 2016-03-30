@@ -16,7 +16,7 @@
  */
 
 // XML generation entry point.
-$generatorXml = {};
+const $generatorXml = {};
 
 // Do XML escape.
 $generatorXml.escape = function (s) {
@@ -1757,3 +1757,5 @@ $generatorXml.cluster = function (cluster, clientNearCfg) {
 
     return '';
 };
+
+export default $generatorXml;

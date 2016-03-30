@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['Auth', ['$http', '$rootScope', '$state', '$common', 'IgniteGettingStarted', 'User',
+export default ['Auth', ['$http', '$rootScope', '$state', '$common', 'gettingStarted', 'User',
     ($http, $root, $state, $common, gettingStarted, User) => {
         let _auth = false;
 

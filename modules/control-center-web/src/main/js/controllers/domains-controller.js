@@ -16,6 +16,8 @@
  */
 
 // Controller for Domain model screen.
+import consoleModule from 'controllers/common-module';
+
 consoleModule.controller('domainsController', [
     '$scope', '$http', '$state', '$filter', '$timeout', '$modal', '$common', '$focus', '$confirm', '$confirmBatch', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard', 'IgniteAgentMonitor',
     function ($scope, $http, $state, $filter, $timeout, $modal, $common, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard, IgniteAgentMonitor) {

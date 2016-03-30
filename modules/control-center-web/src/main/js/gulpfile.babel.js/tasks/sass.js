@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-var gulp = require('gulp');
-var gulpSequence = require('gulp-sequence');
-var sass = require('gulp-sass');
+import gulp from 'gulp';
+import sequence from 'gulp-sequence';
+import sass from 'gulp-sass';
 
-var paths = [
+const paths = [
     './public/stylesheets/style.scss'
 ];
 
-gulp.task('sass', function () {
-    return gulp.src(paths)
+gulp.task('sass', () =>
+    gulp.src(paths)
         .pipe(sass({ outputStyle: 'nested' }).on('error', sass.logError))
-        .pipe(gulp.dest('./public/stylesheets'));
-});
+        .pipe(gulp.dest('./public/stylesheets'))
+);
 
-gulp.task('sass:watch', function (cb) {
-    gulp.watch(paths, function(glob) {
-        gulpSequence('sass', 'bundle')(cb)
-    });
-});
+gulp.task('sass:watch', (cb) =>
+    gulp.watch(paths, () => sequence('sass', 'bundle', cb))
+);

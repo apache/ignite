@@ -45,7 +45,7 @@ angular
             return items;
         }];
     })
-    .service('IgniteGettingStarted', ['$rootScope', '$modal', 'igniteGettingStarted', function($root, $modal, igniteGettingStarted) {
+    .service('gettingStarted', ['$rootScope', '$modal', 'igniteGettingStarted', function($root, $modal, igniteGettingStarted) {
         const _model = igniteGettingStarted;
 
         let _page = 0;

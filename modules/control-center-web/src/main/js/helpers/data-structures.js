@@ -16,7 +16,7 @@
  */
 
 // Entry point for common data structures.
-$dataStructures = {};
+const $dataStructures = {};
 
 // Java build-in primitive.
 $dataStructures.JAVA_BUILD_IN_PRIMITIVES = ['boolean', 'byte', 'double', 'float', 'int', 'long', 'short'];
@@ -81,3 +81,5 @@ $dataStructures.fullClassName = function (clsName) {
 
     return clsName;
 };
+
+export default $dataStructures;

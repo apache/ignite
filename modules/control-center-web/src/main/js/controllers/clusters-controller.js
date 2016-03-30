@@ -16,6 +16,8 @@
  */
 
 // Controller for Clusters screen.
+import consoleModule from 'controllers/common-module';
+
 consoleModule.controller('clustersController', [
     '$scope', '$http', '$state', '$timeout', '$common', '$confirm', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'igniteEventGroups',
     function ($scope, $http, $state, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, igniteEventGroups) {

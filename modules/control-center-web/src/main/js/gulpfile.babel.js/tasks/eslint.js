@@ -15,14 +15,29 @@
  * limitations under the License.
  */
 
-var gulp = require('gulp');
-var sequence = require('gulp-sequence');
-var environments = require('gulp-environments');
+import gulp from 'gulp';
+import cache from 'gulp-cached';
+import eslint from 'gulp-eslint';
+import sequence from 'gulp-sequence';
 
-var production = environments.production;
+const paths = [
+    './app/**/*.js',
+    './gulpfile.babel.js/**/*.js',
+    './gulpfile.babel.js/*.js'
+];
 
-gulp.task('set-prod', production.task);
+gulp.task('eslint:node', () =>
+	gulp.src('./serve/**/*.js')
+        .pipe(cache('eslint:node'))
+		.pipe(eslint({envs: ['node']}))
+		.pipe(eslint.format())
+);
 
-gulp.task('production', function(cb) {
-	sequence('set-prod', 'build', cb)
-});
+gulp.task('eslint:browser', () =>
+	gulp.src(paths)
+        .pipe(cache('eslint:browser'))
+		.pipe(eslint({envs: ['browser']}))
+		.pipe(eslint.format())
+);
+
+gulp.task('eslint', (cb) => sequence('eslint:browser', 'eslint:node', cb));

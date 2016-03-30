@@ -16,6 +16,8 @@
  */
 
 // Controller for SQL notebook screen.
+import consoleModule from 'controllers/common-module';
+
 consoleModule.controller('sqlController', [
     '$scope', '$http', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', '$common', '$confirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridExporterConstants',
     function ($scope, $http, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, $common, $confirm, IgniteAgentMonitor, IgniteChartColors, QueryNotebooks, uiGridExporterConstants) {

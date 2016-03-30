@@ -16,6 +16,8 @@
  */
 
 // Controller for Profile screen.
+import consoleModule from 'controllers/common-module';
+
 consoleModule.controller('profileController', [
     '$rootScope', '$scope', '$http', '$common', '$focus', '$confirm', 'IgniteCountries',
     function ($rootScope, $scope, $http, $common, $focus, $confirm, countries) {

@@ -16,7 +16,7 @@
  */
 
 // Java generation entry point.
-$generatorJava = {};
+const $generatorJava = {};
 
 /**
  * Translate some value to valid java code.
@@ -3142,3 +3142,5 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
 
     return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.generateStaticImports() + '\n\n' + res.asString();
 };
+
+export default $generatorJava;

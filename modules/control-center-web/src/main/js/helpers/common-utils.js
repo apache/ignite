@@ -16,7 +16,7 @@
  */
 
 // Entry point for common utils.
-$commonUtils = {};
+const $commonUtils = {};
 
 /**
  * @param v Value to check.
@@ -113,7 +113,4 @@ $commonUtils.randomString = function (len) {
     return res;
 };
 
-// For server side we should export Java code generation entry point.
-if (typeof window === 'undefined') {
-    module.exports = $commonUtils;
-}
+export default $commonUtils;

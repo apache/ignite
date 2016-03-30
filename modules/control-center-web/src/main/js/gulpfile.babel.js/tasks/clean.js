@@ -15,9 +15,21 @@
  * limitations under the License.
  */
 
-var gulp = require('gulp');
-var sequence = require('gulp-sequence');
+import gulp from 'gulp';
+import ignore from 'gulp-ignore';
+import clean from 'gulp-rimraf';
 
-gulp.task('build', function(cb) {
-    return sequence('clean', ['copy', 'jade', 'sass'], 'bundle', 'inject:plugins', cb);
-});
+import { destDir, igniteModulesTemp } from '../paths';
+
+// Clean build folder, remove files.
+gulp.task('clean', () =>
+    gulp.src(`${ destDir }/*`, {read: false})
+        .pipe(ignore('jspm_packages'))
+        .pipe(ignore('system.config.js'))
+        .pipe(clean({ force: true }))
+);
+
+gulp.task('clean:ignite-modules-temp', () =>
+    gulp.src(igniteModulesTemp, {read: false})
+        .pipe(clean({ force: true }))
+);

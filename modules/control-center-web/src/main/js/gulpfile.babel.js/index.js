@@ -15,11 +15,15 @@
  * limitations under the License.
  */
 
-// Optional content generation entry point.
-const $generatorOptional = {};
+import gulp from 'gulp';
+import requireDir from 'require-dir';
+import sequence from 'gulp-sequence';
 
-$generatorOptional.optionalContent = function (zip, cluster) {
-    // No-op.
-};
+// Require all tasks in gulpfile.js/tasks, including subfolders.
+requireDir('./tasks', { recurse: true });
 
-export default $generatorOptional;
+// Default no-arg task.
+gulp.task('default', ['build']);
+
+// Build + watch + connect task.
+gulp.task('watch', (cb) => sequence('build', 'connect', ['bundle:ignite:watch', 'sass:watch', 'jade:watch', 'copy:watch'], cb));

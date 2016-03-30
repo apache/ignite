@@ -8,38 +8,31 @@ System.config({
     ]
   },
   paths: {
-    "github:*": "jspm_packages/github/*",
-    "npm:*": "jspm_packages/npm/*"
+    "github:*": "build/jspm_packages/github/*",
+    "npm:*": "build/jspm_packages/npm/*"
   },
   separateCSS: true,
 
   map: {
-    "Blob": "github:eligrey/Blob.js@master",
-    "FileSaver": "github:eligrey/FileSaver.js@master",
     "ace": "github:ajaxorg/ace-builds@1.2.3",
-    "angular": "github:angular/bower-angular@1.5.2",
-    "angular-ag-grid": "github:ceolter/ag-grid@2.3.5",
-    "angular-animate": "github:angular/bower-angular-animate@1.5.2",
+    "angular": "github:angular/bower-angular@1.5.3",
+    "angular-animate": "github:angular/bower-angular-animate@1.5.3",
     "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@1.4.0",
-    "angular-grid": "github:ceolter/ag-grid@2.3.5",
     "angular-loading": "github:darthwade/angular-loading@0.1.4",
     "angular-motion": "github:mgcrea/angular-motion@0.4.3",
     "angular-nvd3": "github:krispo/angular-nvd3@1.0.5",
     "angular-retina": "github:jrief/angular-retina@0.3.8",
-    "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.2",
-    "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.7",
+    "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.3",
+    "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.8",
     "angular-socket-io": "github:btford/angular-socket-io@0.7.0",
     "angular-strap": "github:mgcrea/angular-strap@2.3.7",
     "angular-tree-control": "github:wix/angular-tree-control@0.2.23",
-    "angular-ui-ace": "github:angular-ui/ui-ace@0.2.3",
     "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.1.1",
     "angular-ui-router": "github:angular-ui/ui-router@0.2.18",
     "angular-ui-router-metatags": "github:tinusn/ui-router-metatags@1.0.3",
-    "angular-ui-router-title": "github:nonplus/angular-ui-router-title@0.0.4",
     "babel": "npm:babel-core@5.8.38",
     "babel-runtime": "npm:babel-runtime@5.8.38",
     "blob": "github:eligrey/Blob.js@master",
-    "bootstrap": "github:twbs/bootstrap@3.3.6",
     "bootstrap-carousel": "github:twbs/bootstrap@3.3.6",
     "clean-css": "npm:clean-css@3.4.10",
     "core-js": "npm:core-js@1.2.6",
@@ -47,33 +40,27 @@ System.config({
     "file-saver": "github:eligrey/FileSaver.js@master",
     "font-awesome": "npm:font-awesome@4.5.0",
     "jade": "github:johnsoftek/plugin-jade@0.6.0",
-    "johnsoftek/plugin-jade": "github:johnsoftek/plugin-jade@include",
     "jquery": "github:components/jquery@2.2.1",
     "json": "github:systemjs/plugin-json@0.1.0",
-    "jszip": "github:Stuk/jszip@2.5.0",
+    "jszip": "github:Stuk/jszip@2.6.0",
     "lodash": "github:lodash/lodash@4.6.1",
-    "nvd3": "npm:nvd3@1.8.1",
     "pdfmake": "github:bpampuch/pdfmake@0.1.20",
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
     "socket.io-client": "github:socketio/socket.io-client@1.4.5",
-    "spinjs": "github:fgnass/spin.js@2.3.2",
     "text": "github:systemjs/plugin-text@0.0.7",
     "github:angular-ui/bower-ui-grid@3.1.1": {
       "pdfmake": "github:bpampuch/pdfmake@0.1.20"
     },
-    "github:angular-ui/ui-ace@0.2.3": {
-      "ace": "github:ajaxorg/ace-builds@1.2.3"
-    },
     "github:angular-ui/ui-router@0.2.18": {
-      "angular": "github:angular/bower-angular@1.5.2"
+      "angular": "github:angular/bower-angular@1.5.3"
     },
-    "github:angular/bower-angular-animate@1.5.2": {
-      "angular": "github:angular/bower-angular@1.5.2"
+    "github:angular/bower-angular-animate@1.5.3": {
+      "angular": "github:angular/bower-angular@1.5.3"
     },
-    "github:angular/bower-angular-sanitize@1.5.2": {
-      "angular": "github:angular/bower-angular@1.5.2"
+    "github:angular/bower-angular-sanitize@1.5.3": {
+      "angular": "github:angular/bower-angular@1.5.3"
     },
-    "github:angular/bower-angular@1.5.2": {
+    "github:angular/bower-angular@1.5.3": {
       "jquery": "github:components/jquery@2.2.1"
     },
     "github:btford/angular-socket-io@0.7.0": {
@@ -86,10 +73,6 @@ System.config({
       "blob": "github:eligrey/Blob.js@master"
     },
     "github:johnsoftek/plugin-jade@0.6.0": {
-      "jade-compiler": "npm:jade@1.11.0",
-      "text": "github:systemjs/plugin-text@0.0.4"
-    },
-    "github:johnsoftek/plugin-jade@include": {
       "jade-compiler": "npm:jade@1.11.0",
       "text": "github:systemjs/plugin-text@0.0.4"
     },
@@ -142,20 +125,17 @@ System.config({
       "nvd3": "npm:nvd3@1.8.1"
     },
     "github:mgcrea/angular-motion@0.4.3": {
-      "angular": "github:angular/bower-angular@1.5.2",
+      "angular": "github:angular/bower-angular@1.5.3",
       "css": "github:systemjs/plugin-css@0.1.20"
     },
     "github:mgcrea/angular-strap@2.3.7": {
-      "angular": "github:angular/bower-angular@1.5.2",
-      "angular-animate": "github:angular/bower-angular-animate@1.5.2",
+      "angular": "github:angular/bower-angular@1.5.3",
+      "angular-animate": "github:angular/bower-angular-animate@1.5.3",
       "angular-motion": "github:mgcrea/angular-motion@0.4.3",
-      "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.2"
+      "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.3"
     },
     "github:twbs/bootstrap@3.3.6": {
       "jquery": "github:components/jquery@2.2.1"
-    },
-    "github:wix/angular-tree-control@0.2.23": {
-      "angular": "github:angular/bower-angular@1.5.2"
     },
     "npm:acorn-globals@1.0.9": {
       "acorn": "npm:acorn@2.7.0"

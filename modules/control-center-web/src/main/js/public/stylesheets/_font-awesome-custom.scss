@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-@import "../../node_modules/font-awesome/scss/variables";
-$fa-font-path: "/fonts";
+@import "../../build/jspm_packages/npm/font-awesome@4.5.0/scss/variables";
+$fa-font-path: "/jspm_packages/npm/font-awesome@4.5.0/fonts";
 
-@import "../../node_modules/font-awesome/scss/mixins";
-@import "../../node_modules/font-awesome/scss/path";
-@import "../../node_modules/font-awesome/scss/core";
-@import "../../node_modules/font-awesome/scss/larger";
-@import "../../node_modules/font-awesome/scss/fixed-width";
-@import "../../node_modules/font-awesome/scss/list";
-@import "../../node_modules/font-awesome/scss/bordered-pulled";
-@import "../../node_modules/font-awesome/scss/animated";
-@import "../../node_modules/font-awesome/scss/rotated-flipped";
-@import "../../node_modules/font-awesome/scss/stacked";
-@import "../../node_modules/font-awesome/scss/icons";
+@import "../../build/jspm_packages/npm/font-awesome@4.5.0/scss/mixins";
+@import "../../build/jspm_packages/npm/font-awesome@4.5.0/scss/path";
+@import "../../build/jspm_packages/npm/font-awesome@4.5.0/scss/core";
+@import "../../build/jspm_packages/npm/font-awesome@4.5.0/scss/larger";
+@import "../../build/jspm_packages/npm/font-awesome@4.5.0/scss/fixed-width";
+@import "../../build/jspm_packages/npm/font-awesome@4.5.0/scss/list";
+@import "../../build/jspm_packages/npm/font-awesome@4.5.0/scss/bordered-pulled";
+@import "../../build/jspm_packages/npm/font-awesome@4.5.0/scss/animated";
+@import "../../build/jspm_packages/npm/font-awesome@4.5.0/scss/rotated-flipped";
+@import "../../build/jspm_packages/npm/font-awesome@4.5.0/scss/stacked";
+@import "../../build/jspm_packages/npm/font-awesome@4.5.0/scss/icons";

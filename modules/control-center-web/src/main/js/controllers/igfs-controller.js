@@ -16,6 +16,8 @@
  */
 
 // Controller for IGFS screen.
+import consoleModule from 'controllers/common-module';
+
 consoleModule.controller('igfsController', [
     '$scope', '$http', '$state', '$filter', '$timeout', '$common', '$confirm', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard',
     function ($scope, $http, $state, $filter, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard) {

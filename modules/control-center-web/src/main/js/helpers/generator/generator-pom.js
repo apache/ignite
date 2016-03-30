@@ -16,7 +16,7 @@
  */
 
 // pom.xml generation entry point.
-$generatorPom = {};
+const $generatorPom = {};
 
 $generatorPom.escapeId = function (s) {
     if (typeof(s) !== 'string')
@@ -250,3 +250,5 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
 
     return res;
 };
+
+export default $generatorPom;

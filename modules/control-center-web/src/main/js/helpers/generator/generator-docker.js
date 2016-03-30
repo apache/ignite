@@ -16,7 +16,7 @@
  */
 
 // Docker file generation entry point.
-$generatorDocker = {};
+const $generatorDocker = {};
 
 // Generate from
 $generatorDocker.from = function(cluster, version) {
@@ -50,3 +50,5 @@ $generatorDocker.ignoreFile = function() {
     return 'target\n' +
             'Dockerfile';
 };
+
+export default $generatorDocker;

@@ -22,7 +22,7 @@ import angular from 'angular';
  * If this problem will be fixed in AngularStrap we can remove this delegate.
  */
 angular.module('mgcrea.ngStrap.select')
-    .decorator('$select', ($delegate) => {
+    .decorator('$select', ['$delegate', ($delegate) => {
         function SelectFactoryDecorated(element, controller, config) {
             const delegate = $delegate(element, controller, config);
 
@@ -74,4 +74,4 @@ angular.module('mgcrea.ngStrap.select')
         SelectFactoryDecorated.defaults = $delegate.defaults;
 
         return SelectFactoryDecorated;
-    });
+    }]);

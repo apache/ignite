@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-// task run static server to local development
+import gulp from 'gulp';
+import connect from 'gulp-connect';
+import modrewrite from 'connect-modrewrite';
 
-var gulp = require('gulp');
-var connect = require('gulp-connect');
-var modrewrite = require('connect-modrewrite');
+import { destDir } from '../paths';
 
-var options = {
-    livereload: true,
-	port: 8090,
-	root: './build',
-	middleware: function (connect, opt) {
-		return [modrewrite([
-			'^/api/v1/(.*)$ http://localhost:3000/$1 [P]' 
-		])];
-    },
-    fallback: './build/index.html'
-};
-
-// task run static server to local development
-gulp.task('connect', function() {
-	connect.server(options);
+// Task run static server to local development.
+gulp.task('connect', () => {
+    connect.server({
+        port: 8090,
+        root: [ destDir ],
+        middleware() {
+            return [modrewrite([
+                '^/api/v1/(.*)$ http://localhost:3000/$1 [P]'
+            ])];
+        },
+        fallback: `${destDir}/index.html`
+    });
 });

@@ -16,7 +16,7 @@
  */
 
 // Entry point for common functions for code generation.
-$generatorCommon = {};
+const $generatorCommon = {};
 
 // Add leading zero.
 $generatorCommon.addLeadingZero = function (numberStr, minSize) {
@@ -524,3 +524,5 @@ $generatorCommon.dataForExampleConfigured = function(cluster) {
         return _.find(cache.domains, {demo: true});
     }));
 };
+
+export default $generatorCommon;

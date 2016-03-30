@@ -15,30 +15,7 @@
  * limitations under the License.
  */
 
-var gulp = require('gulp');
-var cache = require('gulp-cached');
-var sequence = require('gulp-sequence');
+import gulp from 'gulp';
+import sequence from 'gulp-sequence';
 
-var eslint = require('gulp-eslint');
-
-var paths = [
-    './app/**/*.js'
-];
-
-gulp.task('eslint:node', function() {
-	return gulp.src('./serve/**/*.js')
-        .pipe(cache('eslint:node'))
-		.pipe(eslint({envs: ['node']}))
-		.pipe(eslint.format());
-});
-
-gulp.task('eslint:browser', function() {
-	return gulp.src(paths)
-        .pipe(cache('eslint:browser'))
-		.pipe(eslint({envs: ['browser']}))
-		.pipe(eslint.format());
-});
-
-gulp.task('eslint', function(cb) {
-	return sequence('eslint:browser', 'eslint:node')(cb);
-});
+gulp.task('build', (cb) => sequence('clean', 'clean:ignite-modules-temp', 'ignite:modules', ['copy', 'jade', 'sass'], 'bundle', cb));

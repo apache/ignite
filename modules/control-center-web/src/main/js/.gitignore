@@ -1,10 +1,10 @@
-node_modules
-jspm_packages
 *.idea
 *.log
 .npmrc
-build
-app/plugins
+build/*
+!build/system.config.js
+node_modules
+ignite_modules_temp/*
 public/stylesheets/*.css
 serve/config/*.json
 serve/agent_dists/*.zip

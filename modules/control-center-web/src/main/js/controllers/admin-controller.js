@@ -16,6 +16,8 @@
  */
 
 // Controller for Admin screen.
+import consoleModule from 'controllers/common-module';
+
 consoleModule.controller('adminController', [
     '$rootScope', '$scope', '$http', '$q', '$common', '$confirm', '$state', 'User',
     function ($rootScope, $scope, $http, $q, $common, $confirm, $state, User) {

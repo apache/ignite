@@ -15,10 +15,20 @@
  * limitations under the License.
  */
 
-var gulp = require('gulp');
-var clean = require('gulp-rimraf');
+import path from 'path';
 
-// Remove build folder.
-gulp.task('clean', function() {
-    return gulp.src('./build', {read: false}).pipe(clean());
-});
+const root = path.dirname(__dirname);
+
+const srcDir = path.join(root, 'app');
+const destDir = path.join(root, 'build');
+
+const igniteModulesDir = process.env.IGNITE_MODULES ? path.normalize(process.env.IGNITE_MODULES) : path.join(root, 'ignite_modules');
+const igniteModulesTemp = path.join(root, 'ignite_modules_temp');
+
+export {
+    root,
+    srcDir,
+    destDir,
+    igniteModulesDir,
+    igniteModulesTemp
+};

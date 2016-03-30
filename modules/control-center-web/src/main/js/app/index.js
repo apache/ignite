@@ -20,8 +20,9 @@ import ace from 'ace';
 import angular from 'angular';
 import pdfMake from 'pdfmake';
 
+ace.config.set("basePath", "/jspm_packages/github/ajaxorg/ace-builds@1.2.3");
+
 window._ = _;
-window.ace = ace;
 window.require = ace.require; // TODO Should be removed after full refactoring to directives.
 window.pdfMake = pdfMake;
 
@@ -46,7 +47,6 @@ import 'query-command-supported';
 
 import 'public/stylesheets/style.css!';
 
-import 'nvd3/build/nv.d3.css!';
 import 'angular-tree-control/css/tree-control-attribute.css!';
 import 'angular-tree-control/css/tree-control.css!';
 import 'angular-ui-grid/ui-grid.css!';
@@ -99,11 +99,50 @@ import IgniteCountries from './services/Countries.service';
 import IgniteChartColors from './services/ChartColors.service';
 import IgniteAgentMonitor from './services/AgentMonitor.service';
 
-// Providers
+// Providers.
 
 // Filters.
 import hasPojo from './filters/hasPojo.filter';
 import byName from './filters/byName.filter';
+
+// Helpers
+import $generatorCommon from 'helpers/generator/generator-common';
+import $generatorDocker from 'helpers/generator/generator-docker';
+import $generatorJava from 'helpers/generator/generator-java';
+import $generatorOptional from 'helpers/generator/generator-optional';
+import $generatorPom from 'helpers/generator/generator-pom';
+import $generatorProperties from 'helpers/generator/generator-properties';
+import $generatorReadme from 'helpers/generator/generator-readme';
+import $generatorXml from 'helpers/generator/generator-xml';
+
+import $commonUtils from 'helpers/common-utils';
+import $dataStructures from 'helpers/data-structures';
+
+window.$generatorCommon = $generatorCommon;
+window.$generatorDocker = $generatorDocker;
+window.$generatorJava = $generatorJava;
+window.$generatorOptional = $generatorOptional;
+window.$generatorPom = $generatorPom;
+window.$generatorProperties = $generatorProperties;
+window.$generatorReadme = $generatorReadme;
+window.$generatorXml = $generatorXml;
+window.$commonUtils = $commonUtils;
+window.$dataStructures = $dataStructures;
+
+// Add legacy logic;
+import consoleModule from 'controllers/common-module';
+window.consoleModule = consoleModule;
+
+import 'controllers/admin-controller';
+import 'controllers/caches-controller';
+import 'controllers/clusters-controller';
+import 'controllers/domains-controller';
+import 'controllers/igfs-controller';
+import 'controllers/profile-controller';
+import 'controllers/sql-controller';
+
+// Inject external modules.
+import 'ignite_modules_temp/index';
 
 angular
 .module('ignite-console', [
@@ -134,7 +173,11 @@ angular
     'ignite-console.navbar',
     'ignite-console.configuration',
     'ignite-console.getting-started',
-    'ignite-console.version'
+    'ignite-console.version',
+    // Ignite legacy module.
+    'ignite-console.legacy',
+    // Ignite modules.
+    'ignite-console.modules'
 ])
 // Directives.
 .directive(...igniteAdvancedOptionsToggle)

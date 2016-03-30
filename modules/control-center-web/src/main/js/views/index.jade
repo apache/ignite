@@ -15,7 +15,7 @@
     limitations under the License.
 
 doctype html
-html(ng-app='ignite-web-console' id='app')
+html(ng-app='ignite-console' id='app' ng-strict-di)
     head
         base(href='/')
         link(rel='shortcut icon' href='favicon.ico')
@@ -30,14 +30,18 @@ html(ng-app='ignite-web-console' id='app')
         meta(name='keywords' content='{{$meta.keywords}}')
         meta(ng-repeat='(key, value) in $meta.properties' name='{{::key}}' content='{{::value}}')
 
-        link(rel='stylesheet', href='/app.min.css')
+        // build:css
+        link(rel='stylesheet', href='/vendors.css')
+        link(rel='stylesheet', href='/app.css')
+        // endbuild
 
-        script(src='/common-utils.js')
-        script(src='/app.min.js')
-
-        script(src='/common-module.js')
-        script(src='/data-structures.js')
-        script(src='/all.js')
+        // build:js
+        script(src='jspm_packages/system.js')
+        script(src='system.config.js')
+        script(src='vendors.js')
+        script(src='app.js')
+        script System.import('app/index');
+        // endbuild
 
         // ignite:plugins
         // endignite

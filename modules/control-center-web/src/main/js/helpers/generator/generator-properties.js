@@ -16,7 +16,7 @@
  */
 
 // Properties generation entry point.
-$generatorProperties = {};
+const $generatorProperties = {};
 
 $generatorProperties.jdbcUrlTemplate = function(dialect) {
     switch (dialect) {
@@ -151,3 +151,5 @@ $generatorProperties.generateProperties = function (cluster, res) {
 
     return res;
 };
+
+export default $generatorProperties;
