@@ -28,6 +28,7 @@
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Events;
@@ -509,5 +510,10 @@
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public IDictionary<string, object> UserAttributes { get; set; }
+
+        /// <summary>
+        /// Gets or sets the atomic data structures configuration.
+        /// </summary>
+        public AtomicConfiguration AtomicConfiguration { get; set; }
     }
 }
