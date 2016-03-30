@@ -238,6 +238,15 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
+     * Sets cache name.
+     *
+     * @param name New value for cache name.
+     */
+    public void name(String name) {
+        this.name = name;
+    }
+
+    /**
      * @return Cache mode.
      */
     public CacheMode mode() {
@@ -403,6 +412,15 @@ public class VisorCacheMetrics implements Serializable {
      */
     public VisorCacheQueryMetrics queryMetrics() {
         return qryMetrics;
+    }
+
+    /**
+     * Sets cache query metrics.
+     *
+     * @param qryMetrics New value for query metrics.
+     */
+    public void queryMetrics(VisorCacheQueryMetrics qryMetrics) {
+        this.qryMetrics = qryMetrics;
     }
 
     /**
