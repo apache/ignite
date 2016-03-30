@@ -507,6 +507,7 @@
         /// Environment variables are added to node attributes automatically.
         /// NOTE: attribute names starting with "org.apache.ignite" are reserved for internal use.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public IDictionary<string, object> UserAttributes { get; set; }
     }
 }
