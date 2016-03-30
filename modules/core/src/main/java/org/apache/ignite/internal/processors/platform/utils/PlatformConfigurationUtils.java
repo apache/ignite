@@ -564,6 +564,19 @@ import java.util.Map;
         if (bc != null)
             w.writeBoolean(bc.isCompactFooter());
 
+        Map<String, ?> attrs = cfg.getUserAttributes();
+
+        if (attrs != null) {
+            w.writeInt(attrs.size());
+
+            for (Map.Entry<String, ?> e : attrs.entrySet()) {
+                w.writeString(e.getKey());
+                w.writeObject(e.getValue());
+            }
+        }
+        else
+            w.writeInt(0);
+
         w.writeString(cfg.getIgniteHome());
 
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
