@@ -6490,7 +6490,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Override public K next() {
             current = internalIterator.next();
 
-            return (K)current.keyValue(false);
+            return (K)current.wrapLazyValue().getKey();
         }
 
         @Override public void remove() {
@@ -6498,7 +6498,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 throw new IllegalStateException();
 
             try {
-                GridCacheAdapter.this.getAndRemove((K)current.keyValue(false));
+                GridCacheAdapter.this.getAndRemove((K)current.wrapLazyValue().getKey());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -6554,7 +6554,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 throw new IllegalStateException();
 
             try {
-                GridCacheAdapter.this.getAndRemove((K)current.keyValue(false));
+                GridCacheAdapter.this.getAndRemove((K)current.wrapLazyValue().getKey());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
