@@ -251,7 +251,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
             @Override public boolean apply(KeyCacheObject key) {
                 GridCacheMapEntry entry = map.get(key);
 
-                return entry.visitable(filter);
+                return entry != null && entry.visitable(filter);
             }
         };
 
