@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Events;
@@ -307,7 +308,7 @@ namespace Apache.Ignite.Core.Tests
                             Serializer = new TestSerializer()
                         }
                     },
-                    Types = new [] {typeof(string).FullName },
+                    Types = new[] {typeof (string).FullName},
                     DefaultIdMapper = new IdMapper(),
                     DefaultKeepDeserialized = true,
                     DefaultNameMapper = new NameMapper(),
@@ -348,7 +349,7 @@ namespace Apache.Ignite.Core.Tests
                                 },
                                 Indexes = new[]
                                 {
-                                    new QueryIndex("field") { IndexType = QueryIndexType.FullText }
+                                    new QueryIndex("field") {IndexType = QueryIndexType.FullText}
                                 },
                                 Aliases = new[]
                                 {
@@ -399,7 +400,7 @@ namespace Apache.Ignite.Core.Tests
                 JvmDllPath = @"c:\jvm",
                 JvmInitialMemoryMb = 1024,
                 JvmMaxMemoryMb = 2048,
-                LifecycleBeans = new[] {new LifecycleBean(), new LifecycleBean() },
+                LifecycleBeans = new[] {new LifecycleBean(), new LifecycleBean()},
                 MetricsExpireTime = TimeSpan.FromSeconds(15),
                 MetricsHistorySize = 45,
                 MetricsLogFrequency = TimeSpan.FromDays(2),
@@ -408,7 +409,15 @@ namespace Apache.Ignite.Core.Tests
                 NetworkSendRetryDelay = TimeSpan.FromSeconds(98),
                 NetworkTimeout = TimeSpan.FromMinutes(4),
                 SuppressWarnings = true,
-                WorkDirectory = @"c:\work"
+                WorkDirectory = @"c:\work",
+                IsDaemon = true,
+                UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x),
+                AtomicConfiguration = new AtomicConfiguration
+                {
+                    CacheMode = CacheMode.Replicated,
+                    AtomicSequenceReserveSize = 200,
+                    Backups = 2
+                }
             };
         }
 
