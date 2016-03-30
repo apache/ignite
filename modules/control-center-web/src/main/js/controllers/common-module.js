@@ -1054,7 +1054,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                     checkDirty: function(curItem, srcItem) {
                         this.groups.forEach(function(group) {
                             if (checkGroupDirty(group, curItem, srcItem))
-                                dirty = true;
+                                group.dirty = true;
                         });
                     }
                 };
