@@ -27,6 +27,7 @@
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Events;
@@ -478,5 +479,14 @@
         /// so that it won't participate in the task execution or in-memory data grid storage.
         /// </summary>
         public bool IsDaemon { get; set; }
+
+        /// <summary>
+        /// Gets or sets the user attributes for this node.
+        /// <para />
+        /// These attributes can be retrieved later via <see cref="IClusterNode.GetAttributes"/>.
+        /// Environment variables are added to node attributes automatically.
+        /// NOTE: attribute names starting with "org.apache.ignite" are reserved for internal use.
+        /// </summary>
+        public IDictionary<string, object> UserAttributes { get; set; }
     }
 }
