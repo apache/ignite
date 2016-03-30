@@ -25,9 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
-import kafka.producer.KeyedMessage;
-import kafka.producer.Producer;
-import kafka.producer.ProducerConfig;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 import kafka.utils.SystemTime$;
@@ -37,6 +34,9 @@ import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.ZkConnection;
 import org.apache.curator.test.TestingServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import scala.Tuple2;
 
 /**
@@ -106,15 +106,17 @@ public class TestKafkaBroker {
     /**
      * Sends a message to Kafka broker.
      *
-     * @param keyedMessages List of keyed messages.
+     * @param records List of records.
      * @return Producer used to send the message.
      */
-    public Producer<String, String> sendMessages(List<KeyedMessage<String, String>> keyedMessages) {
-        Producer<String, String> producer = new Producer<>(getProducerConfig());
+    public void sendMessages(List<ProducerRecord<String, String>> records) {
+        Producer<String, String> producer = new KafkaProducer<>(getProducerConfig());
 
-        producer.send(scala.collection.JavaConversions.asScalaBuffer(keyedMessages));
+        for (ProducerRecord<String, String> rec : records)
+            producer.send(rec);
 
-        return producer;
+        producer.flush();
+        producer.close();
     }
 
     /**
@@ -185,6 +187,7 @@ public class TestKafkaBroker {
         props.put("offsets.topic.replication.factor", "1");
         props.put("log.dir", createTmpDir("_cfg").getAbsolutePath());
         props.put("log.flush.interval.messages", "1");
+        props.put("log.flush.interval.ms", "10");
 
         return props;
     }
@@ -212,14 +215,14 @@ public class TestKafkaBroker {
      *
      * @return Kafka Producer config.
      */
-    private ProducerConfig getProducerConfig() {
+    private Properties getProducerConfig() {
         Properties props = new Properties();
 
-        props.put("metadata.broker.list", getBrokerAddress());
         props.put("bootstrap.servers", getBrokerAddress());
-        props.put("serializer.class", "kafka.serializer.StringEncoder");
+        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
-        return new ProducerConfig(props);
+        return props;
     }
 
     /**
