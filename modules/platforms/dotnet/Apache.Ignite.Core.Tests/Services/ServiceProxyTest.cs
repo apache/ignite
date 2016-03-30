@@ -23,8 +23,8 @@ namespace Apache.Ignite.Core.Tests.Services
     using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Services;

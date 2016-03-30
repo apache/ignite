@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Impl.Services
     using System.Reflection;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
@@ -349,7 +348,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 return locInst;
 
             var javaProxy = UU.ServicesGetServiceProxy(Target, name, sticky);
-            var platform = GetServiceDescriptors().Single(x => x.Name == name).Platform;
+            var platform = GetServiceDescriptors().Cast<ServiceDescriptor>().Single(x => x.Name == name).Platform;
 
             return new ServiceProxy<T>((method, args) =>
                 InvokeProxyMethod(javaProxy, method, args, platform)).GetTransparentProxy();

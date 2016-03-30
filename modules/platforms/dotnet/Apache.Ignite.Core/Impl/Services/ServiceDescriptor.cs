@@ -20,9 +20,9 @@ namespace Apache.Ignite.Core.Impl.Services
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Collections;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Services;
 
     /// <summary>

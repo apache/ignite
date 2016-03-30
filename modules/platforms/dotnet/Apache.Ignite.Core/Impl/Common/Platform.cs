@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Common
+namespace Apache.Ignite.Core.Impl.Common
 {
     /// <summary>
     /// Represents an Ignite platform.
