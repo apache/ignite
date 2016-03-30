@@ -114,6 +114,7 @@
     <Compile Include="Compute\TaskAdapterTest.cs" />
     <Compile Include="Compute\TaskResultTest.cs" />
     <Compile Include="Dataload\DataStreamerTest.cs" />
+    <Compile Include="Dataload\DataStreamerTestTopologyChange.cs" />
     <Compile Include="DataStructures\AtomicLongTest.cs" />
     <Compile Include="DataStructures\AtomicReferenceTest.cs" />
     <Compile Include="DataStructures\AtomicSequenceTest.cs" />
@@ -130,6 +131,7 @@
     <Compile Include="IgniteConfigurationSerializerTest.cs" />
     <Compile Include="IgniteConfigurationTest.cs" />
     <Compile Include="IgniteTestBase.cs" />
+    <Compile Include="JavaHomeTest.cs" />
     <Compile Include="LifecycleTest.cs" />
     <Compile Include="LoadDllTest.cs" />
     <Compile Include="IgniteManagerTest.cs" />
@@ -185,6 +187,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Config\cache-binarizables.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Config\cache-local-node.xml">
+      <SubType>Designer</SubType>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\cache-query-continuous.xml">
@@ -264,6 +270,15 @@
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
     <None Include="app.config" />
+    <Content Include="Config\ignite-dotnet-cfg.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Include="Config\Apache.Ignite.exe.config.test3">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\Apache.Ignite.exe.config.test2">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

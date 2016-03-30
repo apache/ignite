@@ -26,25 +26,31 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="localHost" value="127.0.0.1"/>
+        <property name="connectorConfiguration"><null/></property>
+        
+        <property name="userAttributes">
+            <map>
+                <entry key="platformAttributeNode" value="true"/>
+            </map>
+        </property>
+        
+
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="writeThrough" value="true"/>
-                    <property name="readThrough" value="true"/>
-                    <property name="cacheStoreFactory">
-                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
-                            <property name="typeName" value="Apache.Ignite.ExamplesDll.Datagrid.EmployeeStore, Apache.Ignite.ExamplesDll"/>
-                        </bean>
+                    <property name="name" value="cache"/>
+                    <property name="nodeFilter">
+                        <bean class="org.apache.ignite.platform.PlatformAttributeNodeFilter" />
                     </property>
                 </bean>
             </list>
         </property>
 
-        <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->

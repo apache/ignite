@@ -715,14 +715,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteFuture<?> rebalance();
 
     /**
-     * Gets snapshot metrics (statistics) for this cache.
+     * Gets whole cluster snapshot metrics (statistics) for this cache.
      *
      * @return Cache metrics.
      */
     public CacheMetrics metrics();
 
     /**
-     * Gets snapshot metrics for caches in cluster group.
+     * Gets cluster group snapshot metrics for caches in cluster group.
      *
      * @param grp Cluster group.
      * @return Cache metrics.
@@ -730,9 +730,23 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public CacheMetrics metrics(ClusterGroup grp);
 
     /**
-     * Gets MxBean for this cache.
+     * Gets local snapshot metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public CacheMetrics localMetrics();
+
+    /**
+     * Gets whole cluster MxBean for this cache.
      *
      * @return MxBean.
      */
     public CacheMetricsMXBean mxBean();
+
+    /**
+     * Gets local MxBean for this cache.
+     *
+     * @return MxBean.
+     */
+    public CacheMetricsMXBean localMxBean();
 }

@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import kafka.producer.KeyedMessage;
-import kafka.producer.Producer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
@@ -33,6 +31,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.stream.kafka.TestKafkaBroker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.runtime.Herder;
@@ -183,7 +182,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      * @return Map of key value messages.
      */
     private Map<String, String> produceStream(String topic) {
-        List<KeyedMessage<String, String>> messages = new ArrayList<>(EVENT_CNT);
+        List<ProducerRecord<String, String>> messages = new ArrayList<>(EVENT_CNT);
 
         Map<String, String> keyValMap = new HashMap<>();
 
@@ -193,14 +192,12 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
             String key = topic + "_" + String.valueOf(evt);
             String msg = runtime + String.valueOf(evt);
 
-            messages.add(new KeyedMessage<>(topic, key, msg));
+            messages.add(new ProducerRecord<>(topic, key, msg));
 
             keyValMap.put(key, msg);
         }
 
-        Producer<String, String> producer = kafkaBroker.sendMessages(messages);
-
-        producer.close();
+        kafkaBroker.sendMessages(messages);
 
         return keyValMap;
     }
@@ -216,7 +213,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
 
         props.put(ConnectorConfig.TOPICS_CONFIG, topics);
         props.put(ConnectorConfig.TASKS_MAX_CONFIG, "2");
-        props.put(ConnectorConfig.NAME_CONFIG, "test-connector");
+        props.put(ConnectorConfig.NAME_CONFIG, "test-sink-connector");
         props.put(ConnectorConfig.CONNECTOR_CLASS_CONFIG, IgniteSinkConnector.class.getName());
         props.put(IgniteSinkConstants.CACHE_NAME, "testCache");
         props.put(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE, "true");

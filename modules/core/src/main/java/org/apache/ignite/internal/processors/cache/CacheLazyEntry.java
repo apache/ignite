@@ -80,7 +80,7 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      * @param keepBinary Keep binary flag.
      * @param val Cache value.
      */
-    public CacheLazyEntry(GridCacheContext<K, V> ctx,
+    public CacheLazyEntry(GridCacheContext ctx,
         KeyCacheObject keyObj,
         K key,
         CacheObject valObj,
@@ -134,6 +134,13 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      */
     public K key() {
         return key;
+    }
+
+    /**
+     * @return Keep binary flag.
+     */
+    public boolean keepBinary() {
+        return keepBinary;
     }
 
     /** {@inheritDoc} */
