@@ -54,10 +54,9 @@ import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import java.math.BigDecimal;
-import java.net.URL;
+import java.security.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -65,6 +64,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 
@@ -805,17 +805,10 @@ public class PlatformUtils {
      * @param o Object to unwrap.
      * @return Unwrapped object.
      */
-    public static Object unwrapBinaryIfNeeded(Object o) {
+    private static Object unwrapBinary(Object o) {
         if (o == null)
             return null;
 
-        return unwrapBinary(o);
-    }
-    /**
-     * @param o Object to unwrap.
-     * @return Unwrapped object.
-     */
-    private static Object unwrapBinary(Object o) {
         if (knownArray(o))
             return o;
 
@@ -852,12 +845,14 @@ public class PlatformUtils {
         return obj instanceof String[] ||
             obj instanceof boolean[] ||
             obj instanceof byte[] ||
+            obj instanceof char[] ||
             obj instanceof int[] ||
             obj instanceof long[] ||
             obj instanceof short[] ||
-            obj instanceof Date[] ||
+            obj instanceof Timestamp[] ||
             obj instanceof double[] ||
             obj instanceof float[] ||
+            obj instanceof UUID[] ||
             obj instanceof BigDecimal[];
     }
 
