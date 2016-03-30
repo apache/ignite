@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
@@ -110,6 +111,11 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
                 Assert.AreEqual(cfg.IsDaemon, resCfg.IsDaemon);
                 Assert.AreEqual(cfg.UserAttributes, resCfg.UserAttributes);
+
+                Assert.AreEqual(cfg.AtomicConfiguration.AtomicSequenceReserveSize,
+                    resCfg.AtomicConfiguration.AtomicSequenceReserveSize);
+                Assert.AreEqual(cfg.AtomicConfiguration.Backups, resCfg.AtomicConfiguration.Backups);
+                Assert.AreEqual(cfg.AtomicConfiguration.CacheMode, resCfg.AtomicConfiguration.CacheMode);
             }
         }
 
@@ -353,7 +359,13 @@ namespace Apache.Ignite.Core.Tests
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 Localhost = "127.0.0.1",
                 IsDaemon = true,
-                UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x)
+                UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x),
+                AtomicConfiguration = new AtomicConfiguration
+                {
+                    CacheMode = CacheMode.Replicated,
+                    Backups = 2,
+                    AtomicSequenceReserveSize = 200
+                }
             };
         }
     }
