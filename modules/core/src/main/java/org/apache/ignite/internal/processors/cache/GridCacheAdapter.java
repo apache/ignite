@@ -963,14 +963,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * @return Set of internal cached entry representations, excluding {@link GridCacheInternal} keys.
+     * @return Set of internal cached entry representations.
      */
     public Iterable<? extends GridCacheEntryEx> entries() {
-        return map.entries();
+        return allEntries();
     }
 
     /**
-     * @return Set of internal cached entry representations, including {@link GridCacheInternal} keys.
+     * @return Set of internal cached entry representations.
      */
     public Iterable<? extends GridCacheEntryEx> allEntries() {
         return map.entries();
@@ -983,16 +983,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySetx(final CacheEntryPredicate... filter) {
-        CacheEntryPredicate p = new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx ex) {
-                if (ex instanceof GridCacheMapEntry)
-                    return ((GridCacheMapEntry)ex).visitable(filter);
-                else
-                    return false;
-            }
-        };
-
-        return new EntrySet(map.entrySet(p));
+        return new EntrySet(map.entrySet(filter));
     }
 
     /** {@inheritDoc} */
@@ -3954,16 +3945,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
-        CacheEntryPredicate p = new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx ex) {
-                if (ex instanceof GridCacheMapEntry)
-                    return ((GridCacheMapEntry)ex).visitable(CU.empty0());
-                else
-                    return false;
-            }
-        };
-
-        return entrySet(p).iterator();
+        return entrySet().iterator();
     }
 
     /**
@@ -4696,16 +4678,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Key set.
      */
     public Set<K> keySet(@Nullable final CacheEntryPredicate... filter) {
-        CacheEntryPredicate p = new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx ex) {
-                if (ex instanceof GridCacheMapEntry)
-                    return ((GridCacheMapEntry)ex).visitable(filter);
-                else
-                    return false;
-            }
-        };
-
-        return new KeySet(map.entrySet(p));
+        return new KeySet(map.entrySet(filter));
     }
 
     /**
