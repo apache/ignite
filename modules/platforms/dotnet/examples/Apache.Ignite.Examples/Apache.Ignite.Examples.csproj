@@ -41,9 +41,8 @@
       <HintPath Condition="Exists('..\..\bin\Apache.Ignite.Core.dll')">..\..\bin\Apache.Ignite.Core.dll</HintPath>
     </Reference>
     <Reference Include="Apache.Ignite.Linq">
-      <HintPath Condition="Exists('..\..\Apache.Ignite.Linq')">..\..\Apache.Ignite.Linq\bin\$(Platform)\$(Configuration)\Apache.Ignite.Linq.dll</HintPath>
-      <HintPath Condition="'$(Platform)' == 'x86' And Exists('..\..\bin\x86\Apache.Ignite.Linq.dll')">..\..\bin\x86\Apache.Ignite.Linq.dll</HintPath>
-      <HintPath Condition="'$(Platform)' == 'x64' And Exists('..\..\bin\Apache.Ignite.Linq.dll')">..\..\bin\Apache.Ignite.Linq.dll</HintPath>
+      <HintPath Condition="Exists('..\..\Apache.Ignite.Linq')">..\..\Apache.Ignite.Linq\bin\$(Configuration)\Apache.Ignite.Linq.dll</HintPath>
+      <HintPath Condition="Exists('..\..\bin\Apache.Ignite.Linq.dll')">..\..\bin\Apache.Ignite.Linq.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
