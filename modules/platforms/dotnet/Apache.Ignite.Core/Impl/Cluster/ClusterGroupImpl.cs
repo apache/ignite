@@ -281,12 +281,6 @@ namespace Apache.Ignite.Core.Impl.Cluster
         }
 
         /** <inheritDoc /> */
-        public IClusterGroup ForDaemons()
-        {
-            return GetClusterGroup(UU.ProjectionForDaemons(Target));
-        }
-
-        /** <inheritDoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
             IgniteArgumentCheck.NotNull(node, "node");

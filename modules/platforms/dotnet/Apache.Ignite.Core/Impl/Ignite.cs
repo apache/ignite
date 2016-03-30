@@ -274,12 +274,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IClusterGroup ForDaemons()
-        {
-            return _prj.ForDaemons();
-        }
-
-        /** <inheritdoc /> */
         public IClusterGroup ForHost(IClusterNode node)
         {
             IgniteArgumentCheck.NotNull(node, "node");
