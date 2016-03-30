@@ -908,7 +908,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         if (metrics == null)
                             metrics = U.newHashMap(caches.size());
 
-                        metrics.put(cache.context().cacheId(), cache.metrics());
+                        metrics.put(cache.context().cacheId(), cache.localMetrics());
                     }
                 }
 
