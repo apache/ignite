@@ -20,7 +20,7 @@ import ace from 'ace';
 import angular from 'angular';
 import pdfMake from 'pdfmake';
 
-ace.config.set("basePath", "/jspm_packages/github/ajaxorg/ace-builds@1.2.3");
+ace.config.set('basePath', '/jspm_packages/github/ajaxorg/ace-builds@1.2.3');
 
 window._ = _;
 window.require = ace.require; // TODO Should be removed after full refactoring to directives.
