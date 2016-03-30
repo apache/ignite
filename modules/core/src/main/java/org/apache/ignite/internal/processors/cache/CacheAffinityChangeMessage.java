@@ -58,6 +58,8 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     private transient boolean exchangeNeeded;
 
     /**
+     * Constructor used when message is created after cache rebalance finished.
+     *
      * @param topVer Topology version.
      * @param assignmentChange Assignment change.
      * @param cacheDeploymentIds Cache deployment ID.
@@ -73,6 +75,8 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     }
 
     /**
+     * Constructor used when message is created to finish exchange.
+     *
      * @param exchId Exchange ID.
      * @param partsMsg Partitions messages.
      * @param assignmentChange Assignment change.

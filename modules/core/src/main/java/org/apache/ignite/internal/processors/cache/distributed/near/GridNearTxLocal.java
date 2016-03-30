@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -1338,6 +1339,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearTxLocal.class, this, "mappings", mappings, "super", super.toString());
+        return S.toString(GridNearTxLocal.class, this,
+            "thread", IgniteUtils.threadName(threadId),
+            "mappings", mappings,
+            "super", super.toString());
     }
 }
