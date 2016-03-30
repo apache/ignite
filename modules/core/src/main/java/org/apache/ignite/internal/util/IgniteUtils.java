@@ -4323,7 +4323,7 @@ public abstract class IgniteUtils {
 
         cacheName = maskName(cacheName);
 
-        sb.a("group=").a(cacheName).a(',');
+        sb.a("group=").a('"').a(cacheName).a('"').a(',');
 
         sb.a("name=").a(name);
 
