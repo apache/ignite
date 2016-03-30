@@ -249,6 +249,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return map.entries(filter);
     }
 
+    @Override public Iterable<GridCacheMapEntry> allEntries(CacheEntryPredicate... filter) {
+        return map.allEntries(filter);
+    }
+
     @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
         return map.entrySet(filter);
     }
@@ -645,7 +649,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
-        Iterator<GridDhtCacheEntry> it = (Iterator) map.entries().iterator();
+        Iterator<GridDhtCacheEntry> it = (Iterator) map.allEntries().iterator();
 
         GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
 

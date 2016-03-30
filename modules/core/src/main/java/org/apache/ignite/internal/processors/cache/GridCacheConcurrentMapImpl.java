@@ -285,6 +285,17 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<GridCacheMapEntry> allEntries(final CacheEntryPredicate... filter) {
+        final IgnitePredicate<GridCacheMapEntry> p = new IgnitePredicate<GridCacheMapEntry>() {
+            @Override public boolean apply(GridCacheMapEntry entry) {
+                return F.isAll(entry, filter);
+            }
+        };
+
+        return F.viewReadOnly(map.values(), F.<GridCacheMapEntry>identity(), p);
+    }
+
+    /** {@inheritDoc} */
     @Deprecated @Nullable @Override public GridCacheMapEntry randomEntry() {
         Iterator<GridCacheMapEntry> iterator = map.values().iterator();
 

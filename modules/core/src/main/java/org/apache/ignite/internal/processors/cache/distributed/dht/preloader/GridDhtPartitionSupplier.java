@@ -298,7 +298,7 @@ class GridDhtPartitionSupplier {
 
                     if (phase == SupplyContextPhase.ONHEAP) {
                         Iterator<GridCacheMapEntry> entIt = sctx != null ?
-                            (Iterator<GridCacheMapEntry>)sctx.entryIt : loc.entries().iterator();
+                            (Iterator<GridCacheMapEntry>)sctx.entryIt : loc.allEntries().iterator();
 
                         while (entIt.hasNext()) {
                             if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
@@ -794,7 +794,7 @@ class GridDhtPartitionSupplier {
 
                     boolean partMissing = false;
 
-                    for (GridCacheEntryEx e : loc.entries()) {
+                    for (GridCacheEntryEx e : loc.allEntries()) {
                         if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
                             // Demander no longer needs this partition, so we send '-1' partition and move on.
                             s.missed(part);

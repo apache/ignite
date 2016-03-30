@@ -82,9 +82,15 @@ public interface GridCacheConcurrentMap {
 
     /**
      * @param filter Filter.
-     * @return Iterable of the mappings contained in this map.
+     * @return Iterable of the mappings contained in this map, excluding entries in unvisitable state.
      */
     Iterable<GridCacheMapEntry> entries(CacheEntryPredicate... filter);
+
+    /**
+     * @param filter Filter.
+     * @return Iterable of the mappings contained in this map, including entries in unvisitable state.
+     */
+    Iterable<GridCacheMapEntry> allEntries(CacheEntryPredicate... filter);
 
     /**
      * @param filter Filter.

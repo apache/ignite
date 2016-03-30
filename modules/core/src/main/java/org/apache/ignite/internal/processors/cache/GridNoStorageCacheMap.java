@@ -86,6 +86,10 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
         return Collections.emptySet();
     }
 
+    @Override public Iterable<GridCacheMapEntry> allEntries(CacheEntryPredicate... filter) {
+        return Collections.emptySet();
+    }
+
     @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
         return Collections.emptySet();
     }

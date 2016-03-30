@@ -106,24 +106,38 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
-        Set<KeyCacheObject> set = new HashSet<>();
+        Collection<Set<KeyCacheObject>> sets = new ArrayList<>();
 
         for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
-            set.addAll(partition.keySet(filter));
+            sets.add(partition.keySet(filter));
         }
 
-        return set;
+        return new PartitionedReadOnlySet<>(sets);
     }
 
-    @Override public Iterable<GridCacheMapEntry> entries(CacheEntryPredicate... filter) {
-        final List<Iterator<GridCacheMapEntry>> iterators = new ArrayList<>();
-
-        for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
-            iterators.add(partition.entries(filter).iterator());
-        }
-
+    @Override public Iterable<GridCacheMapEntry> entries(final CacheEntryPredicate... filter) {
         return new Iterable<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {
+                List<Iterator<GridCacheMapEntry>> iterators = new ArrayList<>();
+
+                for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
+                    iterators.add(partition.entries(filter).iterator());
+                }
+
+                return F.flatIterators(iterators);
+            }
+        };
+    }
+
+    @Override public Iterable<GridCacheMapEntry> allEntries(final CacheEntryPredicate... filter) {
+        return new Iterable<GridCacheMapEntry>() {
+            @Override public Iterator<GridCacheMapEntry> iterator() {
+                List<Iterator<GridCacheMapEntry>> iterators = new ArrayList<>();
+
+                for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
+                    iterators.add(partition.allEntries(filter).iterator());
+                }
+
                 return F.flatIterators(iterators);
             }
         };
