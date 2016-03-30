@@ -31,7 +31,7 @@ namespace ignite
     }
 
     IgniteError::IgniteError() :
-        runtime_error("Operation completed successfully."), 
+        std::runtime_error("Operation completed successfully."), 
         code(IGNITE_SUCCESS),
         msg(NULL)
     {
@@ -39,14 +39,14 @@ namespace ignite
     }
 
     IgniteError::IgniteError(int32_t code) :
-        runtime_error("No additional information available."),
+        std::runtime_error("No additional information available."),
         code(code),
         msg(NULL)
     {
     }
 
     IgniteError::IgniteError(int32_t code, const char* msg) :
-        runtime_error(msg),
+        std::runtime_error(msg),
         code(code),
         msg(CopyChars(msg))
     {
@@ -54,7 +54,7 @@ namespace ignite
     }
 
     IgniteError::IgniteError(const IgniteError& other) :
-        runtime_error(other),
+        std::runtime_error(other),
         code(other.code),
         msg(CopyChars(other.msg))
     {

@@ -72,13 +72,17 @@
     throw ignite::IgniteError(code, stream.str().c_str()); \
 }
 
+#ifdef _MSC_VER
+#   pragma warning(push)
+#   pragma warning(disable : 4275)
+#endif
+
 namespace ignite
 {
     /**
      * Ignite error information.
      */
     class IGNITE_IMPORT_EXPORT IgniteError : public std::runtime_error
-#pragma warning(suppress : 4275)
     {
     public:
         /** Success. */
@@ -264,5 +268,9 @@ namespace ignite
         char* msg;       
     };    
 }
+
+#ifdef _MSC_VER
+#   pragma warning(pop) 
+#endif
 
 #endif
