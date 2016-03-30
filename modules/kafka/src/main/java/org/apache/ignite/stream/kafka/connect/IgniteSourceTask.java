@@ -222,6 +222,8 @@ public class IgniteSourceTask extends SourceTask {
         if (rmtLsnrId != null)
             IgniteGrid.getIgnite().events(IgniteGrid.getIgnite().cluster().forCacheNodes(cacheName))
                 .stopRemoteListen(rmtLsnrId);
+
+        rmtLsnrId = null;
     }
 
     /**
