@@ -217,6 +217,22 @@
 
             if (isCompactFooterSet)
                 writer.WriteBoolean(BinaryConfiguration.CompactFooter);
+
+            // User attributes
+            var attrs = UserAttributes;
+
+            if (attrs == null)
+                writer.WriteInt(0);
+            else
+            {
+                writer.WriteInt(attrs.Count);
+
+                foreach (var pair in attrs)
+                {
+                    writer.WriteString(pair.Key);
+                    writer.Write(pair.Value);
+                }
+            }
         }
 
         /// <summary>
@@ -255,6 +271,10 @@
                 BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
                 BinaryConfiguration.CompactFooter = r.ReadBoolean();
             }
+
+            // User attributes
+            UserAttributes = Enumerable.Range(0, r.ReadInt())
+                .ToDictionary(x => r.ReadString(), x => r.ReadObject<object>());
         }
 
         /// <summary>
