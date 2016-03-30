@@ -278,7 +278,7 @@ namespace Apache.Ignite.Core.Impl
                     // Current version comes first
                     var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
 
-                    foreach (var ver in versions)
+                    foreach (var ver in versions.Where(v => !string.IsNullOrEmpty(v)))
                     {
                         using (var verKey = jSubKey.OpenSubKey(ver))
                         {
@@ -296,13 +296,16 @@ namespace Apache.Ignite.Core.Impl
         /// Unpacks an embedded resource into a temporary folder and returns the full path of resulting file.
         /// </summary>
         /// <param name="resourceName">Resource name.</param>
-        /// <returns>Path to a temp file with an unpacked resource.</returns>
-        public static string UnpackEmbeddedResource(string resourceName)
+        /// <param name="fileName">Name of the resulting file.</param>
+        /// <returns>
+        /// Path to a temp file with an unpacked resource.
+        /// </returns>
+        public static string UnpackEmbeddedResource(string resourceName, string fileName)
         {
             var dllRes = Assembly.GetExecutingAssembly().GetManifestResourceNames()
                 .Single(x => x.EndsWith(resourceName, StringComparison.OrdinalIgnoreCase));
 
-            return WriteResourceToTempFile(dllRes, resourceName);
+            return WriteResourceToTempFile(dllRes, fileName);
         }
 
         /// <summary>
