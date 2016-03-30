@@ -269,6 +269,20 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="userAttributes" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element maxOccurs="unbounded" name="keyValuePair"  />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="atomicConfiguration" minOccurs="0">
+                    <xs:complexType>
+                        <xs:attribute name="cacheMode" type="xs:string" />
+                        <xs:attribute name="backups" type="xs:int" />
+                        <xs:attribute name="atomicSequenceReserveSize" type="xs:int" />
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="gridName" type="xs:string" />
             <xs:attribute name="jvmDllPath" type="xs:string" />
