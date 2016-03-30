@@ -272,7 +272,7 @@
                 <xs:element name="userAttributes" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element maxOccurs="unbounded" name="keyValuePair"  />
+                            <xs:element maxOccurs="unbounded" name="pair"  />
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>

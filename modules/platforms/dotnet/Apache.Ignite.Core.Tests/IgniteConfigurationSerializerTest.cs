@@ -249,7 +249,7 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            var props = type.GetProperties();
+            var props = type.GetProperties().Where(p => p.GetIndexParameters().Length == 0);
 
             foreach (var propInfo in props)
             {
