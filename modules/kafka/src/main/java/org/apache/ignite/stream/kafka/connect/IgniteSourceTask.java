@@ -34,6 +34,7 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
@@ -68,8 +69,14 @@ public class IgniteSourceTask extends SourceTask {
     /** Cache name. */
     private static String cacheName;
 
-    /** Listener id. */
+    /** Remote Listener id. */
     private static UUID rmtLsnrId;
+
+    /** Local listener. */
+    private static TaskLocalListener locLsnr = new TaskLocalListener();
+
+    /** Remote filter. */
+    private static TaskRemoteFilter rmtLsnr = new TaskRemoteFilter();
 
     /** User-defined filter. */
     private static IgnitePredicate<CacheEvent> filter;
@@ -123,38 +130,6 @@ public class IgniteSourceTask extends SourceTask {
                 }
             }
         }
-
-        IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
-            @Override public boolean apply(UUID id, CacheEvent evt) {
-                try {
-                    if (!evtBuf.offer(evt, 10, TimeUnit.MILLISECONDS))
-                        log.error("Failed to buffer event {}", evt.name());
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                return true;
-            }
-        };
-
-        IgnitePredicate<CacheEvent> rmtLsnr = new IgnitePredicate<CacheEvent>() {
-            @Override public boolean apply(CacheEvent evt) {
-
-                Affinity affinity = IgniteGrid.getIgnite().affinity(cacheName);
-                ClusterNode evtNode = evt.eventNode();
-
-                if (affinity.isPrimary(evtNode, evt.key())) {
-                    // Process this event. Ignored on backups.
-                    if (filter != null && filter.apply(evt))
-                        return false;
-
-                    return true;
-                }
-
-                return false;
-            }
-        };
 
         try {
             int[] evts = cacheEvents(props.get(IgniteSourceConstants.CACHE_EVENTS));
@@ -229,7 +204,7 @@ public class IgniteSourceTask extends SourceTask {
     /**
      * Stops the grid client.
      */
-    @Override public void stop() {
+    @Override public synchronized void stop() {
         if (stopped)
             return;
 
@@ -247,6 +222,48 @@ public class IgniteSourceTask extends SourceTask {
         if (rmtLsnrId != null)
             IgniteGrid.getIgnite().events(IgniteGrid.getIgnite().cluster().forCacheNodes(cacheName))
                 .stopRemoteListen(rmtLsnrId);
+    }
+
+    /**
+     * Local listener buffering cache events to be further sent to Kafka.
+     */
+    private static class TaskLocalListener implements IgniteBiPredicate<UUID, CacheEvent> {
+
+        @Override public boolean apply(UUID id, CacheEvent evt) {
+            try {
+                if (!evtBuf.offer(evt, 10, TimeUnit.MILLISECONDS))
+                    log.error("Failed to buffer event {}", evt.name());
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            return true;
+        }
+    }
+
+    /**
+     * Remote filter.
+     */
+    private static class TaskRemoteFilter implements IgnitePredicate<CacheEvent> {
+        @IgniteInstanceResource
+        Ignite ignite;
+
+        @Override public boolean apply(CacheEvent evt) {
+
+            Affinity affinity = ignite.affinity(cacheName);
+            ClusterNode evtNode = evt.eventNode();
+
+            if (affinity.isPrimary(evtNode, evt.key())) {
+                // Process this event. Ignored on backups.
+                if (filter != null && filter.apply(evt))
+                    return false;
+
+                return true;
+            }
+
+            return false;
+        }
     }
 
     /**
