@@ -39,6 +39,9 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Xmlns. */
         private const string XmlnsAttribute = "xmlns";
 
+        /** Xmlns. */
+        private const string KeyValPairElement = "pair";
+
         /** Schema. */
         private const string Schema = "http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection";
 
@@ -130,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Common
             var elementType = typeof (KeyValuePair<,>).MakeGenericType(valueType.GetGenericArguments());
 
             foreach (var element in (IEnumerable)obj)
-                WriteElement(element, writer, "keyValuePair", elementType, property);
+                WriteElement(element, writer, KeyValPairElement, elementType, property);
         }
 
         /// <summary>
@@ -195,6 +198,11 @@ namespace Apache.Ignite.Core.Impl.Common
                 {
                     // Collection
                     ReadCollectionProperty(reader, prop, target);
+                }
+                else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof (IDictionary<,>))
+                {
+                    // Dictionary
+                    ReadDictionaryProperty(reader, prop, target);
                 }
                 else
                 {
@@ -280,6 +288,43 @@ namespace Apache.Ignite.Core.Impl.Common
             }
 
             prop.SetValue(target, list, null);
+        }
+        
+        /// <summary>
+        /// Reads the dictionary.
+        /// </summary>
+        private static void ReadDictionaryProperty(XmlReader reader, PropertyInfo prop, object target)
+        {
+            var keyValTypes = prop.PropertyType.GetGenericArguments();
+
+            var dictType = typeof (Dictionary<,>).MakeGenericType(keyValTypes);
+
+            var dict = (IDictionary) Activator.CreateInstance(dictType);
+
+            using (var subReader = reader.ReadSubtree())
+            {
+                subReader.Read();  // skip list head
+                while (subReader.Read())
+                {
+                    if (subReader.NodeType != XmlNodeType.Element)
+                        continue;
+
+                    if (subReader.Name != PropertyNameToXmlName(KeyValPairElement))
+                        throw new ConfigurationErrorsException(
+                            string.Format("Invalid dictionary element in IgniteConfiguration: expected '{0}', " +
+                                          "but was '{1}'", KeyValPairElement, subReader.Name));
+
+                    var key = subReader.GetAttribute("key");
+
+                    if (key == null)
+                        throw new ConfigurationErrorsException(
+                            "Invalid dictionary entry, key attribute is missing for property " + prop);
+
+                    dict[key] = subReader.GetAttribute("value");
+                }
+            }
+
+            prop.SetValue(target, dict, null);
         }
 
         /// <summary>
