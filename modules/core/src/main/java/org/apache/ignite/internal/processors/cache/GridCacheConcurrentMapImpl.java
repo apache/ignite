@@ -156,6 +156,11 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
         int sizeChange = 0;
 
         if (doomed != null) {
+            synchronized (doomed) {
+                if (!doomed.deleted())
+                    sizeChange--;
+            }
+
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
                 ctx.events().addEvent(doomed.partition(),
                     doomed.key(),
@@ -171,14 +176,11 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
                     null,
                     null,
                     true);
-
-            synchronized (doomed) {
-                if (!doomed.deleted())
-                    sizeChange--;
-            }
         }
 
         if (created != null) {
+            sizeChange++;
+
             if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
                 ctx.events().addEvent(created.partition(),
                     created.key(),
@@ -199,11 +201,6 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
                 ctx.evicts().touch(
                     cur,
                     topVer);
-
-            synchronized (created) {
-                if (!created.deleted())
-                    sizeChange++;
-            }
         }
 
         if (sizeChange != 0)
