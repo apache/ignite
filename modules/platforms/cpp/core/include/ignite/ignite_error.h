@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-#include <exception>
+#include <stdexcept>
 #include <sstream>
 
 #include <ignite/common/common.h>
