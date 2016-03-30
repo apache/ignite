@@ -21,7 +21,7 @@
 #include <jni.h>
 
 #include "ignite/common/common.h"
-#include "ignite/common/ignite_error.h"
+#include "ignite/ignite_error.h"
 
 namespace ignite
 {

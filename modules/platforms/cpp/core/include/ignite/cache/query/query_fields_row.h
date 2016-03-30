@@ -26,7 +26,7 @@
 #include <vector>
 
 #include <ignite/common/concurrent.h>
-#include <ignite/common/ignite_error.h>
+#include <ignite/ignite_error.h>
 
 #include "ignite/cache/cache_entry.h"
 #include "ignite/impl/cache/query/query_fields_row_impl.h"
