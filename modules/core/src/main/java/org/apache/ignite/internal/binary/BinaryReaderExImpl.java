@@ -35,6 +35,7 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -1687,9 +1688,13 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
                 BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId);
 
-                if (type == null || type.metadata() == null)
+                if (type == null || type.metadata() == null) {
+                    U.dumpStack("Cannot find metadata for object with compact footer: " +
+                        typeId);
+
                     throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
                         typeId);
+                }
 
                 for (BinarySchema typeSchema : type.metadata().schemas()) {
                     if (schemaId == typeSchema.schemaId()) {
