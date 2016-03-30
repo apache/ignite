@@ -287,6 +287,7 @@
             <xs:attribute name="networkTimeout" type="xs:string" />
             <xs:attribute name="workDirectory" type="xs:string" />
             <xs:attribute name="localhost" type="xs:string" />
+            <xs:attribute name="isDaemon" type="xs:boolean" />
         </xs:complexType>
     </xs:element>    
 </xs:schema>

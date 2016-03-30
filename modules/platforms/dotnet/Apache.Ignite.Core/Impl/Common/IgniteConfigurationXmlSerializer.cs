@@ -360,7 +360,8 @@ namespace Apache.Ignite.Core.Impl.Common
             if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof (KeyValuePair<,>))
                 return false;
 
-            return propertyType.IsValueType || propertyType == typeof(string) || propertyType == typeof(Type);
+            return propertyType.IsValueType || propertyType == typeof (string) || propertyType == typeof (Type) ||
+                   propertyType == typeof (object);
         }
 
         /// <summary>
@@ -383,8 +384,8 @@ namespace Apache.Ignite.Core.Impl.Common
             if (property.DeclaringType == typeof (IgniteConfiguration) && property.Name == "IncludedEventTypes")
                 return EventTypeConverter.Instance;
 
-            //if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(KeyValuePair<,>))
-            //    return 
+            if (propertyType == typeof (object))
+                return ObjectStringConverter.Instance;
 
             var converter = TypeDescriptor.GetConverter(propertyType);
 
