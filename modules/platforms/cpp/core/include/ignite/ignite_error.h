@@ -77,7 +77,8 @@ namespace ignite
     /**
      * Ignite error information.
      */
-    class IGNITE_IMPORT_EXPORT IgniteError : public std::exception
+    class IGNITE_IMPORT_EXPORT IgniteError : public std::runtime_error
+#pragma warning(suppress : 4275)
     {
     public:
         /** Success. */
@@ -245,13 +246,6 @@ namespace ignite
          * @return Error message.
          */
         const char* GetText() const;
-
-        /**
-         * Get error message. Synonim for GetText().
-         *
-         * @return Error message.
-         */
-        virtual const char* what() const;
 
         /**
          * Set error.

@@ -30,26 +30,35 @@ namespace ignite
             throw err;
     }
 
-    IgniteError::IgniteError() : code(IGNITE_SUCCESS), msg(NULL)
+    IgniteError::IgniteError() :
+        runtime_error("Operation completed successfully."), 
+        code(IGNITE_SUCCESS),
+        msg(NULL)
     {
         // No-op.
     }
 
-    IgniteError::IgniteError(int32_t code) : code(code), msg(NULL)
+    IgniteError::IgniteError(int32_t code) :
+        runtime_error("No additional information available."),
+        code(code),
+        msg(NULL)
+    {
+    }
+
+    IgniteError::IgniteError(int32_t code, const char* msg) :
+        runtime_error(msg),
+        code(code),
+        msg(CopyChars(msg))
     {
         // No-op.
     }
 
-    IgniteError::IgniteError(int32_t code, const char* msg)
+    IgniteError::IgniteError(const IgniteError& other) :
+        runtime_error(other),
+        code(other.code),
+        msg(CopyChars(other.msg))
     {
-        this->code = code;
-        this->msg = CopyChars(msg);
-    }
-
-    IgniteError::IgniteError(const IgniteError& other)
-    {
-        this->code = other.code;
-        this->msg = CopyChars(other.msg);
+        // No-op.
     }
 
     IgniteError& IgniteError::operator=(const IgniteError& other)
@@ -89,11 +98,6 @@ namespace ignite
             return msg;
         else
             return  "No additional information available.";
-    }
-
-    const char* IgniteError::what() const
-    {
-        return GetText();
     }
 
     void IgniteError::SetError(const int jniCode, const char* jniCls, const char* jniMsg, IgniteError* err)

@@ -42,4 +42,18 @@ BOOST_AUTO_TEST_CASE(TestIgniteErrorDerivesStdException)
     }
 }
 
+BOOST_AUTO_TEST_CASE(TestIgniteErrorDerivesStdRuntimeError)
+{
+    const std::string testMsg = "Lorem ipsum dolor sit amet";
+
+    try
+    {
+        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, testMsg.c_str());
+    }
+    catch (std::runtime_error& e)
+    {
+        BOOST_REQUIRE_EQUAL(testMsg, std::string(e.what()));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
