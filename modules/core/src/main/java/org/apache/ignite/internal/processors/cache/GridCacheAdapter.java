@@ -108,7 +108,6 @@ import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridClosureException;
-import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
@@ -133,7 +132,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -147,8 +145,6 @@ import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_KEY_VALIDATION_DISABLED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
-import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_CREATED;
-import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_DESTROYED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -956,57 +952,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         GridCacheMapEntry cur = map.getEntry(key);
 
         if (cur == null || cur.obsolete()) {
-            GridTriple<GridCacheMapEntry> t = map.putEntryIfObsoleteOrAbsent(
+            cur = map.putEntryIfObsoleteOrAbsent(
                 topVer,
                 key,
                 null,
-                create);
-
-            cur = t.get1();
-
-            GridCacheMapEntry created = t.get2();
-            GridCacheMapEntry doomed = t.get3();
-
-            if (doomed != null && ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
-                // Event notification.
-                ctx.events().addEvent(doomed.partition(),
-                    doomed.key(),
-                    locNodeId,
-                    (IgniteUuid)null,
-                    null,
-                    EVT_CACHE_ENTRY_DESTROYED,
-                    null,
-                    false,
-                    null,
-                    false,
-                    null,
-                    null,
-                    null,
-                    true);
-
-            if (created != null) {
-                // Event notification.
-                if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
-                    ctx.events().addEvent(created.partition(),
-                        created.key(),
-                        locNodeId,
-                        (IgniteUuid)null,
-                        null,
-                        EVT_CACHE_ENTRY_CREATED,
-                        null,
-                        false,
-                        null,
-                        false,
-                        null,
-                        null,
-                        null,
-                        true);
-
-                if (touch)
-                    ctx.evicts().touch(
-                        cur,
-                        topVer);
-            }
+                create, touch);
         }
 
         return cur;
@@ -1098,21 +1048,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     public void removeIfObsolete(KeyCacheObject key) {
         assert key != null;
 
-        GridCacheMapEntry entry = map.removeEntryIfObsolete(key);
+        GridCacheMapEntry entry = map.getEntry(key);
 
-        if (entry != null) {
-            assert entry.obsolete() : "Removed non-obsolete entry: " + entry;
-
-            if (log.isDebugEnabled())
-                log.debug("Removed entry from cache: " + entry);
-
-            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
-                // Event notification.
-                ctx.events().addEvent(entry.partition(), entry.key(), locNodeId, (IgniteUuid)null, null,
-                    EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null, false);
-        }
-        else if (log.isDebugEnabled())
-            log.debug("Remove will not be done for key (obsolete entry got replaced or removed): " + key);
+        if (entry.obsolete())
+            removeEntry(entry);
     }
 
     /**
@@ -1296,7 +1235,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param entry Removes entry from cache if currently mapped value is the same as passed.
      */
     public void removeEntry(GridCacheEntryEx entry) {
-        map.removeEntry(entry);
+        boolean removed = map.removeEntry(entry);
+
+        if (log.isDebugEnabled()) {
+            if (removed)
+                log.debug("Removed entry from cache: " + entry);
+            else
+                log.debug("Remove will not be done for key (entry got replaced or removed): " + entry.key());
+        }
     }
 
     /**

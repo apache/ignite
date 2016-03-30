@@ -603,7 +603,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         }
         finally {
             if (rmv)
-                cctx.cache().removeIfObsolete(key); // Clear cache.
+                cctx.cache().removeEntry(this); // Clear cache.
         }
     }
 

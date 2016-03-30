@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.lang.GridTriple;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -36,7 +35,7 @@ public interface GridCacheConcurrentMap {
      * @param key Key.
      * @return Entry.
      */
-    @Nullable GridCacheMapEntry getEntry(Object key);
+    @Nullable GridCacheMapEntry getEntry(KeyCacheObject key);
 
     /**
      * @param topVer Topology version.
@@ -46,11 +45,12 @@ public interface GridCacheConcurrentMap {
      * @return Triple where the first element is current entry associated with the key,
      *      the second is created entry and the third is doomed (all may be null).
      */
-    GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(
+    @Nullable GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable CacheObject val,
-        boolean create);
+        boolean create,
+        boolean touch);
 
     /**
      * Removes passed in entry if it presents in the map.
@@ -59,16 +59,6 @@ public interface GridCacheConcurrentMap {
      * @return {@code True} if remove happened.
      */
     boolean removeEntry(GridCacheEntryEx entry);
-
-    /**
-     * Removes and returns the entry associated with the specified key
-     * in the HashMap if entry is obsolete. Returns null if the HashMap
-     * contains no mapping for this key.
-     *
-     * @param key Key.
-     * @return Removed entry, possibly {@code null}.
-     */
-    GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key);
 
     /**
      * Returns the number of key-value mappings in this map.

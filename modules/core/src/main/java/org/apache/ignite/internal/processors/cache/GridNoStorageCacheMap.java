@@ -23,17 +23,12 @@ import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtOffHeapCacheEntry;
-import org.apache.ignite.internal.util.lang.GridTriple;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Empty cache map that will never store any entries.
  */
 public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
-
-    /** Empty triple. */
-    private final GridTriple<GridCacheMapEntry> emptyTriple =
-        new GridTriple<>(null, null, null);
 
     private final GridCacheContext ctx;
 
@@ -44,29 +39,22 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
         this.ctx = ctx;
     }
 
-    @Nullable @Override public GridCacheMapEntry getEntry(Object key) {
+    @Nullable @Override public GridCacheMapEntry getEntry(KeyCacheObject key) {
         return null;
     }
 
     @Override
-    public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
-        @Nullable CacheObject val, boolean create) {
-        if (create) {
-            GridCacheMapEntry entry = ctx.useOffheapEntry() ?
+    public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
+        @Nullable CacheObject val, boolean create, boolean touch) {
+        if (create)
+            return ctx.useOffheapEntry() ?
                 new GridDhtOffHeapCacheEntry(ctx, topVer, key, key.hashCode(), val) :
                 new GridDhtCacheEntry(ctx, topVer, key, key.hashCode(), val);
-
-            return new GridTriple<>(entry, null, null);
-        }
         else
-            return emptyTriple;
+            return null;
     }
 
     @Override public boolean removeEntry(GridCacheEntryEx entry) {
-        throw new AssertionError();
-    }
-
-    @Override public GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key) {
         throw new AssertionError();
     }
 

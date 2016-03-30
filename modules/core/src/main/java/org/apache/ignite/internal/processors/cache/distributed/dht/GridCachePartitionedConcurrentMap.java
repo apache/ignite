@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.PartitionedReadOnlySet;
-import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +44,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         this.ctx = ctx;
     }
 
-    @Nullable @Override public GridCacheMapEntry getEntry(Object key) {
+    @Nullable @Override public GridCacheMapEntry getEntry(KeyCacheObject key) {
         GridDhtLocalPartition part = ctx.topology().localPartition(key, false);
 
         if (part == null)
@@ -55,23 +54,14 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     @Override
-    public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
-        @Nullable CacheObject val, boolean create) {
+    public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
+        @Nullable CacheObject val, boolean create, boolean touch) {
         GridDhtLocalPartition part = ctx.topology().localPartition(key, create);
-
-        if (part == null)
-            return new GridTriple<>(null, null, null);
-
-        return part.putEntryIfObsoleteOrAbsent(topVer, key, val, create);
-    }
-
-    @Override public GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key) {
-        GridDhtLocalPartition part = ctx.topology().localPartition(key, false);
 
         if (part == null)
             return null;
 
-        return part.removeEntryIfObsolete(key);
+        return part.putEntryIfObsoleteOrAbsent(topVer, key, val, create, touch);
     }
 
     @Override public int size() {

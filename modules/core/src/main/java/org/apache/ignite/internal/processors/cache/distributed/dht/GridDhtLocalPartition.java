@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
-import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -71,7 +70,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Key partition.
  */
-public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable {
+public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable, GridCacheConcurrentMap {
     /** Maximum size for delete queue. */
     public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
         200_000);
@@ -212,19 +211,19 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * @return Number of entries in this partition (constant-time method).
      */
-    public int size() {
+    @Override public int size() {
         return map.size();
     }
 
-    public int publicSize() {
+    @Override public int publicSize() {
         return map.publicSize();
     }
 
-    public void incrementPublicSize(GridCacheEntryEx e) {
+    @Override public void incrementPublicSize(GridCacheEntryEx e) {
         map.incrementPublicSize(e);
     }
 
-    public void decrementPublicSize(GridCacheEntryEx e) {
+    @Override public void decrementPublicSize(GridCacheEntryEx e) {
         map.decrementPublicSize(e);
     }
 
@@ -237,38 +236,34 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return state == MOVING || state == OWNING || state == RENTING;
     }
 
-    @Nullable public GridCacheMapEntry getEntry(Object key) {
+    @Override @Nullable public GridCacheMapEntry getEntry(KeyCacheObject key) {
         return map.getEntry(key);
     }
 
-    public boolean removeEntry(GridCacheEntryEx entry) {
+    @Override public boolean removeEntry(GridCacheEntryEx entry) {
         return map.removeEntry(entry);
     }
 
-    public Iterable<GridCacheMapEntry> entries(
+    @Override public Iterable<GridCacheMapEntry> entries(
         CacheEntryPredicate... filter) {
         return map.entries(filter);
     }
 
-    public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
+    @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
         return map.entrySet(filter);
     }
 
-    public GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key) {
-        return map.removeEntryIfObsolete(key);
-    }
-
-    @Nullable public GridCacheMapEntry randomEntry() {
+    @Override @Nullable public GridCacheMapEntry randomEntry() {
         return map.randomEntry();
     }
 
-    public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(
+    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         AffinityTopologyVersion topVer, KeyCacheObject key,
-        @Nullable CacheObject val, boolean create) {
-        return map.putEntryIfObsoleteOrAbsent(topVer, key, val, create);
+        @Nullable CacheObject val, boolean create, boolean touch) {
+        return map.putEntryIfObsoleteOrAbsent(topVer, key, val, create, touch);
     }
 
-    public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
+    @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
         return map.keySet(filter);
     }
 

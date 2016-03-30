@@ -22,15 +22,17 @@ import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+
+import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_CREATED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_DESTROYED;
 
 /**
  * Implementation of concurrent cache map.
@@ -44,7 +46,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     private static final int DFLT_CONCUR_LEVEL = Runtime.getRuntime().availableProcessors() * 2;
 
     /** Internal map. */
-    private final ConcurrentHashMap8<KeyCacheObject, GridCacheMapEntry> map;
+    private final ConcurrentMap<KeyCacheObject, GridCacheMapEntry> map;
 
     /** Map entry factory. */
     private final GridCacheMapEntryFactory factory;
@@ -92,112 +94,141 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
         float loadFactor, int concurrencyLevel) {
         this.ctx = ctx;
         this.factory = factory;
-        map = new ConcurrentHashMap8<>(initialCapacity, loadFactor, concurrencyLevel);
+        map = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrencyLevel);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry getEntry(Object key) {
-        return map.get(ctx.cacheObjects().toCacheKeyObject(ctx.cacheObjectContext(), key, true));
+    @Nullable @Override public GridCacheMapEntry getEntry(KeyCacheObject key) {
+        return map.get(key);
     }
 
     /** {@inheritDoc} */
-    @Override public GridTriple<GridCacheMapEntry> putEntryIfObsoleteOrAbsent(final AffinityTopologyVersion topVer,
-        KeyCacheObject key, @Nullable final CacheObject val, final boolean create) {
+    @Nullable @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(final AffinityTopologyVersion topVer,
+        KeyCacheObject key, @Nullable final CacheObject val, final boolean create, final boolean touch) {
 
-        final KeyCacheObject cacheKey = (KeyCacheObject)ctx.cacheObjects().prepareForCache(key, ctx);
+        GridCacheMapEntry cur = null;
+        GridCacheMapEntry created = null;
+        GridCacheMapEntry created0 = null;
+        GridCacheMapEntry doomed = null;
 
-        final GridTriple<GridCacheMapEntry> result = new GridTriple<>();
+        boolean done = false;
 
-        GridCacheMapEntry cur = map.compute(cacheKey, new ConcurrentHashMap8.BiFun<KeyCacheObject, GridCacheMapEntry, GridCacheMapEntry>() {
-            @Override public GridCacheMapEntry apply(KeyCacheObject object, GridCacheMapEntry entry) {
-                GridCacheMapEntry cur = null;
-                GridCacheMapEntry created0 = null;
-                GridCacheMapEntry doomed0 = null;
+        while (!done) {
+            GridCacheMapEntry entry = map.get(key);
+            created = null;
+            doomed = null;
 
-                if (entry == null) {
-                    if (create)
-                        cur = created0 = factory.create(ctx, topVer, cacheKey, cacheKey.hashCode(), val);
+            if (entry == null) {
+                if (create) {
+                    if (created0 == null)
+                        created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+
+                    cur = created = created0;
+
+                    done = map.putIfAbsent(created.key(), created) == null;
                 }
-                else {
-                    if (entry.obsolete()) {
-                        doomed0 = entry;
+                else
+                    done = true;
+            }
+            else {
+                if (entry.obsolete()) {
+                    doomed = entry;
 
-                        if (create)
-                            cur = created0 = factory.create(ctx, topVer, cacheKey, cacheKey.hashCode(), val);
+                    if (create) {
+                        if (created0 == null)
+                            created0 = factory.create(ctx, topVer, key, key.hashCode(), val);
+
+                        cur = created = created0;
+
+                        done = map.replace(entry.key(), doomed, created);
                     }
                     else
-                        cur = entry;
+                        done = map.remove(entry.key(), doomed);
                 }
+                else {
+                    cur = entry;
 
-                int sizeChange = 0;
-
-                if (doomed0 != null) {
-                    synchronized (doomed0) {
-                        if (!doomed0.deleted())
-                            sizeChange--;
-                    }
+                    done = true;
                 }
-
-                if (created0 != null)
-                    sizeChange++;
-
-                pubSize.addAndGet(sizeChange);
-
-                result.set1(cur);
-                result.set2(created0);
-                result.set3(doomed0);
-
-                return cur;
             }
-        });
+        }
 
-        return result;
+        int sizeChange = 0;
+
+        if (doomed != null) {
+            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
+                ctx.events().addEvent(doomed.partition(),
+                    doomed.key(),
+                    ctx.localNodeId(),
+                    (IgniteUuid)null,
+                    null,
+                    EVT_CACHE_ENTRY_DESTROYED,
+                    null,
+                    false,
+                    null,
+                    false,
+                    null,
+                    null,
+                    null,
+                    true);
+
+            synchronized (doomed) {
+                if (!doomed.deleted())
+                    sizeChange--;
+            }
+        }
+
+        if (created != null) {
+            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_CREATED))
+                ctx.events().addEvent(created.partition(),
+                    created.key(),
+                    ctx.localNodeId(),
+                    (IgniteUuid)null,
+                    null,
+                    EVT_CACHE_ENTRY_CREATED,
+                    null,
+                    false,
+                    null,
+                    false,
+                    null,
+                    null,
+                    null,
+                    true);
+
+            if (touch)
+                ctx.evicts().touch(
+                    cur,
+                    topVer);
+
+            synchronized (created) {
+                if (!created.deleted())
+                    sizeChange++;
+            }
+        }
+
+        if (sizeChange != 0)
+            pubSize.addAndGet(sizeChange);
+
+        return cur;
     }
 
     /** {@inheritDoc} */
     @Override public boolean removeEntry(final GridCacheEntryEx entry) {
-        final AtomicBoolean result = new AtomicBoolean();
+        boolean removed = map.remove(entry.key(), entry);
 
-        map.computeIfPresent(entry.key(), new ConcurrentHashMap8.BiFun<KeyCacheObject, GridCacheMapEntry, GridCacheMapEntry>() {
-            @Override public GridCacheMapEntry apply(KeyCacheObject object, GridCacheMapEntry entry0) {
-                if (entry.equals(entry0)) {
-                    result.set(true);
+        if (removed) {
+            if (ctx.events().isRecordable(EVT_CACHE_ENTRY_DESTROYED))
+                // Event notification.
+                ctx.events().addEvent(entry.partition(), entry.key(), ctx.localNodeId(), (IgniteUuid)null, null,
+                    EVT_CACHE_ENTRY_DESTROYED, null, false, null, false, null, null, null, false);
 
-                    synchronized (entry) {
-                        if (!entry.deleted())
-                            decrementPublicSize(entry);
-                    }
-
-                    return null;
-                }
-                return entry0;
+            synchronized (entry) {
+                if (!entry.deleted())
+                    decrementPublicSize(entry);
             }
-        });
+        }
 
-        return result.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheMapEntry removeEntryIfObsolete(KeyCacheObject key) {
-        final AtomicReference<GridCacheMapEntry> result = new AtomicReference<>();
-
-        map.computeIfPresent(key, new ConcurrentHashMap8.BiFun<KeyCacheObject, GridCacheMapEntry, GridCacheMapEntry>() {
-            @Override public GridCacheMapEntry apply(KeyCacheObject object, GridCacheMapEntry entry) {
-                if (!entry.obsolete())
-                    return entry;
-
-                result.set(entry);
-
-                synchronized (entry) {
-                    if (!entry.deleted())
-                        decrementPublicSize(entry);
-                }
-
-                return null;
-            }
-        });
-
-        return result.get();
+        return removed;
     }
 
     /** {@inheritDoc} */
@@ -249,9 +280,13 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry randomEntry() {
-        // TODO
-        return map.values().iterator().next();
+    @Deprecated @Nullable @Override public GridCacheMapEntry randomEntry() {
+        Iterator<GridCacheMapEntry> iterator = map.values().iterator();
+
+        if (iterator.hasNext())
+            return iterator.next();
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -269,7 +304,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
                 if (!(o instanceof GridCacheMapEntry))
                     return false;
 
-                GridCacheMapEntry entry = (GridCacheMapEntry) o;
+                GridCacheMapEntry entry = (GridCacheMapEntry)o;
 
                 return entry.equals(map.get(entry.key())) && F.isAll(entry, filter);
             }
