@@ -270,6 +270,17 @@ import java.util.Map;
 
             cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
         }
+
+        int attrCnt = in.readInt();
+
+        if (attrCnt > 0) {
+            Map<String, Object> attrs = new HashMap<>(attrCnt);
+
+            for (int i = 0; i < attrCnt; i++)
+                attrs.put(in.readString(), in.readObject());
+
+            cfg.setUserAttributes(attrs);
+        }
     }
 
     /**
