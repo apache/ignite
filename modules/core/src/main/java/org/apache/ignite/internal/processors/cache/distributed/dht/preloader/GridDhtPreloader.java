@@ -612,7 +612,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 GridAffinityAssignment assignment = cctx.affinity().assignment(topVer);
 
-                boolean newAffMode = node.version().compareTo(CacheAffinitySharedManager.DELAY_AFF_ASSIGN_SINCE) >= 0;
+                boolean newAffMode = node.version().compareTo(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0;
 
                 GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
                     topVer,

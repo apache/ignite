@@ -35,7 +35,6 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -128,7 +127,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private final int fieldIdLen;
 
     /** Offset size in bytes. */
-    private final int fieldOffsetLen;
+    private final int fieldOffLen;
 
     /** Object schema. */
     private final BinarySchema schema;
@@ -151,7 +150,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
     public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
-        this(ctx, in, ldr, null, forUnmarshal);
+        this(ctx,
+            in,
+            ldr,
+            null,
+            forUnmarshal);
     }
 
     /**
@@ -168,7 +171,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         ClassLoader ldr,
         @Nullable BinaryReaderHandles hnds,
         boolean forUnmarshal) {
-        this(ctx, in, ldr, hnds, false, forUnmarshal);
+        this(ctx,
+            in,
+            ldr,
+            hnds,
+            false,
+            forUnmarshal);
     }
 
     /**
@@ -213,7 +221,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             // Get trivial flag values.
             userType = BinaryUtils.isUserType(flags);
             fieldIdLen = BinaryUtils.fieldIdLength(flags);
-            fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+            fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
 
             // Calculate footer borders and raw offset.
             if (BinaryUtils.hasSchema(flags)) {
@@ -274,7 +282,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             schemaId = 0;
             userType = false;
             fieldIdLen = 0;
-            fieldOffsetLen = 0;
+            fieldOffLen = 0;
             schema = null;
         }
 
@@ -1688,13 +1696,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
                 BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId);
 
-                if (type == null || type.metadata() == null) {
-                    U.dumpStack("Cannot find metadata for object with compact footer: " +
-                        typeId);
-
+                if (type == null || type.metadata() == null)
                     throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
                         typeId);
-                }
 
                 for (BinarySchema typeSchema : type.metadata().schemas()) {
                     if (schemaId == typeSchema.schemaId()) {
@@ -1737,7 +1741,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             builder.addField(fieldId);
 
-            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffsetLen;
+            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffLen;
         }
 
         return builder.build();
@@ -1871,9 +1875,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     private boolean trySetUserFieldPosition(int order) {
         if (order != BinarySchema.ORDER_NOT_FOUND) {
-            int offsetPos = footerStart + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
+            int offsetPos = footerStart + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
-            int pos = start + BinaryUtils.fieldOffsetRelative(in, offsetPos, fieldOffsetLen);
+            int pos = start + BinaryUtils.fieldOffsetRelative(in, offsetPos, fieldOffLen);
 
             streamPosition(pos);
 
@@ -1904,14 +1908,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             if (id0 == id) {
                 int pos = start + BinaryUtils.fieldOffsetRelative(in, searchPos + BinaryUtils.FIELD_ID_LEN,
-                    fieldOffsetLen);
+                    fieldOffLen);
 
                 streamPosition(pos);
 
                 return true;
             }
 
-            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffsetLen;
+            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffLen;
         }
     }
 

@@ -1065,19 +1065,19 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ']');
             }
 
-            boolean rmtDelayAssign;
+            boolean rmtLateAssign;
 
-            if (n.version().compareTo(CacheAffinitySharedManager.DELAY_AFF_ASSIGN_SINCE) >= 0)
-                rmtDelayAssign = n.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
+            if (n.version().compareTo(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0)
+                rmtLateAssign = n.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
             else
-                rmtDelayAssign = false;
+                rmtLateAssign = false;
 
-            if (locDelayAssign != rmtDelayAssign) {
+            if (locDelayAssign != rmtLateAssign) {
                 throw new IgniteCheckedException("Remote node has cache affinity assignment mode different from local " +
                     "[locId8=" +  U.id8(locNode.id()) +
                     ", locDelayAssign=" + locDelayAssign +
                     ", rmtId8=" + U.id8(n.id()) +
-                    ", rmtDelayAssign=" + rmtDelayAssign +
+                    ", rmtLateAssign=" + rmtLateAssign +
                     ", rmtAddrs=" + U.addressesAsString(n) + ']');
             }
         }
