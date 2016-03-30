@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestPredefinedXml()
         {
-            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10'>
+            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true'>
                             <localhost>127.1.1.1</localhost>
                             <binaryConfiguration compactFooter='false'>
                                 <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' bar='testBar' />
@@ -95,6 +95,8 @@ namespace Apache.Ignite.Core.Tests
                                 <int>TaskFailed</int>
                                 <int>JobFinished</int>
                             </includedEventTypes>
+                            <userAttributes><pair key='myNode' value='true' /></userAttributes>
+                            <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
@@ -102,6 +104,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual("c:", cfg.WorkDirectory);
             Assert.AreEqual("127.1.1.1", cfg.Localhost);
+            Assert.IsTrue(cfg.IsDaemon);
             Assert.AreEqual(1024, cfg.JvmMaxMemoryMb);
             Assert.AreEqual(TimeSpan.FromSeconds(10), cfg.MetricsLogFrequency);
             Assert.AreEqual(TimeSpan.FromMinutes(1), ((TcpDiscoverySpi)cfg.DiscoverySpi).JoinTimeout);
@@ -134,6 +137,13 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(QueryIndexType.Geospatial, queryEntity.Indexes.Single().IndexType);
             Assert.AreEqual("indexFld", queryEntity.Indexes.Single().Fields.Single().Name);
             Assert.AreEqual(true, queryEntity.Indexes.Single().Fields.Single().IsDescending);
+
+            Assert.AreEqual(new Dictionary<string, object> {{"myNode", "true"}}, cfg.UserAttributes);
+
+            var atomicCfg = cfg.AtomicConfiguration;
+            Assert.AreEqual(2, atomicCfg.Backups);
+            Assert.AreEqual(CacheMode.Local, atomicCfg.CacheMode);
+            Assert.AreEqual(250, atomicCfg.AtomicSequenceReserveSize);
         }
 
         /// <summary>
