@@ -414,6 +414,9 @@ public class IgniteConfiguration {
     /** Client access configuration. */
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
 
+    /** ODBC configuration. */
+    private OdbcConfiguration odbcCfg;
+
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
@@ -517,6 +520,7 @@ public class IgniteConfiguration {
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
+        odbcCfg = cfg.getOdbcConfiguration();
         p2pEnabled = cfg.isPeerClassLoadingEnabled();
         p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
@@ -2300,6 +2304,27 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setConnectorConfiguration(ConnectorConfiguration connectorCfg) {
         this.connectorCfg = connectorCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets configuration for ODBC.
+     *
+     * @return ODBC configuration.
+     */
+    public OdbcConfiguration getOdbcConfiguration() {
+        return odbcCfg;
+    }
+
+    /**
+     * Sets configuration for ODBC.
+     *
+     * @param odbcCfg ODBC configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setOdbcConfiguration(OdbcConfiguration odbcCfg) {
+        this.odbcCfg = odbcCfg;
 
         return this;
     }

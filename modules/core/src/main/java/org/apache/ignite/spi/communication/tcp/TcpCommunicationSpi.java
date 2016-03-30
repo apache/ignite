@@ -1394,8 +1394,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 .append(']').append(U.nl());
         }
 
-        if (log.isInfoEnabled())
-            log.info(sb.toString());
+        U.warn(log, sb.toString());
 
         GridNioServer<Message> nioSrvr1 = nioSrvr;
 
