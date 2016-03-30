@@ -187,13 +187,6 @@ public interface GridDhtPartitionTopology {
     public GridDhtPartitionFullMap partitionMap(boolean onlyActive);
 
     /**
-     * @param topVer Topology version.
-     * @param e Entry added to cache.
-     * @return Local partition.
-     */
-    public GridDhtLocalPartition onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry e);
-
-    /**
      * @param e Entry removed from cache.
      */
     public void onRemoved(GridDhtCacheEntry e);

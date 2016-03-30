@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -405,7 +404,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
                         try {
                             if (!locPart.isEmpty()) {
-                                for (GridDhtCacheEntry o : locPart.entries()) {
+                                for (GridCacheEntryEx o : locPart.entries()) {
                                     if (!o.obsoleteOrDeleted())
                                         dataLdr.removeDataInternal(o.key());
                                 }
@@ -428,7 +427,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 if (near != null) {
                     GridCacheVersion obsoleteVer = ctx.versions().next();
 
-                    for (GridCacheEntryEx e : near.map().allEntries0()) {
+                    for (GridCacheEntryEx e : near.allEntries()) {
                         if (!e.valid(topVer) && e.markObsolete(obsoleteVer))
                             near.removeEntry(e);
                     }
