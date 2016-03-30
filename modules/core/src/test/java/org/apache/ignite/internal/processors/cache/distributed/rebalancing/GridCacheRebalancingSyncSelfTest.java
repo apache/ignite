@@ -32,7 +32,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -94,7 +93,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     private volatile boolean concurrentStartFinished3;
 
     /** */
-    private volatile boolean record = false;
+    private volatile boolean record;
 
     /** */
     private final ConcurrentHashMap<Class, AtomicInteger> map = new ConcurrentHashMap<>();
@@ -439,6 +438,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     *
+     */
     protected void checkPartitionMapExchangeFinished() {
         for (Ignite g : G.allGrids()) {
             IgniteKernal g0 = (IgniteKernal)g;
@@ -481,16 +483,18 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
                                 entry.getValue() == GridDhtPartitionState.OWNING);
                         }
 
-                        for (GridDhtLocalPartition loc : locs) {
+                        for (GridDhtLocalPartition loc : locs)
                             assertTrue(pMap.containsKey(loc.id()));
-                        }
                     }
                 }
             }
         }
     }
 
-    protected void checkPartitionMapMessagesAbsent() throws IgniteInterruptedCheckedException {
+    /**
+     * @throws Exception If failed.
+     */
+    protected void checkPartitionMapMessagesAbsent() throws Exception {
         map.clear();
 
         record = true;
@@ -502,8 +506,11 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         AtomicInteger iF = map.get(GridDhtPartitionsFullMessage.class);
         AtomicInteger iS = map.get(GridDhtPartitionsSingleMessage.class);
 
-        assertTrue(iF == null || iF.get() == 1); // 1 message can be sent right after all checks passed.
-        assertTrue(iS == null);
+        Integer fullMap = iF != null ? iF.get() : null;
+        Integer singleMap = iS != null ? iS.get() : null;
+
+        assertTrue("Unexpected full map messages: " + fullMap, fullMap == null || fullMap.equals(1)); // 1 message can be sent right after all checks passed.
+        assertNull("Unexpected single map messages", singleMap);
     }
 
     /** {@inheritDoc} */
@@ -686,7 +693,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
         }
 
         /**
-         * @param msg
+         * @param msg Message.
          */
         private void recordMessage(Object msg) {
             if (record) {
