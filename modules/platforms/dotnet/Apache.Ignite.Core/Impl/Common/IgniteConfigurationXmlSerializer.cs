@@ -89,6 +89,9 @@ namespace Apache.Ignite.Core.Impl.Common
                 WriteBasicProperty(obj, writer, valueType, property);
             else if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof (ICollection<>))
                 WriteCollectionProperty(obj, writer, valueType, property);
+            else if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof (IDictionary<,>))
+                // TODO: IDictionary is ICollection!
+                WriteDictionaryProperty(obj, writer, valueType, property);
             else
                 WriteComplexProperty(obj, writer, valueType);
 
@@ -112,6 +115,20 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static void WriteCollectionProperty(object obj, XmlWriter writer, Type valueType, PropertyInfo property)
         {
+            var elementType = valueType.GetGenericArguments().Single();
+
+            var elementTypeName = PropertyNameToXmlName(elementType.Name);
+
+            foreach (var element in (IEnumerable)obj)
+                WriteElement(element, writer, elementTypeName, elementType, property);
+        }
+
+        /// <summary>
+        /// Writes the dictionary property.
+        /// </summary>
+        private static void WriteDictionaryProperty(object obj, XmlWriter writer, Type valueType, PropertyInfo property)
+        {
+            // TODO
             var elementType = valueType.GetGenericArguments().Single();
 
             var elementTypeName = PropertyNameToXmlName(elementType.Name);
