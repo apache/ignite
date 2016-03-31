@@ -352,7 +352,7 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
     }
 
     /**
-     *
+     * Gets the file system using authority and tcp flag.
      *
      * @param authority Authority.
      * @return File system.

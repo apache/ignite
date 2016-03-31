@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,6 @@ import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoi
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_EMBED;
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM;
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP;
-import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_REMOTE_TCP;
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils.parameter;
 
 /**
@@ -407,10 +407,12 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             }
         }
 
+        final boolean isLocAddr = isLocAddr(endpoint.host());
+
         // 4. Try local TCP connection.
         boolean skipLocTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP, authority, false);
 
-        if (curDelegate == null && !skipLocTcp) {
+        if (curDelegate == null && !skipLocTcp && isLocAddr) {
             HadoopIgfsEx hadoop = null;
 
             try {
@@ -431,10 +433,11 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             }
         }
 
-        // 5. Try remote TCP connection.
-        boolean skipRemoteTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_REMOTE_TCP, authority, false);
+        // 5. Try remote TCP connection, if a non-local address specified:
+        if (curDelegate != null)
+            return curDelegate;
 
-        if (curDelegate == null && !skipRemoteTcp && (skipLocTcp || !F.eq(LOCALHOST, endpoint.host()))) {
+        if (!isLocAddr) {
             HadoopIgfsEx hadoop = null;
 
             try {
@@ -473,6 +476,29 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
                 "ignite-shmem-1.0.0.jar is in Hadoop classpath if you use shared memory endpoint).");
 
             throw new HadoopIgfsCommunicationException(errMsg.toString());
+        }
+    }
+
+    /**
+     * Determines if the guven address is local.
+     * @param host The host to check
+     * @return If the address denotes the local host.
+     */
+    public static boolean isLocAddr(String host) {
+        if (F.isEmpty(host))
+            // empty address treated as local address:
+            return true;
+
+        try {
+            InetAddress x = InetAddress.getByName(host);
+
+            assert x != null;
+
+            return x.isLinkLocalAddress() || x.isLoopbackAddress();
+        }
+        catch (IOException ioe) {
+            // Local address must be unresolvable:
+            return false;
         }
     }
 
