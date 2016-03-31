@@ -22,6 +22,7 @@
  </ProjectOptions>
  <Targets>
   <Target Name="$(ProjectDir)/Apache.Ignite.Core/bin/Debug/Apache.Ignite.Core.dll" Analyze="True" AnalyzeAllChildren="True" />
+  <Target Name="$(ProjectDir)/Apache.Ignite.Linq/bin/Debug/Apache.Ignite.Linq.dll" Analyze="True" AnalyzeAllChildren="True" />
  </Targets>
  <Rules>
   <RuleFiles>
