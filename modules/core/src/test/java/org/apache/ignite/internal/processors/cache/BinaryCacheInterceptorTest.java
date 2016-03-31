@@ -142,19 +142,14 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
                 add(key(i));
         }};
 
-        Set allKeys = new LinkedHashSet();
-        allKeys.addAll(keys);
-        allKeys.addAll(unknownKeys);
+        for (Object key : unknownKeys)
+            assertNull(cache.get(key));
 
         for (Object key : keys) {
             Object val = value(valueOf(key));
 
             cache.put(key, val);
-        }
 
-        for (Object key : allKeys) {
-            Object val = value(valueOf(key));
-            
             BinaryObject retVal = (BinaryObject)cache.get(key);
 
             assertEquals(val, retVal.deserialize());
