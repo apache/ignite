@@ -595,6 +595,8 @@ import java.util.*;
         AtomicConfiguration atomic = cfg.getAtomicConfiguration();
 
         if (atomic != null) {
+            w.writeBoolean(true);
+
             w.writeInt(atomic.getAtomicSequenceReserveSize());
             w.writeInt(atomic.getBackups());
             w.writeInt(atomic.getCacheMode().ordinal());
