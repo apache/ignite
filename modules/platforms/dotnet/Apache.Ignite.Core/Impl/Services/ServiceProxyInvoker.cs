@@ -107,8 +107,7 @@ namespace Apache.Ignite.Core.Impl.Services
                 return methods[0];
 
             // 3) 0 or more than 1 matching method - throw.
-            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-            var argsString = arguments == null || arguments.Length == 0
+            var argsString = arguments.Length == 0
                 ? "0"
                 : "(" +
                   arguments.Select(x => x == null ? "null" : x.GetType().Name).Aggregate((x, y) => x + ", " + y)
