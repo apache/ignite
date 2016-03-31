@@ -284,6 +284,8 @@ import java.util.*;
             atomic.setAtomicSequenceReserveSize(in.readInt());
             atomic.setBackups(in.readInt());
             atomic.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
+
+            cfg.setAtomicConfiguration(atomic);
         }
     }
 
