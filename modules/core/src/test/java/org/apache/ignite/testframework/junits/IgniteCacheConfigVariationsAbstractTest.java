@@ -94,7 +94,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
                     IgniteConfiguration cfg = optimize(getConfiguration(gridName));
 
                     if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
-                        CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(gridName);
+                        CacheConfiguration cc = cacheConfiguration();
 
                         cc.setName(cacheName());
 
@@ -147,14 +147,14 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
             IgniteEx grid = grid(i);
 
             if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
-                CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(grid.name());
+                CacheConfiguration cc = cacheConfiguration();
 
                 cc.setName(cacheName());
 
                 grid.getOrCreateCache(cc);
             }
 
-            if (testsCfg.withClients() && i == CLIENT_NEAR_ONLY_IDX)
+            if (testsCfg.withClients() && i == CLIENT_NEAR_ONLY_IDX && grid(i).configuration().isClientMode())
                 grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
         }
 

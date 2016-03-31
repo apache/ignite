@@ -1146,7 +1146,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 rawGetOrUnmarshalUnlocked(!retval && !isOffHeapValuesOnly()) : this.val;
 
             if (intercept) {
-                val0 = CU.value(val, cctx, false);
+                val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
 
                 CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
 
@@ -2303,7 +2303,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             // Actual update.
             if (op == GridCacheOperation.UPDATE) {
                 if (intercept) {
-                    updated0 = value(updated0, updated, false);
+                    updated0 = value(updated0, updated, keepBinary, false);
 
                     Object interceptorVal = cctx.config().getInterceptor()
                         .onBeforePut(new CacheLazyEntry(cctx, key, key0, oldVal, old0, keepBinary), updated0);
@@ -2514,6 +2514,20 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             conflictCtx,
             true,
             updateCntr0 == null ? 0 : updateCntr0);
+    }
+
+    /**
+     * @param val Value.
+     * @param cacheObj Cache object.
+     * @param keepBinary Keep binary flag.
+     * @param cpy Copy flag.
+     * @return Cache object value.
+     */
+    @Nullable private Object value(@Nullable Object val, @Nullable CacheObject cacheObj, boolean keepBinary, boolean cpy) {
+        if (val != null)
+            return val;
+
+        return cctx.unwrapBinaryIfNeeded(cacheObj, keepBinary, cpy);
     }
 
     /**
