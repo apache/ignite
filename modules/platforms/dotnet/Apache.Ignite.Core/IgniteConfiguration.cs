@@ -36,6 +36,7 @@
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
@@ -538,5 +539,10 @@
         /// Gets or sets the atomic data structures configuration.
         /// </summary>
         public AtomicConfiguration AtomicConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the transaction configuration.
+        /// </summary>
+        public TransactionConfiguration TransactionConfiguration { get; set; }
     }
 }
