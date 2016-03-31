@@ -131,7 +131,7 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
     res.needEmptyLine = true;
 
     $generatorPom.addProperty(res, 'groupId', 'org.apache.ignite');
-    $generatorPom.addProperty(res, 'artifactId', 'ignite-generated-' + $generatorPom.escapeId(cluster.name));
+    $generatorPom.addProperty(res, 'artifactId', $generatorPom.escapeId(cluster.name) + '-project');
     $generatorPom.addProperty(res, 'version', igniteVersion);
 
     res.needEmptyLine = true;
