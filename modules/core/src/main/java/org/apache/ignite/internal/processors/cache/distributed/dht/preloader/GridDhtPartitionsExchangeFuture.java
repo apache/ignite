@@ -742,7 +742,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (crd.isLocal()) {
             if (remaining.isEmpty())
-                onAllReceived();
+                onAllReceived(false);
         }
         else
             sendPartitions(crd);
@@ -1218,9 +1218,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         if (allReceived)
-            onAllReceived();
+            onAllReceived(false);
     }
 
+    /**
+     * @param fut Affinity future.
+     */
     private void onAffinityInitialized(IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut) {
         try {
             assert fut.isDone();
@@ -1231,7 +1234,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             CacheAffinityChangeMessage msg = new CacheAffinityChangeMessage(exchId, m, assignmentChange);
 
-            log.info("Centralized affinity exchange, send affinity change message: " + msg);
+            if (log.isDebugEnabled())
+                log.debug("Centralized affinity exchange, send affinity change message: " + msg);
 
             cctx.discovery().sendCustomEvent(msg);
         }
@@ -1241,9 +1245,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     *
+     * @param competeAsync If {@code true} completes future from another thread (to do not block discovery thread).
      */
-    private void onAllReceived() {
+    private void onAllReceived(boolean competeAsync) {
         try {
             assert crd.isLocal();
 
@@ -1283,7 +1287,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (!nodes.isEmpty())
                     sendAllPartitions(nodes);
 
-                onDone(exchangeId().topologyVersion());
+                if (competeAsync)
+                    competeAsync();
+                else
+                    onDone(exchangeId().topologyVersion());
             }
         }
         catch (IgniteCheckedException e) {
@@ -1453,7 +1460,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     assert centralizedAff;
 
                     if (crd.equals(node)) {
-                        cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this, crd.isLocal(), msg);
+                        cctx.affinity().onExchangeChangeAffinityMessage(GridDhtPartitionsExchangeFuture.this,
+                            crd.isLocal(),
+                            msg);
 
                         if (!crd.isLocal()) {
                             GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage();
@@ -1464,13 +1473,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             updatePartitionFullMap(partsMsg);
                         }
 
-                        onDone(exchId.topologyVersion());
+                        competeAsync();
                     }
                     else {
-                        log.info("Ignore affinity change message, coordinator changed [node=" + node.id() +
-                            ", crd=" + crd.id() +
-                            ", msg=" + msg +
-                            ']');
+                        if (log.isDebugEnabled()) {
+                            log.debug("Ignore affinity change message, coordinator changed [node=" + node.id() +
+                                ", crd=" + crd.id() +
+                                ", msg=" + msg +
+                                ']');
+                        }
                     }
                 }
                 finally {
@@ -1576,14 +1587,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 cacheCtx.affinity().affinityCache().initialize(topologyVersion(), affAssignment);
                             }
 
-                            onDone(topologyVersion());
+                            competeAsync();
 
                             return;
                         }
 
                         if (crd0.isLocal()) {
                             if (allReceived) {
-                                onAllReceived();
+                                onAllReceived(true);
 
                                 return;
                             }
@@ -1609,6 +1620,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     *
+     */
+    private void competeAsync() {
+        cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+            @Override public void run() {
+                onDone(topologyVersion());
+            }
+        });
     }
 
     /** {@inheritDoc} */

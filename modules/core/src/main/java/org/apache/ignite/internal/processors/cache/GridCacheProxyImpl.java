@@ -1334,22 +1334,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> EntryProcessorResult<T> invoke(
-        AffinityTopologyVersion topVer,
-        K key,
-        EntryProcessor<K, V, T> entryProcessor,
-        Object... args) throws IgniteCheckedException {
-        CacheOperationContext prev = gate.enter(opCtx);
-
-        try {
-            return delegate.invoke(topVer, key, entryProcessor, args);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void removeAll()
         throws IgniteCheckedException {
         CacheOperationContext prev = gate.enter(opCtx);
