@@ -28,6 +28,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -44,12 +45,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Configuration utils.
@@ -280,6 +276,14 @@ import java.util.Map;
                 attrs.put(in.readString(), in.readObject());
 
             cfg.setUserAttributes(attrs);
+        }
+
+        if (in.readBoolean()) {
+            AtomicConfiguration atomic = new AtomicConfiguration();
+
+            atomic.setAtomicSequenceReserveSize(in.readInt());
+            atomic.setBackups(in.readInt());
+            atomic.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
         }
     }
 
@@ -587,6 +591,16 @@ import java.util.Map;
         }
         else
             w.writeInt(0);
+
+        AtomicConfiguration atomic = cfg.getAtomicConfiguration();
+
+        if (atomic != null) {
+            w.writeInt(atomic.getAtomicSequenceReserveSize());
+            w.writeInt(atomic.getBackups());
+            w.writeInt(atomic.getCacheMode().ordinal());
+        }
+        else
+            w.writeBoolean(false);
 
         w.writeString(cfg.getIgniteHome());
 
