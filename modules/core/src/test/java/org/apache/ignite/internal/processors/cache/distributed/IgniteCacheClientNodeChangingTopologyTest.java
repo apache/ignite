@@ -911,6 +911,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         assertTrue(ignite3.configuration().isClientMode());
 
+        awaitPartitionMapExchange();
+
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
 
         for (int i = 0; i < 100; i++)
@@ -1069,6 +1071,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         assertEquals(5, msgs.size());
 
         ignite3.close();
+
+        awaitPartitionMapExchange();
 
         for (int i = 0; i < 100; i++)
             map.put(i, i + 1);

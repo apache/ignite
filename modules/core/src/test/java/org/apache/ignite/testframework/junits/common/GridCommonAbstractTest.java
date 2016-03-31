@@ -484,8 +484,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         ", p=" + p +
                                         ", affNodesCnt=" + exp +
                                         ", ownersCnt=" + actual +
-                                        ", affNodes=" + affNodes +
-                                        ", owners=" + owners +
+                                        ", affNodes=" + F.nodeIds(affNodes) +
+                                        ", owners=" + F.nodeIds(owners) +
                                         ", topFut=" + topFut +
                                         ", locNode=" + g.cluster().localNode() + ']');
                                 }
