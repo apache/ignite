@@ -1506,7 +1506,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                             if (log.isDebugEnabled())
                                 log.debug("Touching partition entries: " + part);
 
-                            touchOnTopologyChange(part.entries());
+                            touchOnTopologyChange(part.allEntries());
                         }
                     }
                 }
