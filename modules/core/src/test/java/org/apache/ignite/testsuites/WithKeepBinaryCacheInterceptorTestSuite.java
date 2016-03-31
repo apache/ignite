@@ -18,7 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.BinaryCacheInterceptorTest;
@@ -28,7 +27,7 @@ import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuit
 /**
  * Test suite for cache API.
  */
-public class IgniteBinaryCacheVariationsInterceptorTestSuite extends TestSuite {
+public class WithKeepBinaryCacheInterceptorTestSuite extends TestSuite {
     /**
      * @return Cache API test suite.
      * @throws Exception If failed.
@@ -44,20 +43,8 @@ public class IgniteBinaryCacheVariationsInterceptorTestSuite extends TestSuite {
                     return cfg.getMarshaller() instanceof BinaryMarshaller;
                 }
             })
-            .withCacheConfigFilters(
-                new IgnitePredicate<CacheConfiguration>() {
-                    @Override public boolean apply(CacheConfiguration configuration) {
-//                        return configuration.getAtomicityMode() == CacheAtomicityMode.ATOMIC;
-//                        return configuration.getMemoryMode() != CacheMemoryMode.OFFHEAP_TIERED;
-                        return true;
-                    }
-                }
-            )
             .gridsCount(4)
             .backups(1)
-//            .specifyIgniteParam(0, 0, 0)
-//            .specifyCacheParam(0, 0, 2, 0, 0, 0, 0, 0, 0)
-//            .specifyCacheParam(0, 0, 0, 0, 0, 0, 0, 0, 0) // TX
             .testedNodesCount(2).withClients()
             .build();
     }
