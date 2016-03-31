@@ -17,19 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -43,7 +47,7 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
     private static volatile boolean validate;
 
     /** */
-    private static volatile boolean binaryObjectExpected = true;
+    private static volatile boolean binaryObjExp = true;
 
     /** */
     public static final int CNT = 10;
@@ -80,12 +84,16 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
     /** */
     public static final CacheEntryProcessor INC_ENTRY_PROC_RET_BINARY_OBJ = new CacheEntryProcessor() {
         @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
+            assertFalse(entry.getKey() instanceof BinaryObjectOffheapImpl);
+
             Object val = entry.getValue();
 
             int valId = 0;
 
             if (val != null) {
                 assertTrue(val instanceof BinaryObject);
+
+                assertFalse(val instanceof BinaryObjectOffheapImpl);
 
                 valId = valueOf(((BinaryObject)val).deserialize()) + 1;
             }
@@ -131,7 +139,7 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
-    public void testPutGet() throws Exception {
+    public void testRemovePutGet() throws Exception {
         final IgniteCache cache = jcache().withKeepBinary();
 
         Set keys = new LinkedHashSet() {{
@@ -139,13 +147,13 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
                 add(key(i));
         }};
 
-        Set unknownKeys = new LinkedHashSet() {{
-            for (int i = CNT; i < 2 * CNT; i++)
-                add(key(i));
-        }};
+        for (Object key : keys)
+            cache.remove(key);
 
-        for (Object key : unknownKeys)
+        for (Object key : keys) {
             assertNull(cache.get(key));
+            assertNull(cache.getEntry(key));
+        }
 
         for (Object key : keys) {
             Object val = value(valueOf(key));
@@ -155,7 +163,64 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
             BinaryObject retVal = (BinaryObject)cache.get(key);
 
             assertEquals(val, retVal.deserialize());
+
+            CacheEntry<BinaryObject, BinaryObject> entry = cache.getEntry(key);
+
+            // TODO fix it or not?
+//            assertTrue(entry.getKey() instanceof BinaryObject);
+
+            assertEquals(val, entry.getValue().deserialize());
         }
+    }
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("serial")
+    public void testPutAllGetAll() throws Exception {
+        final IgniteCache cache = jcache().withKeepBinary();
+
+        final Set keys = new LinkedHashSet() {{
+            for (int i = 0; i < CNT; i++)
+                add(key(i));
+        }};
+
+        for (Object val : cache.getAll(keys).values())
+            assertNull(val);
+
+        Collection<CacheEntry> entries = cache.<CacheEntry>getEntries(keys);
+
+        for (CacheEntry e : entries)
+            assertNull(e.getValue());
+
+        Map keyValMap = new LinkedHashMap(){{
+            for (Object key : keys) {
+                Object val = value(valueOf(key));
+
+                put(key, val);
+            }
+        }};
+
+        cache.putAll(keyValMap);
+
+        Set<Map.Entry<BinaryObject, BinaryObject>> set = cache.getAll(keys).entrySet();
+
+        for (Map.Entry<BinaryObject, BinaryObject> e : set) {
+            Object expVal = value(valueOf(e.getKey().deserialize()));
+
+            assertEquals(expVal, e.getValue().deserialize());
+        }
+
+        entries = cache.getEntries(keys);
+
+        for (CacheEntry<BinaryObject, BinaryObject> e : entries) {
+            assertTrue(e.getKey() instanceof BinaryObject);
+
+            Object expVal = value(valueOf(e.getKey().deserialize()));
+
+            assertEquals(expVal, e.getValue().deserialize());
+        }
+
+        cache.removeAll(keys);
     }
 
     /**
@@ -190,7 +255,8 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
             assertEquals(value(1), deserializeBinary(cache.get(key)));
         }
 
-        cache.removeAll(keys);
+        for (Object key : keys)
+            cache.remove(key);
 
         // TODO. beforePut gets newVal as usrObj and then afterPut gets e.getVal as usrObj
 //        binaryObjectExpected = false;
@@ -217,46 +283,7 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
      * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
-    public void testPutAllGetAll() throws Exception {
-        final IgniteCache cache = jcache().withKeepBinary();
-
-        final Set keys = new LinkedHashSet() {{
-            for (int i = 0; i < CNT; i++)
-                add(key(i));
-        }};
-
-        Set unknownKeys = new LinkedHashSet() {{
-            for (int i = CNT; i < 2 * CNT; i++)
-                add(key(i));
-        }};
-
-        for (Object val : cache.getAll(unknownKeys).values())
-            assertNull(val);
-
-        Map keyValMap = new LinkedHashMap(){{
-            for (Object key : keys) {
-                Object val = value(valueOf(key));
-
-                put(key, val);
-            }
-        }};
-
-        cache.putAll(keyValMap);
-
-        Set<Map.Entry<BinaryObject, BinaryObject>> set = cache.getAll(keys).entrySet();
-
-        for (Map.Entry<BinaryObject, BinaryObject> e : set) {
-            Object expVal = value(valueOf(e.getKey().deserialize()));
-
-            assertEquals(expVal, e.getValue().deserialize());
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("serial")
-    public void _testRest() throws Exception {
+    public void testInvokeAll() throws Exception {
         final IgniteCache cache = jcache().withKeepBinary();
 
         Set keys = new LinkedHashSet() {{
@@ -264,40 +291,55 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
                 add(key(i));
         }};
 
-        Set unknownKeys = new LinkedHashSet() {{
-            for (int i = CNT; i < 2 * CNT; i++)
-                add(key(i));
-        }};
-
-        Set allKeys = new LinkedHashSet();
-        allKeys.addAll(keys);
-        allKeys.addAll(unknownKeys);
-
         for (Object key : keys) {
-            Object val = value(valueOf(key));
+            Object res = cache.invoke(key, NOOP_ENTRY_PROC);
 
-            cache.put(key, val);
+            assertNull(res);
 
-            BinaryObject retVal = (BinaryObject)cache.get(key);
-
-            assertEquals(val, retVal.deserialize());
+            assertNull(cache.get(key));
         }
 
-        for (Object key : allKeys) {
-            cache.get(key);
-            cache.getEntry(key);
-            cache.invoke(key, NOOP_ENTRY_PROC);
-            cache.invoke(key, INC_ENTRY_PROC_RET_USER_OBJ, dataMode);
+        Map<BinaryObject, EntryProcessorResult<BinaryObject>> resMap = cache.invokeAll(keys, INC_ENTRY_PROC_RET_BINARY_OBJ, dataMode);
+
+        for (Map.Entry<BinaryObject, EntryProcessorResult<BinaryObject>> e : resMap.entrySet()) {
+            assertNull(e.getValue().get());
+
+            assertEquals(value(0), deserializeBinary(cache.get(e.getKey())));
         }
 
-        cache.getAll(allKeys);
-        cache.getEntries(allKeys);
-        cache.getAllOutTx(allKeys);
-        cache.invokeAll(allKeys, NOOP_ENTRY_PROC);
-        cache.invokeAll(allKeys, INC_ENTRY_PROC_RET_USER_OBJ, dataMode);
+        resMap = cache.invokeAll(keys, INC_ENTRY_PROC_RET_BINARY_OBJ, dataMode);
 
-        for (Object key : allKeys)
-            cache.remove(key);
+        for (Map.Entry<BinaryObject, EntryProcessorResult<BinaryObject>> e : resMap.entrySet()) {
+            assertEquals(value(0), deserializeBinary(e.getValue().get()));
+
+            assertEquals(value(1), deserializeBinary(cache.get(e.getKey())));
+        }
+
+        cache.removeAll(keys);
+
+        // TODO. Below we get inconsistent results: sometimes newVal is userObj, sometimes it's BinaryObj.
+//        binaryObjExp = false;
+//
+//        try {
+//            resMap = cache.invokeAll(keys, INC_ENTRY_PROC_RET_USER_OBJ, dataMode);
+//
+//            for (Map.Entry<BinaryObject, EntryProcessorResult<BinaryObject>> e : resMap.entrySet()) {
+//                assertNull(e.getValue().get());
+//
+//                assertEquals(value(0), cache.get(e.getKey()));
+//            }
+//
+//            resMap = cache.invokeAll(keys, INC_ENTRY_PROC_RET_USER_OBJ, dataMode);
+//
+//            for (Map.Entry<BinaryObject, EntryProcessorResult<BinaryObject>> e : resMap.entrySet()) {
+//                assertEquals(value(0), e.getValue().get());
+//
+//                assertEquals(value(1), cache.get(e.getKey()));
+//            }
+//        }
+//        finally {
+//            binaryObjExp = true;
+//        }
     }
 
     /**
@@ -331,7 +373,7 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
                 validateOldVal(e.getValue());
 
                 if (newVal != null)
-                    assertEquals("NewVal: " + newVal, binaryObjectExpected, newVal instanceof BinaryObject);
+                    assertEquals("NewVal: " + newVal, binaryObjExp, newVal instanceof BinaryObject);
             }
 
             return newVal;
