@@ -234,6 +234,18 @@
                     writer.Write(pair.Value);
                 }
             }
+
+            // Atomic
+            if (AtomicConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+
+                writer.WriteInt(AtomicConfiguration.AtomicSequenceReserveSize);
+                writer.WriteInt(AtomicConfiguration.Backups);
+                writer.WriteInt((int) AtomicConfiguration.CacheMode);
+            }
+            else
+                writer.WriteBoolean(false);
         }
 
         /// <summary>
@@ -276,6 +288,17 @@
             // User attributes
             UserAttributes = Enumerable.Range(0, r.ReadInt())
                 .ToDictionary(x => r.ReadString(), x => r.ReadObject<object>());
+
+            // Atomic
+            if (r.ReadBoolean())
+            {
+                AtomicConfiguration = new AtomicConfiguration
+                {
+                    AtomicSequenceReserveSize = r.ReadInt(),
+                    Backups = r.ReadInt(),
+                    CacheMode = (CacheMode) r.ReadInt()
+                };
+            }
         }
 
         /// <summary>
