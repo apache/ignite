@@ -9,8 +9,13 @@ Requirements:
 * JAVA_HOME environment variable set to the corresponding JDK (x64 or x86).
 
 Building binaries:
-  msbuild Apache.Ignite.sln /p:Configuration=Release /p:Platform=x64
+  msbuild Apache.Ignite.sln /p:Configuration=Release
 Resulting binaries will be in Apache.Ignite\bin folder
+NOTE: 
+* x86 solution platform requires x86 Oracle JDK.
+* x64 solution platform requires x64 Oracle JDK.
+* AnyCPU platform requires at least one of the above. 
+To build truly universal AnyCPU binaries (suitable for x86 and x64 modes), both x64 and x86 Oracle JDKs should be installed.
 
 Building in later versions of Visual Studio:
 * Open Apache.Ignite.sln in Visual Studio

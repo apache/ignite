@@ -3,7 +3,7 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -57,6 +57,24 @@
   </PropertyGroup>
   <PropertyGroup>
     <DelaySign>false</DelaySign>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>CODE_ANALYSIS;DEBUG</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>bin\Debug\Apache.Ignite.Core.XML</DocumentationFile>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <OutputPath>bin\Release\</OutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>bin\Release\Apache.Ignite.Core.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -125,6 +143,7 @@
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
+    <Compile Include="Impl\Common\Platform.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
     <Compile Include="Compute\ComputeJobAdapter.cs" />
     <Compile Include="Compute\ComputeJobFailoverException.cs" />
@@ -212,6 +231,7 @@
     <Compile Include="Impl\Cache\Event\CacheEntryCreateEvent.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryRemoveEvent.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryUpdateEvent.cs" />
+    <Compile Include="Impl\Cache\ICacheInternal.cs" />
     <Compile Include="Impl\Cache\MutableCacheEntry.cs" />
     <Compile Include="Impl\Cache\Query\AbstractQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryFilter.cs" />
@@ -248,6 +268,7 @@
     <Compile Include="Impl\Common\IgniteConfigurationXmlSerializer.cs" />
     <Compile Include="Impl\Common\IgniteHome.cs" />
     <Compile Include="Impl\Common\LoadedAssembliesResolver.cs" />
+    <Compile Include="Impl\Common\Logger.cs" />
     <Compile Include="Impl\Common\ResizeableArray.cs" />
     <Compile Include="Impl\Common\TypeCaster.cs" />
     <Compile Include="Impl\Common\TypeStringConverter.cs" />
@@ -443,9 +464,18 @@
       <Link>resources\release\x86\ignite.common.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup Condition="'$(Platform)' == 'AnyCPU'">
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\x64\$(Configuration)\ignite.common.dll">
+      <Link>resources\$(Configuration)\x64\ignite.common.dll</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll" Condition="Exists('$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll')">
+      <Link>resources\$(Configuration)\x86\ignite.common.dll</Link>
+    </EmbeddedResource>
+  </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
+    <None Include="build-common.ps1" />
     <None Include="NuGet\Uninstall.ps1" />
     <None Include="NuGet\PostBuild.ps1" />
     <None Include="NuGet\Install.ps1" />
@@ -457,6 +487,11 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
+    <PreBuildEvent>cd "$(ProjectDir)"
+	set COMPLUS_ApplicationMigrationRuntimeActivationConfigPath=$(ProjectDir)
+	PowerShell.exe -executionpolicy remotesigned -File build-common.ps1 -Configuration $(ConfigurationName) -msbuildexe "$(MSBuildBinPath)\msbuild.exe"</PreBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

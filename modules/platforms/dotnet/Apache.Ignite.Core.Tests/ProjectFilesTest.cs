@@ -38,13 +38,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.GreaterOrEqual(projFiles.Length, 7);
 
             var invalidFiles =
-                projFiles.Where(x =>
-                {
-                    var text = File.ReadAllText(x.FullName);
-
-                    return !text.Contains("ToolsVersion=\"4.0\"") ||
-                           text.IndexOf("AnyCPU", StringComparison.OrdinalIgnoreCase) >= 0;
-                }).ToArray();
+                projFiles.Where(x => !File.ReadAllText(x.FullName).Contains("ToolsVersion=\"4.0\"")).ToArray();
 
             Assert.AreEqual(0, invalidFiles.Length,
                 "Invalid csproj files: " + string.Join(", ", invalidFiles.Select(x => x.FullName)));

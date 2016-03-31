@@ -20,8 +20,10 @@ namespace Apache.Ignite.Core.Tests.NuGet
 {
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Linq;
     using NUnit.Framework;
 
     /// <summary>
@@ -74,16 +76,41 @@ namespace Apache.Ignite.Core.Tests.NuGet
         [Test]
         public void TestSql()
         {
-            var ignite = Ignition.GetIgnite();
-
-            var cache = ignite.GetOrCreateCache<int, Person>(new CacheConfiguration("sqlCache", typeof (Person)));
-
-            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => new Person {Name = "Name" + x, Age = x}));
+            var cache = GetPersonCache();
 
             var sqlRes = cache.Query(new SqlQuery(typeof (Person), "age < ?", 30)).GetAll();
 
             Assert.AreEqual(29, sqlRes.Count);
             Assert.IsTrue(sqlRes.All(x => x.Value.Age < 30));
+        }
+
+        /// <summary>
+        /// Tests the LINQ.
+        /// </summary>
+        [Test]
+        public void TestLinq()
+        {
+            var cache = GetPersonCache().AsCacheQueryable();
+
+            var res = cache.Where(x => x.Value.Age < 30).ToList();
+
+            Assert.AreEqual(29, res.Count);
+            Assert.IsTrue(res.All(x => x.Value.Age < 30));
+        }
+
+        /// <summary>
+        /// Gets the person cache.
+        /// </summary>
+        /// <returns></returns>
+        private static ICache<int, Person> GetPersonCache()
+        {
+            var ignite = Ignition.GetIgnite();
+
+            var cache = ignite.GetOrCreateCache<int, Person>(new CacheConfiguration("sqlCache", typeof(Person)));
+
+            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => new Person { Name = "Name" + x, Age = x }));
+
+            return cache;
         }
 
         /// <summary>
