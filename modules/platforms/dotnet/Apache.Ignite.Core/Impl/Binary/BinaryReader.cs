@@ -846,7 +846,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="pos">Position.</param>
         /// <param name="obj">Object.</param>
-        private void AddHandle(int pos, object obj)
+        internal void AddHandle(int pos, object obj)
         {
             if (_hnds == null)
                 _hnds = new BinaryReaderHandleDictionary(pos, obj);
@@ -874,35 +874,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 Stream.Seek(_frame.Pos + _frame.Hdr.GetRawOffset(Stream, _frame.Pos), SeekOrigin.Begin);
             }
-        }
-
-        /// <summary>
-        /// Determines whether header at current position is HDR_NULL.
-        /// </summary>
-        private bool IsNotNullHeader(byte expHdr)
-        {
-            var hdr = ReadByte();
-            
-            if (hdr == BinaryUtils.HdrNull)
-                return false;
-
-            if (expHdr != hdr)
-                throw new BinaryObjectException(string.Format("Invalid header on deserialization. " +
-                                                          "Expected: {0} but was: {1}", expHdr, hdr));
-
-            return true;
-        }
-
-        /// <summary>
-        /// Seeks the field by name, reads header and returns true if field is present and header is not null.
-        /// </summary>
-        private bool SeekField(string fieldName, byte expHdr)
-        {
-            if (!SeekField(fieldName)) 
-                return false;
-
-            // Expected read order, no need to seek.
-            return IsNotNullHeader(expHdr);
         }
 
         /// <summary>
@@ -943,7 +914,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T ReadField<T>(string fieldName, Func<IBinaryStream, T> readFunc, byte expHdr)
         {
-            return SeekField(fieldName, expHdr) ? readFunc(Stream) : default(T);
+            return SeekField(fieldName) ? Read(readFunc, expHdr) : default(T);
         }
 
         /// <summary>
@@ -951,7 +922,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T ReadField<T>(string fieldName, Func<BinaryReader, T> readFunc, byte expHdr)
         {
-            return SeekField(fieldName, expHdr) ? readFunc(this) : default(T);
+            return SeekField(fieldName) ? Read(readFunc, expHdr) : default(T);
         }
 
         /// <summary>
@@ -959,7 +930,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T ReadField<T>(string fieldName, Func<T> readFunc, byte expHdr)
         {
-            return SeekField(fieldName, expHdr) ? readFunc() : default(T);
+            return SeekField(fieldName) ? Read(readFunc, expHdr) : default(T);
         }
 
         /// <summary>
@@ -967,7 +938,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T Read<T>(Func<BinaryReader, T> readFunc, byte expHdr)
         {
-            return IsNotNullHeader(expHdr) ? readFunc(this) : default(T);
+            return Read(() => readFunc(this), expHdr);
         }
 
         /// <summary>
@@ -975,7 +946,27 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private T Read<T>(Func<IBinaryStream, T> readFunc, byte expHdr)
         {
-            return IsNotNullHeader(expHdr) ? readFunc(Stream) : default(T);
+            return Read(() => readFunc(Stream), expHdr);
+        }
+
+        /// <summary>
+        /// Reads header and invokes specified func if the header is not null.
+        /// </summary>
+        private T Read<T>(Func<T> readFunc, byte expHdr)
+        {
+            var hdr = ReadByte();
+
+            if (hdr == BinaryUtils.HdrNull)
+                return default(T);
+
+            if (hdr == BinaryUtils.HdrHnd)
+                return ReadHandleObject<T>(Stream.Position - 1);
+
+            if (expHdr != hdr)
+                throw new BinaryObjectException(string.Format("Invalid header on deserialization. " +
+                                                          "Expected: {0} but was: {1}", expHdr, hdr));
+
+            return readFunc();
         }
 
         /// <summary>

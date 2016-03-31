@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsModeResolver;
 import org.apache.ignite.internal.processors.igfs.IgfsPaths;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -94,10 +95,6 @@ import static org.apache.ignite.internal.processors.hadoop.fs.HadoopParameters.P
 import static org.apache.ignite.internal.processors.hadoop.fs.HadoopParameters.PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH;
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils.parameter;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.IGFS_SCHEME;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PREFER_LOCAL_WRITES;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 
 /**
  * {@code IGFS} Hadoop 2.x file system driver over file system API. To use
@@ -463,9 +460,11 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
         try {
             if (mode(p) == PROXY)
                 secondaryFileSystem().setOwner(toSecondary(p), usr, grp);
-            else if (rmtClient.update(convert(p), F.asMap(PROP_USER_NAME, usr, PROP_GROUP_NAME, grp)) == null)
+            else if (rmtClient.update(convert(p), F.asMap(IgfsUtils.PROP_USER_NAME, usr,
+                IgfsUtils.PROP_GROUP_NAME, grp)) == null) {
                 throw new IOException("Failed to set file permission (file not found?)" +
                     " [path=" + p + ", username=" + usr + ", grpName=" + grp + ']');
+            }
         }
         finally {
             leaveBusy();
@@ -579,8 +578,8 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
                     return os;
             }
             else {
-                Map<String, String> permMap = F.asMap(PROP_PERMISSION, toString(perm),
-                    PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites));
+                Map<String, String> permMap = F.asMap(IgfsUtils.PROP_PERMISSION, toString(perm),
+                    IgfsUtils.PROP_PREFER_LOCAL_WRITES, Boolean.toString(preferLocFileWrites));
 
                 // Create stream and close it in the 'finally' section if any sequential operation failed.
                 HadoopIgfsStreamDelegate stream;
@@ -1002,8 +1001,8 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             file.modificationTime(),
             file.accessTime(),
             permission(file),
-            file.property(PROP_USER_NAME, user),
-            file.property(PROP_GROUP_NAME, "users"),
+            file.property(IgfsUtils.PROP_USER_NAME, user),
+            file.property(IgfsUtils.PROP_GROUP_NAME, "users"),
             convert(file.path())) {
             @Override public String toString() {
                 return "FileStatus [path=" + getPath() + ", isDir=" + isDirectory() + ", len=" + getLen() + "]";
@@ -1021,7 +1020,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
         if (perm == null)
             perm = FsPermission.getDefault();
 
-        return F.asMap(PROP_PERMISSION, toString(perm));
+        return F.asMap(IgfsUtils.PROP_PERMISSION, toString(perm));
     }
 
     /**
@@ -1039,7 +1038,7 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
      * @return Hadoop permission.
      */
     private FsPermission permission(IgfsFile file) {
-        String perm = file.property(PROP_PERMISSION, null);
+        String perm = file.property(IgfsUtils.PROP_PERMISSION, null);
 
         if (perm == null)
             return FsPermission.getDefault();

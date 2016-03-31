@@ -892,13 +892,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeArray);
 
-            if (val == null)
-                WriteNullField();
-            else
-            {
-                _stream.WriteByte(BinaryUtils.TypeArray);
-                BinaryUtils.WriteArray(val, this);
-            }
+            WriteArray(val);
         }
 
         /// <summary>
@@ -921,6 +915,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
+                if (WriteHandle(_stream.Position, val))
+                    return;
+
                 _stream.WriteByte(BinaryUtils.TypeArray);
                 BinaryUtils.WriteArray(val, this);
             }
@@ -948,6 +945,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullField();
             else
             {
+                if (WriteHandle(_stream.Position, val))
+                    return;
+
                 WriteByte(BinaryUtils.TypeCollection);
                 BinaryUtils.WriteCollection(val, this);
             }
@@ -975,6 +975,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullField();
             else
             {
+                if (WriteHandle(_stream.Position, val))
+                    return;
+
                 WriteByte(BinaryUtils.TypeDictionary);
                 BinaryUtils.WriteDictionary(val, this);
             }
@@ -1079,6 +1082,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (handler != null)
             {
+                if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
+                    return;
+
                 handler(this, obj);
 
                 return;
@@ -1312,7 +1318,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_hnds == null)
             {
                 // Cache absolute handle position.
-                _hnds = new BinaryHandleDictionary<object, long>(obj, pos);
+                _hnds = new BinaryHandleDictionary<object, long>(obj, pos, ReferenceEqualityComparer<object>.Instance);
 
                 return false;
             }
