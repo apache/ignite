@@ -53,9 +53,19 @@ gulp.task('bundle:ignite:watch', () =>
     gulp.watch(paths, ['bundle:ignite:app'])
 );
 
-gulp.task('bundle:ignite:vendors', () =>
-    jspm.bundle(`${srcDir}/index - [${srcDir}/**/*] - [./controllers/**/*] - [./helpers/**/*] - [./public/**/*!css] - [${igniteModulesTemp}/**/*] - [${igniteModulesTemp}/**/*!jade]`, `${destDir}/vendors.js`, options)
-);
+gulp.task('bundle:ignite:vendors', () => {
+    const exclude = [
+        `${srcDir}/**/*`,
+        `${srcDir}/**/*!jade`,
+        './controllers/**/*',
+        './helpers/**/*',
+        './public/**/*!css',
+        `${igniteModulesTemp}/**/*`,
+        `${igniteModulesTemp}/**/*!jade`
+    ].map((item) => `[${item}]`).join(' - ');
+
+    return jspm.bundle(`${srcDir}/index - ${exclude}`, `${destDir}/vendors.js`, options);
+});
 
 gulp.task('bundle:ignite:app', () =>
     jspm.bundle(`${srcDir}/index - ${destDir}/vendors`, `${destDir}/app.js`, options)

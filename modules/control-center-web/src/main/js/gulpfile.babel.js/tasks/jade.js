@@ -49,6 +49,4 @@ gulp.task('jade:ignite_modules', () =>
         .pipe(gulp.dest(`${destDir}/ignite_modules`))
 );
 
-gulp.task('jade:watch', (cb) =>
-    gulp.watch([igniteModulePaths, paths], () => sequence('jade', 'inject:plugins:html', cb))
-);
+gulp.task('jade:watch', () => gulp.watch([paths, igniteModulePaths], ['jade']));
