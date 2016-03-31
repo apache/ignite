@@ -59,7 +59,7 @@ namespace Apache.Ignite.Linq.Impl
             GetMethod(typeof (Regex), "Replace", new[] {typeof (string), typeof (string), typeof (string)}, 
                 GetFunc("regexp_replace")),
             GetMethod(typeof (DateTime), "ToString", new[] {typeof (string)},
-                (e, v) => VisitFunc(e, v, "formatdatetime", ", 'UTC'")),
+                (e, v) => VisitFunc(e, v, "formatdatetime", ", 'en', 'UTC'")),
 
             GetMathMethod("Abs", typeof (int)),
             GetMathMethod("Abs", typeof (long)),
