@@ -85,7 +85,7 @@ public class GridCacheSharedContext<K, V> {
     /** Deployment manager. */
     private GridCacheDeploymentManager<K, V> depMgr;
 
-    /** */
+    /** Affinity manager. */
     private CacheAffinitySharedManager affMgr;
 
     /** Cache contexts map. */

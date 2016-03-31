@@ -155,7 +155,7 @@ public interface GridDhtPartitionTopology {
      * @param part Partition.
      * @return Partition state.
      */
-    @Nullable public GridDhtPartitionState partitionState(UUID nodeId, int part);
+    public GridDhtPartitionState partitionState(UUID nodeId, int part);
 
     /**
      * @return Current update sequence.

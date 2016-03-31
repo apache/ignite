@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteSingleStateImpl;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteStateImpl;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;

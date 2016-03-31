@@ -22,7 +22,6 @@ import java.util.List;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 

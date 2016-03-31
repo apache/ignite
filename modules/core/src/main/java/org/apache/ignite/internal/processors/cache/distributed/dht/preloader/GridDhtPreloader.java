@@ -274,8 +274,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         assert exchFut.forcePreload() || exchFut.dummyReassign() ||
             exchFut.exchangeId().topologyVersion().equals(top.topologyVersion()) :
             "Topology version mismatch [exchId=" + exchFut.exchangeId() +
-                ", cache=" + cctx.name() +
-                ", topVer=" + top.topologyVersion() + ']';
+            ", cache=" + cctx.name() +
+            ", topVer=" + top.topologyVersion() + ']';
 
         GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
 

@@ -61,7 +61,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     private static final int GRID_CNT = 2;
 
     /** Number of increment iterations. */
-    private static final int INCREMENTS = 1;//100;
+    private static final int INCREMENTS = 100;
 
     /** */
     private static final int KEYS = 50;
@@ -253,6 +253,7 @@ public class IgniteCacheEntryProcessorNodeJoinTest extends GridCommonAbstractTes
     }
 
     /**
+     * @param cacheName Cache name.
      * @param invokeAll If {@code true} tests invokeAll operation.
      * @param fut If not null then executes updates while future is not done.
      * @param latch Latch to count down when first update is done.

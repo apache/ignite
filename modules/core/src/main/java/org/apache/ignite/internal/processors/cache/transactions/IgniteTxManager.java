@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -85,15 +84,12 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
-import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
@@ -506,8 +502,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return {@code True} if need wait transaction for exchange.
      */
     public boolean needWaitTransaction(IgniteInternalTx tx, AffinityTopologyVersion topVer) {
-        // Must wait for all transactions, even for DHT local and DHT remote since preloading may acquire
-        // values pending to be overwritten by prepared transaction.
         AffinityTopologyVersion txTopVer = tx.topologyVersionSnapshot();
 
         return txTopVer != null && txTopVer.compareTo(topVer) < 0;
@@ -1733,9 +1727,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 continue;
 
             if (ver.hasConflictVersion()) {
-                CacheVersion nearVer0 = ver.conflictVersion();
+                CacheVersion commitVer = ver.conflictVersion();
 
-                if (nearVer0.equals(nearVer)) {
+                if (commitVer.equals(nearVer)) {
                     if (--txNum == 0) {
                         if (fut != null)
                             fut.onDone(true);
@@ -1927,37 +1921,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = (int)(threadId ^ (threadId >>> 32));
+            int res = (int)(threadId ^ (threadId >>> 32));
 
-            result = 31 * result + cacheId;
+            res = 31 * res + cacheId;
 
-            return result;
-        }
-    }
-
-    /**
-     * Atomic integer that compares only using references, not values.
-     */
-    private static final class AtomicInt extends AtomicInteger {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param initVal Initial value.
-         */
-        private AtomicInt(int initVal) {
-            super(initVal);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object obj) {
-            // Reference only.
-            return obj == this;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return super.hashCode();
+            return res;
         }
     }
 

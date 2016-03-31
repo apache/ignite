@@ -497,7 +497,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     updateClientNodes(node.id());
                 }
 
-
                 final AffinityTopologyVersion nextTopVer;
 
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {

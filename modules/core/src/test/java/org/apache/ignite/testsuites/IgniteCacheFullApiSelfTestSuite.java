@@ -215,7 +215,7 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapTieredMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedNearDisabledAtomicOffHeapTieredMultiNodeFullApiSelfTest.class);
 
-        // Old affinity assignment.
+        // Old affinity assignment mode.
         suite.addTestSuite(GridCachePartitionedLateAffDisabledMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheAtomicLateAffDisabledPrimaryWriteOrderMultiNodeFullApiSelfTest.class);
 

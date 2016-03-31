@@ -644,13 +644,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     }
 
     /**
-     * @return Near cache.
-     */
-    private GridNearCacheAdapter<K, V> cache() {
-        return (GridNearCacheAdapter<K, V>)cctx.cache();
-    }
-
-    /**
      * @param key Key.
      * @param v Value.
      * @param ver Version.
@@ -660,23 +653,30 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         if (keepCacheObjects) {
             K key0 = (K)key;
             V val0 = needVer ?
-                    (V)new T2<>(skipVals ? true : v, ver) :
-                    (V)(skipVals ? true : v);
+                (V)new T2<>(skipVals ? true : v, ver) :
+                (V)(skipVals ? true : v);
 
             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
         }
         else {
             K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false);
             V val0 = needVer ?
-                    (V)new T2<>(!skipVals ?
-                            (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
-                            (V)Boolean.TRUE, ver) :
-                    !skipVals ?
-                            (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
-                            (V)Boolean.TRUE;
+                (V)new T2<>(!skipVals ?
+                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
+                    (V)Boolean.TRUE, ver) :
+                !skipVals ?
+                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
+                    (V)Boolean.TRUE;
 
             add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
         }
+    }
+
+    /**
+     * @return Near cache.
+     */
+    private GridNearCacheAdapter<K, V> cache() {
+        return (GridNearCacheAdapter<K, V>)cctx.cache();
     }
 
     /**

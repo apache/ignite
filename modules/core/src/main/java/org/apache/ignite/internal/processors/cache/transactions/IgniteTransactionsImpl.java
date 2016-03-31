@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteTransactionsEx;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.A;

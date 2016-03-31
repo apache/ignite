@@ -1060,7 +1060,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 if (drCacheCtx.isDrEnabled()) {
                     try {
-                        drCacheCtx.dr().beforeExchange(topologyVersion(), exchId.isLeft());
+                        drCacheCtx.dr().onExchange(topologyVersion(), exchId.isLeft());
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to notify DR: " + e, e);
@@ -1090,8 +1090,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
                     "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
-
-            log.info("Complete exchange [ver=" + exchId.topologyVersion() + ", err=" + err + ", evt=" + discoEvt + ']');
 
             initFut.onDone(err == null);
 
@@ -1258,7 +1256,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             updateLastVersion(cctx.versions().last());
 
-            cctx.versions().onExchange(topologyVersion(), lastVer.get().order());
+            cctx.versions().onExchange(lastVer.get().order());
 
             if (centralizedAff) {
                 IgniteInternalFuture<Map<Integer, Map<Integer, List<UUID>>>> fut = cctx.affinity().initAffinityOnNodeLeft(this);
@@ -1400,7 +1398,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param msg Partitions full messages.
      */
     private void updatePartitionFullMap(GridDhtPartitionsFullMessage msg) {
-        cctx.versions().onExchange(topologyVersion(), msg.lastVersion().order());
+        cctx.versions().onExchange(msg.lastVersion().order());
 
         for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();

@@ -165,10 +165,9 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param topVer Exchange topology version.
      * @param rcvOrder Received order.
      */
-    public void onExchange(AffinityTopologyVersion topVer, long rcvOrder) {
+    public void onExchange(long rcvOrder) {
         long order;
 
         while (true) {
@@ -181,10 +180,6 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
             else
                 break;
         }
-
-        log.info("Updated version order on exchange [topVer=" + topVer +
-            ", before=" + order +
-            ", after=" + this.order.get() + ']');
     }
 
     /**
@@ -311,6 +306,12 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
             (GridCacheVersion)conflictVer);
     }
 
+    /**
+     * @param topVer Topology version plus number of seconds from the start time of the first grid node.
+     * @param nodeOrderDrId Node order and DR ID.
+     * @param globalTime Globally adjusted time.
+     * @param order Version order.
+     */
     private CacheVersion createVersionFromRaw(int topVer, int nodeOrderDrId, long globalTime, long order) {
         return new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
     }

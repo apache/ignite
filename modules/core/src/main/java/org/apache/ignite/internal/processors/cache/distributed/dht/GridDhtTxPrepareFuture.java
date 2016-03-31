@@ -1342,7 +1342,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     GridDhtPartitionState state = entry.context().topology().partitionState(n.id(),
                         entry.cached().partition());
 
-                    if (state == null || (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.EVICTED)) {
+                    if (state != GridDhtPartitionState.OWNING && state != GridDhtPartitionState.EVICTED) {
                         T2<GridCacheOperation, CacheObject> procVal = entry.entryProcessorCalculatedValue();
 
                         assert procVal != null : entry;

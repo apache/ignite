@@ -266,15 +266,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         return stopping;
     }
 
-    /**
-     * @param part Partition.
-     * @param aff Affinity assignments.
-     * @return {@code True} if given partition belongs to local node.
-     */
-    private boolean localNode(int part, List<List<ClusterNode>> aff) {
-        return aff.get(part).contains(cctx.localNode());
-    }
-
     /** {@inheritDoc} */
     @Override public void initPartitions(GridDhtPartitionsExchangeFuture exchFut) throws IgniteInterruptedCheckedException {
         U.writeLock(lock);
@@ -381,6 +372,10 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         updateRebalanceVersion(aff);
     }
 
+    /**
+     * @param aff Affinity assignments.
+     * @param updateSeq Update sequence.
+     */
     private void createPartitions(List<List<ClusterNode>> aff, long updateSeq) {
         ClusterNode loc = cctx.localNode();
 
@@ -597,6 +592,10 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         return localPartition(p, topVer, create, true);
     }
 
+    /**
+     * @param p Partition number.
+     * @return Partition.
+     */
     private GridDhtLocalPartition createPartition(int p) {
         GridDhtLocalPartition loc = locParts.get(p);
 
@@ -1436,6 +1435,15 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (size >= threshold)
                 X.println(">>>   Local partition [part=" + part.id() + ", size=" + size + ']');
         }
+    }
+
+    /**
+     * @param part Partition.
+     * @param aff Affinity assignments.
+     * @return {@code True} if given partition belongs to local node.
+     */
+    private boolean localNode(int part, List<List<ClusterNode>> aff) {
+        return aff.get(part).contains(cctx.localNode());
     }
 
     /**

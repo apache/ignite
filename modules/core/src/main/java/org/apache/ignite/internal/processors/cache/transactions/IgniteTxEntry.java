@@ -915,13 +915,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     }
 
     /**
-     * @return Read version for serializable transaction.
-     */
-    @Nullable public CacheVersion serializableReadVersion() {
-        return serReadVer;
-    }
-
-    /**
      * Gets stored entry version. Version is stored for all entries in serializable transaction or
      * when value is read using {@link IgniteCache#getEntry(Object)} method.
      *

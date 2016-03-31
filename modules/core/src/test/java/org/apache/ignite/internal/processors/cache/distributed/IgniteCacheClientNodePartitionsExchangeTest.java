@@ -321,6 +321,7 @@ public class IgniteCacheClientNodePartitionsExchangeTest extends GridCommonAbstr
 
         ignite4.close(); // After server leave exchange is completed by discovery message.
 
+        // With FairAffinityFunction affinity calculation is different, this causes one more topology change.
         boolean exchangeAfterRebalance = fairAffinity;
 
         waitForTopologyUpdate(4,

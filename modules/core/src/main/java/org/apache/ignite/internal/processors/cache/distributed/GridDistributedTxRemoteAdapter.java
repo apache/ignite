@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -48,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteEx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;

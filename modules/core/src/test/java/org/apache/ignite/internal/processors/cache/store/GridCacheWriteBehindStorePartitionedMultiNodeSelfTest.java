@@ -103,7 +103,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
      * @throws Exception If failed.
      */
     private void prepare() throws Exception {
-        startGridsMultiThreaded(GRID_CNT);
+        startGridsMultiThreaded(GRID_CNT, true);
     }
 
     /** {@inheritDoc} */

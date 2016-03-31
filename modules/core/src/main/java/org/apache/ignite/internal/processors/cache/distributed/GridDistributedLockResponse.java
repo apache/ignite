@@ -156,14 +156,6 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     }
 
     /**
-     * @param committedVers Committed versions relative to lock version.
-     * @param rolledbackVers Rolled back versions relative to lock version.
-     */
-    public void setCandidates(Collection<CacheVersion> committedVers, Collection<CacheVersion> rolledbackVers) {
-        completedVersions(committedVers, rolledbackVers);
-    }
-
-    /**
      * @param val Value.
      */
     public void addValue(CacheObject val) {

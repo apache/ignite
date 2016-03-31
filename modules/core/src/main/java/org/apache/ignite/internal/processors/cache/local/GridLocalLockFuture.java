@@ -173,20 +173,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     }
 
     /**
-     * @return Lock version.
-     */
-    CacheVersion lockVersion() {
-        return lockVer;
-    }
-
-    /**
-     * @return Entries.
-     */
-    List<GridLocalCacheEntry> entries() {
-        return entries;
-    }
-
-    /**
      * @return {@code True} if transaction is not {@code null}.
      */
     private boolean inTx() {
