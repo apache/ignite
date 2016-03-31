@@ -87,6 +87,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MARSH_CACHE_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.P2P_POOL;
@@ -112,6 +113,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Direct protocol version. */
     public static final byte DIRECT_PROTO_VER = 2;
+
+    /** Current IO policy. */
+    private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
 
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap8<>();
@@ -142,6 +146,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** Marshaller cache pool. */
     private ExecutorService marshCachePool;
+
+    /** IGFS pool. */
+    private ExecutorService igfsPool;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -241,6 +248,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         mgmtPool = ctx.getManagementExecutorService();
         utilityCachePool = ctx.utilityCachePool();
         marshCachePool = ctx.marshallerCachePool();
+        igfsPool = ctx.getIgfsExecutorService();
         affPool = new IgniteThreadPoolExecutor(
             "aff",
             ctx.gridName(),
@@ -632,6 +640,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case AFFINITY_POOL:
                 case UTILITY_CACHE_POOL:
                 case MARSH_CACHE_POOL:
+                case IGFS_POOL:
                 {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
@@ -692,6 +701,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 return marshCachePool;
 
+            case IGFS_POOL:
+                assert igfsPool != null : "IGFS pool is not configured.";
+
+                return igfsPool;
+
             default: {
                 assert plc >= 0 : "Negative policy: " + plc;
 
@@ -742,7 +756,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                     assert obj != null;
 
-                    lsnr.onMessage(nodeId, obj);
+                    invokeListener(msg.policy(), lsnr, nodeId, obj);
                 }
                 finally {
                     threadProcessingMessage(false);
@@ -819,7 +833,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         assert obj != null;
 
-        lsnr.onMessage(nodeId, obj);
+        invokeListener(msg.policy(), lsnr, nodeId, obj);
     }
 
     /**
@@ -1022,6 +1036,38 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 return;
             }
         }
+    }
+
+    /**
+     * Invoke message listener.
+     *
+     * @param plc Policy.
+     * @param lsnr Listener.
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    private void invokeListener(Byte plc, GridMessageListener lsnr, UUID nodeId, Object msg) {
+        Byte oldPlc = CUR_PLC.get();
+
+        boolean change = F.eq(oldPlc, plc);
+
+        if (change)
+            CUR_PLC.set(plc);
+
+        try {
+            lsnr.onMessage(nodeId, msg);
+        }
+        finally {
+            if (change)
+                CUR_PLC.set(oldPlc);
+        }
+    }
+
+    /**
+     * @return Current IO policy
+     */
+    @Nullable public static Byte currentPolicy() {
+        return CUR_PLC.get();
     }
 
     /**
@@ -2246,9 +2292,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             for (GridTuple3<GridIoMessage, Long, IgniteRunnable> t = msgs.poll(); t != null; t = msgs.poll()) {
                 try {
-                    lsnr.onMessage(
-                        nodeId,
-                        t.get1().message());
+                    invokeListener(plc, lsnr, nodeId, t.get1().message());
                 }
                 finally {
                     if (t.get3() != null)
