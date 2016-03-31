@@ -251,10 +251,12 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
      * @return Value.
      */
     public static int valueOf(Object obj) {
+        assertNotNull(obj);
+
         if (obj instanceof TestObject)
             return ((TestObject)obj).value();
         else
-            throw new IllegalStateException();
+            throw new IllegalArgumentException("Unknown type: " + obj);
     }
 
     /**

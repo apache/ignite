@@ -1809,9 +1809,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             req.keepBinary());
 
-                        Object val = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(ctx, entry.key(),
-                            old, req.keepBinary()),
-                            updated.value(ctx.cacheObjectContext(), false));
+                        Object val = ctx.config().getInterceptor().onBeforePut(
+                            new CacheLazyEntry(ctx, entry.key(), old, req.keepBinary()),
+                            ctx.unwrapBinaryIfNeeded(updated, req.keepBinary(), false));
 
                         if (val == null)
                             continue;

@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessorException;
@@ -209,6 +211,45 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
 //        finally {
 //            binaryObjectExpected = true;
 //        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("serial")
+    public void testPutAllGetAll() throws Exception {
+        final IgniteCache cache = jcache().withKeepBinary();
+
+        final Set keys = new LinkedHashSet() {{
+            for (int i = 0; i < CNT; i++)
+                add(key(i));
+        }};
+
+        Set unknownKeys = new LinkedHashSet() {{
+            for (int i = CNT; i < 2 * CNT; i++)
+                add(key(i));
+        }};
+
+        for (Object val : cache.getAll(unknownKeys).values())
+            assertNull(val);
+
+        Map keyValMap = new LinkedHashMap(){{
+            for (Object key : keys) {
+                Object val = value(valueOf(key));
+
+                put(key, val);
+            }
+        }};
+
+        cache.putAll(keyValMap);
+
+        Set<Map.Entry<BinaryObject, BinaryObject>> set = cache.getAll(keys).entrySet();
+
+        for (Map.Entry<BinaryObject, BinaryObject> e : set) {
+            Object expVal = value(valueOf(e.getKey().deserialize()));
+
+            assertEquals(expVal, e.getValue().deserialize());
+        }
     }
 
     /**
