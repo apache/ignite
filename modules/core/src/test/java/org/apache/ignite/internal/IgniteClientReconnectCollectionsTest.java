@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -44,6 +46,55 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
     /** {@inheritDoc} */
     @Override protected int clientCount() {
         return 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCollectionsReconnectClusterRestart() throws Exception {
+        CollectionConfiguration colCfg = new CollectionConfiguration();
+
+        colCfg.setCacheMode(PARTITIONED);
+        colCfg.setAtomicityMode(TRANSACTIONAL);
+
+        Ignite client = grid(serverCount());
+
+        assertTrue(client.cluster().localNode().isClient());
+
+        final IgniteQueue<Object> queue = client.queue("q", 0, colCfg);
+        final IgniteSet<Object> set = client.set("s", colCfg);
+
+        Ignite srv = grid(0);
+
+        reconnectServersRestart(log, client, Collections.singleton(srv), new Callable<Collection<Ignite>>() {
+            @Override public Collection<Ignite> call() throws Exception {
+                return Collections.singleton((Ignite)startGrid(0));
+            }
+        });
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                queue.add(1);
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                set.add(1);
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        try (IgniteQueue<Object> queue2 = client.queue("q", 0, colCfg)) {
+            queue2.add(1);
+        }
+
+        try (IgniteSet<Object> set2 = client.set("s", colCfg)) {
+            set2.add(1);
+        }
     }
 
     /**

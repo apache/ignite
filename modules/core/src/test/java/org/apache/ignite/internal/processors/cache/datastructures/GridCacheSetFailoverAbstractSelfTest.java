@@ -31,7 +31,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetItemKey;
+import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -183,8 +183,8 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
                     if (entry.hasValue()) {
                         cnt++;
 
-                        if (entry.key() instanceof GridCacheSetItemKey) {
-                            GridCacheSetItemKey setItem = (GridCacheSetItemKey)entry.key();
+                        if (entry.key() instanceof SetItemKey) {
+                            SetItemKey setItem = (SetItemKey)entry.key();
 
                             if (setIds.add(setItem.setId()))
                                 log.info("Unexpected set item [setId=" + setItem.setId() +

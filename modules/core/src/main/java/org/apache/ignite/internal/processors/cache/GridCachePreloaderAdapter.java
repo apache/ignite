@@ -93,6 +93,11 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean needForceKeys() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void onReconnected() {
         // No-op.
     }
@@ -119,7 +124,12 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> rebalanceFuture() {
-        return new GridFinishedFuture<>(true);
+        return finFut;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> initialRebalanceFuture() {
+        return finFut;
     }
 
     /** {@inheritDoc} */

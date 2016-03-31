@@ -20,8 +20,11 @@ package org.apache.ignite.internal.processors.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -31,6 +34,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -45,8 +49,8 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -203,6 +207,54 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test HAVING clause.
+     */
+    public void testHaving() {
+        IgniteCache<Integer, Integer> c = ignite(0).getOrCreateCache(cacheConfig("ints", true,
+            Integer.class, Integer.class));
+
+        try {
+            Random rnd = new GridRandom();
+
+            Map<Integer, AtomicLong> cntMap = new HashMap<>();
+
+            for (int i = 0; i < 1000; i++) {
+                int v = (int)(50 * rnd.nextGaussian());
+
+                c.put(i, v);
+
+                AtomicLong cnt = cntMap.get(v);
+
+                if (cnt == null)
+                    cntMap.put(v, cnt = new AtomicLong());
+
+                cnt.incrementAndGet();
+            }
+
+            assertTrue(cntMap.size() > 10);
+
+            String sqlQry = "select _val, count(*) cnt from Integer group by _val having cnt > ?";
+
+            X.println("Plan: " + c.query(new SqlFieldsQuery("explain " + sqlQry).setArgs(0)).getAll());
+
+            for (int i = -1; i <= 1001; i += 10) {
+                List<List<?>> res = c.query(new SqlFieldsQuery(sqlQry).setArgs(i)).getAll();
+
+                for (List<?> row : res) {
+                    int v = (Integer)row.get(0);
+                    long cnt = (Long)row.get(1);
+
+                    assertTrue(cnt + " > " + i, cnt > i);
+                    assertEquals(cntMap.get(v).longValue(), cnt);
+                }
+            }
+        }
+        finally {
+            c.destroy();
+        }
+    }
+
+    /**
      * @param c Cache.
      * @param qry Query.
      * @param args Arguments.
@@ -227,6 +279,40 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testFunctionNpe() {
+        assert false : "https://issues.apache.org/jira/browse/IGNITE-1886";
+
+        IgniteCache<Integer, User> userCache = ignite(0).createCache(
+            cacheConfig("UserCache", true, Integer.class, User.class));
+        IgniteCache<Integer, UserOrder> userOrderCache = ignite(0).createCache(
+            cacheConfig("UserOrderCache", true, Integer.class, UserOrder.class));
+        IgniteCache<Integer, OrderGood> orderGoodCache = ignite(0).createCache(
+            cacheConfig("OrderGoodCache", true, Integer.class, OrderGood.class));
+
+        try {
+            String sql =
+                "SELECT a.* FROM (" +
+                    "SELECT CASE WHEN u.id < 100 THEN u.id ELSE ug.id END id " +
+                    "FROM \"UserCache\".User u, UserOrder ug " +
+                    "WHERE u.id = ug.userId" +
+                    ") a, (" +
+                    "SELECT CASE WHEN og.goodId < 5 THEN 100 ELSE og.goodId END id " +
+                    "FROM UserOrder ug, \"OrderGoodCache\".OrderGood og " +
+                    "WHERE ug.id = og.orderId) b " +
+                    "WHERE a.id = b.id";
+
+            userOrderCache.query(new SqlFieldsQuery(sql)).getAll();
+        }
+        finally {
+            userCache.destroy();
+            userOrderCache.destroy();
+            orderGoodCache.destroy();
+        }
+    }
+
+    /**
      * Test value.
      */
     private static class GroupIndexTestValue implements Serializable {
@@ -244,5 +330,26 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
             this.a = a;
             this.b = b;
         }
+    }
+
+    private static class User implements Serializable {
+        @QuerySqlField
+        private int id;
+    }
+
+    private static class UserOrder implements Serializable {
+        @QuerySqlField
+        private int id;
+
+        @QuerySqlField
+        private int userId;
+    }
+
+    private static class OrderGood implements Serializable {
+        @QuerySqlField
+        private int orderId;
+
+        @QuerySqlField
+        private int goodId;
     }
 }

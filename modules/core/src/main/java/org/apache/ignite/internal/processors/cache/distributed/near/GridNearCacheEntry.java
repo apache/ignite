@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -66,17 +65,14 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
      * @param key Cache key.
      * @param hash Key hash value.
      * @param val Entry value.
-     * @param next Next entry in the linked list.
-     * @param hdrId Header id.
      */
-    public GridNearCacheEntry(GridCacheContext ctx,
+    public GridNearCacheEntry(
+        GridCacheContext ctx,
         KeyCacheObject key,
         int hash,
-        CacheObject val,
-        GridCacheMapEntry next,
-        int hdrId)
-    {
-        super(ctx, key, hash, val, next, hdrId);
+        CacheObject val
+    ) {
+        super(ctx, key, hash, val);
 
         part = ctx.affinity().partition(key);
     }
@@ -131,6 +127,12 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 }
             }
 
+            if (cctx.affinity().backup(cctx.localNode(), part, topVer)) {
+                this.topVer = -1L;
+
+                return false;
+            }
+
             this.topVer = topVer.topologyVersion();
 
             return true;
@@ -164,7 +166,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
                             if (isNew() || !valid(topVer)) {
                                 // Version does not change for load ops.
-                                update(e.value(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
+                                update(e.value(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version(), true);
 
                                 if (cctx.deferredDelete() && !isNew() && !isInternal()) {
                                     boolean deleted = val == null;
@@ -348,7 +350,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             null,
             false,
             /*skip store*/false,
-            /*can remap*/true
+            /*can remap*/true,
+            false
         ).get().get(keyValue(false));
     }
 
@@ -376,6 +379,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         long ttl,
         long expireTime,
         boolean evt,
+        boolean keepBinary,
         AffinityTopologyVersion topVer,
         UUID subjId)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
@@ -398,7 +402,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 if (this.dhtVer == null || this.dhtVer.compareTo(dhtVer) < 0) {
                     primaryNode(primaryNodeId, topVer);
 
-                    update(val, expireTime, ttl, ver);
+                    update(val, expireTime, ttl, ver, true);
 
                     if (cctx.deferredDelete() && !isInternal()) {
                         boolean deleted = val == null;
@@ -417,8 +421,20 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 }
 
                 if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
-                    cctx.events().addEvent(partition(), key, tx, null, EVT_CACHE_OBJECT_READ,
-                        val, val != null, old, hasVal, subjId, null, null);
+                    cctx.events().addEvent(
+                        partition(),
+                        key,
+                        tx,
+                        null,
+                        EVT_CACHE_OBJECT_READ,
+                        val,
+                        val != null,
+                        old,
+                        hasVal,
+                        subjId,
+                        null,
+                        null,
+                        keepBinary);
 
                 return ret;
             }

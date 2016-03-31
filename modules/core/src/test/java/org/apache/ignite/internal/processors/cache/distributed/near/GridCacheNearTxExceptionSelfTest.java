@@ -30,24 +30,4 @@ public class GridCacheNearTxExceptionSelfTest extends IgniteTxExceptionAbstractS
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testTransformBackup(){
-        fail("https://issues.apache.org/jira/browse/IGNITE-1601");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testRemoveBackup() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1839");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPutBackup() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1839");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testTransformNear() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1839");
-    }
 }

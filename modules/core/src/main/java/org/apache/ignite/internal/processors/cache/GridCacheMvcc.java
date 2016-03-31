@@ -348,9 +348,6 @@ public final class GridCacheMvcc {
 
                     reassign();
 
-                    if (cand.local())
-                        cctx.mvcc().removeLocal(cand);
-
                     return true;
                 }
             }
@@ -596,8 +593,6 @@ public final class GridCacheMvcc {
         );
 
         if (serOrder == null) {
-            cctx.mvcc().addLocal(cand);
-
             boolean add = add0(cand);
 
             assert add : cand;
@@ -605,8 +600,6 @@ public final class GridCacheMvcc {
         else {
             if (!add0(cand))
                 return null;
-
-            cctx.mvcc().addLocal(cand);
         }
 
         return cand;

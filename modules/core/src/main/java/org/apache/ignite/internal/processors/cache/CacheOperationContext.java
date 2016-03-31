@@ -42,11 +42,14 @@ public class CacheOperationContext implements Serializable {
     /** Client ID which operates over this projection. */
     private final UUID subjId;
 
-    /** Keep portable flag. */
-    private final boolean keepPortable;
+    /** Keep binary flag. */
+    private final boolean keepBinary;
 
     /** Expiry policy. */
     private final ExpiryPolicy expiryPlc;
+
+    /** Data center Id. */
+    private final Byte dataCenterId;
 
     /**
      * Constructor with default values.
@@ -56,55 +59,69 @@ public class CacheOperationContext implements Serializable {
 
         subjId = null;
 
-        keepPortable = false;
+        keepBinary = false;
 
         expiryPlc = null;
 
         noRetries = false;
+
+        dataCenterId = null;
     }
 
     /**
      * @param skipStore Skip store flag.
      * @param subjId Subject ID.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @param expiryPlc Expiry policy.
+     * @param dataCenterId Data center id.
      */
     public CacheOperationContext(
         boolean skipStore,
         @Nullable UUID subjId,
-        boolean keepPortable,
+        boolean keepBinary,
         @Nullable ExpiryPolicy expiryPlc,
-        boolean noRetries) {
+        boolean noRetries,
+        @Nullable Byte dataCenterId) {
         this.skipStore = skipStore;
 
         this.subjId = subjId;
 
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
 
         this.expiryPlc = expiryPlc;
 
         this.noRetries = noRetries;
+
+        this.dataCenterId = dataCenterId;
     }
 
     /**
-     * @return Keep portable flag.
+     * @return Keep binary flag.
      */
-    public boolean isKeepPortable() {
-        return keepPortable;
+    public boolean isKeepBinary() {
+        return keepBinary;
     }
 
     /**
-     * See {@link IgniteInternalCache#keepPortable()}.
+     * @return {@code True} if data center id is set otherwise {@code false}.
+     */
+    public boolean hasDataCenterId() {
+        return dataCenterId != null;
+    }
+
+    /**
+     * See {@link IgniteInternalCache#keepBinary()}.
      *
-     * @return New instance of CacheOperationContext with keep portable flag.
+     * @return New instance of CacheOperationContext with keep binary flag.
      */
-    public CacheOperationContext keepPortable() {
+    public CacheOperationContext keepBinary() {
         return new CacheOperationContext(
             skipStore,
             subjId,
             true,
             expiryPlc,
-            noRetries);
+            noRetries,
+            dataCenterId);
     }
 
     /**
@@ -117,6 +134,15 @@ public class CacheOperationContext implements Serializable {
     }
 
     /**
+     * Gets data center ID.
+     *
+     * @return Client ID.
+     */
+    @Nullable public Byte dataCenterId() {
+        return dataCenterId;
+    }
+
+    /**
      * See {@link IgniteInternalCache#forSubjectId(UUID)}.
      *
      * @param subjId Subject id.
@@ -126,9 +152,10 @@ public class CacheOperationContext implements Serializable {
         return new CacheOperationContext(
             skipStore,
             subjId,
-            keepPortable,
+            keepBinary,
             expiryPlc,
-            noRetries);
+            noRetries,
+            dataCenterId);
     }
 
     /**
@@ -148,9 +175,10 @@ public class CacheOperationContext implements Serializable {
         return new CacheOperationContext(
             skipStore,
             subjId,
-            keepPortable,
+            keepBinary,
             expiryPlc,
-            noRetries);
+            noRetries,
+            dataCenterId);
     }
 
     /**
@@ -172,7 +200,8 @@ public class CacheOperationContext implements Serializable {
             subjId,
             true,
             plc,
-            noRetries);
+            noRetries,
+            dataCenterId);
     }
 
     /**
@@ -183,10 +212,10 @@ public class CacheOperationContext implements Serializable {
         return new CacheOperationContext(
             skipStore,
             subjId,
-            keepPortable,
+            keepBinary,
             expiryPlc,
-            noRetries
-        );
+            noRetries,
+            dataCenterId);
     }
 
     /**

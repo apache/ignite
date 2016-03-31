@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -38,6 +39,7 @@ import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -171,13 +173,19 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
 
-            Ignite ignite = grid(i);
+            final Ignite ignite = grid(i);
 
             ignite.services().deployNodeSingleton(SINGLETON_NAME, new TestService());
 
-            ClusterGroup grp = ignite.cluster();
+            final ClusterGroup grp = ignite.cluster();
 
             assertEquals(NODES_CNT, grp.nodes().size());
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ignite.services(grp).serviceDescriptors().size() == 1;
+                }
+            }, 5000);
 
             Collection<ServiceDescriptor> srvDscs = ignite.services(grp).serviceDescriptors();
 
@@ -206,13 +214,19 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
 
-            Ignite ignite = grid(i);
+            final Ignite ignite = grid(i);
 
             ignite.services(ignite.cluster().forClients()).deployNodeSingleton(SINGLETON_NAME, new TestService());
 
-            ClusterGroup grp = ignite.cluster();
+            final ClusterGroup grp = ignite.cluster();
 
             assertEquals(NODES_CNT, grp.nodes().size());
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return ignite.services(grp).serviceDescriptors().size() == 1;
+                }
+            }, 5000);
 
             Collection<ServiceDescriptor> srvDscs = ignite.services(grp).serviceDescriptors();
 

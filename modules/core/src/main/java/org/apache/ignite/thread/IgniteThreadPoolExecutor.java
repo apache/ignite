@@ -166,7 +166,8 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
     /**
      * Creates a new service with the given initial parameters.
      *
-     * @param gridName Name of the grid
+     * @param threadNamePrefix Will be added at the beginning of all created threads.
+     * @param gridName Must be the name of the grid.
      * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
      * @param maxPoolSize The maximum number of threads to allow in the pool.
      * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
@@ -175,6 +176,7 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
      *      runnable tasks submitted by the {@link #execute(Runnable)} method.
      */
     public IgniteThreadPoolExecutor(
+        String threadNamePrefix,
         String gridName,
         int corePoolSize,
         int maxPoolSize,
@@ -186,38 +188,7 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
             keepAliveTime,
             TimeUnit.MILLISECONDS,
             workQ,
-            new IgniteThreadFactory(gridName)
-        );
-    }
-
-    /**
-     * Creates a new service with the given initial parameters.
-     *
-     * @param gridName Name of the grid.
-     * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
-     * @param maxPoolSize The maximum number of threads to allow in the pool.
-     * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
-     *      that excess idle threads will wait for new tasks before terminating.
-     * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only the
-     *      runnable tasks submitted by the {@link #execute(Runnable)} method.
-     * @param hnd Optional handler to use when execution is blocked because the thread bounds and queue
-     *      capacities are reached. If {@code null} then {@code AbortPolicy}
-     *      handler is used by default.
-     */
-    public IgniteThreadPoolExecutor(
-        String gridName,
-        int corePoolSize,
-        int maxPoolSize,
-        long keepAliveTime,
-        BlockingQueue<Runnable> workQ,
-        RejectedExecutionHandler hnd) {
-        this(
-            corePoolSize,
-            maxPoolSize,
-            keepAliveTime,
-            workQ,
-            new IgniteThreadFactory(gridName),
-            hnd
+            new IgniteThreadFactory(gridName, threadNamePrefix)
         );
     }
 

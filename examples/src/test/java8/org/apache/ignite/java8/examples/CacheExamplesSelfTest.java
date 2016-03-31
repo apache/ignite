@@ -18,6 +18,7 @@
 package org.apache.ignite.java8.examples;
 
 import org.apache.ignite.examples.java8.datagrid.CacheAffinityExample;
+import org.apache.ignite.examples.java8.datagrid.CacheEntryProcessorExample;
 import org.apache.ignite.examples.java8.datagrid.CacheApiExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
@@ -34,6 +35,13 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      */
     public void testCacheAffinityExample() throws Exception {
         CacheAffinityExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheEntryProcessorExample() throws Exception {
+        CacheEntryProcessorExample.main(EMPTY_ARGS);
     }
 
 //    TODO: IGNITE-711 next example(s) should be implemented for java 8

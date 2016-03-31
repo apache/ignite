@@ -41,7 +41,7 @@ public class GridNoStorageCacheMap extends GridCacheConcurrentMap {
      * @param ctx Cache context.
      */
     public GridNoStorageCacheMap(GridCacheContext ctx) {
-        super(ctx, 0, 0.75f, 1);
+        super(ctx, 0, null, 0.75f, 1);
     }
 
     /** {@inheritDoc} */
@@ -91,8 +91,8 @@ public class GridNoStorageCacheMap extends GridCacheConcurrentMap {
     {
         if (create) {
             GridCacheMapEntry entry = ctx.useOffheapEntry() ?
-                new GridDhtOffHeapCacheEntry(ctx, topVer, key, hash(key.hashCode()), val, null, 0) :
-                new GridDhtCacheEntry(ctx, topVer, key, hash(key.hashCode()), val, null, 0);
+                new GridDhtOffHeapCacheEntry(ctx, topVer, key, hash(key.hashCode()), val) :
+                new GridDhtCacheEntry(ctx, topVer, key, hash(key.hashCode()), val);
 
             return new GridTriple<>(entry, null, null);
         }

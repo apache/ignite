@@ -24,7 +24,7 @@ import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cache.store.CacheStoreSession;
-import org.apache.ignite.examples.datagrid.store.Person;
+import org.apache.ignite.examples.model.Person;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.hibernate.HibernateException;
@@ -107,7 +107,7 @@ public class CacheHibernatePersonStore extends CacheStoreAdapter<Long, Person> {
                 for (Object obj : list) {
                     Person person = (Person)obj;
 
-                    clo.apply(person.getId(), person);
+                    clo.apply(person.id, person);
 
                     cnt++;
                 }

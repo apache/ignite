@@ -27,8 +27,10 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -113,13 +115,18 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
      * @throws Exception e.
      */
     public void test() throws Exception {
+        String marshClsName = GridTestProperties.getProperty(GridTestProperties.MARSH_CLASS_NAME);
+
+        // This test passes with binary marshaller because we do not unmarshall keys.
+        if (marshClsName != null && marshClsName.contains(BinaryMarshaller.class.getSimpleName()))
+            return;
+
         readCnt.set(Integer.MAX_VALUE);
 
         startGrid(0);
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++)
             grid(0).cache(CACHE).put(new TestKey(String.valueOf(i)), i);
-        }
 
         readCnt.set(1);
 
@@ -127,15 +134,13 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
 
         readCnt.set(Integer.MAX_VALUE);
 
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 50; i++)
             assert grid(1).cache(CACHE).get(new TestKey(String.valueOf(i))) != null;
-        }
 
         stopGrid(0);
 
-        for (int i = 50; i < 100; i++) {
-            assert grid(1).cache(CACHE).get(new TestKey(String.valueOf(i))) == null;
-        }
+        for (int i = 50; i < 100; i++)
+            assertNull(grid(1).cache(CACHE).get(new TestKey(String.valueOf(i))));
     }
 
     /** {@inheritDoc} */

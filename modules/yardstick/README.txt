@@ -54,21 +54,23 @@ and command line arguments for running Yardstick scripts.
 
 The following Ignite benchmark properties can be defined in the benchmark configuration:
 
-* `-nn <num>` or `--nodeNumber <num>` - Number of nodes (automatically set in `benchmark.properties`), used to wait for the specified number of nodes to start
 * `-b <num>` or `--backups <num>` - Number of backups for every key
 * `-cfg <path>` or `--Config <path>` - Path to Ignite configuration file
-* `-sm <mode>` or `-syncMode <mode>` - Synchronization mode (defined in `CacheWriteSynchronizationMode`)
+* `-cs` or `--cacheStore` - Enable or disable cache store readThrough, writeThrough
 * `-cl` or `--client` - Client flag
 * `-nc` or `--nearCache` - Near cache flag
-* `-wom <mode>` or `--writeOrderMode <mode>` - Write order mode for ATOMIC caches (defined in `CacheAtomicWriteOrderMode`)
-* `-txc <value>` or `--txConcurrency <value>` - Cache transaction concurrency control, either `OPTIMISTIC` or `PESSIMISTIC` (defined in `CacheTxConcurrency`)
-* `-txi <value>` or `--txIsolation <value>` - Cache transaction isolation (defined in `CacheTxIsolation`)
+* `-nn <num>` or `--nodeNumber <num>` - Number of nodes (automatically set in `benchmark.properties`), used to wait for the specified number of nodes to start
+* `-sm <mode>` or `-syncMode <mode>` - Synchronization mode (defined in `CacheWriteSynchronizationMode`)
 * `-ot` or `--offheapTiered` - Flag indicating whether tiered off-heap mode is on
 * `-ov` or `--offheapValuesOnly` - Flag indicating whether off-heap mode is on and only cache values are stored off-heap
-* `-rtp <num>`  or `--restPort <num>` - REST TCP port, indicates that a Ignite node is ready to process Ignite Clients
-* `-rth <host>` or `--restHost <host>` - REST TCP host
-* `-ss` or `--syncSend` - Flag indicating whether synchronous send is used in `TcpCommunicationSpi`
 * `-r <num>` or `--range` - Range of keys that are randomly generated for cache operations
+* `-rth <host>` or `--restHost <host>` - REST TCP host
+* `-rtp <num>` or `--restPort <num>` - REST TCP port, indicates that a Ignite node is ready to process Ignite Clients
+* `-ss` or `--syncSend` - Flag indicating whether synchronous send is used in `TcpCommunicationSpi`
+* `-txc <value>` or `--txConcurrency <value>` - Cache transaction concurrency control, either `OPTIMISTIC` or `PESSIMISTIC` (defined in `CacheTxConcurrency`)
+* `-txi <value>` or `--txIsolation <value>` - Cache transaction isolation (defined in `CacheTxIsolation`)
+* `-wb` or `--writeBehind` - Enable or disable writeBehind for cache store
+* `-wom <mode>` or `--writeOrderMode <mode>` - Write order mode for ATOMIC caches (defined in `CacheAtomicWriteOrderMode`)
 
 For example if we need to run 2 `IgniteNode` servers on localhost with `PutBenchmark` benchmark on localhost,
 with number of backups set to 1, synchronization mode set to `PRIMARY_SYNC`, then the following configuration

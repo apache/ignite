@@ -40,7 +40,10 @@ public interface GridComponent {
         CACHE_PROC,
 
         /** */
-        PLUGIN
+        PLUGIN,
+
+        /** */
+        CLUSTER_PROC
     }
 
     /**
@@ -131,6 +134,7 @@ public interface GridComponent {
      *
      * @param clusterRestarted Cluster restarted flag.
      * @throws IgniteCheckedException If failed.
+     * @return Future to wait before completing reconnect future.
      */
-    public void onReconnected(boolean clusterRestarted) throws IgniteCheckedException;
+    @Nullable public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException;
 }

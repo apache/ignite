@@ -204,7 +204,8 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
      * Stops streamer.
      */
     public void stop() {
-        srv.stop();
+        if (srv != null)
+            srv.stop();
 
         if (log.isDebugEnabled())
             log.debug("Socket streaming server stopped");

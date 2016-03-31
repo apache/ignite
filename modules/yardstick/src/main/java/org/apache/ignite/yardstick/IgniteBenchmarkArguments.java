@@ -62,7 +62,7 @@ public class IgniteBenchmarkArguments {
 
     /** */
     @Parameter(names = {"-txc", "--txConcurrency"}, description = "Transaction concurrency")
-    private TransactionConcurrency txConcurrency = TransactionConcurrency.OPTIMISTIC;
+    private TransactionConcurrency txConcurrency = TransactionConcurrency.PESSIMISTIC;
 
     /** */
     @Parameter(names = {"-txi", "--txIsolation"}, description = "Transaction isolation")
@@ -135,6 +135,17 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-kpt", "--keysPerThread"}, description = "Use not intersecting keys in putAll benchmark")
     private boolean keysPerThread;
+
+    /** */
+    @Parameter(names = {"-pp", "--printPartitionStats"}, description = "Print partition statistics")
+    private boolean printPartStats;
+
+    /**
+     * @return If {@code true} when need to print partition statistics.
+     */
+    public boolean printPartitionStatistics() {
+        return printPartStats;
+    }
 
     /**
      * @return JDBC url.

@@ -38,6 +38,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -177,7 +178,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Picked node.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key, AffinityTopologyVersion topVer) throws IgniteCheckedException {
+    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key,
+        AffinityTopologyVersion topVer) throws IgniteCheckedException {
         Map<ClusterNode, Collection<K>> map = keysToNodes(cacheName, F.asList(key), topVer);
 
         return map != null ? F.first(map.keySet()) : null;
@@ -205,20 +207,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             return Collections.emptyList();
 
         return primaryAndBackups(affInfo, key);
-    }
-
-    /**
-     * Map single key to primary and backup nodes.
-     *
-     * @param cacheName Cache name.
-     * @param key Key to map.
-     * @return Affinity nodes, primary first.
-     * @throws IgniteCheckedException If failed.
-     */
-    public <K> List<ClusterNode> mapKeyToPrimaryAndBackups(@Nullable String cacheName, K key)
-        throws IgniteCheckedException
-    {
-        return mapKeyToPrimaryAndBackups(cacheName, key, ctx.discovery().topologyVersionEx());
     }
 
     /**
@@ -317,7 +305,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             if (cache == null)
                 return null;
 
-            GridCacheContext<Object,Object> cctx = cache.context();
+            GridCacheContext<Object, Object> cctx = cache.context();
 
             cctx.awaitStarted();
 
@@ -423,8 +411,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Requests {@link AffinityFunction} and
-     * {@link AffinityKeyMapper} from remote node.
+     * Requests {@link AffinityFunction} and {@link AffinityKeyMapper} from remote node.
      *
      * @param cacheName Name of cache on which affinity is requested.
      * @param topVer Topology version.
@@ -497,7 +484,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     private <K> ClusterNode primary(AffinityInfo aff, K key) throws IgniteCheckedException {
-        if (key instanceof CacheObject)
+        if (key instanceof CacheObject && !(key instanceof BinaryObject))
             key = ((CacheObject)key).value(aff.cacheObjCtx, false);
 
         int part = aff.affFunc.partition(aff.mapper.affinityKey(key));
@@ -516,8 +503,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @return Primary and backup nodes.
      */
     private <K> List<ClusterNode> primaryAndBackups(AffinityInfo aff, K key) {
-        if (key instanceof CacheObject)
-            key = ((CacheObject) key).value(aff.cacheObjCtx, false);
+        if (key instanceof CacheObject && !(key instanceof BinaryObject))
+            key = ((CacheObject)key).value(aff.cacheObjCtx, false);
 
         int part = aff.affFunc.partition(aff.mapper.affinityKey(key));
 
@@ -800,7 +787,12 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                return GridAffinityProcessor.this.mapKeysToNodes(cacheName, keys);
+                if (F.isEmpty(keys))
+                    return Collections.emptyMap();
+
+                AffinityInfo affInfo = cache();
+
+                return affinityMap(affInfo, keys);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -812,10 +804,16 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Nullable @Override public ClusterNode mapKeyToNode(K key) {
+            A.notNull(key, "key");
+
             ctx.gateway().readLock();
 
             try {
-                return GridAffinityProcessor.this.mapKeyToNode(cacheName, key);
+                AffinityInfo affInfo = cache();
+
+                Map<ClusterNode, Collection<K>> map = affinityMap(affInfo, Collections.singletonList(key));
+
+                return F.first(map.keySet());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -879,9 +877,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                AffinityInfo cache = cache();
-
-                return cache != null ? cache.assignment().get(part) : Collections.<ClusterNode>emptyList();
+                return cache().assignment().get(part);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -895,15 +891,14 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
          * @return Affinity info for current topology version.
          * @throws IgniteCheckedException If failed.
          */
-        @Nullable private AffinityInfo cache() throws IgniteCheckedException {
-            return affinityCache(cacheName, new AffinityTopologyVersion(topologyVersion()));
-        }
+        private AffinityInfo cache() throws IgniteCheckedException {
+            AffinityInfo aff = affinityCache(cacheName, ctx.discovery().topologyVersionEx());
 
-        /**
-         * @return Topology version.
-         */
-        private long topologyVersion() {
-            return ctx.discovery().topologyVersion();
+            if (aff == null)
+                throw new IgniteException("Failed to find cache (cache was not started " +
+                    "yet or cache was already stopped): " + cacheName);
+
+            return aff;
         }
     }
 }

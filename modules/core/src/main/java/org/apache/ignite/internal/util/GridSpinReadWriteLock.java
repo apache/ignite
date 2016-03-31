@@ -21,16 +21,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import sun.misc.Unsafe;
 
 /**
  *
  */
 @GridToStringExclude
 public class GridSpinReadWriteLock {
-    /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** */
     private static final long PENDING_WLOCKS_OFFS;
 
@@ -42,10 +38,10 @@ public class GridSpinReadWriteLock {
      */
     static {
         try {
-            STATE_OFFS = UNSAFE.objectFieldOffset(GridSpinReadWriteLock.class.getDeclaredField("state"));
+            STATE_OFFS = GridUnsafe.objectFieldOffset(GridSpinReadWriteLock.class.getDeclaredField("state"));
 
             PENDING_WLOCKS_OFFS =
-                UNSAFE.objectFieldOffset(GridSpinReadWriteLock.class.getDeclaredField("pendingWLocks"));
+                GridUnsafe.objectFieldOffset(GridSpinReadWriteLock.class.getDeclaredField("pendingWLocks"));
         }
         catch (NoSuchFieldException e) {
             throw new Error(e);
@@ -403,7 +399,7 @@ public class GridSpinReadWriteLock {
      * @return {@code True} on success.
      */
     private boolean compareAndSet(long offs, int expect, int update) {
-        return UNSAFE.compareAndSwapInt(this, offs, expect, update);
+        return GridUnsafe.compareAndSwapInt(this, offs, expect, update);
     }
 
     /** {@inheritDoc} */

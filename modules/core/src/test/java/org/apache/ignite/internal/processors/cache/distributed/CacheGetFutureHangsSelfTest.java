@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -29,6 +30,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -135,11 +137,15 @@ public class CacheGetFutureHangsSelfTest extends GridCommonAbstractTest {
                     @Override public void run() {
                         T2<Ignite, Integer> ignite;
 
+                        Set<Integer> keys = F.asSet(1, 2, 3, 4, 5);
+
                         while ((ignite = randomNode()) != null) {
                             IgniteCache<Object, Object> cache = ignite.get1().cache(null);
 
                             for (int i = 0; i < 100; i++)
                                 cache.containsKey(ThreadLocalRandom.current().nextInt(100_000));
+
+                            cache.containsKeys(keys);
 
                             assertTrue(nodes.compareAndSet(ignite.get2(), null, ignite.get1()));
 

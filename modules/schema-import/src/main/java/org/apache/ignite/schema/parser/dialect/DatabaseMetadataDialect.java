@@ -21,10 +21,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.schema.parser.DbColumn;
 import org.apache.ignite.schema.parser.DbTable;
 
@@ -45,7 +45,7 @@ public abstract class DatabaseMetadataDialect {
      * Gets tables from database.
      *
      * @param conn Database connection.
-     * @param schemas Collention of schema names to load.
+     * @param schemas Collection of schema names to load.
      * @param tblsOnly If {@code true} then gets only tables otherwise gets tables and views.
      * @return Collection of table descriptors.
      * @throws SQLException If failed to get tables.
@@ -69,27 +69,7 @@ public abstract class DatabaseMetadataDialect {
      * @param idxs Table indexes.
      * @return New {@code DbTable} instance.
      */
-    protected DbTable table(String schema, String tbl, Collection<DbColumn> cols, Map<String, Map<String, Boolean>>idxs) {
-        Set<String> ascCols = new HashSet<>();
-
-        Set<String> descCols = new HashSet<>();
-
-        for (Map<String, Boolean> idx : idxs.values()) {
-            if (idx.size() == 1)
-                for (Map.Entry<String, Boolean> idxCol : idx.entrySet()) {
-                    String colName = idxCol.getKey();
-
-                    Boolean desc = idxCol.getValue();
-
-                    if (desc != null) {
-                        if (desc)
-                            descCols.add(colName);
-                        else
-                            ascCols.add(colName);
-                    }
-                }
-        }
-
-        return new DbTable(schema, tbl, cols, ascCols, descCols, idxs);
+    protected DbTable table(String schema, String tbl, Collection<DbColumn> cols, Collection<QueryIndex>idxs) {
+        return new DbTable(schema, tbl, cols, idxs);
     }
 }

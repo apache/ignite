@@ -41,8 +41,6 @@ public class MessagingExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     public void testMessagingPingPongExample() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-10");
-
         MessagingPingPongExample.main(EMPTY_ARGS);
     }
 

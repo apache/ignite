@@ -31,6 +31,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -45,8 +46,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
@@ -412,6 +411,9 @@ public class IgniteConfiguration {
     /** Client access configuration. */
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
 
+    /** ODBC configuration. */
+    private OdbcConfiguration odbcCfg;
+
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
@@ -429,6 +431,15 @@ public class IgniteConfiguration {
 
     /** SSL connection factory. */
     private Factory<SSLContext> sslCtxFactory;
+
+    /** Platform configuration. */
+    private PlatformConfiguration platformCfg;
+
+    /** Cache key configuration. */
+    private CacheKeyConfiguration[] cacheKeyCfg;
+
+    /** */
+    private BinaryConfiguration binaryCfg;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -464,8 +475,10 @@ public class IgniteConfiguration {
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
+        binaryCfg = cfg.getBinaryConfiguration();
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
+        cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         connectorCfg = cfg.getConnectorConfiguration();
         classLdr = cfg.getClassLoader();
@@ -500,10 +513,12 @@ public class IgniteConfiguration {
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
+        odbcCfg = cfg.getOdbcConfiguration();
         p2pEnabled = cfg.isPeerClassLoadingEnabled();
         p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
+        platformCfg = cfg.getPlatformConfiguration();
         pluginCfgs = cfg.getPluginConfigurations();
         pubPoolSize = cfg.getPublicThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
@@ -880,8 +895,22 @@ public class IgniteConfiguration {
      * @see IgniteConfiguration#getMarshallerCacheThreadPoolSize()
      * @see IgniteConfiguration#getMarshallerCacheKeepAliveTime()
      * @return {@code this} for chaining.
+     * @deprecated Use {@link #setMarshallerCacheThreadPoolSize(int)} instead.
      */
+    @Deprecated
     public IgniteConfiguration setMarshallerCachePoolSize(int poolSize) {
+        return setMarshallerCacheThreadPoolSize(poolSize);
+    }
+
+    /**
+     * Sets default thread pool size that will be used to process marshaller messages.
+     *
+     * @param poolSize Default executor service size to use for marshaller messages.
+     * @see IgniteConfiguration#getMarshallerCacheThreadPoolSize()
+     * @see IgniteConfiguration#getMarshallerCacheKeepAliveTime()
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setMarshallerCacheThreadPoolSize(int poolSize) {
         marshCachePoolSize = poolSize;
 
         return this;
@@ -1007,8 +1036,8 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of marshaller to use in grid. If not provided,
-     * {@link OptimizedMarshaller} will be used on Java HotSpot VM, and
-     * {@link JdkMarshaller} will be used on other VMs.
+     * default marshaller implementation that allows to read object field values
+     * without deserialization will be used.
      *
      * @return Marshaller to use in grid.
      */
@@ -1351,11 +1380,12 @@ public class IgniteConfiguration {
      *
      * Default is {@code 1} which has minimal impact on the operation of the grid.
      *
-     * @param size Size.
+     * @param rebalanceThreadPoolSize Number of system threads that will be assigned for partition transfer during
+     *      rebalancing.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setRebalanceThreadPoolSize(int size) {
-        this.rebalanceThreadPoolSize = size;
+    public IgniteConfiguration setRebalanceThreadPoolSize(int rebalanceThreadPoolSize) {
+        this.rebalanceThreadPoolSize = rebalanceThreadPoolSize;
 
         return this;
     }
@@ -1976,6 +2006,47 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Gets cache key configuration.
+     *
+     * @return Cache key configuration.
+     */
+    public CacheKeyConfiguration[] getCacheKeyConfiguration() {
+        return cacheKeyCfg;
+    }
+
+    /**
+     * Sets cache key configuration.
+     * Cache key configuration defines
+     *
+     * @param cacheKeyCfg Cache key configuration.
+     */
+    public IgniteConfiguration setCacheKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
+        this.cacheKeyCfg = cacheKeyCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets configuration for Ignite Binary objects.
+     *
+     * @return Binary configuration object.
+     */
+    public BinaryConfiguration getBinaryConfiguration() {
+        return binaryCfg;
+    }
+
+    /**
+     * Sets configuration for Ignite Binary objects.
+     *
+     * @param binaryCfg Binary configuration object.
+     */
+    public IgniteConfiguration setBinaryConfiguration(BinaryConfiguration binaryCfg) {
+        this.binaryCfg = binaryCfg;
+
+        return this;
+    }
+
+    /**
      * Gets flag indicating whether cache sanity check is enabled. If enabled, then Ignite
      * will perform the following checks and throw an exception if check fails:
      * <ul>
@@ -2231,6 +2302,27 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Gets configuration for ODBC.
+     *
+     * @return ODBC configuration.
+     */
+    public OdbcConfiguration getOdbcConfiguration() {
+        return odbcCfg;
+    }
+
+    /**
+     * Sets configuration for ODBC.
+     *
+     * @param odbcCfg ODBC configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setOdbcConfiguration(OdbcConfiguration odbcCfg) {
+        this.odbcCfg = odbcCfg;
+
+        return this;
+    }
+
+    /**
      * Gets configurations for services to be deployed on the grid.
      *
      * @return Configurations for services to be deployed on the grid.
@@ -2407,6 +2499,24 @@ public class IgniteConfiguration {
         this.storeSesLsnrs = storeSesLsnrs;
 
         return this;
+    }
+
+    /**
+     * Gets platform configuration.
+     *
+     * @return Platform configuration.
+     */
+    public PlatformConfiguration getPlatformConfiguration() {
+        return platformCfg;
+    }
+
+    /**
+     * Sets platform configuration.
+     *
+     * @param platformCfg Platform configuration.
+     */
+    public void setPlatformConfiguration(PlatformConfiguration platformCfg) {
+        this.platformCfg = platformCfg;
     }
 
     /** {@inheritDoc} */

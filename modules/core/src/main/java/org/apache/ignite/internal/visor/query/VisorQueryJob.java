@@ -20,11 +20,14 @@ package org.apache.ignite.internal.visor.query;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -39,6 +42,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.RMV_DELAY;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_COL_NAMES;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_QRY_NAME;
+import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SCAN_NEAR_CACHE;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.SQL_QRY_NAME;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.fetchScanQueryRows;
 import static org.apache.ignite.internal.visor.query.VisorQueryUtils.fetchSqlQueryRows;
@@ -70,26 +74,49 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
         return cacheProcessor.jcache(cacheName);
     }
 
+    /**
+     * Execute scan query.
+     *
+     * @param c Cache to scan.
+     * @param arg Job argument with query parameters.
+     * @return Query cursor.
+     */
+    private QueryCursor<Cache.Entry<Object, Object>> scan(IgniteCache<Object, Object> c, VisorQueryArg arg) {
+        ScanQuery<Object, Object> qry = new ScanQuery<>(null);
+        qry.setPageSize(arg.pageSize());
+        qry.setLocal(arg.local());
+
+        return c.withKeepBinary().query(qry);
+    }
+
+    /**
+     * Scan near cache.
+     *
+     * @param c Cache to scan near entries.
+     * @return Cache entries iterator wrapped with query cursor.
+     */
+    private QueryCursor<Cache.Entry<Object, Object>> near(IgniteCache<Object, Object> c) {
+        return new VisorNearCacheCursor<>(c.localEntries(CachePeekMode.NEAR).iterator());
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteBiTuple<? extends VisorExceptionWrapper, VisorQueryResultEx> run(VisorQueryArg arg) {
         try {
             UUID nid = ignite.localNode().id();
 
+            boolean near = SCAN_NEAR_CACHE.equalsIgnoreCase(arg.queryTxt());
+
             boolean scan = arg.queryTxt() == null;
 
-            String qryId = (scan ? SCAN_QRY_NAME : SQL_QRY_NAME) + "-" +
-                UUID.randomUUID();
+            // Generate query ID to store query cursor in node local storage.
+            String qryId = ((scan || near) ? SCAN_QRY_NAME : SQL_QRY_NAME) + "-" + UUID.randomUUID();
 
             IgniteCache<Object, Object> c = cache(arg.cacheName());
 
-            if (scan) {
-                ScanQuery<Object, Object> qry = new ScanQuery<>(null);
-                qry.setPageSize(arg.pageSize());
-                qry.setLocal(arg.local());
-
+            if (near || scan) {
                 long start = U.currentTimeMillis();
 
-                VisorQueryCursor<Cache.Entry<Object, Object>> cur = new VisorQueryCursor<>(c.query(qry));
+                VisorQueryCursor<Cache.Entry<Object, Object>> cur = new VisorQueryCursor<>(near ? near(c) : scan(c, arg));
 
                 List<Object[]> rows = fetchScanQueryRows(cur, arg.pageSize());
 
@@ -115,7 +142,7 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
 
                 long start = U.currentTimeMillis();
 
-                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(c.query(qry));
+                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(c.withKeepBinary().query(qry));
 
                 Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 
@@ -183,5 +210,42 @@ public class VisorQueryJob extends VisorJob<VisorQueryArg, IgniteBiTuple<? exten
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorQueryJob.class, this);
+    }
+
+    /**
+     * Wrapper for cache iterator to behave like {@link QueryCursor}.
+     */
+    private static class VisorNearCacheCursor<T> implements QueryCursor<T> {
+        /** Wrapped iterator.  */
+        private final Iterator<T> it;
+
+        /**
+         * Wrapping constructor.
+         *
+         * @param it Near cache iterator to wrap.
+         */
+        private VisorNearCacheCursor(Iterator<T> it) {
+            this.it = it;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<T> getAll() {
+            List<T> all = new ArrayList<>();
+
+            while(it.hasNext())
+                all.add(it.next());
+
+            return all;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() {
+            // Nothing to close.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Iterator<T> iterator() {
+            return it;
+        }
     }
 }

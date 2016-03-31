@@ -61,8 +61,13 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
 
         Ignition.setClientMode(true);
 
-        startGrid("client1");
-        startGrid("client2");
+        try {
+            startGrid("client1");
+            startGrid("client2");
+        }
+        finally {
+            Ignition.setClientMode(false);
+        }
     }
 
     /** {@inheritDoc} */

@@ -336,6 +336,8 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     private void testTransactionMixed0(IgniteCache<Integer, Object>[] caches, TransactionConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
         for (IgniteCache<Integer, Object> cache : caches) {
+            info("Checking cache: " + cache.getName());
+
             Transaction tx = cache.unwrap(Ignite.class).transactions().txStart(concurrency, REPEATABLE_READ);
 
             try {
@@ -351,6 +353,8 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
             }
 
             for (IgniteCache<Integer, Object> cacheInner : caches) {
+                info("Getting value from cache: " + cacheInner.getName());
+
                 tx = cacheInner.unwrap(Ignite.class).transactions().txStart(concurrency, REPEATABLE_READ);
 
                 try {

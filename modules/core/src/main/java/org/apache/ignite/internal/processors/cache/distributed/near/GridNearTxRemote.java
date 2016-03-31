@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Externalizable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
@@ -34,10 +33,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteStateImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -74,7 +75,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param ldr Class loader.
      * @param nodeId Node ID.
      * @param nearNodeId Near node ID.
-     * @param rmtThreadId Remote thread ID.
      * @param xidVer XID version.
      * @param commitVer Commit version.
      * @param sys System flag.
@@ -92,7 +92,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         ClassLoader ldr,
         UUID nodeId,
         UUID nearNodeId,
-        long rmtThreadId,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
@@ -109,15 +108,14 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         super(
             ctx, 
             nodeId, 
-            rmtThreadId, 
-            xidVer, 
+            xidVer,
             commitVer, 
             sys, 
             plc, 
             concurrency, 
             isolation, 
             invalidate, 
-            timeout, 
+            timeout,
             txSize,
             subjId, 
             taskNameHash
@@ -127,10 +125,10 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
         this.nearNodeId = nearNodeId;
 
-        readMap = Collections.emptyMap();
+        int writeSize = writeEntries != null ? Math.max(txSize, writeEntries.size()) : txSize;
 
-        writeMap = new LinkedHashMap<>(
-            writeEntries != null ? Math.max(txSize, writeEntries.size()) : txSize, 1.0f);
+        txState = new IgniteTxRemoteStateImpl(Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
+            U.<IgniteTxKey, IgniteTxEntry>newLinkedHashMap(writeSize));
 
         if (writeEntries != null) {
             for (IgniteTxEntry entry : writeEntries) {
@@ -147,7 +145,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param nodeId Node ID.
      * @param nearNodeId Near node ID.
      * @param nearXidVer Near transaction ID.
-     * @param rmtThreadId Remote thread ID.
      * @param xidVer XID version.
      * @param commitVer Commit version.
      * @param sys System flag.
@@ -163,7 +160,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         UUID nodeId,
         UUID nearNodeId,
         GridCacheVersion nearXidVer,
-        long rmtThreadId,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
         boolean sys,
@@ -179,17 +175,16 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         super(
             ctx, 
             nodeId, 
-            rmtThreadId, 
-            xidVer, 
+            xidVer,
             commitVer,
             sys,
             plc,
             concurrency, 
             isolation, 
             invalidate, 
-            timeout, 
+            timeout,
             txSize,
-            subjId, 
+            subjId,
             taskNameHash
         );
 
@@ -198,8 +193,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         this.nearXidVer = nearXidVer;
         this.nearNodeId = nearNodeId;
 
-        readMap = new LinkedHashMap<>(1, 1.0f);
-        writeMap = new LinkedHashMap<>(txSize, 1.0f);
+        txState = new IgniteTxRemoteStateImpl(U.<IgniteTxKey, IgniteTxEntry>newLinkedHashMap(1),
+            U.<IgniteTxKey, IgniteTxEntry>newLinkedHashMap(txSize));
     }
 
     /** {@inheritDoc} */
@@ -230,6 +225,13 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /**
+     * @param cntrs Partition indexes.
+     */
+    @Override public void setPartitionUpdateCounters(long[] cntrs) {
+        // No-op.
+    }
+
+    /**
      * Adds owned versions to map.
      *
      * @param vers Map of owned versions.
@@ -253,7 +255,12 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> masterNodeIds() {
-        return Arrays.asList(nodeId, nearNodeId);
+        Collection<UUID> res = new ArrayList<>(2);
+
+        res.add(nodeId);
+        res.add(nearNodeId);
+
+        return res;
     }
 
     /**
@@ -322,7 +329,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                     // Initialize cache entry.
                     entry.cached(cached);
 
-                    writeMap.put(entry.txKey(), entry);
+                    txState.addWriteEntry(entry.txKey(), entry);
 
                     addExplicit(entry);
 
@@ -356,7 +363,8 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
         GridCacheOperation op,
         CacheObject val,
         @Nullable GridCacheVersion drVer,
-        boolean skipStore
+        boolean skipStore,
+        boolean keepBinary
     ) throws IgniteCheckedException {
         checkInternal(key);
 
@@ -389,9 +397,10 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                         -1L,
                         cached,
                         drVer,
-                        skipStore);
+                        skipStore,
+                        keepBinary);
 
-                    writeMap.put(key, txEntry);
+                    txState.addWriteEntry(key, txEntry);
 
                     return true;
                 }

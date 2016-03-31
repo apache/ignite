@@ -22,6 +22,20 @@
            xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2
            http://maven.apache.org/xsd/component-1.1.2.xsd">
     <files>
+        <!-- Copy CPP files. -->
+        <file>
+            <source>modules/platforms/cpp/project/vs/ignite.slnrel</source>
+            <outputDirectory>/platforms/cpp/project/vs</outputDirectory>
+            <destName>ignite.sln</destName>
+        </file>
+
+        <file>
+            <source>modules/platforms/cpp/project/vs/ignite_x86.slnrel</source>
+            <outputDirectory>/platforms/cpp/project/vs</outputDirectory>
+            <destName>ignite_x86.sln</destName>
+        </file>
+
+        <!-- Other files. -->
         <file>
             <source>assembly/LICENSE_FABRIC</source>
             <destName>LICENSE</destName>
@@ -42,6 +56,95 @@
     </files>
 
     <fileSets>
+        <!-- Move platforms readme. -->
+        <fileSet>
+            <directory>modules/platforms</directory>
+            <outputDirectory>/platforms</outputDirectory>
+            <includes>
+                <include>README.txt</include>
+            </includes>
+        </fileSet>
+
+        <!-- Move .Net readme. -->
+        <fileSet>
+            <directory>modules/platforms/dotnet</directory>
+            <outputDirectory>/platforms/dotnet</outputDirectory>
+            <includes>
+                <include>README.txt</include>
+            </includes>
+        </fileSet>
+
+        <!-- Move .Net binaries. -->
+        <fileSet>
+            <directory>modules/platforms/dotnet/bin</directory>
+            <outputDirectory>/platforms/dotnet/bin</outputDirectory>
+        </fileSet>
+
+        <!-- Move .Net docs. -->
+        <fileSet>
+            <directory>modules/clients/target/dotnetdoc/html</directory>
+            <outputDirectory>/platforms/dotnet/docs</outputDirectory>
+        </fileSet>
+
+        <!-- Move .Net examples. -->
+        <fileSet>
+            <directory>modules/platforms/dotnet/examples</directory>
+            <outputDirectory>/platforms/dotnet/examples</outputDirectory>
+        </fileSet>
+
+        <!-- Move .Net licenses. -->
+        <fileSet>
+            <directory>modules/platforms/licenses</directory>
+            <outputDirectory>/platforms/dotnet/licenses</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP readme. -->
+        <fileSet>
+            <directory>modules/platforms/cpp</directory>
+            <outputDirectory>/platforms/cpp</outputDirectory>
+            <includes>
+                <include>README.txt</include>
+                <include>DEVNOTES.txt</include>
+            </includes>
+        </fileSet>
+
+        <!-- Move CPP "common" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/common</directory>
+            <outputDirectory>/platforms/cpp/common</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "core" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/core</directory>
+            <outputDirectory>/platforms/cpp/core</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "ignite" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/ignite</directory>
+            <outputDirectory>/platforms/cpp/ignite</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP examples. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/examples</directory>
+            <outputDirectory>/platforms/cpp/examples</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP licenses. -->
+        <fileSet>
+            <directory>modules/platforms/licenses</directory>
+            <outputDirectory>/platforms/cpp/licenses</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP docs. -->
+        <fileSet>
+            <directory>modules/clients/target/cppdoc/html</directory>
+            <outputDirectory>/platforms/cpp/docs</outputDirectory>
+        </fileSet>
+
+        <!-- Other files. -->
         <fileSet>
             <directory>bin</directory>
             <outputDirectory>/bin</outputDirectory>

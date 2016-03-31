@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
@@ -165,7 +166,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @param incBackups {@code true} if need to include backups.
      * @param fields Fields query flag.
      * @param all Whether to load all pages.
-     * @param keepPortable Whether to keep portables.
+     * @param keepBinary Whether to keep binary.
      * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
@@ -179,7 +180,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         boolean incBackups,
         boolean fields,
         boolean all,
-        boolean keepPortable,
+        boolean keepBinary,
         UUID subjId,
         int taskHash,
         AffinityTopologyVersion topVer,
@@ -192,7 +193,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.incBackups = incBackups;
         this.fields = fields;
         this.all = all;
-        this.keepPortable = keepPortable;
+        this.keepPortable = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
@@ -215,7 +216,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
      * @param incBackups {@code true} if need to include backups.
      * @param args Query arguments.
      * @param incMeta Include meta data or not.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @param subjId Subject ID.
      * @param taskHash Task name hash code.
      * @param topVer Topology version.
@@ -237,7 +238,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         boolean incBackups,
         Object[] args,
         boolean incMeta,
-        boolean keepPortable,
+        boolean keepBinary,
         UUID subjId,
         int taskHash,
         AffinityTopologyVersion topVer,
@@ -262,7 +263,7 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         this.incBackups = incBackups;
         this.args = args;
         this.incMeta = incMeta;
-        this.keepPortable = keepPortable;
+        this.keepPortable = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
         this.topVer = topVer;
@@ -280,28 +281,28 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (keyValFilter != null) {
+        if (keyValFilter != null && keyValFilterBytes == null) {
             if (addDepInfo)
                 prepareObject(keyValFilter, cctx);
 
             keyValFilterBytes = CU.marshal(cctx, keyValFilter);
         }
 
-        if (rdc != null) {
+        if (rdc != null && rdcBytes == null) {
             if (addDepInfo)
                 prepareObject(rdc, cctx);
 
             rdcBytes = CU.marshal(cctx, rdc);
         }
 
-        if (trans != null) {
+        if (trans != null && transBytes == null) {
             if (addDepInfo)
                 prepareObject(trans, cctx);
 
             transBytes = CU.marshal(cctx, trans);
         }
 
-        if (!F.isEmpty(args)) {
+        if (!F.isEmpty(args) && argsBytes == null) {
             if (addDepInfo) {
                 for (Object arg : args)
                     prepareObject(arg, cctx);
@@ -317,17 +318,17 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
         Marshaller mrsh = ctx.marshaller();
 
-        if (keyValFilterBytes != null)
-            keyValFilter = mrsh.unmarshal(keyValFilterBytes, ldr);
+        if (keyValFilterBytes != null && keyValFilter == null)
+            keyValFilter = mrsh.unmarshal(keyValFilterBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
-        if (rdcBytes != null)
+        if (rdcBytes != null && rdc == null)
             rdc = mrsh.unmarshal(rdcBytes, ldr);
 
-        if (transBytes != null)
-            trans = mrsh.unmarshal(transBytes, ldr);
+        if (transBytes != null && trans == null)
+            trans = mrsh.unmarshal(transBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
-        if (argsBytes != null)
-            args = mrsh.unmarshal(argsBytes, ldr);
+        if (argsBytes != null && args == null)
+            args = mrsh.unmarshal(argsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
@@ -342,8 +343,10 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     void beforeLocalExecution(GridCacheContext ctx) throws IgniteCheckedException {
         Marshaller marsh = ctx.marshaller();
 
-        rdc = rdc != null ? marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(rdc), null) : null;
-        trans = trans != null ? marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(trans), null) : null;
+        rdc = rdc != null ? marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(rdc),
+            U.resolveClassLoader(ctx.gridConfig())) : null;
+        trans = trans != null ? marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(trans),
+            U.resolveClassLoader(ctx.gridConfig())) : null;
     }
 
     /**
@@ -452,9 +455,9 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     }
 
     /**
-     * @return Whether to keep portables.
+     * @return Whether to keep binary.
      */
-    public boolean keepPortable() {
+    public boolean keepBinary() {
         return keepPortable;
     }
 

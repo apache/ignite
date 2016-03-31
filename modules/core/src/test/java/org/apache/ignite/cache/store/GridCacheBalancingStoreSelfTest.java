@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheStoreBalancingWrapper;
@@ -127,15 +128,35 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentLoad() throws Exception {
-        int threads = 5;
+        CacheConfiguration cfg = new CacheConfiguration();
 
-        final int keys = 50;
+        assertEquals(CacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD, cfg.getStoreConcurrentLoadAllThreshold());
 
+        doTestConcurrentLoad(5, 50, CacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentLoadCustomThreshold() throws Exception {
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setStoreConcurrentLoadAllThreshold(15);
+
+        assertEquals(15, cfg.getStoreConcurrentLoadAllThreshold());
+
+        doTestConcurrentLoad(5, 50, cfg.getStoreConcurrentLoadAllThreshold());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestConcurrentLoad(int threads, final int keys, int threshold) throws Exception {
         final CyclicBarrier beforeBarrier = new CyclicBarrier(threads);
 
         ConcurrentVerifyStore store = new ConcurrentVerifyStore(keys);
 
-        final CacheStoreBalancingWrapper<Integer, Integer> wrapper =new CacheStoreBalancingWrapper<>(store);
+        final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<>(store, threshold);
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -159,17 +180,35 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentLoadAll() throws Exception {
-        int threads = 5;
+        CacheConfiguration cfg = new CacheConfiguration();
 
-        final int threshold = 5;
+        assertEquals(CacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD, cfg.getStoreConcurrentLoadAllThreshold());
 
-        final int keysCnt = 100;
+        doTestConcurrentLoadAll(5, CacheStoreBalancingWrapper.DFLT_LOAD_ALL_THRESHOLD, 150);
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentLoadAllCustomThreshold() throws Exception {
+        CacheConfiguration cfg = new CacheConfiguration();
+
+        cfg.setStoreConcurrentLoadAllThreshold(15);
+
+        assertEquals(15, cfg.getStoreConcurrentLoadAllThreshold());
+
+        doTestConcurrentLoadAll(5, cfg.getStoreConcurrentLoadAllThreshold(), 150);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestConcurrentLoadAll(int threads, final int threshold, final int keysCnt) throws Exception {
         final CyclicBarrier beforeBarrier = new CyclicBarrier(threads);
 
         ConcurrentVerifyStore store = new ConcurrentVerifyStore(keysCnt);
 
-        final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<>(store);
+        final CacheStoreBalancingWrapper<Integer, Integer> wrapper = new CacheStoreBalancingWrapper<>(store, threshold);
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {

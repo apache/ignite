@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -35,7 +35,7 @@ public class GridNearLockMapping {
 
     /** Collection of mapped keys. */
     @GridToStringInclude
-    private Collection<KeyCacheObject> mappedKeys = new LinkedList<>();
+    private final Collection<KeyCacheObject> mappedKeys = new ArrayList<>();
 
     /** Near lock request. */
     @GridToStringExclude

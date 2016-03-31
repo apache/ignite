@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -26,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -110,6 +112,16 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * Checks whether a cache should be undeployed in SHARED or CONTINUOUS modes.
+     *
+     * @param g Ignite node.
+     * @return {@code true} if the cache has to be undeployed, {@code false} otherwise.
+     */
+    protected boolean isCacheUndeployed(Ignite g) {
+        return !(g.configuration().getMarshaller() instanceof BinaryMarshaller);
+    }
+
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
     public void testDeployment() throws Exception {
@@ -156,7 +168,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -191,7 +203,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -207,7 +219,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             }
 
             assertEquals(0, g1.cache(null).localSize());
-            assertEquals(0, g2.cache(null).localSize());
+
+            assertEquals(isCacheUndeployed(g1) ? 0 : 1, g2.cache(null).localSize());
 
             startGrid(3);
         }
@@ -219,6 +232,18 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
     public void testDeployment4() throws Exception {
+        doDeployment4(false);
+    }
+
+    /** @throws Exception If failed. */
+    @SuppressWarnings("unchecked")
+    public void testDeployment4BackupLeavesGrid() throws Exception {
+        doDeployment4(true);
+    }
+
+    /** @throws Exception If failed. */
+    @SuppressWarnings("unchecked")
+    private void doDeployment4(boolean backupLeavesGrid) throws Exception {
         try {
             depMode = CONTINUOUS;
 
@@ -241,7 +266,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()) &&
+                    g1.affinity(null).isBackup((backupLeavesGrid ? g0 : g1).cluster().localNode(), key))
                     break;
             }
 
@@ -250,9 +276,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             stopGrid(GRID_NAME);
 
             assertEquals(1, g1.cache(null).localSize(CachePeekMode.ALL));
-            assertEquals(1, g1.cache(null).localSize(CachePeekMode.ALL));
 
-            assertEquals(1, g2.cache(null).localSize(CachePeekMode.ALL));
             assertEquals(1, g2.cache(null).localSize(CachePeekMode.ALL));
 
             startGrid(3);
@@ -292,7 +316,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             assert cache != null;
 
-            cache.put(key, Arrays.asList(val1Cls.newInstance()));
+            cache.put(key, new ArrayList<>(Arrays.asList(val1Cls.newInstance())));
 
             info(">>>>>>> First put completed.");
 
@@ -337,7 +361,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -370,7 +394,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.affinity(null).mapKeyToNode(key).id().equals(g2.cluster().localNode().id()))
                     break;
             }
 
@@ -401,6 +425,71 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             info("Added value to cache 0.");
 
             startGrid(1);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheUndeploymentSharedMode() throws Exception {
+        testCacheUndeployment(SHARED);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheUndeploymentContMode() throws Exception {
+        testCacheUndeployment(CONTINUOUS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void testCacheUndeployment(DeploymentMode depMode) throws Exception {
+        ClassLoader ldr = getExternalClassLoader();
+
+        Class valCls = ldr.loadClass(TEST_VALUE_1);
+        Class taskCls = ldr.loadClass(TEST_TASK_2);
+
+        try {
+            this.depMode = depMode;
+
+            Ignite g0 = startGrid(0);
+            Ignite g1 = startGrid(1);
+
+            for (int i = 0; i < 20; i++)
+                g0.cache(null).put(i, valCls.newInstance());
+
+            assert g0.cache(null).localSize(CachePeekMode.ALL) > 0 : "Cache is empty";
+            assert g1.cache(null).localSize(CachePeekMode.ALL) > 0 : "Cache is empty";
+
+            g0.compute(g0.cluster().forRemotes()).execute(taskCls, g1.cluster().localNode());
+
+            stopGrid(0);
+
+            if (depMode == SHARED && isCacheUndeployed(g1)) {
+                for (int i = 0; i < 10; i++) {
+                    if (g1.cache(null).localSize(CachePeekMode.ALL) == 0)
+                        break;
+
+                    Thread.sleep(500);
+                }
+
+                assertEquals(0, g1.cache(null).localSize(CachePeekMode.ALL));
+            }
+            else {
+                for (int i = 0; i < 4; i++) {
+                    if (g1.cache(null).localSize(CachePeekMode.ALL) == 0)
+                        break;
+
+                    Thread.sleep(500);
+                }
+
+                assert g1.cache(null).localSize(CachePeekMode.ALL) > 0 : "Cache undeployed unexpectadly";
+            }
         }
         finally {
             stopAllGrids();

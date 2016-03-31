@@ -86,9 +86,9 @@ public interface GridCachePreloader {
 
     /**
      * @param exchFut Exchange future to assign.
-     * @return Assignments.
+     * @return Assignments or {@code null} if detected that there are pending exchanges.
      */
-    public GridDhtPreloaderAssignments assign(GridDhtPartitionsExchangeFuture exchFut);
+    @Nullable public GridDhtPreloaderAssignments assign(GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * Adds assignments to preloader.
@@ -97,9 +97,12 @@ public interface GridCachePreloader {
      * @param forcePreload Force preload flag.
      * @param caches Rebalancing of these caches will be finished before this started.
      * @param cnt Counter.
+     * @return Rebalancing closure.
      */
-    public Callable<Boolean> addAssignments(GridDhtPreloaderAssignments assignments, boolean forcePreload,
-        Collection<String> caches, int cnt);
+    public Callable<Boolean> addAssignments(GridDhtPreloaderAssignments assignments,
+        boolean forcePreload,
+        Collection<String> caches,
+        int cnt);
 
     /**
      * @param p Preload predicate.
@@ -134,6 +137,12 @@ public interface GridCachePreloader {
     public IgniteInternalFuture<Boolean> rebalanceFuture();
 
     /**
+     * @return {@code true} if there is no need to force keys preloading
+     *      (e.g. rebalancing has been completed).
+     */
+    public boolean needForceKeys();
+
+    /**
      * Requests that preloader sends the request for the key.
      *
      * @param keys Keys to request.
@@ -141,6 +150,11 @@ public interface GridCachePreloader {
      * @return Future to complete when all keys are preloaded.
      */
     public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer);
+
+    /**
+     * @return Future completed when rebalance on node start topology finished.
+     */
+    public IgniteInternalFuture<?> initialRebalanceFuture();
 
     /**
      * Force preload process.

@@ -26,8 +26,11 @@
 -->
 <hibernate-configuration>
     <session-factory>
-        <!-- Database connection settings (private in-memory database). -->
-        <property name="connection.url">jdbc:h2:mem:example;DB_CLOSE_DELAY=-1</property>
+        <!-- Database connection URL. -->
+        <property name="connection.url">jdbc:h2:tcp://localhost/mem:ExampleDb</property>
+
+        <!-- Database connection username. -->
+        <property name="connection.username">sa</property>
 
         <!-- Only validate the database schema on startup in production mode. -->
         <property name="hbm2ddl.auto">update</property>

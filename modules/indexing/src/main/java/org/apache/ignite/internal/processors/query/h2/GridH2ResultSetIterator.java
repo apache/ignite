@@ -41,14 +41,19 @@ public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAd
     protected final Object[] row;
 
     /** */
+    private final boolean closeStmt;
+
+    /** */
     private boolean hasRow;
 
     /**
      * @param data Data array.
+     * @param closeStmt If {@code true} closes result set statement when iterator is closed.
      * @throws IgniteCheckedException If failed.
      */
-    protected GridH2ResultSetIterator(ResultSet data) throws IgniteCheckedException {
+    protected GridH2ResultSetIterator(ResultSet data, boolean closeStmt) throws IgniteCheckedException {
         this.data = data;
+        this.closeStmt = closeStmt;
 
         if (data != null) {
             try {
@@ -115,11 +120,13 @@ public abstract class GridH2ResultSetIterator<T> extends GridCloseableIteratorAd
             // Nothing to close.
             return;
 
-        try {
-            U.closeQuiet(data.getStatement());
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException(e);
+        if (closeStmt) {
+            try {
+                U.closeQuiet(data.getStatement());
+            }
+            catch (SQLException e) {
+                throw new IgniteCheckedException(e);
+            }
         }
 
         U.closeQuiet(data);

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.Cache;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -35,6 +36,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
@@ -260,25 +262,32 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             for (Integer key : keys)
                 cache0.put(key, val);
 
-            SwapSpaceSpi swap = ignite(nodeIdx).configuration().getSwapSpaceSpi();
+            Ignite ignite = ignite(nodeIdx);
+
+            SwapSpaceSpi swap = ignite.configuration().getSwapSpaceSpi();
+
+            GridCacheAdapter<Integer, String> internalCache =
+                ((IgniteKernal)ignite).context().cache().internalCache();
+
+            CacheObjectContext coctx = internalCache.context().cacheObjectContext();
 
             Set<Integer> swapKeys = new HashSet<>();
 
-            IgniteSpiCloseableIterator<Integer> it = swap.keyIterator(SPACE_NAME, null);
+            IgniteSpiCloseableIterator<KeyCacheObject> it = swap.keyIterator(SPACE_NAME, null);
 
             assertNotNull(it);
 
-            while (it.hasNext())
-                assertTrue(swapKeys.add(it.next()));
+            while (it.hasNext()) {
+                KeyCacheObject next = it.next();
+
+                assertTrue(swapKeys.add((Integer)next.value(coctx, false)));
+            }
 
             assertFalse(swapKeys.isEmpty());
 
             assertTrue(swapKeys.size() + HEAP_ENTRIES < 100);
 
             Set<Integer> offheapKeys = new HashSet<>();
-
-            GridCacheAdapter<Integer, String> internalCache =
-                ((IgniteKernal)ignite(nodeIdx)).context().cache().internalCache();
 
             Iterator<Map.Entry<Integer, String>> offheapIt;
 
@@ -645,7 +654,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     private T2<List<Integer>, List<Integer>> swapKeys(int nodeIdx) {
         SwapSpaceSpi swap = ignite(nodeIdx).configuration().getSwapSpaceSpi();
 
-        IgniteSpiCloseableIterator<Integer> it = swap.keyIterator(SPACE_NAME, null);
+        IgniteSpiCloseableIterator<KeyCacheObject> it = swap.keyIterator(SPACE_NAME, null);
 
         assertNotNull(it);
 
@@ -656,8 +665,11 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         List<Integer> primary = new ArrayList<>();
         List<Integer> backups = new ArrayList<>();
 
+        CacheObjectContext coctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache()
+            .context().cacheObjectContext();
+
         while (it.hasNext()) {
-            Integer key = it.next();
+            Integer key = it.next().value(coctx, false);
 
             if (aff.isPrimary(node, key))
                 primary.add(key);

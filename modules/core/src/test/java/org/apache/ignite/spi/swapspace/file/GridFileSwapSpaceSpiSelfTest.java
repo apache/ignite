@@ -28,6 +28,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -111,7 +113,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
      * @return Swap key.
      */
     private SwapKey key(int i) {
-        return new SwapKey(i, i % 11, U.intToBytes(i));
+        return new SwapKey(new KeyCacheObjectImpl(i, U.intToBytes(i)), i % 11, U.intToBytes(i));
     }
 
     /**
@@ -354,8 +356,11 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
         assertEquals(cnt, spi.count(space));
 
-        for (Map.Entry<SwapKey, byte[]> entry : map.entrySet())
-            hash1 += (Integer)entry.getKey().key() * Arrays.hashCode(entry.getValue());
+        for (Map.Entry<SwapKey, byte[]> entry : map.entrySet()) {
+            KeyCacheObject key = (KeyCacheObject)entry.getKey().key();
+
+            hash1 += (Integer)key.value(null, false) * Arrays.hashCode(entry.getValue());
+        }
 
         assertEquals(hash0, hash1);
     }

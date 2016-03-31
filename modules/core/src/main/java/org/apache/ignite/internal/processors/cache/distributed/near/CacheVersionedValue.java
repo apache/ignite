@@ -53,7 +53,7 @@ public class CacheVersionedValue implements Message {
      * @param val Cache value.
      * @param ver Cache version.
      */
-    CacheVersionedValue(CacheObject val, GridCacheVersion ver) {
+    public CacheVersionedValue(CacheObject val, GridCacheVersion ver) {
         this.val = val;
         this.ver = ver;
     }
@@ -95,6 +95,11 @@ public class CacheVersionedValue implements Message {
     public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         if (val != null)
             val.finishUnmarshal(ctx.cacheObjectContext(), ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

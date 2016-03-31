@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -212,6 +213,22 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     public void testMultiThreadedClientsServersRestart() throws Throwable {
         fail("https://issues.apache.org/jira/browse/IGNITE-1123");
 
+        multiThreadedClientsServersRestart(GRID_CNT, CLIENT_GRID_CNT);
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    public void _testMultiThreadedServersRestart() throws Throwable {
+        multiThreadedClientsServersRestart(GRID_CNT * 2, 0);
+    }
+
+    /**
+     * @param srvs Number of servers.
+     * @param clients Number of clients.
+     * @throws Exception If any error occurs.
+     */
+    private void multiThreadedClientsServersRestart(int srvs, int clients) throws Throwable {
         final AtomicBoolean done = new AtomicBoolean();
 
         try {
@@ -219,66 +236,127 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
             info("Test timeout: " + (getTestTimeout() / (60 * 1000)) + " min.");
 
-            startGridsMultiThreaded(GRID_CNT);
+            startGridsMultiThreaded(srvs);
 
-            clientFlagGlobal = true;
-
-            startGridsMultiThreaded(GRID_CNT, CLIENT_GRID_CNT);
+            IgniteInternalFuture<?> clientFut = null;
 
             final AtomicReference<Throwable> error = new AtomicReference<>();
 
-            final BlockingQueue<Integer> clientStopIdxs = new LinkedBlockingQueue<>();
+            if (clients > 0) {
+                clientFlagGlobal = true;
 
-            for (int i = GRID_CNT; i < GRID_CNT + CLIENT_GRID_CNT; i++)
-                clientStopIdxs.add(i);
+                startGridsMultiThreaded(srvs, clients);
 
-            final AtomicInteger clientStartIdx = new AtomicInteger(9000);
+                final BlockingQueue<Integer> clientStopIdxs = new LinkedBlockingQueue<>();
 
-            IgniteInternalFuture<?> fut1 = multithreadedAsync(
+                for (int i = srvs; i < srvs + clients; i++)
+                    clientStopIdxs.add(i);
+
+                final AtomicInteger clientStartIdx = new AtomicInteger(9000);
+
+                clientFut = multithreadedAsync(
+                    new Callable<Object>() {
+                        @Override public Object call() throws Exception {
+                            try {
+                                clientFlagPerThread.set(true);
+
+                                while (!done.get() && error.get() == null) {
+                                    Integer stopIdx = clientStopIdxs.take();
+
+                                    log.info("Stop client: " + stopIdx);
+
+                                    stopGrid(stopIdx);
+
+                                    while (!done.get() && error.get() == null) {
+                                        // Generate unique name to simplify debugging.
+                                        int startIdx = clientStartIdx.getAndIncrement();
+
+                                        log.info("Start client: " + startIdx);
+
+                                        UUID id = UUID.randomUUID();
+
+                                        nodeId.set(id);
+
+                                        try {
+                                            Ignite ignite = startGrid(startIdx);
+
+                                            assertTrue(ignite.configuration().isClientMode());
+
+                                            clientStopIdxs.add(startIdx);
+
+                                            break;
+                                        }
+                                        catch (Exception e) {
+                                            if (X.hasCause(e, IgniteClientDisconnectedCheckedException.class) ||
+                                                X.hasCause(e, IgniteClientDisconnectedException.class))
+                                                log.info("Client disconnected: " + e);
+                                            else if (X.hasCause(e, ClusterTopologyCheckedException.class))
+                                                log.info("Client failed to start: " + e);
+                                            else {
+                                                if (failedNodes.contains(id) && X.hasCause(e, IgniteSpiException.class))
+                                                    log.info("Client failed: " + e);
+                                                else
+                                                    throw e;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            catch (Throwable e) {
+                                log.error("Unexpected error: " + e, e);
+
+                                error.compareAndSet(null, e);
+
+                                return null;
+                            }
+
+                            return null;
+                        }
+                    },
+                    clients,
+                    "client-restart");
+            }
+
+            final BlockingQueue<Integer> srvStopIdxs = new LinkedBlockingQueue<>();
+
+            for (int i = 0; i < srvs; i++)
+                srvStopIdxs.add(i);
+
+            final AtomicInteger srvStartIdx = new AtomicInteger(srvs + clients);
+
+            IgniteInternalFuture<?> srvFut = multithreadedAsync(
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         try {
-                            clientFlagPerThread.set(true);
+                            clientFlagPerThread.set(false);
 
                             while (!done.get() && error.get() == null) {
-                                Integer stopIdx = clientStopIdxs.take();
+                                int stopIdx = srvStopIdxs.take();
 
-                                log.info("Stop client: " + stopIdx);
+                                U.sleep(50);
+
+                                Thread.currentThread().setName("stop-server-" + getTestGridName(stopIdx));
+
+                                log.info("Stop server: " + stopIdx);
 
                                 stopGrid(stopIdx);
 
-                                while (!done.get() && error.get() == null) {
-                                    // Generate unique name to simplify debugging.
-                                    int startIdx = clientStartIdx.getAndIncrement();
+                                // Generate unique name to simplify debugging.
+                                int startIdx = srvStartIdx.getAndIncrement();
 
-                                    log.info("Start client: " + startIdx);
+                                Thread.currentThread().setName("start-server-" + getTestGridName(startIdx));
 
-                                    UUID id = UUID.randomUUID();
+                                log.info("Start server: " + startIdx);
 
-                                    nodeId.set(id);
+                                try {
+                                    Ignite ignite = startGrid(startIdx);
 
-                                    try {
-                                        Ignite ignite = startGrid(startIdx);
+                                    assertFalse(ignite.configuration().isClientMode());
 
-                                        assertTrue(ignite.configuration().isClientMode());
-
-                                        clientStopIdxs.add(startIdx);
-
-                                        break;
-                                    }
-                                    catch (Exception e) {
-                                        if (X.hasCause(e, IgniteClientDisconnectedCheckedException.class) ||
-                                            X.hasCause(e, IgniteClientDisconnectedException.class))
-                                            log.info("Client disconnected: " + e);
-                                        else if (X.hasCause(e, ClusterTopologyCheckedException.class))
-                                            log.info("Client failed to start: " + e);
-                                        else {
-                                            if (failedNodes.contains(id) && X.hasCause(e, IgniteSpiException.class))
-                                                log.info("Client failed: " + e);
-                                            else
-                                                throw e;
-                                        }
-                                    }
+                                    srvStopIdxs.add(startIdx);
+                                }
+                                catch (IgniteCheckedException e) {
+                                    log.info("Failed to start: " + e);
                                 }
                             }
                         }
@@ -293,53 +371,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                         return null;
                     }
                 },
-                CLIENT_GRID_CNT,
-                "client-restart");
-
-            final BlockingQueue<Integer> srvStopIdxs = new LinkedBlockingQueue<>();
-
-            for (int i = 0; i < GRID_CNT; i++)
-                srvStopIdxs.add(i);
-
-            final AtomicInteger srvStartIdx = new AtomicInteger(GRID_CNT + CLIENT_GRID_CNT);
-
-            IgniteInternalFuture<?> fut2 = multithreadedAsync(
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        try {
-                            clientFlagPerThread.set(false);
-
-                            while (!done.get() && error.get() == null) {
-                                int stopIdx = srvStopIdxs.take();
-
-                                log.info("Stop server: " + stopIdx);
-
-                                stopGrid(stopIdx);
-
-                                // Generate unique name to simplify debugging.
-                                int startIdx = srvStartIdx.getAndIncrement();
-
-                                log.info("Start server: " + startIdx);
-
-                                Ignite ignite = startGrid(startIdx);
-
-                                assertFalse(ignite.configuration().isClientMode());
-
-                                srvStopIdxs.add(startIdx);
-                            }
-                        }
-                        catch (Throwable e) {
-                            log.error("Unexpected error: " + e, e);
-
-                            error.compareAndSet(null, e);
-
-                            return null;
-                        }
-
-                        return null;
-                    }
-                },
-                GRID_CNT - 1,
+                srvs - 1,
                 "server-restart");
 
             final long timeToExec = getTestTimeout() - 60_000;
@@ -356,8 +388,10 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                     done.set(true);
 
-                    fut1.cancel();
-                    fut2.cancel();
+                    if (clientFut != null)
+                        clientFut.cancel();
+
+                    srvFut.cancel();
 
                     throw err;
                 }
@@ -367,8 +401,10 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
             done.set(true);
 
-            fut1.get();
-            fut2.get();
+            if (clientFut != null)
+                clientFut.get();
+
+            srvFut.get();
         }
         finally {
             done.set(true);
