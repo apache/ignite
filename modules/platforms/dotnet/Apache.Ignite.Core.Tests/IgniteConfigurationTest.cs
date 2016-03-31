@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
     /// <summary>
@@ -365,6 +366,14 @@ namespace Apache.Ignite.Core.Tests
                     CacheMode = CacheMode.Replicated,
                     Backups = 2,
                     AtomicSequenceReserveSize = 200
+                },
+                TransactionConfiguration = new TransactionConfiguration
+                {
+                    DefaultTransactionConcurrency = TransactionConcurrency.Optimistic,
+                    DefaultTimeout = TimeSpan.FromSeconds(25),
+                    DefaultTransactionIsolation = TransactionIsolation.Serializable,
+                    PessimisticTransactionLogLinger = TimeSpan.FromHours(1),
+                    PessimisticTransactionLogSize = 240
                 }
             };
         }

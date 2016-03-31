@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Transactions
         public const TransactionIsolation DefaultDefaultTransactionIsolation = TransactionIsolation.RepeatableRead;
 
         /// <summary> The default value for <see cref="DefaultTransactionIsolation"/> property. </summary>
-        public const long DefaultDefaultTimeout = 0;
+        public readonly TimeSpan DefaultDefaultTimeout = TimeSpan.Zero;
 
         /// <summary> The default value for <see cref="PessimisticTransactionLogSize"/> property. </summary>
         public const int DefaultPessimisticTransactionLogSize = 0;
@@ -54,9 +54,10 @@ namespace Apache.Ignite.Core.Transactions
 
         /// <summary>
         /// Gets or sets the cache transaction timeout to use when one is not explicitly specified.
+        /// <see cref="TimeSpan.Zero"/> for infinite timeout.
         /// </summary>
-        [DefaultValue(DefaultDefaultTimeout)]
-        public long DefaultTimeout { get; set; }
+        [DefaultValue(typeof(TimeSpan), "00:00:00")]
+        public TimeSpan DefaultTimeout { get; set; }
 
         /// <summary>
         /// Gets or sets the size of pessimistic transactions log stored on node in order to recover 
