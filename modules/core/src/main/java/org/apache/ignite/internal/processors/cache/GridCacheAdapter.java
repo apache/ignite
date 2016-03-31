@@ -6450,10 +6450,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private final class KeySetIterator implements Iterator<K> {
         private final Iterator<GridCacheMapEntry> internalIterator;
 
+        private final boolean keepBinary;
+
         private GridCacheMapEntry current;
 
-        private KeySetIterator(Iterator<GridCacheMapEntry> internalIterator) {
+        private KeySetIterator(Iterator<GridCacheMapEntry> internalIterator, boolean keepBinary) {
             this.internalIterator = internalIterator;
+            this.keepBinary = keepBinary;
         }
 
         @Override public boolean hasNext() {
@@ -6463,7 +6466,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Override public K next() {
             current = internalIterator.next();
 
-            return (K)current.wrapLazyValue().getKey();
+            return (K)ctx.unwrapBinaryIfNeeded(current.key(), keepBinary, true);
         }
 
         @Override public void remove() {
@@ -6471,7 +6474,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 throw new IllegalStateException();
 
             try {
-                GridCacheAdapter.this.getAndRemove((K)current.wrapLazyValue().getKey());
+                GridCacheAdapter.this.getAndRemove((K)current.key());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -6484,12 +6487,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     private final class KeySet extends AbstractSet<K> {
         private final Set<GridCacheMapEntry> internalSet;
 
+        private final boolean keepBinary;
+
         private KeySet(Set<GridCacheMapEntry> internalSet) {
             this.internalSet = internalSet;
+
+            CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+            keepBinary = opCtx != null && opCtx.isKeepBinary();
         }
 
         @Override public Iterator<K> iterator() {
-            return new KeySetIterator(internalSet.iterator());
+            return new KeySetIterator(internalSet.iterator(), keepBinary);
         }
 
         @Override public int size() {
