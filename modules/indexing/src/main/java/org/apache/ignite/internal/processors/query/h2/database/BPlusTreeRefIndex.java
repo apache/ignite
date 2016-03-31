@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -46,7 +47,6 @@ import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.table.Table;
 import org.h2.table.TableFilter;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
@@ -66,6 +66,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /** */
     private static final byte READY = 2;
+
+    /** Fill factor for merge. */
+    private final float fillFactor;
 
     /** */
     private PageMemory pageMem;
@@ -152,8 +155,10 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     };
 
     /** */
-    private final PageHandler<Get> search = new PageHandler<Get>() {
+    private final PageHandler<Get> search = new GetPageHandler<Get>() {
         @Override public int run(Page page, ByteBuffer buf, Get g, int lvl) throws IgniteCheckedException {
+            g.backId = 0; // Usually we'll go left down.
+
             IndexPageIO io = IndexPageIO.forPage(buf);
 
             int cnt = io.getCount(buf);
@@ -192,11 +197,15 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 g.fwdId = inner(io).getRight(buf, idx);
             else {
                 assert idx == cnt;
-                // Here we are actually going to the right -> child's forward is unknown to us, need to ask our forward.
+                // Here child's forward is unknown to us (we either go right or it is an empty "routing" page),
+                // need to ask our forward about the child's forward (it must be leftmost child or our forward page).
                 // This is ok from the locking standpoint because we take all locks in the forward direction.
                 long fwdId = io.getForward(buf);
 
                 g.fwdId = fwdId == 0 ? 0 : getLeftmostChild(fwdId);
+
+                if (cnt != 0) // If empty, it is a routing page and we go to the left, otherwise we go to the right.
+                    g.backId = inner(io).getLeft(buf, cnt - 1);
             }
 
             return Get.GO_DOWN;
@@ -208,7 +217,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     };
 
     /** */
-    private final PageHandler<Put> replace = new PageHandler<Put>() {
+    private final PageHandler<Put> replace = new GetPageHandler<Put>() {
         @Override public int run(Page page, ByteBuffer buf, Put p, int lvl) throws IgniteCheckedException {
             assert p.btmLvl == 0 : "split is impossible with replace";
 
@@ -250,17 +259,13 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             return Put.FOUND;
         }
 
-        @Override protected boolean releaseAfterWrite(Page page, Put p, int lvl) {
-            return p.canRelease(page, lvl);
-        }
-
         @Override public String toString() {
             return "replace";
         }
     };
 
     /** */
-    private final PageHandler<Put> insert = new PageHandler<Put>() {
+    private final PageHandler<Put> insert = new GetPageHandler<Put>() {
         @Override public int run(Page page, ByteBuffer buf, Put p, int lvl) throws IgniteCheckedException {
             assert p.btmLvl == lvl: "we must always insert at the bottom level: " + p.btmLvl + " " + lvl;
 
@@ -298,17 +303,13 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             return Put.FOUND;
         }
 
-        @Override protected boolean releaseAfterWrite(Page page, Put p, int lvl) {
-            return p.canRelease(page, lvl);
-        }
-
         @Override public String toString() {
             return "insert";
         }
     };
 
     /** */
-    private final PageHandler<Remove> removeFromLeaf = new PageHandler<Remove>() {
+    private final PageHandler<Remove> removeFromLeaf = new GetPageHandler<Remove>() {
         @Override int run(Page page, ByteBuffer buf, Remove r, int lvl) throws IgniteCheckedException {
             assert lvl == 0: lvl;
 
@@ -329,23 +330,15 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
             io.setCount(buf, cnt);
 
+            int maxCnt = io.getMaxCount(buf);
+            int minCnt = (int)(maxCnt * fillFactor);
+
             // Randomization is for smoothing worst case scenarios. Probability of merge attempt
-            // is proportional to free space in our page.
-            if (cnt == 0 || ThreadLocalRandom8.current().nextInt(io.getMaxCount(buf)) > cnt) {
-                if (r.tail == null)
-                    r.tail = new Object[4];
-
+            // is proportional to free space in our page (discounted on fill factor).
+            if (cnt <= minCnt || ThreadLocalRandom.current().nextInt(maxCnt - minCnt) > cnt - minCnt)
                 r.needMerge = TRUE;
-            }
-
-            if (r.tail != null)
-                r.addTail(page, buf, 0);
 
             return Remove.FOUND;
-        }
-
-        @Override protected boolean releaseAfterWrite(Page page, Remove r, int lvl) {
-            return r.canRelease(page, lvl);
         }
 
         @Override public String toString() {
@@ -354,18 +347,44 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     };
 
     /** */
-    private final PageHandler<Remove> lockTail = new PageHandler<Remove>() {
+    private final PageHandler<Remove> lockBackAndTail = new GetPageHandler<Remove>() {
+        @Override int run(Page back, ByteBuffer buf, Remove r, int lvl) throws IgniteCheckedException {
+            IndexPageIO io = IndexPageIO.forPage(buf);
+
+            // Check that we have consistent view of the world.
+            if (io.getForward(buf) != r.pageId)
+                return Remove.RETRY;
+
+            Page page = page(r.pageId);
+
+            try {
+                if (doLockTail(r, page, lvl))
+                    return Remove.RETRY;
+            }
+            finally {
+                if (r.canRelease(page, lvl))
+                    page.close();
+            }
+
+            r.addTail(back, buf, lvl, true);
+
+            return Remove.FOUND;
+        }
+
+        @Override public String toString() {
+            return "lockBack";
+        }
+    };
+
+    /** */
+    private final PageHandler<Remove> lockTail = new GetPageHandler<Remove>() {
         @Override int run(Page page, ByteBuffer buf, Remove r, int lvl) throws IgniteCheckedException {
-            assert lvl > 0: lvl;
             assert r.needMerge == TRUE || r.needReplaceInner == TRUE;
-            assert r.tailPage(lvl - 1) != null;
 
             IndexPageIO io = IndexPageIO.forPage(buf);
 
             int cnt = io.getCount(buf);
             int idx = findInsertionPoint(io, buf, cnt, r.row);
-
-            assert cnt > 0: cnt; // Our tail is not empty -> the page can't become empty.
 
             boolean found = idx >= 0;
 
@@ -378,22 +397,18 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 idx = -idx - 1;
 
             // Check that we have a correct view of the world.
-            if (inner(io).getLeft(buf, idx) != r.tailPage(lvl - 1).id()) {
+            if (!io.isLeaf() && inner(io).getLeft(buf, idx) != r.nonBackTailPage().id()) {
                 assert !found;
 
                 return Remove.RETRY;
             }
 
-            r.addTail(page, buf, lvl);
+            r.addTail(page, buf, lvl, false);
 
             if (r.needMerge == TRUE)
                 r.needMerge = READY;
 
             return Remove.FOUND;
-        }
-
-        @Override protected boolean releaseAfterWrite(Page page, Remove r, int lvl) {
-            return r.canRelease(page, lvl);
         }
 
         @Override public String toString() {
@@ -477,6 +492,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         IndexColumn[] cols
     ) throws IgniteCheckedException {
         super(keyCol, valCol);
+
+        fillFactor = 0.1f; // TODO make configurable
 
         assert cctx.cacheId() == metaPageId.cacheId();
 
@@ -562,7 +579,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         long firstPageId;
 
         try (Page meta = page(metaPageId)) {
-            firstPageId = getLeftmostPageId(meta, 0); // Level 0 is always bottom.
+            firstPageId = getLeftmostPageId(meta, 0); // Level 0 is always at the bottom.
         }
 
         try (Page first = page(firstPageId)) {
@@ -673,9 +690,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         throws IgniteCheckedException {
         Page page = page(pageId);
 
-        if (page == null)
-            return true; // Page was removed, retry.
-
         try {
             for (;;) {
                 // Init args.
@@ -712,6 +726,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                     default:
                         assert false: res;
                 }
+
+                checkInterrupted();
             }
         }
         finally {
@@ -752,9 +768,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 pageId = nextDataPage(0, row.partId);
 
             try (Page page = page(pageId)) {
-                if (page == null)
-                    continue;
-
                 if (writePage(page, writeRow, row, -1, -1) >= 0)
                     return; // Successful write.
             }
@@ -892,7 +905,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             for (;;) {
                 initOperation(r);
 
-                if (!removeDown(r, r.rootId, 0L, r.rootLvl))
+                if (!removeDown(r, r.rootId, 0L, 0L, r.rootLvl))
                     break;
 
                 checkInterrupted();
@@ -914,22 +927,20 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     /**
      * @param r Remove operation.
      * @param pageId Page ID.
+     * @param backId Expected backward page ID if we are going to the right.
      * @param fwdId Expected forward page ID.
      * @param lvl Level.
      * @return {@code true} If we need to retry.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean removeDown(final Remove r, final long pageId, final long fwdId, final int lvl)
+    private boolean removeDown(final Remove r, final long pageId, final long backId, final long fwdId, final int lvl)
         throws IgniteCheckedException {
         assert lvl >= 0 : lvl;
 
         if (r.isTail(pageId, lvl))
-            return false; // We've already handled this page.
+            return false; // We've already locked this page.
 
         final Page page = page(pageId);
-
-        if (page == null)
-            return true; // Page was removed, retry.
 
         try {
             for (;;) {
@@ -944,7 +955,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         return true; // Our page was splitted or merged, retry.
 
                     case Remove.GO_DOWN:
-                        if (removeDown(r, r.pageId, r.fwdId, lvl - 1)) {
+                        if (removeDown(r, r.pageId, r.backId, r.fwdId, lvl - 1)) {
                             checkInterrupted();
 
                             continue;
@@ -954,18 +965,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                             return false; // Finish.
 
                         if (r.needReplaceInner == TRUE || r.needMerge == TRUE) {
-                            res = writePage(page, lockTail, r, lvl, Remove.RETRY);
-
-                            switch (res) {
-                                case Remove.RETRY:
-                                    return true;
-
-                                case Remove.FOUND:
-                                    return false;
-
-                                default:
-                                    assert false: res;
-                            }
+                            if (lockTail(r, page, backId, lvl))
+                                return true; // Retry.
                         }
                         else {
                             r.finishTail();
@@ -979,17 +980,22 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         // We must be at the bottom here, just need to remove row from the current page.
                         assert lvl == 0 : lvl;
 
-                        res = writePage(page, removeFromLeaf, r, lvl, Remove.RETRY);
+                        // We optimistically assume that we will not need to lock back page here.
+                        // If r.removed is set then we are retrying to lock tail pages and don't need to do remove here.
+                        res = r.removed != null ? Remove.FOUND : writePage(page, removeFromLeaf, r, lvl, Remove.RETRY);
 
                         switch (res) {
                             case Remove.RETRY:
                                 return true;
 
                             case Remove.FOUND:
-                                if (r.tail == null)
+                                if (r.needMerge == FALSE && r.needReplaceInner == FALSE) {
                                     r.finish();
 
-                                return false; // Finished.
+                                    return false; // Finish.
+                                }
+
+                                return lockTail(r, page, backId, lvl);
 
                             default:
                                 assert false : res;
@@ -1008,12 +1014,91 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                     default:
                         assert false: res;
                 }
+
+                checkInterrupted();
             }
         }
         finally {
             if (r.canRelease(page, lvl))
                 page.close();
         }
+    }
+
+    /**
+     * @param page Page.
+     */
+    private static void unlockAndClose(Page page) {
+        try {
+            page.releaseWrite(true);
+        }
+        finally {
+            page.close();
+        }
+    }
+
+    /**
+     * @param r Remove.
+     * @param page Page.
+     * @param backId Back page ID.
+     * @param lvl Level.
+     * @return {@code true} If we need to retry.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean lockTail(Remove r, Page page, long backId, int lvl) throws IgniteCheckedException {
+        assert page != null;
+
+        if (backId == 0)
+            return doLockTail(r, page, lvl);
+
+        Page back = page(backId);
+
+        try {
+            // Init parameter for the handler.
+            r.pageId = page.id();
+
+            int res = writePage(back, lockBackAndTail, r, lvl, Remove.RETRY);
+
+            switch (res) {
+                case Remove.RETRY:
+                    return true;
+
+                case Remove.FOUND:
+                    break;
+
+                default:
+                    assert false : res;
+            }
+        }
+        finally {
+            if (r.canRelease(back, lvl))
+                back.close();
+        }
+
+        return false;
+    }
+
+    /**
+     * @param r Remove operation.
+     * @param page Page.
+     * @param lvl Level.
+     * @return {@code true} if we need to retry.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean doLockTail(Remove r, Page page, int lvl) throws IgniteCheckedException {
+        int res = writePage(page, lockTail, r, lvl, Remove.RETRY);
+
+        switch (res) {
+            case Remove.RETRY:
+                return true;
+
+            case Remove.FOUND:
+                break;
+
+            default:
+                assert false : res;
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -1260,9 +1345,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         final Page page = page(pageId);
 
-        if (page == null)
-            return true; // Page was removed, retry.
-
         try {
             for (;;) {
                 // Init args.
@@ -1411,6 +1493,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         /** In/Out parameter: expected forward page ID. */
         long fwdId;
 
+        /** In/Out parameter: in case of right turn this field will contain backward page ID for the child. */
+        long backId;
+
         /**
          * @param row Row.
          */
@@ -1469,9 +1554,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * @return {@code true} If we can release the given page.
          */
         boolean canRelease(Page page, int lvl) {
-            assert page != null;
-
-            return true;
+            return page != null;
         }
     }
 
@@ -1609,9 +1692,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         /** {@inheritDoc} */
         @Override boolean canRelease(Page page, int lvl) {
-            assert page != null;
-
-            return tail != page;
+            return page != null && tail != page;
         }
 
         /**
@@ -1636,7 +1717,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      */
     private class Remove extends Get {
         /** We may need to lock part of the tree branch from the bottom to up for multiple levels. */
-        Object[] tail;
+        Tail tail;
 
         /** */
         byte needReplaceInner = FALSE;
@@ -1656,11 +1737,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
         /** {@inheritDoc} */
         @Override boolean found(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
-            if (!io.isLeaf() && tail == null) {
+            if (!io.isLeaf())
                 needReplaceInner = TRUE;
-
-                tail = new Object[(lvl + 1) * 2]; // We'll need to lock all the pages up to our parent.
-            }
 
             return io.isLeaf();
         }
@@ -1690,6 +1768,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          */
         void finishTail() {
             assert needMerge == READY || needReplaceInner == READY;
+            assert needMerge != TRUE;
+            assert needReplaceInner != TRUE;
             assert tail != null;
 
             if (needReplaceInner == READY) {
@@ -1715,75 +1795,119 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * Release pages for all locked levels at the tail.
          */
         void releaseTail() {
-            Object[] tail0 = tail;
-
-            if (tail0 == null)
-                return;
+            Tail t = tail;
 
             tail = null;
 
-            // TODO unlock everything in case of failure?
-            for (int i = 0; i < tail0.length; i += 2) {
-                Page page = (Page)tail0[i];
-
-                if (page == null)
-                    break;
-
+            while (t != null) {
                 try {
-                    page.releaseWrite(true);
+                    t.page.releaseWrite(true);
                 }
                 finally {
-                    page.close();
+                    t.page.close();
                 }
+
+                if (t.down != null)
+                    t = t.down;
+                else
+                    t = t.fwd;
             }
         }
 
         /** {@inheritDoc} */
         @Override boolean canRelease(Page page, int lvl) {
-            assert page != null;
-
-            return !isTail(page.id(), lvl);
-        }
-
-        /**
-         * @param page Page locked for write.
-         * @param buf Buffer.
-         * @param lvl Level.
-         */
-        void addTail(Page page, ByteBuffer buf, int lvl) {
-            assert tail != null;
-
-            int idx = lvl * 2;
-
-            if (idx >= tail.length)
-                tail = Arrays.copyOf(tail, idx * 2);
-
-            assert tail[idx] == null;
-
-            tail[idx] = page;
-            tail[idx + 1] = buf;
+            return page != null && !isTail(page.id(), lvl);
         }
 
         /**
          * @param pageId Page ID.
          * @param lvl Level.
-         * @return {@code true} If is a tail page.
+         * @return {@code true} If the given page is in tail.
          */
         boolean isTail(long pageId, int lvl) {
-            if (tail == null)
-                return false;
+            Tail t = tail;
 
-            Page page = tailPage(lvl);
+            while (t != null) {
+                if (t.lvl < lvl)
+                    return false;
 
-            return page != null &&  page.id() == pageId;
+                if (t.lvl == lvl && t.page.id() == pageId)
+                    return true;
+
+                if (t.fwd != null)
+                    t = t.fwd;
+                else
+                    t = t.down;
+            }
+
+            return false;
         }
 
         /**
+         * @param page Page.
+         * @param buf Buffer.
          * @param lvl Level.
-         * @return Page.
+         * @param back If the given page is back page for the current tail, otherwise it must be an upper level page.
          */
-        Page tailPage(int lvl) {
-            return (Page)tail[lvl * 2];
+        void addTail(Page page, ByteBuffer buf, int lvl, boolean back) {
+            Tail t = new Tail(page, buf, lvl);
+
+            if (back) {
+                assert tail != null;
+                assert tail.lvl == lvl : "must be on the same level as out forward";
+
+                t.fwd = tail;
+            }
+            else {
+                assert tail == null || tail.lvl == lvl - 1: "must be on upper higher than current tail";
+
+                // Grow the tail.
+                t.down = tail;
+            }
+
+            tail = t;
+        }
+
+        /**
+         * @return Non-back tail page.
+         */
+        public Page nonBackTailPage() {
+            assert tail != null;
+
+            return tail.fwd == null ? tail.page : tail.fwd.page;
+        }
+    }
+
+    /**
+     * Tail for remove.
+     */
+    private static class Tail {
+        /** */
+        final Page page;
+
+        /** */
+        final ByteBuffer buf;
+
+        /** */
+        final int lvl;
+
+        /** */
+        Tail fwd;
+
+        /** */
+        Tail down;
+
+        /**
+         * @param page Write locked page.
+         * @param buf Buffer.
+         * @param lvl Level.
+         */
+        private Tail(Page page, ByteBuffer buf, int lvl) {
+            assert page != null;
+
+            this.page = page;
+            this.buf = buf;
+            this.lvl = lvl;
         }
     }
 
@@ -1926,6 +2050,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      */
     private static <X> int readPage(Page page, PageHandler<X> h, X arg, int lvl, int dfltRes)
         throws IgniteCheckedException {
+        if (page == null)
+            return dfltRes;
+
         ByteBuffer buf = page.getForRead();
 
         if (buf == null)
@@ -1950,6 +2077,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      */
     private static <X> int writePage(Page page, PageHandler<X> h, X arg, int lvl, int dfltRes)
         throws IgniteCheckedException {
+        if (page == null)
+            return dfltRes;
+
         int res;
 
         boolean ok = false;
@@ -2073,8 +2203,12 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 }
 
                 if (prevPage != null) { // Release previous page.
-                    prevPage.releaseRead();
-                    prevPage.close();
+                    try {
+                        prevPage.releaseRead();
+                    }
+                    finally {
+                        prevPage.close();
+                    }
                 }
 
                 if (F.isEmpty(rows)) {
@@ -2622,6 +2756,16 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          */
         protected boolean releaseAfterWrite(Page page, X arg, int lvl) {
             return true;
+        }
+    }
+
+    /**
+     * Page handler for basic {@link Get} operation.
+     */
+    private static abstract class GetPageHandler<X extends Get> extends PageHandler<X> {
+        /** {@inheritDoc} */
+        @Override protected final boolean releaseAfterWrite(Page page, X g, int lvl) {
+            return g.canRelease(page, lvl);
         }
     }
 }
