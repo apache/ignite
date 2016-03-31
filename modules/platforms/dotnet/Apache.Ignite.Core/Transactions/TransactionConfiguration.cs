@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Transactions
 {
+    using System;
     using System.ComponentModel;
 
     /// <summary>
@@ -35,6 +36,9 @@ namespace Apache.Ignite.Core.Transactions
 
         /// <summary> The default value for <see cref="PessimisticTransactionLogSize"/> property. </summary>
         public const int DefaultPessimisticTransactionLogSize = 0;
+
+        /// <summary> The default value for <see cref="PessimisticTransactionLogLinger"/> property. </summary>
+        public readonly TimeSpan DefaultPessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(10000);
 
         /// <summary>
         /// Gets or sets the cache transaction concurrency to use when one is not explicitly specified.
@@ -61,5 +65,11 @@ namespace Apache.Ignite.Core.Transactions
         /// </summary>
         [DefaultValue(DefaultPessimisticTransactionLogSize)]
         public int PessimisticTransactionLogSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the delay after which pessimistic recovery entries will be cleaned up for failed node.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
+        public TimeSpan PessimisticTransactionLogLinger { get; set; }
     }
 }
