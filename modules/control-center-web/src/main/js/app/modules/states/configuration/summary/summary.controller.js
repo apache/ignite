@@ -240,7 +240,7 @@ export default [
                 });
             });
 
-            projectStructureRoot.name = cluster.name + '-configuration.zip';
+            projectStructureRoot.name = cluster.name + '-project.zip';
             clnCfg.name = cluster.name + '-client.xml';
             srvCfg.name = cluster.name + '-server.xml';
         };
@@ -323,7 +323,7 @@ export default [
             const blob = zip.generate({type: 'blob', compression: 'DEFLATE', mimeType: 'application/octet-stream'});
 
             // Download archive.
-            saveAs(blob, cluster.name + '-configuration.zip');
+            saveAs(blob, cluster.name + '-project.zip');
         };
 
         /**
