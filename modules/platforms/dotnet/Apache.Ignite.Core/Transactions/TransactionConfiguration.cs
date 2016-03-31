@@ -33,6 +33,9 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary> The default value for <see cref="DefaultTransactionIsolation"/> property. </summary>
         public const long DefaultDefaultTimeout = 0;
 
+        /// <summary> The default value for <see cref="PessimisticTransactionLogSize"/> property. </summary>
+        public const int DefaultPessimisticTransactionLogSize = 0;
+
         /// <summary>
         /// Gets or sets the cache transaction concurrency to use when one is not explicitly specified.
         /// </summary>
@@ -50,5 +53,13 @@ namespace Apache.Ignite.Core.Transactions
         /// </summary>
         [DefaultValue(DefaultDefaultTimeout)]
         public long DefaultTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of pessimistic transactions log stored on node in order to recover 
+        /// transaction commit if originating node has left grid before it has sent all messages to transaction nodes.
+        /// <code>0</code> for unlimited.
+        /// </summary>
+        [DefaultValue(DefaultPessimisticTransactionLogSize)]
+        public int PessimisticTransactionLogSize { get; set; }
     }
 }
