@@ -1659,14 +1659,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 CacheLazyEntry e;
 
                 if (op == GridCacheOperation.UPDATE) {
-                    updated0 = value(updated0, updated, false);
+                    updated0 = value(updated0, updated, keepBinary, false);
 
                     e = new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary);
 
                     Object interceptorVal = cctx.config().getInterceptor().onBeforePut(e, updated0);
 
                     if (interceptorVal == null)
-                        return new GridTuple3<>(false, cctx.unwrapTemporary(value(old0, old, false)), invokeRes);
+                        return new GridTuple3<>(false, cctx.unwrapTemporary(value(old0, old, keepBinary, false)), invokeRes);
                     else {
                         updated0 = cctx.unwrapTemporary(interceptorVal);
 
@@ -2528,19 +2528,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             return val;
 
         return cctx.unwrapBinaryIfNeeded(cacheObj, keepBinary, cpy);
-    }
-
-    /**
-     * @param val Value.
-     * @param cacheObj Cache object.
-     * @param cpy Copy flag.
-     * @return Cache object value.
-     */
-    @Nullable private Object value(@Nullable Object val, @Nullable CacheObject cacheObj, boolean cpy) {
-        if (val != null)
-            return val;
-
-        return cacheObj != null ? cacheObj.value(cctx.cacheObjectContext(), cpy) : null;
     }
 
     /**
