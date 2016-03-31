@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_CREATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_DESTROYED;
@@ -94,7 +95,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
         float loadFactor, int concurrencyLevel) {
         this.ctx = ctx;
         this.factory = factory;
-        map = new ConcurrentHashMap<>(initialCapacity, loadFactor, concurrencyLevel);
+        map = new ConcurrentHashMap8<>(initialCapacity, loadFactor, concurrencyLevel);
     }
 
     /** {@inheritDoc} */
