@@ -20,6 +20,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
     /// Employee.
@@ -45,16 +46,19 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <summary>
         /// Name.
         /// </summary>
+        [QuerySqlField]
         public string Name { get; set; }
 
         /// <summary>
         /// Salary.
         /// </summary>
+        [QuerySqlField]
         public long Salary { get; set; }
 
         /// <summary>
         /// Address.
         /// </summary>
+        [QuerySqlField]
         public Address Address { get; set; }
 
         /// <summary>
