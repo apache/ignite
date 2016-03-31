@@ -1,5 +1,5 @@
 
-LIBRARY   ignite.odbc
+LIBRARY   ignite.odbc.dll
 EXPORTS
 	ConfigDSN
 	SQLAllocConnect
