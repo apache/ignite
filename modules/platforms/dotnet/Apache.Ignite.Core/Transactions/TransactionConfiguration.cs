@@ -27,10 +27,19 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary> The default value for <see cref="DefaultTransactionConcurrency"/> property. </summary>
         public const TransactionConcurrency DefaultDefaultTransactionConcurrency = TransactionConcurrency.Pessimistic;
 
+        /// <summary> The default value for <see cref="DefaultTransactionIsolation"/> property. </summary>
+        public const TransactionIsolation DefaultDefaultTransactionIsolation = TransactionIsolation.RepeatableRead;
+
         /// <summary>
         /// Gets or sets the cache transaction concurrency to use when one is not explicitly specified.
         /// </summary>
         [DefaultValue(DefaultDefaultTransactionConcurrency)]
         public TransactionConcurrency DefaultTransactionConcurrency { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache transaction isolation to use when one is not explicitly specified.
+        /// </summary>
+        [DefaultValue(DefaultDefaultTransactionIsolation)]
+        public TransactionIsolation DefaultTransactionIsolation { get; set; }
     }
 }
