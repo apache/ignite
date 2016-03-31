@@ -30,6 +30,9 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary> The default value for <see cref="DefaultTransactionIsolation"/> property. </summary>
         public const TransactionIsolation DefaultDefaultTransactionIsolation = TransactionIsolation.RepeatableRead;
 
+        /// <summary> The default value for <see cref="DefaultTransactionIsolation"/> property. </summary>
+        public const long DefaultDefaultTimeout = 0;
+
         /// <summary>
         /// Gets or sets the cache transaction concurrency to use when one is not explicitly specified.
         /// </summary>
@@ -41,5 +44,11 @@ namespace Apache.Ignite.Core.Transactions
         /// </summary>
         [DefaultValue(DefaultDefaultTransactionIsolation)]
         public TransactionIsolation DefaultTransactionIsolation { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache transaction timeout to use when one is not explicitly specified.
+        /// </summary>
+        [DefaultValue(DefaultDefaultTimeout)]
+        public long DefaultTimeout { get; set; }
     }
 }
