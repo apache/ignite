@@ -85,7 +85,6 @@
    <RuleFile Name="$(FxCopDir)\Rules\GlobalizationRules.dll" Enabled="True" AllRulesEnabled="False">
     <Rule Name="AvoidDuplicateAccelerators" Enabled="True" />
     <Rule Name="DoNotHardcodeLocaleSpecificStrings" Enabled="True" />
-    <Rule Name="NormalizeStringsToUppercase" Enabled="True" />
     <Rule Name="SetLocaleForDataTypes" Enabled="True" />
     <Rule Name="SpecifyCultureInfo" Enabled="True" />
     <Rule Name="SpecifyMarshalingForPInvokeStringArguments" Enabled="True" />
