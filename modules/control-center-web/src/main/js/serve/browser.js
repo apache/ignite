@@ -24,12 +24,16 @@
  */
 module.exports = {
     implements: 'browser-manager',
-    inject: ['require(lodash)', 'require(socket.io)', 'require(apache-ignite)', 'agent-manager', 'configure']
+    inject: ['require(lodash)', 'require(socket.io)', 'agent-manager', 'configure']
 };
 
-module.exports.factory = (_, socketio, apacheIgnite, agentMgr, configure) => {
-    const SqlFieldsQuery = apacheIgnite.SqlFieldsQuery;
-    const ScanQuery = apacheIgnite.ScanQuery;
+module.exports.factory = (_, socketio, agentMgr, configure) => {
+    const _errorToJson = (err) => {
+        return {
+            message: err.message,
+            code: err.code || 1
+        };
+    };
 
     return {
         attach: (server) => {
@@ -45,7 +49,7 @@ module.exports.factory = (_, socketio, apacheIgnite, agentMgr, configure) => {
                     agentMgr.findAgent(user._id)
                         .then((agent) => agent.availableDrivers())
                         .then((drivers) => cb(null, drivers))
-                        .catch((errMsg) => cb(errMsg));
+                        .catch((err) => cb(_errorToJson(err)));
                 });
 
                 // Return schemas from database to browser.
@@ -57,7 +61,7 @@ module.exports.factory = (_, socketio, apacheIgnite, agentMgr, configure) => {
                             return agent.metadataSchemas(preset.jdbcDriverJar, preset.jdbcDriverClass, preset.jdbcUrl, jdbcInfo);
                         })
                         .then((schemas) => cb(null, schemas))
-                        .catch((errMsg) => cb(errMsg));
+                        .catch((err) => cb(_errorToJson(err)));
                 });
 
                 // Return tables from database to browser.
@@ -70,90 +74,81 @@ module.exports.factory = (_, socketio, apacheIgnite, agentMgr, configure) => {
                                 preset.schemas, preset.tablesOnly);
                         })
                         .then((tables) => cb(null, tables))
-                        .catch((errMsg) => cb(errMsg));
+                        .catch((err) => cb(_errorToJson(err)));
                 });
 
                 // Return topology command result from grid to browser.
                 socket.on('node:topology', (demo, attr, mtr, cb) => {
                     agentMgr.findAgent(user._id)
-                        .then((agent) => agent.ignite(demo).cluster(attr, mtr))
+                        .then((agent) => agent.topology(demo, attr, mtr))
                         .then((clusters) => cb(null, clusters))
-                        .catch((errMsg) => cb(errMsg));
+                        .catch((err) => cb(_errorToJson(err)));
                 });
 
                 // Close query on node.
                 socket.on('node:query:close', (args, cb) => {
                     agentMgr.findAgent(user._id)
-                        .then((agent) => {
-                            const cache = agent.ignite(args.demo).cache(args.cacheName);
-
-                            return cache.__createPromise(cache._createCommand('qrycls').addParam('qryId', args.queryId));
-                        })
+                        .then((agent) => agent.queryClose(args.demo, args.queryId))
                         .then(() => cb())
-                        .catch((errMsg) => cb(errMsg));
+                        .catch((err) => cb(_errorToJson(err)));
                 });
 
                 // Execute query on node and return first page to browser.
                 socket.on('node:query', (args, cb) => {
                     agentMgr.findAgent(user._id)
                         .then((agent) => {
-                            // Create sql query.
-                            const qry = args.type === 'SCAN' ? new ScanQuery() : new SqlFieldsQuery(args.query);
+                            if (args.type === 'SCAN')
+                                return agent.scan(args.demo, args.cacheName, args.pageSize);
 
-                            // Set page size for query.
-                            qry.setPageSize(args.pageSize);
-
-                            return agent.ignite(args.demo).cache(args.cacheName).query(qry).nextPage();
+                            return agent.fieldsQuery(args.demo, args.cacheName, args.query, args.pageSize);
                         })
-                        .then((cursor) => cb(null, {
-                            meta: cursor.fieldsMetadata(),
-                            rows: cursor.page(),
-                            queryId: cursor.queryId()
-                        }))
-                        .catch((errMsg) => cb(errMsg));
+                        .then((res) => cb(null, res))
+                        .catch((err) => cb(_errorToJson(err)));
                 });
 
                 // Fetch next page for query and return result to browser.
                 socket.on('node:query:fetch', (args, cb) => {
                     agentMgr.findAgent(user._id)
-                        .then((agent) => {
-                            const cache = agent.ignite(args.demo).cache(args.cacheName);
-
-                            const cmd = cache._createCommand('qryfetch')
-                                .addParam('qryId', args.queryId)
-                                .addParam('pageSize', args.pageSize);
-
-                            return cache.__createPromise(cmd);
-                        })
-                        .then((page) => cb(null, {
-                            rows: page.items,
-                            last: page === null || page.last
-                        }))
-                        .catch((errMsg) => cb(errMsg));
+                        .then((agent) => agent.queryFetch(args.demo, args.queryId, args.pageSize))
+                        .then((res) => cb(null, res))
+                        .catch((err) => cb(_errorToJson(err)));
                 });
 
                 // Execute query on node and return full result to browser.
                 socket.on('node:query:getAll', (args, cb) => {
+                    // Set page size for query.
+                    const pageSize = 1024;
+
                     agentMgr.findAgent(user._id)
                         .then((agent) => {
-                            // Create sql query.
-                            const qry = args.type === 'SCAN' ? new ScanQuery() : new SqlFieldsQuery(args.query);
+                            const firstPage = args.type === 'SCAN' ? agent.scan(args.demo, args.cacheName, pageSize)
+                                : agent.fieldsQuery(args.demo, args.cacheName, args.query, pageSize);
 
-                            // Set page size for query.
-                            qry.setPageSize(1024);
+                            const fetchResult = (acc) => {
+                                if (!acc.queryId)
+                                    return acc;
 
-                            const cursor = agent.ignite(args.demo).cache(args.cacheName).query(qry);
+                                return agent.queryFetch(args.demo, acc.queryId, pageSize)
+                                    .then((res) => {
+                                        acc.rows = acc.rows.concat(res.rows);
 
-                            return cursor.getAll()
-                                .then((rows) => cb(null, {meta: cursor.fieldsMetadata(), rows}));
+                                        acc.last = res.last;
+
+                                        return fetchResult(acc);
+                                    });
+                            };
+
+                            return firstPage
+                                .then(fetchResult);
                         })
-                        .catch((errMsg) => cb(errMsg));
+                        .then((res) => cb(null, res))
+                        .catch((err) => cb(_errorToJson(err)));
                 });
 
                 // Return cache metadata from all nodes in grid.
                 socket.on('node:cache:metadata', (args, cb) => {
                     agentMgr.findAgent(user._id)
-                        .then((agent) => agent.ignite(args.demo).cache(args.cacheName).metadata())
+                        .then((agent) => agent.metadata(args.demo, args.cacheName))
                         .then((caches) => {
                             let types = [];
 
@@ -237,7 +232,7 @@ module.exports.factory = (_, socketio, apacheIgnite, agentMgr, configure) => {
 
                             return cb(null, types);
                         })
-                        .catch((errMsg) => cb(errMsg));
+                        .catch((err) => cb(_errorToJson(err)));
                 });
 
                 const count = agentMgr.addAgentListener(user._id, socket);

@@ -80,12 +80,14 @@ class IgniteAgentMonitor {
         this._socketFactory = socketFactory;
 
         this._$q = $q;
+
+        this._$common = $common;
     }
 
     /**
      * @private
      */
-    _checkModal() {
+    checkModal() {
         if (this._scope.showModal && !this._scope.hasAgents)
             this._downloadAgentModal.$promise.then(this._downloadAgentModal.show);
         else if ((this._scope.hasAgents || !this._scope.showModal) && this._downloadAgentModal.$isShown)
@@ -100,7 +102,7 @@ class IgniteAgentMonitor {
             return this._$q.when();
 
         if (this._scope.hasAgents !== null)
-            this._checkModal();
+            this.checkModal();
 
         const latch = this._$q.defer();
 
@@ -122,7 +124,7 @@ class IgniteAgentMonitor {
         this._socket.on('agent:count', ({count}) => {
             this._scope.hasAgents = count > 0;
 
-            this._checkModal();
+            this.checkModal();
 
             if (this._scope.hasAgents)
                 this._scope.$broadcast('agent:connected', true);
@@ -131,7 +133,7 @@ class IgniteAgentMonitor {
         this._socket.on('disconnect', () => {
             this._scope.hasAgents = false;
 
-            this._checkModal();
+            this.checkModal();
         });
     }
 
@@ -211,6 +213,15 @@ class IgniteAgentMonitor {
     }
 
     /**
+     * @param {String} errMsg
+     */
+    showNodeError(errMsg) {
+        this._downloadAgentModal.show();
+
+        this._$common.showError(errMsg);
+    }
+
+    /**
      *
      * @param {String} event
      * @param {Object} [args]
@@ -219,17 +230,7 @@ class IgniteAgentMonitor {
      */
     _rest(event, ...args) {
         return this._downloadAgentModal.$promise
-            .then(() => this._emit(event, ...args))
-            .then((res) => {
-                this._downloadAgentModal.hide();
-
-                return res;
-            })
-            .catch((errMsg) => {
-                this._downloadAgentModal.show();
-
-                return this._$q.reject(errMsg);
-            });
+            .then(() => this._emit(event, ...args));
     }
 
     /**
@@ -288,7 +289,7 @@ class IgniteAgentMonitor {
     stopWatch() {
         this._scope.showModal = false;
 
-        this._checkModal();
+        this.checkModal();
 
         this._scope.$broadcast('agent:connected', false);
     }

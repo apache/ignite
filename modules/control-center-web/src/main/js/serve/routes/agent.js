@@ -21,20 +21,19 @@
 
 module.exports = {
     implements: 'agent-routes',
-    inject: ['require(lodash)', 'require(express)', 'require(fs)', 'require(jszip)', 'require(apache-ignite)', 'settings', 'agent-manager']
+    inject: ['require(lodash)', 'require(express)', 'require(fs)', 'require(jszip)', 'settings', 'agent-manager']
 };
 
 /**
  * @param _
  * @param express
- * @param apacheIgnite
  * @param fs
  * @param JSZip
  * @param settings
  * @param {AgentManager} agentMgr
  * @returns {Promise}
  */
-module.exports.factory = function(_, express, fs, JSZip, apacheIgnite, settings, agentMgr) {
+module.exports.factory = function(_, express, fs, JSZip, settings, agentMgr) {
     return new Promise((resolveFactory) => {
         const router = new express.Router();
 

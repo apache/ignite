@@ -79,13 +79,10 @@ module.exports.factory = function(_, express, mongo, agentMgr) {
                     });
                 })
                 .then((user) => {
-                    if (!params.token || user.token !== params.token)
+                    if (params.token && user.token !== params.token)
                         agentMgr.close(user._id);
 
-                    for (const param in params) {
-                        if (params.hasOwnProperty(param))
-                            user[param] = params[param];
-                    }
+                    _.extend(user, params);
 
                     return user.save();
                 })
