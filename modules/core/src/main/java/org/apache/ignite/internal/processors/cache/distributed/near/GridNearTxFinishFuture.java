@@ -136,7 +136,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (isMini(fut)) {
                 MinFuture f = (MinFuture)fut;
 
-                if (f.onNodeLeft(nodeId)) {
+                if (f.onNodeLeft(nodeId, true)) {
                     // Remove previous mapping.
                     mappings.remove(nodeId);
 
@@ -211,7 +211,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     CheckRemoteTxMiniFuture f = (CheckRemoteTxMiniFuture)fut;
 
                     if (f.futureId().equals(res.miniId()))
-                        f.onDhtFinishResponse(nodeId);
+                        f.onDhtFinishResponse(nodeId, false);
                 }
             }
     }
@@ -486,7 +486,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                             }
                         }
                         catch (ClusterTopologyCheckedException e) {
-                            mini.onNodeLeft(backupId);
+                            mini.onNodeLeft(backupId, false);
                         }
                         catch (IgniteCheckedException e) {
                             mini.onDone(e);
@@ -628,7 +628,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 // Remove previous mapping.
                 mappings.remove(m.node().id());
 
-                fut.onNodeLeft(n.id());
+                fut.onNodeLeft(n.id(), false);
             }
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
@@ -728,10 +728,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         private final IgniteUuid futId = IgniteUuid.randomUuid();
 
         /**
-          * @param nodeId Node ID.
+         * @param nodeId Node ID.
+         * @param discoThread {@code True} if executed from discovery thread.
          * @return {@code True} if future processed node failure.
          */
-        abstract boolean onNodeLeft(UUID nodeId);
+        abstract boolean onNodeLeft(UUID nodeId, boolean discoThread);
 
         /**
          * @return Future ID.
@@ -774,10 +775,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             return m;
         }
 
-        /**
-         * @param nodeId Failed node ID.
-         */
-        boolean onNodeLeft(UUID nodeId) {
+        /** {@inheritDoc} */
+        boolean onNodeLeft(UUID nodeId, boolean discoThread) {
             if (nodeId.equals(m.node().id())) {
                 if (log.isDebugEnabled())
                     log.debug("Remote node left grid while sending or waiting for reply: " + this);
@@ -806,7 +805,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                                         fut.listen(new CI1<IgniteInternalFuture<?>>() {
                                             @Override public void apply(IgniteInternalFuture<?> fut) {
-                                                mini.onDhtFinishResponse(cctx.localNodeId());
+                                                mini.onDhtFinishResponse(cctx.localNodeId(), true);
                                             }
                                         });
                                     }
@@ -815,7 +814,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                                             cctx.io().send(backup, req, tx.ioPolicy());
                                         }
                                         catch (ClusterTopologyCheckedException e) {
-                                            mini.onNodeLeft(backupId);
+                                            mini.onNodeLeft(backupId, discoThread);
                                         }
                                         catch (IgniteCheckedException e) {
                                             mini.onDone(e);
@@ -823,13 +822,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                                     }
                                 }
                                 else
-                                    mini.onDhtFinishResponse(backupId);
+                                    mini.onDhtFinishResponse(backupId, true);
                             }
                         }
                     }
                 }
 
-                onDone(tx);
+                onDone0(tx, discoThread ? cctx.kernalContext().getSystemExecutorService() : null);
 
                 return true;
             }
@@ -881,11 +880,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         }
 
         /** {@inheritDoc} */
-        @Override boolean onNodeLeft(UUID nodeId) {
+        @Override boolean onNodeLeft(UUID nodeId, boolean discoThread) {
             if (nodeId.equals(backup.id())) {
                 readyNearMappingFromBackup(m);
 
-                onDone(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId));
+                onDone0(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId),
+                    discoThread ? cctx.asyncListenerPool() : null);
 
                 return true;
             }
@@ -942,22 +942,24 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         }
 
         /** {@inheritDoc} */
-        @Override boolean onNodeLeft(UUID nodeId) {
-            return onResponse(nodeId);
+        @Override boolean onNodeLeft(UUID nodeId, boolean discoThread) {
+            return onResponse(nodeId, discoThread);
         }
 
         /**
          * @param nodeId Node ID.
+         * @param discoThread {@code True} if executed from discovery thread.
          */
-        void onDhtFinishResponse(UUID nodeId) {
-            onResponse(nodeId);
+        void onDhtFinishResponse(UUID nodeId, boolean discoThread) {
+            onResponse(nodeId, discoThread);
         }
 
         /**
          * @param nodeId Node ID.
+         * @param discoThread {@code True} if executed from discovery thread.
          * @return {@code True} if processed node response.
          */
-        private boolean onResponse(UUID nodeId) {
+        private boolean onResponse(UUID nodeId, boolean discoThread) {
             boolean done;
 
             boolean ret;
@@ -969,7 +971,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             }
 
             if (done)
-                onDone(tx);
+                onDone0(tx, discoThread ? cctx.asyncListenerPool() : null);
 
             return ret;
         }

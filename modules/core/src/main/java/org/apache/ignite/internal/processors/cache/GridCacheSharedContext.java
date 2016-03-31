@@ -24,6 +24,7 @@ import java.util.ListIterator;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
@@ -671,5 +672,12 @@ public class GridCacheSharedContext<K, V> {
      */
     public void txContextReset() {
         mvccMgr.contextReset();
+    }
+
+    /**
+     * @return Pool for asynchronous notification of cache future listeners (used to do not block discovery thread).
+     */
+    public Executor asyncListenerPool() {
+        return kernalCtx.getSystemExecutorService();
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.future;
 
 import java.util.Arrays;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 import org.apache.ignite.IgniteCheckedException;
@@ -213,9 +214,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
                         lsnr = lsnr0;
                     else if (lsnr instanceof ArrayListener)
                         ((ArrayListener)lsnr).add(lsnr0);
-                    else {
+                    else
                         lsnr = (IgniteInClosure)new ArrayListener<IgniteInternalFuture>(lsnr, lsnr0);
-                    }
 
                     return;
                 }
@@ -235,8 +235,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     /**
      * Notifies all registered listeners.
      */
-    private void notifyListeners() {
-        IgniteInClosure<? super IgniteInternalFuture<R>> lsnr0;
+    private void notifyListeners(Executor lsnrExec) {
+        final IgniteInClosure<? super IgniteInternalFuture<R>> lsnr0;
 
         synchronized (this) {
             lsnr0 = lsnr;
@@ -249,7 +249,15 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
 
         assert lsnr0 != null;
 
-        notifyListener(lsnr0);
+        if (lsnrExec != null) {
+            lsnrExec.execute(new Runnable() {
+                @Override public void run() {
+                    notifyListener(lsnr0);
+                }
+            });
+        }
+        else
+            notifyListener(lsnr0);
     }
 
     /**
@@ -326,6 +334,15 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /**
+     * @param res Result.
+     * @param lsnrExec Executor for listeners notification.
+     * @return {@code True} if result was set by this call.
+     */
+    public final boolean onDone0(@Nullable R res, Executor lsnrExec) {
+       return onDone(res, null, false, lsnrExec);
+    }
+
+    /**
      * Callback to notify that future is finished.
      * This method must delegate to {@link #onDone(Object, Throwable)} method.
      *
@@ -337,6 +354,15 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /**
+     * @param err Error.
+     * @param lsnrExec Executor for listeners notification.
+     * @return {@code True} if result was set by this call.
+     */
+    public final boolean onDone0(@Nullable Throwable err, Executor lsnrExec) {
+        return onDone(null, err, false, lsnrExec);
+    }
+
+    /**
      * Callback to notify that future is finished. Note that if non-{@code null} exception is passed in
      * the result value will be ignored.
      *
@@ -345,16 +371,21 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @return {@code True} if result was set by this call.
      */
     public boolean onDone(@Nullable R res, @Nullable Throwable err) {
-        return onDone(res, err, false);
+        return onDone(res, err, false, null);
+    }
+
+    public boolean onDone0(@Nullable R res, @Nullable Throwable err, Executor lsnrExec) {
+        return onDone(res, err, false, lsnrExec);
     }
 
     /**
      * @param res Result.
      * @param err Error.
      * @param cancel {@code True} if future is being cancelled.
+     * @param lsnrExec Optional executor for listeners notification.
      * @return {@code True} if result was set by this call.
      */
-    private boolean onDone(@Nullable R res, @Nullable Throwable err, boolean cancel) {
+    private boolean onDone(@Nullable R res, @Nullable Throwable err, boolean cancel, @Nullable Executor lsnrExec) {
         boolean notify = false;
 
         try {
@@ -379,7 +410,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         }
         finally {
             if (notify)
-                notifyListeners();
+                notifyListeners(lsnrExec);
         }
     }
 
@@ -389,7 +420,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @return {@code True} if cancel flag was set by this call.
      */
     public boolean onCancelled() {
-        return onDone(null, null, true);
+        return onDone(null, null, true, null);
     }
 
     /** {@inheritDoc} */
