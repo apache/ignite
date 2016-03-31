@@ -286,7 +286,6 @@ public class GridFunc {
         }
     };
 
-
     /** */
     private static final IgniteClosure CACHE_ENTRY_VAL_GET = new IgniteClosure() {
         @SuppressWarnings({"unchecked"})
@@ -895,7 +894,7 @@ public class GridFunc {
      * @return Single iterator.
      */
     @SuppressWarnings("unchecked")
-    public static <T> Iterator<T> concat(Iterator<T> ... iters) {
+    public static <T> Iterator<T> concat(Iterator<T>... iters) {
         if (iters.length == 1)
             return iters[0];
 
@@ -925,7 +924,7 @@ public class GridFunc {
             }
 
             private void advance() {
-                for (;;) {
+                for (; ; ) {
                     if (it.hasNext()) {
                         next = it.next();
 
@@ -1009,7 +1008,7 @@ public class GridFunc {
             if (isEmpty(p))
                 res.clear();
             else if (!isAlwaysFalse(p))
-                for (Iterator<T> iter = res.iterator(); iter.hasNext();)
+                for (Iterator<T> iter = res.iterator(); iter.hasNext(); )
                     if (isAll(iter.next(), p))
                         iter.remove();
         }
@@ -1050,7 +1049,7 @@ public class GridFunc {
             if (isEmpty(p))
                 res.clear();
             else if (!isAlwaysFalse(p))
-                for (Iterator<Map.Entry<K, V>> iter = m.entrySet().iterator(); iter.hasNext();)
+                for (Iterator<Map.Entry<K, V>> iter = m.entrySet().iterator(); iter.hasNext(); )
                     if (isAll(iter.next(), p))
                         iter.remove();
         }
@@ -1166,7 +1165,7 @@ public class GridFunc {
             res = c;
 
             if (p != null)
-                for (Iterator<T> it = c.iterator(); it.hasNext();)
+                for (Iterator<T> it = c.iterator(); it.hasNext(); )
                     if (isAny(it.next(), p))
                         it.remove();
         }
@@ -1324,7 +1323,7 @@ public class GridFunc {
             if (num < res.size()) {
                 int i = 0;
 
-                for (Iterator<T> iter = res.iterator(); iter.hasNext();) {
+                for (Iterator<T> iter = res.iterator(); iter.hasNext(); ) {
                     iter.next();
 
                     if (i++ >= num)
@@ -1690,6 +1689,25 @@ public class GridFunc {
 
             @Override public boolean isEmpty() {
                 return F.isEmpty(p) ? c.isEmpty() : !iterator().hasNext();
+            }
+        };
+    }
+
+    @SuppressWarnings("RedundantTypeArguments")
+    @SafeVarargs
+    public static <T1, T2> Iterable<T2> viewReadOnly(@Nullable final Iterable<? extends T1> c,
+        final IgniteClosure<? super T1, T2> trans, @Nullable final IgnitePredicate<? super T1>... p) {
+        A.notNull(trans, "trans");
+
+        if (isEmpty(c) || isAlwaysFalse(p))
+            return Collections.emptyList();
+
+        assert c != null;
+
+        return new Iterable<T2>() {
+            @NotNull
+            @Override public Iterator<T2> iterator() {
+                return F.<T1, T2>iterator(c, trans, true, p);
             }
         };
     }
@@ -2266,7 +2284,7 @@ public class GridFunc {
      * @return Whether or not the given collection is {@code null} or empty.
      */
     public static boolean isEmpty(@Nullable Iterable<?> c) {
-        return c == null || (c instanceof Collection<?> ? ((Collection<?>) c).isEmpty() : !c.iterator().hasNext());
+        return c == null || (c instanceof Collection<?> ? ((Collection<?>)c).isEmpty() : !c.iterator().hasNext());
     }
 
     /**
@@ -2592,8 +2610,7 @@ public class GridFunc {
     public static <T1, T2> Iterator<T2> iterator(final Iterator<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans,
         final boolean readOnly,
-        @Nullable final IgnitePredicate<? super T1>... p)
-    {
+        @Nullable final IgnitePredicate<? super T1>... p) {
         A.notNull(c, "c", trans, "trans");
 
         if (isAlwaysFalse(p))
@@ -2678,7 +2695,7 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code true}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
+    @SuppressWarnings({"unchecked", "RedundantCast"})
     public static <T> IgnitePredicate<T> alwaysTrue() {
         return (IgnitePredicate<T>)ALWAYS_TRUE;
     }
@@ -2690,7 +2707,7 @@ public class GridFunc {
      * @param <T> Type of the free variable, i.e. the element the predicate is called on.
      * @return Predicate that always returns {@code false}.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
+    @SuppressWarnings({"unchecked", "RedundantCast"})
     public static <T> IgnitePredicate<T> alwaysFalse() {
         return (IgnitePredicate<T>)ALWAYS_FALSE;
     }
@@ -2746,7 +2763,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if its free variable is {@code null}.
      */
     public static <T> IgnitePredicate<T> isNull() {
-        return (IgnitePredicate<T>) IS_NULL;
+        return (IgnitePredicate<T>)IS_NULL;
     }
 
     /**
@@ -2756,7 +2773,7 @@ public class GridFunc {
      * @return Predicate that evaluates to {@code true} if its free variable is not {@code null}.
      */
     public static <T> IgnitePredicate<T> notNull() {
-        return (IgnitePredicate<T>) IS_NOT_NULL;
+        return (IgnitePredicate<T>)IS_NOT_NULL;
     }
 
     /**
@@ -3085,7 +3102,7 @@ public class GridFunc {
      *      does not exist in the map. Return {@code null} if key is not found and
      *      closure is {@code null}.
      */
-    public static <K, V>  V addIfAbsent(ConcurrentMap<K, V> map, K key, @Nullable Callable<V> c) {
+    public static <K, V> V addIfAbsent(ConcurrentMap<K, V> map, K key, @Nullable Callable<V> c) {
         A.notNull(map, "map", key, "key");
 
         V v = map.get(key);
@@ -4073,7 +4090,7 @@ public class GridFunc {
      * @param <T> Element's type.
      * @return Created set.
      */
-    @SuppressWarnings( {"RedundantTypeArguments"})
+    @SuppressWarnings({"RedundantTypeArguments"})
     public static <T> Set<T> asSet(@Nullable T... t) {
         if (t == null || t.length == 0)
             return Collections.<T>emptySet();
@@ -4520,7 +4537,8 @@ public class GridFunc {
      * @param futs Futures. If none provided - this method is no-op.
      * @throws IgniteCheckedException If any of the futures failed.
      */
-    public static <T> void awaitAll(long timeout, @Nullable Collection<IgniteInternalFuture<T>> futs) throws IgniteCheckedException {
+    public static <T> void awaitAll(long timeout,
+        @Nullable Collection<IgniteInternalFuture<T>> futs) throws IgniteCheckedException {
         awaitAll(timeout, null, futs);
     }
 
@@ -4580,5 +4598,27 @@ public class GridFunc {
      */
     public static IgnitePredicate<IgniteInternalFuture<?>> unfinishedFutures() {
         return UNFINISHED_FUTURE;
+    }
+
+    public static <T1, T2> Iterable<T2> map(final Iterable<? extends T1> it, final IgniteClosure<T1, T2> cl) {
+        return new Iterable<T2>() {
+            @Override public Iterator<T2> iterator() {
+                return new Iterator<T2>() {
+                    private final Iterator<? extends T1> it0 = it.iterator();
+
+                    @Override public boolean hasNext() {
+                        return it0.hasNext();
+                    }
+
+                    @Override public T2 next() {
+                        return cl.apply(it0.next());
+                    }
+
+                    @Override public void remove() {
+                        throw new UnsupportedOperationException("remove");
+                    }
+                };
+            }
+        };
     }
 }

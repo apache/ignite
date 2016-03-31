@@ -676,7 +676,7 @@ public class GridDhtPartitionDemander {
                         "value, will ignore rebalance entries)");
 
                     if (cached.markObsoleteIfEmpty(null))
-                        cached.context().cache().removeIfObsolete(cached.key());
+                        cached.context().cache().removeEntry(cached);
 
                     return true;
                 }

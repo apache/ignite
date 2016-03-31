@@ -115,9 +115,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         return true;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void init() {
-        map.setEntryFactory(new GridCacheMapEntryFactory() {
+    @Override protected GridCacheMapEntryFactory entryFactory() {
+        return new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
@@ -131,7 +130,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 return new GridDhtColocatedCacheEntry(ctx, topVer, key, hash, val);
             }
-        });
+        };
     }
 
     /** {@inheritDoc} */
@@ -214,7 +213,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<V>() {
                 @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter tx) {
-                    IgniteInternalFuture<Map<Object, Object>>  fut = tx.getAllAsync(ctx,
+                    IgniteInternalFuture<Map<Object, Object>> fut = tx.getAllAsync(ctx,
                         Collections.singleton(ctx.toCacheKeyObject(key)),
                         deserializeBinary,
                         skipVals,
@@ -244,8 +243,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         }
 
         AffinityTopologyVersion topVer = tx == null ?
-                (canRemap ? ctx.affinity().affinityTopologyVersion() : ctx.shared().exchange().readyAffinityVersion()) :
-                tx.topologyVersion();
+            (canRemap ? ctx.affinity().affinityTopologyVersion() : ctx.shared().exchange().readyAffinityVersion()) :
+            tx.topologyVersion();
 
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
@@ -521,7 +520,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 GridCacheVersion obsoleteVer = context().versions().next();
 
                                 if (isNew && entry.markObsoleteIfEmpty(obsoleteVer))
-                                    removeIfObsolete(key);
+                                    removeEntry(entry);
 
                                 success = false;
                             }
