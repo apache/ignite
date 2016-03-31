@@ -370,10 +370,13 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
         /** {@inheritDoc} */
         @Nullable @Override public V onBeforePut(Cache.Entry<K, V> e, V newVal) {
             if (validate) {
-                validateOldVal(e.getValue());
+                validateEntry(e);
 
-                if (newVal != null)
+                if (newVal != null) {
                     assertEquals("NewVal: " + newVal, binaryObjExp, newVal instanceof BinaryObject);
+
+                    assertFalse(e.getKey() instanceof BinaryObjectOffheapImpl);
+                }
             }
 
             return newVal;
@@ -381,29 +384,37 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
 
         /** {@inheritDoc} */
         @Override public void onAfterPut(Cache.Entry<K, V> entry) {
-            validateOldVal(entry.getValue());
+            validateEntry(entry);
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry) {
-            V val = entry.getValue();
+            validateEntry(entry);
 
-            validateOldVal(val);
-
-            return new IgniteBiTuple<>(false, val);
+            return new IgniteBiTuple<>(false, entry.getValue());
         }
 
         /** {@inheritDoc} */
         @Override public void onAfterRemove(Cache.Entry<K, V> entry) {
-            validateOldVal(entry.getValue());
+            validateEntry(entry);
         }
 
         /**
-         * @param val Value.
+         * @param e Value.
          */
-        private void validateOldVal(V val) {
-            if (validate && val != null)
-                assertEquals("Val: " + val, true, val instanceof BinaryObject);
+        private void validateEntry(Cache.Entry<K, V> e) {
+            assertNotNull(e);
+            assertNotNull(e.getKey());
+
+            assertFalse(e.getKey() instanceof BinaryObjectOffheapImpl);
+            assertFalse(e.getValue() instanceof BinaryObjectOffheapImpl);
+
+            if (validate) {
+                assertTrue("Key: " + e.getKey(), e.getKey() instanceof BinaryObject);
+
+                if (e.getValue() != null)
+                    assertTrue("Val: " + e.getValue(), e.getValue() instanceof BinaryObject);
+            }
         }
     }
 }
