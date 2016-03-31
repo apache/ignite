@@ -121,7 +121,7 @@ namespace Apache.Ignite.Core.Impl
 
             if (Exs.TryGetValue(clsName, out ctor))
             {
-                var match = InnerClassRegex.Match(msg);
+                var match = InnerClassRegex.Match(msg ?? string.Empty);
 
                 ExceptionFactoryDelegate innerCtor;
 

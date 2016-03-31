@@ -40,6 +40,10 @@
       <HintPath Condition="Exists('..\..\Apache.Ignite')">..\..\Apache.Ignite\bin\$(Configuration)\Apache.Ignite.Core.dll</HintPath>
       <HintPath Condition="Exists('..\..\bin\Apache.Ignite.Core.dll')">..\..\bin\Apache.Ignite.Core.dll</HintPath>
     </Reference>
+    <Reference Include="Apache.Ignite.Linq">
+      <HintPath Condition="Exists('..\..\Apache.Ignite.Linq')">..\..\Apache.Ignite.Linq\bin\$(Configuration)\Apache.Ignite.Linq.dll</HintPath>
+      <HintPath Condition="Exists('..\..\bin\Apache.Ignite.Linq.dll')">..\..\bin\Apache.Ignite.Linq.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
@@ -49,6 +53,7 @@
     <Compile Include="Datagrid\ContinuousQueryExample.cs" />
     <Compile Include="Datagrid\DataStreamerExample.cs" />
     <Compile Include="Datagrid\PutGetExample.cs" />
+    <Compile Include="Datagrid\LinqExample.cs" />
     <Compile Include="Datagrid\QueryExample.cs" />
     <Compile Include="Datagrid\StoreExample.cs" />
     <Compile Include="Datagrid\TransactionExample.cs" />
