@@ -110,6 +110,7 @@ namespace Apache.Ignite.Core.Impl.Services
             var argsString = arguments.Length == 0
                 ? "0"
                 : "(" +
+                  // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                   arguments.Select(x => x == null ? "null" : x.GetType().Name).Aggregate((x, y) => x + ", " + y)
                   + ")";
 
