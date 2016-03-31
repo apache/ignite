@@ -1085,7 +1085,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
                     return;
 
-                handler(this, obj);
+                handler.Write(this, obj);
 
                 return;
             }
