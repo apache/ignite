@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
@@ -40,6 +42,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -50,11 +53,18 @@ import org.jetbrains.annotations.Nullable;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
+import java.math.BigDecimal;
+import java.security.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 
@@ -791,6 +801,124 @@ public class PlatformUtils {
         }
     }
 
+    /**
+     * @param o Object to unwrap.
+     * @return Unwrapped object.
+     */
+    private static Object unwrapBinary(Object o) {
+        if (o == null)
+            return null;
+
+        if (knownArray(o))
+            return o;
+
+        if (o instanceof Map.Entry) {
+            Map.Entry entry = (Map.Entry)o;
+
+            Object key = entry.getKey();
+
+            Object uKey = unwrapBinary(key);
+
+            Object val = entry.getValue();
+
+            Object uVal = unwrapBinary(val);
+
+            return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
+        }
+        else if (BinaryUtils.knownCollection(o))
+            return unwrapKnownCollection((Collection<Object>)o);
+        else if (BinaryUtils.knownMap(o))
+            return unwrapBinariesIfNeeded((Map<Object, Object>)o);
+        else if (o instanceof Object[])
+            return unwrapBinariesInArray((Object[])o);
+        else if (o instanceof BinaryObject)
+            return ((BinaryObject)o).deserialize();
+
+        return o;
+    }
+
+    /**
+     * @param obj Obj.
+     * @return True is obj is a known simple type array.
+     */
+    private static boolean knownArray(Object obj) {
+        return obj instanceof String[] ||
+            obj instanceof boolean[] ||
+            obj instanceof byte[] ||
+            obj instanceof char[] ||
+            obj instanceof int[] ||
+            obj instanceof long[] ||
+            obj instanceof short[] ||
+            obj instanceof Timestamp[] ||
+            obj instanceof double[] ||
+            obj instanceof float[] ||
+            obj instanceof UUID[] ||
+            obj instanceof BigDecimal[];
+    }
+
+    /**
+     * @param o Object to test.
+     * @return True if collection should be recursively unwrapped.
+     */
+    private static boolean knownCollection(Object o) {
+        Class<?> cls = o == null ? null : o.getClass();
+
+        return cls == ArrayList.class || cls == LinkedList.class || cls == HashSet.class;
+    }
+
+    /**
+     * @param o Object to test.
+     * @return True if map should be recursively unwrapped.
+     */
+    private static boolean knownMap(Object o) {
+        Class<?> cls = o == null ? null : o.getClass();
+
+        return cls == HashMap.class || cls == LinkedHashMap.class;
+    }
+
+    /**
+     * @param col Collection to unwrap.
+     * @return Unwrapped collection.
+     */
+    @SuppressWarnings("TypeMayBeWeakened")
+    private static Collection<Object> unwrapKnownCollection(Collection<Object> col) {
+        Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
+
+        for (Object obj : col)
+            col0.add(unwrapBinary(obj));
+
+        return col0;
+    }
+
+    /**
+     * Unwrap array of binaries if needed.
+     *
+     * @param arr Array.
+     * @return Result.
+     */
+    public static Object[] unwrapBinariesInArray(Object[] arr) {
+        Object[] res = new Object[arr.length];
+
+        for (int i = 0; i < arr.length; i++)
+            res[i] = unwrapBinary(arr[i]);
+
+        return res;
+    }
+
+    /**
+     * Unwraps map.
+     *
+     * @param map Map to unwrap.
+     * @return Unwrapped collection.
+     */
+    private static Map<Object, Object> unwrapBinariesIfNeeded(Map<Object, Object> map) {
+        Map<Object, Object> map0 = BinaryUtils.newMap(map);
+
+        for (Map.Entry<Object, Object> e : map.entrySet())
+            map0.put(unwrapBinary(e.getKey()), unwrapBinary(e.getValue()));
+
+        return map0;
+    }
     /**
      * Private constructor.
      */
