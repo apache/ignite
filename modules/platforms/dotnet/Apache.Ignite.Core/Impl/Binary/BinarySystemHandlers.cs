@@ -603,6 +603,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             ctx.WriteInt(binEnum.EnumValue);
         }
 
+        /// <summary>
+        /// Writes serializable.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="o">The object.</param>
+        private static void WriteSerializable(BinaryWriter writer, object o)
+        {
+            writer.Write(new SerializableObjectHolder(o));
+        }
+
         /**
          * <summary>Read enum array.</summary>
          */
