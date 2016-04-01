@@ -86,7 +86,7 @@ namespace ignite
         return code;
     }
 
-    const char* IgniteError::GetText() const
+    const char* IgniteError::GetText() const IGNITE_NO_THROW
     {
         if (code == IGNITE_SUCCESS)
             return "Operation completed successfully.";
