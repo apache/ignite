@@ -209,7 +209,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         this.discoEvt = discoEvt;
         this.cctx = cctx;
 
-        onDone(exchId.topologyVersion());
+        onDone0(exchId.topologyVersion(), null, null);
     }
 
     /**
@@ -231,7 +231,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         reassign = true;
 
-        onDone(exchId.topologyVersion());
+        onDone0(exchId.topologyVersion(), null, null);
     }
 
     /**
@@ -484,7 +484,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 case NONE: {
                     initTopologies();
 
-                    onDone(topologyVersion());
+                    onDone0(topologyVersion(), null, null);
 
                     break;
                 }
@@ -494,14 +494,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
         catch (IgniteInterruptedCheckedException e) {
-            onDone(e);
+            onDone0(null, e, null);
 
             throw e;
         }
         catch (Throwable e) {
             U.error(log, "Failed to reinitialize local partitions (preloading will be stopped): " + exchId, e);
 
-            onDone(e);
+            onDone0(null, e, null);
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -705,7 +705,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
-        onDone(topologyVersion());
+        onDone0(topologyVersion(), null, null);
     }
 
     /**
@@ -1087,7 +1087,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         cctx.exchange().onExchangeDone(this, err);
 
-        if (super.onDone(res, err) && !dummy && !forcePreload) {
+        if (super.onDone0(res, err, lsnrExec) && !dummy && !forcePreload) {
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
                     "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
@@ -1241,7 +1241,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cctx.discovery().sendCustomEvent(msg);
         }
         catch (IgniteCheckedException e) {
-            onDone(e);
+            onDone0(null, e, null);
         }
     }
 
@@ -1292,7 +1292,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
         catch (IgniteCheckedException e) {
-            onDone(e);
+            onDone0(null, e, null);
         }
     }
 
@@ -1394,7 +1394,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         updatePartitionFullMap(msg);
 
-        onDone(exchId.topologyVersion());
+        onDone0(exchId.topologyVersion(), null, null);
     }
 
     /**
