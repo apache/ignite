@@ -1062,6 +1062,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final CacheEntryPredicate[] filter,
         boolean waitTopFut
     ) {
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
         GridCacheOperation op;
         Collection vals;
 
@@ -1078,7 +1080,27 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             vals = null;
         }
 
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
+        GridCacheDrInfo conflictPutVal = null;
+        GridCacheVersion conflictRmvVer = null;
+
+        if (opCtx != null && opCtx.hasDataCenterId()) {
+            Byte dcId = opCtx.dataCenterId();
+
+            assert dcId != null;
+
+            if (op == UPDATE) {
+                conflictPutVal = new GridCacheDrInfo(ctx.toCacheObject(val), ctx.versions().next(dcId));
+
+                vals = null;
+            }
+            else if (op == GridCacheOperation.TRANSFORM) {
+                conflictPutVal = new GridCacheDrInfo(proc, ctx.versions().next(dcId));
+
+                vals = null;
+            }
+            else
+                conflictRmvVer = ctx.versions().next(dcId);
+        }
 
         return new GridNearAtomicUpdateFuture(
             ctx,
@@ -1088,8 +1110,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             Collections.singletonList(key),
             vals,
             invokeArgs,
-            null,
-            null,
+            conflictPutVal != null ? Collections.singleton(conflictPutVal) : null,
+            conflictRmvVer != null ? Collections.singleton(conflictRmvVer) : null,
             retval,
             false,
             opCtx != null ? opCtx.expiry() : null,
