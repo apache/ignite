@@ -25,6 +25,8 @@
 
 #include <iostream>
 
+#include <array>
+
 #define IGNITE_TRACE_ALLOC(addr) \
     std::cout << "ALLOC " << __FILE__ << "(" << __LINE__ << "): 0x" << (void*)addr << std::endl;
 
@@ -33,7 +35,13 @@
  */
 #define IGNITE_NO_COPY_ASSIGNMENT(cls) \
     cls(const cls& src); \
-    cls& operator= (const cls& other); 
+    cls& operator= (const cls& other);
+
+#if (__cplusplus >= 201103L)
+#   define IGNITE_NO_THROW nothrow
+#else
+#   define IGNITE_NO_THROW throw()
+#endif
 
 namespace ignite
 {
