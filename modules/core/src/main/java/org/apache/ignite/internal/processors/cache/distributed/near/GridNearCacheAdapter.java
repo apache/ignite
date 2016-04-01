@@ -39,13 +39,10 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheClearAllRunnable;
-import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheEntrySet;
-import org.apache.ignite.internal.processors.cache.GridCacheKeySet;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
@@ -55,13 +52,10 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -364,28 +358,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         return dht().entrySet(part);
     }
 
-    /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> primaryEntrySet(
-        @Nullable final CacheEntryPredicate... filter) {
-        return dht().primaryEntrySet(filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<K> keySet(@Nullable CacheEntryPredicate[] filter) {
-        return new KeySet(nearKeySet(filter), dht().keySet(filter));
-    }
-
     /**
-     * @param filter Entry filter.
      * @return Keys for near cache only.
      */
-    public Set<K> nearKeySet(@Nullable CacheEntryPredicate[] filter) {
-        return super.keySet(filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<K> primaryKeySet(@Nullable CacheEntryPredicate... filter) {
-        return dht().primaryKeySet(filter);
+    public Set<K> nearKeySet() {
+        return super.keySet();
     }
 
     /** {@inheritDoc} */
