@@ -1989,7 +1989,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ) {
             assert node != null : data;
 
-            evts.add(F.t(type, topVer, node, topSnapshot, data));
+            evts.add(new GridTuple5<>(type, topVer, node, topSnapshot, data));
         }
 
         /**

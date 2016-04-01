@@ -155,7 +155,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         Map<UUID, Collection<UUID>> map = txMapping.transactionNodes();
 
         if (map.size() == 1) {
-            Map.Entry<UUID, Collection<UUID>> entry = F.firstEntry(map);
+            Map.Entry<UUID, Collection<UUID>> entry = map.entrySet().iterator().next();
 
             assert entry != null;
 
