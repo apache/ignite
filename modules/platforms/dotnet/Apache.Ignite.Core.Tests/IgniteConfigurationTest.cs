@@ -113,10 +113,19 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.IsDaemon, resCfg.IsDaemon);
                 Assert.AreEqual(cfg.UserAttributes, resCfg.UserAttributes);
 
-                Assert.AreEqual(cfg.AtomicConfiguration.AtomicSequenceReserveSize,
-                    resCfg.AtomicConfiguration.AtomicSequenceReserveSize);
-                Assert.AreEqual(cfg.AtomicConfiguration.Backups, resCfg.AtomicConfiguration.Backups);
-                Assert.AreEqual(cfg.AtomicConfiguration.CacheMode, resCfg.AtomicConfiguration.CacheMode);
+                var atm = cfg.AtomicConfiguration;
+                var resAtm = resCfg.AtomicConfiguration;
+                Assert.AreEqual(atm.AtomicSequenceReserveSize, resAtm.AtomicSequenceReserveSize);
+                Assert.AreEqual(atm.Backups, resAtm.Backups);
+                Assert.AreEqual(atm.CacheMode, resAtm.CacheMode);
+
+                var tx = cfg.TransactionConfiguration;
+                var resTx = resCfg.TransactionConfiguration;
+                Assert.AreEqual(tx.DefaultTimeout, resTx.DefaultTimeout);
+                Assert.AreEqual(tx.DefaultTransactionConcurrency, resTx.DefaultTransactionConcurrency);
+                Assert.AreEqual(tx.DefaultTransactionIsolation, resTx.DefaultTransactionIsolation);
+                Assert.AreEqual(tx.PessimisticTransactionLogLinger, resTx.PessimisticTransactionLogLinger);
+                Assert.AreEqual(tx.PessimisticTransactionLogSize, resTx.PessimisticTransactionLogSize);
             }
         }
 
