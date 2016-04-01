@@ -314,6 +314,19 @@
                     CacheMode = (CacheMode) r.ReadInt()
                 };
             }
+
+            // Tx
+            if (r.ReadBoolean())
+            {
+                TransactionConfiguration = new TransactionConfiguration
+                {
+                    PessimisticTransactionLogSize = r.ReadInt(),
+                    DefaultTransactionConcurrency = (TransactionConcurrency) r.ReadInt(),
+                    DefaultTransactionIsolation = (TransactionIsolation) r.ReadInt(),
+                    DefaultTimeout = TimeSpan.FromMilliseconds(r.ReadLong()),
+                    PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadLong())
+                };
+            }
         }
 
         /// <summary>
