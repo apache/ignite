@@ -72,11 +72,6 @@
     throw ignite::IgniteError(code, stream.str().c_str()); \
 }
 
-#ifdef _MSC_VER
-#   pragma warning(push)
-#   pragma warning(disable : 4275)
-#endif
-
 namespace ignite
 {
     /**
@@ -276,9 +271,5 @@ namespace ignite
         char* msg;       
     };    
 }
-
-#ifdef _MSC_VER
-#   pragma warning(pop) 
-#endif
 
 #endif
