@@ -483,7 +483,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
      * @param host The host to check
      * @return If the address denotes the local host.
      */
-    public static boolean isLocAddr(String host) {
+    private static boolean isLocAddr(String host) {
         if (F.isEmpty(host))
             // empty address treated as local address:
             return true;
