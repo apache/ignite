@@ -85,6 +85,7 @@
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>
         <module>modules/web/ignite-weblogic-test</module>
+        <module>modules/flink</module>
     </modules>
 
     <profiles>
