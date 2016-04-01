@@ -39,7 +39,7 @@
 #endif
 
 #if (__cplusplus >= 201103L)
-#   define IGNITE_NO_THROW nothrow
+#   define IGNITE_NO_THROW noexcept
 #else
 #   define IGNITE_NO_THROW throw()
 #endif
