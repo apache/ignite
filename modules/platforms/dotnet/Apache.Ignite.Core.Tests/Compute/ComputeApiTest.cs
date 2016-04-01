@@ -31,6 +31,9 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Discovery;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Resource;
@@ -186,7 +189,24 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]  // TODO: DELME!
         public void TestStartupTime()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration());
+            var cfg = new IgniteConfiguration
+            {
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] { "127.0.0.1:47500" }
+                    },
+                    AckTimeout = TimeSpan.FromSeconds(0.1),
+                    JoinTimeout = TimeSpan.FromSeconds(0.1),
+                    MaxAckTimeout = TimeSpan.FromSeconds(0.1),
+                    NetworkTimeout = TimeSpan.FromSeconds(0.1),
+                    SocketTimeout = TimeSpan.FromSeconds(0.1)
+                },
+                Localhost = "127.0.0.1",
+                JvmOptions = TestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath()
+            };
 
             var ignite = Ignition.Start(cfg);
 
