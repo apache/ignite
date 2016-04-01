@@ -21,11 +21,10 @@ using Apache.Ignite.Core;
 using Apache.Ignite.Core.Events;
 using Apache.Ignite.ExamplesDll.Compute;
 using Apache.Ignite.ExamplesDll.Events;
+using Apache.Ignite.ExamplesDll.Binary;
 
 namespace Apache.Ignite.Examples.Events
 {
-    using Apache.Ignite.ExamplesDll.Binary;
-
     /// <summary>
     /// Example demonstrating Ignite events.
     /// <para />

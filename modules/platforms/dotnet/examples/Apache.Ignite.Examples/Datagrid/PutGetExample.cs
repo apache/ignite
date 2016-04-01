@@ -19,11 +19,10 @@ using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Binary;
+using Apache.Ignite.ExamplesDll.Binary;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
-    using Apache.Ignite.ExamplesDll.Binary;
-
     /// <summary>
     /// This example demonstrates several put-get operations on Ignite cache
     /// with binary values. Note that binary object can be retrieved in

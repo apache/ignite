@@ -18,13 +18,12 @@
 using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
+using Apache.Ignite.Core.Cache.Configuration;
+using Apache.Ignite.ExamplesDll.Binary;
 using Apache.Ignite.ExamplesDll.Datagrid;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
-    using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.ExamplesDll.Binary;
-
     /// <summary>
     /// Example demonstrating cache store.
     /// <para />

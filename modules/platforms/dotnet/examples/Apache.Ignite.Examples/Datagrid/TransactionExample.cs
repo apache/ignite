@@ -17,13 +17,12 @@
 
 using System;
 using Apache.Ignite.Core;
+using Apache.Ignite.Core.Cache.Configuration;
+using Apache.Ignite.ExamplesDll.Binary;
 using Apache.Ignite.Core.Transactions;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
-    using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.ExamplesDll.Binary;
-
     /// <summary>
     /// This example demonstrates how to use transactions on Apache cache.
     /// <para />
