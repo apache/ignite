@@ -650,18 +650,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     *
-     */
-    enum ExchangeType {
-        /** */
-        CLIENT,
-        /** */
-        ALL,
-        /** */
-        NONE
-    }
-
-    /**
      * @throws IgniteCheckedException If failed.
      */
     private void clientOnlyExchange() throws IgniteCheckedException {
@@ -1043,8 +1031,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone0(@Nullable AffinityTopologyVersion res, @Nullable Throwable err, Executor lsnrExec) {
-        if (err == null) {
+    @Override public boolean onDone(@Nullable AffinityTopologyVersion res, @Nullable Throwable err, Executor lsnrExec) {
+        boolean realExchange = !dummy && !forcePreload;
+
+        if (err == null && realExchange) {
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                 if (cacheCtx.isLocal())
                     continue;
@@ -1068,26 +1058,26 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     }
                 }
             }
-        }
 
-        Map<Integer, Boolean> m = null;
+            Map<Integer, Boolean> m = null;
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (cacheCtx.config().getTopologyValidator() != null && !CU.isSystemCache(cacheCtx.name())) {
-                if (m == null)
-                    m = new HashMap<>();
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (cacheCtx.config().getTopologyValidator() != null && !CU.isSystemCache(cacheCtx.name())) {
+                    if (m == null)
+                        m = new HashMap<>();
 
-                m.put(cacheCtx.cacheId(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
+                    m.put(cacheCtx.cacheId(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
+                }
             }
-        }
 
-        cacheValidRes = m != null ? m : Collections.<Integer, Boolean>emptyMap();
+            cacheValidRes = m != null ? m : Collections.<Integer, Boolean>emptyMap();
+        }
 
         cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
 
-        cctx.exchange().onExchangeDone(this, err);
+        cctx.exchange().onExchangeDone(this, err, lsnrExec);
 
-        if (super.onDone(res, err) && !dummy && !forcePreload) {
+        if (super.onDone(res, err, lsnrExec) && realExchange) {
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
                     "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
@@ -1288,7 +1278,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (!nodes.isEmpty())
                     sendAllPartitions(nodes);
 
-                onDone0(exchangeId().topologyVersion(), discoThread ? cctx.asyncListenerPool() : null);
+                onDone(exchangeId().topologyVersion(), discoThread ? cctx.asyncListenerPool() : null);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1471,7 +1461,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             updatePartitionFullMap(partsMsg);
                         }
 
-                        onDone0(topologyVersion(), cctx.asyncListenerPool());
+                        onDone(topologyVersion(), cctx.asyncListenerPool());
                     }
                     else {
                         if (log.isDebugEnabled()) {
@@ -1585,7 +1575,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 cacheCtx.affinity().affinityCache().initialize(topologyVersion(), affAssignment);
                             }
 
-                            onDone0(topologyVersion(), cctx.asyncListenerPool());
+                            onDone(topologyVersion(), cctx.asyncListenerPool());
 
                             return;
                         }
@@ -1638,6 +1628,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return exchId.hashCode();
+    }
+
+    /**
+     *
+     */
+    enum ExchangeType {
+        /** */
+        CLIENT,
+        /** */
+        ALL,
+        /** */
+        NONE
     }
 
     /** {@inheritDoc} */

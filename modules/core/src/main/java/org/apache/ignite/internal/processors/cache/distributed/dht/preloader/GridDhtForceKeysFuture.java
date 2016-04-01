@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -155,8 +156,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Collection<K> res, @Nullable Throwable err) {
-        if (super.onDone(res, err)) {
+    @Override public boolean onDone(@Nullable Collection<K> res, @Nullable Throwable err, Executor lsnrExec) {
+        if (super.onDone(res, err, lsnrExec)) {
             if (trackable)
                 preloader.remoteFuture(this);
 

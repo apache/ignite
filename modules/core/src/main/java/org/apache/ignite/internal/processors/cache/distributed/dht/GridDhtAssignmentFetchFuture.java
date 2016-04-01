@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -153,8 +154,8 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable GridDhtAffinityAssignmentResponse res, @Nullable Throwable err) {
-        if (super.onDone(res, err)) {
+    @Override public boolean onDone(@Nullable GridDhtAffinityAssignmentResponse res, @Nullable Throwable err, Executor lsnrExec) {
+        if (super.onDone(res, err, lsnrExec)) {
             ctx.affinity().removeDhtAssignmentFetchFuture(this);
 
             return true;

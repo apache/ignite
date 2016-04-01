@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -683,7 +684,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Boolean success, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable Boolean success, @Nullable Throwable err, Executor lsnrExec) {
         // Protect against NPE.
         if (success == null) {
             assert err != null;
@@ -741,7 +742,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                 cctx.tm().setTxTopologyHint(null);
         }
 
-        if (super.onDone(success, err)) {
+        if (super.onDone(success, err, null)) {
             if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
 

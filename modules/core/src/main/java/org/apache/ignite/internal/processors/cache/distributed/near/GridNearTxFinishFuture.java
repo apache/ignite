@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -217,7 +218,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteInternalTx tx0, Throwable err) {
+    @Override public boolean onDone(IgniteInternalTx tx0, Throwable err, Executor lsnrExec) {
         if (isDone())
             return false;
 
@@ -276,7 +277,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     tx.tmFinish(commit);
                 }
 
-                if (super.onDone(tx0, err)) {
+                if (super.onDone(tx0, err, lsnrExec)) {
                     if (error() instanceof IgniteTxHeuristicCheckedException) {
                         AffinityTopologyVersion topVer = tx.topologyVersion();
 
@@ -828,7 +829,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     }
                 }
 
-                onDone0(tx, discoThread ? cctx.kernalContext().getSystemExecutorService() : null);
+                onDone(tx, discoThread ? cctx.kernalContext().getSystemExecutorService() : null);
 
                 return true;
             }
@@ -884,7 +885,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (nodeId.equals(backup.id())) {
                 readyNearMappingFromBackup(m);
 
-                onDone0(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId),
+                onDone(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId),
                     discoThread ? cctx.asyncListenerPool() : null);
 
                 return true;
@@ -971,7 +972,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             }
 
             if (done)
-                onDone0(tx, discoThread ? cctx.asyncListenerPool() : null);
+                onDone(tx, discoThread ? cctx.asyncListenerPool() : null);
 
             return ret;
         }

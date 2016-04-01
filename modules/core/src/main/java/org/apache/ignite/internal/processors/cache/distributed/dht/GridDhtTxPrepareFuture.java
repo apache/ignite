@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -622,7 +623,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(GridNearTxPrepareResponse res0, Throwable err) {
+    @Override public boolean onDone(GridNearTxPrepareResponse res0, Throwable err, Executor lsnrExec) {
         assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
             "pending mini futures: " + this;
 
@@ -871,7 +872,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (last || tx.isSystemInvalidate())
             tx.state(PREPARED);
 
-        if (super.onDone(res, err)) {
+        if (super.onDone(res, err, null)) {
             // Don't forget to clean up.
             cctx.mvcc().removeMvccFuture(this);
 

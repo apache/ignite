@@ -36,6 +36,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
@@ -3636,11 +3637,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err, Executor lsnrExec) {
             // Make sure to remove future before completion.
             pendingFuts.remove(maskNull(cacheName), this);
 
-            return super.onDone(res, err);
+            return super.onDone(res, err, lsnrExec);
         }
 
         /** {@inheritDoc} */
@@ -3678,11 +3679,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err, Executor lsnrExec) {
             // Make sure to remove future before completion.
             pendingTemplateFuts.remove(maskNull(cacheName), this);
 
-            return super.onDone(res, err);
+            return super.onDone(res, err, lsnrExec);
         }
 
         /** {@inheritDoc} */

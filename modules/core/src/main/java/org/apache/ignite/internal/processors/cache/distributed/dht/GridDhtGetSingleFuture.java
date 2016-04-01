@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -181,8 +182,8 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(GridCacheEntryInfo res, Throwable err) {
-        if (super.onDone(res, err)) {
+    @Override public boolean onDone(GridCacheEntryInfo res, Throwable err, Executor lsnrExec) {
+        if (super.onDone(res, err, lsnrExec)) {
             // Release all partitions reserved by this future.
             if (part != -1)
                 cctx.topology().releasePartitions(part);
@@ -356,6 +357,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             }
             else {
                 fut = tx.getAllAsync(cctx,
+                    null,
                     Collections.singleton(key),
                     /*deserialize binary*/false,
                     skipVals,
@@ -390,6 +392,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                         }
                         else {
                             fut0 = tx.getAllAsync(cctx,
+                                null,
                                 Collections.singleton(key),
                                 /*deserialize binary*/false,
                                 skipVals,

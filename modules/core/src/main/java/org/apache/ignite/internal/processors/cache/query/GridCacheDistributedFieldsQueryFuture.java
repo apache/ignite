@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -72,11 +73,11 @@ public class GridCacheDistributedFieldsQueryFuture
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Collection<List<Object>> res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable Collection<List<Object>> res, @Nullable Throwable err, Executor lsnrExec) {
         if (!metaFut.isDone())
             metaFut.onDone();
 
-        return super.onDone(res, err);
+        return super.onDone(res, err, lsnrExec);
     }
 
     /** {@inheritDoc} */

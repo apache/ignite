@@ -46,6 +46,7 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -2393,8 +2394,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
-            if (super.onDone(res, err)) {
+        @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err, Executor lsnrExec) {
+            if (super.onDone(res, err, lsnrExec)) {
                 ctx.event().removeLocalEventListener(this, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
                 return true;

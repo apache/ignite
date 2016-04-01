@@ -103,8 +103,7 @@ public abstract class CacheAsyncOperationsFailoverAbstractTest extends GridCache
     /**
      * @throws Exception If failed.
      */
-    // TODO GG-10885.
-    public void _testPutAllAsyncFailoverManyThreads() throws Exception {
+    public void testPutAllAsyncFailoverManyThreads() throws Exception {
         putAllAsyncFailover(ignite(0).configuration().getSystemThreadPoolSize() * 2, 3);
     }
 

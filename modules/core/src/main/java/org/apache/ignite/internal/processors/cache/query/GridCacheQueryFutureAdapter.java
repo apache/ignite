@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -152,12 +153,12 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(Collection<R> res, Throwable err) {
+    @Override public boolean onDone(Collection<R> res, Throwable err, Executor lsnrExec) {
         cctx.time().removeTimeoutObject(this);
 
         qry.query().onCompleted(res, err, startTime(), duration());
 
-        return super.onDone(res, err);
+        return super.onDone(res, err, lsnrExec);
     }
 
     /** {@inheritDoc} */

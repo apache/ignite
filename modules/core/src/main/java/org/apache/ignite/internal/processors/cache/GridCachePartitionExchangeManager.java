@@ -31,6 +31,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -744,28 +745,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * Refresh partitions.
-     *
-     * @param timeout Timeout.
-     */
-    private void refreshPartitions(long timeout) {
-        long last = lastRefresh.get();
-
-        long now = U.currentTimeMillis();
-
-        if (last != -1 && now - last >= timeout && lastRefresh.compareAndSet(last, now)) {
-            if (log.isDebugEnabled())
-                log.debug("Refreshing partitions [last=" + last + ", now=" + now + ", delta=" + (now - last) +
-                    ", timeout=" + timeout + ", lastRefresh=" + lastRefresh + ']');
-
-            refreshPartitions();
-        }
-        else if (log.isDebugEnabled())
-            log.debug("Partitions were not refreshed [last=" + last + ", now=" + now + ", delta=" + (now - last) +
-                ", timeout=" + timeout + ", lastRefresh=" + lastRefresh + ']');
-    }
-
-    /**
      * @param nodes Nodes.
      * @return {@code True} if message was sent, {@code false} if node left grid.
      */
@@ -907,9 +886,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * @param exchFut Exchange.
+     * @param lsnrExec Executor for affinity future listeners notification.
      * @param err Error.
      */
-    public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut, @Nullable Throwable err) {
+    public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut, @Nullable Throwable err, Executor lsnrExec) {
         AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
         if (log.isDebugEnabled())
@@ -934,7 +914,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         nodeVers.put(topVer, new IgnitePair<>(minVer, maxVer));
 
-        for (AffinityTopologyVersion oldVer : nodeVers.headMap(new AffinityTopologyVersion(topVer.topologyVersion() - 10, 0)).keySet())
+        AffinityTopologyVersion histVer = new AffinityTopologyVersion(topVer.topologyVersion() - 10, 0);
+
+        for (AffinityTopologyVersion oldVer : nodeVers.headMap(histVer).keySet())
             nodeVers.remove(oldVer);
 
         if (err == null) {
@@ -954,7 +936,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         log.debug("Completing created topology ready future " +
                             "[ver=" + topVer + ", fut=" + entry.getValue() + ']');
 
-                    entry.getValue().onDone(topVer);
+                    entry.getValue().onDone(topVer, lsnrExec);
                 }
             }
         }
@@ -965,7 +947,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         log.debug("Completing created topology ready future with error " +
                             "[ver=" + topVer + ", fut=" + entry.getValue() + ']');
 
-                    entry.getValue().onDone(err);
+                    entry.getValue().onDone(err, lsnrExec);
                 }
             }
         }
@@ -1718,10 +1700,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(AffinityTopologyVersion res, @Nullable Throwable err) {
+        @Override public boolean onDone(AffinityTopologyVersion res, @Nullable Throwable err, Executor lsnrExec) {
             assert res != null || err != null;
 
-            boolean done = super.onDone(res, err);
+            boolean done = super.onDone(res, err, lsnrExec);
 
             if (done)
                 readyFuts.remove(topVer, this);

@@ -24,6 +24,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -498,7 +499,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(Boolean success, Throwable err) {
+    @Override public boolean onDone(Boolean success, Throwable err, Executor lsnrExec) {
         if (log.isDebugEnabled())
             log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
 
@@ -532,7 +533,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         if (tx != null)
             cctx.tm().txContext(tx);
 
-        if (super.onDone(success, err)) {
+        if (super.onDone(success, err, null)) {
             if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
 

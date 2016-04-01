@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -411,8 +412,8 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
-        if (super.onDone(res, err)) {
+    @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, Executor lsnrExec) {
+        if (super.onDone(res, err, lsnrExec)) {
             cctx.mvcc().removeFuture(futId);
 
             if (err == null) {

@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -206,7 +207,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteInternalTx t, Throwable err) {
+    @Override public boolean onDone(IgniteInternalTx t, Throwable err, Executor lsnrExec) {
         if (isDone())
             return false;
 
@@ -270,7 +271,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         if (err0 == null || tx.needCheckBackup())
             tx.state(PREPARED);
 
-        if (super.onDone(tx, err0)) {
+        if (super.onDone(tx, err0, null)) {
             if (err0 != null)
                 tx.setRollbackOnly();
 

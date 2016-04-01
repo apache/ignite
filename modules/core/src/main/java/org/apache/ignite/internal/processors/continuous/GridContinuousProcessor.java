@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -1691,11 +1692,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable UUID res, @Nullable Throwable err) {
+        @Override public boolean onDone(@Nullable UUID res, @Nullable Throwable err, Executor lsnrExec) {
             if (timeoutObj != null)
                 ctx.timeout().removeTimeoutObject(timeoutObj);
 
-            return super.onDone(res, err);
+            return super.onDone(res, err, lsnrExec);
         }
 
         /** {@inheritDoc} */
@@ -1736,11 +1737,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err, Executor lsnrExec) {
             if (timeoutObj != null)
                 ctx.timeout().removeTimeoutObject(timeoutObj);
 
-            return super.onDone(res, err);
+            return super.onDone(res, err, lsnrExec);
         }
 
         /** {@inheritDoc} */

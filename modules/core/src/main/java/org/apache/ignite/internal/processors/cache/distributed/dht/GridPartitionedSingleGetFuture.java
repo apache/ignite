@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -723,8 +724,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(Object res, Throwable err) {
-        if (super.onDone(res, err)) {
+    @Override public boolean onDone(Object res, Throwable err, Executor lsnrExec) {
+        if (super.onDone(res, err, lsnrExec)) {
             // Don't forget to clean up.
             if (trackable)
                 cctx.mvcc().removeFuture(futId);

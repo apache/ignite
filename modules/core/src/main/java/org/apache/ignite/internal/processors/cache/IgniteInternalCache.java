@@ -1988,4 +1988,18 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws IgniteCheckedException In case of error.
      */
     @Nullable public V tryPutIfAbsent(K key, V val) throws IgniteCheckedException;
+
+    /**
+     * @param topVer Locked topology version.
+     * @param key Key.
+     * @param entryProcessor Entry processor.
+     * @param args Arguments.
+     * @return Invoke result.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public <T> EntryProcessorResult<T> invoke(
+        @Nullable AffinityTopologyVersion topVer,
+        K key,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args) throws IgniteCheckedException;
 }

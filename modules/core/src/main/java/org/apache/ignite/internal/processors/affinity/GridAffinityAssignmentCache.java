@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -545,10 +546,10 @@ public class GridAffinityAssignmentCache {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(AffinityTopologyVersion res, @Nullable Throwable err) {
+        @Override public boolean onDone(AffinityTopologyVersion res, @Nullable Throwable err, Executor lsnrExec) {
             assert res != null || err != null;
 
-            boolean done = super.onDone(res, err);
+            boolean done = super.onDone(res, err, lsnrExec);
 
             if (done)
                 readyFuts.remove(reqTopVer, this);

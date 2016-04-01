@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
@@ -245,8 +246,8 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Map<K, V> res, @Nullable Throwable err) {
-            if (super.onDone(res, err)) {
+        @Override public boolean onDone(@Nullable Map<K, V> res, @Nullable Throwable err, Executor lsnrExec) {
+            if (super.onDone(res, err, lsnrExec)) {
                 assert keys != null;
 
                 for (K key : keys)

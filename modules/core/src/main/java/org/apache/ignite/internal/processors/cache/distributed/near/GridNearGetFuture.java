@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -212,8 +213,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(Map<K, V> res, Throwable err) {
-        if (super.onDone(res, err)) {
+    @Override public boolean onDone(Map<K, V> res, Throwable err, Executor lsnrExec) {
+        if (super.onDone(res, err, lsnrExec)) {
             // Don't forget to clean up.
             if (trackable)
                 cctx.mvcc().removeFuture(futId);
@@ -883,8 +884,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Map<K, V> res, @Nullable Throwable err) {
-            if (super.onDone(res, err)) {
+        @Override public boolean onDone(@Nullable Map<K, V> res, @Nullable Throwable err, Executor lsnrExec) {
+            if (super.onDone(res, err, lsnrExec)) {
                 releaseEvictions(keys.keySet(), savedEntries, topVer);
 
                 return true;

@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -367,8 +368,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
-        if (super.onDone(res, err)) {
+    @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err, Executor lsnrExec) {
+        if (super.onDone(res, err, lsnrExec)) {
             cctx.mvcc().removeAtomicFuture(version());
 
             if (err != null) {

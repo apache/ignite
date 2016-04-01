@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -1803,11 +1804,11 @@ public class IgfsDataManager extends IgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
+        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, Executor lsnrExec) {
             if (!isDone()) {
                 pendingWrites.remove(fileId, this);
 
-                if (super.onDone(res, err))
+                if (super.onDone(res, err, lsnrExec))
                     return true;
             }
 

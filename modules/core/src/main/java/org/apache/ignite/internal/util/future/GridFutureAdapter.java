@@ -321,7 +321,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @return {@code True} if result was set by this call.
      */
     public final boolean onDone() {
-        return onDone(null, null);
+        return onDone(null, null, null);
     }
 
     /**
@@ -332,7 +332,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @return {@code True} if result was set by this call.
      */
     public final boolean onDone(@Nullable R res) {
-        return onDone(res, null);
+        return onDone(res, null, null);
     }
 
     /**
@@ -343,7 +343,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @return {@code True} if result was set by this call.
      */
     public final boolean onDone(@Nullable Throwable err) {
-        return onDone(null, err);
+        return onDone(null, err, null);
     }
 
     /**
@@ -354,8 +354,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @param err Optional error.
      * @return {@code True} if result was set by this call.
      */
-    public boolean onDone(@Nullable R res, @Nullable Throwable err) {
-        return onDone(res, err, false, null);
+    public final boolean onDone(@Nullable R res, @Nullable Throwable err) {
+        return onDone(res, err, null);
     }
 
     /**
@@ -363,8 +363,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @param lsnrExec Executor for listeners notification.
      * @return {@code True} if result was set by this call.
      */
-    public final boolean onDone0(@Nullable R res, Executor lsnrExec) {
-        return onDone0(res, null, lsnrExec);
+    public final boolean onDone(@Nullable R res, Executor lsnrExec) {
+        return onDone(res, null, lsnrExec);
     }
 
     /**
@@ -372,8 +372,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @param lsnrExec Executor for listeners notification.
      * @return {@code True} if result was set by this call.
      */
-    public final boolean onDone0(@Nullable Throwable err, Executor lsnrExec) {
-        return onDone0(null, err, lsnrExec);
+    public final boolean onDone(@Nullable Throwable err, Executor lsnrExec) {
+        return onDone(null, err, lsnrExec);
     }
 
     /**
@@ -382,8 +382,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @param lsnrExec Executor for listeners notification.
      * @return {@code True} if result was set by this call.
      */
-    public boolean onDone0(@Nullable R res, @Nullable Throwable err, Executor lsnrExec) {
-        return onDone(res, err, false, lsnrExec);
+    public boolean onDone(@Nullable R res, @Nullable Throwable err, Executor lsnrExec) {
+        return onDone0(res, err, false, lsnrExec);
     }
 
     /**
@@ -393,7 +393,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @param lsnrExec Optional executor for listeners notification.
      * @return {@code True} if result was set by this call.
      */
-    private boolean onDone(@Nullable R res, @Nullable Throwable err, boolean cancel, @Nullable Executor lsnrExec) {
+    private boolean onDone0(@Nullable R res, @Nullable Throwable err, boolean cancel, @Nullable Executor lsnrExec) {
         boolean notify = false;
 
         try {
@@ -428,7 +428,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @return {@code True} if cancel flag was set by this call.
      */
     public boolean onCancelled() {
-        return onDone(null, null, true, null);
+        return onDone0(null, null, true, null);
     }
 
     /** {@inheritDoc} */

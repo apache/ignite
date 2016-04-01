@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -281,7 +282,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable IgniteInternalTx res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable IgniteInternalTx res, @Nullable Throwable err, Executor lsnrExec) {
         if (err != null)
             ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, err);
 
@@ -290,7 +291,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         if (err == null || tx.needCheckBackup())
             tx.state(PREPARED);
 
-        if (super.onDone(tx, err)) {
+        if (super.onDone(tx, err, lsnrExec)) {
             cctx.mvcc().removeMvccFuture(this);
 
             return true;

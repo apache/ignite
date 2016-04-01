@@ -1268,7 +1268,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * Sets thread local cache operation context.
      *
-     * @param opCtx Flags to set.
+     * @param opCtx Operation contex.
      */
     public void operationContextPerCall(@Nullable CacheOperationContext opCtx) {
         if (nearContext())

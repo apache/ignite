@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -201,7 +202,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
+    @Override public boolean onDone(IgniteInternalTx tx, Throwable err, Executor lsnrExec) {
         if (initialized() || err != null) {
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
                 this.tx.tmFinish(err == null);
@@ -213,7 +214,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
             Throwable finishErr = e != null ? e : err;
 
-            if (super.onDone(tx, finishErr)) {
+            if (super.onDone(tx, finishErr, lsnrExec)) {
                 if (finishErr == null)
                     finishErr = this.tx.commitError();
 
@@ -576,7 +577,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
 
             // If node left, then there is nothing to commit on it.
-            onDone0(tx, discoThread ? cctx.asyncListenerPool() : null);
+            onDone(tx, discoThread ? cctx.asyncListenerPool() : null);
         }
 
         /**

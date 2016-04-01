@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCheckedException;
@@ -310,7 +311,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+    @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err, Executor lsnrExec) {
         assert res == null || res instanceof GridCacheReturn;
 
         GridCacheReturn ret = (GridCacheReturn)res;
@@ -322,7 +323,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
 
-        if (super.onDone(retval, err)) {
+        if (super.onDone(retval, err, lsnrExec)) {
             CacheVersion futVer = state.onFutureDone();
 
             if (futVer != null)
