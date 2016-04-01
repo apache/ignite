@@ -32,13 +32,13 @@ namespace Apache.Ignite.Core.Transactions
         public const TransactionIsolation DefaultDefaultTransactionIsolation = TransactionIsolation.RepeatableRead;
 
         /// <summary> The default value for <see cref="DefaultTransactionIsolation"/> property. </summary>
-        public readonly TimeSpan DefaultDefaultTimeout = TimeSpan.Zero;
+        public static readonly TimeSpan DefaultDefaultTimeout = TimeSpan.Zero;
 
         /// <summary> The default value for <see cref="PessimisticTransactionLogSize"/> property. </summary>
         public const int DefaultPessimisticTransactionLogSize = 0;
 
         /// <summary> The default value for <see cref="PessimisticTransactionLogLinger"/> property. </summary>
-        public readonly TimeSpan DefaultPessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(10000);
+        public static readonly TimeSpan DefaultPessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(10000);
 
         /// <summary>
         /// Gets or sets the cache transaction concurrency to use when one is not explicitly specified.
