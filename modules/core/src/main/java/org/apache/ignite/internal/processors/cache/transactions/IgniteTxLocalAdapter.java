@@ -399,20 +399,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     @Nullable @Override public GridTuple<CacheObject> peek(
         GridCacheContext cacheCtx,
         boolean failFast,
-        KeyCacheObject key,
-        CacheEntryPredicate[] filter
+        KeyCacheObject key
     ) throws GridCacheFilterFailedException {
         IgniteTxEntry e = entry(cacheCtx.txKey(key));
 
-        if (e != null) {
-            // We should look at tx entry previous value. If this is a user peek then previous
-            // value is the same as value. If this is a filter evaluation peek then previous value holds
-            // value visible to filter while value contains value enlisted for write.
-            if (!F.isEmpty(filter) && !F.isAll(e.cached(), filter))
-                return e.hasPreviousValue() ? F.t(CU.<CacheObject>failed(failFast, e.previousValue())) : null;
-
+        if (e != null)
             return e.hasPreviousValue() ? F.t(e.previousValue()) : null;
-        }
 
         return null;
     }
@@ -2040,16 +2032,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     @Override public <K, V> IgniteInternalFuture<GridCacheReturn> putAllAsync(
         GridCacheContext cacheCtx,
         Map<? extends K, ? extends V> map,
-        boolean retval,
-        CacheEntryPredicate[] filter
+        boolean retval
     ) {
         return (IgniteInternalFuture<GridCacheReturn>)putAllAsync0(cacheCtx,
             map,
             null,
             null,
             null,
-            retval,
-            filter);
+            retval);
     }
 
     /** {@inheritDoc} */
@@ -2058,7 +2048,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         K key,
         V val,
         boolean retval,
-        CacheEntryPredicate[] filter) {
+        CacheEntryPredicate filter) {
         return putAsync0(cacheCtx, key, val, null, null, retval, filter);
     }
 
@@ -2086,8 +2076,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             null,
             null,
             drMap,
-            false,
-            null);
+            false);
     }
 
     /** {@inheritDoc} */
@@ -2102,8 +2091,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             map,
             invokeArgs,
             null,
-            true,
-            null);
+            true);
     }
 
     /** {@inheritDoc} */
@@ -2971,9 +2959,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             Object res = null;
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                CacheInvokeEntry<Object, Object> invokeEntry =
-                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0, ver,
-                        txEntry.keepBinary());
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), key0, cacheVal,
+                    val0, ver, txEntry.keepBinary(), txEntry.cached());
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 
@@ -3042,7 +3029,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         @Nullable EntryProcessor<K, V, Object> entryProcessor,
         @Nullable final Object[] invokeArgs,
         final boolean retval,
-        @Nullable final CacheEntryPredicate[] filter
+        @Nullable final CacheEntryPredicate filter
     ) {
         assert key != null;
 
@@ -3059,6 +3046,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
+            final CacheEntryPredicate[] filters = CU.filterArray(filter);
+
             final IgniteInternalFuture<Void> loadFut = enlistWrite(
                 cacheCtx,
                 cacheKey,
@@ -3068,7 +3057,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 invokeArgs,
                 retval,
                 /*lockOnly*/false,
-                filter,
+                filters,
                 ret,
                 opCtx != null && opCtx.skipStore(),
                 /*singleRmv*/false,
@@ -3109,7 +3098,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             retval,
                             /*read*/false,
                             -1L,
-                            filter,
+                            filters,
                             /*computeInvoke*/true);
 
                         return ret;
@@ -3162,7 +3151,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param invokeArgs Optional arguments for EntryProcessor.
      * @param drMap DR map.
      * @param retval Key-transform value map to store.
-     * @param filter Filter.
      * @return Operation future.
      */
     @SuppressWarnings("unchecked")
@@ -3172,11 +3160,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> invokeMap,
         @Nullable final Object[] invokeArgs,
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> drMap,
-        final boolean retval,
-        @Nullable final CacheEntryPredicate[] filter
+        final boolean retval
     ) {
-        assert filter == null || invokeMap == null;
-
         try {
             beforePut(cacheCtx, retval);
         }
@@ -3236,7 +3221,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 invokeArgs,
                 retval,
                 false,
-                filter,
+                CU.filterArray(null),
                 ret,
                 enlisted,
                 drMap,
@@ -3284,7 +3269,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             retval,
                             /*read*/false,
                             -1L,
-                            filter,
+                            CU.filterArray(null),
                             /*computeInvoke*/true);
 
                         return ret;
@@ -3403,7 +3388,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         GridCacheContext cacheCtx,
         Collection<? extends K> keys,
         boolean retval,
-        CacheEntryPredicate[] filter,
+        CacheEntryPredicate filter,
         boolean singleRmv
     ) {
         return removeAllAsync0(cacheCtx, keys, null, retval, filter, singleRmv);
@@ -3424,7 +3409,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         @Nullable final Collection<? extends K> keys,
         @Nullable Map<KeyCacheObject, GridCacheVersion> drMap,
         final boolean retval,
-        @Nullable final CacheEntryPredicate[] filter,
+        @Nullable final CacheEntryPredicate filter,
         boolean singleRmv) {
         try {
             checkUpdatesAllowed(cacheCtx);
@@ -3495,7 +3480,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         ExpiryPolicy plc;
 
-        if (!F.isEmpty(filter))
+        final CacheEntryPredicate[] filters = CU.filterArray(filter);
+
+        if (!F.isEmpty(filters))
             plc = opCtx != null ? opCtx.expiry() : null;
         else
             plc = null;
@@ -3511,7 +3498,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             /** invoke arguments */null,
             retval,
             /** lock only */false,
-            filter,
+            filters,
             ret,
             enlisted,
             null,
@@ -3562,12 +3549,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     postLockWrite(cacheCtx,
                         enlisted,
                         ret,
-                            /*remove*/true,
+                        /*remove*/true,
                         retval,
-                            /*read*/false,
+                        /*read*/false,
                         -1L,
-                        filter,
-                            /*computeInvoke*/false);
+                        filters,
+                        /*computeInvoke*/false);
 
                     return ret;
                 }

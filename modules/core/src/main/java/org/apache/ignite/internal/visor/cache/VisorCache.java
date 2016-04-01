@@ -301,6 +301,15 @@ public class VisorCache implements Serializable {
     }
 
     /**
+     * Sets new value for cache name.
+     *
+     * @param name New cache name.
+     */
+    public void name(String name) {
+        this.name = name;
+    }
+
+    /**
      * @return Dynamic deployment ID.
      */
     public IgniteUuid dynamicDeploymentId() {

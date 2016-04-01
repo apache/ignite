@@ -515,15 +515,13 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param ctx Cache context.
      * @param failFast Fail-fast flag.
      * @param key Key to look up.
-     * @param filter Filter to check.
      * @return Current value for the key within transaction.
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
      @Nullable public GridTuple<CacheObject> peek(
          GridCacheContext ctx,
          boolean failFast,
-         KeyCacheObject key,
-         @Nullable CacheEntryPredicate[] filter) throws GridCacheFilterFailedException;
+         KeyCacheObject key) throws GridCacheFilterFailedException;
 
     /**
      * @return Start version.

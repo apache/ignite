@@ -1260,6 +1260,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             boolean recordEvt = cctx.gridEvents().isRecordable(EVT_CACHE_OBJECT_READ);
 
+            final boolean keepBinary = txEntry.keepBinary();
+
             CacheObject cacheVal = txEntry.hasValue() ? txEntry.value() :
                 txEntry.cached().innerGet(this,
                     /*swap*/false,
@@ -1273,7 +1275,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     /**closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
                     null,
-                    txEntry.keepBinary());
+                    keepBinary);
 
             boolean modified = false;
 
@@ -1296,8 +1298,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             }
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(txEntry.context(),
-                    txEntry.key(), key, cacheVal, val, ver, txEntry.keepBinary());
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(
+                    txEntry.key(), key, cacheVal, val, ver, keepBinary, txEntry.cached());
 
                 try {
                     EntryProcessor<Object, Object, Object> processor = t.get1();
@@ -1999,8 +2001,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Nullable @Override public GridTuple<CacheObject> peek(GridCacheContext ctx,
             boolean failFast,
-            KeyCacheObject key,
-            @Nullable CacheEntryPredicate[] filter) {
+            KeyCacheObject key) {
             return null;
         }
 

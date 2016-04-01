@@ -1611,8 +1611,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             try {
                                 U.warn(log,
                                     "Retrying preload partition exchange due to timeout [done=" + isDone() +
-                                        ", dummy=" + dummy + ", exchId=" + exchId + ", rcvdIds=" + F.id8s(rcvdIds) +
-                                        ", rmtIds=" + F.id8s(rmtIds) + ", remaining=" + F.id8s(remaining()) +
+                                        ", dummy=" + dummy + ", exchId=" + exchId + ", rcvdIds=" + id8s(rcvdIds) +
+                                        ", rmtIds=" + id8s(rmtIds) + ", remaining=" + id8s(remaining()) +
                                         ", init=" + init + ", initFut=" + initFut.isDone() +
                                         ", ready=" + ready + ", replied=" + replied + ", added=" + added +
                                         ", oldest=" + U.id8(oldestNode.get().id()) + ", oldestOrder=" +
@@ -1645,6 +1645,29 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             return Collections.emptyList();
 
         return F.lose(rmtIds, true, rcvdIds);
+    }
+
+    /**
+     * Convenient utility method that returns collection of node ID8s for a given
+     * collection of node IDs. ID8 is a shorter string representation of node ID,
+     * mainly the first 8 characters.
+     * <p>
+     * Note that this method doesn't create a new collection but simply iterates
+     * over the input one.
+     *
+     * @param ids Collection of nodeIds.
+     * @return Collection of node IDs for given collection of grid nodes.
+     */
+    private static Collection<String> id8s(@Nullable Collection<UUID> ids) {
+        if (ids == null || ids.isEmpty())
+            return Collections.emptyList();
+
+        Collection<String> res = new ArrayList<>(ids.size());
+
+        for (UUID id : ids)
+            res.add(U.id8(id));
+
+        return res;
     }
 
     /** {@inheritDoc} */

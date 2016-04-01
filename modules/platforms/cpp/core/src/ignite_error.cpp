@@ -90,7 +90,12 @@ namespace ignite
         else
             return  "No additional information available.";
     }
-    
+
+    const char* IgniteError::what() const
+    {
+        return GetText();
+    }
+
     void IgniteError::SetError(const int jniCode, const char* jniCls, const char* jniMsg, IgniteError* err)
     {
         if (jniCode == IGNITE_JNI_ERR_SUCCESS)

@@ -134,6 +134,28 @@ public class CachePluginManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * Unwrap entry to specified type. For details see {@code javax.cache.Cache.Entry.unwrap(Class)}.
+     *
+     * @param entry Entry to unwrap.
+     * @param cls Type of the expected component.
+     * @param <T> Return type.
+     * @param <K> Key type.
+     * @param <V> Value type.
+     * @return New instance of underlying type or {@code null} if it's not available.
+     */
+    @SuppressWarnings({"unchecked", "ForLoopReplaceableByForEach"})
+    @Nullable public <T, K, V> T unwrapCacheEntry(Cache.Entry<K, V> entry, Class<T> cls) {
+        for (int i = 0; i < providersList.size(); i++) {
+            final T res = (T)providersList.get(i).unwrapCacheEntry(entry, cls);
+
+            if (res != null)
+                return res;
+        }
+
+        return null;
+    }
+
+    /**
      * Validates cache plugin configurations. Throw exception if validation failed.
      *
      * @throws IgniteCheckedException If validation failed.

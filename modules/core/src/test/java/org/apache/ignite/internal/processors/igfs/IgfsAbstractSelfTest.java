@@ -1543,9 +1543,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppend() throws Exception {
-        if (dual)
-            fail("Test fails in DUAL modes, see https://issues.apache.org/jira/browse/IGNITE-1631");
-
         create(igfs, paths(DIR, SUBDIR), null);
 
         assert igfs.exists(SUBDIR);
@@ -3038,7 +3035,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 for (byte[] chunk: chunks) {
                     byte[] buf = new byte[chunk.length];
 
-                    read = is.read(buf);
+                    read = 0;
+
+                    while (true) {
+                        int r = is.read(buf, read, buf.length - read);
+
+                        read += r;
+
+                        if (read == buf.length || r <= 0)
+                            break;
+                    }
 
                     assert read == chunk.length : "Chunk #" + chunkIdx + " was not read fully:" +
                             " read=" + read + ", expected=" + chunk.length;

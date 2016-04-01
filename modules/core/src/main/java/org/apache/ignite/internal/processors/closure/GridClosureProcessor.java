@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -1106,6 +1107,25 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Get collection of actual results.
+     *
+     * @param res Initial results.
+     * @return Converted results.
+     */
+    private static <R> Collection<R> jobResults(List<ComputeJobResult> res) {
+        if (res == null)
+            return Collections.emptyList();
+        else {
+            List<R> res0 = new ArrayList<>(res.size());
+
+            for (int i = 0; i < res.size(); i++)
+                res0.add(res.get(i).<R>getData());
+
+            return res0;
+        }
+    }
+
+    /**
      *
      */
     private class JobMapper {
@@ -1462,7 +1482,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Collection<R> reduce(List<ComputeJobResult> res) {
-            return F.jobResults(res);
+            return jobResults(res);
         }
     }
 
@@ -1602,7 +1622,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Collection<R> reduce(List<ComputeJobResult> res) throws IgniteException {
-            return F.jobResults(res);
+            return jobResults(res);
         }
     }
 
@@ -1713,7 +1733,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Collection<R> reduce(List<ComputeJobResult> res) {
-            return F.jobResults(res);
+            return jobResults(res);
         }
     }
 

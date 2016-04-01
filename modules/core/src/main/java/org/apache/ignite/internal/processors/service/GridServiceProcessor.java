@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1073,7 +1074,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 CU.oldestAliveCacheServerNode(cache.context().shared(), AffinityTopologyVersion.NONE);
 
             if (oldestSrvNode == null)
-                return F.emptyIterator();
+                return new GridEmptyIterator<>();
 
             GridCacheQueryManager qryMgr = cache.context().queries();
 

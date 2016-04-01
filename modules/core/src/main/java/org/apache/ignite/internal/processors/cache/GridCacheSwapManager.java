@@ -306,6 +306,18 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param partId Partition ID to get swap entries count for.
+     * @return Number of swap entries.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long swapEntriesCount(int partId) throws IgniteCheckedException {
+        if (!swapEnabled)
+            return 0;
+
+        return swapMgr.swapKeys(spaceName, Collections.singleton(partId));
+    }
+
+    /**
      * @param primary If {@code true} includes primary entries.
      * @param backup If {@code true} includes backup entries.
      * @param topVer Topology version.
@@ -326,6 +338,18 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         }
         else
             return (int)offheap.entriesCount(spaceName);
+    }
+
+    /**
+     * @param partId Partition ID to get entries count for.
+     * @return Number of offheap entries.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long offheapEntriesCount(int partId) throws IgniteCheckedException {
+        if (!offheapEnabled)
+            return 0;
+
+        return offheap.entriesCount(spaceName, Collections.singleton(partId));
     }
 
     /**
@@ -690,8 +714,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         if (!swapEnabled)
             return null;
 
-        final GridTuple<GridCacheSwapEntry> t = F.t1();
-        final GridTuple<IgniteCheckedException> err = F.t1();
+        final GridTuple<GridCacheSwapEntry> t = new GridTuple<>();
+        final GridTuple<IgniteCheckedException> err = new GridTuple<>();
 
         SwapKey swapKey = new SwapKey(key,
             part,
@@ -979,7 +1003,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             }
         }
 
-        final GridTuple<IgniteCheckedException> err = F.t1();
+        final GridTuple<IgniteCheckedException> err = new GridTuple<>();
 
         swapMgr.removeAll(spaceName,
             unprocessedKeys,
@@ -1596,7 +1620,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         assert primary || backup;
 
         if (!offheapEnabled)
-            return F.emptyIterator();
+            return new GridEmptyIterator<>();
 
         if (primary && backup)
             return keyIterator(offheap.iterator(spaceName));
@@ -1621,7 +1645,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         assert primary || backup;
 
         if (!swapEnabled)
-            return F.emptyIterator();
+            return new GridEmptyIterator<>();
 
         if (primary && backup)
             return keyIterator(cctx.gridSwap().rawIterator(spaceName));
@@ -2020,7 +2044,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         assert primary || backup;
 
         if (!swapEnabled)
-            return F.emptyIterator();
+            return new GridEmptyIterator<>();
 
         if (primary && backup)
             return cacheEntryIterator(this.<K, V>lazySwapIterator());
@@ -2052,7 +2076,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         assert primary || backup;
 
         if (!offheapEnabled)
-            return F.emptyIterator();
+            return new GridEmptyIterator<>();
 
         if (primary && backup)
             return cacheEntryIterator(this.<K, V>lazyOffHeapIterator());
