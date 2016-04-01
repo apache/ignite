@@ -3083,33 +3083,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheReturn removex(final K key, final V val) throws IgniteCheckedException {
-        A.notNull(key, "key", val, "val");
-
-        if (keyCheck)
-            validateCacheKey(key);
-
-        return syncOp(new SyncOp<GridCacheReturn>(true) {
-            @Override public GridCacheReturn op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                // Register before hiding in the filter.
-                if (ctx.deploymentEnabled())
-                    ctx.deploy().registerClass(val);
-
-                return tx.removeAllAsync(ctx,
-                    null,
-                    Collections.singletonList(key),
-                    /*retval*/true,
-                    ctx.equalsValArray(val),
-                    /*singleRmv*/false).get();
-            }
-
-            @Override public String toString() {
-                return "remove [key=" + key + ", val=" + val + ']';
-            }
-        });
-    }
-
-    /** {@inheritDoc} */
     @Override public void removeAllConflict(final Map<KeyCacheObject, ? extends CacheVersion> drMap)
         throws IgniteCheckedException {
         if (F.isEmpty(drMap))
@@ -3143,100 +3116,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             @Override public String toString() {
                 return "removeAllDrASync [drMap=" + drMap + ']';
-            }
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheReturn replacex(final K key, final V oldVal, final V newVal)
-        throws IgniteCheckedException
-    {
-        A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
-
-        if (keyCheck)
-            validateCacheKey(key);
-
-        return syncOp(new SyncOp<GridCacheReturn>(true) {
-            @Override public GridCacheReturn op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-                // Register before hiding in the filter.
-                if (ctx.deploymentEnabled())
-                    ctx.deploy().registerClass(oldVal);
-
-                return tx.putAsync(ctx,
-                    null,
-                    key,
-                    newVal,
-                    true,
-                    ctx.equalsValArray(oldVal)).get();
-            }
-
-            @Override public String toString() {
-                return "replace [key=" + key + ", oldVal=" + oldVal + ", newVal=" + newVal + ']';
-            }
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheReturn> removexAsync(final K key, final V val) {
-        A.notNull(key, "key", val, "val");
-
-        if (keyCheck)
-            validateCacheKey(key);
-
-        return asyncOp(new AsyncOp<GridCacheReturn>() {
-            @Override public IgniteInternalFuture<GridCacheReturn> op(IgniteTxLocalAdapter tx, AffinityTopologyVersion readyTopVer) {
-                // Register before hiding in the filter.
-                try {
-                    if (ctx.deploymentEnabled())
-                        ctx.deploy().registerClass(val);
-                }
-                catch (IgniteCheckedException e) {
-                    return new GridFinishedFuture<>(e);
-                }
-
-                return (IgniteInternalFuture)tx.removeAllAsync(ctx,
-                    readyTopVer,
-                    Collections.singletonList(key),
-                    /*retval*/true,
-                    ctx.equalsValArray(val),
-                    /*singleRmv*/false);
-            }
-
-            @Override public String toString() {
-                return "removeAsync [key=" + key + ", val=" + val + ']';
-            }
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheReturn> replacexAsync(final K key, final V oldVal, final V newVal)
-    {
-        A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
-
-        if (keyCheck)
-            validateCacheKey(key);
-
-        return asyncOp(new AsyncOp<GridCacheReturn>() {
-            @Override public IgniteInternalFuture<GridCacheReturn> op(IgniteTxLocalAdapter tx, AffinityTopologyVersion readyTopVer) {
-                // Register before hiding in the filter.
-                try {
-                    if (ctx.deploymentEnabled())
-                        ctx.deploy().registerClass(oldVal);
-                }
-                catch (IgniteCheckedException e) {
-                    return new GridFinishedFuture<>(e);
-                }
-
-                return (IgniteInternalFuture)tx.putAsync(ctx,
-                    readyTopVer,
-                    key,
-                    newVal,
-                    true,
-                    ctx.equalsValArray(oldVal));
-            }
-
-            @Override public String toString() {
-                return "replaceAsync [key=" + key + ", oldVal=" + oldVal + ", newVal=" + newVal + ']';
             }
         });
     }

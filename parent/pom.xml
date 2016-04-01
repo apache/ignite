@@ -425,6 +425,10 @@
                                 <title>OSGi integration</title>
                                 <packages>org.apache.ignite.osgi*</packages>
                             </group>
+                            <group>
+                                <title>Flink integration</title>
+                                <packages>org.apache.ignite.sink.flink*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[

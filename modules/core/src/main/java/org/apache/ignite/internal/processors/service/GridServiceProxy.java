@@ -126,7 +126,13 @@ public class GridServiceProxy<T> implements Serializable {
         return false;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Invoek the method.
+     *
+     * @param mtd Method.
+     * @param args Arugments.
+     * @return Result.
+     */
     @SuppressWarnings("BusyWait")
     public Object invokeMethod(final Method mtd, final Object[] args) {
         if (U.isHashCodeMethod(mtd))
