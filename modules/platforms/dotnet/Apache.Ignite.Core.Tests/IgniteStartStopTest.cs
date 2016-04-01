@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests
                     },
                     AckTimeout = TimeSpan.FromSeconds(0.1),
                     JoinTimeout = TimeSpan.FromSeconds(0.1),
-                    MaxAckTimeout = TimeSpan.FromSeconds(0.1),
+                    MaxAckTimeout = TimeSpan.FromSeconds(0.2),
                     NetworkTimeout = TimeSpan.FromSeconds(0.1),
                     SocketTimeout = TimeSpan.FromSeconds(0.1)
                 },
