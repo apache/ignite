@@ -247,6 +247,20 @@
             }
             else
                 writer.WriteBoolean(false);
+
+            // Tx
+            if (TransactionConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+
+                writer.WriteInt(TransactionConfiguration.PessimisticTransactionLogSize);
+                writer.WriteInt((int) TransactionConfiguration.DefaultTransactionConcurrency);
+                writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
+                writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
+            }
+            else
+                writer.WriteBoolean(false);
         }
 
         /// <summary>
