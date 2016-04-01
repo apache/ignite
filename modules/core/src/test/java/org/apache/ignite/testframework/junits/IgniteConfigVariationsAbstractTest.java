@@ -191,6 +191,13 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /**
+     * @return Tested grid is client node or not.
+     */
+    protected boolean isClient() {
+        return testedGrid().configuration().isClientMode();
+    }
+
+    /**
      * Runs in all data modes.
      */
     protected void runInAllDataModes(TestRunnable call) throws Exception {

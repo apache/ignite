@@ -125,15 +125,13 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
             info("Grid " + i + ": " + grid(i).localNode().id());
 
         if (testsCfg.withClients()) {
-            boolean testedNodeNearEnabled = grid(testedNodeIdx).cachex(cacheName()).context().isNear();
-
             if (testedNodeIdx != SERVER_NODE_IDX)
-                assertEquals(testedNodeIdx == CLIENT_NEAR_ONLY_IDX, testedNodeNearEnabled);
+                assertEquals(testedNodeIdx == CLIENT_NEAR_ONLY_IDX, nearEnabled());
 
             info(">>> Starting set of tests [testedNodeIdx=" + testedNodeIdx
                 + ", id=" + grid(testedNodeIdx).localNode().id()
                 + ", isClient=" + grid(testedNodeIdx).configuration().isClientMode()
-                + ", nearEnabled=" + testedNodeNearEnabled + "]");
+                + ", nearEnabled=" + nearEnabled() + "]");
         }
     }
 

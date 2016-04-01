@@ -38,11 +38,13 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+
 /**
  *
  */
 @SuppressWarnings("unchecked")
-public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstractTest {
+public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariationsAbstractTest {
     /** */
     private static volatile boolean validate;
 
@@ -60,7 +62,7 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
     };
 
     /** */
-    public static final CacheEntryProcessor INC_ENTRY_PROC_RET_USER_OBJ = new CacheEntryProcessor() {
+    public static final CacheEntryProcessor INC_ENTRY_PROC_USER_OBJ = new CacheEntryProcessor() {
         @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
             Object val = entry.getValue();
 
@@ -82,7 +84,7 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
         }
     };
     /** */
-    public static final CacheEntryProcessor INC_ENTRY_PROC_RET_BINARY_OBJ = new CacheEntryProcessor() {
+    public static final CacheEntryProcessor INC_ENTRY_PROC_BINARY_OBJ = new CacheEntryProcessor() {
         @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
             assertFalse(entry.getKey() instanceof BinaryObjectOffheapImpl);
 
@@ -166,7 +168,7 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
 
             CacheEntry<BinaryObject, BinaryObject> entry = cache.getEntry(key);
 
-            // TODO fix it or not?
+            // TODO fix it (see IGNITE-2899 and point 1.2 in comments)
 //            assertTrue(entry.getKey() instanceof BinaryObject);
 
             assertEquals(val, entry.getValue().deserialize());
@@ -244,39 +246,54 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
         }
 
         for (Object key : keys) {
-            Object res = cache.invoke(key, INC_ENTRY_PROC_RET_BINARY_OBJ, dataMode);
+            Object res = cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
             assertNull(res);
-            assertEquals(value(0), deserializeBinary(cache.get(key)));
 
-            res = cache.invoke(key, INC_ENTRY_PROC_RET_BINARY_OBJ, dataMode);
+            // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
+            if (!(isClient() && nearEnabled()))
+                assertEquals(value(0), deserializeBinary(cache.get(key)));
+
+            res = cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
             assertEquals(value(0), deserializeBinary(res));
-            assertEquals(value(1), deserializeBinary(cache.get(key)));
+
+            // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
+            if (!(isClient() && nearEnabled()))
+                assertEquals(value(1), deserializeBinary(cache.get(key)));
         }
 
         for (Object key : keys)
             cache.remove(key);
 
-        // TODO. beforePut gets newVal as usrObj and then afterPut gets e.getVal as usrObj
-//        binaryObjectExpected = false;
-//
-//        try {
-//            for (Object key : keys) {
-//                Object res = cache.invoke(key, INC_ENTRY_PROC_RET_USER_OBJ, dataMode);
-//
-//                assertNull(res);
-//                assertEquals(value(0), deserializeBinary(cache.get(key)));
-//
-//                res = cache.invoke(key, INC_ENTRY_PROC_RET_USER_OBJ, dataMode);
-//
+        // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+        binaryObjExp = atomicityMode() == TRANSACTIONAL;
+
+        try {
+            for (Object key : keys) {
+                Object res = cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+                assertNull(res);
+
+                // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
+                if (!(isClient() && nearEnabled()))
+                    assertEquals(value(0), deserializeBinary(cache.get(key)));
+
+                res = cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+                info(">>>>> res: " + res.getClass());
+
+                // TODO fix it for !deserializeRes case (see IGNITE-2899 and point 1.4.2 in comments)
 //                assertEquals(value(0), res);
-//                assertEquals(value(1), deserializeBinary(cache.get(key)));
-//            }
-//        }
-//        finally {
-//            binaryObjectExpected = true;
-//        }
+
+                // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
+                if (!(isClient() && nearEnabled()))
+                    assertEquals(value(1), deserializeBinary(cache.get(key)));
+            }
+        }
+        finally {
+            binaryObjExp = true;
+        }
     }
 
     /**
@@ -299,47 +316,56 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
             assertNull(cache.get(key));
         }
 
-        Map<BinaryObject, EntryProcessorResult<BinaryObject>> resMap = cache.invokeAll(keys, INC_ENTRY_PROC_RET_BINARY_OBJ, dataMode);
+        Map<Object, EntryProcessorResult<Object>> resMap = cache.invokeAll(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
-        for (Map.Entry<BinaryObject, EntryProcessorResult<BinaryObject>> e : resMap.entrySet()) {
-            assertNull(e.getValue().get());
+        checkInvokeAllResult(cache, resMap, null, value(0), true);
 
-            assertEquals(value(0), deserializeBinary(cache.get(e.getKey())));
-        }
+        resMap = cache.invokeAll(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
-        resMap = cache.invokeAll(keys, INC_ENTRY_PROC_RET_BINARY_OBJ, dataMode);
-
-        for (Map.Entry<BinaryObject, EntryProcessorResult<BinaryObject>> e : resMap.entrySet()) {
-            assertEquals(value(0), deserializeBinary(e.getValue().get()));
-
-            assertEquals(value(1), deserializeBinary(cache.get(e.getKey())));
-        }
+        checkInvokeAllResult(cache, resMap, value(0), value(1), true);
 
         cache.removeAll(keys);
 
-        // TODO. Below we get inconsistent results: sometimes newVal is userObj, sometimes it's BinaryObj.
-//        binaryObjExp = false;
-//
-//        try {
-//            resMap = cache.invokeAll(keys, INC_ENTRY_PROC_RET_USER_OBJ, dataMode);
-//
-//            for (Map.Entry<BinaryObject, EntryProcessorResult<BinaryObject>> e : resMap.entrySet()) {
-//                assertNull(e.getValue().get());
-//
-//                assertEquals(value(0), cache.get(e.getKey()));
-//            }
-//
-//            resMap = cache.invokeAll(keys, INC_ENTRY_PROC_RET_USER_OBJ, dataMode);
-//
-//            for (Map.Entry<BinaryObject, EntryProcessorResult<BinaryObject>> e : resMap.entrySet()) {
-//                assertEquals(value(0), e.getValue().get());
-//
-//                assertEquals(value(1), cache.get(e.getKey()));
-//            }
-//        }
-//        finally {
-//            binaryObjExp = true;
-//        }
+        // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+        binaryObjExp = atomicityMode() == TRANSACTIONAL;
+
+        try {
+            resMap = cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+            checkInvokeAllResult(cache, resMap, null, value(0), false);
+
+            resMap = cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+            checkInvokeAllResult(cache, resMap, value(0), value(1), false);
+        }
+        finally {
+            binaryObjExp = true;
+        }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param resMap Result map.
+     * @param expRes Expected result.
+     * @param cacheVal Expected cache value for key.
+     * @param deserializeRes Deseriallize result flag.
+     */
+    private void checkInvokeAllResult(IgniteCache cache, Map<Object, EntryProcessorResult<Object>> resMap,
+        Object expRes, Object cacheVal, boolean deserializeRes) {
+        for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
+            info("Key: " + e.getKey());
+
+            // TODO fix it (see IGNITE-2899 and point 1.4.1 in comments)
+//            assertTrue(e.getKey() instanceof BinaryObject);
+
+            Object res = e.getValue().get();
+
+            // TODO fix it for !deserializeRes case (see IGNITE-2899 and point 1.4.2 in comments)
+            if (deserializeRes)
+                assertEquals(expRes, deserializeRes ? deserializeBinary(res) : res);
+
+            assertEquals(cacheVal, deserializeBinary(cache.get(e.getKey())));
+        }
     }
 
     /**
@@ -347,7 +373,7 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
      * @return User object.
      */
     private static Object deserializeBinary(Object val) {
-        assertTrue(val instanceof BinaryObject);
+        assertTrue("Val: " + val, val instanceof BinaryObject);
 
         return ((BinaryObject)val).deserialize();
     }
@@ -370,7 +396,7 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
         /** {@inheritDoc} */
         @Nullable @Override public V onBeforePut(Cache.Entry<K, V> e, V newVal) {
             if (validate) {
-                validateEntry(e);
+                validateEntry(e, false);
 
                 if (newVal != null) {
                     assertEquals("NewVal: " + newVal, binaryObjExp, newVal instanceof BinaryObject);
@@ -384,25 +410,25 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
 
         /** {@inheritDoc} */
         @Override public void onAfterPut(Cache.Entry<K, V> entry) {
-            validateEntry(entry);
+            validateEntry(entry, true);
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry) {
-            validateEntry(entry);
+            validateEntry(entry, false);
 
             return new IgniteBiTuple<>(false, entry.getValue());
         }
 
         /** {@inheritDoc} */
         @Override public void onAfterRemove(Cache.Entry<K, V> entry) {
-            validateEntry(entry);
+            validateEntry(entry, true);
         }
 
         /**
          * @param e Value.
          */
-        private void validateEntry(Cache.Entry<K, V> e) {
+        private void validateEntry(Cache.Entry<K, V> e, boolean onAfterPut) {
             assertNotNull(e);
             assertNotNull(e.getKey());
 
@@ -412,8 +438,11 @@ public class BinaryCacheInterceptorTest extends IgniteCacheConfigVariationsAbstr
             if (validate) {
                 assertTrue("Key: " + e.getKey(), e.getKey() instanceof BinaryObject);
 
-                if (e.getValue() != null)
-                    assertTrue("Val: " + e.getValue(), e.getValue() instanceof BinaryObject);
+                if (e.getValue() != null) {
+                    // TODO we should always do this check, but cann't due to a bug (see IGNITE-2899 and point 1.3 in comments)
+                    if (!(onAfterPut && !binaryObjExp))
+                        assertTrue("Val: " + e.getValue(), e.getValue() instanceof BinaryObject);
+                }
             }
         }
     }
