@@ -20,10 +20,13 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -49,8 +52,39 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
+            var sw = Stopwatch.StartNew();
+
             TestUtils.KillProcesses();
             Ignition.StopAll(true);
+
+            Console.WriteLine(sw.Elapsed);
+        }
+
+        [Test]  // TODO: DELME!
+        public void TestStartupTime()
+        {
+            var cfg = new IgniteConfiguration
+            {
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] { "127.0.0.1:47500" }
+                    },
+                    AckTimeout = TimeSpan.FromSeconds(0.1),
+                    JoinTimeout = TimeSpan.FromSeconds(0.1),
+                    MaxAckTimeout = TimeSpan.FromSeconds(0.1),
+                    NetworkTimeout = TimeSpan.FromSeconds(0.1),
+                    SocketTimeout = TimeSpan.FromSeconds(0.1)
+                },
+                Localhost = "127.0.0.1",
+                JvmOptions = TestUtils.TestJavaOptions(),
+                JvmClasspath = TestUtils.CreateTestClasspath()
+            };
+
+            var ignite = Ignition.Start(cfg);
+
+            Ignition.Stop(ignite.Name, true);
         }
 
         /// <summary>
