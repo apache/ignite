@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
@@ -42,6 +43,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
@@ -286,6 +289,18 @@ import java.util.*;
             atomic.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
 
             cfg.setAtomicConfiguration(atomic);
+        }
+
+        if (in.readBoolean()) {
+            TransactionConfiguration tx = new TransactionConfiguration();
+
+            tx.setPessimisticTxLogSize(in.readInt());
+            tx.setDefaultTxConcurrency(TransactionConcurrency.fromOrdinal(in.readInt()));
+            tx.setDefaultTxIsolation(TransactionIsolation.fromOrdinal(in.readInt()));
+            tx.setDefaultTxTimeout(in.readLong());
+            tx.setPessimisticTxLogLinger(in.readInt());
+
+            cfg.setTransactionConfiguration(tx);
         }
     }
 
