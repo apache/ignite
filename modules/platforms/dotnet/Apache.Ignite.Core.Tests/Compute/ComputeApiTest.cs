@@ -183,6 +183,16 @@ namespace Apache.Ignite.Core.Tests.Compute
             Console.WriteLine("Test finished in: " + sw.Elapsed);
         }
 
+        [Test]  // TODO: DELME!
+        public void TestStartupTime()
+        {
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration());
+
+            var ignite = Ignition.Start(cfg);
+
+            Ignition.Stop(ignite.Name, true);
+        }
+
         [TearDown]
         public void AfterTest()
         {
