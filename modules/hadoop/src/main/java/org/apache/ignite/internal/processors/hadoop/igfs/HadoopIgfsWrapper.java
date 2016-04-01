@@ -479,9 +479,10 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
     }
 
     /**
-     * Determines if the guven address is local.
+     * Determines if the given address is local.
+     *
      * @param host The host to check
-     * @return If the address denotes the local host.
+     * @return If the address is a local address.
      */
     private static boolean isLocAddr(String host) {
         if (F.isEmpty(host))
