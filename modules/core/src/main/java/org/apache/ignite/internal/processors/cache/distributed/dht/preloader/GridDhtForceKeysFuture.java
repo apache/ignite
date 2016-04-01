@@ -156,8 +156,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Collection<K> res, @Nullable Throwable err, Executor lsnrExec) {
-        if (super.onDone(res, err, lsnrExec)) {
+    @Override public boolean onDone(@Nullable Collection<K> res, @Nullable Throwable err) {
+        if (super.onDone(res, err)) {
             if (trackable)
                 preloader.remoteFuture(this);
 

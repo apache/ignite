@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -37,7 +37,7 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
     private GridDhtPartitionExchangeId exchId;
 
     /** Last used cache version. */
-    private CacheVersion lastVer;
+    private GridCacheVersion lastVer;
 
     /**
      * Required by {@link Externalizable}.
@@ -50,7 +50,7 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
      * @param exchId Exchange ID.
      * @param lastVer Last version.
      */
-    GridDhtPartitionsAbstractMessage(GridDhtPartitionExchangeId exchId, @Nullable CacheVersion lastVer) {
+    GridDhtPartitionsAbstractMessage(GridDhtPartitionExchangeId exchId, @Nullable GridCacheVersion lastVer) {
         this.exchId = exchId;
         this.lastVer = lastVer;
     }
@@ -75,7 +75,7 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
     /**
      * @return Last used version among all nodes.
      */
-    @Nullable public CacheVersion lastVersion() {
+    @Nullable public GridCacheVersion lastVersion() {
         return lastVer;
     }
 

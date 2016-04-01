@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -60,10 +60,10 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     private UUID nodeId;
 
     /** Future version. */
-    private CacheVersion futVer;
+    private GridCacheVersion futVer;
 
     /** Write version. */
-    private CacheVersion writeVer;
+    private GridCacheVersion writeVer;
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
@@ -84,8 +84,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     private List<CacheObject> prevVals;
 
     /** Conflict versions. */
-    @GridDirectCollection(CacheVersion.class)
-    private List<CacheVersion> conflictVers;
+    @GridDirectCollection(GridCacheVersion.class)
+    private List<GridCacheVersion> conflictVers;
 
     /** TTLs. */
     private GridLongList ttls;
@@ -187,8 +187,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     public GridDhtAtomicUpdateRequest(
         int cacheId,
         UUID nodeId,
-        CacheVersion futVer,
-        CacheVersion writeVer,
+        GridCacheVersion futVer,
+        GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
         boolean forceTransformBackups,
@@ -249,7 +249,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long conflictExpireTime,
-        @Nullable CacheVersion conflictVer,
+        @Nullable GridCacheVersion conflictVer,
         boolean addPrevVal,
         int partId,
         @Nullable CacheObject prevVal,
@@ -428,14 +428,14 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /**
      * @return Version assigned on primary node.
      */
-    public CacheVersion futureVersion() {
+    public GridCacheVersion futureVersion() {
         return futVer;
     }
 
     /**
      * @return Write version.
      */
-    public CacheVersion writeVersion() {
+    public GridCacheVersion writeVersion() {
         return writeVer;
     }
 
@@ -565,7 +565,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
      * @param idx Index.
      * @return Conflict version.
      */
-    @Nullable public CacheVersion conflictVersion(int idx) {
+    @Nullable public GridCacheVersion conflictVersion(int idx) {
         if (conflictVers != null) {
             assert idx >= 0 && idx < conflictVers.size();
 

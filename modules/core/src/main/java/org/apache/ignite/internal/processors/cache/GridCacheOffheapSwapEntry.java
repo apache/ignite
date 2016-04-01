@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +46,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
     private final long valPtr;
 
     /** */
-    private final CacheVersion ver;
+    private final GridCacheVersion ver;
 
     /** */
     private CacheObject val;
@@ -56,9 +57,8 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
     /**
      * @param ptr Value pointer.
      * @param size Value size.
-     * @param cctx Context.
      */
-    public GridCacheOffheapSwapEntry(long ptr, int size, GridCacheSharedContext cctx) {
+    public GridCacheOffheapSwapEntry(long ptr, int size) {
         assert ptr > 0 : ptr;
         assert size > 40 : size;
 
@@ -68,7 +68,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
 
         boolean verEx = GridUnsafe.getByte(readPtr++) != 0;
 
-        ver = cctx.versions().readVersion(readPtr, verEx);
+        ver = U.readVersion(readPtr, verEx);
 
         readPtr += verEx ? GridCacheSwapEntryImpl.VERSION_EX_SIZE : GridCacheSwapEntryImpl.VERSION_SIZE;
 
@@ -117,17 +117,16 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
 
     /**
      * @param ptr Marshaled swap entry address.
-     * @param cctx Context.
      * @return Version.
      */
-    public static CacheVersion version(long ptr, GridCacheSharedContext cctx) {
+    public static GridCacheVersion version(long ptr) {
         long addr = ptr + GridCacheSwapEntryImpl.VERSION_OFFSET;
 
         boolean verEx = GridUnsafe.getByte(addr) != 0;
 
         addr++;
 
-        return cctx.versions().readVersion(addr, verEx);
+        return U.readVersion(addr, verEx);
     }
 
     /** {@inheritDoc} */
@@ -156,7 +155,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return ver;
     }
 

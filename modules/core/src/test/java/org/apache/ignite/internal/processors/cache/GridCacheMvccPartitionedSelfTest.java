@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -92,8 +92,8 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         UUID node1 = UUID.randomUUID();
 
-        CacheVersion ver1 = version(1);
-        CacheVersion ver2 = version(2);
+        GridCacheVersion ver1 = version(1);
+        GridCacheVersion ver2 = version(2);
 
         GridCacheMvccCandidate c1 = entry.addRemote(node1, 1, ver1, 0, false, true);
         GridCacheMvccCandidate c2 = entry.addNearLocal(node1, 1, ver2, 0, true);
@@ -126,8 +126,8 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         UUID node1 = UUID.randomUUID();
 
-        CacheVersion ver1 = version(1);
-        CacheVersion ver2 = version(2);
+        GridCacheVersion ver1 = version(1);
+        GridCacheVersion ver2 = version(2);
 
         GridCacheMvccCandidate c1 = entry.addNearLocal(node1, 1, ver1, 0, true);
         GridCacheMvccCandidate c2 = entry.addRemote(node1, 1, ver2, 0, false, true);
@@ -159,8 +159,8 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         UUID node1 = UUID.randomUUID();
 
-        CacheVersion ver1 = version(1);
-        CacheVersion ver2 = version(2);
+        GridCacheVersion ver1 = version(1);
+        GridCacheVersion ver2 = version(2);
 
         GridCacheMvccCandidate c1 = entry.addNearLocal(node1, 1, ver1, 0, true);
         GridCacheMvccCandidate c2 = entry.addRemote(node1, 1, ver2, 0, false, true);
@@ -261,8 +261,8 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         UUID node1 = UUID.randomUUID();
 
-        CacheVersion ver0 = version(0);
-        CacheVersion ver1 = version(1);
+        GridCacheVersion ver0 = version(0);
+        GridCacheVersion ver1 = version(1);
 
         entry.addNearLocal(node1, 1, ver1, 0, true);
 
@@ -293,10 +293,10 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         UUID node1 = UUID.randomUUID();
 
-        CacheVersion ver0 = version(0);
-        CacheVersion ver1 = version(1);
-        CacheVersion ver2 = version(2);
-        CacheVersion ver3 = version(3);
+        GridCacheVersion ver0 = version(0);
+        GridCacheVersion ver1 = version(1);
+        GridCacheVersion ver2 = version(2);
+        GridCacheVersion ver3 = version(3);
 
         GridCacheMvccCandidate c3 = entry.addNearLocal(node1, 1, ver3, 0, true);
 
@@ -336,10 +336,10 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         UUID node1 = UUID.randomUUID();
 
-        CacheVersion ver0 = version(0);
-        CacheVersion ver1 = version(1);
-        CacheVersion ver2 = version(2);
-        CacheVersion ver3 = version(3);
+        GridCacheVersion ver0 = version(0);
+        GridCacheVersion ver1 = version(1);
+        GridCacheVersion ver2 = version(2);
+        GridCacheVersion ver3 = version(3);
 
         GridCacheMvccCandidate c3 = entry.addNearLocal(node1, 1, ver3, 0, true);
         entry.addNearLocal(node1, 1, ver2, 0, true);
@@ -476,10 +476,10 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         UUID node1 = UUID.randomUUID();
 
-        CacheVersion ver1 = version(10);
-        CacheVersion nearVer2 = version(5);
-        CacheVersion ver2 = version(20);
-        CacheVersion ver3 = version(30);
+        GridCacheVersion ver1 = version(10);
+        GridCacheVersion nearVer2 = version(5);
+        GridCacheVersion ver2 = version(20);
+        GridCacheVersion ver3 = version(30);
 
         entry.addRemote(node1, 1, ver1, 0, false, true);
         entry.addNearLocal(node1, 1, nearVer2, 0, true);
@@ -566,10 +566,10 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         UUID node1 = UUID.randomUUID();
 
-        CacheVersion ver1 = version(10);
-        CacheVersion nearVer2 = version(5);
-        CacheVersion ver2 = version(20);
-        CacheVersion ver3 = version(30);
+        GridCacheVersion ver1 = version(10);
+        GridCacheVersion nearVer2 = version(5);
+        GridCacheVersion ver2 = version(20);
+        GridCacheVersion ver3 = version(30);
 
         entry.addRemote(node1, 1, ver1, 0, false, true);
         entry.addNearLocal(node1, 1, nearVer2, 0, true);
@@ -774,7 +774,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
      *
      * @return Empty list.
      */
-    private Collection<CacheVersion> empty() {
+    private Collection<GridCacheVersion> empty() {
         return Collections.emptyList();
     }
 
@@ -785,7 +785,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
      * @param ver Cache version.
      * @param reentry Reentry flag.
      */
-    private void checkLocalOwner(GridCacheMvccCandidate cand, CacheVersion ver, boolean reentry) {
+    private void checkLocalOwner(GridCacheMvccCandidate cand, GridCacheVersion ver, boolean reentry) {
         assert cand != null;
 
         info("Done candidate: " + cand);
@@ -808,7 +808,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
      * @param owner Owner flag.
      * @param used Done flag.
      */
-    private void checkRemote(GridCacheMvccCandidate cand, CacheVersion ver, boolean owner, boolean used) {
+    private void checkRemote(GridCacheMvccCandidate cand, GridCacheVersion ver, boolean owner, boolean used) {
         assert cand != null;
 
         info("Done candidate: " + cand);
@@ -833,7 +833,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
      * @param owner Lock owner.
      * @param reentry Reentry flag.
      */
-    private void checkLocal(GridCacheMvccCandidate cand, CacheVersion ver, boolean ready,
+    private void checkLocal(GridCacheMvccCandidate cand, GridCacheVersion ver, boolean ready,
         boolean owner, boolean reentry) {
         assert cand != null;
 

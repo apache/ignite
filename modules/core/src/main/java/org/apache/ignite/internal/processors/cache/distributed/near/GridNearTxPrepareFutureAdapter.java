@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.Gri
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -119,7 +119,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return tx.xidVersion();
     }
 
@@ -232,7 +232,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         }
 
         if (!m.empty()) {
-            CacheVersion writeVer = res.writeVersion();
+            GridCacheVersion writeVer = res.writeVersion();
 
             if (writeVer == null)
                 writeVer = res.dhtVersion();

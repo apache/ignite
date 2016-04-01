@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -726,7 +726,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             int cnt = keys.size();
 
             if (req.inTx()) {
-                CacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
+                GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
 
                 if (dhtVer != null)
                     tx = ctx.tm().tx(dhtVer);
@@ -983,7 +983,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 // This will send remote messages.
                 fut.map();
 
-                final CacheVersion mappedVer = fut.version();
+                final GridCacheVersion mappedVer = fut.version();
 
                 return new GridDhtEmbeddedFuture<>(
                     new C2<Boolean, Exception, GridNearLockResponse>() {
@@ -1078,7 +1078,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         List<GridCacheEntryEx> entries,
         GridNearLockRequest req,
         @Nullable GridDhtTxLocalAdapter tx,
-        CacheVersion mappedVer,
+        GridCacheVersion mappedVer,
         Throwable err) {
         assert mappedVer != null;
         assert tx == null || tx.xidVersion().equals(mappedVer);
@@ -1100,7 +1100,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 // We have to add completed versions for cases when nearLocal and remote transactions
                 // execute concurrently.
-                IgnitePair<Collection<CacheVersion>> versPair = ctx.tm().versions(req.version());
+                IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(req.version());
 
                 res.completedVersions(versPair.get1(), versPair.get2());
 
@@ -1115,9 +1115,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         try {
                             // Don't return anything for invalid partitions.
                             if (tx == null || !tx.isRollbackOnly()) {
-                                CacheVersion dhtVer = req.dhtVersion(i);
+                                GridCacheVersion dhtVer = req.dhtVersion(i);
 
-                                CacheVersion ver = e.version();
+                                GridCacheVersion ver = e.version();
 
                                 boolean ret = req.returnValue(i) || dhtVer == null || !dhtVer.equals(ver);
 
@@ -1253,9 +1253,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param baseVer Base version.
      * @return Collection of pending candidates versions.
      */
-    private Collection<CacheVersion> localDhtPendingVersions(Iterable<GridCacheEntryEx> entries,
-        CacheVersion baseVer) {
-        Collection<CacheVersion> lessPending = new GridLeanSet<>(5);
+    private Collection<GridCacheVersion> localDhtPendingVersions(Iterable<GridCacheEntryEx> entries,
+        GridCacheVersion baseVer) {
+        Collection<GridCacheVersion> lessPending = new GridLeanSet<>(5);
 
         for (GridCacheEntryEx entry : entries) {
             // Since entries were collected before locks are added, some of them may become obsolete.
@@ -1425,7 +1425,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param keys Keys.
      * @param unmap Flag for un-mapping version.
      */
-    public void removeLocks(UUID nodeId, CacheVersion ver, Iterable<KeyCacheObject> keys, boolean unmap) {
+    public void removeLocks(UUID nodeId, GridCacheVersion ver, Iterable<KeyCacheObject> keys, boolean unmap) {
         assert nodeId != null;
         assert ver != null;
 
@@ -1433,12 +1433,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             return;
 
         // Remove mapped versions.
-        CacheVersion dhtVer = unmap ? ctx.mvcc().unmapVersion(ver) : ver;
+        GridCacheVersion dhtVer = unmap ? ctx.mvcc().unmapVersion(ver) : ver;
 
         Map<ClusterNode, List<KeyCacheObject>> dhtMap = new HashMap<>();
         Map<ClusterNode, List<KeyCacheObject>> nearMap = new HashMap<>();
 
-        CacheVersion obsoleteVer = null;
+        GridCacheVersion obsoleteVer = null;
 
         for (KeyCacheObject key : keys) {
             while (true) {
@@ -1522,10 +1522,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
         }
 
-        IgnitePair<Collection<CacheVersion>> versPair = ctx.tm().versions(ver);
+        IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(ver);
 
-        Collection<CacheVersion> committed = versPair.get1();
-        Collection<CacheVersion> rolledback = versPair.get2();
+        Collection<GridCacheVersion> committed = versPair.get1();
+        Collection<GridCacheVersion> rolledback = versPair.get2();
 
         // Backups.
         for (Map.Entry<ClusterNode, List<KeyCacheObject>> entry : dhtMap.entrySet()) {
@@ -1597,7 +1597,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param ver Version.
      * @throws IgniteCheckedException If invalidate failed.
      */
-    private void invalidateNearEntry(KeyCacheObject key, CacheVersion ver) throws IgniteCheckedException {
+    private void invalidateNearEntry(KeyCacheObject key, GridCacheVersion ver) throws IgniteCheckedException {
         GridCacheEntryEx nearEntry = near().peekEx(key);
 
         if (nearEntry != null)

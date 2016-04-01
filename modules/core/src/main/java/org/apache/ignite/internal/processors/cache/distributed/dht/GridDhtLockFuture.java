@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCa
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
@@ -96,7 +96,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     private UUID nearNodeId;
 
     /** Near lock version. */
-    private CacheVersion nearLockVer;
+    private GridCacheVersion nearLockVer;
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
@@ -117,7 +117,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     private IgniteUuid futId;
 
     /** Lock version. */
-    private CacheVersion lockVer;
+    private GridCacheVersion lockVer;
 
     /** Read flag. */
     private boolean read;
@@ -183,7 +183,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     public GridDhtLockFuture(
         GridCacheContext<?, ?> cctx,
         UUID nearNodeId,
-        CacheVersion nearLockVer,
+        GridCacheVersion nearLockVer,
         @NotNull AffinityTopologyVersion topVer,
         int cnt,
         boolean read,
@@ -269,7 +269,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return lockVer;
     }
 
@@ -305,7 +305,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheVersion mappedVersion() {
+    @Nullable @Override public GridCacheVersion mappedVersion() {
         return tx == null ? nearLockVer : null;
     }
 
@@ -684,7 +684,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Boolean success, @Nullable Throwable err, Executor lsnrExec) {
+    @Override public boolean onDone(@Nullable Boolean success, @Nullable Throwable err) {
         // Protect against NPE.
         if (success == null) {
             assert err != null;
@@ -742,7 +742,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                 cctx.tm().setTxTopologyHint(null);
         }
 
-        if (super.onDone(success, err, null)) {
+        if (super.onDone(success, err)) {
             if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
 
@@ -1012,7 +1012,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         if (!skipStore && (read || cctx.loadPreviousValue()) && cctx.readThrough() && (needReturnVal || read)) {
             final Map<KeyCacheObject, GridDhtCacheEntry> loadMap = new LinkedHashMap<>();
 
-            final CacheVersion ver = version();
+            final GridCacheVersion ver = version();
 
             for (GridDhtCacheEntry entry : entries) {
                 try {

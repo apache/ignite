@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -520,7 +520,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         assert configuration().getNearConfiguration() != null;
 
         if (ctx.affinityNode()) {
-            CacheVersion obsoleteVer = ctx.versions().next();
+            GridCacheVersion obsoleteVer = ctx.versions().next();
 
             List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally(srv, near, readers);
 

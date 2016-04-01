@@ -66,7 +66,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1610,7 +1610,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                     assertNotNull(keys0);
 
                     for (Integer key : keys0) {
-                        CacheVersion ver = null;
+                        GridCacheVersion ver = null;
                         Object val = null;
 
                         for (Ignite node : nodes) {
@@ -1635,7 +1635,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
                                 assertNotNull("No entry [node=" + node.name() + ", key=" + key + ']', entry);
 
-                                CacheVersion ver0 = entry instanceof GridNearCacheEntry ?
+                                GridCacheVersion ver0 = entry instanceof GridNearCacheEntry ?
                                     ((GridNearCacheEntry)entry).dhtVersion() : entry.version();
 
                                 assertNotNull("Null version [node=" + node.name() + ", key=" + key + ']', ver0);

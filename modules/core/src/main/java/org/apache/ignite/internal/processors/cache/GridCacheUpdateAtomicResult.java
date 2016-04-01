@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import javax.cache.processor.EntryProcessor;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -48,7 +48,7 @@ public class GridCacheUpdateAtomicResult {
 
     /** Version for deferred delete. */
     @GridToStringInclude
-    private final CacheVersion rmvVer;
+    private final GridCacheVersion rmvVer;
 
     /** DR resolution result. */
     @GridToStringInclude
@@ -83,7 +83,7 @@ public class GridCacheUpdateAtomicResult {
         @Nullable IgniteBiTuple<Object, Exception> res,
         long newTtl,
         long conflictExpireTime,
-        @Nullable CacheVersion rmvVer,
+        @Nullable GridCacheVersion rmvVer,
         @Nullable GridCacheVersionConflictContext<?, ?> conflictRes,
         boolean sndToDht,
         long updateCntr) {
@@ -152,7 +152,7 @@ public class GridCacheUpdateAtomicResult {
     /**
      * @return Version for deferred delete.
      */
-    @Nullable public CacheVersion removeVersion() {
+    @Nullable public GridCacheVersion removeVersion() {
         return rmvVer;
     }
 

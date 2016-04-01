@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -66,7 +66,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** Array of mapped DHT versions for this entry. */
     @GridToStringInclude
-    private CacheVersion[] dhtVers;
+    private GridCacheVersion[] dhtVers;
 
     /** Subject ID. */
     private UUID subjId;
@@ -127,7 +127,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         UUID nodeId,
         long threadId,
         IgniteUuid futId,
-        CacheVersion lockVer,
+        GridCacheVersion lockVer,
         boolean isInTx,
         boolean implicitTx,
         boolean implicitSingleTx,
@@ -178,7 +178,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         this.retVal = retVal;
         this.firstClientReq = firstClientReq;
 
-        dhtVers = new CacheVersion[keyCnt];
+        dhtVers = new GridCacheVersion[keyCnt];
     }
 
     /**
@@ -294,7 +294,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     public void addKeyBytes(
         KeyCacheObject key,
         boolean retVal,
-        @Nullable CacheVersion dhtVer,
+        @Nullable GridCacheVersion dhtVer,
         GridCacheContext ctx
     ) throws IgniteCheckedException {
         dhtVers[idx] = dhtVer;
@@ -307,7 +307,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param idx Index of the key.
      * @return DHT version for key at given index.
      */
-    public CacheVersion dhtVersion(int idx) {
+    public GridCacheVersion dhtVersion(int idx) {
         return dhtVers[idx];
     }
 
@@ -470,7 +470,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 21:
-                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, CacheVersion.class);
+                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;

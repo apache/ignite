@@ -154,8 +154,8 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<GridDhtAffin
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable GridDhtAffinityAssignmentResponse res, @Nullable Throwable err, Executor lsnrExec) {
-        if (super.onDone(res, err, lsnrExec)) {
+    @Override public boolean onDone(@Nullable GridDhtAffinityAssignmentResponse res, @Nullable Throwable err) {
+        if (super.onDone(res, err)) {
             ctx.affinity().removeDhtAssignmentFetchFuture(this);
 
             return true;

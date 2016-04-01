@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,7 +41,7 @@ public class GridCacheCommittedTxInfo implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Originating transaction ID. */
-    private CacheVersion originatingTxId;
+    private GridCacheVersion originatingTxId;
 
     /** Originating node ID. */
     private UUID originatingNodeId;
@@ -72,7 +71,7 @@ public class GridCacheCommittedTxInfo implements Externalizable {
      * @return Originating transaction ID (the transaction ID for replicated cache and near transaction ID
      *      for partitioned cache).
      */
-    public CacheVersion originatingTxId() {
+    public GridCacheVersion originatingTxId() {
         return originatingTxId;
     }
 

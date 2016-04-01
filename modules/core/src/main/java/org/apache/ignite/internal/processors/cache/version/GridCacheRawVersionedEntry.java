@@ -57,7 +57,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
     private long expireTime;
 
     /** Version. */
-    private CacheVersion ver;
+    private GridCacheVersion ver;
 
     /**
      * {@code Externalizable} support.
@@ -79,7 +79,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         @Nullable CacheObject val,
         long ttl,
         long expireTime,
-        CacheVersion ver) {
+        GridCacheVersion ver) {
         assert key != null;
 
         this.key = key;
@@ -103,7 +103,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         byte[] valBytes,
         long ttl,
         long expireTime,
-        CacheVersion ver) {
+        GridCacheVersion ver) {
         this.keyBytes = keyBytes;
         this.valBytes = valBytes;
         this.ttl = ttl;
@@ -175,7 +175,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return ver;
     }
 

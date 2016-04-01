@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -60,7 +60,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     private IgniteUuid miniId;
 
     /** Version. */
-    private CacheVersion ver;
+    private GridCacheVersion ver;
 
     /** */
     @GridToStringInclude
@@ -122,7 +122,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
-        CacheVersion ver,
+        GridCacheVersion ver,
         Map<KeyCacheObject, Boolean> keys,
         boolean readThrough,
         @NotNull AffinityTopologyVersion topVer,
@@ -182,7 +182,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return ver;
     }
 

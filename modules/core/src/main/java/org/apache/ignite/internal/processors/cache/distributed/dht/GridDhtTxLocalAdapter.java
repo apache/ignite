@@ -41,7 +41,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -89,7 +89,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     protected boolean explicitLock;
 
     /** Versions of pending locks for entries of this tx. */
-    private Collection<CacheVersion> pendingVers;
+    private Collection<GridCacheVersion> pendingVers;
 
     /** Flag indicating that originating node has near cache. */
     private boolean nearOnOriginatingNode;
@@ -117,7 +117,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      */
     protected GridDhtTxLocalAdapter(
         GridCacheSharedContext cctx,
-        CacheVersion xidVer,
+        GridCacheVersion xidVer,
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
@@ -248,14 +248,14 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /**
      * @return Versions for all pending locks that were in queue before tx locks were released.
      */
-    public Collection<CacheVersion> pendingVersions() {
-        return pendingVers == null ? Collections.<CacheVersion>emptyList() : pendingVers;
+    public Collection<GridCacheVersion> pendingVersions() {
+        return pendingVers == null ? Collections.<GridCacheVersion>emptyList() : pendingVers;
     }
 
     /**
      * @param pendingVers Versions for all pending locks that were in queue before tx locsk were released.
      */
-    public void pendingVersions(Collection<CacheVersion> pendingVers) {
+    public void pendingVersions(Collection<GridCacheVersion> pendingVers) {
         this.pendingVers = pendingVers;
     }
 
@@ -502,10 +502,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
                 existing.cached(cached);
 
-                CacheVersion explicit = existing.explicitVersion();
+                GridCacheVersion explicit = existing.explicitVersion();
 
                 if (explicit != null) {
-                    CacheVersion dhtVer = cctx.mvcc().mappedVersion(explicit);
+                    GridCacheVersion dhtVer = cctx.mvcc().mappedVersion(explicit);
 
                     if (dhtVer == null)
                         throw new IgniteCheckedException("Failed to find dht mapping for explicit entry version: " + existing);

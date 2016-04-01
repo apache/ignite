@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -103,7 +103,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** Conflict remove values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    private Collection<CacheVersion> conflictRmvVals;
+    private Collection<GridCacheVersion> conflictRmvVals;
 
     /** Return value require flag. */
     private final boolean retval;
@@ -180,7 +180,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         @Nullable Collection<?> vals,
         @Nullable Object[] invokeArgs,
         @Nullable Collection<GridCacheDrInfo> conflictPutVals,
-        @Nullable Collection<CacheVersion> conflictRmvVals,
+        @Nullable Collection<GridCacheVersion> conflictRmvVals,
         final boolean retval,
         final boolean rawRetval,
         @Nullable ExpiryPolicy expiryPlc,
@@ -240,7 +240,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return state.futureVersion();
     }
 
@@ -311,7 +311,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err, Executor lsnrExec) {
+    @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
         assert res == null || res instanceof GridCacheReturn;
 
         GridCacheReturn ret = (GridCacheReturn)res;
@@ -323,8 +323,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         if (op == TRANSFORM && retval == null)
             retval = Collections.emptyMap();
 
-        if (super.onDone(retval, err, lsnrExec)) {
-            CacheVersion futVer = state.onFutureDone();
+        if (super.onDone(retval, err)) {
+            GridCacheVersion futVer = state.onFutureDone();
 
             if (futVer != null)
                 cctx.mvcc().removeAtomicFuture(futVer);
@@ -530,7 +530,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         private AffinityTopologyVersion topVer = AffinityTopologyVersion.ZERO;
 
         /** */
-        private CacheVersion updVer;
+        private GridCacheVersion updVer;
 
         /** Topology version when got mapping error. */
         private AffinityTopologyVersion mapErrTopVer;
@@ -546,7 +546,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         private CachePartialUpdateCheckedException err;
 
         /** Future ID. */
-        private CacheVersion futVer;
+        private GridCacheVersion futVer;
 
         /** Completion future for a particular topology version. */
         private GridFutureAdapter<Void> topCompleteFut;
@@ -563,7 +563,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         /**
          * @return Future version.
          */
-        @Nullable synchronized CacheVersion futureVersion() {
+        @Nullable synchronized GridCacheVersion futureVersion() {
             return futVer;
         }
 
@@ -844,9 +844,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
             int size = keys.size();
 
-            CacheVersion futVer = cctx.versions().next(topVer);
+            GridCacheVersion futVer = cctx.versions().next(topVer);
 
-            CacheVersion updVer;
+            GridCacheVersion updVer;
 
             // Assign version on near node in CLOCK ordering mode even if fastMap is false.
             if (cctx.config().getAtomicWriteOrderMode() == CLOCK) {
@@ -961,8 +961,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         /**
          * @return Future version.
          */
-        CacheVersion onFutureDone() {
-            CacheVersion ver0;
+        GridCacheVersion onFutureDone() {
+            GridCacheVersion ver0;
 
             GridFutureAdapter<Void> fut0;
 
@@ -993,8 +993,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
          */
         private Map<UUID, GridNearAtomicUpdateRequest> mapUpdate(Collection<ClusterNode> topNodes,
             AffinityTopologyVersion topVer,
-            CacheVersion futVer,
-            @Nullable CacheVersion updVer,
+            GridCacheVersion futVer,
+            @Nullable GridCacheVersion updVer,
             @Nullable Collection<KeyCacheObject> remapKeys) throws Exception {
             Iterator<?> it = null;
 
@@ -1006,7 +1006,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             if (conflictPutVals != null)
                 conflictPutValsIt = conflictPutVals.iterator();
 
-            Iterator<CacheVersion> conflictRmvValsIt = null;
+            Iterator<GridCacheVersion> conflictRmvValsIt = null;
 
             if (conflictRmvVals != null)
                 conflictRmvValsIt = conflictRmvVals.iterator();
@@ -1019,7 +1019,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     throw new NullPointerException("Null key.");
 
                 Object val;
-                CacheVersion conflictVer;
+                GridCacheVersion conflictVer;
                 long conflictTtl;
                 long conflictExpireTime;
 
@@ -1124,12 +1124,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
          * @throws Exception If failed.
          */
         private GridNearAtomicUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
-            CacheVersion futVer,
-            @Nullable CacheVersion updVer) throws Exception {
+            GridCacheVersion futVer,
+            @Nullable GridCacheVersion updVer) throws Exception {
             Object key = F.first(keys);
 
             Object val;
-            CacheVersion conflictVer;
+            GridCacheVersion conflictVer;
             long conflictTtl;
             long conflictExpireTime;
 

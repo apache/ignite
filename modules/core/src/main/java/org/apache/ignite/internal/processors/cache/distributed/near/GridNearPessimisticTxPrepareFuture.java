@@ -282,7 +282,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable IgniteInternalTx res, @Nullable Throwable err, Executor lsnrExec) {
+    @Override public boolean onDone(@Nullable IgniteInternalTx res, @Nullable Throwable err) {
         if (err != null)
             ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, err);
 
@@ -291,7 +291,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         if (err == null || tx.needCheckBackup())
             tx.state(PREPARED);
 
-        if (super.onDone(tx, err, lsnrExec)) {
+        if (super.onDone(tx, err)) {
             cctx.mvcc().removeMvccFuture(this);
 
             return true;

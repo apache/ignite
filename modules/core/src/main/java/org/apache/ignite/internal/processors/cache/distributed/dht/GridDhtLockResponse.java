@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -77,7 +77,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param cnt Key count.
      * @param addDepInfo Deployment info.
      */
-    public GridDhtLockResponse(int cacheId, CacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId, int cnt,
+    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId, int cnt,
         boolean addDepInfo) {
         super(cacheId, lockVer, futId, cnt, addDepInfo);
 
@@ -93,7 +93,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
      * @param err Error.
      * @param addDepInfo
      */
-    public GridDhtLockResponse(int cacheId, CacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId,
+    public GridDhtLockResponse(int cacheId, GridCacheVersion lockVer, IgniteUuid futId, IgniteUuid miniId,
         Throwable err, boolean addDepInfo) {
         super(cacheId, lockVer, futId, err, addDepInfo);
 

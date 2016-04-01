@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -68,7 +67,7 @@ public class GridCacheMvccCandidate implements Externalizable,
 
     /** Lock version. */
     @GridToStringInclude
-    private CacheVersion ver;
+    private GridCacheVersion ver;
 
     /** Maximum wait time. */
     @GridToStringInclude
@@ -113,7 +112,7 @@ public class GridCacheMvccCandidate implements Externalizable,
     private transient volatile UUID otherNodeId;
 
     /** Other lock version (near version vs dht version). */
-    private transient CacheVersion otherVer;
+    private transient GridCacheVersion otherVer;
 
     /** Mapped DHT node IDs. */
     @GridToStringInclude
@@ -125,10 +124,10 @@ public class GridCacheMvccCandidate implements Externalizable,
 
     /** Owned lock version by the moment this candidate was added. */
     @GridToStringInclude
-    private transient volatile CacheVersion ownerVer;
+    private transient volatile GridCacheVersion ownerVer;
 
     /** */
-    private CacheVersion serOrder;
+    private GridCacheVersion serOrder;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -157,9 +156,9 @@ public class GridCacheMvccCandidate implements Externalizable,
         GridCacheEntryEx parent,
         UUID nodeId,
         @Nullable UUID otherNodeId,
-        @Nullable CacheVersion otherVer,
+        @Nullable GridCacheVersion otherVer,
         long threadId,
-        CacheVersion ver,
+        GridCacheVersion ver,
         long timeout,
         boolean loc,
         boolean reentry,
@@ -167,7 +166,7 @@ public class GridCacheMvccCandidate implements Externalizable,
         boolean singleImplicit,
         boolean nearLoc,
         boolean dhtLoc,
-        @Nullable CacheVersion serOrder
+        @Nullable GridCacheVersion serOrder
     ) {
         assert nodeId != null;
         assert ver != null;
@@ -347,7 +346,7 @@ public class GridCacheMvccCandidate implements Externalizable,
     /**
      * @return Near version.
      */
-    public CacheVersion otherVersion() {
+    public GridCacheVersion otherVersion() {
         return otherVer;
     }
 
@@ -358,7 +357,7 @@ public class GridCacheMvccCandidate implements Externalizable,
      * @param otherVer Alternative candidate version.
      * @return {@code True} if other version was set, {@code false} if other version is already set.
      */
-    public boolean otherVersion(CacheVersion otherVer) {
+    public boolean otherVersion(GridCacheVersion otherVer) {
         assert otherVer != null;
 
         if (this.otherVer == null) {
@@ -376,7 +375,7 @@ public class GridCacheMvccCandidate implements Externalizable,
      * @param ownerVer Version of owned candidate by the moment this candidate was added.
      * @return {@code True} if owned version was set, {@code false} otherwise.
      */
-    public boolean ownerVersion(CacheVersion ownerVer) {
+    public boolean ownerVersion(GridCacheVersion ownerVer) {
         assert ownerVer != null;
 
         if (this.ownerVer == null) {
@@ -392,7 +391,7 @@ public class GridCacheMvccCandidate implements Externalizable,
      * @return Version of owned candidate by the time this candidate was added, or {@code null}
      *      if there were no owned candidates.
      */
-    @Nullable public CacheVersion ownerVersion() {
+    @Nullable public GridCacheVersion ownerVersion() {
         return ownerVer;
     }
 
@@ -407,7 +406,7 @@ public class GridCacheMvccCandidate implements Externalizable,
     /**
      * @return Lock version.
      */
-    public CacheVersion version() {
+    public GridCacheVersion version() {
         return ver;
     }
 
@@ -470,7 +469,7 @@ public class GridCacheMvccCandidate implements Externalizable,
     /**
      * @return Version for serializable transactions ordering.
      */
-    @Nullable public CacheVersion serializableOrder() {
+    @Nullable public GridCacheVersion serializableOrder() {
         return serOrder;
     }
 
@@ -595,7 +594,7 @@ public class GridCacheMvccCandidate implements Externalizable,
      * @param threadId Thread ID to check.
      * @return {@code True} if matched.
      */
-    public boolean matches(CacheVersion ver, UUID nodeId, long threadId) {
+    public boolean matches(GridCacheVersion ver, UUID nodeId, long threadId) {
         return ver.equals(this.ver) || (nodeId.equals(this.nodeId) && threadId == this.threadId);
     }
 

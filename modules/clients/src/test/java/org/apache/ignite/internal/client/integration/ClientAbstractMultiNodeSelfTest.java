@@ -57,7 +57,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -513,7 +513,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             IgniteTxManager tm = cacheCtx.tm();
 
-            CacheVersion v = ((GridCacheVersionable)o).version();
+            GridCacheVersion v = ((GridCacheVersionable)o).version();
 
             IgniteInternalTx t = tm.tx(v);
 

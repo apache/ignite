@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -41,7 +41,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     private long threadId;
 
     /** Commit version. */
-    private CacheVersion commitVer;
+    private GridCacheVersion commitVer;
 
     /** Invalidate flag. */
     private boolean invalidate;
@@ -56,7 +56,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     private boolean syncRollback;
 
     /** Min version used as base for completed versions. */
-    private CacheVersion baseVer;
+    private GridCacheVersion baseVer;
 
     /** Expected txSize. */
     private int txSize;
@@ -92,9 +92,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
      * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxFinishRequest(
-        CacheVersion xidVer,
+        GridCacheVersion xidVer,
         IgniteUuid futId,
-        @Nullable CacheVersion commitVer,
+        @Nullable GridCacheVersion commitVer,
         long threadId,
         boolean commit,
         boolean invalidate,
@@ -102,9 +102,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
         byte plc,
         boolean syncCommit,
         boolean syncRollback,
-        CacheVersion baseVer,
-        Collection<CacheVersion> committedVers,
-        Collection<CacheVersion> rolledbackVers,
+        GridCacheVersion baseVer,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers,
         int txSize,
         boolean addDepInfo
     ) {
@@ -157,7 +157,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     /**
      * @return Commit version.
      */
-    public CacheVersion commitVersion() {
+    public GridCacheVersion commitVersion() {
         return commitVer;
     }
 
@@ -200,7 +200,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     /**
      * @return Base version.
      */
-    public CacheVersion baseVersion() {
+    public GridCacheVersion baseVersion() {
         return baseVer;
     }
 

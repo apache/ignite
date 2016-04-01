@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Update future for atomic cache.
@@ -29,7 +29,7 @@ public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
     /**
      * @return Future version.
      */
-    public CacheVersion version();
+    public GridCacheVersion version();
 
     /**
      * Gets future that will be completed when it is safe when update is finished on the given version of topology.

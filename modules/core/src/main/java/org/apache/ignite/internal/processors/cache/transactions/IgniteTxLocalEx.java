@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,7 +40,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     /**
      * @return Minimum version involved in transaction.
      */
-    public CacheVersion minVersion();
+    public GridCacheVersion minVersion();
 
     /**
      * @return Commit error.
@@ -169,7 +169,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public IgniteInternalFuture<?> removeAllDrAsync(
         GridCacheContext cacheCtx,
-        Map<KeyCacheObject, CacheVersion> drMap);
+        Map<KeyCacheObject, GridCacheVersion> drMap);
 
     /**
      * Finishes transaction (either commit or rollback).
@@ -198,5 +198,5 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
         boolean skipVals,
         boolean needVer,
         boolean keepBinary,
-        GridInClosure3<KeyCacheObject, Object, CacheVersion> c);
+        GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c);
 }

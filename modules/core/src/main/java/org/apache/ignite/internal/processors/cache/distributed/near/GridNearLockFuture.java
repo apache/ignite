@@ -49,7 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
@@ -100,7 +100,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     private final IgniteUuid futId;
 
     /** Lock version. */
-    private final CacheVersion lockVer;
+    private final GridCacheVersion lockVer;
 
     /** Read flag. */
     private boolean read;
@@ -132,7 +132,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     private volatile AffinityTopologyVersion topVer;
 
     /** Map of current values. */
-    private final Map<KeyCacheObject, IgniteBiTuple<CacheVersion, CacheObject>> valMap;
+    private final Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
 
     /** Trackable flag. */
     private boolean trackable = true;
@@ -216,7 +216,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return lockVer;
     }
 
@@ -623,7 +623,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(Boolean success, Throwable err, Executor lsnrExec) {
+    @Override public boolean onDone(Boolean success, Throwable err) {
         if (log.isDebugEnabled())
             log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
 
@@ -658,7 +658,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         if (tx != null)
             cctx.tm().txContext(tx);
 
-        if (super.onDone(success, err, null)) {
+        if (super.onDone(success, err)) {
             if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
 
@@ -957,7 +957,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                             cand,
                                             topVer);
 
-                                    IgniteBiTuple<CacheVersion, CacheObject> val = entry.versionedValue();
+                                    IgniteBiTuple<GridCacheVersion, CacheObject> val = entry.versionedValue();
 
                                     if (val == null) {
                                         GridDhtCacheEntry dhtEntry = dht().peekExx(key);
@@ -975,7 +975,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                         }
                                     }
 
-                                    CacheVersion dhtVer = null;
+                                    GridCacheVersion dhtVer = null;
 
                                     if (val != null) {
                                         dhtVer = val.get1();
@@ -1177,15 +1177,15 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                     GridNearCacheEntry entry = cctx.near().entryExx(k, req.topologyVersion());
 
                                     try {
-                                        IgniteBiTuple<CacheVersion, CacheObject> oldValTup =
+                                        IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup =
                                             valMap.get(entry.key());
 
                                         boolean hasBytes = entry.hasValue();
                                         CacheObject oldVal = entry.rawGet();
                                         CacheObject newVal = res.value(i);
 
-                                        CacheVersion dhtVer = res.dhtVersion(i);
-                                        CacheVersion mappedVer = res.mappedVersion(i);
+                                        GridCacheVersion dhtVer = res.dhtVersion(i);
+                                        GridCacheVersion mappedVer = res.mappedVersion(i);
 
                                         // On local node don't record twice if DHT cache already recorded.
                                         boolean record = retval && oldValTup != null && oldValTup.get1().equals(dhtVer);
@@ -1545,7 +1545,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                 return;
                             }
 
-                            IgniteBiTuple<CacheVersion, CacheObject> oldValTup = valMap.get(entry.key());
+                            IgniteBiTuple<GridCacheVersion, CacheObject> oldValTup = valMap.get(entry.key());
 
                             CacheObject oldVal = entry.rawGet();
                             boolean hasOldVal = false;
@@ -1560,8 +1560,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                     hasOldVal = entry.hasValue();
                             }
 
-                            CacheVersion dhtVer = res.dhtVersion(i);
-                            CacheVersion mappedVer = res.mappedVersion(i);
+                            GridCacheVersion dhtVer = res.dhtVersion(i);
+                            GridCacheVersion mappedVer = res.mappedVersion(i);
 
                             if (newVal == null) {
                                 if (oldValTup != null) {

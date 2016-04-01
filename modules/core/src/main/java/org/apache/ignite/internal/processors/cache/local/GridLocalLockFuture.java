@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -81,7 +81,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private IgniteUuid futId;
 
     /** Lock version. */
-    private CacheVersion lockVer;
+    private GridCacheVersion lockVer;
 
     /** Error. */
     @SuppressWarnings("UnusedDeclaration")
@@ -153,7 +153,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return lockVer;
     }
 

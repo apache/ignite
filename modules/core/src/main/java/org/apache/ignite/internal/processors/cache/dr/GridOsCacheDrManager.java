@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
@@ -71,7 +71,7 @@ public class GridOsCacheDrManager implements GridCacheDrManager {
         @Nullable CacheObject val,
         long ttl,
         long expireTime,
-        CacheVersion ver,
+        GridCacheVersion ver,
         GridDrType drType,
         AffinityTopologyVersion topVer) {
         // No-op.

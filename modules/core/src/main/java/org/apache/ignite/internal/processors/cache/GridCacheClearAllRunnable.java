@@ -21,7 +21,7 @@ import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -34,7 +34,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
     protected final GridCacheAdapter<K, V> cache;
 
     /**  Obsolete version. */
-    protected final CacheVersion obsoleteVer;
+    protected final GridCacheVersion obsoleteVer;
 
     /** Mod for the given runnable. */
     protected final int id;
@@ -58,13 +58,9 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
      * @param obsoleteVer Obsolete version.
      * @param id Mod for the given runnable.
      * @param totalCnt Mods count across all spawned clearLocally runnables.
-     * @param readers Clear readers flag.
      */
-    public GridCacheClearAllRunnable(GridCacheAdapter<K, V> cache,
-        CacheVersion obsoleteVer,
-        int id,
-        int totalCnt,
-        boolean readers) {
+    public GridCacheClearAllRunnable(GridCacheAdapter<K, V> cache, GridCacheVersion obsoleteVer,
+        int id, int totalCnt, boolean readers) {
         assert cache != null;
         assert obsoleteVer != null;
         assert id >= 0;

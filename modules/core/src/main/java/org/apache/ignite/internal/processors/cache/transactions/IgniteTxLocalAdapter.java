@@ -61,8 +61,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.Gri
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -103,6 +103,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -128,20 +129,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         AtomicIntegerFieldUpdater.newUpdater(IgniteTxLocalAdapter.class, "doneFlag");
 
     /** Minimal version encountered (either explicit lock or XID of this transaction). */
-    protected CacheVersion minVer;
+    protected GridCacheVersion minVer;
 
     /** Flag indicating with TM commit happened. */
     @SuppressWarnings("UnusedDeclaration")
     protected volatile int doneFlag;
 
     /** Committed versions, relative to base. */
-    private Collection<CacheVersion> committedVers = Collections.emptyList();
+    private Collection<GridCacheVersion> committedVers = Collections.emptyList();
 
     /** Rolled back versions, relative to base. */
-    private Collection<CacheVersion> rolledbackVers = Collections.emptyList();
+    private Collection<GridCacheVersion> rolledbackVers = Collections.emptyList();
 
     /** Base for completed versions. */
-    private CacheVersion completedBase;
+    private GridCacheVersion completedBase;
 
     /** Flag indicating that transformed values should be sent to remote nodes. */
     private boolean sndTransformedVals;
@@ -184,7 +185,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     protected IgniteTxLocalAdapter(
         GridCacheSharedContext cctx,
-        CacheVersion xidVer,
+        GridCacheVersion xidVer,
         boolean implicit,
         boolean implicitSingle,
         boolean sys,
@@ -420,13 +421,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         boolean skipVals,
         boolean needVer,
         boolean keepBinary,
-        final GridInClosure3<KeyCacheObject, Object, CacheVersion> c
+        final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
     ) {
         assert cacheCtx.isLocal() : cacheCtx.name();
 
         if (!readThrough || !cacheCtx.readThrough()) {
             for (KeyCacheObject key : keys)
-                c.apply(key, null, cctx.versions().readEmptyEntryVersion());
+                c.apply(key, null, SER_READ_EMPTY_ENTRY_VER);
 
             return new GridFinishedFuture<>();
         }
@@ -434,7 +435,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         try {
             IgniteCacheExpiryPolicy expiryPlc = accessPolicy(cacheCtx, keys);
 
-            Map<KeyCacheObject, CacheVersion> misses = null;
+            Map<KeyCacheObject, GridCacheVersion> misses = null;
 
             for (KeyCacheObject key : keys) {
                 while (true) {
@@ -447,7 +448,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         continue;
 
                     try {
-                        T2<CacheObject, CacheVersion> res = entry.innerGetVersioned(this,
+                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(this,
                             /*readSwap*/true,
                             /*unmarshal*/true,
                             /*update-metrics*/!skipVals,
@@ -480,11 +481,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             }
 
             if (misses != null) {
-                final Map<KeyCacheObject, CacheVersion> misses0 = misses;
+                final Map<KeyCacheObject, GridCacheVersion> misses0 = misses;
 
                 cacheCtx.store().loadAll(this, misses.keySet(), new CI2<KeyCacheObject, Object>() {
                     @Override public void apply(KeyCacheObject key, Object val) {
-                        CacheVersion ver = misses0.remove(key);
+                        GridCacheVersion ver = misses0.remove(key);
 
                         assert ver != null : key;
 
@@ -495,7 +496,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 GridCacheEntryEx entry = cacheCtx.cache().entryEx(key);
 
                                 try {
-                                    CacheVersion setVer = entry.versionedValue(cacheVal, ver, null);
+                                    GridCacheVersion setVer = entry.versionedValue(cacheVal, ver, null);
 
                                     boolean set = setVer != null;
 
@@ -520,14 +521,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             }
                         }
                         else
-                            ver = cctx.versions().readEmptyEntryVersion();
+                            ver = SER_READ_EMPTY_ENTRY_VER;
 
                         c.apply(key, val, ver);
                     }
                 });
 
                 for (KeyCacheObject key : misses0.keySet())
-                    c.apply(key, null, cctx.versions().readEmptyEntryVersion());
+                    c.apply(key, null, SER_READ_EMPTY_ENTRY_VER);
             }
 
             return new GridFinishedFuture<>();
@@ -542,7 +543,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      *
      * @return Minimum versions.
      */
-    @Override public CacheVersion minVersion() {
+    @Override public GridCacheVersion minVersion() {
         return minVer;
     }
 
@@ -653,7 +654,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         if (near() || isWriteToStoreFromDht) {
             try {
                 if (writeEntries != null) {
-                    Map<Object, IgniteBiTuple<Object, CacheVersion>> putMap = null;
+                    Map<Object, IgniteBiTuple<Object, GridCacheVersion>> putMap = null;
                     List<Object> rmvCol = null;
                     CacheStoreManager writeStore = null;
 
@@ -683,7 +684,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         GridCacheOperation op = res.get1();
                         KeyCacheObject key = e.key();
                         CacheObject val = res.get2();
-                        CacheVersion ver = writeVersion();
+                        GridCacheVersion ver = writeVersion();
 
                         if (op == CREATE || op == UPDATE) {
                             // Batch-process all removes if needed.
@@ -732,7 +733,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 if (putMap == null)
                                     putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
 
-                                putMap.put(key, F.<Object, CacheVersion>t(val, ver));
+                                putMap.put(key, F.<Object, GridCacheVersion>t(val, ver));
                             }
                         }
                         else if (op == DELETE) {
@@ -910,7 +911,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(txEntry,
                                         true);
 
-                                    CacheVersion dhtVer = null;
+                                    GridCacheVersion dhtVer = null;
 
                                     // For near local transactions we must record DHT version
                                     // in order to keep near entries on backup nodes until
@@ -937,7 +938,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     CacheObject val = res.get2();
 
                                     // Deal with conflicts.
-                                    CacheVersion explicitVer = txEntry.conflictVersion() != null ?
+                                    GridCacheVersion explicitVer = txEntry.conflictVersion() != null ?
                                         txEntry.conflictVersion() : writeVersion();
 
                                     if ((op == CREATE || op == UPDATE) &&
@@ -1239,9 +1240,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /** {@inheritDoc} */
     @Override public void completedVersions(
-        CacheVersion completedBase,
-        Collection<CacheVersion> committedVers,
-        Collection<CacheVersion> rolledbackVers) {
+        GridCacheVersion completedBase,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers) {
         this.completedBase = completedBase;
         this.committedVers = committedVers;
         this.rolledbackVers = rolledbackVers;
@@ -1250,21 +1251,21 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /**
      * @return Completed base for ordering.
      */
-    public CacheVersion completedBase() {
+    public GridCacheVersion completedBase() {
         return completedBase;
     }
 
     /**
      * @return Committed versions.
      */
-    public Collection<CacheVersion> committedVersions() {
+    public Collection<GridCacheVersion> committedVersions() {
         return committedVers;
     }
 
     /**
      * @return Rolledback versions.
      */
-    public Collection<CacheVersion> rolledbackVersions() {
+    public Collection<GridCacheVersion> rolledbackVersions() {
         return rolledbackVers;
     }
 
@@ -1356,7 +1357,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         Collection<KeyCacheObject> keys,
         @Nullable ExpiryPolicy expiryPlc,
         Map<K, V> map,
-        Map<KeyCacheObject, CacheVersion> missed,
+        Map<KeyCacheObject, GridCacheVersion> missed,
         int keysCnt,
         boolean deserializeBinary,
         boolean skipVals,
@@ -1398,11 +1399,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         val = txEntry.applyEntryProcessors(val);
 
                     if (val != null) {
-                        CacheVersion ver = null;
+                        GridCacheVersion ver = null;
 
                         if (needVer) {
                             if (txEntry.op() != READ)
-                                ver = IgniteTxEntry.GET_ENTRY_INVALID_VER_UPDATED;
+                                ver = GET_ENTRY_INVALID_VER_UPDATED;
                             else {
                                 ver = txEntry.entryReadVersion();
 
@@ -1425,7 +1426,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 if (ver == null) {
                                     assert optimistic() && repeatableRead() : this;
 
-                                    ver = IgniteTxEntry.GET_ENTRY_INVALID_VER_AFTER_GET;
+                                    ver = GET_ENTRY_INVALID_VER_AFTER_GET;
                                 }
                             }
 
@@ -1440,7 +1441,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                     while (true) {
                         try {
-                            CacheVersion readVer = null;
+                            GridCacheVersion readVer = null;
 
                             Object transformClo =
                                 (txEntry.op() == TRANSFORM &&
@@ -1448,7 +1449,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     F.first(txEntry.entryProcessors()) : null;
 
                             if (needVer) {
-                                T2<CacheObject, CacheVersion> res = txEntry.cached().innerGetVersioned(
+                                T2<CacheObject, GridCacheVersion> res = txEntry.cached().innerGetVersioned(
                                     this,
                                     /*swap*/true,
                                     /*unmarshal*/true,
@@ -1520,17 +1521,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     GridCacheEntryEx entry = entryEx(cacheCtx, txKey, topVer);
 
                     try {
-                        CacheVersion ver = entry.version();
+                        GridCacheVersion ver = entry.version();
 
                         CacheObject val = null;
-                        CacheVersion readVer = null;
+                        GridCacheVersion readVer = null;
 
                         if (!pessimistic() || readCommitted() && !skipVals) {
                             IgniteCacheExpiryPolicy accessPlc =
                                 optimistic() ? accessPolicy(cacheCtx, txKey, expiryPlc) : null;
 
                             if (needReadVer) {
-                                T2<CacheObject, CacheVersion> res = primaryLocal(entry) ?
+                                T2<CacheObject, GridCacheVersion> res = primaryLocal(entry) ?
                                     entry.innerGetVersioned(this,
                                         /*swap*/true,
                                         /*unmarshal*/true,
@@ -1665,7 +1666,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     private <K, V> IgniteInternalFuture<Map<K, V>> checkMissed(
         final GridCacheContext cacheCtx,
         final Map<K, V> map,
-        final Map<KeyCacheObject, CacheVersion> missedMap,
+        final Map<KeyCacheObject, GridCacheVersion> missedMap,
         final boolean deserializeBinary,
         final boolean skipVals,
         final boolean keepCacheObjects,
@@ -1698,8 +1699,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 skipVals,
                 needReadVer,
                 !deserializeBinary,
-                new GridInClosure3<KeyCacheObject, Object, CacheVersion>() {
-                    @Override public void apply(KeyCacheObject key, Object val, CacheVersion loadVer) {
+                new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
+                    @Override public void apply(KeyCacheObject key, Object val, GridCacheVersion loadVer) {
                         if (isRollbackOnly()) {
                             if (log.isDebugEnabled())
                                 log.debug("Ignoring loaded value for read because transaction was rolled back: " +
@@ -1794,7 +1795,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             final Map<K, V> retMap = new GridLeanMap<>(keysCnt);
 
-            final Map<KeyCacheObject, CacheVersion> missed = new GridLeanMap<>(pessimistic() ? keysCnt : 0);
+            final Map<KeyCacheObject, GridCacheVersion> missed = new GridLeanMap<>(pessimistic() ? keysCnt : 0);
 
             CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
@@ -1858,7 +1859,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 GridCacheEntryEx cached = txEntry.cached();
 
                                 CacheObject val = null;
-                                CacheVersion readVer = null;
+                                GridCacheVersion readVer = null;
 
                                 try {
                                     Object transformClo =
@@ -1867,7 +1868,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             F.first(txEntry.entryProcessors()) : null;
 
                                     if (needVer) {
-                                        T2<CacheObject, CacheVersion> res = cached.innerGetVersioned(
+                                        T2<CacheObject, GridCacheVersion> res = cached.innerGetVersioned(
                                             IgniteTxLocalAdapter.this,
                                             /*swap*/cacheCtx.isSwapOrOffheapEnabled(),
                                             /*unmarshal*/true,
@@ -2121,7 +2122,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllDrAsync(
         GridCacheContext cacheCtx,
-        Map<KeyCacheObject, CacheVersion> drMap
+        Map<KeyCacheObject, GridCacheVersion> drMap
     ) {
         return removeAllAsync0(cacheCtx, null, null, drMap, false, null, false);
     }
@@ -2184,7 +2185,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             if (entryProcessor != null)
                 transform = true;
 
-            CacheVersion drVer = dataCenterId != null ? cctx.versions().next(dataCenterId) : null;
+            GridCacheVersion drVer = dataCenterId != null ? cctx.versions().next(dataCenterId) : null;
 
             boolean loadMissed = enlistWriteEntry(cacheCtx,
                 entryTopVer,
@@ -2264,7 +2265,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         final GridCacheReturn ret,
         Collection<KeyCacheObject> enlisted,
         @Nullable Map<KeyCacheObject, GridCacheDrInfo> drPutMap,
-        @Nullable Map<KeyCacheObject, CacheVersion> drRmvMap,
+        @Nullable Map<KeyCacheObject, GridCacheVersion> drRmvMap,
         boolean skipStore,
         final boolean singleRmv,
         final boolean keepBinary,
@@ -2302,7 +2303,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 Object val = rmv || lookup == null ? null : lookup.get(key);
                 EntryProcessor entryProcessor = invokeMap == null ? null : invokeMap.get(key);
 
-                CacheVersion drVer;
+                GridCacheVersion drVer;
                 long drTtl;
                 long drExpireTime;
 
@@ -2414,11 +2415,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         final boolean skipStore,
         final boolean retval,
         final boolean keepBinary) {
-        GridInClosure3<KeyCacheObject, Object, CacheVersion> c =
-            new GridInClosure3<KeyCacheObject, Object, CacheVersion>() {
+        GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c =
+            new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
                 @Override public void apply(KeyCacheObject key,
                     @Nullable Object val,
-                    @Nullable CacheVersion loadVer) {
+                    @Nullable GridCacheVersion loadVer) {
                     if (log.isDebugEnabled())
                         log.debug("Loaded value from remote node [key=" + key + ", val=" + val + ']');
 
@@ -2429,7 +2430,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     if (needReadVer) {
                         assert loadVer != null;
 
-                        e.entryReadVersion(singleRmv && val != null ? cctx.versions().readNotEmptyEntryVersion() : loadVer);
+                        e.entryReadVersion(singleRmv && val != null ? SER_READ_NOT_EMPTY_VER : loadVer);
                     }
 
                     if (singleRmv) {
@@ -2442,7 +2443,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         CacheObject cacheVal = cacheCtx.toCacheObject(val);
 
                         if (e.op() == TRANSFORM) {
-                            CacheVersion ver;
+                            GridCacheVersion ver;
 
                             try {
                                 ver = e.cached().version();
@@ -2511,7 +2512,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         final boolean retval,
         final boolean lockOnly,
         final CacheEntryPredicate[] filter,
-        final CacheVersion drVer,
+        final GridCacheVersion drVer,
         final long drTtl,
         long drExpireTime,
         final GridCacheReturn ret,
@@ -2551,12 +2552,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
 
                     CacheObject old = null;
-                    CacheVersion readVer = null;
+                    GridCacheVersion readVer = null;
 
                     if (optimistic() && !implicit()) {
                         try {
                             if (needReadVer) {
-                                T2<CacheObject, CacheVersion> res = primaryLocal(entry) ?
+                                T2<CacheObject, GridCacheVersion> res = primaryLocal(entry) ?
                                     entry.innerGetVersioned(this,
                                         /*swap*/false,
                                         /*unmarshal*/retval || needVal,
@@ -2623,7 +2624,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             if (needReadVer) {
                                 assert readVer != null;
 
-                                txEntry.entryReadVersion(singleRmv ? cctx.versions().readNotEmptyEntryVersion() : readVer);
+                                txEntry.entryReadVersion(singleRmv ? SER_READ_EMPTY_ENTRY_VER : readVer);
                             }
                         }
 
@@ -2676,14 +2677,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             if (needReadVer) {
                                 assert readVer != null;
 
-                                txEntry.entryReadVersion(singleRmv ? cctx.versions().readNotEmptyEntryVersion() : readVer);
+                                txEntry.entryReadVersion(singleRmv ? SER_READ_EMPTY_ENTRY_VER : readVer);
                             }
 
                             if (retval && !transform)
                                 ret.set(cacheCtx, old, true, keepBinary);
                             else {
                                 if (txEntry.op() == TRANSFORM) {
-                                    CacheVersion ver;
+                                    GridCacheVersion ver;
 
                                     try {
                                         ver = entry.version();
@@ -2760,7 +2761,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     enlisted.add(cacheKey);
 
                 if (txEntry.op() == TRANSFORM) {
-                    CacheVersion ver;
+                    GridCacheVersion ver;
 
                     try {
                         ver = entry.version();
@@ -2900,7 +2901,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         if (txEntry.op() == TRANSFORM) {
                             if (computeInvoke) {
-                                CacheVersion ver;
+                                GridCacheVersion ver;
 
                                 try {
                                     ver = cached.version();
@@ -2978,7 +2979,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param ver Entry version.
      */
     private void addInvokeResult(IgniteTxEntry txEntry, CacheObject cacheVal, GridCacheReturn ret,
-        CacheVersion ver) {
+        GridCacheVersion ver) {
         GridCacheContext ctx = txEntry.context();
 
         Object key0 = null;
@@ -3444,7 +3445,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         final GridCacheContext cacheCtx,
         @Nullable AffinityTopologyVersion entryTopVer,
         @Nullable final Collection<? extends K> keys,
-        @Nullable Map<KeyCacheObject, CacheVersion> drMap,
+        @Nullable Map<KeyCacheObject, GridCacheVersion> drMap,
         final boolean retval,
         @Nullable final CacheEntryPredicate[] filter,
         boolean singleRmv) {
@@ -3727,7 +3728,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<CacheVersion> alternateVersions() {
+    @Override public Collection<GridCacheVersion> alternateVersions() {
         return Collections.emptyList();
     }
 
@@ -3756,7 +3757,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         boolean filtersSet,
         long drTtl,
         long drExpireTime,
-        @Nullable CacheVersion drVer,
+        @Nullable GridCacheVersion drVer,
         boolean skipStore,
         boolean keepBinary
     ) {
@@ -3881,7 +3882,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             GridCacheMvccCandidate explicitCand = entry.localOwner();
 
             if (explicitCand != null) {
-                CacheVersion explicitVer = explicitCand.version();
+                GridCacheVersion explicitVer = explicitCand.version();
 
                 boolean locCand = false;
 

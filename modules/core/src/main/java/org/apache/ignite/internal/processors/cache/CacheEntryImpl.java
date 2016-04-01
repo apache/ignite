@@ -23,7 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import javax.cache.Cache;
 import org.apache.ignite.cache.CacheEntry;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  *
@@ -39,7 +39,7 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V>, Externalizable {
     private V val;
 
     /** Entry version. */
-    private CacheVersion ver;
+    private GridCacheVersion ver;
 
     /**
      * Required by {@link Externalizable}.
@@ -62,7 +62,7 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V>, Externalizable {
      * @param val Value.
      * @param ver Entry version.
      */
-    public CacheEntryImpl(K key, V val, CacheVersion ver) {
+    public CacheEntryImpl(K key, V val, GridCacheVersion ver) {
         this.key = key;
         this.val = val;
         this.ver = ver;

@@ -49,7 +49,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.CI2;
@@ -78,7 +78,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     private GridDhtCacheAdapter<K, V> dht;
 
     /** Remove queue. */
-    private GridCircularBuffer<T2<KeyCacheObject, CacheVersion>> rmvQueue;
+    private GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -142,7 +142,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         List<Integer> nearValsIdxs = res.nearValuesIndexes();
         List<Integer> skipped = res.skippedIndexes();
 
-        CacheVersion ver = req.updateVersion();
+        GridCacheVersion ver = req.updateVersion();
 
         if (ver == null)
             ver = res.nearVersion();
@@ -222,7 +222,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     private void processNearAtomicUpdateResponse(
-        CacheVersion ver,
+        GridCacheVersion ver,
         KeyCacheObject key,
         @Nullable CacheObject val,
         @Nullable byte[] valBytes,
@@ -305,7 +305,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         GridDhtAtomicUpdateRequest req,
         GridDhtAtomicUpdateResponse res
     ) {
-        CacheVersion ver = req.writeVersion();
+        GridCacheVersion ver = req.writeVersion();
 
         assert ver != null;
 
@@ -628,13 +628,13 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAllConflict(Map<KeyCacheObject, ? extends CacheVersion> drMap)
+    @Override public void removeAllConflict(Map<KeyCacheObject, GridCacheVersion> drMap)
         throws IgniteCheckedException {
         dht.removeAllConflict(drMap);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, ? extends CacheVersion> drMap)
+    @Override public IgniteInternalFuture<?> removeAllConflictAsync(Map<KeyCacheObject, GridCacheVersion> drMap)
         throws IgniteCheckedException {
         return dht.removeAllConflictAsync(drMap);
     }
@@ -657,11 +657,11 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDeferredDelete(GridCacheEntryEx entry, CacheVersion ver) {
+    @Override public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
         assert entry.isNear();
 
         try {
-            T2<KeyCacheObject, CacheVersion> evicted = rmvQueue.add(new T2<>(entry.key(), ver));
+            T2<KeyCacheObject, GridCacheVersion> evicted = rmvQueue.add(new T2<>(entry.key(), ver));
 
             if (evicted != null)
                 removeVersionedEntry(evicted.get1(), evicted.get2());

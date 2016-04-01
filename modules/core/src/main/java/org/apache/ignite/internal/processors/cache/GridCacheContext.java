@@ -75,8 +75,8 @@ import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
@@ -130,7 +130,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     };
 
     /** Empty cache version array. */
-    private static final CacheVersion[] EMPTY_VERSION = new CacheVersion[0];
+    private static final GridCacheVersion[] EMPTY_VERSION = new GridCacheVersion[0];
 
     /** Kernal context. */
     private GridKernalContext ctx;
@@ -1137,7 +1137,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Empty cache version array.
      */
-    public CacheVersion[] emptyVersion() {
+    public GridCacheVersion[] emptyVersion() {
         return EMPTY_VERSION;
     }
 
@@ -1268,7 +1268,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * Sets thread local cache operation context.
      *
-     * @param opCtx Operation contex.
+     * @param opCtx Operation context.
      */
     public void operationContextPerCall(@Nullable CacheOperationContext opCtx) {
         if (nearContext())
@@ -1497,7 +1497,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         UUID nearNodeId,
         AffinityTopologyVersion topVer,
         GridDhtCacheEntry entry,
-        CacheVersion explicitLockVer,
+        GridCacheVersion explicitLockVer,
         IgniteLogger log,
         Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap,
         @Nullable Map<ClusterNode, List<GridDhtCacheEntry>> nearMap
@@ -1553,7 +1553,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void dhtMap(
         GridDhtCacheEntry entry,
-        CacheVersion explicitLockVer,
+        GridCacheVersion explicitLockVer,
         IgniteLogger log,
         Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap,
         Map<ClusterNode, List<GridDhtCacheEntry>> nearMap
@@ -1654,7 +1654,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param entry Entry.
      * @param ver Version.
      */
-    public void onDeferredDelete(GridCacheEntryEx entry, CacheVersion ver) {
+    public void onDeferredDelete(GridCacheEntryEx entry, GridCacheVersion ver) {
         assert entry != null;
         assert !Thread.holdsLock(entry) : entry;
         assert ver != null;
@@ -1893,7 +1893,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean keepCacheObjects,
         boolean deserializeBinary,
         boolean cpy,
-        final CacheVersion ver) {
+        final GridCacheVersion ver) {
         assert key != null;
         assert val != null || skipVals;
 

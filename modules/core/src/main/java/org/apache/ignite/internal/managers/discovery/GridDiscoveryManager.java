@@ -2394,8 +2394,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err, Executor lsnrExec) {
-            if (super.onDone(res, err, lsnrExec)) {
+        @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
+            if (super.onDone(res, err)) {
                 ctx.event().removeLocalEventListener(this, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
                 return true;

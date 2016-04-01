@@ -3637,11 +3637,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err, Executor lsnrExec) {
+        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
             // Make sure to remove future before completion.
             pendingFuts.remove(maskNull(cacheName), this);
 
-            return super.onDone(res, err, lsnrExec);
+            return super.onDone(res, err);
         }
 
         /** {@inheritDoc} */
@@ -3679,11 +3679,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err, Executor lsnrExec) {
+        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
             // Make sure to remove future before completion.
             pendingTemplateFuts.remove(maskNull(cacheName), this);
 
-            return super.onDone(res, err, lsnrExec);
+            return super.onDone(res, err);
         }
 
         /** {@inheritDoc} */

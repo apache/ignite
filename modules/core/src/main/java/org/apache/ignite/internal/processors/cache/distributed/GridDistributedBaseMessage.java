@@ -25,7 +25,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -44,7 +44,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
     /** Lock or transaction version. */
     @GridToStringInclude
-    protected CacheVersion ver;
+    protected GridCacheVersion ver;
 
     /** */
     @GridToStringExclude
@@ -52,13 +52,13 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
 
     /** Committed versions with order higher than one for this message (needed for commit ordering). */
     @GridToStringInclude
-    @GridDirectCollection(CacheVersion.class)
-    private Collection<CacheVersion> committedVers;
+    @GridDirectCollection(GridCacheVersion.class)
+    private Collection<GridCacheVersion> committedVers;
 
     /** Rolled back versions with order higher than one for this message (needed for commit ordering). */
     @GridToStringInclude
-    @GridDirectCollection(CacheVersion.class)
-    private Collection<CacheVersion> rolledbackVers;
+    @GridDirectCollection(GridCacheVersion.class)
+    private Collection<GridCacheVersion> rolledbackVers;
 
     /** Count of keys referenced in candidates array (needed only locally for optimization). */
     @GridToStringInclude
@@ -88,7 +88,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
      * @param cnt Key count.
      * @param addDepInfo Deployment info flag.
      */
-    protected GridDistributedBaseMessage(CacheVersion ver, int cnt, boolean addDepInfo) {
+    protected GridDistributedBaseMessage(GridCacheVersion ver, int cnt, boolean addDepInfo) {
         this(cnt, addDepInfo);
 
         assert ver != null;
@@ -104,14 +104,14 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
     /**
      * @return Version.
      */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return ver;
     }
 
     /**
      * @param ver Version.
      */
-    public void version(CacheVersion ver) {
+    public void version(GridCacheVersion ver) {
         this.ver = ver;
     }
 
@@ -119,8 +119,8 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      */
-    public void completedVersions(Collection<CacheVersion> committedVers,
-        Collection<CacheVersion> rolledbackVers) {
+    public void completedVersions(Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers) {
         this.committedVers = committedVers;
         this.rolledbackVers = rolledbackVers;
     }
@@ -128,15 +128,15 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
     /**
      * @return Committed versions.
      */
-    public Collection<CacheVersion> committedVersions() {
-        return committedVers == null ? Collections.<CacheVersion>emptyList() : committedVers;
+    public Collection<GridCacheVersion> committedVersions() {
+        return committedVers == null ? Collections.<GridCacheVersion>emptyList() : committedVers;
     }
 
     /**
      * @return Rolled back versions.
      */
-    public Collection<CacheVersion> rolledbackVersions() {
-        return rolledbackVers == null ? Collections.<CacheVersion>emptyList() : rolledbackVers;
+    public Collection<GridCacheVersion> rolledbackVersions() {
+        return rolledbackVers == null ? Collections.<GridCacheVersion>emptyList() : rolledbackVers;
     }
 
     /**

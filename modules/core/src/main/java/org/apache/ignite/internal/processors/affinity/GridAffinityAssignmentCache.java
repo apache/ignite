@@ -546,10 +546,10 @@ public class GridAffinityAssignmentCache {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(AffinityTopologyVersion res, @Nullable Throwable err, Executor lsnrExec) {
+        @Override public boolean onDone(AffinityTopologyVersion res, @Nullable Throwable err) {
             assert res != null || err != null;
 
-            boolean done = super.onDone(res, err, lsnrExec);
+            boolean done = super.onDone(res, err);
 
             if (done)
                 readyFuts.remove(reqTopVer, this);

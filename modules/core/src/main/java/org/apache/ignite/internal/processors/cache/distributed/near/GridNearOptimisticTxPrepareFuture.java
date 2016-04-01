@@ -198,7 +198,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteInternalTx t, Throwable err, Executor lsnrExec) {
+    @Override public boolean onDone(IgniteInternalTx t, Throwable err) {
         if (isDone())
             return false;
 
@@ -227,7 +227,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (err0 == null || tx.needCheckBackup())
             tx.state(PREPARED);
 
-        if (super.onDone(tx, err0, discoThread ? cctx.asyncListenerPool() : null)) {
+        if (super.onDone(tx, err0)) {
             // Don't forget to clean up.
             cctx.mvcc().removeMvccFuture(this);
 

@@ -67,7 +67,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
@@ -237,8 +237,8 @@ public class GridCacheUtils {
     };
 
     /** Converts transaction to XID version. */
-    private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, CacheVersion>() {
-        @Override public CacheVersion apply(IgniteInternalTx tx) {
+    private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, GridCacheVersion>() {
+        @Override public GridCacheVersion apply(IgniteInternalTx tx) {
             return tx.xidVersion();
         }
 
@@ -574,8 +574,8 @@ public class GridCacheUtils {
      * @return Closure which converts transaction entry xid to XID version.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<IgniteInternalTx, CacheVersion> tx2xidVersion() {
-        return (IgniteClosure<IgniteInternalTx, CacheVersion>)tx2xidVer;
+    public static <K, V> IgniteClosure<IgniteInternalTx, GridCacheVersion> tx2xidVersion() {
+        return (IgniteClosure<IgniteInternalTx, GridCacheVersion>)tx2xidVer;
     }
 
     /**
@@ -1009,7 +1009,7 @@ public class GridCacheUtils {
      * @param ver Version.
      * @return Byte array.
      */
-    public static byte[] versionToBytes(CacheVersion ver) {
+    public static byte[] versionToBytes(GridCacheVersion ver) {
         assert ver != null;
 
         byte[] bytes = new byte[28];

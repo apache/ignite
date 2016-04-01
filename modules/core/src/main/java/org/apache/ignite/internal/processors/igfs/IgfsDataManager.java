@@ -1804,11 +1804,11 @@ public class IgfsDataManager extends IgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, Executor lsnrExec) {
+        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
             if (!isDone()) {
                 pendingWrites.remove(fileId, this);
 
-                if (super.onDone(res, err, lsnrExec))
+                if (super.onDone(res, err))
                     return true;
             }
 

@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -69,6 +69,12 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_ST
 public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Dummy version for non-existing entry read in SERIALIZABLE transaction. */
+    public static final GridCacheVersion SER_READ_EMPTY_ENTRY_VER = new GridCacheVersion(0, 0, 0, 0);
+
+    /** Dummy version for any existing entry read in SERIALIZABLE transaction. */
+    public static final GridCacheVersion SER_READ_NOT_EMPTY_VER = new GridCacheVersion(0, 0, 0, 1);
 
     /** */
     public static final GridCacheVersion GET_ENTRY_INVALID_VER_UPDATED = new GridCacheVersion(0, 0, 0, 2);
@@ -125,15 +131,15 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private long conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
 
     /** Conflict version. */
-    private CacheVersion conflictVer;
+    private GridCacheVersion conflictVer;
 
     /** Explicit lock version if there is one. */
     @GridToStringInclude
-    private CacheVersion explicitVer;
+    private GridCacheVersion explicitVer;
 
     /** DHT version. */
     @GridDirectTransient
-    private volatile CacheVersion dhtVer;
+    private volatile GridCacheVersion dhtVer;
 
     /** Put filters. */
     @GridToStringInclude
@@ -195,7 +201,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private long partUpdateCntr;
 
     /** */
-    private CacheVersion serReadVer;
+    private GridCacheVersion serReadVer;
 
     /**
      * Required by {@link Externalizable}
@@ -224,7 +230,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         long ttl,
         long conflictExpireTime,
         GridCacheEntryEx entry,
-        @Nullable CacheVersion conflictVer,
+        @Nullable GridCacheVersion conflictVer,
         boolean skipStore,
         boolean keepBinary
     ) {
@@ -273,7 +279,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         long ttl,
         GridCacheEntryEx entry,
         CacheEntryPredicate[] filters,
-        CacheVersion conflictVer,
+        GridCacheVersion conflictVer,
         boolean skipStore,
         boolean keepBinary
     ) {
@@ -366,14 +372,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @return DHT version.
      */
-    public CacheVersion dhtVersion() {
+    public GridCacheVersion dhtVersion() {
         return dhtVer;
     }
 
     /**
      * @param dhtVer DHT version.
      */
-    public void dhtVersion(CacheVersion dhtVer) {
+    public void dhtVersion(GridCacheVersion dhtVer) {
         this.dhtVer = dhtVer;
     }
 
@@ -670,7 +676,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     @SuppressWarnings("unchecked")
     public CacheObject applyEntryProcessors(CacheObject cacheVal) {
-        CacheVersion ver;
+        GridCacheVersion ver;
 
         try {
             ver = entry.version();
@@ -740,28 +746,28 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @param explicitVer Explicit version.
      */
-    public void explicitVersion(CacheVersion explicitVer) {
+    public void explicitVersion(GridCacheVersion explicitVer) {
         this.explicitVer = explicitVer;
     }
 
     /**
      * @return Explicit version.
      */
-    public CacheVersion explicitVersion() {
+    public GridCacheVersion explicitVersion() {
         return explicitVer;
     }
 
     /**
      * @return Conflict version.
      */
-    @Nullable public CacheVersion conflictVersion() {
+    @Nullable public GridCacheVersion conflictVersion() {
         return conflictVer;
     }
 
     /**
      * @param conflictVer Conflict version.
      */
-    public void conflictVersion(@Nullable CacheVersion conflictVer) {
+    public void conflictVersion(@Nullable GridCacheVersion conflictVer) {
         this.conflictVer = conflictVer;
     }
 
@@ -920,14 +926,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      *
      * @return Entry version.
      */
-    @Nullable public CacheVersion entryReadVersion() {
+    @Nullable public GridCacheVersion entryReadVersion() {
         return serReadVer;
     }
 
     /**
      * @param ver Entry version.
      */
-    public void entryReadVersion(CacheVersion  ver) {
+    public void entryReadVersion(GridCacheVersion  ver) {
         assert this.serReadVer == null;
         assert ver != null;
 

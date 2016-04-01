@@ -40,7 +40,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -107,7 +107,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
             if (txEntry != null) {
                 if (entry.context().isLocal()) {
-                    CacheVersion serReadVer = txEntry.entryReadVersion();
+                    GridCacheVersion serReadVer = txEntry.entryReadVersion();
 
                     if (serReadVer != null) {
                         GridCacheContext ctx = entry.context();
@@ -207,7 +207,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteInternalTx t, Throwable err, Executor lsnrExec) {
+    @Override public boolean onDone(IgniteInternalTx t, Throwable err) {
         if (isDone())
             return false;
 
@@ -271,7 +271,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         if (err0 == null || tx.needCheckBackup())
             tx.state(PREPARED);
 
-        if (super.onDone(tx, err0, null)) {
+        if (super.onDone(tx, err0)) {
             if (err0 != null)
                 tx.setRollbackOnly();
 

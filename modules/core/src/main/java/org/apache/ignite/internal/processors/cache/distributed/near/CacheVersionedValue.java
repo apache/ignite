@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -42,7 +42,7 @@ public class CacheVersionedValue implements Message {
 
     /** Cache version. */
     @GridToStringInclude
-    private CacheVersion ver;
+    private GridCacheVersion ver;
 
     /** */
     public CacheVersionedValue() {
@@ -53,7 +53,7 @@ public class CacheVersionedValue implements Message {
      * @param val Cache value.
      * @param ver Cache version.
      */
-    public CacheVersionedValue(CacheObject val, CacheVersion ver) {
+    public CacheVersionedValue(CacheObject val, GridCacheVersion ver) {
         this.val = val;
         this.ver = ver;
     }
@@ -61,7 +61,7 @@ public class CacheVersionedValue implements Message {
     /**
      * @return Cache version.
      */
-    public CacheVersion version() {
+    public GridCacheVersion version() {
         return ver;
     }
 

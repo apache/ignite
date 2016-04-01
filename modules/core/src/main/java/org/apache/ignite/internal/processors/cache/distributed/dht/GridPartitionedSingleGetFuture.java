@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -371,10 +371,10 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     boolean isNew = entry.isNewLocked();
 
                     CacheObject v = null;
-                    CacheVersion ver = null;
+                    GridCacheVersion ver = null;
 
                     if (needVer) {
-                        T2<CacheObject, CacheVersion> res = entry.innerGetVersioned(
+                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
                             /*swap*/true,
                             /*unmarshal*/true,
@@ -605,7 +605,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param res Result.
      * @param ver Version.
      */
-    private void setSkipValueResult(boolean res, @Nullable CacheVersion ver) {
+    private void setSkipValueResult(boolean res, @Nullable GridCacheVersion ver) {
         assert skipVals;
 
         if (needVer) {
@@ -621,7 +621,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param val Value.
      * @param ver Version.
      */
-    private void setResult(@Nullable CacheObject val, @Nullable CacheVersion ver) {
+    private void setResult(@Nullable CacheObject val, @Nullable GridCacheVersion ver) {
         try {
             assert !skipVals;
 
@@ -724,8 +724,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(Object res, Throwable err, Executor lsnrExec) {
-        if (super.onDone(res, err, lsnrExec)) {
+    @Override public boolean onDone(Object res, Throwable err) {
+        if (super.onDone(res, err)) {
             // Don't forget to clean up.
             if (trackable)
                 cctx.mvcc().removeFuture(futId);

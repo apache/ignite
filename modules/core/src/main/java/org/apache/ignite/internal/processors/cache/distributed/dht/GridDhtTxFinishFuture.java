@@ -202,7 +202,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteInternalTx tx, Throwable err, Executor lsnrExec) {
+    @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
         if (initialized() || err != null) {
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
                 this.tx.tmFinish(err == null);
@@ -214,7 +214,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
             Throwable finishErr = e != null ? e : err;
 
-            if (super.onDone(tx, finishErr, lsnrExec)) {
+            if (super.onDone(tx, finishErr)) {
                 if (finishErr == null)
                     finishErr = this.tx.commitError();
 
@@ -577,7 +577,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
 
             // If node left, then there is nothing to commit on it.
-            onDone(tx, discoThread ? cctx.asyncListenerPool() : null);
+            onDone(tx);
         }
 
         /**

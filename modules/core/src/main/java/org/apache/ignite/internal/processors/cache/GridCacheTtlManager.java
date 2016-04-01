@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -113,7 +113,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     public void expire() {
         long now = U.currentTimeMillis();
 
-        CacheVersion obsoleteVer = null;
+        GridCacheVersion obsoleteVer = null;
 
         for (int size = pendingEntries.sizex(); size > 0; size--) {
             EntryWrapper e = pendingEntries.firstx();

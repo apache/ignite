@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -87,7 +87,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      */
     @Nullable public GridCacheMvccCandidate addLocal(
         long threadId,
-        CacheVersion ver,
+        GridCacheVersion ver,
         AffinityTopologyVersion topVer,
         long timeout,
         boolean reenter,
@@ -142,7 +142,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridCacheMvccCandidate> remoteMvccSnapshot(CacheVersion... exclude) {
+    @Override public Collection<GridCacheMvccCandidate> remoteMvccSnapshot(GridCacheVersion... exclude) {
         Collection<GridCacheMvccCandidate> rmts = this.rmts;
 
         if (rmts.isEmpty() || F.isEmpty(exclude))
@@ -179,11 +179,11 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
         UUID nodeId,
         @Nullable UUID otherNodeId,
         long threadId,
-        CacheVersion ver,
+        GridCacheVersion ver,
         long timeout,
         boolean tx,
         boolean implicitSingle,
-        @Nullable CacheVersion owned
+        @Nullable GridCacheVersion owned
     ) throws GridDistributedLockCancelledException, GridCacheEntryRemovedException {
         GridCacheMvccCandidate prev;
         GridCacheMvccCandidate owner;
@@ -386,7 +386,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeLock(CacheVersion ver) throws GridCacheEntryRemovedException {
+    @Override public boolean removeLock(GridCacheVersion ver) throws GridCacheEntryRemovedException {
         GridCacheMvccCandidate prev = null;
         GridCacheMvccCandidate owner = null;
 
@@ -402,7 +402,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
             if (doomed == null)
                 addRemoved(ver);
 
-            CacheVersion obsoleteVer = obsoleteVersionExtras();
+            GridCacheVersion obsoleteVer = obsoleteVersionExtras();
 
             if (obsoleteVer != null && !obsoleteVer.equals(ver))
                 checkObsolete();
@@ -451,10 +451,10 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @param ver Lock version.
      * @throws GridDistributedLockCancelledException If lock is cancelled.
      */
-    protected void checkRemoved(CacheVersion ver) throws GridDistributedLockCancelledException {
+    protected void checkRemoved(GridCacheVersion ver) throws GridDistributedLockCancelledException {
         assert Thread.holdsLock(this);
 
-        CacheVersion obsoleteVer = obsoleteVersionExtras();
+        GridCacheVersion obsoleteVer = obsoleteVersionExtras();
 
         if ((obsoleteVer != null && obsoleteVer.equals(ver)) || cctx.mvcc().isRemoved(cctx, ver))
             throw new GridDistributedLockCancelledException("Lock has been cancelled [key=" + key +
@@ -465,7 +465,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @param ver Lock version.
      * @return {@code True} if removed.
      */
-    public boolean addRemoved(CacheVersion ver) {
+    public boolean addRemoved(GridCacheVersion ver) {
         assert Thread.holdsLock(this);
 
         return cctx.mvcc().addRemoved(cctx, ver);
@@ -477,7 +477,7 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @return Owner.
      * @throws GridCacheEntryRemovedException If entry is removed.
      */
-    @Nullable public GridCacheMvccCandidate readyLock(CacheVersion ver)
+    @Nullable public GridCacheMvccCandidate readyLock(GridCacheVersion ver)
         throws GridCacheEntryRemovedException {
         GridCacheMvccCandidate prev = null;
         GridCacheMvccCandidate owner = null;
@@ -527,10 +527,10 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      *
      * @throws GridCacheEntryRemovedException If entry is removed.
      */
-    @Nullable public GridCacheMvccCandidate readyNearLock(CacheVersion ver, CacheVersion mapped,
-        Collection<CacheVersion> committed,
-        Collection<CacheVersion> rolledBack,
-        Collection<CacheVersion> pending) throws GridCacheEntryRemovedException {
+    @Nullable public GridCacheMvccCandidate readyNearLock(GridCacheVersion ver, GridCacheVersion mapped,
+        Collection<GridCacheVersion> committed,
+        Collection<GridCacheVersion> rolledBack,
+        Collection<GridCacheVersion> pending) throws GridCacheEntryRemovedException {
         GridCacheMvccCandidate prev = null;
         GridCacheMvccCandidate owner = null;
 
@@ -575,8 +575,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @param rolledbackVers Rolled back versions.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    public void orderCompleted(CacheVersion baseVer, Collection<CacheVersion> committedVers,
-        Collection<CacheVersion> rolledbackVers)
+    public void orderCompleted(GridCacheVersion baseVer, Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers)
         throws GridCacheEntryRemovedException {
         if (!F.isEmpty(committedVers) || !F.isEmpty(rolledbackVers)) {
             GridCacheMvccCandidate prev = null;
@@ -625,12 +625,12 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @return Owner.
      */
     @Nullable public GridCacheMvccCandidate doneRemote(
-        CacheVersion lockVer,
-        CacheVersion baseVer,
-        Collection<CacheVersion> committedVers,
-        Collection<CacheVersion> rolledbackVers,
+        GridCacheVersion lockVer,
+        GridCacheVersion baseVer,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers,
         boolean sysInvalidate) throws GridCacheEntryRemovedException {
-        return doneRemote(lockVer, baseVer, Collections.<CacheVersion>emptySet(), committedVers,
+        return doneRemote(lockVer, baseVer, Collections.<GridCacheVersion>emptySet(), committedVers,
             rolledbackVers, sysInvalidate);
     }
 
@@ -648,11 +648,11 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @return Owner.
      */
     @Nullable public GridCacheMvccCandidate doneRemote(
-        CacheVersion lockVer,
-        CacheVersion baseVer,
-        @Nullable Collection<CacheVersion> pendingVers,
-        Collection<CacheVersion> committedVers,
-        Collection<CacheVersion> rolledbackVers,
+        GridCacheVersion lockVer,
+        GridCacheVersion baseVer,
+        @Nullable Collection<GridCacheVersion> pendingVers,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers,
         boolean sysInvalidate) throws GridCacheEntryRemovedException {
         GridCacheMvccCandidate prev = null;
         GridCacheMvccCandidate owner = null;
@@ -741,8 +741,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
     /** {@inheritDoc} */
     @Override public boolean tmLock(IgniteInternalTx tx,
         long timeout,
-        @Nullable CacheVersion serOrder,
-        CacheVersion serReadVer,
+        @Nullable GridCacheVersion serOrder,
+        GridCacheVersion serReadVer,
         boolean keepBinary
     ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local())
@@ -865,8 +865,8 @@ public class GridDistributedCacheEntry extends GridCacheMapEntry {
      * @param col Collection to mask.
      * @return Empty collection if argument is null.
      */
-    private Collection<CacheVersion> maskNull(Collection<CacheVersion> col) {
-        return col == null ? Collections.<CacheVersion>emptyList() : col;
+    private Collection<GridCacheVersion> maskNull(Collection<GridCacheVersion> col) {
+        return col == null ? Collections.<GridCacheVersion>emptyList() : col;
     }
 
     /** {@inheritDoc} */

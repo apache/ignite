@@ -886,10 +886,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * @param exchFut Exchange.
-     * @param lsnrExec Executor for affinity future listeners notification.
      * @param err Error.
      */
-    public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut, @Nullable Throwable err, Executor lsnrExec) {
+    public void onExchangeDone(GridDhtPartitionsExchangeFuture exchFut, @Nullable Throwable err) {
         AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
         if (log.isDebugEnabled())
@@ -936,7 +935,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         log.debug("Completing created topology ready future " +
                             "[ver=" + topVer + ", fut=" + entry.getValue() + ']');
 
-                    entry.getValue().onDone(topVer, lsnrExec);
+                    entry.getValue().onDone(topVer);
                 }
             }
         }
@@ -947,7 +946,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         log.debug("Completing created topology ready future with error " +
                             "[ver=" + topVer + ", fut=" + entry.getValue() + ']');
 
-                    entry.getValue().onDone(err, lsnrExec);
+                    entry.getValue().onDone(err);
                 }
             }
         }
@@ -1700,10 +1699,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(AffinityTopologyVersion res, @Nullable Throwable err, Executor lsnrExec) {
+        @Override public boolean onDone(AffinityTopologyVersion res, @Nullable Throwable err) {
             assert res != null || err != null;
 
-            boolean done = super.onDone(res, err, lsnrExec);
+            boolean done = super.onDone(res, err);
 
             if (done)
                 readyFuts.remove(topVer, this);

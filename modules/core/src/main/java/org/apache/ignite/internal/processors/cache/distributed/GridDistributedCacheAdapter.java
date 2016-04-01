@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -148,7 +148,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param key Key to remove.
      * @param ver Version to remove.
      */
-    public void removeVersionedEntry(KeyCacheObject key, CacheVersion ver) {
+    public void removeVersionedEntry(KeyCacheObject key, GridCacheVersion ver) {
         GridCacheEntryEx entry = peekEx(key);
 
         if (entry == null)
@@ -426,7 +426,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 }
 
                 if (near != null) {
-                    CacheVersion obsoleteVer = ctx.versions().next();
+                    GridCacheVersion obsoleteVer = ctx.versions().next();
 
                     for (GridCacheEntryEx e : near.map().allEntries0()) {
                         if (!e.valid(topVer) && e.markObsolete(obsoleteVer))

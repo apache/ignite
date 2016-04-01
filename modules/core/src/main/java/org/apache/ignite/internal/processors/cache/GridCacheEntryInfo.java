@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -58,7 +58,7 @@ public class GridCacheEntryInfo implements Message {
     private long expireTime;
 
     /** Entry version. */
-    private CacheVersion ver;
+    private GridCacheVersion ver;
 
     /** New flag. */
     @GridDirectTransient
@@ -155,14 +155,14 @@ public class GridCacheEntryInfo implements Message {
     /**
      * @return Version.
      */
-    public CacheVersion version() {
+    public GridCacheVersion version() {
         return ver;
     }
 
     /**
      * @param ver Version.
      */
-    public void version(CacheVersion ver) {
+    public void version(GridCacheVersion ver) {
         this.ver = ver;
     }
 

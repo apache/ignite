@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteSingleStateImpl;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteStateImpl;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -62,7 +62,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     private IgniteUuid rmtFutId;
 
     /** Near transaction ID. */
-    private CacheVersion nearXidVer;
+    private GridCacheVersion nearXidVer;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -96,8 +96,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         IgniteUuid rmtFutId,
         UUID nodeId,
         AffinityTopologyVersion topVer,
-        CacheVersion xidVer,
-        CacheVersion commitVer,
+        GridCacheVersion xidVer,
+        GridCacheVersion commitVer,
         boolean sys,
         byte plc,
         TransactionConcurrency concurrency,
@@ -105,7 +105,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         boolean invalidate,
         long timeout,
         int txSize,
-        CacheVersion nearXidVer,
+        GridCacheVersion nearXidVer,
         Map<UUID, Collection<UUID>> txNodes,
         @Nullable UUID subjId,
         int taskNameHash,
@@ -168,10 +168,10 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         UUID nearNodeId,
         IgniteUuid rmtFutId,
         UUID nodeId,
-        CacheVersion nearXidVer,
+        GridCacheVersion nearXidVer,
         AffinityTopologyVersion topVer,
-        CacheVersion xidVer,
-        CacheVersion commitVer,
+        GridCacheVersion xidVer,
+        GridCacheVersion commitVer,
         boolean sys,
         byte plc,
         TransactionConcurrency concurrency,
@@ -252,7 +252,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion nearXidVersion() {
+    @Override public GridCacheVersion nearXidVersion() {
         return nearXidVer;
     }
 

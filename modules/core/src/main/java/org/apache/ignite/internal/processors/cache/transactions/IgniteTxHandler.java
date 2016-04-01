@@ -55,7 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxRemote;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -287,7 +287,7 @@ public class IgniteTxHandler {
 
         GridDhtTxLocal tx;
 
-        CacheVersion mappedVer = ctx.tm().mappedVersion(req.version());
+        GridCacheVersion mappedVer = ctx.tm().mappedVersion(req.version());
 
         if (mappedVer != null) {
             tx = ctx.tm().tx(mappedVer);
@@ -634,7 +634,7 @@ public class IgniteTxHandler {
      */
     private IgniteInternalFuture<IgniteInternalTx> finishDhtLocal(UUID nodeId, @Nullable GridNearTxLocal locTx,
         GridNearTxFinishRequest req) {
-        CacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
+        GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
 
         GridDhtTxLocal tx = null;
 
@@ -1232,7 +1232,7 @@ public class IgniteTxHandler {
      * @param ver Version.
      * @throws IgniteCheckedException If invalidate failed.
      */
-    private void invalidateNearEntry(GridCacheContext cacheCtx, KeyCacheObject key, CacheVersion ver)
+    private void invalidateNearEntry(GridCacheContext cacheCtx, KeyCacheObject key, GridCacheVersion ver)
         throws IgniteCheckedException {
         GridNearCacheAdapter near = cacheCtx.isNear() ? cacheCtx.near() : cacheCtx.dht().near();
 

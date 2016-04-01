@@ -30,7 +30,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -65,7 +64,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -1692,11 +1690,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable UUID res, @Nullable Throwable err, Executor lsnrExec) {
+        @Override public boolean onDone(@Nullable UUID res, @Nullable Throwable err) {
             if (timeoutObj != null)
                 ctx.timeout().removeTimeoutObject(timeoutObj);
 
-            return super.onDone(res, err, lsnrExec);
+            return super.onDone(res, err);
         }
 
         /** {@inheritDoc} */
@@ -1737,11 +1735,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err, Executor lsnrExec) {
+        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
             if (timeoutObj != null)
                 ctx.timeout().removeTimeoutObject(timeoutObj);
 
-            return super.onDone(res, err, lsnrExec);
+            return super.onDone(res, err);
         }
 
         /** {@inheritDoc} */

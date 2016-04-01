@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -175,7 +175,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     private IgniteUuid nearMiniId;
 
     /** DHT versions map. */
-    private Map<IgniteTxKey, CacheVersion> dhtVerMap;
+    private Map<IgniteTxKey, GridCacheVersion> dhtVerMap;
 
     /** {@code True} if this is last prepare operation for node. */
     private boolean last;
@@ -214,7 +214,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         GridCacheSharedContext cctx,
         final GridDhtTxLocalAdapter tx,
         IgniteUuid nearMiniId,
-        Map<IgniteTxKey, CacheVersion> dhtVerMap,
+        Map<IgniteTxKey, GridCacheVersion> dhtVerMap,
         boolean last,
         boolean retVal
     ) {
@@ -254,7 +254,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return tx.xidVersion();
     }
 
@@ -623,7 +623,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(GridNearTxPrepareResponse res0, Throwable err, Executor lsnrExec) {
+    @Override public boolean onDone(GridNearTxPrepareResponse res0, Throwable err) {
         assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
             "pending mini futures: " + this;
 
@@ -772,10 +772,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             if (tx.needReturnValue() || tx.nearOnOriginatingNode() || tx.hasInterceptor())
                 addDhtValues(res);
 
-            CacheVersion min = tx.minVersion();
+            GridCacheVersion min = tx.minVersion();
 
             if (tx.needsCompletedVersions()) {
-                IgnitePair<Collection<CacheVersion>> versPair = cctx.tm().versions(min);
+                IgnitePair<Collection<GridCacheVersion>> versPair = cctx.tm().versions(min);
 
                 res.completedVersions(versPair.get1(), versPair.get2());
             }
@@ -807,7 +807,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     try {
                         GridCacheEntryEx entry = txEntry.cached();
 
-                        CacheVersion dhtVer = entry.version();
+                        GridCacheVersion dhtVer = entry.version();
 
                         CacheObject val0 = entry.valueBytes();
 
@@ -824,7 +824,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             }
         }
 
-        for (Map.Entry<IgniteTxKey, CacheVersion> ver : dhtVerMap.entrySet()) {
+        for (Map.Entry<IgniteTxKey, GridCacheVersion> ver : dhtVerMap.entrySet()) {
             IgniteTxEntry txEntry = tx.entry(ver.getKey());
 
             if (res.hasOwnedValue(ver.getKey()))
@@ -836,7 +836,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 try {
                     GridCacheEntryEx entry = txEntry.cached();
 
-                    CacheVersion dhtVer = entry.version();
+                    GridCacheVersion dhtVer = entry.version();
 
                     if (ver.getValue() == null || !ver.getValue().equals(dhtVer)) {
                         CacheObject val0 = entry.valueBytes();
@@ -872,7 +872,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (last || tx.isSystemInvalidate())
             tx.state(PREPARED);
 
-        if (super.onDone(res, err, null)) {
+        if (super.onDone(res, err)) {
             // Don't forget to clean up.
             cctx.mvcc().removeMvccFuture(this);
 
@@ -1013,7 +1013,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         throws IgniteCheckedException {
         try {
             for (IgniteTxEntry entry : entries) {
-                CacheVersion serReadVer = entry.entryReadVersion();
+                GridCacheVersion serReadVer = entry.entryReadVersion();
 
                 if (serReadVer != null) {
                     entry.cached().unswap();
@@ -1369,9 +1369,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @param baseVer Base version.
      * @return Collection of pending candidates versions.
      */
-    private Collection<CacheVersion> localDhtPendingVersions(Iterable<IgniteTxEntry> entries,
-        CacheVersion baseVer) {
-        Collection<CacheVersion> lessPending = new GridLeanSet<>(5);
+    private Collection<GridCacheVersion> localDhtPendingVersions(Iterable<IgniteTxEntry> entries,
+        GridCacheVersion baseVer) {
+        Collection<GridCacheVersion> lessPending = new GridLeanSet<>(5);
 
         for (IgniteTxEntry entry : entries) {
             try {

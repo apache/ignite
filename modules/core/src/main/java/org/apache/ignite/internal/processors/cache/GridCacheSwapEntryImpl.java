@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,7 +62,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     private IgniteUuid valClsLdrId;
 
     /** Version. */
-    private CacheVersion ver;
+    private GridCacheVersion ver;
 
     /** Time to live. */
     private long ttl;
@@ -81,7 +82,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     public GridCacheSwapEntryImpl(
         ByteBuffer valBytes,
         byte type,
-        CacheVersion ver,
+        GridCacheVersion ver,
         long ttl,
         long expireTime,
         @Nullable IgniteUuid keyClsLdrId,
@@ -113,15 +114,14 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
 
     /**
      * @param bytes Entry bytes.
-     * @param cctx Context.
      * @return Version.
      */
-    public static CacheVersion version(byte[] bytes, GridCacheSharedContext cctx) {
+    public static GridCacheVersion version(byte[] bytes) {
         long off = GridUnsafe.BYTE_ARR_OFF + VERSION_OFFSET; // Skip ttl, expire time.
 
         boolean verEx = GridUnsafe.getByte(bytes, off++) != 0;
 
-        return cctx.versions().readVersion(bytes, off, verEx);
+        return U.readVersion(bytes, off, verEx);
     }
 
     /**
@@ -180,7 +180,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return ver;
     }
 
@@ -214,7 +214,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
      */
     public byte[] marshal() {
         // Ttl + expire time + Ex Version flag + Version.
-        int size = 16 + 1 + (ver.hasConflictVersion() ? VERSION_EX_SIZE : VERSION_SIZE);
+        int size = 16 + 1 + ((ver instanceof GridCacheVersionEx) ? VERSION_EX_SIZE : VERSION_SIZE);
 
         size += 1; // Plain byte array flag.
 
@@ -258,12 +258,11 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
     }
 
     /**
-     * @param cctx Context.
      * @param arr Entry bytes.
      * @param valOnly If {@code true} unmarshalls only entry value.
      * @return Entry.
      */
-    public static GridCacheSwapEntryImpl unmarshal(GridCacheSharedContext cctx, byte[] arr, boolean valOnly) {
+    public static GridCacheSwapEntryImpl unmarshal(byte[] arr, boolean valOnly) {
         if (valOnly) {
             long off = GridUnsafe.BYTE_ARR_OFF + VERSION_OFFSET; // Skip ttl, expire time.
 
@@ -302,7 +301,7 @@ public class GridCacheSwapEntryImpl implements GridCacheSwapEntry {
 
         boolean verEx = GridUnsafe.getBoolean(arr, off++);
 
-        CacheVersion ver = cctx.versions().readVersion(arr, off, verEx);
+        GridCacheVersion ver = U.readVersion(arr, off, verEx);
 
         off += verEx ? VERSION_EX_SIZE : VERSION_SIZE;
 

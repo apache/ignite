@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -171,7 +171,7 @@ public interface GridCacheEntryEx {
     /**
      * @return Not-null version if entry is obsolete.
      */
-    public CacheVersion obsoleteVersion();
+    public GridCacheVersion obsoleteVersion();
 
     /**
      * @return {@code True} if entry is obsolete.
@@ -189,7 +189,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if obsolete version is not {@code null} and is not the
      *      passed in version.
      */
-    public boolean obsolete(CacheVersion exclude);
+    public boolean obsolete(GridCacheVersion exclude);
 
     /**
      * @return Entry info.
@@ -204,7 +204,7 @@ public interface GridCacheEntryEx {
      * @return {@code true} if entry is obsolete.
      * @throws IgniteCheckedException If swap could not be released.
      */
-    public boolean invalidate(@Nullable CacheVersion curVer, CacheVersion newVer) throws IgniteCheckedException;
+    public boolean invalidate(@Nullable GridCacheVersion curVer, GridCacheVersion newVer) throws IgniteCheckedException;
 
     /**
      * Invalidates this entry if it passes given filter.
@@ -224,7 +224,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if entry could be evicted.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean evictInternal(boolean swap, CacheVersion obsoleteVer,
+    public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException;
 
     /**
@@ -235,11 +235,11 @@ public interface GridCacheEntryEx {
      * @return Swap entry if this entry was marked obsolete, {@code null} if entry was not evicted.
      * @throws IgniteCheckedException If failed.
      */
-    public GridCacheBatchSwapEntry evictInBatchInternal(CacheVersion obsoleteVer) throws IgniteCheckedException;
+    public GridCacheBatchSwapEntry evictInBatchInternal(GridCacheVersion obsoleteVer) throws IgniteCheckedException;
 
     /**
      * This method should be called each time entry is marked obsolete
-     * other than by calling {@link #markObsolete(CacheVersion)}.
+     * other than by calling {@link #markObsolete(GridCacheVersion)}.
      */
     public void onMarkedObsolete();
 
@@ -321,7 +321,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public T2<CacheObject, CacheVersion> innerGetVersioned(
+    @Nullable public T2<CacheObject, GridCacheVersion> innerGetVersioned(
         IgniteInternalTx tx,
         boolean readSwap,
         boolean unmarshal,
@@ -383,10 +383,10 @@ public interface GridCacheEntryEx {
         CacheEntryPredicate[] filter,
         GridDrType drType,
         long drExpireTime,
-        @Nullable CacheVersion explicitVer,
+        @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
         String taskName,
-        @Nullable CacheVersion dhtVer,
+        @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
@@ -420,10 +420,10 @@ public interface GridCacheEntryEx {
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         GridDrType drType,
-        @Nullable CacheVersion explicitVer,
+        @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
         String taskName,
-        @Nullable CacheVersion dhtVer,
+        @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
@@ -463,7 +463,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
     public GridCacheUpdateAtomicResult innerUpdate(
-        CacheVersion ver,
+        GridCacheVersion ver,
         UUID evtNodeId,
         UUID affNodeId,
         GridCacheOperation op,
@@ -483,7 +483,7 @@ public interface GridCacheEntryEx {
         GridDrType drType,
         long conflictTtl,
         long conflictExpireTime,
-        @Nullable CacheVersion conflictVer,
+        @Nullable GridCacheVersion conflictVer,
         boolean conflictResolve,
         boolean intercept,
         @Nullable UUID subjId,
@@ -514,7 +514,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
     public GridTuple3<Boolean, Object, EntryProcessorResult<Object>> innerUpdateLocal(
-        CacheVersion ver,
+        GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
         @Nullable Object[] invokeArgs,
@@ -540,7 +540,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If failed to remove from swap.
      * @return {@code True} if entry was not being used, passed the filter and could be removed.
      */
-    public boolean clear(CacheVersion ver, boolean readers) throws IgniteCheckedException;
+    public boolean clear(GridCacheVersion ver, boolean readers) throws IgniteCheckedException;
 
     /**
      * This locks is called by transaction manager during prepare step
@@ -556,8 +556,8 @@ public interface GridCacheEntryEx {
      */
     public boolean tmLock(IgniteInternalTx tx,
         long timeout,
-        @Nullable CacheVersion serOrder,
-        @Nullable CacheVersion serReadVer,
+        @Nullable GridCacheVersion serOrder,
+        @Nullable GridCacheVersion serReadVer,
         boolean keepBinary
     ) throws GridCacheEntryRemovedException, GridDistributedLockCancelledException;
 
@@ -574,7 +574,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} If lock has been removed.
      * @throws GridCacheEntryRemovedException If this entry has been removed from cache.
      */
-    public boolean removeLock(CacheVersion ver) throws GridCacheEntryRemovedException;
+    public boolean removeLock(GridCacheVersion ver) throws GridCacheEntryRemovedException;
 
     /**
      * Sets obsolete flag if possible.
@@ -583,7 +583,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if entry is obsolete, {@code false} if
      *      entry is still used by other threads or nodes.
      */
-    public boolean markObsolete(CacheVersion ver);
+    public boolean markObsolete(GridCacheVersion ver);
 
     /**
      * Sets obsolete flag if entry value is {@code null} or entry is expired and no
@@ -593,7 +593,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if entry was marked obsolete.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean markObsoleteIfEmpty(@Nullable CacheVersion ver) throws IgniteCheckedException;
+    public boolean markObsoleteIfEmpty(@Nullable GridCacheVersion ver) throws IgniteCheckedException;
 
     /**
      * Sets obsolete flag if entry version equals to {@code ver}.
@@ -601,13 +601,13 @@ public interface GridCacheEntryEx {
      * @param ver Version to compare with.
      * @return {@code True} if marked obsolete.
      */
-    public boolean markObsoleteVersion(CacheVersion ver);
+    public boolean markObsoleteVersion(GridCacheVersion ver);
 
     /**
      * @return Version.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    public CacheVersion version() throws GridCacheEntryRemovedException;
+    public GridCacheVersion version() throws GridCacheEntryRemovedException;
 
     /**
      * Checks if there was read/write conflict in serializable transaction.
@@ -616,7 +616,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if version check passed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    public boolean checkSerializableReadVersion(CacheVersion serReadVer) throws GridCacheEntryRemovedException;
+    public boolean checkSerializableReadVersion(GridCacheVersion serReadVer) throws GridCacheEntryRemovedException;
 
     /**
      * Peeks into entry without loading value or updating statistics.
@@ -669,7 +669,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     public boolean initialValue(CacheObject val,
-        CacheVersion ver,
+        GridCacheVersion ver,
         long ttl,
         long expireTime,
         boolean preload,
@@ -711,9 +711,9 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If index could not be updated.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public CacheVersion versionedValue(CacheObject val,
-        @Nullable CacheVersion curVer,
-        @Nullable CacheVersion newVer)
+    public GridCacheVersion versionedValue(CacheObject val,
+        @Nullable GridCacheVersion curVer,
+        @Nullable GridCacheVersion newVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -723,7 +723,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if the candidate is either owner or pending.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean hasLockCandidate(CacheVersion ver) throws GridCacheEntryRemovedException;
+    public boolean hasLockCandidate(GridCacheVersion ver) throws GridCacheEntryRemovedException;
 
     /**
      * Checks if the candidate is either owner or pending.
@@ -739,7 +739,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if lock is owned by any thread or node.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean lockedByAny(CacheVersion... exclude) throws GridCacheEntryRemovedException;
+    public boolean lockedByAny(GridCacheVersion... exclude) throws GridCacheEntryRemovedException;
 
     /**
      * @return {@code True} if lock is owned by current thread.
@@ -753,7 +753,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if locked either locally or by thread.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    public boolean lockedLocallyByIdOrThread(CacheVersion lockVer, long threadId)
+    public boolean lockedLocallyByIdOrThread(GridCacheVersion lockVer, long threadId)
         throws GridCacheEntryRemovedException;
 
     /**
@@ -762,7 +762,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if lock is owned by candidate.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean lockedLocally(CacheVersion lockVer) throws GridCacheEntryRemovedException;
+    public boolean lockedLocally(GridCacheVersion lockVer) throws GridCacheEntryRemovedException;
 
     /**
      * @param threadId Thread ID to check.
@@ -770,7 +770,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if lock is owned by given thread.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean lockedByThread(long threadId, CacheVersion exclude) throws GridCacheEntryRemovedException;
+    public boolean lockedByThread(long threadId, GridCacheVersion exclude) throws GridCacheEntryRemovedException;
 
     /**
      * @param threadId Thread ID to check.
@@ -784,7 +784,7 @@ public interface GridCacheEntryEx {
      * @return {@code True} if owner has the specified version.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public boolean lockedBy(CacheVersion ver) throws GridCacheEntryRemovedException;
+    public boolean lockedBy(GridCacheVersion ver) throws GridCacheEntryRemovedException;
 
     /**
      * Will not fail for removed entries.
@@ -798,20 +798,20 @@ public interface GridCacheEntryEx {
      * @param ver Version to check for ownership.
      * @return {@code True} if owner has the specified version.
      */
-    public boolean lockedByUnsafe(CacheVersion ver);
+    public boolean lockedByUnsafe(GridCacheVersion ver);
 
     /**
      *
      * @param lockVer Lock ID to check.
      * @return {@code True} if lock is owned by candidate.
      */
-    public boolean lockedLocallyUnsafe(CacheVersion lockVer);
+    public boolean lockedLocallyUnsafe(GridCacheVersion lockVer);
 
     /**
      * @param ver Lock version to check.
      * @return {@code True} if has candidate with given lock ID.
      */
-    public boolean hasLockCandidateUnsafe(CacheVersion ver);
+    public boolean hasLockCandidateUnsafe(GridCacheVersion ver);
 
     /**
      * @param threadId Thread ID.
@@ -827,7 +827,7 @@ public interface GridCacheEntryEx {
      * @return All local candidates.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public Collection<GridCacheMvccCandidate> localCandidates(@Nullable CacheVersion... exclude)
+    public Collection<GridCacheMvccCandidate> localCandidates(@Nullable GridCacheVersion... exclude)
         throws GridCacheEntryRemovedException;
 
     /**
@@ -836,7 +836,7 @@ public interface GridCacheEntryEx {
      * @param exclude Exclude version.
      * @return All remote versions minus the excluded ones, if any.
      */
-    public Collection<GridCacheMvccCandidate> remoteMvccSnapshot(CacheVersion... exclude);
+    public Collection<GridCacheMvccCandidate> remoteMvccSnapshot(GridCacheVersion... exclude);
 
     /**
      * Gets lock candidate for given lock ID.
@@ -845,7 +845,7 @@ public interface GridCacheEntryEx {
      * @return Lock candidate for given ID.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public GridCacheMvccCandidate candidate(CacheVersion ver) throws GridCacheEntryRemovedException;
+    @Nullable public GridCacheMvccCandidate candidate(GridCacheVersion ver) throws GridCacheEntryRemovedException;
 
     /**
      * @param nodeId Node ID.
@@ -876,7 +876,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If serialization failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public CacheObject valueBytes(@Nullable CacheVersion ver)
+    @Nullable public CacheObject valueBytes(@Nullable GridCacheVersion ver)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -901,7 +901,7 @@ public interface GridCacheEntryEx {
      * @param obsoleteVer Version to set obsolete if entry is expired.
      * @return {@code True} if this entry was obsolete or became obsolete as a result of this call.
      */
-    public boolean onTtlExpired(CacheVersion obsoleteVer);
+    public boolean onTtlExpired(GridCacheVersion obsoleteVer);
 
     /**
      * @return Time to live, without accounting for transactions or removals.
@@ -918,7 +918,7 @@ public interface GridCacheEntryEx {
      * @param ver Version.
      * @param ttl Time to live.
      */
-    public void updateTtl(@Nullable CacheVersion ver, long ttl) throws GridCacheEntryRemovedException;
+    public void updateTtl(@Nullable GridCacheVersion ver, long ttl) throws GridCacheEntryRemovedException;
 
     /**
      * Called when entry should be evicted from offheap.
@@ -933,7 +933,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @return {@code True} if entry was obsoleted and written to swap.
      */
-    public boolean onOffheapEvict(byte[] entry, CacheVersion evictVer, CacheVersion obsoleteVer)
+    public boolean onOffheapEvict(byte[] entry, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

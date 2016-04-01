@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheFilterFailedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -334,7 +334,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param key Key to get version for.
      * @return Owned version, if any.
      */
-    @Nullable public CacheVersion ownedVersion(IgniteTxKey key);
+    @Nullable public GridCacheVersion ownedVersion(IgniteTxKey key);
 
     /**
      * Gets ID of additional node involved. For example, in DHT case, other node is
@@ -365,7 +365,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     /**
      * @return Near transaction ID.
      */
-    @Nullable public CacheVersion nearXidVersion();
+    @Nullable public GridCacheVersion nearXidVersion();
 
     /**
      * @return Transaction nodes mapping (primary node -> related backup nodes).
@@ -528,28 +528,28 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     /**
      * @return Start version.
      */
-    public CacheVersion startVersion();
+    public GridCacheVersion startVersion();
 
     /**
      * @return Transaction version.
      */
-    public CacheVersion xidVersion();
+    public GridCacheVersion xidVersion();
 
     /**
      * @return Version created at commit time.
      */
-    public CacheVersion commitVersion();
+    public GridCacheVersion commitVersion();
 
     /**
      * @param commitVer Commit version.
      */
-    public void commitVersion(CacheVersion commitVer);
+    public void commitVersion(GridCacheVersion commitVer);
 
     /**
      * @return End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
      *      assigned to this transaction at the end of write phase.
      */
-    public CacheVersion endVersion();
+    public GridCacheVersion endVersion();
 
     /**
      * Prepare state.
@@ -569,20 +569,20 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param endVer End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
      *      assigned to this transaction at the end of write phase.
      */
-    public void endVersion(CacheVersion endVer);
+    public void endVersion(GridCacheVersion endVer);
 
     /**
      * @return Transaction write version. For all transactions except DHT transactions, will be equal to
      *      {@link #xidVersion()}.
      */
-    public CacheVersion writeVersion();
+    public GridCacheVersion writeVersion();
 
     /**
      * Sets write version.
      *
      * @param ver Write version.
      */
-    public void writeVersion(CacheVersion ver);
+    public void writeVersion(GridCacheVersion ver);
 
     /**
      * @return Future for transaction completion.
@@ -685,7 +685,7 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     /**
      * @return Alternate transaction versions.
      */
-    public Collection<CacheVersion> alternateVersions();
+    public Collection<GridCacheVersion> alternateVersions();
 
     /**
      * @return {@code True} if transaction needs completed versions for processing.
@@ -697,8 +697,8 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param committed Committed transactions relative to base.
      * @param rolledback Rolled back transactions relative to base.
      */
-    public void completedVersions(CacheVersion base, Collection<CacheVersion> committed,
-        Collection<CacheVersion> rolledback);
+    public void completedVersions(GridCacheVersion base, Collection<GridCacheVersion> committed,
+        Collection<GridCacheVersion> rolledback);
 
     /**
      * @return {@code True} if transaction has at least one internal entry.

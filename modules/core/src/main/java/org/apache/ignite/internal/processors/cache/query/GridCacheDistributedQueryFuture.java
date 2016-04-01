@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -246,8 +245,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(Collection<R> res, Throwable err, Executor lsnrExec) {
-        boolean done = super.onDone(res, err, lsnrExec);
+    @Override public boolean onDone(Collection<R> res, Throwable err) {
+        boolean done = super.onDone(res, err);
 
         // Must release the lath after onDone() in order for a waiting thread to see an exception, if any.
         firstPageLatch.countDown();

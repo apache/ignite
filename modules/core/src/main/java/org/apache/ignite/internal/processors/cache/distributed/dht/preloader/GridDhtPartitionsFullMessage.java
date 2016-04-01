@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -74,7 +74,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @param topVer Topology version.
      */
     public GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id,
-        @Nullable CacheVersion lastVer,
+        @Nullable GridCacheVersion lastVer,
         @NotNull AffinityTopologyVersion topVer) {
         super(id, lastVer);
 

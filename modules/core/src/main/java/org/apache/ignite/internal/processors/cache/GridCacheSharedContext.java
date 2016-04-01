@@ -673,11 +673,4 @@ public class GridCacheSharedContext<K, V> {
     public void txContextReset() {
         mvccMgr.contextReset();
     }
-
-    /**
-     * @return Pool for asynchronous notification of cache future listeners (used to do not block discovery thread).
-     */
-    public Executor asyncListenerPool() {
-        return kernalCtx.getSystemExecutorService();
-    }
 }

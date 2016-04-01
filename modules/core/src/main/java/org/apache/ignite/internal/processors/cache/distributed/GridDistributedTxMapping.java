@@ -27,7 +27,7 @@ import java.util.LinkedHashSet;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -55,7 +55,7 @@ public class GridDistributedTxMapping implements Externalizable {
     private boolean explicitLock;
 
     /** DHT version. */
-    private CacheVersion dhtVer;
+    private GridCacheVersion dhtVer;
 
     /** {@code True} if this is last mapping for node. */
     private boolean last;
@@ -155,7 +155,7 @@ public class GridDistributedTxMapping implements Externalizable {
     /**
      * @return DHT version.
      */
-    public CacheVersion dhtVersion() {
+    public GridCacheVersion dhtVersion() {
         return dhtVer;
     }
 
@@ -163,7 +163,7 @@ public class GridDistributedTxMapping implements Externalizable {
      * @param dhtVer DHT version.
      * @param writeVer DHT writeVersion.
      */
-    public void dhtVersion(CacheVersion dhtVer, CacheVersion writeVer) {
+    public void dhtVersion(GridCacheVersion dhtVer, GridCacheVersion writeVer) {
         this.dhtVer = dhtVer;
 
         for (IgniteTxEntry e : entries)

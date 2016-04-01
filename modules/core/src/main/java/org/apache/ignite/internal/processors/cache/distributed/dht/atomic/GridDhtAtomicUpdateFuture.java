@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -70,10 +70,10 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     private final GridCacheContext cctx;
 
     /** Future version. */
-    private final CacheVersion futVer;
+    private final GridCacheVersion futVer;
 
     /** Write version. */
-    private final CacheVersion writeVer;
+    private final GridCacheVersion writeVer;
 
     /** Force transform backup flag. */
     private boolean forceTransformBackups;
@@ -118,7 +118,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         GridCacheContext cctx,
         CI2<GridNearAtomicUpdateRequest,
         GridNearAtomicUpdateResponse> completionCb,
-        CacheVersion writeVer,
+        GridCacheVersion writeVer,
         GridNearAtomicUpdateRequest updateReq,
         GridNearAtomicUpdateResponse updateRes
     ) {
@@ -152,7 +152,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return futVer;
     }
 
@@ -234,7 +234,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         EntryProcessor<Object, Object, Object> entryProcessor,
         long ttl,
         long conflictExpireTime,
-        @Nullable CacheVersion conflictVer,
+        @Nullable GridCacheVersion conflictVer,
         boolean addPrevVal,
         @Nullable CacheObject prevVal,
         long updateCntr) {
@@ -368,8 +368,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err, Executor lsnrExec) {
-        if (super.onDone(res, err, lsnrExec)) {
+    @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
+        if (super.onDone(res, err)) {
             cctx.mvcc().removeAtomicFuture(version());
 
             if (err != null) {

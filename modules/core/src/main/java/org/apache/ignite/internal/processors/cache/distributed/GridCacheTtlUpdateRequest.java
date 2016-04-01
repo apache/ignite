@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -48,8 +48,8 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
     private List<KeyCacheObject> keys;
 
     /** Entries versions. */
-    @GridDirectCollection(CacheVersion.class)
-    private List<CacheVersion> vers;
+    @GridDirectCollection(GridCacheVersion.class)
+    private List<GridCacheVersion> vers;
 
     /** Near entries keys. */
     @GridToStringInclude
@@ -57,8 +57,8 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
     private List<KeyCacheObject> nearKeys;
 
     /** Near entries versions. */
-    @GridDirectCollection(CacheVersion.class)
-    private List<CacheVersion> nearVers;
+    @GridDirectCollection(GridCacheVersion.class)
+    private List<GridCacheVersion> nearVers;
 
     /** New TTL. */
     private long ttl;
@@ -104,7 +104,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
      * @param key Key.
      * @param ver Version.
      */
-    public void addEntry(KeyCacheObject key, CacheVersion ver) {
+    public void addEntry(KeyCacheObject key, GridCacheVersion ver) {
         if (keys == null) {
             keys = new ArrayList<>();
 
@@ -120,7 +120,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
      * @param key Key.
      * @param ver Version.
      */
-    public void addNearEntry(KeyCacheObject key, CacheVersion ver) {
+    public void addNearEntry(KeyCacheObject key, GridCacheVersion ver) {
         if (nearKeys == null) {
             nearKeys = new ArrayList<>();
 
@@ -142,7 +142,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
     /**
      * @return Versions.
      */
-    public List<CacheVersion > versions() {
+    public List<GridCacheVersion > versions() {
         return vers;
     }
 
@@ -150,7 +150,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
      * @param idx Entry index.
      * @return Version.
      */
-    public CacheVersion version(int idx) {
+    public GridCacheVersion version(int idx) {
         assert idx >= 0 && idx < vers.size() : idx;
 
         return vers.get(idx);
@@ -166,7 +166,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheMessage {
     /**
      * @return Versions for near cache entries.
      */
-    public List<CacheVersion > nearVersions() {
+    public List<GridCacheVersion > nearVersions() {
         return nearVers;
     }
 

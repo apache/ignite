@@ -51,7 +51,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCachePlainVersionedEntry;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -112,11 +112,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** Transaction ID. */
     @GridToStringInclude
-    protected CacheVersion xidVer;
+    protected GridCacheVersion xidVer;
 
     /** Entries write version. */
     @GridToStringInclude
-    protected CacheVersion writeVer;
+    protected GridCacheVersion writeVer;
 
     /** Implicit flag. */
     @GridToStringInclude
@@ -140,7 +140,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** Transaction counter value at the start of transaction. */
     @GridToStringInclude
-    protected CacheVersion startVer;
+    protected GridCacheVersion startVer;
 
     /** Cache registry. */
     @GridToStringExclude
@@ -151,7 +151,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * assigned to this transaction at the end of write phase.
      */
     @GridToStringInclude
-    protected CacheVersion endVer;
+    protected GridCacheVersion endVer;
 
     /** Isolation. */
     @GridToStringInclude
@@ -193,7 +193,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected boolean transform;
 
     /** Commit version. */
-    private volatile CacheVersion commitVer;
+    private volatile GridCacheVersion commitVer;
 
     /** Finalizing status. */
     private volatile FinalizationStatus finalizing = FinalizationStatus.NONE;
@@ -270,7 +270,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     protected IgniteTxAdapter(
         GridCacheSharedContext<?, ?> cctx,
-        CacheVersion xidVer,
+        GridCacheVersion xidVer,
         boolean implicit,
         boolean loc,
         boolean sys,
@@ -330,8 +330,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected IgniteTxAdapter(
         GridCacheSharedContext<?, ?> cctx,
         UUID nodeId,
-        CacheVersion xidVer,
-        CacheVersion startVer,
+        GridCacheVersion xidVer,
+        GridCacheVersion startVer,
         long threadId,
         boolean sys,
         byte plc,
@@ -697,7 +697,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion ownedVersion(IgniteTxKey key) {
+    @Override public GridCacheVersion ownedVersion(IgniteTxKey key) {
         return null;
     }
 
@@ -733,7 +733,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion xidVersion() {
+    @Override public GridCacheVersion xidVersion() {
         return xidVer;
     }
 
@@ -781,7 +781,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         IgniteTxEntry txEntry = entry(entry.txKey());
 
-        CacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
+        GridCacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
 
         return local() && !cacheCtx.isDht() ?
             entry.lockedByThread(threadId()) || (explicit != null && entry.lockedBy(explicit)) :
@@ -797,7 +797,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         IgniteTxEntry txEntry = entry(entry.txKey());
 
-        CacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
+        GridCacheVersion explicit = txEntry == null ? null : txEntry.explicitVersion();
 
         return local() && !cacheCtx.isDht() ?
             entry.lockedByThreadUnsafe(threadId()) || (explicit != null && entry.lockedByUnsafe(explicit)) :
@@ -868,8 +868,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Commit version.
      */
-    @Override public CacheVersion commitVersion() {
-        CacheVersion commitVer0 = commitVer;
+    @Override public GridCacheVersion commitVersion() {
+        GridCacheVersion commitVer0 = commitVer;
 
         if (commitVer0 != null)
             return commitVer0;
@@ -889,11 +889,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @param commitVer Commit version.
      */
-    @Override public void commitVersion(CacheVersion commitVer) {
+    @Override public void commitVersion(GridCacheVersion commitVer) {
         if (commitVer == null)
             return;
 
-        CacheVersion commitVer0 = this.commitVer;
+        GridCacheVersion commitVer0 = this.commitVer;
 
         if (commitVer0 != null)
             return;
@@ -938,8 +938,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public void completedVersions(CacheVersion base, Collection<CacheVersion> committed,
-        Collection<CacheVersion> txs) {
+    @Override public void completedVersions(GridCacheVersion base, Collection<GridCacheVersion> committed,
+        Collection<GridCacheVersion> txs) {
         /* No-op. */
     }
 
@@ -1154,27 +1154,27 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion startVersion() {
+    @Override public GridCacheVersion startVersion() {
         return startVer;
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion endVersion() {
+    @Override public GridCacheVersion endVersion() {
         return endVer;
     }
 
     /** {@inheritDoc} */
-    @Override public void endVersion(CacheVersion endVer) {
+    @Override public void endVersion(GridCacheVersion endVer) {
         this.endVer = endVer;
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion writeVersion() {
+    @Override public GridCacheVersion writeVersion() {
         return writeVer == null ? commitVersion() : writeVer;
     }
 
     /** {@inheritDoc} */
-    @Override public void writeVersion(CacheVersion writeVer) {
+    @Override public void writeVersion(GridCacheVersion writeVer) {
         this.writeVer = writeVer;
     }
 
@@ -1237,7 +1237,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheVersion nearXidVersion() {
+    @Nullable @Override public GridCacheVersion nearXidVersion() {
         return null;
     }
 
@@ -1291,7 +1291,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             Object key = null;
 
-            CacheVersion ver;
+            GridCacheVersion ver;
 
             try {
                 ver = txEntry.cached().version();
@@ -1374,7 +1374,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         GridCacheOperation op,
         IgniteTxEntry txEntry,
         CacheObject newVal,
-        CacheVersion newVer,
+        GridCacheVersion newVer,
         GridCacheEntryEx old)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert newVer != null;
@@ -1535,7 +1535,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         readExternalMeta(in);
 
-        xidVer = (CacheVersion)in.readObject();
+        xidVer = (GridCacheVersion)in.readObject();
         invalidate = in.readBoolean();
         timeout = in.readLong();
         threadId = in.readLong();
@@ -1847,7 +1847,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public CacheVersion ownedVersion(IgniteTxKey key) {
+        @Nullable @Override public GridCacheVersion ownedVersion(IgniteTxKey key) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
@@ -1877,7 +1877,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public CacheVersion nearXidVersion() {
+        @Nullable @Override public GridCacheVersion nearXidVersion() {
             return null;
         }
 
@@ -2015,27 +2015,27 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public CacheVersion startVersion() {
+        @Override public GridCacheVersion startVersion() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public CacheVersion xidVersion() {
+        @Override public GridCacheVersion xidVersion() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public CacheVersion commitVersion() {
+        @Override public GridCacheVersion commitVersion() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void commitVersion(CacheVersion commitVer) {
+        @Override public void commitVersion(GridCacheVersion commitVer) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public CacheVersion endVersion() {
+        @Override public GridCacheVersion endVersion() {
             return null;
         }
 
@@ -2050,17 +2050,17 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public void endVersion(CacheVersion endVer) {
+        @Override public void endVersion(GridCacheVersion endVer) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public CacheVersion writeVersion() {
+        @Override public GridCacheVersion writeVersion() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void writeVersion(CacheVersion ver) {
+        @Override public void writeVersion(GridCacheVersion ver) {
             // No-op.
         }
 
@@ -2150,7 +2150,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<CacheVersion> alternateVersions() {
+        @Override public Collection<GridCacheVersion> alternateVersions() {
             return null;
         }
 
@@ -2160,7 +2160,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public void completedVersions(CacheVersion base, Collection committed, Collection rolledback) {
+        @Override public void completedVersions(GridCacheVersion base, Collection committed, Collection rolledback) {
             // No-op.
         }
 

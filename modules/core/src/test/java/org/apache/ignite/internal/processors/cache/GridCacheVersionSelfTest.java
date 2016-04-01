@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.Callable;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -34,7 +34,7 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTopologyVersionDrId() throws Exception {
-        CacheVersion ver = version(10, 0);
+        GridCacheVersion ver = version(10, 0);
 
         assertEquals(10, ver.nodeOrder());
         assertEquals(0, ver.dataCenterId());
@@ -101,7 +101,7 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
      * @param drId Data center ID.
      * @return Cache version.
      */
-    private CacheVersion version(int nodeOrder, int drId) {
+    private GridCacheVersion version(int nodeOrder, int drId) {
         return new GridCacheVersion(0, 0, 0, nodeOrder, drId);
     }
 }

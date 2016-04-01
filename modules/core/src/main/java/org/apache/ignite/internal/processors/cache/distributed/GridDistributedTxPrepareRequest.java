@@ -34,8 +34,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -89,7 +89,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** Commit version for EC transactions. */
     @GridToStringInclude
-    private CacheVersion writeVer;
+    private GridCacheVersion writeVer;
 
     /** Transaction timeout. */
     @GridToStringInclude
@@ -112,15 +112,15 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** DHT versions to verify. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<IgniteTxKey, CacheVersion> dhtVers;
+    private Map<IgniteTxKey, GridCacheVersion> dhtVers;
 
     /** */
     @GridDirectCollection(IgniteTxKey.class)
     private Collection<IgniteTxKey> dhtVerKeys;
 
     /** */
-    @GridDirectCollection(CacheVersion.class)
-    private Collection<CacheVersion> dhtVerVals;
+    @GridDirectCollection(GridCacheVersion.class)
+    private Collection<GridCacheVersion> dhtVerVals;
 
     /** Expected transaction size. */
     private int txSize;
@@ -213,7 +213,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @param key Key for which version is verified.
      * @param dhtVer DHT version to check.
      */
-    public void addDhtVersion(IgniteTxKey key, @Nullable CacheVersion dhtVer) {
+    public void addDhtVersion(IgniteTxKey key, @Nullable GridCacheVersion dhtVer) {
         if (dhtVers == null)
             dhtVers = new HashMap<>();
 
@@ -223,8 +223,8 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /**
      * @return Map of versions to be verified.
      */
-    public Map<IgniteTxKey, CacheVersion> dhtVersions() {
-        return dhtVers == null ? Collections.<IgniteTxKey, CacheVersion>emptyMap() : dhtVers;
+    public Map<IgniteTxKey, GridCacheVersion> dhtVersions() {
+        return dhtVers == null ? Collections.<IgniteTxKey, GridCacheVersion>emptyMap() : dhtVers;
     }
 
     /**
@@ -237,7 +237,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /**
      * @return Commit version.
      */
-    public CacheVersion writeVersion() { return writeVer; }
+    public GridCacheVersion writeVersion() { return writeVer; }
 
     /**
      * @return Invalidate flag.
@@ -355,7 +355,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             assert dhtVerKeys.size() == dhtVerVals.size();
 
             Iterator<IgniteTxKey> keyIt = dhtVerKeys.iterator();
-            Iterator<CacheVersion> verIt = dhtVerVals.iterator();
+            Iterator<GridCacheVersion> verIt = dhtVerVals.iterator();
 
             dhtVers = U.newHashMap(dhtVerKeys.size());
 

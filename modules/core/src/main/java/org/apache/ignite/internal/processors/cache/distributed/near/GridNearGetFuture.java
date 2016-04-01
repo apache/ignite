@@ -46,7 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -82,7 +82,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     private IgniteTxLocalEx tx;
 
     /** */
-    private CacheVersion ver;
+    private GridCacheVersion ver;
 
     /**
      * @param cctx Context.
@@ -213,8 +213,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(Map<K, V> res, Throwable err, Executor lsnrExec) {
-        if (super.onDone(res, err, lsnrExec)) {
+    @Override public boolean onDone(Map<K, V> res, Throwable err) {
+        if (super.onDone(res, err)) {
             // Don't forget to clean up.
             if (trackable)
                 cctx.mvcc().removeFuture(futId);
@@ -273,7 +273,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             finally {
                 // Exception has been thrown, must release reserved near entries.
                 if (!success) {
-                    CacheVersion obsolete = cctx.versions().next(topVer);
+                    GridCacheVersion obsolete = cctx.versions().next(topVer);
 
                     if (savedEntries != null) {
                         for (GridNearCacheEntry reserved : savedEntries.values()) {
@@ -427,14 +427,14 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
             try {
                 CacheObject v = null;
-                CacheVersion ver = null;
+                GridCacheVersion ver = null;
 
                 boolean isNear = entry != null;
 
                 // First we peek into near cache.
                 if (isNear) {
                     if (needVer) {
-                        T2<CacheObject, CacheVersion> res = entry.innerGetVersioned(
+                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
                             /*swap*/true,
                             /*unmarshal*/true,
@@ -573,7 +573,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     boolean isNew = dhtEntry.isNewLocked() || !dhtEntry.valid(topVer);
 
                     if (needVer) {
-                        T2<CacheObject, CacheVersion> res = dhtEntry.innerGetVersioned(
+                        T2<CacheObject, GridCacheVersion> res = dhtEntry.innerGetVersioned(
                             null,
                             /*swap*/true,
                             /*unmarshal*/true,
@@ -650,7 +650,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param ver Version.
      */
     @SuppressWarnings("unchecked")
-    private void addResult(KeyCacheObject key, CacheObject v, CacheVersion ver) {
+    private void addResult(KeyCacheObject key, CacheObject v, GridCacheVersion ver) {
         if (keepCacheObjects) {
             K key0 = (K)key;
             V val0 = needVer ?
@@ -709,7 +709,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         if (!empty) {
             boolean atomic = cctx.atomic();
 
-            CacheVersion ver = atomic ? null : F.isEmpty(infos) ? null : cctx.versions().next();
+            GridCacheVersion ver = atomic ? null : F.isEmpty(infos) ? null : cctx.versions().next();
 
             for (GridCacheEntryInfo info : infos) {
                 try {
@@ -884,8 +884,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         }
 
         /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Map<K, V> res, @Nullable Throwable err, Executor lsnrExec) {
-            if (super.onDone(res, err, lsnrExec)) {
+        @Override public boolean onDone(@Nullable Map<K, V> res, @Nullable Throwable err) {
+            if (super.onDone(res, err)) {
                 releaseEvictions(keys.keySet(), savedEntries, topVer);
 
                 return true;

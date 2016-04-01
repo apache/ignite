@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Local transaction API.
@@ -30,10 +30,10 @@ public interface IgniteTxRemoteEx extends IgniteInternalTx {
      * @param rolledbackVers Rolled back version.
      * @param pendingVers Pending versions.
      */
-    public void doneRemote(CacheVersion baseVer,
-        Collection<CacheVersion> committedVers,
-        Collection<CacheVersion> rolledbackVers,
-        Collection<CacheVersion> pendingVers);
+    public void doneRemote(GridCacheVersion baseVer,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers,
+        Collection<GridCacheVersion> pendingVers);
 
     /**
      * @param cntrs Partition update indexes.

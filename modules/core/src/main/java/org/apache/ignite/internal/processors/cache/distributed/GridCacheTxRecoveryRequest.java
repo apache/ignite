@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -40,7 +40,7 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     private IgniteUuid miniId;
 
     /** Near transaction ID. */
-    private CacheVersion nearXidVer;
+    private GridCacheVersion nearXidVer;
 
     /** Expected number of transactions on node. */
     private int txNum;
@@ -94,7 +94,7 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     /**
      * @return Near version.
      */
-    public CacheVersion nearXidVersion() {
+    public GridCacheVersion nearXidVersion() {
         return nearXidVer;
     }
 

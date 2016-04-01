@@ -40,7 +40,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
@@ -218,7 +218,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteInternalTx tx0, Throwable err, Executor lsnrExec) {
+    @Override public boolean onDone(IgniteInternalTx tx0, Throwable err) {
         if (isDone())
             return false;
 
@@ -277,7 +277,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     tx.tmFinish(commit);
                 }
 
-                if (super.onDone(tx0, err, lsnrExec)) {
+                if (super.onDone(tx0, err)) {
                     if (error() instanceof IgniteTxHeuristicCheckedException) {
                         AffinityTopologyVersion topVer = tx.topologyVersion();
 
@@ -443,7 +443,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                         if (committed) {
                             if (tx.syncCommit()) {
-                                CacheVersion nearXidVer = tx.nearXidVersion();
+                                GridCacheVersion nearXidVer = tx.nearXidVersion();
 
                                 assert nearXidVer != null : tx;
 
@@ -548,14 +548,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      */
     private void readyNearMappingFromBackup(GridDistributedTxMapping mapping) {
         if (mapping.near()) {
-            CacheVersion xidVer = tx.xidVersion();
+            GridCacheVersion xidVer = tx.xidVersion();
 
             mapping.dhtVersion(xidVer, xidVer);
 
             tx.readyNearLocks(mapping,
-                Collections.<CacheVersion>emptyList(),
-                Collections.<CacheVersion>emptyList(),
-                Collections.<CacheVersion>emptyList());
+                Collections.<GridCacheVersion>emptyList(),
+                Collections.<GridCacheVersion>emptyList(),
+                Collections.<GridCacheVersion>emptyList());
         }
     }
 
@@ -829,7 +829,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     }
                 }
 
-                onDone(tx, discoThread ? cctx.kernalContext().getSystemExecutorService() : null);
+                onDone(tx);
 
                 return true;
             }
@@ -885,8 +885,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (nodeId.equals(backup.id())) {
                 readyNearMappingFromBackup(m);
 
-                onDone(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId),
-                    discoThread ? cctx.asyncListenerPool() : null);
+                onDone(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId));
 
                 return true;
             }
@@ -972,7 +971,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             }
 
             if (done)
-                onDone(tx, discoThread ? cctx.asyncListenerPool() : null);
+                onDone(tx);
 
             return ret;
         }

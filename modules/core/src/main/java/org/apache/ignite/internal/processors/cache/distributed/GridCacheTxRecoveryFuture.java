@@ -412,8 +412,8 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err, Executor lsnrExec) {
-        if (super.onDone(res, err, lsnrExec)) {
+    @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
+        if (super.onDone(res, err)) {
             cctx.mvcc().removeFuture(futId);
 
             if (err == null) {

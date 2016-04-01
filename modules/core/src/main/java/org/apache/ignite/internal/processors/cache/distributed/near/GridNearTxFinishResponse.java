@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -65,7 +65,7 @@ public class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
      * @param miniId Mini future Id.
      * @param err Error.
      */
-    public GridNearTxFinishResponse(CacheVersion xid, long nearThreadId, IgniteUuid futId, IgniteUuid miniId,
+    public GridNearTxFinishResponse(GridCacheVersion xid, long nearThreadId, IgniteUuid futId, IgniteUuid miniId,
         @Nullable Throwable err) {
         super(xid, futId);
 

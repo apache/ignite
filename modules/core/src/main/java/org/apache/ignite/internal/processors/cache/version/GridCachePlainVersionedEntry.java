@@ -37,7 +37,7 @@ public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEnt
     private final long expireTime;
 
     /** Version. */
-    private final CacheVersion ver;
+    private final GridCacheVersion ver;
 
     /** Start version flag. */
     private final boolean isStartVer;
@@ -49,7 +49,7 @@ public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEnt
      * @param expireTime Expire time.
      * @param ver Version.
      */
-    public GridCachePlainVersionedEntry(K key, @Nullable V val, long ttl, long expireTime, CacheVersion ver) {
+    public GridCachePlainVersionedEntry(K key, @Nullable V val, long ttl, long expireTime, GridCacheVersion ver) {
         this(key, val, ttl, expireTime, ver, false);
     }
 
@@ -61,7 +61,7 @@ public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEnt
      * @param ver Version.
      * @param isStartVer Start version flag.
      */
-    public GridCachePlainVersionedEntry(K key, V val, long ttl, long expireTime, CacheVersion ver,
+    public GridCachePlainVersionedEntry(K key, V val, long ttl, long expireTime, GridCacheVersion ver,
         boolean isStartVer) {
         assert ver != null;
         assert key != null;
@@ -115,7 +115,7 @@ public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEnt
     }
 
     /** {@inheritDoc} */
-    @Override public CacheVersion version() {
+    @Override public GridCacheVersion version() {
         return ver;
     }
 

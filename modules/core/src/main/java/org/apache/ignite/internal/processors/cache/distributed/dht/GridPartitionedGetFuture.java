@@ -43,7 +43,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -205,8 +205,8 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(Map<K, V> res, Throwable err, Executor lsnrExec) {
-        if (super.onDone(res, err, lsnrExec)) {
+    @Override public boolean onDone(Map<K, V> res, Throwable err) {
+        if (super.onDone(res, err)) {
             // Don't forget to clean up.
             if (trackable)
                 cctx.mvcc().removeFuture(futId);
@@ -448,10 +448,10 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     boolean isNew = entry.isNewLocked();
 
                     CacheObject v = null;
-                    CacheVersion ver = null;
+                    GridCacheVersion ver = null;
 
                     if (needVer) {
-                        T2<CacheObject, CacheVersion> res = entry.innerGetVersioned(
+                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
                             /*swap*/true,
                             /*unmarshal*/true,

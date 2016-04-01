@@ -177,7 +177,8 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -8968,13 +8969,13 @@ public abstract class IgniteUtils {
      * @param ver Version.
      * @return Offset.
      */
-    public static long writeVersion(byte[] arr, long off, CacheVersion ver) {
-        boolean verEx = ver.hasConflictVersion();
+    public static long writeVersion(byte[] arr, long off, GridCacheVersion ver) {
+        boolean verEx = ver instanceof GridCacheVersionEx;
 
         GridUnsafe.putBoolean(arr, off++, verEx);
 
         if (verEx) {
-            CacheVersion drVer = ver.conflictVersion();
+            GridCacheVersion drVer = ver.conflictVersion();
 
             assert drVer != null;
 
@@ -8999,7 +9000,7 @@ public abstract class IgniteUtils {
 
         off += 4;
 
-        GridUnsafe.putInt(arr, off, ver.nodeOrder());
+        GridUnsafe.putInt(arr, off, ver.nodeOrderAndDrIdRaw());
 
         off += 4;
 
@@ -9012,6 +9013,76 @@ public abstract class IgniteUtils {
         off += 8;
 
         return off;
+    }
+
+    /**
+     * @param ptr Offheap address.
+     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
+     * @return Version.
+     */
+    public static GridCacheVersion readVersion(long ptr, boolean verEx) {
+        GridCacheVersion ver = new GridCacheVersion(GridUnsafe.getInt(ptr),
+            GridUnsafe.getInt(ptr + 4),
+            GridUnsafe.getLong(ptr + 8),
+            GridUnsafe.getLong(ptr + 16));
+
+        if (verEx) {
+            ptr += 24;
+
+            ver = new GridCacheVersionEx(GridUnsafe.getInt(ptr),
+                GridUnsafe.getInt(ptr + 4),
+                GridUnsafe.getLong(ptr + 8),
+                GridUnsafe.getLong(ptr + 16),
+                ver);
+        }
+
+        return ver;
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param verEx If {@code true} reads {@link GridCacheVersionEx} instance.
+     * @return Version.
+     */
+    public static GridCacheVersion readVersion(byte[] arr, long off, boolean verEx) {
+        int topVer = GridUnsafe.getInt(arr, off);
+
+        off += 4;
+
+        int nodeOrderDrId = GridUnsafe.getInt(arr, off);
+
+        off += 4;
+
+        long globalTime = GridUnsafe.getLong(arr, off);
+
+        off += 8;
+
+        long order = GridUnsafe.getLong(arr, off);
+
+        off += 8;
+
+        GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+
+        if (verEx) {
+            topVer = GridUnsafe.getInt(arr, off);
+
+            off += 4;
+
+            nodeOrderDrId = GridUnsafe.getInt(arr, off);
+
+            off += 4;
+
+            globalTime = GridUnsafe.getLong(arr, off);
+
+            off += 8;
+
+            order = GridUnsafe.getLong(arr, off);
+
+            ver = new GridCacheVersionEx(topVer, nodeOrderDrId, globalTime, order, ver);
+        }
+
+        return ver;
     }
 
     /**

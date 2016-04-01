@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.extras;
 
 import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,13 +39,13 @@ public interface GridCacheEntryExtras {
     /**
      * @return Obsolete version.
      */
-    @Nullable public CacheVersion obsoleteVersion();
+    @Nullable public GridCacheVersion obsoleteVersion();
 
     /**
      * @param obsoleteVer Obsolete version.
      * @return Updated extras.
      */
-    public GridCacheEntryExtras obsoleteVersion(CacheVersion obsoleteVer);
+    public GridCacheEntryExtras obsoleteVersion(GridCacheVersion obsoleteVer);
 
     /**
      * @return TTL.

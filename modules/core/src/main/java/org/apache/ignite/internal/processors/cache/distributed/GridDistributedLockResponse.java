@@ -27,7 +27,7 @@ import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -75,7 +75,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
-        CacheVersion lockVer,
+        GridCacheVersion lockVer,
         IgniteUuid futId,
         int cnt,
         boolean addDepInfo) {
@@ -97,7 +97,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
-        CacheVersion lockVer,
+        GridCacheVersion lockVer,
         IgniteUuid futId,
         Throwable err,
         boolean addDepInfo) {
@@ -119,7 +119,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
      * @param addDepInfo Deployment info.
      */
     public GridDistributedLockResponse(int cacheId,
-        CacheVersion lockVer,
+        GridCacheVersion lockVer,
         IgniteUuid futId,
         int cnt,
         Throwable err,

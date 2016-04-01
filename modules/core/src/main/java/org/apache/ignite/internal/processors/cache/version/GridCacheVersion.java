@@ -24,13 +24,14 @@ import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Grid unique version.
  */
-public class GridCacheVersion implements CacheVersion, Externalizable {
+public class GridCacheVersion implements Message, Comparable<GridCacheVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -102,56 +103,95 @@ public class GridCacheVersion implements CacheVersion, Externalizable {
     /**
      * @return Topology version plus number of seconds from the start time of the first grid node..
      */
-    @Override public final int topologyVersion() {
+    public int topologyVersion() {
         return topVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public final int nodeOrderAndDrIdRaw() {
+    /**
+     * Gets combined node order and DR ID.
+     *
+     * @return Combined integer for node order and DR ID.
+     */
+    public int nodeOrderAndDrIdRaw() {
         return nodeOrderDrId;
     }
 
-    /** {@inheritDoc} */
-    @Override public final long globalTime() {
+    /**
+     * @return Adjusted time.
+     */
+    public long globalTime() {
         return globalTime;
     }
 
-    /** {@inheritDoc} */
-    @Override public final long order() {
+    /**
+     * @return Version order.
+     */
+    public long order() {
         return order;
     }
 
-    /** {@inheritDoc} */
-    @Override public final int nodeOrder() {
+    /**
+     * @return Node order on which this version was assigned.
+     */
+    public int nodeOrder() {
         return nodeOrderDrId & NODE_ORDER_MASK;
     }
 
-    /** {@inheritDoc} */
-    @Override public final byte dataCenterId() {
+    /**
+     * @return DR mask.
+     */
+    public byte dataCenterId() {
         return (byte)((nodeOrderDrId >> DR_ID_SHIFT) & DR_ID_MASK);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasConflictVersion() {
-        return false;
     }
 
     /**
      * @return Conflict version.
      */
-    @Override public CacheVersion conflictVersion() {
+    public GridCacheVersion conflictVersion() {
         return this; // Use current version.
+    }
+
+    /**
+     * @param ver Version.
+     * @return {@code True} if this version is greater.
+     */
+    public boolean isGreater(GridCacheVersion ver) {
+        return compareTo(ver) > 0;
+    }
+
+    /**
+     * @param ver Version.
+     * @return {@code True} if this version is greater or equal.
+     */
+    public boolean isGreaterEqual(GridCacheVersion ver) {
+        return compareTo(ver) >= 0;
+    }
+
+    /**
+     * @param ver Version.
+     * @return {@code True} if this version is less.
+     */
+    public boolean isLess(GridCacheVersion ver) {
+        return compareTo(ver) < 0;
+    }
+
+    /**
+     * @param ver Version.
+     * @return {@code True} if this version is less or equal.
+     */
+    public boolean isLessEqual(GridCacheVersion ver) {
+        return compareTo(ver) <= 0;
     }
 
     /**
      * @return Version represented as {@code GridUuid}
      */
-    @Override public final IgniteUuid asGridUuid() {
+    public IgniteUuid asGridUuid() {
         return new IgniteUuid(new UUID(((long)topVer << 32) | nodeOrderDrId, globalTime), order);
     }
 
     /** {@inheritDoc} */
-    @Override public final void onAckReceived() {
+    @Override public void onAckReceived() {
         // No-op.
     }
 
@@ -197,15 +237,13 @@ public class GridCacheVersion implements CacheVersion, Externalizable {
 
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
-    @Override public int compareTo(CacheVersion other) {
-        assert other instanceof GridCacheVersion : other;
-
+    @Override public int compareTo(GridCacheVersion other) {
         int res = Integer.compare(topologyVersion(), other.topologyVersion());
 
         if (res != 0)
             return res;
 
-        res = Long.compare(order, ((GridCacheVersion)other).order);
+        res = Long.compare(order, other.order);
 
         if (res != 0)
             return res;

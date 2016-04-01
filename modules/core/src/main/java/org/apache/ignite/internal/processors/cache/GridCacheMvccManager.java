@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVe
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
-import org.apache.ignite.internal.processors.cache.version.CacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -90,7 +90,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private ConcurrentMap<Long, GridCacheExplicitLockSpan> pendingExplicit;
 
     /** Set of removed lock versions. */
-    private GridBoundedConcurrentLinkedHashSet<CacheVersion> rmvLocks =
+    private GridBoundedConcurrentLinkedHashSet<GridCacheVersion> rmvLocks =
         new GridBoundedConcurrentLinkedHashSet<>(MAX_REMOVED_LOCKS, MAX_REMOVED_LOCKS, 0.75f, 16, PER_SEGMENT_Q);
 
     /** Locked keys. */
@@ -103,17 +103,17 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
     /** Active futures mapped by version ID. */
     @GridToStringExclude
-    private final ConcurrentMap<CacheVersion, Collection<GridCacheMvccFuture<?>>> mvccFuts = newMap();
+    private final ConcurrentMap<GridCacheVersion, Collection<GridCacheMvccFuture<?>>> mvccFuts = newMap();
 
     /** Pending atomic futures. */
-    private final ConcurrentMap<CacheVersion, GridCacheAtomicFuture<?>> atomicFuts =
+    private final ConcurrentMap<GridCacheVersion, GridCacheAtomicFuture<?>> atomicFuts =
         new ConcurrentHashMap8<>();
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridCacheFuture<?>> futs = new ConcurrentHashMap8<>();
 
     /** Near to DHT version mapping. */
-    private final ConcurrentMap<CacheVersion, CacheVersion> near2dht = newMap();
+    private final ConcurrentMap<GridCacheVersion, GridCacheVersion> near2dht = newMap();
 
     /** Finish futures. */
     private final ConcurrentLinkedDeque8<FinishLockFuture> finishFuts = new ConcurrentLinkedDeque8<>();
@@ -257,7 +257,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 cacheFut.onNodeLeft(discoEvt.eventNode().id());
 
                 if (cacheFut.isCancelled() || cacheFut.isDone()) {
-                    CacheVersion futVer = cacheFut.version();
+                    GridCacheVersion futVer = cacheFut.version();
 
                     if (futVer != null)
                         atomicFuts.remove(futVer, cacheFut);
@@ -338,11 +338,11 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param from From version.
      * @param to To version.
      */
-    public void mapVersion(CacheVersion from, CacheVersion to) {
+    public void mapVersion(GridCacheVersion from, GridCacheVersion to) {
         assert from != null;
         assert to != null;
 
-        CacheVersion old = near2dht.put(from, to);
+        GridCacheVersion old = near2dht.put(from, to);
 
         assert old == null || old == to || old.equals(to);
 
@@ -354,10 +354,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param from Near version.
      * @return DHT version.
      */
-    public CacheVersion mappedVersion(CacheVersion from) {
+    public GridCacheVersion mappedVersion(GridCacheVersion from) {
         assert from != null;
 
-        CacheVersion to = near2dht.get(from);
+        GridCacheVersion to = near2dht.get(from);
 
         if (log.isDebugEnabled())
             log.debug("Retrieved mapped version [from=" + from + ", to=" + to + ']');
@@ -415,10 +415,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param from From version.
      * @return To version.
      */
-    public CacheVersion unmapVersion(CacheVersion from) {
+    public GridCacheVersion unmapVersion(GridCacheVersion from) {
         assert from != null;
 
-        CacheVersion to = near2dht.remove(from);
+        GridCacheVersion to = near2dht.remove(from);
 
         if (log.isDebugEnabled())
             log.debug("Removed mapped version [from=" + from + ", to=" + to + ']');
@@ -431,7 +431,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param fut Future.
      * @return {@code False} if future was forcibly completed with error.
      */
-    public boolean addAtomicFuture(CacheVersion futVer, GridCacheAtomicFuture<?> fut) {
+    public boolean addAtomicFuture(GridCacheVersion futVer, GridCacheAtomicFuture<?> fut) {
         IgniteInternalFuture<?> old = atomicFuts.put(futVer, fut);
 
         assert old == null : "Old future is not null [futVer=" + futVer + ", fut=" + fut + ", old=" + old + ']';
@@ -452,7 +452,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futVer Future ID.
      * @return Future.
      */
-    @Nullable public IgniteInternalFuture<?> atomicFuture(CacheVersion futVer) {
+    @Nullable public IgniteInternalFuture<?> atomicFuture(GridCacheVersion futVer) {
         return atomicFuts.get(futVer);
     }
 
@@ -460,7 +460,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futVer Future ID.
      * @return Removed future.
      */
-    @Nullable public IgniteInternalFuture<?> removeAtomicFuture(CacheVersion futVer) {
+    @Nullable public IgniteInternalFuture<?> removeAtomicFuture(GridCacheVersion futVer) {
         return atomicFuts.remove(futVer);
     }
 
@@ -546,7 +546,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
             // Handle version mappings.
             if (fut instanceof GridCacheMappedVersion) {
-                CacheVersion from = ((GridCacheMappedVersion)fut).mappedVersion();
+                GridCacheVersion from = ((GridCacheMappedVersion)fut).mappedVersion();
 
                 if (from != null)
                     mapVersion(from, fut.version());
@@ -637,7 +637,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Future.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public GridCacheMvccFuture<?> mvccFuture(CacheVersion ver, IgniteUuid futId) {
+    @Nullable public GridCacheMvccFuture<?> mvccFuture(GridCacheVersion ver, IgniteUuid futId) {
         Collection<GridCacheMvccFuture<?>> futs = this.mvccFuts.get(ver);
 
         if (futs != null) {
@@ -672,7 +672,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param ver Lock version to check.
      * @return {@code True} if lock had been removed.
      */
-    public boolean isRemoved(GridCacheContext cacheCtx, CacheVersion ver) {
+    public boolean isRemoved(GridCacheContext cacheCtx, GridCacheVersion ver) {
         return !cacheCtx.isNear() && !cacheCtx.isLocal() && ver != null && rmvLocks.contains(ver);
     }
 
@@ -681,7 +681,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param ver Obsolete entry version.
      * @return {@code True} if added.
      */
-    public boolean addRemoved(GridCacheContext cacheCtx, CacheVersion ver) {
+    public boolean addRemoved(GridCacheContext cacheCtx, GridCacheVersion ver) {
         if (cacheCtx.isNear() || cacheCtx.isLocal())
             return true;
 
@@ -893,7 +893,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      */
     public GridCacheMvccCandidate removeExplicitLock(long threadId,
         IgniteTxKey key,
-        @Nullable CacheVersion ver)
+        @Nullable GridCacheVersion ver)
     {
         assert threadId > 0;
 
@@ -935,7 +935,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param ver Version.
      * @return Lock candidate that satisfies given criteria or {@code null} if no such candidate.
      */
-    @Nullable public GridCacheMvccCandidate explicitLock(IgniteTxKey key, @Nullable CacheVersion ver) {
+    @Nullable public GridCacheMvccCandidate explicitLock(IgniteTxKey key, @Nullable GridCacheVersion ver) {
         for (GridCacheExplicitLockSpan span : pendingExplicit.values()) {
             GridCacheMvccCandidate cand = span.candidate(key, ver);
 
@@ -1248,7 +1248,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             if (!pendingLocks.isEmpty()) {
-                Map<CacheVersion, IgniteInternalTx> txs = new HashMap<>(1, 1.0f);
+                Map<GridCacheVersion, IgniteInternalTx> txs = new HashMap<>(1, 1.0f);
 
                 for (Collection<GridCacheMvccCandidate> cands : pendingLocks.values())
                     for (GridCacheMvccCandidate c : cands)
