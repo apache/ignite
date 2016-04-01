@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1042,7 +1043,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(AffinityTopologyVersion res, Throwable err) {
+    @Override public boolean onDone0(@Nullable AffinityTopologyVersion res, @Nullable Throwable err, Executor lsnrExec) {
         if (err == null) {
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                 if (cacheCtx.isLocal())
@@ -1245,9 +1246,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * @param competeAsync If {@code true} completes future from another thread (to do not block discovery thread).
+     * @param discoThread If {@code true} completes future from another thread (to do not block discovery thread).
      */
-    private void onAllReceived(boolean competeAsync) {
+    private void onAllReceived(boolean discoThread) {
         try {
             assert crd.isLocal();
 
@@ -1287,10 +1288,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (!nodes.isEmpty())
                     sendAllPartitions(nodes);
 
-                if (competeAsync)
-                    competeAsync();
-                else
-                    onDone(exchangeId().topologyVersion());
+                onDone0(exchangeId().topologyVersion(), discoThread ? cctx.asyncListenerPool() : null);
             }
         }
         catch (IgniteCheckedException e) {
@@ -1473,7 +1471,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             updatePartitionFullMap(partsMsg);
                         }
 
-                        competeAsync();
+                        onDone0(topologyVersion(), cctx.asyncListenerPool());
                     }
                     else {
                         if (log.isDebugEnabled()) {
@@ -1587,7 +1585,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                 cacheCtx.affinity().affinityCache().initialize(topologyVersion(), affAssignment);
                             }
 
-                            competeAsync();
+                            onDone0(topologyVersion(), cctx.asyncListenerPool());
 
                             return;
                         }
@@ -1620,17 +1618,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         finally {
             leaveBusy();
         }
-    }
-
-    /**
-     *
-     */
-    private void competeAsync() {
-        cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-            @Override public void run() {
-                onDone(topologyVersion());
-            }
-        });
     }
 
     /** {@inheritDoc} */

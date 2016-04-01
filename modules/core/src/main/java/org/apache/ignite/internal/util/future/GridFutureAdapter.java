@@ -234,8 +234,10 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
 
     /**
      * Notifies all registered listeners.
+     *
+     * @param lsnrExec Optional executor for listener notification.
      */
-    private void notifyListeners(Executor lsnrExec) {
+    private void notifyListeners(@Nullable Executor lsnrExec) {
         final IgniteInClosure<? super IgniteInternalFuture<R>> lsnr0;
 
         synchronized (this) {
@@ -334,15 +336,6 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /**
-     * @param res Result.
-     * @param lsnrExec Executor for listeners notification.
-     * @return {@code True} if result was set by this call.
-     */
-    public final boolean onDone0(@Nullable R res, Executor lsnrExec) {
-       return onDone(res, null, false, lsnrExec);
-    }
-
-    /**
      * Callback to notify that future is finished.
      * This method must delegate to {@link #onDone(Object, Throwable)} method.
      *
@@ -351,15 +344,6 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      */
     public final boolean onDone(@Nullable Throwable err) {
         return onDone(null, err);
-    }
-
-    /**
-     * @param err Error.
-     * @param lsnrExec Executor for listeners notification.
-     * @return {@code True} if result was set by this call.
-     */
-    public final boolean onDone0(@Nullable Throwable err, Executor lsnrExec) {
-        return onDone(null, err, false, lsnrExec);
     }
 
     /**
@@ -374,6 +358,30 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         return onDone(res, err, false, null);
     }
 
+    /**
+     * @param res Result.
+     * @param lsnrExec Executor for listeners notification.
+     * @return {@code True} if result was set by this call.
+     */
+    public final boolean onDone0(@Nullable R res, Executor lsnrExec) {
+        return onDone0(res, null, lsnrExec);
+    }
+
+    /**
+     * @param err Error.
+     * @param lsnrExec Executor for listeners notification.
+     * @return {@code True} if result was set by this call.
+     */
+    public final boolean onDone0(@Nullable Throwable err, Executor lsnrExec) {
+        return onDone0(null, err, lsnrExec);
+    }
+
+    /**
+     * @param res Result.
+     * @param err Optional error.
+     * @param lsnrExec Executor for listeners notification.
+     * @return {@code True} if result was set by this call.
+     */
     public boolean onDone0(@Nullable R res, @Nullable Throwable err, Executor lsnrExec) {
         return onDone(res, err, false, lsnrExec);
     }
