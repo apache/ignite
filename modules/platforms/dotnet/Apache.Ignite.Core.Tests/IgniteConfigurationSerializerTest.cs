@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Tests.Binary;
+    using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
     /// <summary>
@@ -97,6 +98,7 @@ namespace Apache.Ignite.Core.Tests
                             </includedEventTypes>
                             <userAttributes><pair key='myNode' value='true' /></userAttributes>
                             <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
+                            <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' DefaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33'
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
@@ -144,6 +146,13 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(2, atomicCfg.Backups);
             Assert.AreEqual(CacheMode.Local, atomicCfg.CacheMode);
             Assert.AreEqual(250, atomicCfg.AtomicSequenceReserveSize);
+
+            var tx = cfg.TransactionConfiguration;
+            Assert.AreEqual(TransactionConcurrency.Optimistic, tx.DefaultTransactionConcurrency);
+            Assert.AreEqual(TransactionIsolation.RepeatableRead, tx.DefaultTransactionIsolation);
+            Assert.AreEqual(new TimeSpan(0,1,2), tx.DefaultTimeout);
+            Assert.AreEqual(15, tx.PessimisticTransactionLogSize);
+            Assert.AreEqual(TimeSpan.FromSeconds(33), tx.PessimisticTransactionLogLinger);
         }
 
         /// <summary>
@@ -427,6 +436,14 @@ namespace Apache.Ignite.Core.Tests
                     CacheMode = CacheMode.Replicated,
                     AtomicSequenceReserveSize = 200,
                     Backups = 2
+                },
+                TransactionConfiguration = new TransactionConfiguration
+                {
+                    PessimisticTransactionLogSize = 23,
+                    DefaultTransactionIsolation = TransactionIsolation.ReadCommitted,
+                    DefaultTimeout = TimeSpan.FromDays(2),
+                    DefaultTransactionConcurrency = TransactionConcurrency.Optimistic,
+                    PessimisticTransactionLogLinger = TimeSpan.FromHours(3)
                 }
             };
         }
