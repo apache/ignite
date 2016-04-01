@@ -23,8 +23,10 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
@@ -123,19 +125,25 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Third node. */
         private IIgnite _grid3;
 
+        private Stopwatch sw;
+
         /// <summary>
         /// Initialization routine.
         /// </summary>
         [TestFixtureSetUp]
         public void InitClient()
         {
+            sw = Stopwatch.StartNew();
             TestUtils.KillProcesses();
 
             var configs = GetConfigs();
 
-            _grid1 = Ignition.Start(Configuration(configs.Item1));
-            _grid2 = Ignition.Start(Configuration(configs.Item2));
-            _grid3 = Ignition.Start(Configuration(configs.Item3));
+            var grids = TestUtils.StartMultiple(Configuration(configs.Item1), Configuration(configs.Item2),
+                Configuration(configs.Item3));
+
+            _grid1 = grids[0];
+            _grid2 = grids[1];
+            _grid3 = grids[2];
         }
 
         /// <summary>
@@ -169,6 +177,10 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             if (_grid3 != null)
                 Ignition.Stop(_grid3.Name, true);
+
+            sw.Stop();
+
+            Console.WriteLine("Test finished in: " + sw.Elapsed);
         }
 
         [TearDown]

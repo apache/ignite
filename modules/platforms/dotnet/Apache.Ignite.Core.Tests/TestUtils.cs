@@ -333,5 +333,15 @@ namespace Apache.Ignite.Core.Tests
                 JvmClasspath = CreateTestClasspath()
             };
         }
+
+        /// <summary>
+        /// Starts multiple grids in parallel.
+        /// </summary>
+        /// <param name="configs">The configs.</param>
+        /// <returns>Started grids.</returns>
+        public static IIgnite[] StartMultiple(params IgniteConfiguration[] configs)
+        {
+            return configs.AsParallel().Select(Ignition.Start).ToArray();
+        }
     }
 }
