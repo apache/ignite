@@ -621,6 +621,20 @@ import java.util.*;
         else
             w.writeBoolean(false);
 
+        TransactionConfiguration tx = cfg.getTransactionConfiguration();
+
+        if (tx != null) {
+            w.writeBoolean(true);
+
+            w.writeInt(tx.getPessimisticTxLogSize());
+            w.writeInt(tx.getDefaultTxConcurrency().ordinal());
+            w.writeInt(tx.getDefaultTxIsolation().ordinal());
+            w.writeLong(tx.getDefaultTxTimeout());
+            w.writeInt(tx.getPessimisticTxLogLinger());
+        }
+        else
+            w.writeBoolean(false);
+
         w.writeString(cfg.getIgniteHome());
 
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
