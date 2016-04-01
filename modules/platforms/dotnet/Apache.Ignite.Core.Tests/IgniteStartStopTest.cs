@@ -52,17 +52,15 @@ namespace Apache.Ignite.Core.Tests
         [TearDown]
         public void TearDown()
         {
-            var sw = Stopwatch.StartNew();
-
             TestUtils.KillProcesses();
             Ignition.StopAll(true);
-
-            Console.WriteLine(sw.Elapsed);
         }
 
         [Test]  // TODO: DELME!
         public void TestStartupTime()
         {
+            var sw = Stopwatch.StartNew();
+
             var cfg = new IgniteConfiguration
             {
                 DiscoverySpi = new TcpDiscoverySpi
@@ -85,6 +83,8 @@ namespace Apache.Ignite.Core.Tests
             var ignite = Ignition.Start(cfg);
 
             Ignition.Stop(ignite.Name, true);
+
+            Console.WriteLine(sw.Elapsed);
         }
 
         /// <summary>
