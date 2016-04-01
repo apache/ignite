@@ -381,6 +381,16 @@ public class GridCacheUtils {
     }
 
     /**
+     * Create filter array.
+     *
+     * @param filter Filter.
+     * @return Filter array.
+     */
+    public static CacheEntryPredicate[] filterArray(@Nullable CacheEntryPredicate filter) {
+        return filter != null ? new CacheEntryPredicate[] { filter } : CU.empty0();
+    }
+
+    /**
      * Entry predicate factory mostly used for deserialization.
      *
      * @param <K> Key type.
