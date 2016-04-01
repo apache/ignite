@@ -283,6 +283,15 @@
                         <xs:attribute name="atomicSequenceReserveSize" type="xs:int" />
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="transactionConfiguration" minOccurs="0">
+                    <xs:complexType>
+                        <xs:attribute name="defaultTransactionConcurrency" type="xs:string" />
+                        <xs:attribute name="defaultTransactionIsolation" type="xs:string" />
+                        <xs:attribute name="defaultTimeout" type="xs:string" />
+                        <xs:attribute name="pessimisticTransactionLogSize" type="xs:int" />
+                        <xs:attribute name="pessimisticTransactionLogLinger" type="xs:string" />
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="gridName" type="xs:string" />
             <xs:attribute name="jvmDllPath" type="xs:string" />

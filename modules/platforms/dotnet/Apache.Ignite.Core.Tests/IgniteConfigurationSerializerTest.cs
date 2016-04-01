@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Tests
                             </includedEventTypes>
                             <userAttributes><pair key='myNode' value='true' /></userAttributes>
                             <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
-                            <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' DefaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
+                            <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
