@@ -22,6 +22,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
@@ -273,7 +274,7 @@ namespace Apache.Ignite.Linq.Impl
                 // H2 allows NULL & -1 for unlimited, but Ignite indexing does not
                 // Maximum limit that works is (int.MaxValue - offset) 
                 var offsetInt = (int) ((ConstantExpression) offset.Count).Value;
-                _builder.Append((int.MaxValue - offsetInt).ToString());
+                _builder.Append((int.MaxValue - offsetInt).ToString(CultureInfo.InvariantCulture));
             }
             else
                 BuildSqlExpression(limit.Count);
