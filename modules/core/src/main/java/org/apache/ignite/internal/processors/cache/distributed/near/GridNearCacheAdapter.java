@@ -486,10 +486,15 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             return super.splitClearLocally(srv, near, readers);
     }
 
+    /**
+     * Wrapper for KeySet.
+     */
     private final class KeySet extends AbstractSet<K> {
 
+        /** Near set. */
         private final Set<K> nearSet;
 
+        /** DHT set. */
         private final Set<K> dhtSet;
 
         private KeySet(Set<K> nearSet, Set<K> dhtSet) {
@@ -497,6 +502,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             this.dhtSet = dhtSet;
         }
 
+        /** {@inheritDoc} */
         @Override public Iterator<K> iterator() {
             return new KeySetIterator(nearSet.iterator(),
                 F.iterator0(dhtSet, false, new P1<K>() {
@@ -511,11 +517,15 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 }));
         }
 
+        /** {@inheritDoc} */
         @Override public int size() {
             return F.size(iterator());
         }
     }
 
+    /**
+     * Key set iterator.
+     */
     private final class KeySetIterator implements Iterator<K> {
         /** */
         private Iterator<K> dhtIter;

@@ -6298,28 +6298,42 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
     }
 
+    /**
+     * Iterator implementation for KeySet.
+     */
     private final class KeySetIterator implements Iterator<K> {
+        /** Internal map entry iterator. */
         private final Iterator<GridCacheMapEntry> internalIterator;
 
+        /** Keep binary flag. */
         private final boolean keepBinary;
 
+        /** Current entry. */
         private GridCacheMapEntry current;
 
+        /**
+         * Constructor.
+         * @param internalIterator Internal iterator.
+         * @param keepBinary Keep binary flag.
+         */
         private KeySetIterator(Iterator<GridCacheMapEntry> internalIterator, boolean keepBinary) {
             this.internalIterator = internalIterator;
             this.keepBinary = keepBinary;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean hasNext() {
             return internalIterator.hasNext();
         }
 
+        /** {@inheritDoc} */
         @Override public K next() {
             current = internalIterator.next();
 
             return (K)ctx.unwrapBinaryIfNeeded(current.key(), keepBinary, true);
         }
 
+        /** {@inheritDoc} */
         @Override public void remove() {
             if (current == null)
                 throw new IllegalStateException();
@@ -6335,11 +6349,20 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
     }
 
+    /**
+     * A wrapper over internal map that provides set semantics and constant-time contains() check.
+     */
     private final class KeySet extends AbstractSet<K> {
+        /** Internal entry set. */
         private final Set<GridCacheMapEntry> internalSet;
 
+        /** Keep binary flag. */
         private final boolean keepBinary;
 
+        /**
+         * Constructor
+         * @param internalSet Internal set.
+         */
         private KeySet(Set<GridCacheMapEntry> internalSet) {
             this.internalSet = internalSet;
 
@@ -6348,14 +6371,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             keepBinary = opCtx != null && opCtx.isKeepBinary();
         }
 
+        /** {@inheritDoc} */
         @Override public Iterator<K> iterator() {
             return new KeySetIterator(internalSet.iterator(), keepBinary);
         }
 
+        /** {@inheritDoc} */
         @Override public int size() {
             return F.size(iterator());
         }
 
+        /** {@inheritDoc} */
         @Override public boolean contains(Object o) {
             GridCacheMapEntry entry = map.getEntry(ctx.toCacheKeyObject(o));
 
@@ -6363,25 +6389,38 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
     }
 
+    /**
+     * Iterator implementation for EntrySet.
+     */
     private final class EntryIterator implements Iterator<Cache.Entry<K, V>> {
+
+        /** Internal iterator. */
         private final Iterator<GridCacheMapEntry> internalIterator;
 
+        /** Current entry. */
         private GridCacheMapEntry current;
 
+        /**
+         * Constructor.
+         * @param internalIterator Internal iterator.
+         */
         private EntryIterator(Iterator<GridCacheMapEntry> internalIterator) {
             this.internalIterator = internalIterator;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean hasNext() {
             return internalIterator.hasNext();
         }
 
+        /** {@inheritDoc} */
         @Override public Cache.Entry<K, V> next() {
             current = internalIterator.next();
 
             return current.wrapLazyValue();
         }
 
+        /** {@inheritDoc} */
         @Override public void remove() {
             if (current == null)
                 throw new IllegalStateException();
@@ -6397,21 +6436,30 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
     }
 
+    /**
+     * A wrapper over internal map that provides set semantics and constant-time contains() check.
+     */
     private final class EntrySet extends AbstractSet<Cache.Entry<K, V>> {
+
+        /** Internal set. */
         private final Set<GridCacheMapEntry> internalSet;
 
+        /** Constructor. */
         private EntrySet(Set<GridCacheMapEntry> internalSet) {
             this.internalSet = internalSet;
         }
 
+        /** {@inheritDoc} */
         @Override public Iterator<Cache.Entry<K, V>> iterator() {
             return new EntryIterator(internalSet.iterator());
         }
 
+        /** {@inheritDoc} */
         @Override public int size() {
             return F.size(iterator());
         }
 
+        /** {@inheritDoc} */
         @Override public boolean contains(Object o) {
             GridCacheMapEntry entry = map.getEntry(ctx.toCacheKeyObject(o));
 
