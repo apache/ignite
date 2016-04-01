@@ -212,21 +212,22 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return map.size() == 0;
     }
 
-    /**
-     * @return Number of entries in this partition (constant-time method).
-     */
+    /** {@inheritDoc} */
     @Override public int size() {
         return map.size();
     }
 
+    /** {@inheritDoc} */
     @Override public int publicSize() {
         return map.publicSize();
     }
 
+    /** {@inheritDoc} */
     @Override public void incrementPublicSize(GridCacheEntryEx e) {
         map.incrementPublicSize(e);
     }
 
+    /** {@inheritDoc} */
     @Override public void decrementPublicSize(GridCacheEntryEx e) {
         map.decrementPublicSize(e);
     }
@@ -240,37 +241,45 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return state == MOVING || state == OWNING || state == RENTING;
     }
 
+    /** {@inheritDoc} */
     @Override @Nullable public GridCacheMapEntry getEntry(KeyCacheObject key) {
         return map.getEntry(key);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean removeEntry(GridCacheEntryEx entry) {
         return map.removeEntry(entry);
     }
 
+    /** {@inheritDoc} */
     @Override public Iterable<GridCacheMapEntry> entries(
         CacheEntryPredicate... filter) {
         return map.entries(filter);
     }
 
+    /** {@inheritDoc} */
     @Override public Iterable<GridCacheMapEntry> allEntries(CacheEntryPredicate... filter) {
         return map.allEntries(filter);
     }
 
+    /** {@inheritDoc} */
     @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
         return map.entrySet(filter);
     }
 
+    /** {@inheritDoc} */
     @Override @Nullable public GridCacheMapEntry randomEntry() {
         return map.randomEntry();
     }
 
+    /** {@inheritDoc} */
     @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create, boolean touch) {
         return map.putEntryIfObsoleteOrAbsent(topVer, key, val, create, touch);
     }
 
+    /** {@inheritDoc} */
     @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
         return map.keySet(filter);
     }

@@ -115,6 +115,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override protected GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */

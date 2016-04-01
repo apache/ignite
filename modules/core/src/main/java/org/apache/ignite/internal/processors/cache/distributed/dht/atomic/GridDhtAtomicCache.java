@@ -173,7 +173,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public boolean isDhtAtomic() {
         return true;
     }
-
+    /** {@inheritDoc} */
     @Override protected GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */

@@ -30,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
 
+    /** Context. */
     private final GridCacheContext ctx;
 
     /**
@@ -39,12 +40,13 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
         this.ctx = ctx;
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry getEntry(KeyCacheObject key) {
         return null;
     }
 
-    @Override
-    public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
+    /** {@inheritDoc} */
+    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create, boolean touch) {
         if (create)
             return ctx.useOffheapEntry() ?
@@ -54,42 +56,52 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
             return null;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean removeEntry(GridCacheEntryEx entry) {
         throw new AssertionError();
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         return 0;
     }
 
+    /** {@inheritDoc} */
     @Override public int publicSize() {
         return 0;
     }
 
+    /** {@inheritDoc} */
     @Override public void incrementPublicSize(GridCacheEntryEx e) {
         // noop
     }
 
+    /** {@inheritDoc} */
     @Override public void decrementPublicSize(GridCacheEntryEx e) {
         // noop
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry randomEntry() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
         return Collections.emptySet();
     }
 
+    /** {@inheritDoc} */
     @Override public Iterable<GridCacheMapEntry> entries(CacheEntryPredicate... filter) {
         return Collections.emptySet();
     }
 
+    /** {@inheritDoc} */
     @Override public Iterable<GridCacheMapEntry> allEntries(CacheEntryPredicate... filter) {
         return Collections.emptySet();
     }
 
+    /** {@inheritDoc} */
     @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
         return Collections.emptySet();
     }

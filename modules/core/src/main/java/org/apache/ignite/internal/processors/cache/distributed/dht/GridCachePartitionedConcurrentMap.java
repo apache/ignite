@@ -36,14 +36,23 @@ import org.apache.ignite.internal.processors.cache.PartitionedReadOnlySet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * An implementation of GridCacheConcurrentMap that will delegate all method calls to corresponding local partition.
+ */
 public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap {
 
+    /** Context. */
     private final GridCacheContext ctx;
 
+    /**
+     * Constructor.
+     * @param ctx Context.
+     */
     public GridCachePartitionedConcurrentMap(GridCacheContext ctx) {
         this.ctx = ctx;
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry getEntry(KeyCacheObject key) {
         GridDhtLocalPartition part = ctx.topology().localPartition(key, false);
 
@@ -53,8 +62,8 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         return part.getEntry(key);
     }
 
-    @Override
-    public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
+    /** {@inheritDoc} */
+    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create, boolean touch) {
         GridDhtLocalPartition part = ctx.topology().localPartition(key, create);
 
@@ -64,6 +73,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         return part.putEntryIfObsoleteOrAbsent(topVer, key, val, create, touch);
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         int size = 0;
 
@@ -74,6 +84,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         return size;
     }
 
+    /** {@inheritDoc} */
     @Override public int publicSize() {
         int size = 0;
 
@@ -84,14 +95,17 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         return size;
     }
 
+    /** {@inheritDoc} */
     @Override public void incrementPublicSize(GridCacheEntryEx e) {
         ctx.topology().localPartition(e.key(), true).incrementPublicSize(e);
     }
 
+    /** {@inheritDoc} */
     @Override public void decrementPublicSize(GridCacheEntryEx e) {
         ctx.topology().localPartition(e.key(), true).decrementPublicSize(e);
     }
 
+    /** {@inheritDoc} */
     @Override public boolean removeEntry(GridCacheEntryEx entry) {
         GridDhtLocalPartition part = ctx.topology().localPartition(entry.key(), false);
 
@@ -101,10 +115,12 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         return part.removeEntry(entry);
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry randomEntry() {
         return entries().iterator().next();
     }
 
+    /** {@inheritDoc} */
     @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
         Collection<Set<KeyCacheObject>> sets = new ArrayList<>();
 
@@ -115,6 +131,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         return new PartitionedReadOnlySet<>(sets);
     }
 
+    /** {@inheritDoc} */
     @Override public Iterable<GridCacheMapEntry> entries(final CacheEntryPredicate... filter) {
         return new Iterable<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {
@@ -129,6 +146,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         };
     }
 
+    /** {@inheritDoc} */
     @Override public Iterable<GridCacheMapEntry> allEntries(final CacheEntryPredicate... filter) {
         return new Iterable<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {
@@ -143,6 +161,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         };
     }
 
+    /** {@inheritDoc} */
     @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
         Collection<Set<GridCacheMapEntry>> sets = new ArrayList<>();
 

@@ -66,10 +66,26 @@ public interface GridCacheConcurrentMap {
      */
     int size();
 
+    /**
+     * Returns the number of publicly available key-value mappings in this map.
+     * It excludes entries that are marked as deleted.
+     *
+     * @return the number of publicly available key-value mappings in this map.
+     */
     int publicSize();
 
+    /**
+     * Increments public size.
+     *
+     * @param e Entry that caused public size change.
+     */
     void incrementPublicSize(GridCacheEntryEx e);
 
+    /**
+     * Decrements public size.
+     *
+     * @param e Entry that caused public size change.
+     */
     void decrementPublicSize(GridCacheEntryEx e);
 
     @Nullable GridCacheMapEntry randomEntry();

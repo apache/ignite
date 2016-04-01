@@ -4683,26 +4683,4 @@ public class GridFunc {
     public static IgnitePredicate<IgniteInternalFuture<?>> unfinishedFutures() {
         return UNFINISHED_FUTURE;
     }
-
-    public static <T1, T2> Iterable<T2> map(final Iterable<? extends T1> it, final IgniteClosure<T1, T2> cl) {
-        return new Iterable<T2>() {
-            @Override public Iterator<T2> iterator() {
-                return new Iterator<T2>() {
-                    private final Iterator<? extends T1> it0 = it.iterator();
-
-                    @Override public boolean hasNext() {
-                        return it0.hasNext();
-                    }
-
-                    @Override public T2 next() {
-                        return cl.apply(it0.next());
-                    }
-
-                    @Override public void remove() {
-                        throw new UnsupportedOperationException("remove");
-                    }
-                };
-            }
-        };
-    }
 }

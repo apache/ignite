@@ -79,6 +79,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         return preldr;
     }
 
+    /** {@inheritDoc} */
     @Override protected GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */

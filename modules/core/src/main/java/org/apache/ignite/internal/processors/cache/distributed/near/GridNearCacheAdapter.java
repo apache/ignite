@@ -89,6 +89,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         super(ctx, ctx.config().getNearConfiguration().getNearStartSize());
     }
 
+    /** {@inheritDoc} */
     @Override protected GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */

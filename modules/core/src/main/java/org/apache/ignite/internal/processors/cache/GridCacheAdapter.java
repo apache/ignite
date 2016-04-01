@@ -387,10 +387,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return map;
     }
 
+    /**
+     * Increments map public size.
+     * @param e Map entry.
+     */
     public void incrementSize(GridCacheMapEntry e) {
         map.incrementPublicSize(e);
     }
 
+    /**
+     * Decrements map public size.
+     * @param e Map entry.
+     */
     public void decrementSize(GridCacheMapEntry e) {
         map.decrementPublicSize(e);
     }
@@ -535,6 +543,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         // No-op.
     }
 
+    /** {@inheritDoc} */
     protected abstract GridCacheMapEntryFactory entryFactory();
 
     /**
@@ -1022,12 +1031,26 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param filter Filters.
      * @return Collection of cached values.
      */
-    public Iterable<V> values(CacheEntryPredicate... filter) {
-        return F.map(map.entries(filter), new IgniteClosure<GridCacheMapEntry, V>() {
-            @Override public V apply(GridCacheMapEntry o) {
-                return (V)o.wrap().getValue();
+    public Iterable<V> values(final CacheEntryPredicate... filter) {
+        return new Iterable<V>() {
+            @Override public Iterator<V> iterator() {
+                return new Iterator<V>() {
+                    private final Iterator<? extends GridCacheEntryEx> it = entries().iterator();
+
+                    @Override public boolean hasNext() {
+                        return it.hasNext();
+                    }
+
+                    @Override public V next() {
+                        return (V) it.next().wrap().getValue();
+                    }
+
+                    @Override public void remove() {
+                        throw new UnsupportedOperationException("remove");
+                    }
+                };
             }
-        });
+        };
     }
 
     /**
@@ -2056,8 +2079,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public V getAndPut(final K key, final V val, @Nullable final CacheEntryPredicate filter)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -2669,7 +2691,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return asyncOp(new AsyncOp<Boolean>() {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
                 return tx.putAsync(ctx, key, val, false, ctx.hasVal()).chain(
-                    (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>) RET2FLAG);
+                    (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>)RET2FLAG);
             }
 
             @Override public String toString() {
@@ -4240,7 +4262,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                             try {
                                 return op.op(tx0).chain(new CX1<IgniteInternalFuture<T>, T>() {
-                                    @Override public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
+                                    @Override
+                                    public T applyx(IgniteInternalFuture<T> tFut) throws IgniteCheckedException {
                                         try {
                                             return tFut.get();
                                         }

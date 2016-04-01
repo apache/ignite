@@ -234,6 +234,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         top.printMemoryStats(1024);
     }
 
+    /**
+     * @return Cache map entry factory.
+     */
     protected GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
