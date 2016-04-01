@@ -38,6 +38,9 @@ import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
+import org.jetbrains.annotations.Nullable;
+
+import javax.cache.Cache;
 
 /**
  * Cache plugin manager.
