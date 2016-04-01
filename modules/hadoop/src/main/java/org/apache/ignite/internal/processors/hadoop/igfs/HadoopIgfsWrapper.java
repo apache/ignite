@@ -498,7 +498,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             return false;
         }
 
-        return x.isLinkLocalAddress() || x.isLoopbackAddress();
+        return x.isLoopbackAddress();
     }
 
     /**
