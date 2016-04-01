@@ -71,6 +71,7 @@
     <Compile Include="Cache\CachePartitionedTest.cs" />
     <Compile Include="Cache\CacheReplicatedAtomicTest.cs" />
     <Compile Include="Cache\CacheReplicatedTest.cs" />
+    <Compile Include="Cache\Query\CacheLinqTest.cs" />
     <Compile Include="Cache\Query\CacheQueriesCodeConfigurationTest.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQueryAbstractTest.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQueryAtomicBackupTest.cs" />
@@ -158,6 +159,10 @@
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
       <Project>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</Project>
       <Name>Apache.Ignite.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.csproj">
+      <Project>{5b571661-17f4-4f29-8c7d-0edb38ca9b55}</Project>
+      <Name>Apache.Ignite.Linq</Name>
     </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite\Apache.Ignite.csproj">
       <Project>{27F7F3C6-BDDE-43A9-B565-856F8395A04B}</Project>

@@ -29,7 +29,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.Affinity;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -76,7 +75,7 @@ public class IgniteSourceTask extends SourceTask {
     private static TaskLocalListener locLsnr = new TaskLocalListener();
 
     /** Remote filter. */
-    private static TaskRemoteFilter rmtLsnr = new TaskRemoteFilter();
+    private static TaskRemoteFilter rmtLsnr;
 
     /** User-defined filter. */
     private static IgnitePredicate<CacheEvent> filter;
@@ -130,6 +129,8 @@ public class IgniteSourceTask extends SourceTask {
                 }
             }
         }
+
+        rmtLsnr = new TaskRemoteFilter(cacheName);
 
         try {
             int[] evts = cacheEvents(props.get(IgniteSourceConstants.CACHE_EVENTS));
@@ -251,12 +252,18 @@ public class IgniteSourceTask extends SourceTask {
         @IgniteInstanceResource
         Ignite ignite;
 
+        /** Cache name. */
+        private final String cacheName;
+
+        TaskRemoteFilter(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
         @Override public boolean apply(CacheEvent evt) {
 
             Affinity affinity = ignite.affinity(cacheName);
-            ClusterNode evtNode = evt.eventNode();
 
-            if (affinity.isPrimary(evtNode, evt.key())) {
+            if (affinity.isPrimary(ignite.cluster().localNode(), evt.key())) {
                 // Process this event. Ignored on backups.
                 if (filter != null && filter.apply(evt))
                     return false;
