@@ -407,54 +407,53 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             }
         }
 
-        final boolean isLocAddr = isLocAddr(endpoint.host());
-
         // 4. Try local TCP connection.
-        boolean skipLocTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP, authority, false);
+        if (curDelegate == null) {
+            final boolean isLocAddr = isLocAddr(endpoint.host());
 
-        if (curDelegate == null && !skipLocTcp && isLocAddr) {
-            HadoopIgfsEx hadoop = null;
+            boolean skipLocTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP, authority, false);
 
-            try {
-                hadoop = new HadoopIgfsOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.igfs(),
-                    log, userName);
+            if (!skipLocTcp && isLocAddr) {
+                HadoopIgfsEx hadoop = null;
 
-                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
+                try {
+                    hadoop = new HadoopIgfsOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.igfs(),
+                        log, userName);
+
+                    curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    if (e instanceof HadoopIgfsCommunicationException)
+                        hadoop.close(true);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
+                            ", port=" + endpoint.port() + ']', e);
+
+                    errTcp = e;
+                }
             }
-            catch (IOException | IgniteCheckedException e) {
-                if (e instanceof HadoopIgfsCommunicationException)
-                    hadoop.close(true);
 
-                if (log.isDebugEnabled())
-                    log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
-                        ", port=" + endpoint.port() + ']', e);
+            // 5. Try remote TCP connection, if a non-local address specified:
+            if (curDelegate == null && !isLocAddr) {
+                HadoopIgfsEx hadoop = null;
 
-                errTcp = e;
-            }
-        }
+                try {
+                    hadoop = new HadoopIgfsOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.igfs(),
+                        log, userName);
 
-        // 5. Try remote TCP connection, if a non-local address specified:
-        if (curDelegate != null)
-            return curDelegate;
+                    curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
+                }
+                catch (IOException | IgniteCheckedException e) {
+                    if (e instanceof HadoopIgfsCommunicationException)
+                        hadoop.close(true);
 
-        if (!isLocAddr) {
-            HadoopIgfsEx hadoop = null;
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
+                            ", port=" + endpoint.port() + ']', e);
 
-            try {
-                hadoop = new HadoopIgfsOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.igfs(),
-                    log, userName);
-
-                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
-            }
-            catch (IOException | IgniteCheckedException e) {
-                if (e instanceof HadoopIgfsCommunicationException)
-                    hadoop.close(true);
-
-                if (log.isDebugEnabled())
-                    log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
-                        ", port=" + endpoint.port() + ']', e);
-
-                errTcp = e;
+                    errTcp = e;
+                }
             }
         }
 
@@ -489,17 +488,17 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             // empty address treated as local address:
             return true;
 
+        final InetAddress x;
+
         try {
-            InetAddress x = InetAddress.getByName(host);
-
-            assert x != null;
-
-            return x.isLinkLocalAddress() || x.isLoopbackAddress();
+            x = InetAddress.getByName(host);
         }
         catch (IOException ioe) {
-            // Local address must be unresolvable:
+            // Local address must be resolvable:
             return false;
         }
+
+        return x.isLinkLocalAddress() || x.isLoopbackAddress();
     }
 
     /**
