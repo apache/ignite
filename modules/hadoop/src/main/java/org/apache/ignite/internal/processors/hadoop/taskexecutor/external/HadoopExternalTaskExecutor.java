@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -938,7 +939,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable IgniteBiTuple<Process, HadoopProcessDescriptor> res,
-            @Nullable Throwable err) {
+            @Nullable Throwable err, Executor lsnrExec) {
             if (err == null) {
                 HadoopProcess proc = runningProcsByProcId.get(childProcId);
 
@@ -957,7 +958,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                 runningProcsByProcId.remove(childProcId);
             }
 
-            if (super.onDone(res, err)) {
+            if (super.onDone(res, err, lsnrExec)) {
                 if (err == null) {
                     if (log.isDebugEnabled())
                         log.debug("Initialized child process for external task execution [jobId=" + jobId +
