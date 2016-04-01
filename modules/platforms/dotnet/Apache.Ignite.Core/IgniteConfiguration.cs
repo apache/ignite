@@ -45,12 +45,12 @@
         /// <summary>
         /// Default initial JVM memory in megabytes.
         /// </summary>
-        public const int DefaultJvmInitMem = 512;
+        public const int DefaultJvmInitMem = -1;
 
         /// <summary>
         /// Default maximum JVM memory in megabytes.
         /// </summary>
-        public const int DefaultJvmMaxMem = 1024;
+        public const int DefaultJvmMaxMem = -1;
 
         /// <summary>
         /// Default metrics expire time.
@@ -373,6 +373,7 @@
 
         /// <summary>
         /// Initial amount of memory in megabytes given to JVM. Maps to -Xms Java option.
+        /// <code>-1</code> maps to JVM defaults.
         /// Defaults to <see cref="DefaultJvmInitMem"/>.
         /// </summary>
         [DefaultValue(DefaultJvmInitMem)]
@@ -380,6 +381,7 @@
 
         /// <summary>
         /// Maximum amount of memory in megabytes given to JVM. Maps to -Xmx Java option.
+        /// <code>-1</code> maps to JVM defaults.
         /// Defaults to <see cref="DefaultJvmMaxMem"/>.
         /// </summary>
         [DefaultValue(DefaultJvmMaxMem)]
