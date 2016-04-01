@@ -482,7 +482,7 @@
     <None Include="Apache.Ignite.Core.snk" />
     <None Include="IgniteConfigurationSection.xsd">
       <SubType>Designer</SubType>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <ItemGroup />
