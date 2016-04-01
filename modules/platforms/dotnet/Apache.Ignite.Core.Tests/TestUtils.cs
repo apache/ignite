@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
-    using System.Threading.Tasks;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
@@ -342,15 +341,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>Started grids.</returns>
         public static IIgnite[] StartMultiple(params IgniteConfiguration[] configs)
         {
-            //return configs.AsParallel().Select(Ignition.Start).ToArray();
-
-            //var tasks = configs.Select(x => Task.Factory.StartNew(() => Ignition.Start(x))).ToArray();
-
-            var tasks = configs.Select(x => Task.Factory.StartNew(() => Ignition.Start(x))).ToArray();
-
-            Task.WaitAll(tasks.ToArray<Task>());
-
-            return tasks.Select(x => x.Result).ToArray();
+            return configs.AsParallel().Select(Ignition.Start).ToArray();
         }
     }
 }
