@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -1376,7 +1375,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         for (IgniteTxEntry entry : entries) {
             try {
                 for (GridCacheMvccCandidate cand : entry.cached().localCandidates()) {
-                    if (cand.version().compareTo(baseVer) < 0)
+                    if (cand.version().isLess(baseVer))
                         lessPending.add(cand.version());
                 }
             }

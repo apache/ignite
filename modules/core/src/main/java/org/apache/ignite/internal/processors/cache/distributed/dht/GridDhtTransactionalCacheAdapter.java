@@ -1262,7 +1262,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             while (true) {
                 try {
                     for (GridCacheMvccCandidate cand : entry.localCandidates()) {
-                        if (cand.version().compareTo(baseVer) < 0)
+                        if (cand.version().isLess(baseVer))
                             lessPending.add(cand.version());
                     }
 

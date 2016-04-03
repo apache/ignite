@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -103,7 +102,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
-import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.*;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -1395,7 +1395,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         if (needVer) {
                             if (txEntry.op() != READ)
-                                ver = GET_ENTRY_INVALID_VER_UPDATED;
+                                ver = IgniteTxEntry.GET_ENTRY_INVALID_VER_UPDATED;
                             else {
                                 ver = txEntry.entryReadVersion();
 
@@ -1418,7 +1418,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 if (ver == null) {
                                     assert optimistic() && repeatableRead() : this;
 
-                                    ver = GET_ENTRY_INVALID_VER_AFTER_GET;
+                                    ver = IgniteTxEntry.GET_ENTRY_INVALID_VER_AFTER_GET;
                                 }
                             }
 
@@ -2612,7 +2612,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             if (needReadVer) {
                                 assert readVer != null;
 
-                                txEntry.entryReadVersion(singleRmv ? SER_READ_EMPTY_ENTRY_VER : readVer);
+                                txEntry.entryReadVersion(singleRmv ? SER_READ_NOT_EMPTY_VER : readVer);
                             }
                         }
 
@@ -2665,7 +2665,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             if (needReadVer) {
                                 assert readVer != null;
 
-                                txEntry.entryReadVersion(singleRmv ? SER_READ_EMPTY_ENTRY_VER : readVer);
+                                txEntry.entryReadVersion(singleRmv ? SER_READ_NOT_EMPTY_VER : readVer);
                             }
 
                             if (retval && !transform)
@@ -3882,7 +3882,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 if (!explicitVer.equals(xidVer) && explicitCand.threadId() == threadId && !explicitCand.tx() && locCand) {
                     txEntry.explicitVersion(explicitVer);
 
-                    if (explicitVer.compareTo(minVer) < 0)
+                    if (explicitVer.isLess(minVer))
                         minVer = explicitVer;
                 }
             }

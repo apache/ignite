@@ -341,7 +341,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         if (evictHist0 != null ) {
             GridCacheVersion ver0 = evictHist0.get(key);
 
-            if (ver0 == null || ver0.compareTo(ver) < 0) {
+            if (ver0 == null || ver0.isLess(ver)) {
                 GridCacheVersion ver1  = evictHist0.put(key, ver);
 
                 assert ver1 == ver0;
@@ -371,7 +371,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
             // Permit preloading if version in history
             // is missing or less than passed in.
-            return ver0 == null || ver0.compareTo(ver) < 0;
+            return ver0 == null || ver0.isLess(ver);
         }
 
         return false;
