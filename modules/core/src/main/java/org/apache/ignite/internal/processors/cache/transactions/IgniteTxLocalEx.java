@@ -190,6 +190,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public IgniteInternalFuture<Void> loadMissing(
         GridCacheContext cacheCtx,
+        AffinityTopologyVersion topVer,
         boolean readThrough,
         boolean async,
         Collection<KeyCacheObject> keys,

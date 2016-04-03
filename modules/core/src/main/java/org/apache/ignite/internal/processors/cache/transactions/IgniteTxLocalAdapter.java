@@ -407,6 +407,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> loadMissing(
         final GridCacheContext cacheCtx,
+        AffinityTopologyVersion topVer,
         final boolean readThrough,
         boolean async,
         final Collection<KeyCacheObject> keys,
@@ -1647,6 +1648,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
     /**
      * @param cacheCtx Cache context.
+     * @param topVer Topology version.
      * @param map Return map.
      * @param missedMap Missed keys.
      * @param deserializeBinary Deserialize binary flag.
@@ -1657,6 +1659,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     private <K, V> IgniteInternalFuture<Map<K, V>> checkMissed(
         final GridCacheContext cacheCtx,
+        final AffinityTopologyVersion topVer,
         final Map<K, V> map,
         final Map<KeyCacheObject, GridCacheVersion> missedMap,
         final boolean deserializeBinary,
@@ -1685,6 +1688,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             },
             loadMissing(
                 cacheCtx,
+                topVer,
                 !skipStore,
                 false,
                 missedMap.keySet(),
@@ -1766,7 +1770,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     @SuppressWarnings("unchecked")
     @Override public <K, V> IgniteInternalFuture<Map<K, V>> getAllAsync(
         final GridCacheContext cacheCtx,
-        @Nullable AffinityTopologyVersion entryTopVer,
+        @Nullable final AffinityTopologyVersion entryTopVer,
         Collection<KeyCacheObject> keys,
         final boolean deserializeBinary,
         final boolean skipVals,
@@ -1932,7 +1936,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         }
 
                         if (!missed.isEmpty() && cacheCtx.isLocal()) {
+                            AffinityTopologyVersion topVer = topologyVersionSnapshot();
+
+                            if (topVer == null)
+                                topVer = entryTopVer;
+
                             return checkMissed(cacheCtx,
+                                topVer != null ? topVer : topologyVersion(),
                                 retMap,
                                 missed,
                                 deserializeBinary,
@@ -1999,7 +2009,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     if (missed.isEmpty())
                         return new GridFinishedFuture<>(retMap);
 
+                    AffinityTopologyVersion topVer = topologyVersionSnapshot();
+
+                    if (topVer == null)
+                        topVer = entryTopVer;
+
                     return checkMissed(cacheCtx,
+                        topVer != null ? topVer : topologyVersion(),
                         retMap,
                         missed,
                         deserializeBinary,
@@ -2198,7 +2214,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 keepBinary);
 
             if (loadMissed) {
+                AffinityTopologyVersion topVer = topologyVersionSnapshot();
+
+                if (topVer == null)
+                    topVer = entryTopVer;
+
                 return loadMissing(cacheCtx,
+                    topVer != null ? topVer : topologyVersion(),
                     Collections.singleton(cacheKey),
                     filter,
                     ret,
@@ -2361,7 +2383,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             }
 
             if (missedForLoad != null) {
+                AffinityTopologyVersion topVer = topologyVersionSnapshot();
+
+                if (topVer == null)
+                    topVer = entryTopVer;
+
                 return loadMissing(cacheCtx,
+                    topVer != null ? topVer : topologyVersion(),
                     missedForLoad,
                     filter,
                     ret,
@@ -2394,6 +2422,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      */
     private IgniteInternalFuture<Void> loadMissing(
         final GridCacheContext cacheCtx,
+        final AffinityTopologyVersion topVer,
         final Set<KeyCacheObject> keys,
         final CacheEntryPredicate[] filter,
         final GridCacheReturn ret,
@@ -2458,6 +2487,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         return loadMissing(
             cacheCtx,
+            topVer,
             /*read through*/cacheCtx.config().isLoadPreviousValue() && !skipStore,
             /*async*/true,
             keys,

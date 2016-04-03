@@ -5192,18 +5192,25 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             topFut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> topFut) {
-                    IgniteInternalFuture<?> opFut = runOp(tx, topVer, opCtx);
+                    try {
+                        topFut.get();
 
-                    opFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> opFut) {
-                            try {
-                                fut0.onDone(opFut.get());
+                        IgniteInternalFuture<?> opFut = runOp(tx, topVer, opCtx);
+
+                        opFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> opFut) {
+                                try {
+                                    fut0.onDone(opFut.get());
+                                }
+                                catch (IgniteCheckedException e) {
+                                    fut0.onDone(e);
+                                }
                             }
-                            catch (IgniteCheckedException e) {
-                                fut0.onDone(e);
-                            }
-                        }
-                    });
+                        });
+                    }
+                    catch (IgniteCheckedException e) {
+                        fut0.onDone(e);
+                    }
                 }
             });
 

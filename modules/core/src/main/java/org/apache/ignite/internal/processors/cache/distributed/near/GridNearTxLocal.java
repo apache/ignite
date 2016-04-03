@@ -345,6 +345,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> loadMissing(
         final GridCacheContext cacheCtx,
+        AffinityTopologyVersion topVer,
         boolean readThrough,
         boolean async,
         final Collection<KeyCacheObject> keys,
@@ -355,6 +356,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     ) {
         if (cacheCtx.isNear()) {
             return cacheCtx.nearTx().txLoadAsync(this,
+                topVer,
                 keys,
                 readThrough,
                 /*deserializeBinary*/false,
@@ -385,7 +387,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     key,
                     readThrough,
                     /*force primary*/needVer,
-                    topologyVersion(),
+                    topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
                     /*deserializeBinary*/false,
@@ -416,7 +418,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     keys,
                     readThrough,
                     /*force primary*/needVer,
-                    topologyVersion(),
+                    topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
                     /*deserializeBinary*/false,
@@ -446,7 +448,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         else {
             assert cacheCtx.isLocal();
 
-            return super.loadMissing(cacheCtx, readThrough, async, keys, skipVals, keepBinary, needVer, c);
+            return super.loadMissing(cacheCtx,
+                topVer,
+                readThrough,
+                async,
+                keys,
+                skipVals,
+                keepBinary,
+                needVer,
+                c);
         }
     }
 
