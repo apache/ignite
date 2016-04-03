@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -1308,9 +1309,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         timeout = cctx.gridConfig().getNetworkTimeout();
 
                     // After workers line up and before preloading starts we initialize all futures.
-                    if (log.isDebugEnabled())
-                        log.debug("Before waiting for exchange futures [futs" +
-                            F.view(exchFuts.values(), F.unfinishedFutures()) + ", worker=" + this + ']');
+                    if (log.isDebugEnabled()) {
+                        Collection<IgniteInternalFuture> unfinished = new HashSet<>();
+
+                        for (GridDhtPartitionsExchangeFuture fut : exchFuts.values()) {
+                            if (!fut.isDone())
+                                unfinished.add(fut);
+                        }
+
+                        log.debug("Before waiting for exchange futures [futs" + unfinished + ", worker=" + this + ']');
+                    }
 
                     // Take next exchange future.
                     exchFut = poll(futQ, timeout, this);

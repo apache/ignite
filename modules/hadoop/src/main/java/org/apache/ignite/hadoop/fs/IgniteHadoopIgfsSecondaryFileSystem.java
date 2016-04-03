@@ -57,6 +57,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -234,8 +235,13 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         if (perm == null)
             perm = FsPermission.getDefault();
 
-        return F.asMap(IgfsUtils.PROP_PERMISSION, String.format("%04o", perm.toShort()), IgfsUtils.PROP_USER_NAME,
-            status.getOwner(), IgfsUtils.PROP_GROUP_NAME, status.getGroup());
+        HashMap<String, String> res = new HashMap<>(3);
+
+        res.put(IgfsUtils.PROP_PERMISSION, String.format("%04o", perm.toShort()));
+        res.put(IgfsUtils.PROP_USER_NAME, status.getOwner());
+        res.put(IgfsUtils.PROP_GROUP_NAME, status.getGroup());
+
+        return res;
     }
 
     /** {@inheritDoc} */

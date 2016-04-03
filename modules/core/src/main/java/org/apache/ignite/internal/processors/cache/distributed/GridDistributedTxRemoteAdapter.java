@@ -223,8 +223,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public GridTuple<CacheObject> peek(GridCacheContext cacheCtx,
         boolean failFast,
-        KeyCacheObject key,
-        CacheEntryPredicate[] filter)
+        KeyCacheObject key)
         throws GridCacheFilterFailedException
     {
         assert false : "Method peek can only be called on user transaction: " + this;

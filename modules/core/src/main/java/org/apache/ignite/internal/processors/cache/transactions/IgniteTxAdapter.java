@@ -2009,8 +2009,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Nullable @Override public GridTuple<CacheObject> peek(GridCacheContext ctx,
             boolean failFast,
-            KeyCacheObject key,
-            @Nullable CacheEntryPredicate[] filter) {
+            KeyCacheObject key) {
             return null;
         }
 
