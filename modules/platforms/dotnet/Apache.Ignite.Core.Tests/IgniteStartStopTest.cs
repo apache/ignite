@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Tests
                     {
                         IpFinder = new TcpDiscoveryStaticIpFinder
                         {
-                            Endpoints = new[] {"127.0.0.1:47500", "127.0.0.1:47501", "127.0.0.1:47502" }
+                            Endpoints = new[] {"127.0.0.1:47500"}
                         },
                         AckTimeout = TimeSpan.FromSeconds(0.1),
                         JoinTimeout = TimeSpan.FromSeconds(0.1),
@@ -79,15 +79,18 @@ namespace Apache.Ignite.Core.Tests
                     },
                     Localhost = "127.0.0.1",
                     JvmOptions = TestUtils.TestJavaOptions(),
-                    JvmClasspath = TestUtils.CreateTestClasspath()
+                    JvmClasspath = TestUtils.CreateTestClasspath(),
+                    GridName = DateTime.Now.Ticks.ToString()
                 };
 
-                var ignite = Ignition.Start(cfg);
+                Ignition.Start(cfg);
 
-                Ignition.Stop(ignite.Name, true);
+                //Ignition.Stop(ignite.Name, true);
 
                 Console.WriteLine(sw.Elapsed);
             }
+
+            Ignition.StopAll(true);
 
             // More endpoints -> Slowdown!
             // Many endpoints with small timeouts -> Much faster!

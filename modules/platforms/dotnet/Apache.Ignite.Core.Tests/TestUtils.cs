@@ -315,7 +315,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 IpFinder = new TcpDiscoveryStaticIpFinder
                 {
-                    Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
+                    Endpoints = new[] { "127.0.0.1:47500" }
                 },
                 AckTimeout = TimeSpan.FromSeconds(0.1),
                 JoinTimeout = TimeSpan.FromSeconds(0.1),
