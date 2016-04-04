@@ -1,19 +1,19 @@
 cluster_name: 'Test Cluster'
 
-listen_address: 127.0.0.1 #%listen_address%
+listen_address: 127.0.0.1
 native_transport_port: 9042
-rpc_address: 127.0.0.1 #%rpc_address%
+rpc_address: 127.0.0.1
 rpc_port: 9160
 
 seed_provider:
     - class_name: org.apache.cassandra.locator.SimpleSeedProvider
       parameters:
-          - seeds: "127.0.0.1,127.0.0.2,127.0.0.3" #%seeds%
-saved_caches_directory: D:/Tools/cassandra-3.3.0/data/saved_caches #%saved_caches_directory%
-commitlog_directory: D:/Tools/cassandra-3.3.0/data/commitlog # %commitlog_directory%
-hints_directory: D:/Tools/cassandra-3.3.0/data/hints # %hints_directory%
+          - seeds: "127.0.0.1"
+saved_caches_directory: ./data/saved_caches
+commitlog_directory: ./data/commitlog
+hints_directory: ./data/hints
 data_file_directories:
-    - D:/Tools/cassandra-3.3.0/data/data # %data_file_directories%
+    - ./data/data
 
 num_tokens: 256
 hinted_handoff_enabled: true
