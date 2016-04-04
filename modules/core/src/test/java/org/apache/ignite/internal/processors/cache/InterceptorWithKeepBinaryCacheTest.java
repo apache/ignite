@@ -434,8 +434,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
         for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
             info("Key: " + e.getKey());
 
-            // TODO fix it (see IGNITE-2899 and point 1.4.1 in comments)
-//            assertTrue(e.getKey() instanceof BinaryObject);
+            assertTrue("Key:" + e.getKey(), e.getKey() instanceof BinaryObject);
 
             Object res = e.getValue().get();
 
