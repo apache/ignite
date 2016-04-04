@@ -847,6 +847,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         return fut.cacheStarted(aff.cacheId()) ||
             !fut.exchangeId().nodeId().equals(cctx.localNodeId()) ||
+            cctx.localNodeId().equals(cacheDesc.receivedFrom()) ||
             (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
     }
 
