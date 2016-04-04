@@ -141,6 +141,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     fut = cctx.exchange().affinityReadyFuture(startTopVer);
 
                     if (fut != null && !fut.isDone()) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Wait for exchange before processing message [msg=" + msg +
+                                ", node=" + nodeId +
+                                ", waitVer=" + startTopVer +
+                                ", cacheDesc=" + cacheDesc + ']');
+                        }
+
                         fut.listen(new CI1<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> fut) {
                                 cctx.kernalContext().closure().runLocalSafe(new Runnable() {
