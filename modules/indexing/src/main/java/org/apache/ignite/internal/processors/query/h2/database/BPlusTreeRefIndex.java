@@ -880,8 +880,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /** {@inheritDoc} */
     @Override public GridH2Row remove(SearchRow row) {
-//        U.dumpStack(" ----> Remove row: " + row);
-
         Remove r = new Remove(row);
 
         try {
@@ -912,7 +910,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             r.releaseTail();
             r.releaseMeta();
 
-//            if ("_key_PK".equals(getName()) && row.getValue(0).getInt() == 544) {
+//            if ("_key_PK".equals(getName())) { // && row.getValue(0).getInt() == 963
 //                X.println("row= " + row);
 //                X.println("rmv= " + r.removed);
 //                X.println("idx= " + getName());
@@ -1159,7 +1157,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         Tail leaf = r.getTail(0, false);
         Tail inner = r.getTail(r.tail.lvl, false);
 
-        if (leaf.io.getCount(leaf.buf) == 0) { // Merge empty page.
+        int cnt = leaf.io.getCount(leaf.buf);
+
+        if (cnt == 0) { // Merge empty page.
             if (!merge(r, 0)) {
                 // For leaf pages this can happen only when parent is empty -> drop the whole branch.
                 dropEmptyBranch(r.meta, inner);
@@ -1167,11 +1167,16 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 return;
             }
 
-            leaf = r.getTail(0, false); // Handle possible tail restructuring after merge.
+            // Need to handle possible tail restructuring after merge.
+            leaf = r.getTail(0, false);
+
+            cnt = leaf.io.getCount(leaf.buf);
+
+            // If any leaf becomes empty we have to either merge it or drop the whole empty branch.
+            assert cnt > 0: "leaf can't be empty after successful merge";
         }
 
-        int maxIdx = leaf.io.getCount(leaf.buf) - 1;
-        long maxLink = leaf.io.getLink(leaf.buf, maxIdx);
+        long maxLink = leaf.io.getLink(leaf.buf, cnt - 1);
 
         inner.io.setLink(inner.buf, r.innerIdx, maxLink);
         leaf.io.setRemoveId(leaf.buf, globalRmvId.get());
