@@ -342,7 +342,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>Started grids.</returns>
         public static IIgnite[] StartMultiple(params IgniteConfiguration[] configs)
         {
-            return configs.AsParallel().Select(Ignition.Start).ToArray();
+            return configs.Select(Ignition.Start).ToArray();
         }
     }
 }
