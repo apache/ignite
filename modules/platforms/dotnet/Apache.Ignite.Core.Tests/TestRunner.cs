@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests
 
             //TestOne(typeof(IgniteStartStopTest), "TestStartupTime");
 
-            TestAll(typeof (ComputeApiTest));
+            TestAll(typeof (ReconnectTest));
             //TestAllInAssembly();
         }
 
