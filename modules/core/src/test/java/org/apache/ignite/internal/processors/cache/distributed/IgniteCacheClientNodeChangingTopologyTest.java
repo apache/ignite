@@ -67,7 +67,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -844,7 +843,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         IgniteEx ignite4 = startGrid(4);
 
-        AffinityTopologyVersion topVer2 = new AffinityTopologyVersion(5, 1);
+        int minorVer = ignite4.configuration().isLateAffinityAssignment() ? 1 : 0;
+
+        AffinityTopologyVersion topVer2 = new AffinityTopologyVersion(5, minorVer);
 
         ignite0.context().cache().context().exchange().affinityReadyFuture(topVer2).get();
 

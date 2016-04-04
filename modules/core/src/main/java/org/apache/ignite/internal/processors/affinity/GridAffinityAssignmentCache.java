@@ -210,6 +210,8 @@ public class GridAffinityAssignmentCache {
      *
      */
     public void onReconnected() {
+        idealAssignment = null;
+
         affCache.clear();
 
         head.set(new GridAffinityAssignment(AffinityTopologyVersion.NONE));

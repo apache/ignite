@@ -258,6 +258,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      */
     public void testRebalanceVersion() throws Exception {
         Ignite ignite0 = startGrid(0);
+
+        int minorVer = ignite0.configuration().isLateAffinityAssignment() ? 1 : 0;
+
         GridDhtPartitionTopology top0 = ((IgniteKernal)ignite0).context().cache().context().cacheContext(1).topology();
 
         assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(1)));
@@ -266,8 +269,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         Ignite ignite1 = startGrid(1);
         GridDhtPartitionTopology top1 = ((IgniteKernal)ignite1).context().cache().context().cacheContext(1).topology();
 
-        waitRebalanceFinished(ignite0, 2, 1);
-        waitRebalanceFinished(ignite1, 2, 1);
+        waitRebalanceFinished(ignite0, 2, minorVer);
+        waitRebalanceFinished(ignite1, 2, minorVer);
 
         assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(3)));
         assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(3)));
@@ -275,9 +278,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         Ignite ignite2 = startGrid(2);
         GridDhtPartitionTopology top2 = ((IgniteKernal)ignite2).context().cache().context().cacheContext(1).topology();
 
-        waitRebalanceFinished(ignite0, 3, 1);
-        waitRebalanceFinished(ignite1, 3, 1);
-        waitRebalanceFinished(ignite2, 3, 1);
+        waitRebalanceFinished(ignite0, 3, minorVer);
+        waitRebalanceFinished(ignite1, 3, minorVer);
+        waitRebalanceFinished(ignite2, 3, minorVer);
 
         assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(4)));
         assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(4)));
