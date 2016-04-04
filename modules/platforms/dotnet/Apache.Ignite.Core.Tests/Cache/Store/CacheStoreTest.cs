@@ -286,6 +286,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual("val", cache.Get(1));
 
             Assert.AreEqual(1, cache.GetSize());
+
+            // Test errors
+            CacheTestStore.ThrowError = true;
+            var err = Assert.Throws<CacheStoreException>(() => cache.Put(1, "1"));
+            Assert.IsTrue(err.InnerException is ArithmeticException);
         }
 
         [Test]

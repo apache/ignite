@@ -392,7 +392,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             if (res != 0) {
                 // Read error
-                Object nativeErr = platformCtx.reader(mem.input()).readObject();
+                Object nativeErr = platformCtx.reader(mem.input()).readObjectDetached();
                 throw platformCtx.createNativeException(nativeErr);
             }
         }
