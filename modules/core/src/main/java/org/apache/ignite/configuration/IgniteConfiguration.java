@@ -203,7 +203,7 @@ public class IgniteConfiguration {
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
 
     /** Default value for affinity assignment mode. */
-    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
+    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = false;
 
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")

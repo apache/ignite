@@ -141,6 +141,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setLateAffinityAssignment(true);
+
         TestRecordingCommunicationSpi commSpi;
 
         if (spiC != null)
