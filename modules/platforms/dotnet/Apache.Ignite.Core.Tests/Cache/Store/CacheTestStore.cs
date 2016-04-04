@@ -61,6 +61,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public void LoadCache(Action<object, object> act, params object[] args)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             if (LoadMultithreaded)
@@ -91,6 +93,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public object Load(object key)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             return Map[key];
@@ -98,6 +102,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public IDictionary LoadAll(ICollection keys)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             return keys.OfType<object>().ToDictionary(key => key, key => "val_" + key);
@@ -105,6 +111,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public void Write(object key, object val)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             Map[key] = val;
@@ -112,6 +120,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public void WriteAll(IDictionary map)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             foreach (DictionaryEntry e in map)
@@ -120,6 +130,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public void Delete(object key)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             Map.Remove(key);
@@ -127,6 +139,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public void DeleteAll(ICollection keys)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             foreach (object key in keys)
@@ -135,6 +149,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public void SessionEnd(bool commit)
         {
+            ThrowIfNeeded();
+
             Debug.Assert(_grid != null);
 
             Debug.Assert(_ses != null);
@@ -150,6 +166,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             get { return stringProperty; }
             set { stringProperty = value; }
+        }
+
+        private static void ThrowIfNeeded()
+        {
+            if (ThrowError)
+                throw new ArithmeticException("Exception in cache store");
         }
     }
 }
