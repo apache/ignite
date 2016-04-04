@@ -895,10 +895,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             // Notify IO manager the second so further components can send and receive messages.
             ctx.io().onKernalStart();
 
-            // Start plugins.
-            for (PluginProvider provider : ctx.plugins().allProviders())
-                provider.onIgniteStart();
-
             // Callbacks.
             for (GridComponent comp : ctx) {
                 // Skip discovery manager.
@@ -915,6 +911,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (!skipDaemon(comp))
                     comp.onKernalStart();
             }
+
+            // Start plugins.
+            for (PluginProvider provider : ctx.plugins().allProviders())
+                provider.onIgniteStart();
 
             // Register MBeans.
             registerKernalMBean();
