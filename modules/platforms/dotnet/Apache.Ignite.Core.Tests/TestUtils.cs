@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     Endpoints = new[] { "127.0.0.1:47500" }
                 },
-                SocketTimeout = TimeSpan.FromSeconds(0.1)
+                SocketTimeout = TimeSpan.FromSeconds(0.2)
             };
         }
 

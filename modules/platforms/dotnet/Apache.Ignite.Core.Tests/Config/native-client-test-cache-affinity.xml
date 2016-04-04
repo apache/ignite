@@ -64,7 +64,7 @@
                         </property>
                     </bean>
                 </property>
-                <property name="socketTimeout" value="100" />
+                <property name="socketTimeout" value="200" />
             </bean>
         </property>
     </bean>
