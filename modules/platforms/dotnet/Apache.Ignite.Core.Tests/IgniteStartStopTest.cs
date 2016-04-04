@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests
             Ignition.StopAll(true);
         }
 
-        //[Test]  // TODO: DELME!
+        [Test]  // TODO: DELME!
         public void TestStartupTime()
         {
             for (var i = 0; i < 10; i++)
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests
                         //JoinTimeout = TimeSpan.FromSeconds(0.1),
                         //MaxAckTimeout = TimeSpan.FromSeconds(0.2),
                         //NetworkTimeout = TimeSpan.FromSeconds(0.1),
-                        SocketTimeout = TimeSpan.FromSeconds(0.1)
+                        //SocketTimeout = TimeSpan.FromSeconds(0.3)
                     },
                     Localhost = "127.0.0.1",
                     JvmOptions = TestUtils.TestJavaOptions(),
@@ -83,9 +83,9 @@ namespace Apache.Ignite.Core.Tests
                     GridName = DateTime.Now.Ticks.ToString()
                 };
 
-                Ignition.Start(cfg);
+                var ignite = Ignition.Start(cfg);
 
-                //Ignition.Stop(ignite.Name, true);
+                Ignition.Stop(ignite.Name, true);
 
                 Console.WriteLine(sw.Elapsed);
             }
