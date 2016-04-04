@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -32,32 +37,59 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 
 /**
  *
  */
 public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTest {
+    /** */
+    private static final int CNT = 20;
+
+    /** */
+    @SuppressWarnings("serial")
+    private static final CacheEntryProcessor PROC = new CacheEntryProcessor() {
+        @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
+            return entry.getValue();
+        }
+    };
+
+    /** */
+    private CacheAtomicityMode atomicityMode;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
         c.setMarshaller(new BinaryMarshaller());
 
+        return c;
+    }
+
+    /**
+     * @param atomicityMode Atomicity mode.
+     * @param memoryMode Memory mode.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration<Object, Object> cacheConfiguration(CacheAtomicityMode atomicityMode,
+        CacheMemoryMode memoryMode) {
+        this.atomicityMode = atomicityMode;
+
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(CacheMode.PARTITIONED);
-        cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        cfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
+        cfg.setAtomicityMode(atomicityMode);
+        cfg.setMemoryMode(memoryMode);
         cfg.setBackups(1);
         cfg.setSwapEnabled(true);
 
-        c.setCacheConfiguration(cfg);
-
-        return c;
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -77,111 +109,218 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testGetTxNoClass() throws Exception {
-        IgniteCache<Integer, BinaryObject> keepBinaryCache = jcache(0).withKeepBinary();
+    public void testTxOffheapTiered() throws Exception {
+        ignite(0).getOrCreateCache(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED));
 
-        for (int key = 0; key < 100; key++) {
-            BinaryObjectBuilder builder = ignite(0).binary().builder("SomeType");
-
-            builder.setField("field1", key);
-            builder.setField("field2", "name_" + key);
-
-            keepBinaryCache.put(key, builder.build());
+        try {
+            doTest();
         }
-
-        for (int key = 0; key < 100; key++) {
-            try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
-                BinaryObject val = keepBinaryCache.get(key);
-
-                assertFalse(val instanceof BinaryObjectOffheapImpl);
-
-                keepBinaryCache.put(key, val);
-
-                tx.commit();
-            }
+        finally {
+            ignite(0).destroyCache(null);
         }
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGetTxRealObject() throws Exception {
-        IgniteCache<Integer, BinaryObject> keepBinaryCache = jcache(0).withKeepBinary();
+    public void testTxOffheapValues() throws Exception {
+        ignite(0).getOrCreateCache(cacheConfiguration(TRANSACTIONAL, OFFHEAP_VALUES));
 
-        for (int key = 0; key < 100; key++)
-            jcache(0).put(key, new TestObject(key));
-
-        for (int key = 0; key < 100; key++) {
-            try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                BinaryObject val = keepBinaryCache.get(key);
-
-                assertFalse(val instanceof BinaryObjectOffheapImpl);
-
-                keepBinaryCache.put(key, val);
-
-                tx.commit();
-            }
+        try {
+            doTest();
+        }
+        finally {
+            ignite(0).destroyCache(null);
         }
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGetNoClass() throws Exception {
-        IgniteCache<Integer, BinaryObject> keepBinaryCache = jcache(0).withKeepBinary();
+    public void testAtomicOffheapTiered() throws Exception {
+        ignite(0).getOrCreateCache(cacheConfiguration(ATOMIC, OFFHEAP_TIERED));
 
-        for (int key = 0; key < 100; key++) {
-            BinaryObjectBuilder builder = ignite(0).binary().builder("SomeType");
-            builder.setField("field1", key);
-            builder.setField("field2", "name_" + key);
-
-            keepBinaryCache.put(key, builder.build());
+        try {
+            doTest();
         }
-
-        for (int key = 0; key < 100; key++) {
-            BinaryObject val = keepBinaryCache.get(key);
-
-            assertFalse(val instanceof BinaryObjectOffheapImpl);
-
-            keepBinaryCache.put(key, val);
+        finally {
+            ignite(0).destroyCache(null);
         }
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGetAllTxNoClass() throws Exception {
-        IgniteCache<Integer, BinaryObject> keepBinaryCache = jcache(0).withKeepBinary();
+    public void testAtomicOffheapValues() throws Exception {
+        ignite(0).getOrCreateCache(cacheConfiguration(ATOMIC, OFFHEAP_VALUES));
 
-        Set<Integer> keys = new HashSet<>();
-
-        for (int i = 0; i < 100; i++) {
-            keys.add(i);
-
-            BinaryObjectBuilder builder = ignite(0).binary().builder("SomeType");
-
-            builder.setField("field1", i);
-            builder.setField("field2", "name_" + i);
-
-            keepBinaryCache.put(i, builder.build());
+        try {
+            doTest();
         }
-
-        try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            Map<Integer, BinaryObject> vals = keepBinaryCache.getAll(keys);
-
-            for (Map.Entry<Integer, BinaryObject> e : vals.entrySet()) {
-                assertFalse("Key: " + e.getKey(), e.getValue() instanceof BinaryObjectOffheapImpl);
-
-                keepBinaryCache.put(e.getKey(), e.getValue());
-            }
-
-            tx.commit();
+        finally {
+            ignite(0).destroyCache(null);
         }
     }
 
     /**
      *
      */
+    private void doTest() {
+        final IgniteCache<Integer, BinaryObject> cache = jcache(0).withKeepBinary();
+
+        for (int key = 0; key < CNT; key++)
+            jcache(0).put(key, new TestObject(key));
+
+        for (int key = CNT; key < 2 * CNT; key++) {
+            BinaryObjectBuilder builder = ignite(0).binary().builder("SomeType");
+            builder.setField("field1", key);
+            builder.setField("field2", "name_" + key);
+
+            cache.put(key, builder.build());
+        }
+
+        Set<Integer> keys = new LinkedHashSet<>();
+
+        for (int i = 0; i < 2 * CNT; i++)
+            keys.add(i);
+
+        check(new TestCheck<Integer>() {
+            @Override public void check(Integer key) {
+                assertFalse(cache.get(key) instanceof BinaryObjectOffheapImpl);
+            }
+        });
+
+        check(new TestCheck<Integer>() {
+            @Override public void check(Integer key) {
+                assertFalse(cache.getEntry(key) instanceof BinaryObjectOffheapImpl);
+            }
+        });
+
+        check(new TestCheck<Integer>() {
+            @Override public void check(Integer key) {
+                assertFalse(cache.getAndPut(key, cache.get(key)) instanceof BinaryObjectOffheapImpl);
+            }
+        });
+
+        check(new TestCheck<Integer>() {
+            @Override public void check(Integer key) {
+                assertFalse(cache.getAndReplace(key, cache.get(key)) instanceof BinaryObjectOffheapImpl);
+            }
+        });
+
+        check(new TestCheck<Integer>() {
+            @Override public void check(Integer key) {
+                assertFalse(cache.getAndPutIfAbsent(key, cache.get(key)) instanceof BinaryObjectOffheapImpl);
+            }
+        });
+
+        check(new TestCheck<Integer>() {
+            @Override public void check(Integer key) {
+                assertFalse(cache.localPeek(key) instanceof BinaryObjectOffheapImpl);
+            }
+        });
+
+        check(new TestCheck<Integer>() {
+            @Override public void check(Integer key) {
+                assertFalse(cache.getAndRemove(key) instanceof BinaryObjectOffheapImpl);
+            }
+        });
+
+        check(new TestCheck<Integer>() {
+            @Override public void check(Integer key) {
+                assertFalse(cache.invoke(key, PROC) instanceof BinaryObjectOffheapImpl);
+            }
+        });
+
+        // GetAll.
+        Map<Integer, BinaryObject> res = cache.getAll(keys);
+
+        for (BinaryObject val : res.values())
+            assertFalse(val instanceof BinaryObjectOffheapImpl);
+
+        if (atomicityMode == TRANSACTIONAL) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                    try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        res = cache.getAll(keys);
+
+                        for (BinaryObject val : res.values())
+                            assertFalse(val instanceof BinaryObjectOffheapImpl);
+
+                        tx.commit();
+                    }
+                }
+            }
+        }
+
+        // GetAllOutTx.
+        res = cache.getAllOutTx(keys);
+
+        for (BinaryObject val : res.values())
+            assertFalse(val instanceof BinaryObjectOffheapImpl);
+
+        if (atomicityMode == TRANSACTIONAL) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                    try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        res = cache.getAllOutTx(keys);
+
+                        for (BinaryObject val : res.values())
+                            assertFalse(val instanceof BinaryObjectOffheapImpl);
+
+                        tx.commit();
+                    }
+                }
+            }
+        }
+
+        // GetEntries.
+        Collection<CacheEntry<Integer, BinaryObject>> entries = cache.getEntries(keys);
+
+        for (CacheEntry<Integer, BinaryObject> e : entries)
+            assertFalse(e.getValue() instanceof BinaryObjectOffheapImpl);
+
+        if (atomicityMode == TRANSACTIONAL) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                    try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        entries = cache.getEntries(keys);
+
+                        for (CacheEntry<Integer, BinaryObject> e : entries)
+                            assertFalse(e.getValue() instanceof BinaryObjectOffheapImpl);
+
+                        tx.commit();
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private void check(TestCheck<Integer> checkOp) {
+        for (int key = 0; key < 2 * CNT; key++) {
+            checkOp.check(key);
+
+            if (atomicityMode == TRANSACTIONAL) {
+                for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                    for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                        try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                            checkOp.check(key);
+
+                            tx.commit();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("PackageVisibleField")
     private static class TestObject {
         /** */
         String field;
@@ -196,5 +335,15 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
             field = "str" + key;
             field2 = key;
         }
+    }
+
+    /**
+     *
+     */
+    private static interface TestCheck<T> {
+        /**
+         * @param t Parameter.
+         */
+        public void check(T t);
     }
 }
