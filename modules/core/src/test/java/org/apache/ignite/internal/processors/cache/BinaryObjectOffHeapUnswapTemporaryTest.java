@@ -274,6 +274,27 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
             }
         }
 
+        // InvokeAll.
+        res = cache.invokeAll(keys, PROC);
+
+        for (BinaryObject val : res.values())
+            assertFalse(val instanceof BinaryObjectOffheapImpl);
+
+        if (atomicityMode == TRANSACTIONAL) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                    try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                        res = cache.invokeAll(keys, PROC);
+
+                        for (BinaryObject val : res.values())
+                            assertFalse(val instanceof BinaryObjectOffheapImpl);
+
+                        tx.commit();
+                    }
+                }
+            }
+        }
+
         // GetEntries.
         Collection<CacheEntry<Integer, BinaryObject>> entries = cache.getEntries(keys);
 
