@@ -24,6 +24,8 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -32,6 +34,9 @@ import org.apache.ignite.cache.store.cassandra.session.pool.SessionPool;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.apache.cassandra.service.CassandraDaemon;
+import org.apache.thrift.transport.TTransportException;
+import java.io.IOException;
 
 /**
  * Helper class providing bunch of utility methods to work with Cassandra
@@ -91,6 +96,8 @@ public class CassandraHelper {
     public static String[] getTestKeyspaces() {
         return KEYSPACES.getString("keyspaces").split(",");
     }
+
+    private static CassandraDaemon cassandraDaemon;
 
     /** */
     public static String[] getContactPointsArray() {
@@ -306,5 +313,24 @@ public class CassandraHelper {
         catch (Throwable e) {
             throw new RuntimeException("Failed to create regular session to Cassandra database", e);
         }
+    }
+
+    /** */
+    public static void startEmbededCassandra() {
+        try {
+            ClassLoader classLoader = CassandraHelper.class.getClassLoader();
+            URL url = classLoader.getResource("org/apache/ignite/tests/cassandra/cassandra.yaml");
+            System.setProperty("cassandra.config", "file:///" + url.getFile());
+            cassandraDaemon = new CassandraDaemon(true);
+            cassandraDaemon.init(null);
+            cassandraDaemon.start();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to start embedded Cassandra", e);
+        }
+    }
+
+    /** */
+    public static void stopEmbededCassandra() {
+        cassandraDaemon.deactivate();
     }
 }
