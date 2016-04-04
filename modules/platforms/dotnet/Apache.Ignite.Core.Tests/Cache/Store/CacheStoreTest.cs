@@ -210,6 +210,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             // Test exception in filter
             Assert.Throws<CacheStoreException>(() => cache.LoadCache(new ExceptionalEntryFilter(), 100, 10));
+
+            // Test exception in store
+            CacheTestStore.ThrowError = true;
+            Assert.Throws<ArithmeticException>(() => cache.LoadCache(new CacheEntryFilter(), 100, 10));
         }
 
         [Test]

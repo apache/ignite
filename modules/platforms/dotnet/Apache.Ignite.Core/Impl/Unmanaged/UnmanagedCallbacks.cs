@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Runtime.InteropServices;
     using System.Threading;
 
@@ -42,6 +43,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Services;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
     using UU = UnmanagedUtils;
 
     /// <summary>
@@ -304,7 +306,18 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 using (PlatformMemoryStream stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    return t.Invoke(stream, cb0, _ignite);
+                    try
+                    {
+                        return t.Invoke(stream, cb0, _ignite);
+                    }
+                    catch (Exception e)
+                    {
+                        stream.Seek(0, SeekOrigin.Begin);
+
+                        _ignite.Marshaller.StartMarshal(stream).WriteObject(e);
+
+                        return -1;
+                    }
                 }
             });
         }
