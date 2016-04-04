@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests
             Ignition.StopAll(true);
         }
 
-        [Test]  // TODO: DELME!
+        //[Test]  // TODO: DELME!
         public void TestStartupTime()
         {
             for (var i = 0; i < 10; i++)
