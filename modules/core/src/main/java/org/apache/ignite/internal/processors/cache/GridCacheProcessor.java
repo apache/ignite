@@ -2925,7 +2925,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     // TODO sql-store
 
-                    qryMgr.remove(key, val, null);
+                    qryMgr.remove(key, cctx.affinity().partition(key), val, null);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal key evicted from swap [swapSpaceName=" + spaceName + ']', e);

@@ -1,21 +1,35 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.query.h2.database;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.engine.Session;
@@ -28,6 +42,12 @@ import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
 import org.h2.table.Table;
 import org.h2.table.TableFilter;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
@@ -1616,7 +1636,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         public void remove() throws IgniteCheckedException {
             IndexPageIO io = IndexPageIO.forPage(leafBuf);
 
-            removed =  getRow(io.getLink(leafBuf, leafIdx));
+            removed = getRow(io.getLink(leafBuf, leafIdx));
 
             int cnt = io.getCount(leafBuf);
 
@@ -1700,14 +1720,17 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @return Row.
      */
     private GridH2Row getRow(long link) throws IgniteCheckedException {
-        CacheObject key;
-        CacheObject val;
-        GridCacheVersion ver;
-
         try (Page page = page(pageId(link))) {
             ByteBuffer buf = page.getForRead();
 
             try {
+                GridH2RowDescriptor desc = ((GridH2Table)table).rowDescriptor();
+
+                GridH2Row existing = desc.cachedRow(link);
+
+                if (existing != null)
+                    return existing;
+
                 DataPageIO io = DataPageIO.forPage(buf);
 
                 int dataOff = io.getDataOffset(buf, dwordsOffset(link));
@@ -1717,33 +1740,37 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 // Skip key-value size.
                 buf.getShort();
 
-                key = coctx.processor().toCacheObject(coctx, buf);
-                val = coctx.processor().toCacheObject(coctx, buf);
+                CacheObject key = coctx.processor().toCacheObject(coctx, buf);
+                CacheObject val = coctx.processor().toCacheObject(coctx, buf);
 
                 int topVer = buf.getInt();
                 int nodeOrderDrId = buf.getInt();
                 long globalTime = buf.getLong();
                 long order = buf.getLong();
 
-                ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+                GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+
+                GridH2Row res;
+
+                try {
+                    res = ((GridH2Table)getTable()).rowDescriptor().createRow(key, PageIdUtils.partId(link), val, ver, 0);
+
+                    res.link = link;
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+
+                assert res.ver != null;
+
+                desc.cache(res);
+
+                return res;
             }
             finally {
                 page.releaseRead();
             }
         }
-
-        GridH2Row res;
-
-        try {
-            res = ((GridH2Table)getTable()).rowDescriptor().createRow(key, val, ver, 0);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
-
-        assert res.ver != null;
-
-        return res;
     }
 
     /** {@inheritDoc} */

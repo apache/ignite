@@ -148,15 +148,15 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
      *
      */
     private static class FakeIndexing extends IgniteH2Indexing {
-        @Override public void onSwap(@Nullable String spaceName, KeyCacheObject key) throws IgniteCheckedException {
-            super.onSwap(spaceName, key);
+        @Override public void onSwap(@Nullable String spaceName, KeyCacheObject key, int partId) throws IgniteCheckedException {
+            super.onSwap(spaceName, key, partId);
 
             idxSwapCnt.incrementAndGet();
         }
 
-        @Override public void onUnswap(@Nullable String spaceName, KeyCacheObject key, CacheObject val)
+        @Override public void onUnswap(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val)
         throws IgniteCheckedException {
-            super.onUnswap(spaceName, key, val);
+            super.onUnswap(spaceName, key, partId, val);
 
             idxUnswapCnt.incrementAndGet();
         }

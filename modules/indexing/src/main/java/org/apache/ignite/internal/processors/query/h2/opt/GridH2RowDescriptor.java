@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.offheap.unsafe.GridOffHeapSmartPointerFactory;
@@ -47,8 +46,14 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, GridCacheVersion ver, long expirationTime)
+    public GridH2Row createRow(CacheObject key, int part, @Nullable CacheObject val, GridCacheVersion ver, long expirationTime)
         throws IgniteCheckedException;
+
+    /**
+     * @param link Link to get row for.
+     * @return Cached row.
+     */
+    public GridH2Row cachedRow(long link);
 
     /**
      * @param key Cache key.
@@ -93,7 +98,7 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     /**
      * @param row Deserialized offheap row to cache in heap.
      */
-    public void cache(GridH2KeyValueRowOffheap row);
+    public void cache(GridH2Row row);
 
     /**
      * @param ptr Offheap pointer to remove from cache.

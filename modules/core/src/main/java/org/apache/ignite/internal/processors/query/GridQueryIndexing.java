@@ -187,8 +187,8 @@ public interface GridQueryIndexing {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, KeyCacheObject key, CacheObject val,
-        GridCacheVersion ver, long expirationTime) throws IgniteCheckedException;
+    public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, KeyCacheObject key, int partId,
+        CacheObject val, GridCacheVersion ver, long expirationTime) throws IgniteCheckedException;
 
     /**
      * Removes index entry by key.
@@ -198,14 +198,14 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(@Nullable String spaceName, KeyCacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException;
+    public void remove(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException;
 
     /**
      * @param space Space name.
      * @param key Key.
      * @return Read versioned value.
      */
-    IgniteBiTuple<CacheObject,GridCacheVersion> read(String space, KeyCacheObject key) throws IgniteCheckedException;
+    IgniteBiTuple<CacheObject,GridCacheVersion> read(String space, KeyCacheObject key, int partId) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is swapped.
@@ -214,7 +214,7 @@ public interface GridQueryIndexing {
      * @param key Key.
      * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(@Nullable String spaceName, KeyCacheObject key) throws IgniteCheckedException;
+    public void onSwap(@Nullable String spaceName, KeyCacheObject key, int partId) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is unswapped.
@@ -224,7 +224,7 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(@Nullable String spaceName, KeyCacheObject key, CacheObject val) throws IgniteCheckedException;
+    public void onUnswap(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val) throws IgniteCheckedException;
 
     /**
      * Rebuilds all indexes of given type.

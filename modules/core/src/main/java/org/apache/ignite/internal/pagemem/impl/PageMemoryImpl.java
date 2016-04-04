@@ -432,6 +432,26 @@ public class  PageMemoryImpl implements PageMemory {
     }
 
     /**
+     * @return Total number of loaded pages in memory.
+     */
+    public long totalPages() {
+        long total = 0;
+
+        for (Segment seg : segments) {
+            seg.readLock().lock();
+
+            try {
+                total += seg.loadedPages.size();
+            }
+            finally {
+                seg.readLock().unlock();
+            }
+        }
+
+        return total;
+    }
+
+    /**
      * @param ptr Pointer to wrap.
      * @param len Memory location length.
      * @return Wrapped buffer.

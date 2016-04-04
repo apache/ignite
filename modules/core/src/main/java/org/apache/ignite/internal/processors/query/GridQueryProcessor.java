@@ -638,7 +638,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public void store(final String space, final KeyCacheObject key, final CacheObject val,
+    public void store(final String space, final KeyCacheObject key, int partId, final CacheObject val,
         GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
         assert key != null;
         assert val != null;
@@ -699,7 +699,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         desc.keyClass().getName() + ", actualCls=" + keyCls.getName() + "]");
             }
 
-            idx.store(space, desc, key, val, ver, expirationTime);
+            idx.store(space, desc, key, partId, val, ver, expirationTime);
         }
         finally {
             busyLock.leaveBusy();
@@ -712,7 +712,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Read versioned value.
      * @throws IgniteCheckedException
      */
-    public IgniteBiTuple<CacheObject, GridCacheVersion> read(final String space, final KeyCacheObject key)
+    public IgniteBiTuple<CacheObject, GridCacheVersion> read(final String space, final KeyCacheObject key, int partId)
         throws IgniteCheckedException {
         if (idx == null)
             return null;
@@ -721,7 +721,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to write to index (grid is stopping).");
 
         try {
-            return idx.read(space, key);
+            return idx.read(space, key, partId);
         }
         finally {
             busyLock.leaveBusy();
@@ -1016,7 +1016,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key Key.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void remove(String space, KeyCacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
+    public void remove(String space, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         assert key != null;
 
         if (log.isDebugEnabled())
@@ -1035,7 +1035,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to remove from index (grid is stopping).");
 
         try {
-            idx.remove(space, key, val, ver);
+            idx.remove(space, key, partId, val, ver);
         }
         finally {
             busyLock.leaveBusy();
@@ -1190,7 +1190,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key key.
      * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(String spaceName, KeyCacheObject key) throws IgniteCheckedException {
+    public void onSwap(String spaceName, KeyCacheObject key, int partId) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Swap [space=" + spaceName + ", key=" + key + "]");
 
@@ -1213,7 +1213,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             idx.onSwap(
                 spaceName,
-                key);
+                key,
+                partId);
         }
         finally {
             busyLock.leaveBusy();
@@ -1228,7 +1229,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(String spaceName, KeyCacheObject key, CacheObject val)
+    public void onUnswap(String spaceName, KeyCacheObject key, int partId, CacheObject val)
         throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Unswap [space=" + spaceName + ", key=" + key + ", val=" + val + "]");
@@ -1246,7 +1247,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to process swap event (grid is stopping).");
 
         try {
-            idx.onUnswap(spaceName, key, val);
+            idx.onUnswap(spaceName, key, partId, val);
         }
         finally {
             busyLock.leaveBusy();
