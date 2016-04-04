@@ -184,16 +184,16 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
         }
 
         /**
-         * @param {String} drvPath
-         * @param {String} drvClass
+         * @param {String} driverPath
+         * @param {String} driverClass
          * @param {String} url
          * @param {Object} info
          * @param {Array} schemas
          * @param {Boolean} tablesOnly
          * @returns {Promise} Promise on list of tables (see org.apache.ignite.schema.parser.DbTable java class)
          */
-        metadataTables(drvPath, drvClass, url, info, schemas, tablesOnly) {
-            return this.executeAgent('schemaImport:metadata', {drvPath, drvClass, url, info, schemas, tablesOnly});
+        metadataTables(driverPath, driverClass, url, info, schemas, tablesOnly) {
+            return this.executeAgent('schemaImport:metadata', {driverPath, driverClass, url, info, schemas, tablesOnly});
         }
 
         /**
@@ -465,12 +465,12 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
          */
         findAgent(userId) {
             if (!this._server)
-                throw new Error('Agent server not started yet!');
+                return Promise.reject(new Error('Agent server not started yet!'));
 
             const agents = this._agents[userId];
 
             if (!agents || agents.length === 0)
-                throw new Error('Failed to connect to agent');
+                return Promise.reject(new Error('Failed to connect to agent'));
 
             return Promise.resolve(agents[0]);
         }
