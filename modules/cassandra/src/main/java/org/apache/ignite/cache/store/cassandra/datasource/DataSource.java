@@ -17,15 +17,8 @@
 
 package org.apache.ignite.cache.store.cassandra.datasource;
 
-import com.datastax.driver.core.AuthProvider;
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ConsistencyLevel;
-import com.datastax.driver.core.NettyOptions;
-import com.datastax.driver.core.PoolingOptions;
-import com.datastax.driver.core.ProtocolOptions;
-import com.datastax.driver.core.SSLOptions;
-import com.datastax.driver.core.SocketOptions;
-import com.datastax.driver.core.policies.AddressTranslater;
+import com.datastax.driver.core.*;
+import com.datastax.driver.core.policies.AddressTranslator;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.ReconnectionPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
@@ -98,7 +91,7 @@ public class DataSource {
     private RetryPolicy retryPlc;
 
     /** Address translator to use. */
-    private AddressTranslater addrTranslater;
+    private AddressTranslator addrTranslater;
 
     /** Speculative execution policy to use. */
     private SpeculativeExecutionPolicy speculativeExecutionPlc;
@@ -358,7 +351,7 @@ public class DataSource {
      * @param translater Address translator.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public void setAddressTranslater(AddressTranslater translater) {
+    public void setAddressTranslater(AddressTranslator translater) {
         this.addrTranslater = translater;
 
         invalidate();
@@ -465,7 +458,7 @@ public class DataSource {
             builder = builder.withMaxSchemaAgreementWaitSeconds(maxSchemaAgreementWaitSeconds);
 
         if (protoVer != null)
-            builder = builder.withProtocolVersion(protoVer);
+            builder = builder.withProtocolVersion(ProtocolVersion.fromInt(protoVer));
 
         if (compression != null) {
             try {
@@ -501,7 +494,7 @@ public class DataSource {
             builder = builder.withRetryPolicy(retryPlc);
 
         if (addrTranslater != null)
-            builder = builder.withAddressTranslater(addrTranslater);
+            builder = builder.withAddressTranslator(addrTranslater);
 
         if (speculativeExecutionPlc != null)
             builder = builder.withSpeculativeExecutionPolicy(speculativeExecutionPlc);
