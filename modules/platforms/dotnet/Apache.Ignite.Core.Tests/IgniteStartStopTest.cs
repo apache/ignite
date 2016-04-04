@@ -71,10 +71,10 @@ namespace Apache.Ignite.Core.Tests
                         {
                             Endpoints = new[] {"127.0.0.1:47500"}
                         },
-                        AckTimeout = TimeSpan.FromSeconds(0.1),
-                        JoinTimeout = TimeSpan.FromSeconds(0.1),
-                        MaxAckTimeout = TimeSpan.FromSeconds(0.2),
-                        NetworkTimeout = TimeSpan.FromSeconds(0.1),
+                        //AckTimeout = TimeSpan.FromSeconds(0.1),
+                        //JoinTimeout = TimeSpan.FromSeconds(0.1),
+                        //MaxAckTimeout = TimeSpan.FromSeconds(0.2),
+                        //NetworkTimeout = TimeSpan.FromSeconds(0.1),
                         SocketTimeout = TimeSpan.FromSeconds(0.1)
                     },
                     Localhost = "127.0.0.1",
