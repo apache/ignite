@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import javax.cache.Cache;
+import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -84,40 +87,43 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testWithoutEventsEntries() throws Exception {
-
         IgniteCache<Integer, String> cache = grid(0).cache(CACHE_NAME);
 
-        // Create new continuous query.
-        ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
+        int ITERATION_CNT = 100;
 
-        qry.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
-            @Override
-            public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> iterable) throws CacheEntryListenerException {
-                assert false;
+        for (int i = 0; i < ITERATION_CNT; i++) {
+            // Create new continuous query.
+            ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
+
+            qry.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> iterable)
+                    throws CacheEntryListenerException {
+                    assert false;
+                }
+            });
+
+            // This filters return always false
+            qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(
+                new CacheEntryEventSerializableFilter<Integer, String>() {
+                    @Override public boolean evaluate(
+                        CacheEntryEvent<? extends Integer, ? extends String> cacheEntryEvent)
+                        throws CacheEntryListenerException {
+                        return false;
+                    }
+                }));
+
+            // Execute query.
+            try (QueryCursor<Cache.Entry<Integer, String>> qryCursor = cache.query(qry)) {
+                for (int key = 0; key < 8; key++)
+                    cache.put(key, Integer.toString(key));
             }
-        });
-
-        // This filters return always false
-        qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer, String>() {
-            @Override
-            public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> cacheEntryEvent) throws CacheEntryListenerException {
-                return false;
-            }
-        });
-
-        // Execute query.
-        cache.query(qry);
-
-        for (int i = 0; i < 8; i++)
-            cache.put(i, Integer.toString(i));
-
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testWithEventsEntries() throws Exception {
-
         IgniteCache<Integer, String> cache = grid(0).cache(CACHE_NAME);
 
         // Create new continuous query.
@@ -126,16 +132,16 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
         final CountDownLatch latch = new CountDownLatch(4);
 
         qry.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
-            @Override
-            public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> iterable) throws CacheEntryListenerException {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> iterable)
+                throws CacheEntryListenerException {
                 latch.countDown();
             }
         });
 
         // This filters return always false
         qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer, String>() {
-            @Override
-            public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e) throws CacheEntryListenerException {
+            @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e)
+                throws CacheEntryListenerException {
                 return e.getKey() % 2 == 0;
             }
         });
@@ -154,5 +160,4 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
-
 }
