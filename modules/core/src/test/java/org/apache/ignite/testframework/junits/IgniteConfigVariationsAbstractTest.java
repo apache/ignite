@@ -27,6 +27,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -200,9 +201,12 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      * Runs in all data modes.
      */
-    protected void runInAllDataModes(TestRunnable call) throws Exception {
-        for (int i = 0; i < DataMode.values().length; i++) {
-            dataMode = DataMode.values()[i];
+    protected void runInAllDataModes(TestRunnable call, DataMode... dataModes) throws Exception {
+        if (F.isEmpty(dataModes))
+            dataModes = DataMode.values();
+
+        for (int i = 0; i < dataModes.length; i++) {
+            dataMode = dataModes[i];
 
             info("Running test in data mode: " + dataMode);
 
