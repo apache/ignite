@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -47,6 +48,31 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
+    }
+
+    /**
+     * Test single evict with OFFHEAP_VALUES mode.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSingleEvictOffHeap() throws Exception {
+        CacheConfiguration<Integer, Object> ccfg = cacheConfiguration(grid(0).name());
+        ccfg.setName("testSingleEvictOffHeap");
+        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_VALUES);
+        ccfg.setSwapEnabled(false);
+
+        LruEvictionPolicy plc = new LruEvictionPolicy();
+        plc.setMaxMemorySize(200);
+
+        ccfg.setEvictionPolicy(plc);
+
+        final IgniteCache<Integer, Object> cache = grid(0).getOrCreateCache(ccfg);
+
+        cache.put(1, new byte[150]);
+        cache.put(2, new byte[150]);
+        cache.put(3, new byte[150]);
+
+        assert cache.size() == 1;
     }
 
     /**
@@ -77,9 +103,9 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         assertTrue(MAX_VALS_AMOUNT - 5 <= cache.size(CachePeekMode.ONHEAP));
         assertEquals(cache.size(CachePeekMode.ALL) - cache.size(CachePeekMode.ONHEAP), cache.size(CachePeekMode.SWAP));
 
-        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
-        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
-        assertTrue(cache.metrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.ONHEAP) * VAL_SIZE);
+        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.localMetrics().getOffHeapAllocatedSize());
+        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.localMetrics().getOffHeapAllocatedSize());
+        assertTrue(cache.localMetrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.ONHEAP) * VAL_SIZE);
     }
 
     /**
@@ -117,9 +143,9 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         assertEquals(cache.size(CachePeekMode.ALL) - cache.size(CachePeekMode.ONHEAP) - cache.size(CachePeekMode.OFFHEAP),
             cache.size(CachePeekMode.SWAP));
 
-        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
-        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
-        assertTrue(cache.metrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.OFFHEAP) * VAL_SIZE);
+        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.localMetrics().getOffHeapAllocatedSize());
+        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.localMetrics().getOffHeapAllocatedSize());
+        assertTrue(cache.localMetrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.OFFHEAP) * VAL_SIZE);
     }
 
     /**
@@ -155,9 +181,9 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         assertTrue(MAX_VALS_AMOUNT >= cache.size(CachePeekMode.OFFHEAP));
         assertTrue(MAX_VALS_AMOUNT - 5 <= cache.size(CachePeekMode.OFFHEAP));
 
-        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
-        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
-        assertTrue(cache.metrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.OFFHEAP) * VAL_SIZE);
+        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.localMetrics().getOffHeapAllocatedSize());
+        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.localMetrics().getOffHeapAllocatedSize());
+        assertTrue(cache.localMetrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.OFFHEAP) * VAL_SIZE);
     }
 
     /** Fill cache with values. */

@@ -288,6 +288,23 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
+        public void LoadAll(IEnumerable<TK> keys, bool replaceExistingValues)
+        {
+            LoadAllAsync(keys, replaceExistingValues).Wait();
+        }
+
+        /** <inheritDoc /> */
+        public Task LoadAllAsync(IEnumerable<TK> keys, bool replaceExistingValues)
+        {
+            return GetFuture<object>((futId, futTyp) => DoOutOp((int) CacheOp.LoadAll, writer =>
+            {
+                writer.WriteLong(futId);
+                writer.WriteBoolean(replaceExistingValues);
+                WriteEnumerable(writer, keys);
+            })).Task;
+        }
+
+        /** <inheritDoc /> */
         public bool ContainsKey(TK key)
         {
             IgniteArgumentCheck.NotNull(key, "key");
@@ -1170,7 +1187,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var msg = Unmarshal<string>(inStream);
                 
-            return new CacheEntryProcessorException(ExceptionUtils.GetException(clsName, msg));
+            return new CacheEntryProcessorException(ExceptionUtils.GetException(_ignite, clsName, msg));
         }
 
         /// <summary>

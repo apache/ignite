@@ -264,6 +264,23 @@ namespace ignite
                 }
 
                 case IGNITE_TYPE_DATE:
+                {
+                    reader.ReadDate();
+
+                    sizeTmp = 8;
+
+                    break;
+                }
+
+                case IGNITE_TYPE_TIMESTAMP:
+                {
+                    reader.ReadTimestamp();
+
+                    sizeTmp = 12;
+
+                    break;
+                }
+
                 default:
                 {
                     // This is a fail case.
@@ -432,6 +449,23 @@ namespace ignite
                 }
 
                 case IGNITE_TYPE_DATE:
+                {
+                    Date date = reader.ReadDate();
+
+                    dataBuf.PutDate(date);
+
+                    break;
+                }
+
+                case IGNITE_TYPE_TIMESTAMP:
+                {
+                    Timestamp ts = reader.ReadTimestamp();
+
+                    dataBuf.PutTimestamp(ts);
+
+                    break;
+                }
+
                 default:
                 {
                     // This is a fail case. Return false.

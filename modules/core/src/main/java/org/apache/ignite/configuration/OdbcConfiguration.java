@@ -38,6 +38,9 @@ public class OdbcConfiguration {
     /** Default socket send and receive buffer size. */
     public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
 
+    /** Default max number of open cursors per connection. */
+    public static final int DFLT_MAX_OPEN_CURSORS = 128;
+
     /** TCP port. */
     private int port = DFLT_TCP_PORT;
 
@@ -65,6 +68,9 @@ public class OdbcConfiguration {
     /** Idle timeout. */
     private long idleTimeout = DFLT_IDLE_TIMEOUT;
 
+    /** Max number of opened cursors per connection. */
+    private int maxOpenCursors = DFLT_MAX_OPEN_CURSORS;
+
     /**
      * Creates ODBC server configuration with all default values.
      */
@@ -84,6 +90,7 @@ public class OdbcConfiguration {
         directBuf = cfg.isDirectBuffer();
         host = cfg.getHost();
         idleTimeout = cfg.getIdleTimeout();
+        maxOpenCursors = cfg.getMaxOpenCursors();
         noDelay = cfg.isNoDelay();
         port = cfg.getPort();
         rcvBufSize = cfg.getReceiveBufferSize();
@@ -288,5 +295,25 @@ public class OdbcConfiguration {
      */
     public void setIdleTimeout(long idleTimeout) {
         this.idleTimeout = idleTimeout;
+    }
+
+    /**
+     * Gets maximum number of opened cursors per connection.
+     * <p>
+     * Defaults to {@link #DFLT_MAX_OPEN_CURSORS}.
+     *
+     * @return Maximum number of opened cursors.
+     */
+    public int getMaxOpenCursors() {
+        return maxOpenCursors;
+    }
+
+    /**
+     * Sets maximum number of opened cursors per connection. See {@link #getMaxOpenCursors()}.
+     *
+     * @param maxOpenCursors Maximum number of opened cursors.
+     */
+    public void setMaxOpenCursors(int maxOpenCursors) {
+        this.maxOpenCursors = maxOpenCursors;
     }
 }

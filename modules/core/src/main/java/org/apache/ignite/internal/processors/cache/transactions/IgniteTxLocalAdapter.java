@@ -2542,7 +2542,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 T2<CacheObject, GridCacheVersion> res = primaryLocal(entry) ?
                                     entry.innerGetVersioned(this,
                                         /*swap*/false,
-                                        /*unmarshal*/retval,
+                                        /*unmarshal*/retval || needVal,
                                         /*metrics*/retval,
                                         /*events*/retval,
                                         CU.subjectId(this, cctx),
@@ -2561,7 +2561,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     /*swap*/false,
                                     /*read-through*/false,
                                     /*fail-fast*/false,
-                                    /*unmarshal*/retval,
+                                    /*unmarshal*/retval || needVal,
                                     /*metrics*/retval,
                                     /*events*/retval,
                                     /*temporary*/false,
@@ -2971,9 +2971,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             Object res = null;
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                CacheInvokeEntry<Object, Object> invokeEntry =
-                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0, ver,
-                        txEntry.keepBinary());
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), key0, cacheVal,
+                    val0, ver, txEntry.keepBinary(), txEntry.cached());
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 
@@ -3778,6 +3777,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             // Keep old ttl value.
             old.cached(entry);
             old.filters(filter);
+
+            // Keep old skipStore and keepBinary flags.
+            old.skipStore(skipStore);
+            old.keepBinary(keepBinary);
 
             // Update ttl if specified.
             if (drTtl >= 0L) {

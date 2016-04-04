@@ -18,13 +18,14 @@
 #ifndef _IGNITE_ODBC_DRIVER_UTILITY
 #define _IGNITE_ODBC_DRIVER_UTILITY
 
-#include <string>
-#include <stdint.h>
-
 #ifdef min
 #   undef min
 #endif //min
 
+#include <stdint.h>
+#include <ctime>
+
+#include <string>
 #include <algorithm>
 
 #include <ignite/common/utils.h>
@@ -156,6 +157,14 @@ namespace ignite
          * @param decimal Decimal value.
          */
         void ReadDecimal(ignite::impl::binary::BinaryReaderImpl& reader, Decimal& decimal);
+
+        /**
+         * Write decimal value using writer.
+         *
+         * @param writer Writer.
+         * @param decimal Decimal value.
+         */
+        void WriteDecimal(ignite::impl::binary::BinaryWriterImpl& writer, const Decimal& decimal);
 
         /**
          * Convert SQL string buffer to std::string.

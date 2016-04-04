@@ -725,8 +725,10 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             if (log.isDebugEnabled())
                 log.debug("Entry was evicted [entry=" + entry + ", localNode=" + cctx.nodeId() + ']');
         }
-        else if (log.isDebugEnabled())
-            log.debug("Entry was not evicted [entry=" + entry + ", localNode=" + cctx.nodeId() + ']');
+        else {
+            if (log.isDebugEnabled())
+                log.debug("Entry was not evicted [entry=" + entry + ", localNode=" + cctx.nodeId() + ']');
+        }
 
         return evicted;
     }

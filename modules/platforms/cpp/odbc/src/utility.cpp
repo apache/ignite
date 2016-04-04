@@ -22,6 +22,20 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/system/odbc_constants.h"
 
+#ifdef ODBC_DEBUG
+
+FILE* log_file = NULL;
+
+void logInit(const char* path)
+{
+    if (!log_file)
+    {
+        log_file = fopen(path, "w");
+    }
+}
+
+#endif //ODBC_DEBUG
+
 namespace ignite
 {
     namespace utility
@@ -82,6 +96,17 @@ namespace ignite
             Decimal res(scale, mag.data(), static_cast<int32_t>(mag.size()));
 
             swap(decimal, res);
+        }
+
+        void WriteDecimal(ignite::impl::binary::BinaryWriterImpl& writer, const Decimal& decimal)
+        {
+            writer.WriteInt8(ignite::impl::binary::IGNITE_TYPE_DECIMAL);
+
+            writer.WriteInt32(decimal.GetScale() | (decimal.IsNegative() ? 0x80000000 : 0));
+
+            writer.WriteInt32(decimal.GetLength());
+
+            impl::binary::BinaryUtils::WriteInt8Array(writer.GetStream(), decimal.GetMagnitude(), decimal.GetLength());
         }
 
         std::string SqlStringToString(const unsigned char* sqlStr, int32_t sqlStrLen)

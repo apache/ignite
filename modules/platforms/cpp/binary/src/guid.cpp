@@ -58,7 +58,7 @@ namespace ignite
         return static_cast<int32_t>(hilo >> 32) ^ static_cast<int32_t>(hilo);
     }
 
-    bool operator==(Guid& val1, Guid& val2)
+    bool operator==(const Guid& val1, const Guid& val2)
     {
         return val1.least == val2.least && val1.most == val2.most;
     }

@@ -141,7 +141,8 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     else
                         res.found(false);
 
-                    Object topic = ctx.config().getMarshaller().unmarshal(req.topicBytes(), null);
+                    Object topic = ctx.config().getMarshaller().unmarshal(req.topicBytes(),
+                        U.resolveClassLoader(ctx.config()));
 
                     ctx.io().send(nodeId, topic, res, SYSTEM_POOL);
                 }
@@ -439,7 +440,8 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     res = (GridTaskResultResponse)msg;
 
                 try {
-                    res.result(ctx.config().getMarshaller().unmarshal(res.resultBytes(), null));
+                    res.result(ctx.config().getMarshaller().unmarshal(res.resultBytes(),
+                        U.resolveClassLoader(ctx.config())));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal task result: " + res, e);

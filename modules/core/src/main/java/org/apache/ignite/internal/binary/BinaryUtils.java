@@ -51,12 +51,15 @@ import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -317,22 +320,6 @@ public class BinaryUtils {
     }
 
     /**
-     * @param typeName Field type name.
-     * @return Field type ID;
-     */
-    @SuppressWarnings("StringEquality")
-    public static int fieldTypeId(String typeName) {
-        for (int i = 0; i < FIELD_TYPE_NAMES.length; i++) {
-            String typeName0 = FIELD_TYPE_NAMES[i];
-
-            if (typeName.equals(typeName0))
-                return i;
-        }
-
-        throw new IllegalArgumentException("Invalid metadata type name: " + typeName);
-    }
-
-    /**
      * @param typeId Field type ID.
      * @return Field type name.
      */
@@ -585,9 +572,8 @@ public class BinaryUtils {
         assert cls != null;
 
         return BinaryObject.class.isAssignableFrom(cls) ||
-            BINARY_CLS.contains(cls) ||
-            cls.isEnum() ||
-            (cls.isArray() && cls.getComponentType().isEnum());
+            Proxy.class.isAssignableFrom(cls) ||
+            BINARY_CLS.contains(cls);
     }
 
     /**
@@ -1563,7 +1549,7 @@ public class BinaryUtils {
         ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
         try {
-            return ctx.optimizedMarsh().unmarshal(input, clsLdr);
+            return ctx.optimizedMarsh().unmarshal(input, U.resolveClassLoader(clsLdr, ctx.configuration()));
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);
@@ -1760,6 +1746,9 @@ public class BinaryUtils {
 
             case GridBinaryMarshaller.CLASS:
                 return doReadClass(in, ctx, ldr);
+
+            case GridBinaryMarshaller.PROXY:
+                return doReadProxy(in, ctx, ldr, handles);
 
             case GridBinaryMarshaller.OPTM_MARSH:
                 return doReadOptimized(in, ctx, ldr);
@@ -1987,6 +1976,40 @@ public class BinaryUtils {
      */
     public static String qualifiedFieldName(Class cls, String fieldName) {
         return cls.getName() + "." + fieldName;
+    }
+
+    /**
+     * Write {@code IgniteUuid} instance.
+     *
+     * @param out Writer.
+     * @param val Value.
+     */
+    public static void writeIgniteUuid(BinaryRawWriter out, @Nullable IgniteUuid val) {
+        if (val != null) {
+            out.writeBoolean(true);
+
+            out.writeLong(val.globalId().getMostSignificantBits());
+            out.writeLong(val.globalId().getLeastSignificantBits());
+            out.writeLong(val.localId());
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Read {@code IgniteUuid} instance.
+     *
+     * @param in Reader.
+     * @return Value.
+     */
+    @Nullable public static IgniteUuid readIgniteUuid(BinaryRawReader in) {
+        if (in.readBoolean()) {
+            UUID globalId = new UUID(in.readLong(), in.readLong());
+
+            return new IgniteUuid(globalId, in.readLong());
+        }
+        else
+            return null;
     }
 
     /**

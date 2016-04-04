@@ -86,7 +86,7 @@ public class BinarySchema implements Externalizable {
      * @param schemaId Schema ID.
      * @param fieldIds Field IDs.
      */
-    private BinarySchema(int schemaId, List<Integer> fieldIds) {
+    public BinarySchema(int schemaId, List<Integer> fieldIds) {
         assert fieldIds != null;
 
         this.schemaId = schemaId;
@@ -258,6 +258,15 @@ public class BinarySchema implements Externalizable {
             fieldIds.add(in.readInt());
 
         initialize(fieldIds);
+    }
+
+    /**
+     * Gets field ids array.
+     *
+     * @return Field ids.
+     */
+    public int[] fieldIds() {
+        return ids;
     }
 
     /**

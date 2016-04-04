@@ -17,66 +17,42 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.ignite.internal.processors.odbc.OdbcRequest.CLOSE_SQL_QUERY;
-import static org.apache.ignite.internal.processors.odbc.OdbcRequest.EXECUTE_SQL_QUERY;
-import static org.apache.ignite.internal.processors.odbc.OdbcRequest.FETCH_SQL_QUERY;
-import static org.apache.ignite.internal.processors.odbc.OdbcRequest.GET_COLUMNS_META;
-import static org.apache.ignite.internal.processors.odbc.OdbcRequest.GET_TABLES_META;
-
 /**
- * SQL query handler.
+ * ODBC message listener.
  */
-public class OdbcNioListener extends GridNioServerListenerAdapter<OdbcRequest> {
-    /** Query ID sequence. */
-    private static final AtomicLong QRY_ID_GEN = new AtomicLong();
+public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
+    /** Connection-related metadata key. */
+    private static final int CONNECTION_DATA_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Request ID generator. */
     private static final AtomicLong REQ_ID_GEN = new AtomicLong();
 
-    /** Kernel context. */
-    private final GridKernalContext ctx;
-
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
+
+    /** Kernal context. */
+    private final GridKernalContext ctx;
 
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Current queries cursors. */
-    private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs = new ConcurrentHashMap<>();
-
     /**
-     * Constructor.
-     *
      * @param ctx Context.
+     * @param busyLock Shutdown busy lock.
      */
-    public OdbcNioListener(final GridKernalContext ctx, final GridSpinBusyLock busyLock) {
+    public OdbcNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock) {
         this.ctx = ctx;
         this.busyLock = busyLock;
-
         this.log = ctx.log(getClass());
     }
 
@@ -84,6 +60,8 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<OdbcRequest> {
     @Override public void onConnected(GridNioSession ses) {
         if (log.isDebugEnabled())
             log.debug("ODBC client connected: " + ses.remoteAddress());
+
+        ses.addMeta(CONNECTION_DATA_META_KEY, new ConnectionData(ctx, busyLock));
     }
 
     /** {@inheritDoc} */
@@ -97,289 +75,97 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<OdbcRequest> {
     }
 
     /** {@inheritDoc} */
-    @Override public void onMessage(GridNioSession ses, OdbcRequest req) {
-        assert req != null;
+    @Override public void onMessage(GridNioSession ses, byte[] msg) {
+        assert msg != null;
 
         long reqId = REQ_ID_GEN.incrementAndGet();
-        long startTime = 0;
 
-        if (log.isDebugEnabled()) {
-            startTime = System.nanoTime();
+        ConnectionData connData = ses.meta(CONNECTION_DATA_META_KEY);
 
-            log.debug("ODBC request received [id=" + reqId + ", addr=" + ses.remoteAddress() + ", req=" + req + ']');
+        assert connData != null;
+
+        OdbcMessageParser parser = connData.getParser();
+
+        OdbcRequest req;
+
+        try {
+            req = parser.decode(msg);
+        }
+        catch (Exception e) {
+            log.error("Failed to parse message [id=" + reqId + ", err=" + e + ']');
+
+            ses.close();
+
+            return;
         }
 
-        OdbcResponse res = handle(req);
-
-        if (log.isDebugEnabled()) {
-            long dur = (System.nanoTime() - startTime) / 1000;
-
-            log.debug("ODBC request processed [id=" + reqId + ", dur(mcs)=" + dur  + ", res=" + res.status() + ']');
-        }
-
-        ses.send(res);
-    }
-
-    /**
-     * Handle request.
-     *
-     * @param req Request.
-     * @return Response.
-     */
-    public OdbcResponse handle(OdbcRequest req) {
         assert req != null;
 
-        if (!busyLock.enterBusy())
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                "Failed to handle ODBC request because node is stopping: " + req);
-
         try {
-            switch (req.command()) {
-                case EXECUTE_SQL_QUERY:
-                    return executeQuery((OdbcQueryExecuteRequest)req);
+            long startTime = 0;
 
-                case FETCH_SQL_QUERY:
-                    return fetchQuery((OdbcQueryFetchRequest)req);
+            if (log.isDebugEnabled()) {
+                startTime = System.nanoTime();
 
-                case CLOSE_SQL_QUERY:
-                    return closeQuery((OdbcQueryCloseRequest)req);
-
-                case GET_COLUMNS_META:
-                    return getColumnsMeta((OdbcQueryGetColumnsMetaRequest) req);
-
-                case GET_TABLES_META:
-                    return getTablesMeta((OdbcQueryGetTablesMetaRequest) req);
+                log.debug("ODBC request received [id=" + reqId + ", addr=" + ses.remoteAddress() +
+                    ", req=" + req + ']');
             }
 
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC request: " + req);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
+            OdbcRequestHandler handler = connData.getHandler();
 
-    /**
-     * {@link OdbcQueryExecuteRequest} command handler.
-     *
-     * @param req Execute query request.
-     * @return Response.
-     */
-    private OdbcResponse executeQuery(OdbcQueryExecuteRequest req) {
-        long qryId = QRY_ID_GEN.getAndIncrement();
+            OdbcResponse resp = handler.handle(req);
 
-        try {
-            SqlFieldsQuery qry = new SqlFieldsQuery(req.sqlQuery());
+            if (log.isDebugEnabled()) {
+                long dur = (System.nanoTime() - startTime) / 1000;
 
-            qry.setArgs(req.arguments());
+                log.debug("ODBC request processed [id=" + reqId + ", dur(mcs)=" + dur  +
+                    ", resp=" + resp.status() + ']');
+            }
 
-            IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
+            byte[] outMsg = parser.encode(resp);
 
-            if (cache == null)
-                return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                    "Cache doesn't exist (did you configure it?): " + req.cacheName());
-
-            QueryCursor qryCur = cache.query(qry);
-
-            Iterator iter = qryCur.iterator();
-
-            qryCurs.put(qryId, new IgniteBiTuple<>(qryCur, iter));
-
-            List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
-
-            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
-
-            return new OdbcResponse(res);
+            ses.send(outMsg);
         }
         catch (Exception e) {
-            qryCurs.remove(qryId);
+            log.error("Failed to process ODBC request [id=" + reqId + ", err=" + e + ']');
 
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
+            ses.send(parser.encode(new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage())));
         }
     }
 
     /**
-     * {@link OdbcQueryCloseRequest} command handler.
-     *
-     * @param req Execute query request.
-     * @return Response.
+     * Connection-related data.
      */
-    private OdbcResponse closeQuery(OdbcQueryCloseRequest req) {
-        try {
-            QueryCursor cur = qryCurs.get(req.queryId()).get1();
+    private static class ConnectionData {
+        /** Request handler. */
+        private final OdbcRequestHandler handler;
 
-            if (cur == null)
-                return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Failed to find query with ID: " + req.queryId());
+        /** Message parser. */
+        private final OdbcMessageParser parser;
 
-            cur.close();
-
-            qryCurs.remove(req.queryId());
-
-            OdbcQueryCloseResult res = new OdbcQueryCloseResult(req.queryId());
-
-            return new OdbcResponse(res);
-        }
-        catch (Exception e) {
-            qryCurs.remove(req.queryId());
-
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
-        }
-    }
-
-    /**
-     * {@link OdbcQueryFetchRequest} command handler.
-     *
-     * @param req Execute query request.
-     * @return Response.
-     */
-    private OdbcResponse fetchQuery(OdbcQueryFetchRequest req) {
-        try {
-            Iterator cur = qryCurs.get(req.queryId()).get2();
-
-            if (cur == null)
-                return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Failed to find query with ID: " + req.queryId());
-
-            List<Object> items = new ArrayList<>();
-
-            for (int i = 0; i < req.pageSize() && cur.hasNext(); ++i)
-                items.add(cur.next());
-
-            OdbcQueryFetchResult res = new OdbcQueryFetchResult(req.queryId(), items, !cur.hasNext());
-
-            return new OdbcResponse(res);
-        }
-        catch (Exception e) {
-            qryCurs.remove(req.queryId());
-
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
-        }
-    }
-
-    /**
-     * {@link OdbcQueryGetColumnsMetaRequest} command handler.
-     *
-     * @param req Get columns metadata request.
-     * @return Response.
-     */
-    private OdbcResponse getColumnsMeta(OdbcQueryGetColumnsMetaRequest req) {
-        try {
-            List<OdbcColumnMeta> meta = new ArrayList<>();
-
-            String cacheName;
-            String tableName;
-
-            if (req.tableName().contains(".")) {
-                // Parsing two-part table name.
-                String[] parts = req.tableName().split("\\.");
-
-                cacheName = OdbcUtils.removeQuotationMarksIfNeeded(parts[0]);
-
-                tableName = parts[1];
-            }
-            else {
-                cacheName = OdbcUtils.removeQuotationMarksIfNeeded(req.cacheName());
-
-                tableName = req.tableName();
-            }
-
-            Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
-
-            for (GridQueryTypeDescriptor table : tablesMeta) {
-                if (!matches(table.name(), tableName))
-                    continue;
-
-                for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
-                    if (!matches(field.getKey(), req.columnName()))
-                        continue;
-
-                    OdbcColumnMeta columnMeta = new OdbcColumnMeta(req.cacheName(), table.name(),
-                        field.getKey(), field.getValue());
-
-                    if (!meta.contains(columnMeta))
-                        meta.add(columnMeta);
-                }
-            }
-
-            OdbcQueryGetColumnsMetaResult res = new OdbcQueryGetColumnsMetaResult(meta);
-
-            return new OdbcResponse(res);
-        }
-        catch (Exception e) {
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
-        }
-    }
-
-    /**
-     * {@link OdbcQueryGetTablesMetaRequest} command handler.
-     *
-     * @param req Get tables metadata request.
-     * @return Response.
-     */
-    private OdbcResponse getTablesMeta(OdbcQueryGetTablesMetaRequest req) {
-        try {
-            List<OdbcTableMeta> meta = new ArrayList<>();
-
-            String realSchema = OdbcUtils.removeQuotationMarksIfNeeded(req.schema());
-
-            for (String cacheName : ctx.cache().cacheNames())
-            {
-                if (!matches(cacheName, realSchema))
-                    continue;
-
-                Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
-
-                for (GridQueryTypeDescriptor table : tablesMeta) {
-                    if (!matches(table.name(), req.table()))
-                        continue;
-
-                    if (!matches("TABLE", req.tableType()))
-                        continue;
-
-                    OdbcTableMeta tableMeta = new OdbcTableMeta(req.catalog(), cacheName, table.name(), "TABLE");
-
-                    if (!meta.contains(tableMeta))
-                        meta.add(tableMeta);
-                }
-            }
-
-            OdbcQueryGetTablesMetaResult res = new OdbcQueryGetTablesMetaResult(meta);
-
-            return new OdbcResponse(res);
-        }
-        catch (Exception e) {
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
-        }
-    }
-
-    /**
-     * Convert metadata in collection from {@link GridQueryFieldMetadata} to
-     * {@link OdbcColumnMeta}.
-     *
-     * @param meta Internal query field metadata.
-     * @return Odbc query field metadata.
-     */
-    private static Collection<OdbcColumnMeta> convertMetadata(Collection<?> meta) {
-        List<OdbcColumnMeta> res = new ArrayList<>();
-
-        if (meta != null) {
-            for (Object info : meta) {
-                assert info instanceof GridQueryFieldMetadata;
-
-                res.add(new OdbcColumnMeta((GridQueryFieldMetadata)info));
-            }
+        /**
+         * @param ctx Context.
+         * @param busyLock Shutdown busy lock.
+         */
+        public ConnectionData(GridKernalContext ctx, GridSpinBusyLock busyLock) {
+            handler = new OdbcRequestHandler(ctx, busyLock);
+            parser = new OdbcMessageParser(ctx);
         }
 
-        return res;
-    }
+        /**
+         * Handler getter.
+         * @return Request handler for the connection.
+         */
+        public OdbcRequestHandler getHandler() {
+            return handler;
+        }
 
-    /**
-     * Checks whether string matches SQL pattern.
-     *
-     * @param str String.
-     * @param ptrn Pattern.
-     * @return Whether string matches pattern.
-     */
-    private static boolean matches(String str, String ptrn) {
-        return str != null && (F.isEmpty(ptrn) ||
-            str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
+        /**
+         * Parser getter
+         * @return Message parser for the connection.
+         */
+        public OdbcMessageParser getParser() {
+            return parser;
+        }
     }
 }

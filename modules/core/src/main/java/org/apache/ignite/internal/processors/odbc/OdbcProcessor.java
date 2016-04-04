@@ -40,7 +40,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** OBCD TCP Server. */
-    private GridNioServer<OdbcRequest> srv;
+    private GridNioServer<byte[]> srv;
 
     /**
      * @param ctx Kernal context.
@@ -70,7 +70,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
                 int port = odbcCfg.getPort();
 
-                srv = GridNioServer.<OdbcRequest>builder()
+                srv = GridNioServer.<byte[]>builder()
                     .address(host)
                     .port(port)
                     .listener(new OdbcNioListener(ctx, busyLock))
@@ -83,7 +83,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                     .socketSendBufferSize(odbcCfg.getSendBufferSize())
                     .socketReceiveBufferSize(odbcCfg.getReceiveBufferSize())
                     .sendQueueLimit(odbcCfg.getSendQueueLimit())
-                    .filters(new GridNioCodecFilter(new OdbcNioParser(ctx), log, false))
+                    .filters(new GridNioCodecFilter(new OdbcBufferedParser(), log, false))
                     .directMode(false)
                     .idleTimeout(odbcCfg.getIdleTimeout())
                     .build();

@@ -17,12 +17,9 @@
 
 namespace Apache.Ignite.ExamplesDll.Binary
 {
-    using System;
-
     /// <summary>
     /// Organization type.
     /// </summary>
-    [Serializable]
     public enum OrganizationType
     {
         /// <summary>

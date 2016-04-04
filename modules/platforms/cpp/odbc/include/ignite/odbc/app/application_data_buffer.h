@@ -23,6 +23,8 @@
 #include <map>
 
 #include <ignite/guid.h>
+#include <ignite/date.h>
+#include <ignite/timestamp.h>
 
 #include "ignite/odbc/decimal.h"
 #include "ignite/odbc/common_types.h"
@@ -165,6 +167,20 @@ namespace ignite
                 void PutDecimal(const Decimal& value);
 
                 /**
+                 * Put date to buffer.
+                 *
+                 * @param value Value to put.
+                 */
+                void PutDate(const Date& value);
+
+                /**
+                 * Put timestamp to buffer.
+                 *
+                 * @param value Value to put.
+                 */
+                void PutTimestamp(const Timestamp& value);
+
+                /**
                  * Get string.
                  *
                  * @return String value of buffer.
@@ -209,9 +225,30 @@ namespace ignite
                 /**
                  * Get value of type double.
                  *
-                 * @return Integer value of type double.
+                 * @return Value of type double.
                  */
                 double GetDouble() const;
+
+                /**
+                 * Get value of type GUID.
+                 *
+                 * @return Value of type Guid.
+                 */
+                Guid GetGuid() const;
+
+                /**
+                 * Get value of type Date.
+                 *
+                 * @return Value of type Date.
+                 */
+                Date GetDate() const;
+
+                /**
+                 * Get value of type Timestamp.
+                 *
+                 * @return Value of type Timestamp.
+                 */
+                Timestamp GetTimestamp() const;
 
                 /**
                  * Get raw data.

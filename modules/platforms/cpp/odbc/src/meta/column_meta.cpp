@@ -77,7 +77,6 @@ namespace ignite
                 utility::ReadString(reader, schemaName);
                 utility::ReadString(reader, tableName);
                 utility::ReadString(reader, columnName);
-                utility::ReadString(reader, typeName);
 
                 dataType = reader.ReadInt8();
             }

@@ -66,9 +66,8 @@ namespace ignite
                  * @param dataType Data type.
                  */
                 ColumnMeta(const std::string& schemaName, const std::string& tableName,
-                           const std::string& columnName, const std::string& typeName, int8_t dataType) :
-                    schemaName(schemaName), tableName(tableName), columnName(columnName), 
-                    typeName(typeName), dataType(dataType)
+                           const std::string& columnName, int8_t dataType) :
+                    schemaName(schemaName), tableName(tableName), columnName(columnName), dataType(dataType)
                 {
                     // No-op.
                 }
@@ -88,7 +87,6 @@ namespace ignite
                     schemaName(other.schemaName),
                     tableName(other.tableName),
                     columnName(other.columnName),
-                    typeName(other.typeName),
                     dataType(other.dataType)
                 {
                     // No-op.
@@ -102,7 +100,6 @@ namespace ignite
                     schemaName = other.schemaName;
                     tableName = other.tableName;
                     columnName = other.columnName;
-                    typeName = other.typeName;
                     dataType = other.dataType;
 
                     return *this;
@@ -142,15 +139,6 @@ namespace ignite
                 }
 
                 /**
-                 * Get column type name.
-                 * @return Column type name.
-                 */
-                const std::string& GetColumnTypeName() const
-                {
-                    return typeName;
-                }
-
-                /**
                  * Get data type.
                  * @return Data type.
                  */
@@ -186,9 +174,6 @@ namespace ignite
 
                 /** Column name. */
                 std::string columnName;
-
-                /** Type name. */
-                std::string typeName;
 
                 /** Data type. */
                 int8_t dataType;

@@ -16,6 +16,8 @@
  */
 
 // ReSharper disable SpecifyACultureInStringConversionExplicitly
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+#pragma warning disable 618  // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
@@ -27,6 +29,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
@@ -37,10 +40,10 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class ComputeApiTest
     {
         /** Echo task name. */
-        private const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
+        public const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
 
         /** Binary argument task name. */
-        private const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
+        public const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
 
         /** Broadcast task name. */
         public const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
@@ -88,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private const int EchoTypeMap = 11;
 
         /** Echo type: binarizable. */
-        private const int EchoTypeBinarizable = 12;
+        public const int EchoTypeBinarizable = 12;
 
         /** Echo type: binary (Java only). */
         private const int EchoTypeBinarizableJava = 13;
@@ -108,6 +111,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Type: enum field. */
         private const int EchoTypeEnumField = 18;
 
+        /** Type: affinity key. */
+        public const int EchoTypeAffinityKey = 19;
+
         /** First node. */
         private IIgnite _grid1;
 
@@ -123,13 +129,34 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureSetUp]
         public void InitClient()
         {
-            //TestUtils.JVM_DEBUG = true;
             TestUtils.KillProcesses();
 
-            _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            var configs = GetConfigs();
+
+            _grid1 = Ignition.Start(Configuration(configs.Item1));
+            _grid2 = Ignition.Start(Configuration(configs.Item2));
+            _grid3 = Ignition.Start(Configuration(configs.Item3));
         }
+
+        /// <summary>
+        /// Gets the configs.
+        /// </summary>
+        protected virtual Tuple<string, string, string> GetConfigs()
+        {
+            return Tuple.Create(
+                "config\\compute\\compute-grid1.xml",
+                "config\\compute\\compute-grid2.xml",
+                "config\\compute\\compute-grid3.xml");
+        }
+
+        /// <summary>
+        /// Gets the expected compact footers setting.
+        /// </summary>
+        protected virtual bool CompactFooter
+        {
+            get { return true; }
+        }
+
 
         [TestFixtureTearDown]
         public void StopClient()
@@ -310,7 +337,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(topVer + 1, _grid1.GetCluster().TopologyVersion);
 
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            _grid3 = Ignition.Start(Configuration(GetConfigs().Item3));
 
             Assert.AreEqual(topVer + 2, _grid1.GetCluster().TopologyVersion);
         }
@@ -351,7 +378,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
             finally 
             {
-                _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+                _grid2 = Ignition.Start(Configuration(GetConfigs().Item2));
             }
         }
 
@@ -383,7 +410,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.IsTrue(nodes.Count == 2);
 
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+            _grid2 = Ignition.Start(Configuration(GetConfigs().Item2));
 
             nodes = _grid1.GetCluster().GetNodes();
 
@@ -1132,6 +1159,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(_grid1.GetCompute().ClusterGroup.GetNodes().Count, res);
         }
 
+        /// <summary>
+        /// Tests the exceptions.
+        /// </summary>
         [Test]
         public void TestExceptions()
         {
@@ -1140,6 +1170,18 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.Throws<BinaryObjectException>(
                 () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
+        }
+
+        /// <summary>
+        /// Tests the footer setting.
+        /// </summary>
+        [Test]
+        public void TestFooterSetting()
+        {
+            Assert.AreEqual(CompactFooter, ((Ignite)_grid1).Marshaller.CompactFooter);
+
+            foreach (var g in new[] {_grid1, _grid2, _grid3})
+                Assert.AreEqual(CompactFooter, g.GetConfiguration().BinaryConfiguration.CompactFooter);
         }
 
         /// <summary>

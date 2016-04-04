@@ -22,6 +22,7 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
+#include "ignite/odbc/message.h"
 #include "ignite/odbc/config/configuration.h"
 
 // TODO: implement appropriate protocol with de-/serialisation.
@@ -39,6 +40,8 @@ namespace ignite
 {
     namespace odbc
     {
+        const std::string Connection::PROTOCOL_VERSION_SINCE = "1.6.0";
+
         Connection::Connection() : socket(), connected(false), cache(), parser()
         {
             // No-op.
@@ -85,7 +88,7 @@ namespace ignite
 
             if (server != config.GetDsn())
             {
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Unknown DNS.");
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Unknown server.");
 
                 return SQL_RESULT_ERROR;
             }
@@ -118,7 +121,7 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            return SQL_RESULT_SUCCESS;
+            return MakeRequestHandshake();
         }
 
         void Connection::Release()
@@ -165,63 +168,97 @@ namespace ignite
             return SQL_RESULT_SUCCESS;
         }
 
-        bool Connection::Send(const int8_t* data, size_t len)
+        void Connection::Send(const int8_t* data, size_t len)
         {
             if (!connected)
-                return false;
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
 
-            size_t sent = 0;
+            OdbcProtocolHeader hdr;
 
-            while (sent != len) 
+            hdr.len = static_cast<int32_t>(len);
+
+            size_t sent = SendAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
+
+            if (sent != sizeof(hdr))
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message header");
+
+            sent = SendAll(data, len);
+
+            if (sent != len)
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not send message body");
+        }
+
+        size_t Connection::SendAll(const int8_t* data, size_t len)
+        {
+            int sent = 0;
+
+            while (sent != len)
             {
-                size_t res = socket.Send(data + sent, len - sent);
+                int res = socket.Send(data + sent, len - sent);
+
+                LOG_MSG("Sent: %d\n", res);
 
                 if (res <= 0)
-                    return false;
+                    return sent;
 
                 sent += res;
             }
 
-            return true;
+            return sent;
         }
 
-        bool Connection::Receive(std::vector<int8_t>& msg)
+        void Connection::Receive(std::vector<int8_t>& msg)
         {
             if (!connected)
-                return false;
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
 
             msg.clear();
 
             OdbcProtocolHeader hdr;
 
-            int received = socket.Receive(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
-            LOG_MSG("Received: %d\n", received);
+            size_t received = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
 
             if (received != sizeof(hdr))
-                return false;
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message header");
 
-            size_t remain = hdr.len;
-            size_t receivedAtAll = 0;
+            if (hdr.len < 0)
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Message lenght is negative");
 
-            msg.resize(remain);
+            if (hdr.len == 0)
+                return;
+
+            msg.resize(hdr.len);
+
+            received = ReceiveAll(&msg[0], hdr.len);
+
+            if (received != hdr.len)
+            {
+                msg.resize(received);
+
+                IGNITE_ERROR_1(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message body");
+            }
+        }
+
+        size_t Connection::ReceiveAll(void* dst, size_t len)
+        {
+            size_t remain = len;
+            int8_t* buffer = reinterpret_cast<int8_t*>(dst);
 
             while (remain)
             {
-                received = socket.Receive(&msg[receivedAtAll], remain);
-                LOG_MSG("Received: %d\n", received);
+                size_t received = len - remain;
+
+                int res = socket.Receive(buffer + received, remain);
+                LOG_MSG("Receive res: %d\n", res);
                 LOG_MSG("remain: %d\n", remain);
 
-                if (received <= 0)
-                {
-                    msg.resize(receivedAtAll);
+                if (res <= 0)
+                    return received;
 
-                    return false;
-                }
-
-                remain -= static_cast<size_t>(received);
+                remain -= static_cast<size_t>(res);
             }
 
-            return true;
+            return len;
         }
 
         const std::string& Connection::GetCache() const
@@ -256,6 +293,54 @@ namespace ignite
                 "Rollback operation is not supported.");
 
             return SQL_RESULT_ERROR;
+        }
+
+        SqlResult Connection::MakeRequestHandshake()
+        {
+            HandshakeRequest req(PROTOCOL_VERSION);
+            HandshakeResponse rsp;
+
+            try
+            {
+                SyncMessage(req, rsp);
+            }
+            catch (const IgniteError& err)
+            {
+                AddStatusRecord(SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (rsp.GetStatus() != RESPONSE_STATUS_SUCCESS)
+            {
+                LOG_MSG("Error: %s\n", rsp.GetError().c_str());
+
+                AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, rsp.GetError());
+
+                InternalRelease();
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (!rsp.IsAccepted())
+            {
+                LOG_MSG("Hanshake message has been rejected.\n");
+
+                std::stringstream constructor;
+
+                constructor << "Node rejected handshake message. "
+                    << "Current node Apache Ignite version: " << rsp.CurrentVer() << ", "
+                    << "node protocol version introduced in version: " << rsp.ProtoVerSince() << ", "
+                    << "driver protocol version introduced in version: " << PROTOCOL_VERSION_SINCE << ".";
+
+                AddStatusRecord(SQL_STATE_08001_CANNOT_CONNECT, constructor.str());
+
+                InternalRelease();
+
+                return SQL_RESULT_ERROR;
+            }
+
+            return SQL_RESULT_SUCCESS;
         }
     }
 }
