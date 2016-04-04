@@ -59,32 +59,38 @@ namespace Apache.Ignite.Core.Tests
         [Test]  // TODO: DELME!
         public void TestStartupTime()
         {
-            var sw = Stopwatch.StartNew();
-
-            var cfg = new IgniteConfiguration
+            for (var i = 0; i < 10; i++)
             {
-                DiscoverySpi = new TcpDiscoverySpi
+                var sw = Stopwatch.StartNew();
+
+                var cfg = new IgniteConfiguration
                 {
-                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    DiscoverySpi = new TcpDiscoverySpi
                     {
-                        Endpoints = new[] { "127.0.0.1:47500" }
+                        IpFinder = new TcpDiscoveryStaticIpFinder
+                        {
+                            Endpoints = new[] {"127.0.0.1:47500", "127.0.0.1:47501", "127.0.0.1:47502" }
+                        },
+                        AckTimeout = TimeSpan.FromSeconds(0.1),
+                        JoinTimeout = TimeSpan.FromSeconds(0.1),
+                        MaxAckTimeout = TimeSpan.FromSeconds(0.2),
+                        NetworkTimeout = TimeSpan.FromSeconds(0.1),
+                        SocketTimeout = TimeSpan.FromSeconds(0.1)
                     },
-                    AckTimeout = TimeSpan.FromSeconds(0.1),
-                    JoinTimeout = TimeSpan.FromSeconds(0.1),
-                    MaxAckTimeout = TimeSpan.FromSeconds(0.2),
-                    NetworkTimeout = TimeSpan.FromSeconds(0.1),
-                    SocketTimeout = TimeSpan.FromSeconds(0.1)
-                },
-                Localhost = "127.0.0.1",
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath()
-            };
+                    Localhost = "127.0.0.1",
+                    JvmOptions = TestUtils.TestJavaOptions(),
+                    JvmClasspath = TestUtils.CreateTestClasspath()
+                };
 
-            var ignite = Ignition.Start(cfg);
+                var ignite = Ignition.Start(cfg);
 
-            Ignition.Stop(ignite.Name, true);
+                Ignition.Stop(ignite.Name, true);
 
-            Console.WriteLine(sw.Elapsed);
+                Console.WriteLine(sw.Elapsed);
+            }
+
+            // More endpoints -> Slowdown!
+            // Many endpoints with small timeouts -> Much faster!
         }
 
         /// <summary>
