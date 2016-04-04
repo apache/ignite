@@ -42,6 +42,18 @@ import java.util.Collections;
  * ODBC processor.
  */
 public class OdbcProcessor extends GridProcessorAdapter {
+    /** Default TCP_NODELAY flag. */
+    private static final boolean DFLT_TCP_NODELAY = true;
+
+    /** Default TCP direct buffer flag. */
+    private static final boolean DFLT_TCP_DIRECT_BUF = false;
+
+    /** Default ODBC idle timeout. */
+    private static final int DFLT_IDLE_TIMEOUT = 7000;
+
+    /** Default socket send and receive buffer size. */
+    private static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
+
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
@@ -84,17 +96,16 @@ public class OdbcProcessor extends GridProcessorAdapter {
                             .port(addr.getPort())
                             .listener(new OdbcNioListener(ctx, busyLock))
                             .logger(log)
-                            .selectorCount(odbcCfg.getSelectorCount())
+                            .selectorCount(Math.min(4, Runtime.getRuntime().availableProcessors()))
                             .gridName(ctx.gridName())
-                            .tcpNoDelay(odbcCfg.isNoDelay())
-                            .directBuffer(odbcCfg.isDirectBuffer())
+                            .tcpNoDelay(DFLT_TCP_NODELAY)
+                            .directBuffer(DFLT_TCP_DIRECT_BUF)
                             .byteOrder(ByteOrder.nativeOrder())
-                            .socketSendBufferSize(odbcCfg.getSendBufferSize())
-                            .socketReceiveBufferSize(odbcCfg.getReceiveBufferSize())
-                            .sendQueueLimit(odbcCfg.getSendQueueLimit())
+                            .socketSendBufferSize(DFLT_SOCK_BUF_SIZE)
+                            .socketReceiveBufferSize(DFLT_SOCK_BUF_SIZE)
                             .filters(new GridNioCodecFilter(new OdbcBufferedParser(), log, false))
                             .directMode(false)
-                            .idleTimeout(odbcCfg.getIdleTimeout())
+                            .idleTimeout(DFLT_IDLE_TIMEOUT)
                             .build();
 
                     srv.start();
