@@ -1126,13 +1126,16 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @throws IgniteCheckedException If failed.
      */
     private void dropEmptyBranch(Page meta, Tail inner) throws IgniteCheckedException {
-        assert inner.fwd == null;
-
         int cnt = inner.io.getCount(inner.buf);
 
-//        X.println("drop branch: " + inner.lvl + " " + cnt);
+        assert cnt > 0: cnt;
+        assert inner.fwd == null: "if we've found our inner key in this page it can't be a back page";
 
-        doRemove(inner.io, inner.page, inner.buf, cnt, inner.idx, meta, inner.lvl, cnt > 1);
+        // We need to check if the branch we are going to drop is from the left or right.
+        boolean kickLeft = inner.down.page.id() == inner(inner.io).getLeft(inner.buf, inner.idx);
+        assert kickLeft || inner.down.page.id() == inner(inner.io).getRight(inner.buf, inner.idx);
+
+        doRemove(inner.io, inner.page, inner.buf, cnt, inner.idx, meta, inner.lvl, kickLeft);
 
         for (Tail t = inner.down; t != null; t = t.down) {
             if (t.fwd != null)
@@ -2567,13 +2570,25 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * @param buf Buffer.
          * @return Items count in the page.
          */
-        public abstract int getCount(ByteBuffer buf);
+        public int getCount(ByteBuffer buf) {
+            int cnt = buf.getShort(CNT_OFF) & 0xFFFF;
+
+            assert cnt >= 0: cnt;
+
+            return cnt;
+        }
 
         /**
          * @param buf Buffer.
          * @param cnt Count.
          */
-        public abstract void setCount(ByteBuffer buf, int cnt);
+        public void setCount(ByteBuffer buf, int cnt) {
+            assert cnt >= 0: cnt;
+
+            buf.putShort(CNT_OFF, (short)cnt);
+
+            assert getCount(buf) == cnt;
+        }
 
         /**
          * @param buf Buffer.
@@ -2654,16 +2669,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         @Override public int getMaxCount(ByteBuffer buf) {
             //  (capacity - ITEMS_OFF - RIGHTMOST_PAGE_ID_SLOT_SIZE) / ITEM_SIZE
             return (buf.capacity() - ITEMS_OFF - 8) >>> 4;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getCount(ByteBuffer buf) {
-            return buf.getShort(CNT_OFF) & 0xFFFF;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setCount(ByteBuffer buf, int cnt) {
-            buf.putShort(CNT_OFF, (short)cnt);
         }
 
         /** {@inheritDoc} */
@@ -2799,18 +2804,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         /** {@inheritDoc} */
         @Override public int getMaxCount(ByteBuffer buf) {
             return (buf.capacity() - ITEMS_OFF) >>> 3; // divide by ITEM_SIZE
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getCount(ByteBuffer buf) {
-            return buf.getShort(CNT_OFF) & 0xFFFF;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setCount(ByteBuffer buf, int cnt) {
-            buf.putShort(CNT_OFF, (short)cnt);
-
-            assert getCount(buf) == cnt;
         }
 
         /** {@inheritDoc} */
