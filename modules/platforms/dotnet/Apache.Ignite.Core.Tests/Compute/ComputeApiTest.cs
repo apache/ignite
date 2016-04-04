@@ -168,14 +168,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureTearDown]
         public void StopClient()
         {
-            if (_grid1 != null)
-                Ignition.Stop(_grid1.Name, true);
-
-            if (_grid2 != null)
-                Ignition.Stop(_grid2.Name, true);
-
-            if (_grid3 != null)
-                Ignition.Stop(_grid3.Name, true);
+            Ignition.StopAll(true);
 
             sw.Stop();
 
@@ -186,6 +179,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void AfterTest()
         {
             TestUtils.AssertHandleRegistryIsEmpty(1000, _grid1, _grid2, _grid3);
+            Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
+        }
+
+        [SetUp]
+        public void BeforeTest()
+        {
+            Console.WriteLine("Starting test: " + TestContext.CurrentContext.Test.Name);
         }
 
         /// <summary>
