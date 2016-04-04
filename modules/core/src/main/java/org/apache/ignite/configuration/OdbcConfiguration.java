@@ -17,8 +17,6 @@
 
 package org.apache.ignite.configuration;
 
-import java.net.Socket;
-
 /**
  * ODBC configuration.
  */
@@ -47,27 +45,6 @@ public class OdbcConfiguration {
     /** TCP host. */
     private String host;
 
-    /** TCP no delay flag. */
-    private boolean noDelay = DFLT_TCP_NODELAY;
-
-    /** ODBC TCP direct buffer flag. */
-    private boolean directBuf = DFLT_TCP_DIRECT_BUF;
-
-    /** ODBC TCP send buffer size. */
-    private int sndBufSize = DFLT_SOCK_BUF_SIZE;
-
-    /** ODBC TCP receive buffer size. */
-    private int rcvBufSize = DFLT_SOCK_BUF_SIZE;
-
-    /** ODBC TCP send queue limit. */
-    private int sndQueueLimit;
-
-    /** ODBC TCP selector count. */
-    private int selectorCnt = Math.min(4, Runtime.getRuntime().availableProcessors());
-
-    /** Idle timeout. */
-    private long idleTimeout = DFLT_IDLE_TIMEOUT;
-
     /** Max number of opened cursors per connection. */
     private int maxOpenCursors = DFLT_MAX_OPEN_CURSORS;
 
@@ -87,16 +64,9 @@ public class OdbcConfiguration {
     public OdbcConfiguration(OdbcConfiguration cfg) {
         assert cfg != null;
 
-        directBuf = cfg.isDirectBuffer();
         host = cfg.getHost();
-        idleTimeout = cfg.getIdleTimeout();
         maxOpenCursors = cfg.getMaxOpenCursors();
-        noDelay = cfg.isNoDelay();
         port = cfg.getPort();
-        rcvBufSize = cfg.getReceiveBufferSize();
-        selectorCnt = cfg.getSelectorCount();
-        sndBufSize = cfg.getSendBufferSize();
-        sndQueueLimit = cfg.getSendQueueLimit();
     }
 
     /**
@@ -142,159 +112,6 @@ public class OdbcConfiguration {
      */
     public void setHost(String host) {
         this.host = host;
-    }
-
-    /**
-     * Gets flag indicating whether {@code TCP_NODELAY} option should be set for accepted client connections.
-     * Setting this option reduces network latency and should be set to {@code true} in majority of cases.
-     * For more information, see {@link Socket#setTcpNoDelay(boolean)}
-     * <p/>
-     * If not specified, default value is {@link #DFLT_TCP_NODELAY}.
-     *
-     * @return Whether {@code TCP_NODELAY} option should be enabled.
-     */
-    public boolean isNoDelay() {
-        return noDelay;
-    }
-
-    /**
-     * Sets whether {@code TCP_NODELAY} option should be set for all accepted ODBC client connections.
-     *
-     * @param noDelay {@code True} if option should be enabled.
-     * @see #isNoDelay()
-     */
-    public void setNoDelay(boolean noDelay) {
-        this.noDelay = noDelay;
-    }
-
-    /**
-     * Gets flag indicating whether ODBC TCP server should use direct buffers. A direct buffer is a buffer
-     * that is allocated and accessed using native system calls, without using JVM heap. Enabling direct
-     * buffer <em>may</em> improve performance and avoid memory issues (long GC pauses due to huge buffer
-     * size).
-     * <p/>
-     * If not specified, default value is {@link #DFLT_TCP_DIRECT_BUF}.
-     *
-     * @return Whether direct buffer should be used.
-     */
-    public boolean isDirectBuffer() {
-        return directBuf;
-    }
-
-    /**
-     * Sets whether to use direct buffer for ODBC TCP server.
-     *
-     * @param directBuf {@code True} if option should be enabled.
-     * @see #isDirectBuffer()
-     */
-    public void setDirectBuffer(boolean directBuf) {
-        this.directBuf = directBuf;
-    }
-
-    /**
-     * Gets ODBC TCP server send buffer size.
-     * <p/>
-     * If not specified, default value is {@link #DFLT_SOCK_BUF_SIZE}.
-     *
-     * @return ODBC TCP server send buffer size (0 for default).
-     */
-    public int getSendBufferSize() {
-        return sndBufSize;
-    }
-
-    /**
-     * Sets ODBC TCP server send buffer size.
-     *
-     * @param sndBufSize Send buffer size.
-     * @see #getSendBufferSize()
-     */
-    public void setSendBufferSize(int sndBufSize) {
-        this.sndBufSize = sndBufSize;
-    }
-
-    /**
-     * Gets ODBC TCP server receive buffer size.
-     * <p/>
-     * If not specified, default value is {@link #DFLT_SOCK_BUF_SIZE}.
-     *
-     * @return ODBC TCP server receive buffer size (0 for default).
-     */
-    public int getReceiveBufferSize() {
-        return rcvBufSize;
-    }
-
-    /**
-     * Sets ODBC TCP server receive buffer size.
-     *
-     * @param rcvBufSize Receive buffer size.
-     * @see #getReceiveBufferSize()
-     */
-    public void setReceiveBufferSize(int rcvBufSize) {
-        this.rcvBufSize = rcvBufSize;
-    }
-
-    /**
-     * Gets ODBC TCP server send queue limit. If the limit exceeds, all successive writes will
-     * block until the queue has enough capacity.
-     *
-     * @return ODBC TCP server send queue limit (0 for unlimited).
-     */
-    public int getSendQueueLimit() {
-        return sndQueueLimit;
-    }
-
-    /**
-     * Sets ODBC TCP server send queue limit.
-     *
-     * @param sndQueueLimit ODBC TCP server send queue limit (0 for unlimited).
-     * @see #getSendQueueLimit()
-     */
-    public void setSendQueueLimit(int sndQueueLimit) {
-        this.sndQueueLimit = sndQueueLimit;
-    }
-
-    /**
-     * Gets number of selector threads in ODBC TCP server. Higher value for this parameter
-     * may increase throughput, but also increases context switching.
-     *
-     * @return Number of selector threads for ODBC TCP server.
-     */
-    public int getSelectorCount() {
-        return selectorCnt;
-    }
-
-    /**
-     * Sets number of selector threads for ODBC TCP server.
-     *
-     * @param selectorCnt Number of selector threads for ODBC TCP server.
-     * @see #getSelectorCount()
-     */
-    public void setSelectorCount(int selectorCnt) {
-        this.selectorCnt = selectorCnt;
-    }
-
-    /**
-     * Gets idle timeout for ODBC TCP server.
-     * <p>
-     * This setting is used to reject half-opened sockets. If no packets
-     * come within idle timeout, the connection is closed.
-     * <p/>
-     * If not specified, default value is {@link #DFLT_IDLE_TIMEOUT}.
-     *
-     * @return Idle timeout in milliseconds.
-     */
-    public long getIdleTimeout() {
-        return idleTimeout;
-    }
-
-    /**
-     * Sets idle timeout for ODBC TCP server.
-     *
-     * @param idleTimeout Idle timeout in milliseconds.
-     * @see #getIdleTimeout()
-     */
-    public void setIdleTimeout(long idleTimeout) {
-        this.idleTimeout = idleTimeout;
     }
 
     /**

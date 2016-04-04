@@ -75,17 +75,16 @@ public class OdbcProcessor extends GridProcessorAdapter {
                     .port(port)
                     .listener(new OdbcNioListener(ctx, busyLock))
                     .logger(log)
-                    .selectorCount(odbcCfg.getSelectorCount())
+                    .selectorCount(Math.min(4, Runtime.getRuntime().availableProcessors()))
                     .gridName(ctx.gridName())
-                    .tcpNoDelay(odbcCfg.isNoDelay())
-                    .directBuffer(odbcCfg.isDirectBuffer())
+                    .tcpNoDelay(OdbcConfiguration.DFLT_TCP_NODELAY)
+                    .directBuffer(OdbcConfiguration.DFLT_TCP_DIRECT_BUF)
                     .byteOrder(ByteOrder.nativeOrder())
-                    .socketSendBufferSize(odbcCfg.getSendBufferSize())
-                    .socketReceiveBufferSize(odbcCfg.getReceiveBufferSize())
-                    .sendQueueLimit(odbcCfg.getSendQueueLimit())
+                    .socketSendBufferSize(OdbcConfiguration.DFLT_SOCK_BUF_SIZE)
+                    .socketReceiveBufferSize(OdbcConfiguration.DFLT_SOCK_BUF_SIZE)
                     .filters(new GridNioCodecFilter(new OdbcBufferedParser(), log, false))
                     .directMode(false)
-                    .idleTimeout(odbcCfg.getIdleTimeout())
+                    .idleTimeout(OdbcConfiguration.DFLT_IDLE_TIMEOUT)
                     .build();
 
                 srv.start();
