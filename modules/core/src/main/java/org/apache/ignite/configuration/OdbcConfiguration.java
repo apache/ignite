@@ -23,8 +23,8 @@ import java.net.Socket;
  * ODBC configuration.
  */
 public class OdbcConfiguration {
-    /** Default TCP server port. */
-    public static final int DFLT_TCP_PORT = 11443;
+    /** Default TCP server port range. */
+    public static final String DFLT_TCP_PORT_RANGE = "11443..11463";
 
     /** Default TCP_NODELAY flag. */
     public static final boolean DFLT_TCP_NODELAY = true;
@@ -41,11 +41,8 @@ public class OdbcConfiguration {
     /** Default max number of open cursors per connection. */
     public static final int DFLT_MAX_OPEN_CURSORS = 128;
 
-    /** TCP port. */
-    private int port = DFLT_TCP_PORT;
-
-    /** TCP host. */
-    private String host;
+    /** Address of the ODBC server. */
+    private String addr;
 
     /** TCP no delay flag. */
     private boolean noDelay = DFLT_TCP_NODELAY;
@@ -88,11 +85,10 @@ public class OdbcConfiguration {
         assert cfg != null;
 
         directBuf = cfg.isDirectBuffer();
-        host = cfg.getHost();
+        addr = cfg.getAddress();
         idleTimeout = cfg.getIdleTimeout();
         maxOpenCursors = cfg.getMaxOpenCursors();
         noDelay = cfg.isNoDelay();
-        port = cfg.getPort();
         rcvBufSize = cfg.getReceiveBufferSize();
         selectorCnt = cfg.getSelectorCount();
         sndBufSize = cfg.getSendBufferSize();
@@ -100,48 +96,37 @@ public class OdbcConfiguration {
     }
 
     /**
-     * Gets port for TCP ODBC server.
+     * Gets address for ODBC TCP server. This can be either an
+     * IP address or a domain name with TCP port or port range.
      * <p>
-     * Default is {@link #DFLT_TCP_PORT}.
-     *
-     * @return TCP port.
-     */
-    public int getPort() {
-        return port;
-    }
-
-    /**
-     * Sets port for TCP ODBC server.
-     *
-     * @param port TCP port.
-     */
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    /**
-     * Gets host for TCP ODBC server. This can be either an
-     * IP address or a domain name.
+     * The format of the address should be as follows:
+     * address := domain_name:tcp_port1[..tcp_port2]
+     * tcp_port2 > tcp_port1.
      * <p>
      * If not defined, system-wide local address will be used
-     * (see {@link IgniteConfiguration#getLocalHost()}.
+     * (see {@link IgniteConfiguration#getLocalHost()} together
+     * with {@link OdbcConfiguration#DFLT_TCP_PORT_RANGE}.
      * <p>
      * You can also use {@code 0.0.0.0} value to bind to all
      * locally-available IP addresses.
      *
-     * @return TCP host.
+     * @return Address of the ODBC server.
      */
-    public String getHost() {
-        return host;
+    public String getAddress() {
+        return addr;
     }
 
     /**
-     * Sets host for TCP ODBC server.
+     * Sets address for ODBC TCP server.
+     * <p>
+     * The format of the address should be as follows:
+     * address := domain_name:tcp_port1[..tcp_port2]
+     * tcp_port2 > tcp_port1.
      *
      * @param host TCP host.
      */
-    public void setHost(String host) {
-        this.host = host;
+    public void setAddress(String host) {
+        this.addr = host;
     }
 
     /**

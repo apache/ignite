@@ -25,12 +25,18 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgnitePortProtocol;
 
+import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * ODBC processor.
@@ -54,49 +60,61 @@ public class OdbcProcessor extends GridProcessorAdapter {
         OdbcConfiguration odbcCfg = ctx.config().getOdbcConfiguration();
 
         if (odbcCfg != null) {
-            try {
-                Marshaller marsh = ctx.config().getMarshaller();
+            Marshaller marsh = ctx.config().getMarshaller();
 
-                if (marsh != null && !(marsh instanceof BinaryMarshaller))
-                    throw new IgniteCheckedException("ODBC can only be used with BinaryMarshaller (please set it " +
+            if (marsh != null && !(marsh instanceof BinaryMarshaller))
+                throw new IgniteCheckedException("ODBC can only be used with BinaryMarshaller (please set it " +
                         "through IgniteConfiguration.setMarshaller())");
 
-                String hostStr = odbcCfg.getHost();
+            String addrStr = odbcCfg.getAddress();
 
-                if (hostStr == null)
-                    hostStr = ctx.config().getLocalHost();
+            if (addrStr == null) {
+                addrStr = ctx.config().getLocalHost();
 
-                InetAddress host = U.resolveLocalHost(hostStr);
-
-                int port = odbcCfg.getPort();
-
-                srv = GridNioServer.<byte[]>builder()
-                    .address(host)
-                    .port(port)
-                    .listener(new OdbcNioListener(ctx, busyLock))
-                    .logger(log)
-                    .selectorCount(odbcCfg.getSelectorCount())
-                    .gridName(ctx.gridName())
-                    .tcpNoDelay(odbcCfg.isNoDelay())
-                    .directBuffer(odbcCfg.isDirectBuffer())
-                    .byteOrder(ByteOrder.nativeOrder())
-                    .socketSendBufferSize(odbcCfg.getSendBufferSize())
-                    .socketReceiveBufferSize(odbcCfg.getReceiveBufferSize())
-                    .sendQueueLimit(odbcCfg.getSendQueueLimit())
-                    .filters(new GridNioCodecFilter(new OdbcBufferedParser(), log, false))
-                    .directMode(false)
-                    .idleTimeout(odbcCfg.getIdleTimeout())
-                    .build();
-
-                srv.start();
-
-                ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
-
-                log.info("ODBC processor has started on TCP port " + port);
+                if (addrStr == null)
+                    addrStr = ""; // Using default host and port range.
             }
-            catch (Exception e) {
-                throw new IgniteCheckedException("Failed to start ODBC processor.", e);
+
+            Collection<InetSocketAddress> addrs = address(addrStr);
+
+            for (InetSocketAddress addr : addrs) {
+                try {
+                    srv = GridNioServer.<byte[]>builder()
+                            .address(addr.getAddress())
+                            .port(addr.getPort())
+                            .listener(new OdbcNioListener(ctx, busyLock))
+                            .logger(log)
+                            .selectorCount(odbcCfg.getSelectorCount())
+                            .gridName(ctx.gridName())
+                            .tcpNoDelay(odbcCfg.isNoDelay())
+                            .directBuffer(odbcCfg.isDirectBuffer())
+                            .byteOrder(ByteOrder.nativeOrder())
+                            .socketSendBufferSize(odbcCfg.getSendBufferSize())
+                            .socketReceiveBufferSize(odbcCfg.getReceiveBufferSize())
+                            .sendQueueLimit(odbcCfg.getSendQueueLimit())
+                            .filters(new GridNioCodecFilter(new OdbcBufferedParser(), log, false))
+                            .directMode(false)
+                            .idleTimeout(odbcCfg.getIdleTimeout())
+                            .build();
+
+                    srv.start();
+
+                    ctx.ports().registerPort(addr.getPort(), IgnitePortProtocol.TCP, getClass());
+
+                    log.info("ODBC processor has started on " + addr);
+
+                    break;
+                }
+                catch (Exception e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to start ODBC processor on " + addr + ": " + e);
+
+                    srv = null;
+                }
             }
+
+            if (srv == null)
+                throw new IgniteCheckedException("Failed to start ODBC processor using provided address: " + addrStr);
         }
     }
 
@@ -112,5 +130,101 @@ public class OdbcProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("ODBC processor stopped.");
         }
+    }
+
+    /**
+     * Creates address from string.
+     *
+     * @param ipStr Address string.
+     * @return Socket addresses (may contain 1 or more addresses if provided string
+     *      includes port range).
+     * @throws IgniteCheckedException If failed.
+     */
+    private static Collection<InetSocketAddress> address(String ipStr) throws IgniteCheckedException {
+        assert ipStr != null;
+
+        ipStr = ipStr.trim();
+
+        String errMsg = "Failed to parse provided ODBC address: " + ipStr;
+
+        int colonCnt = ipStr.length() - ipStr.replace(":", "").length();
+
+        if (colonCnt > 1) {
+            // IPv6 address (literal IPv6 addresses are enclosed in square brackets, for example
+            // https://[2001:db8:85a3:8d3:1319:8a2e:370:7348]:443).
+            if (ipStr.startsWith("[")) {
+                ipStr = ipStr.substring(1);
+
+                if (ipStr.contains("]:"))
+                    return addresses(ipStr, "\\]\\:", errMsg);
+                else if (ipStr.endsWith("]"))
+                    ipStr = ipStr.substring(0, ipStr.length() - 1);
+                else
+                    throw new IgniteCheckedException(errMsg);
+            }
+        }
+        else {
+            // IPv4 address.
+            if (ipStr.endsWith(":"))
+                ipStr = ipStr.substring(0, ipStr.length() - 1);
+            else if (ipStr.indexOf(':') >= 0)
+                return addresses(ipStr, "\\:", errMsg);
+        }
+
+        // Provided address does not contain port (will use default range).
+        return address(ipStr + ':' + OdbcConfiguration.DFLT_TCP_PORT_RANGE);
+    }
+
+    /**
+     * Creates address from string with port information.
+     *
+     * @param ipStr Address string
+     * @param regexDelim Port regex delimiter.
+     * @param errMsg Error message.
+     * @return Socket addresses (may contain 1 or more addresses if provided string
+     *      includes port range).
+     * @throws IgniteCheckedException If failed.
+     */
+    private static Collection<InetSocketAddress> addresses(String ipStr, String regexDelim, String errMsg)
+            throws IgniteCheckedException {
+        String[] tokens = ipStr.split(regexDelim);
+
+        if (tokens.length == 2) {
+            String addrStr = tokens[0];
+            String portStr = tokens[1];
+
+            if (portStr.contains("..")) {
+                try {
+                    int port1 = Integer.parseInt(portStr.substring(0, portStr.indexOf("..")));
+                    int port2 = Integer.parseInt(portStr.substring(portStr.indexOf("..") + 2, portStr.length()));
+
+                    if (port2 < port1 || port1 == port2 || port1 <= 0 || port2 <= 0)
+                        throw new IgniteCheckedException(errMsg);
+
+                    Collection<InetSocketAddress> res = new ArrayList<>(port2 - port1);
+
+                    // Upper bound included.
+                    for (int i = port1; i <= port2; i++)
+                        res.add(new InetSocketAddress(addrStr, i));
+
+                    return res;
+                }
+                catch (IllegalArgumentException e) {
+                    throw new IgniteCheckedException(errMsg, e);
+                }
+            }
+            else {
+                try {
+                    int port = Integer.parseInt(portStr);
+
+                    return Collections.singleton(new InetSocketAddress(addrStr, port));
+                }
+                catch (IllegalArgumentException e) {
+                    throw new IgniteCheckedException(errMsg, e);
+                }
+            }
+        }
+        else
+            throw new IgniteCheckedException(errMsg);
     }
 }
