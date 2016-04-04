@@ -46,6 +46,8 @@ public class InterceptorWithKeepBinaryCacheTestSuite extends TestSuite {
             .gridsCount(5)
             .backups(1)
             .testedNodesCount(3).withClients()
+//            .specifyIgniteParam(0, 0, 0)
+//            .specifyCacheParam(1, 0, 0, 0, 0, 0, 0, 0, 0)
             .build();
     }
 }

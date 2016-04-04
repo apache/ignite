@@ -82,6 +82,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
@@ -1411,12 +1412,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         T2<V, GridCacheVersion> t = (T2<V, GridCacheVersion>)get(key, !ctx.keepBinary(), true);
 
-        CacheEntry<K, V> val = t != null ? new CacheEntryImplEx<>(key, t.get1(), t.get2()): null;
+        Object key0 = ctx.keepBinary() && ctx.binaryMarshaller() ?
+            ((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects()).toBinary(key) :
+            key;
+
+        CacheEntry val = t != null ? new CacheEntryImplEx<>(key0, t.get1(), t.get2()): null;
 
         if (ctx.config().getInterceptor() != null) {
             V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
-            val = (val0 != null) ? new CacheEntryImplEx<>(key, val0, t != null ? t.get2() : null) : null;
+            val = (val0 != null) ? new CacheEntryImplEx<>(key0, val0, t != null ? t.get2() : null) : null;
         }
 
         if (statsEnabled)
@@ -1461,17 +1466,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final boolean intercept = ctx.config().getInterceptor() != null;
 
+        final Object key0 = ctx.keepBinary() && ctx.binaryMarshaller() ?
+            ((CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects()).toBinary(key) :
+            key;
+
         IgniteInternalFuture<CacheEntry<K, V>> fr = fut.chain(
             new CX1<IgniteInternalFuture<T2<V, GridCacheVersion>>, CacheEntry<K, V>>() {
             @Override public CacheEntry<K, V> applyx(IgniteInternalFuture<T2<V, GridCacheVersion>> f)
                 throws IgniteCheckedException {
                 T2<V, GridCacheVersion> t = f.get();
 
-                CacheEntry<K, V> val = t != null ? new CacheEntryImplEx<>(key, t.get1(), t.get2()) : null;
+                CacheEntry val = t != null ? new CacheEntryImplEx<>(key0, t.get1(), t.get2()) : null;
+      
                 if (intercept) {
                     V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
-                    return new CacheEntryImplEx<>(key, val0, t != null ? t.get2() : null);
+                    return (val0 != null) ? new CacheEntryImplEx(key0, val0, t != null ? t.get2() : null) : null;
                 }
                 else
                     return val;

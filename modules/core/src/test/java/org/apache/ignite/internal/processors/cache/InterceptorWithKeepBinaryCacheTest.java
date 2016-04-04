@@ -166,22 +166,81 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                     BinaryObject retVal = (BinaryObject)cache.get(key);
 
-                    // TODO file a bug on it.
-                    if (!(dataMode == SERIALIZABLE && isClient() && nearEnabled()))
+                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
+                    if (!(isClient() && nearEnabled()))
                         assertEquals(val, retVal.deserialize());
 
                     CacheEntry<BinaryObject, BinaryObject> entry = cache.getEntry(key);
 
-                    // TODO fix it (see IGNITE-2899 and point 1.2 in comments)
-//                    assertTrue(entry.getKey() instanceof BinaryObject);
+                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
+                    if (!(isClient() && nearEnabled()))
+                        assertTrue(entry.getKey() instanceof BinaryObject);
 
-                    // TODO file a bug.
-                    if (!(dataMode == SERIALIZABLE && isClient() && nearEnabled()))
+                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
+                    if (!(isClient() && nearEnabled()))
                         assertEquals(val, entry.getValue().deserialize());
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("serial")
+    public void testRemovePutGetAsync() throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                final IgniteCache cache = jcache().withKeepBinary().withAsync();
+
+                Set keys = new LinkedHashSet() {{
+                    for (int i = 0; i < CNT; i++)
+                        add(key(i));
+                }};
+
+                for (Object key : keys) {
+                    cache.remove(key);
+
+                    cache.future().get();
+                }
+
+                for (Object key : keys) {
+                    cache.get(key);
+                    assertNull(cache.future().get());
+
+                    cache.getEntry(key);
+                    assertNull(cache.future().get());
+                }
+
+                for (Object key : keys) {
+                    Object val = value(valueOf(key));
+
+                    cache.put(key, val);
+
+                    cache.future().get();
+
+                    cache.get(key);
+                    BinaryObject retVal = (BinaryObject)cache.future().get();
+
+                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
+                    if (!(isClient() && nearEnabled()))
+                        assertEquals(val, retVal.deserialize());
+
+                    cache.getEntry(key);
+                    CacheEntry<BinaryObject, BinaryObject> e = (CacheEntry<BinaryObject, BinaryObject>)cache.future().get();
+
+                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
+                    if (!(isClient() && nearEnabled()))
+                        assertEquals(key, deserializeBinary(e.getKey()));
+
+                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
+                    if (!(isClient() && nearEnabled()))
+                        assertEquals(val, e.getValue().deserialize());
+                }
+            }
+        }, PLANE_OBJECT, SERIALIZABLE);
+    }
+
     /**
      * @throws Exception If failed.
      */
