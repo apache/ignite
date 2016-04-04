@@ -72,6 +72,8 @@ public class OdbcProcessor extends GridProcessorAdapter {
         OdbcConfiguration odbcCfg = ctx.config().getOdbcConfiguration();
 
         if (odbcCfg != null) {
+            validateConfiguration(odbcCfg);
+
             Marshaller marsh = ctx.config().getMarshaller();
 
             if (marsh != null && !(marsh instanceof BinaryMarshaller))
@@ -141,6 +143,20 @@ public class OdbcProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("ODBC processor stopped.");
         }
+    }
+
+    /**
+     * Validate ODBC configuration
+     *
+     * @param cfg Configuration to validate.
+     * @throws IgniteCheckedException if configuration is not valid.
+     */
+    private static void validateConfiguration(OdbcConfiguration cfg) throws IgniteCheckedException {
+        int maxOpenCursors = cfg.getMaxOpenCursors();
+
+        if (maxOpenCursors < 1)
+            throw new IgniteCheckedException("Parameter maxOpenCursors of the OdbcConfiguration " +
+                    "must be greater than zero: [maxOpenCursors=" + maxOpenCursors + ']');
     }
 
     /**
