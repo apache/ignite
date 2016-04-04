@@ -381,6 +381,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                                             }
                                         }
                                     );
+
                                     if (!F.isEmpty(evts))
                                         locLsnr.onUpdated(evts);
 
