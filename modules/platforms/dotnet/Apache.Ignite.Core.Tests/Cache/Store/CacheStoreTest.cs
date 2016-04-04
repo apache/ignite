@@ -418,8 +418,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             using (var tx = cache.Ignite.GetTransactions().TxStart())
             {
-                CacheTestStore.ExpCommit = true;
-
                 tx.AddMeta("meta", 100);
 
                 cache.Put(1, "val");

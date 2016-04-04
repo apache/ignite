@@ -32,11 +32,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     {
         public static readonly IDictionary Map = new ConcurrentDictionary<object, object>();
 
-        public static bool ExpCommit;
-        
         public static bool LoadMultithreaded;
 
         public static bool LoadObjects;
+
+        public static bool ThrowError;
 
         [InstanceResource]
         private IIgnite _grid = null;
@@ -54,9 +54,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         {
             Map.Clear();
 
-            ExpCommit = false;
             LoadMultithreaded = false;
             LoadObjects = false;
+            ThrowError = false;
         }
 
         public void LoadCache(Action<object, object> act, params object[] args)
