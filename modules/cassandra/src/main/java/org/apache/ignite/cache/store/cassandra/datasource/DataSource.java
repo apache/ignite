@@ -91,7 +91,7 @@ public class DataSource {
     private RetryPolicy retryPlc;
 
     /** Address translator to use. */
-    private AddressTranslator addrTranslater;
+    private AddressTranslator addrTranslator;
 
     /** Speculative execution policy to use. */
     private SpeculativeExecutionPolicy speculativeExecutionPlc;
@@ -348,11 +348,11 @@ public class DataSource {
     /**
      * Sets address translator.
      *
-     * @param translater Address translator.
+     * @param translator Address translator.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public void setAddressTranslater(AddressTranslator translater) {
-        this.addrTranslater = translater;
+    public void setAddressTranslator(AddressTranslator translator) {
+        this.addrTranslator = translator;
 
         invalidate();
     }
@@ -493,8 +493,8 @@ public class DataSource {
         if (retryPlc != null)
             builder = builder.withRetryPolicy(retryPlc);
 
-        if (addrTranslater != null)
-            builder = builder.withAddressTranslator(addrTranslater);
+        if (addrTranslator != null)
+            builder = builder.withAddressTranslator(addrTranslator);
 
         if (speculativeExecutionPlc != null)
             builder = builder.withSpeculativeExecutionPolicy(speculativeExecutionPlc);
