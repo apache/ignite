@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
@@ -124,25 +123,19 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Third node. */
         private IIgnite _grid3;
 
-        private Stopwatch sw;
-
         /// <summary>
         /// Initialization routine.
         /// </summary>
         [TestFixtureSetUp]
         public void InitClient()
         {
-            sw = Stopwatch.StartNew();
             TestUtils.KillProcesses();
 
             var configs = GetConfigs();
 
-            var grids = TestUtils.StartMultiple(Configuration(configs.Item1), Configuration(configs.Item2),
-                Configuration(configs.Item3));
-
-            _grid1 = grids[0];
-            _grid2 = grids[1];
-            _grid3 = grids[2];
+            _grid1 = Ignition.Start(Configuration(configs.Item1));
+            _grid2 = Ignition.Start(Configuration(configs.Item2));
+            _grid3 = Ignition.Start(Configuration(configs.Item3));
         }
 
         /// <summary>
@@ -168,24 +161,20 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureTearDown]
         public void StopClient()
         {
-            Ignition.StopAll(true);
+            if (_grid1 != null)
+                Ignition.Stop(_grid1.Name, true);
 
-            sw.Stop();
+            if (_grid2 != null)
+                Ignition.Stop(_grid2.Name, true);
 
-            Console.WriteLine("Test finished in: " + sw.Elapsed);
+            if (_grid3 != null)
+                Ignition.Stop(_grid3.Name, true);
         }
 
         [TearDown]
         public void AfterTest()
         {
             TestUtils.AssertHandleRegistryIsEmpty(1000, _grid1, _grid2, _grid3);
-            Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
-        }
-
-        [SetUp]
-        public void BeforeTest()
-        {
-            Console.WriteLine("Starting test: " + TestContext.CurrentContext.Test.Name);
         }
 
         /// <summary>

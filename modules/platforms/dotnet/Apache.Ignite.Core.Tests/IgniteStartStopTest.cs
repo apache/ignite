@@ -20,13 +20,10 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -54,46 +51,6 @@ namespace Apache.Ignite.Core.Tests
         {
             TestUtils.KillProcesses();
             Ignition.StopAll(true);
-        }
-
-        [Test]  // TODO: DELME!
-        public void TestStartupTime()
-        {
-            for (var i = 0; i < 10; i++)
-            {
-                var sw = Stopwatch.StartNew();
-
-                var cfg = new IgniteConfiguration
-                {
-                    DiscoverySpi = new TcpDiscoverySpi
-                    {
-                        IpFinder = new TcpDiscoveryStaticIpFinder
-                        {
-                            Endpoints = new[] {"127.0.0.1:47500"}
-                        },
-                        //AckTimeout = TimeSpan.FromSeconds(0.1),
-                        //JoinTimeout = TimeSpan.FromSeconds(0.1),
-                        //MaxAckTimeout = TimeSpan.FromSeconds(0.2),
-                        //NetworkTimeout = TimeSpan.FromSeconds(0.1),
-                        //SocketTimeout = TimeSpan.FromSeconds(0.3)
-                    },
-                    Localhost = "127.0.0.1",
-                    JvmOptions = TestUtils.TestJavaOptions(),
-                    JvmClasspath = TestUtils.CreateTestClasspath(),
-                    GridName = DateTime.Now.Ticks.ToString()
-                };
-
-                var ignite = Ignition.Start(cfg);
-
-                Ignition.Stop(ignite.Name, true);
-
-                Console.WriteLine(sw.Elapsed);
-            }
-
-            Ignition.StopAll(true);
-
-            // More endpoints -> Slowdown!
-            // Many endpoints with small timeouts -> Much faster!
         }
 
         /// <summary>

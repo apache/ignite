@@ -317,7 +317,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     Endpoints = new[] { "127.0.0.1:47500" }
                 },
-                SocketTimeout = TimeSpan.FromSeconds(0.2)
+                SocketTimeout = TimeSpan.FromSeconds(0.3)
             };
         }
 
@@ -333,16 +333,6 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestJavaOptions(),
                 JvmClasspath = CreateTestClasspath()
             };
-        }
-
-        /// <summary>
-        /// Starts multiple grids in parallel.
-        /// </summary>
-        /// <param name="configs">The configs.</param>
-        /// <returns>Started grids.</returns>
-        public static IIgnite[] StartMultiple(params IgniteConfiguration[] configs)
-        {
-            return configs.Select(Ignition.Start).ToArray();
         }
     }
 }

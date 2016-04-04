@@ -54,11 +54,11 @@ echo "x64: $x64"
 if ($env:JAVA_HOME64) {
     $env:JAVA_HOME = $env:JAVA_HOME64
 
-    & $msbuildexe "..\..\cpp\common\project\vs\common.vcxproj" /p:Platform=x64 /p:Configuration=$Configuration
+    & $msbuildexe "..\..\cpp\common\project\vs\common.vcxproj" /p:Platform=x64 /p:Configuration=$Configuration /t:Rebuild
 }
 
 if ($env:JAVA_HOME32) {
     $env:JAVA_HOME = $env:JAVA_HOME32
 
-    & $msbuildexe "..\..\cpp\common\project\vs\common.vcxproj" /p:Platform=Win32 /p:Configuration=$Configuration
+    & $msbuildexe "..\..\cpp\common\project\vs\common.vcxproj" /p:Platform=Win32 /p:Configuration=$Configuration /t:Rebuild
 }
