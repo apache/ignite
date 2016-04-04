@@ -36,6 +36,18 @@ import java.nio.ByteOrder;
  * ODBC processor.
  */
 public class OdbcProcessor extends GridProcessorAdapter {
+    /** Default TCP_NODELAY flag. */
+    private static final boolean DFLT_TCP_NODELAY = true;
+
+    /** Default TCP direct buffer flag. */
+    private static final boolean DFLT_TCP_DIRECT_BUF = false;
+
+    /** Default ODBC idle timeout. */
+    private static final int DFLT_IDLE_TIMEOUT = 7000;
+
+    /** Default socket send and receive buffer size. */
+    private static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
+
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
@@ -77,14 +89,14 @@ public class OdbcProcessor extends GridProcessorAdapter {
                     .logger(log)
                     .selectorCount(Math.min(4, Runtime.getRuntime().availableProcessors()))
                     .gridName(ctx.gridName())
-                    .tcpNoDelay(OdbcConfiguration.DFLT_TCP_NODELAY)
-                    .directBuffer(OdbcConfiguration.DFLT_TCP_DIRECT_BUF)
+                    .tcpNoDelay(DFLT_TCP_NODELAY)
+                    .directBuffer(DFLT_TCP_DIRECT_BUF)
                     .byteOrder(ByteOrder.nativeOrder())
-                    .socketSendBufferSize(OdbcConfiguration.DFLT_SOCK_BUF_SIZE)
-                    .socketReceiveBufferSize(OdbcConfiguration.DFLT_SOCK_BUF_SIZE)
+                    .socketSendBufferSize(DFLT_SOCK_BUF_SIZE)
+                    .socketReceiveBufferSize(DFLT_SOCK_BUF_SIZE)
                     .filters(new GridNioCodecFilter(new OdbcBufferedParser(), log, false))
                     .directMode(false)
-                    .idleTimeout(OdbcConfiguration.DFLT_IDLE_TIMEOUT)
+                    .idleTimeout(DFLT_IDLE_TIMEOUT)
                     .build();
 
                 srv.start();

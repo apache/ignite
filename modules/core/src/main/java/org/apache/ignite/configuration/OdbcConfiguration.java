@@ -24,18 +24,6 @@ public class OdbcConfiguration {
     /** Default TCP server port. */
     public static final int DFLT_TCP_PORT = 11443;
 
-    /** Default TCP_NODELAY flag. */
-    public static final boolean DFLT_TCP_NODELAY = true;
-
-    /** Default TCP direct buffer flag. */
-    public static final boolean DFLT_TCP_DIRECT_BUF = false;
-
-    /** Default ODBC idle timeout. */
-    public static final int DFLT_IDLE_TIMEOUT = 7000;
-
-    /** Default socket send and receive buffer size. */
-    public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
-
     /** Default max number of open cursors per connection. */
     public static final int DFLT_MAX_OPEN_CURSORS = 128;
 
