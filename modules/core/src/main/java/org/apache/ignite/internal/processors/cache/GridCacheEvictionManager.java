@@ -1984,11 +1984,15 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                 if (log.isDebugEnabled())
                     log.debug("Building eviction future result [fut=" + this + ", timedOut=" + timedOut + ']');
 
-                boolean err = F.forAny(resMap.values(), new P1<GridCacheEvictionResponse>() {
-                    @Override public boolean apply(GridCacheEvictionResponse res) {
-                        return res.evictError();
+                boolean err = false;
+
+                for (GridCacheEvictionResponse res : resMap.values()) {
+                    if (res.evictError()) {
+                        err = true;
+
+                        break;
                     }
-                });
+                }
 
                 if (err) {
                     Collection<UUID> ids = F.view(resMap.keySet(), new P1<UUID>() {

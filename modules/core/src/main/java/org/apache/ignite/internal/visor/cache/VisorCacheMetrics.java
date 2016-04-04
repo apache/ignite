@@ -415,15 +415,6 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * Sets cache query metrics.
-     *
-     * @param qryMetrics New value for query metrics.
-     */
-    public void queryMetrics(VisorCacheQueryMetrics qryMetrics) {
-        this.qryMetrics = qryMetrics;
-    }
-
-    /**
      * @return Current size of evict queue used to batch up evictions.
      */
     public int dhtEvictQueueCurrentSize() {
