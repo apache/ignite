@@ -84,7 +84,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         cfg.setDiscoverySpi(disco);
 
-        BlockTpcCommunicationSpi commSpi = new BlockTpcCommunicationSpi();
+        BlockTcpCommunicationSpi commSpi = new BlockTcpCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
 
@@ -143,8 +143,8 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
      * @param ignite Node.
      * @return Communication SPI.
      */
-    protected BlockTpcCommunicationSpi commSpi(Ignite ignite) {
-        return ((BlockTpcCommunicationSpi)ignite.configuration().getCommunicationSpi());
+    protected BlockTcpCommunicationSpi commSpi(Ignite ignite) {
+        return ((BlockTcpCommunicationSpi)ignite.configuration().getCommunicationSpi());
     }
 
     /** {@inheritDoc} */
@@ -403,7 +403,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     /**
      *
      */
-    protected static class BlockTpcCommunicationSpi extends TcpCommunicationSpi {
+    protected static class BlockTcpCommunicationSpi extends TcpCommunicationSpi {
         /** */
         volatile Class msgCls;
 

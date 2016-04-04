@@ -235,8 +235,10 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(1);
 
-        waitForRebalancing(0, new AffinityTopologyVersion(2, 1));
-        waitForRebalancing(1, new AffinityTopologyVersion(2, 1));
+        int waitMinorVer = ignite.configuration().isLateAffinityAssignment() ? 1 : 0;
+
+        waitForRebalancing(0, new AffinityTopologyVersion(2, waitMinorVer));
+        waitForRebalancing(1, new AffinityTopologyVersion(2, waitMinorVer));
 
         awaitPartitionMapExchange(true, true);
 
@@ -256,8 +258,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         startGrid(2);
 
-        waitForRebalancing(1, new AffinityTopologyVersion(4, 1));
-        waitForRebalancing(2, new AffinityTopologyVersion(4, 1));
+        waitForRebalancing(1, new AffinityTopologyVersion(4, waitMinorVer));
+        waitForRebalancing(2, new AffinityTopologyVersion(4, waitMinorVer));
 
         awaitPartitionMapExchange(true, true);
 
