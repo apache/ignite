@@ -253,6 +253,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.staticFieldOffset;
  */
 @SuppressWarnings({"UnusedReturnValue", "UnnecessaryFullyQualifiedName"})
 public abstract class IgniteUtils {
+    /** Correct identifier pattern */
+    private static Pattern correctIdentifier = Pattern.compile("^[a-zA-Z_][a-zA-Z_0-9]*$");
+
     /** {@code True} if {@code unsafe} should be used for array copy. */
     private static final boolean UNSAFE_BYTE_ARR_CP = unsafeByteArrayCopyAvailable();
 
@@ -4322,6 +4325,9 @@ public abstract class IgniteUtils {
             sb.a("grid=").a(gridName).a(',');
 
         cacheName = maskName(cacheName);
+
+        if (!correctIdentifier.matcher(cacheName).matches())
+            cacheName = ObjectName.quote(cacheName);
 
         sb.a("group=").a(cacheName).a(',');
 
