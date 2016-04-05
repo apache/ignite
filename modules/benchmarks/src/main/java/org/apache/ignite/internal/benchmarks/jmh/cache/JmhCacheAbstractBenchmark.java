@@ -126,6 +126,10 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
      */
     @TearDown
     public void tearDown() throws Exception {
+//        System.out.println("TOTAL: " + DirectByteBufferStreamImplV2.TOTAL.longValue());
+//        System.out.println("AVG: " + (DirectByteBufferStreamImplV2.TOTAL.longValue() / DirectByteBufferStreamImplV2.COUNT.longValue()));
+//        System.out.println("LAST: " + DirectByteBufferStreamImplV2.LAST.longValue());
+
         Ignition.stopAll(true);
     }
 

@@ -63,6 +63,8 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
     /** */
     private GridCacheVersion ISOLATED_STREAMER_VER;
 
+    private AtomicLong counter = new AtomicLong();
+
     /** */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
@@ -216,6 +218,10 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      */
     public GridCacheVersion next(AffinityTopologyVersion topVer) {
         return next(topVer.topologyVersion(), true, false, dataCenterId);
+    }
+
+    public long nextLong(AffinityTopologyVersion topVer) {
+        return counter.incrementAndGet();
     }
 
     /**

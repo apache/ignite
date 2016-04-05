@@ -23,6 +23,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.profile.GCProfiler;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -83,9 +84,9 @@ public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
      */
     public static void main(String[] args) throws Exception {
         run("put", CacheAtomicityMode.ATOMIC);
-        run("get", CacheAtomicityMode.ATOMIC);
-        run("put", CacheAtomicityMode.TRANSACTIONAL);
-        run("get", CacheAtomicityMode.TRANSACTIONAL);
+//        run("get", CacheAtomicityMode.ATOMIC);
+//        run("put", CacheAtomicityMode.TRANSACTIONAL);
+//        run("get", CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /**
@@ -97,9 +98,9 @@ public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
      */
     private static void run(String benchmark, CacheAtomicityMode atomicityMode) throws Exception {
         run(benchmark, 4, true, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
-        run(benchmark, 4, true, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
-        run(benchmark, 4, false, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
-        run(benchmark, 4, false, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
+//        run(benchmark, 4, true, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
+//        run(benchmark, 4, false, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+//        run(benchmark, 4, false, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
     }
 
     /**

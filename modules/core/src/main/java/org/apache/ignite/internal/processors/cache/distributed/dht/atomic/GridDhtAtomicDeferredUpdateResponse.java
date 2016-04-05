@@ -41,7 +41,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
     /** ACK future versions. */
     @GridDirectCollection(GridCacheVersion.class)
-    private Collection<GridCacheVersion> futVers;
+    private Collection<Long> futVers;
 
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
@@ -62,7 +62,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
      * @param futVers Future versions.
      * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<GridCacheVersion> futVers, boolean addDepInfo) {
+    public GridDhtAtomicDeferredUpdateResponse(int cacheId, Collection<Long> futVers, boolean addDepInfo) {
         assert !F.isEmpty(futVers);
 
         this.cacheId = cacheId;
@@ -78,7 +78,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
     /**
      * @return List of ACKed future versions.
      */
-    public Collection<GridCacheVersion> futureVersions() {
+    public Collection<Long> futureVersions() {
         return futVers;
     }
 
@@ -98,7 +98,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeCollection("futVers", futVers, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection("futVers", futVers, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
@@ -120,7 +120,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheMessage implem
 
         switch (reader.state()) {
             case 3:
-                futVers = reader.readCollection("futVers", MessageCollectionItemType.MSG);
+                futVers = reader.readCollection("futVers", MessageCollectionItemType.LONG);
 
                 if (!reader.isLastRead())
                     return false;

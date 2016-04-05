@@ -40,14 +40,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import sun.nio.ch.DirectBuffer;
 
-import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
-import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.DOUBLE_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.FLOAT_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.INT_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.LONG_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.*;
 
 /**
  * Direct marshalling I/O stream (version 2).
@@ -76,6 +69,12 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
     /** */
     private static final boolean[] BOOLEAN_ARR_EMPTY = new boolean[0];
+
+//    public static final LongAdder8 TOTAL = new LongAdder8();
+//
+//    public static final LongAdder8 COUNT = new LongAdder8();
+//
+//    public static final AtomicInteger LAST = new AtomicInteger();
 
     /** */
     private static final ArrayCreator<byte[]> BYTE_ARR_CREATOR = new ArrayCreator<byte[]>() {
@@ -643,7 +642,17 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
                     writer.setCurrentWriteClass(msg.getClass());
 
+//                    int startPos = buf.position();
+
                     lastFinished = msg.writeTo(buf, writer);
+
+//                    int endPos = buf.position();
+//                    int diff = endPos - startPos;
+//                    if (msg instanceof GridNearAtomicUpdateRequest) {
+//                        TOTAL.add(diff);
+//                        LAST.set(diff);
+//                        COUNT.increment();
+//                    }
                 }
                 finally {
                     writer.afterInnerMessageWrite(lastFinished);
