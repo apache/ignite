@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelf
 import org.apache.ignite.internal.processors.cache.CacheEntryProcessorCopySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheFutureExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheNamesSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheNamesWithSpecialCharactersTest;
 import org.apache.ignite.internal.processors.cache.CachePutEventListenerErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityApiSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityMapperSelfTest;
@@ -216,6 +217,7 @@ public class IgniteCacheTestSuite extends TestSuite {
 
         // Common tests.
         suite.addTestSuite(CacheNamesSelfTest.class);
+        suite.addTestSuite(CacheNamesWithSpecialCharactersTest.class);
         suite.addTestSuite(GridCacheConcurrentMapSelfTest.class);
         suite.addTestSuite(GridCacheAffinityMapperSelfTest.class);
         suite.addTestSuite(CacheAffinityCallSelfTest.class);
