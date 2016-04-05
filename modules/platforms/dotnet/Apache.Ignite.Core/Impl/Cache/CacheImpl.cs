@@ -811,12 +811,19 @@ namespace Apache.Ignite.Core.Impl.Cache
             var holder = new CacheEntryProcessorHolder(processor, arg,
                 (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TArg)a), typeof(TK), typeof(TV));
 
-            return DoOutInOp(CacheOp.Invoke, writer =>
+            return DoOutInOp((int)CacheOp.Invoke, writer =>
             {
                 writer.Write(key);
                 writer.Write(holder);
             },
-            input => GetResultOrThrow<TRes>(Unmarshal<object>(input)));
+                input =>
+                {
+                    if (input.ReadBool())
+                        return Unmarshal<TRes>(input);
+
+                    throw ReadProcessorException(input);
+                }
+            );
         }
 
         /** <inheritDoc /> */
