@@ -1290,7 +1290,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 if (!s.ReadBool())
                     throw ReadException(s);
 
-                return Marshaller.Unmarshal<object>(s);
+                return Unmarshal<object>(s);
             });
 
             return res == null
@@ -1311,7 +1311,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 if (!s.ReadBool())
                     throw ReadException(s);
 
-                return Marshaller.Unmarshal<object>(s);
+                return Unmarshal<object>(s);
             });
 
             return res == null
