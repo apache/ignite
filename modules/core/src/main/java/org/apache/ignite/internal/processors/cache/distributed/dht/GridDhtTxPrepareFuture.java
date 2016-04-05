@@ -647,7 +647,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 if (tx.markFinalizing(IgniteInternalTx.FinalizationStatus.USER_FINISH)) {
                     IgniteInternalFuture<IgniteInternalTx> fut = null;
 
-                    CIX1<IgniteInternalFuture<IgniteInternalTx>> responseClo =
+                    CIX1<IgniteInternalFuture<IgniteInternalTx>> resClo =
                         new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                             @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
                                 try {
@@ -674,7 +674,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                             fut = tx.rollbackAsync();
 
-                            fut.listen(responseClo);
+                            fut.listen(resClo);
 
                             throw e;
                         }
@@ -684,7 +684,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         fut = tx.rollbackAsync();
 
                     if (fut != null)
-                        fut.listen(responseClo);
+                        fut.listen(resClo);
                 }
             }
             else {

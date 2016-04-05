@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +34,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 
@@ -42,7 +42,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
  */
 public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     /** */
-    private Class<?> recordCls;
+    private Set<Class<?>> recordClasses;
 
     /** */
     private List<Object> recordedMsgs = new ArrayList<>();
@@ -65,7 +65,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
             Object msg0 = ioMsg.message();
 
             synchronized (this) {
-                if (recordCls != null && msg0.getClass().equals(recordCls))
+                if (recordClasses != null && recordClasses.contains(msg0.getClass()))
                     recordedMsgs.add(msg0);
 
                 boolean block = false;
@@ -97,24 +97,42 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     }
 
     /**
-     * @param recordCls Message class to record.
+     * @param recordClasses Message classes to record.
      */
-    public void record(@Nullable Class<?> recordCls) {
+    public void record(Class<?>... recordClasses) {
         synchronized (this) {
-            this.recordCls = recordCls;
+            if (this.recordClasses == null)
+                this.recordClasses = new HashSet<>();
+
+            Collections.addAll(this.recordClasses, recordClasses);
+
+            recordedMsgs = new ArrayList<>();
         }
     }
 
     /**
+     * @param stopRecord Stop record flag.
      * @return Recorded messages.
      */
-    public List<Object> recordedMessages() {
+    public List<Object> recordedMessages(boolean stopRecord) {
         synchronized (this) {
             List<Object> msgs = recordedMsgs;
 
             recordedMsgs = new ArrayList<>();
 
+            if (stopRecord)
+                recordClasses = null;
+
             return msgs;
+        }
+    }
+
+    /**
+     * @return {@code True} if there are blocked messages.
+     */
+    public boolean hasBlockedMessages() {
+        synchronized (this) {
+            return !blockedMsgs.isEmpty();
         }
     }
 
@@ -146,22 +164,35 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     }
 
     /**
-     * Stops block messages and sends all already blocked messages.
+     * Stops block messages and can sends all already blocked messages.
      */
     public void stopBlock() {
+        stopBlock(true);
+    }
+
+    /**
+     * Stops block messages and sends all already blocked messages if sndMsgs is 'true'.
+     *
+     * @param sndMsgs If {@code true} sends blocked messages.
+     */
+    public void stopBlock(boolean sndMsgs) {
         synchronized (this) {
+            blockP = null;
+
             blockCls.clear();
             blockP = null;
 
-            for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
-                try {
-                    ignite.log().info("Send blocked message [node=" + msg.get1().id() +
-                        ", msg=" + msg.get2().message() + ']');
+            if (sndMsgs) {
+                for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
+                    try {
+                        ignite.log().info("Send blocked message [node=" + msg.get1().id() +
+                            ", msg=" + msg.get2().message() + ']');
 
-                    super.sendMessage(msg.get1(), msg.get2());
-                }
-                catch (Throwable e) {
-                    U.error(ignite.log(), "Failed to send blocked message: " + msg, e);
+                        super.sendMessage(msg.get1(), msg.get2());
+                    }
+                    catch (Throwable e) {
+                        U.error(ignite.log(), "Failed to send blocked message: " + msg, e);
+                    }
                 }
             }
 
