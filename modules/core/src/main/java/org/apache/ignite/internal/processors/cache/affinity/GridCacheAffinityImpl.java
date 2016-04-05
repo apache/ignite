@@ -207,7 +207,7 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
             ClusterNode primary = cctx.affinity().primary(key, topVer);
 
             if (primary == null)
-                throw new IgniteException("Failed to get primare node [topVer=" + topVer + ", key=" + key + ']');
+                throw new IgniteException("Failed to get primary node [topVer=" + topVer + ", key=" + key + ']');
 
             Collection<K> mapped = res.get(primary);
 

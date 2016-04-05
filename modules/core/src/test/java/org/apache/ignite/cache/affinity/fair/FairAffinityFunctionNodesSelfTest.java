@@ -191,6 +191,8 @@ public class FairAffinityFunctionNodesSelfTest extends GridCommonAbstractTest {
                     started.remove(idx);
                 }
 
+                awaitPartitionMapExchange();
+
                 topVer++;
 
                 info("Grid 0: " + grid(0).localNode().id());

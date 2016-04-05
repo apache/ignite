@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
@@ -387,6 +386,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             subjId,
             taskNameHash);
 
+        if (tx.system()) {
+            AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), tx);
+
+            // If there is another system transaction in progress, use it's topology version to prevent deadlock.
+            if (topVer != null)
+                tx.topologyVersion(topVer);
+        }
+
         return onCreated(sysCacheCtx, tx);
     }
 
@@ -484,31 +491,24 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : txs()) {
-            // Must wait for all transactions, even for DHT local and DHT remote since preloading may acquire
-            // values pending to be overwritten by prepared transaction.
-
-            if (tx.concurrency() == PESSIMISTIC) {
-                if (tx.topologyVersion().compareTo(AffinityTopologyVersion.ZERO) > 0
-                    && tx.topologyVersion().compareTo(topVer) < 0)
-                    // For PESSIMISTIC mode we must wait for all uncompleted txs
-                    // as we do not know in advance which keys will participate in tx.
-                    res.add(tx.finishFuture());
-            }
-            else if (tx.concurrency() == OPTIMISTIC) {
-                // For OPTIMISTIC mode we wait only for txs in PREPARING state that
-                // have keys for given partitions.
-                TransactionState state = tx.state();
-                AffinityTopologyVersion txTopVer = tx.topologyVersion();
-
-                if ((state != ACTIVE && state != COMMITTED && state != ROLLED_BACK && state != UNKNOWN)
-                    && txTopVer.compareTo(AffinityTopologyVersion.ZERO) > 0 && txTopVer.compareTo(topVer) < 0)
-                    res.add(tx.finishFuture());
-            }
+            if (needWaitTransaction(tx, topVer))
+                res.add(tx.finishFuture());
         }
 
         res.markInitialized();
 
         return res;
+    }
+
+    /**
+     * @param tx Transaction.
+     * @param topVer Exchange version.
+     * @return {@code True} if need wait transaction for exchange.
+     */
+    public boolean needWaitTransaction(IgniteInternalTx tx, AffinityTopologyVersion topVer) {
+        AffinityTopologyVersion txTopVer = tx.topologyVersionSnapshot();
+
+        return txTopVer != null && txTopVer.compareTo(topVer) < 0;
     }
 
     /**
@@ -533,21 +533,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             log.debug("Transaction started: " + tx);
 
         return true;
-    }
-
-    /**
-     * Reverse mapped version look up.
-     *
-     * @param dhtVer Dht version.
-     * @return Near version.
-     */
-    @Nullable public GridCacheVersion nearVersion(GridCacheVersion dhtVer) {
-        IgniteInternalTx tx = idMap.get(dhtVer);
-
-        if (tx != null)
-            return tx.nearXidVersion();
-
-        return null;
     }
 
     /**
@@ -1445,7 +1430,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     try {
                         // Renew cache entry.
-                        txEntry1.cached(cacheCtx.cache().entryEx(txEntry1.key()));
+                        txEntry1.cached(cacheCtx.cache().entryEx(txEntry1.key(), tx.topologyVersion()));
                     }
                     catch (GridDhtInvalidPartitionException e) {
                         assert tx.dht() : "Received invalid partition for non DHT transaction [tx=" +
@@ -1494,7 +1479,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         log.debug("Got removed entry in TM unlockMultiple(..) method (will retry): " + txEntry);
 
                     // Renew cache entry.
-                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key()));
+                    txEntry.cached(cacheCtx.cache().entryEx(txEntry.key(), tx.topologyVersion()));
                 }
             }
         }
@@ -1940,11 +1925,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int result = (int)(threadId ^ (threadId >>> 32));
+            int res = (int)(threadId ^ (threadId >>> 32));
 
-            result = 31 * result + cacheId;
+            res = 31 * res + cacheId;
 
-            return result;
+            return res;
         }
     }
 
@@ -1975,32 +1960,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             assert nearVer != null;
 
             this.nearVer = nearVer;
-        }
-    }
-
-    /**
-     * Atomic integer that compares only using references, not values.
-     */
-    private static final class AtomicInt extends AtomicInteger {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param initVal Initial value.
-         */
-        private AtomicInt(int initVal) {
-            super(initVal);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object obj) {
-            // Reference only.
-            return obj == this;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return super.hashCode();
         }
     }
 
