@@ -774,7 +774,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         node.id() + ", msg=" + m + ']');
             }
             catch (IgniteCheckedException e) {
-                U.warn(log, "Failed to send partitions full message [node=" + node + ", err=" + e + ']');
+                U.dumpStack(log, "Failed to send partitions full message [node=" + node + ", err=" + e + ']');
             }
         }
 
