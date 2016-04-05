@@ -716,6 +716,8 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param ex Exception.
      */
     private static void writeError(BinaryRawWriterEx writer, Exception ex) {
+        // TODO: Write both class and inner
+
         if (ex.getCause() instanceof PlatformNativeException)
             writer.writeObjectDetached(((PlatformNativeException)ex.getCause()).cause());
         else {
