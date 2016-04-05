@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
 
-import org.apache.commons.beanutils.converters.IntegerConverter;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
