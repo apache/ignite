@@ -28,6 +28,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.*;
@@ -139,6 +140,8 @@ import java.util.Map;
         ccfg.setWriteBehindFlushSize(in.readInt());
         ccfg.setWriteBehindFlushThreadCount(in.readInt());
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
+        ccfg.setReadThrough(in.readBoolean());
+        ccfg.setWriteThrough(in.readBoolean());
 
         Object storeFactory = in.readObjectDetached();
 
@@ -259,6 +262,13 @@ import java.util.Map;
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
+
+        if (in.readBoolean()) {
+            if (cfg.getBinaryConfiguration() == null)
+                cfg.setBinaryConfiguration(new BinaryConfiguration());
+
+            cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
+        }
     }
 
     /**
@@ -411,6 +421,8 @@ import java.util.Map;
         writer.writeInt(ccfg.getWriteBehindFlushSize());
         writer.writeInt(ccfg.getWriteBehindFlushThreadCount());
         writer.writeInt(ccfg.getWriteSynchronizationMode() == null ? 0 : ccfg.getWriteSynchronizationMode().ordinal());
+        writer.writeBoolean(ccfg.isReadThrough());
+        writer.writeBoolean(ccfg.isWriteThrough());
 
         if (ccfg.getCacheStoreFactory() instanceof PlatformDotNetCacheStoreFactoryNative)
             writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());
@@ -544,6 +556,12 @@ import java.util.Map;
 
         writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
 
+        BinaryConfiguration bc = cfg.getBinaryConfiguration();
+        w.writeBoolean(bc != null);
+
+        if (bc != null)
+            w.writeBoolean(bc.isCompactFooter());
+
         w.writeString(cfg.getIgniteHome());
 
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
@@ -594,10 +612,10 @@ import java.util.Map;
                 w.writeInt(multiFinder.getAddressRequestAttempts());
                 w.writeInt(multiFinder.getResponseWaitTime());
 
-                Integer ttl = multiFinder.getTimeToLive();
-                w.writeBoolean(ttl != null);
+                int ttl = multiFinder.getTimeToLive();
+                w.writeBoolean(ttl != -1);
 
-                if (ttl != null)
+                if (ttl != -1)
                     w.writeInt(ttl);
             }
         }

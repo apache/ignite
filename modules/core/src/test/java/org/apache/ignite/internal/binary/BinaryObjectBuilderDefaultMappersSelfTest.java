@@ -146,7 +146,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         builder = builder(obj);
 
-        builder.setField("objField", "value");
+        builder.setField("objField", "value", Object.class);
         builder.setField("otherField", (Object)null);
 
         obj = builder.build();

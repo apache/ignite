@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheInterceptor;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -39,7 +40,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
  *
@@ -134,15 +137,32 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean sync(GridCacheSharedContext cctx) {
+    @Override public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext cctx) {
+        CacheWriteSynchronizationMode syncMode = CacheWriteSynchronizationMode.FULL_ASYNC;
+
         for (int i = 0; i < activeCacheIds.size(); i++) {
             int cacheId = (int)activeCacheIds.get(i);
 
-            if (cctx.cacheContext(cacheId).config().getWriteSynchronizationMode() == FULL_SYNC)
-                return true;
+            CacheWriteSynchronizationMode cacheSyncMode =
+                cctx.cacheContext(cacheId).config().getWriteSynchronizationMode();
+
+            switch (cacheSyncMode) {
+                case FULL_SYNC:
+                    return FULL_SYNC;
+
+                case PRIMARY_SYNC: {
+                    if (syncMode == FULL_ASYNC)
+                        syncMode = PRIMARY_SYNC;
+
+                    break;
+                }
+
+                case FULL_ASYNC:
+                    break;
+            }
         }
 
-        return false;
+        return syncMode;
     }
 
     /** {@inheritDoc} */

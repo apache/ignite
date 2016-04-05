@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests.Cache.Store
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
@@ -134,7 +136,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         ///
         /// </summary>
         [TestFixtureSetUp]
-        public void BeforeTests()
+        public virtual void BeforeTests()
         {
             TestUtils.KillProcesses();
 
@@ -156,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         ///
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void AfterTests()
+        public void AfterTests()
         {
             Ignition.StopAll(true);
         }
@@ -471,6 +473,36 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual(cache.Name, CacheTestStore.Map[1]);
 
             _storeCount++;
+        }
+
+        [Test]
+        public void TestLoadAll([Values(true, false)] bool isAsync)
+        {
+            var cache = GetCache();
+
+            var loadAll = isAsync
+                ? (Action<IEnumerable<int>, bool>) ((x, y) => { cache.LoadAllAsync(x, y).Wait(); })
+                : cache.LoadAll;
+
+            Assert.AreEqual(0, cache.GetSize());
+
+            loadAll(Enumerable.Range(105, 5), false);
+
+            Assert.AreEqual(5, cache.GetSize());
+
+            for (int i = 105; i < 110; i++)
+                Assert.AreEqual("val_" + i, cache[i]);
+
+            // Test overwrite
+            cache[105] = "42";
+
+            cache.LocalEvict(new[] { 105 });
+            loadAll(new[] {105}, false);
+            Assert.AreEqual("42", cache[105]);
+
+            loadAll(new[] {105, 106}, true);
+            Assert.AreEqual("val_105", cache[105]);
+            Assert.AreEqual("val_106", cache[106]);
         }
 
         /// <summary>

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -171,20 +170,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         trackable = false;
-    }
-
-    /**
-     * @return Lock version.
-     */
-    GridCacheVersion lockVersion() {
-        return lockVer;
-    }
-
-    /**
-     * @return Entries.
-     */
-    List<GridLocalCacheEntry> entries() {
-        return entries;
     }
 
     /**

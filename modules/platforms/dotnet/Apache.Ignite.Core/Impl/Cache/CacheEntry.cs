@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Represents a cache entry.
     /// </summary>
-    internal struct CacheEntry<TK, TV> : ICacheEntry<TK, TV>
+    public struct CacheEntry<TK, TV> : ICacheEntry<TK, TV>
     {
         /** Key. */
         private readonly TK _key;
