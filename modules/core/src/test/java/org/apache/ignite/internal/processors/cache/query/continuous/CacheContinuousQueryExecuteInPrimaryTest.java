@@ -105,6 +105,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      */
     public void testLocalCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, LOCAL);
+
         doTestWithoutEventsEntries(ccfg);
         doTestWithEventsEntries(ccfg);
     }
@@ -114,6 +115,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      */
     public void testReplicatedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, REPLICATED);
+
         doTestWithoutEventsEntries(ccfg);
         doTestWithEventsEntries(ccfg);
     }
@@ -123,6 +125,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      */
     public void testPartitionedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, PARTITIONED);
+
         doTestWithoutEventsEntries(ccfg);
         doTestWithEventsEntries(ccfg);
     }
@@ -132,6 +135,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      */
     public void testTransactionLocalCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, LOCAL);
+
         doTestWithoutEventsEntries(ccfg);
         doTestWithEventsEntries(ccfg);
     }
@@ -141,6 +145,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      */
     public void testTransactionReplicatedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, REPLICATED);
+
         doTestWithoutEventsEntries(ccfg);
         doTestWithEventsEntries(ccfg);
     }
@@ -150,6 +155,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      */
     public void testTransactionPartitionedCache() throws Exception {
         CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, PARTITIONED);
+
         doTestWithoutEventsEntries(ccfg);
         doTestWithEventsEntries(ccfg);
     }
@@ -165,17 +171,16 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
             final AtomicBoolean noOneListen = new AtomicBoolean(true);
 
             for (int i = 0; i < ITERATION_CNT; i++) {
-                // Create new continuous query.
                 ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
 
                 qry.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
-                    @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> iterable)
+                    @Override public void onUpdated(
+                        Iterable<CacheEntryEvent<? extends Integer, ? extends String>> iterable)
                         throws CacheEntryListenerException {
-                        noOneListen.compareAndSet(true, false);
+                        noOneListen.set(false);
                     }
                 });
 
-                // This filters return always false
                 qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(
                     new CacheEntryEventSerializableFilter<Integer, String>() {
                         @Override public boolean evaluate(
@@ -185,13 +190,13 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
                         }
                     }));
 
-                // Execute query.
                 executeQuery(cache, qry, ccfg.getAtomicityMode() == TRANSACTIONAL);
             }
 
-            assert noOneListen.get();
+            assertTrue(noOneListen.get());
 
-        } finally {
+        }
+        finally {
             ignite(0).destroyCache(ccfg.getName());
         }
     }
@@ -199,34 +204,34 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
     private void executeQuery(IgniteCache<Integer, String> cache, ContinuousQuery<Integer, String> qry,
         boolean isTransactional) {
         try (QueryCursor<Cache.Entry<Integer, String>> qryCursor = cache.query(qry)) {
-
             Transaction tx = null;
+
             if (isTransactional)
                 tx = cache.unwrap(Ignite.class).transactions().txStart();
 
             try {
-
                 for (int key = 0; key < 8; key++)
                     cache.put(key, Integer.toString(key));
 
                 Map<Integer, String> map = new HashMap<>(8);
+
                 for (int key = 8; key < 16; key++)
                     map.put(key, Integer.toString(key));
+
                 cache.putAll(map);
 
                 if (isTransactional)
                     tx.commit();
 
-            } finally {
+            }
+            finally {
                 if (isTransactional)
                     tx.close();
             }
 
             for (int key = 0; key < 8; key++) {
                 cache.invoke(key, new EntryProcessor<Integer, String, Object>() {
-
-                    @Override
-                    public Object process(MutableEntry<Integer, String> entry,
+                    @Override public Object process(MutableEntry<Integer, String> entry,
                         Object... objects) throws EntryProcessorException {
                         entry.setValue(Integer.toString(entry.getKey() + 1));
                         return null;
@@ -236,19 +241,19 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
             }
 
             Map<Integer, EntryProcessor<Integer, String, Object>> invokeMap = new HashMap<>(8);
-            for (int key = 8; key < 16; key++)
-                invokeMap.put(key, new EntryProcessor<Integer, String, Object>() {
 
-                    @Override
-                    public Object process(MutableEntry<Integer, String> entry,
+            for (int key = 8; key < 16; key++) {
+                invokeMap.put(key, new EntryProcessor<Integer, String, Object>() {
+                    @Override public Object process(MutableEntry<Integer, String> entry,
                         Object... objects) throws EntryProcessorException {
                         entry.setValue(Integer.toString(entry.getKey() - 1));
+
                         return null;
                     }
-
                 });
-            cache.invokeAll(invokeMap);
+            }
 
+            cache.invokeAll(invokeMap);
         }
     }
 
@@ -256,10 +261,8 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void doTestWithEventsEntries(CacheConfiguration<Integer, String> ccfg) throws Exception {
-
         try (IgniteCache<Integer, String> cache = grid(0).createCache(ccfg)) {
 
-            // Create new continuous query.
             ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
 
             final CountDownLatch latch = new CountDownLatch(16);
@@ -275,20 +278,22 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
                 }
             });
 
-            // This filters return always false
-            qry.setRemoteFilter(new CacheEntryEventSerializableFilter<Integer, String>() {
-                @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e)
-                    throws CacheEntryListenerException {
-                    return e.getKey() % 2 == 0;
+            qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(
+                new CacheEntryEventSerializableFilter<Integer, String>() {
+                    @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends String> e)
+                        throws CacheEntryListenerException {
+                        return e.getKey() % 2 == 0;
+                    }
                 }
-            });
+            ));
 
             // Execute query.
             executeQuery(cache, qry, ccfg.getAtomicityMode() == TRANSACTIONAL);
 
-            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
-            assert cnt.get() == 16;
-        } finally {
+            assertTrue(latch.await(LATCH_TIMEOUT, MILLISECONDS));
+            assertEquals(16, cnt.get());
+        }
+        finally {
             ignite(0).destroyCache(ccfg.getName());
         }
 
