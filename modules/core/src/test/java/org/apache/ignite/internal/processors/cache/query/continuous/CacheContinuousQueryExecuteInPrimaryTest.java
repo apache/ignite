@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import javax.cache.Cache;
 import javax.cache.configuration.FactoryBuilder;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
@@ -31,6 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 
 import javax.cache.event.CacheEntryEvent;
@@ -48,6 +50,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -77,10 +81,12 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      * @return Cache configuration.
      */
     @NotNull
-    protected CacheConfiguration<Integer, String> cacheConfiguration(CacheMode cacheMode) {
+    protected CacheConfiguration<Integer, String> cacheConfiguration(
+        CacheAtomicityMode cacheAtomicityMode,
+        CacheMode cacheMode) {
         CacheConfiguration<Integer, String> ccfg = new CacheConfiguration<>();
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        ccfg.setAtomicityMode(cacheAtomicityMode);
         ccfg.setCacheMode(cacheMode);
         ccfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -98,7 +104,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testLocalCache() throws Exception {
-        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(LOCAL);
+        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, LOCAL);
         doTestWithoutEventsEntries(ccfg);
         doTestWithEventsEntries(ccfg);
     }
@@ -107,7 +113,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testReplicatedCache() throws Exception {
-        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(REPLICATED);
+        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, REPLICATED);
         doTestWithoutEventsEntries(ccfg);
         doTestWithEventsEntries(ccfg);
     }
@@ -116,7 +122,34 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testPartitionedCache() throws Exception {
-        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(PARTITIONED);
+        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(ATOMIC, PARTITIONED);
+        doTestWithoutEventsEntries(ccfg);
+        doTestWithEventsEntries(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTransactionLocalCache() throws Exception {
+        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, LOCAL);
+        doTestWithoutEventsEntries(ccfg);
+        doTestWithEventsEntries(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTransactionReplicatedCache() throws Exception {
+        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, REPLICATED);
+        doTestWithoutEventsEntries(ccfg);
+        doTestWithEventsEntries(ccfg);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTransactionPartitionedCache() throws Exception {
+        CacheConfiguration<Integer, String> ccfg = cacheConfiguration(TRANSACTIONAL, PARTITIONED);
         doTestWithoutEventsEntries(ccfg);
         doTestWithEventsEntries(ccfg);
     }
@@ -126,7 +159,13 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      */
     private void doTestWithoutEventsEntries(CacheConfiguration<Integer, String> ccfg) throws Exception {
 
+        Transaction tx = null;
+
         try (IgniteCache<Integer, String> cache = grid(0).createCache(ccfg)) {
+            if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
+                Ignite ignite = cache.unwrap(Ignite.class);
+                tx = ignite.transactions().txStart();
+            }
 
             int ITERATION_CNT = 100;
             final AtomicBoolean noOneListen = new AtomicBoolean(true);
@@ -159,6 +198,9 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
             assert noOneListen.get();
 
         } finally {
+            if (tx != null)
+                tx.close();
+
             ignite(0).destroyCache(ccfg.getName());
         }
     }
@@ -208,7 +250,14 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      */
     public void doTestWithEventsEntries(CacheConfiguration<Integer, String> ccfg) throws Exception {
 
+        Transaction tx = null;
+
         try (IgniteCache<Integer, String> cache = grid(0).createCache(ccfg)) {
+
+            if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
+                Ignite ignite = cache.unwrap(Ignite.class);
+                tx = ignite.transactions().txStart();
+            }
 
             // Create new continuous query.
             ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
@@ -219,9 +268,10 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
             qry.setLocalListener(new CacheEntryUpdatedListener<Integer, String>() {
                 @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> iterable)
                     throws CacheEntryListenerException {
-                    for (CacheEntryEvent<? extends Integer, ? extends String> e : iterable)
+                    for (CacheEntryEvent<? extends Integer, ? extends String> e : iterable) {
                         cnt.incrementAndGet();
                         latch.countDown();
+                    }
                 }
             });
 
@@ -239,6 +289,9 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
             assert cnt.get() == 16;
         } finally {
+            if (tx != null)
+                tx.close();
+
             ignite(0).destroyCache(ccfg.getName());
         }
 
