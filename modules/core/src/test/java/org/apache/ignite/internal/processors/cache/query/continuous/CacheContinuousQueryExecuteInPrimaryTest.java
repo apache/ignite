@@ -159,13 +159,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      */
     private void doTestWithoutEventsEntries(CacheConfiguration<Integer, String> ccfg) throws Exception {
 
-        Transaction tx = null;
-
         try (IgniteCache<Integer, String> cache = grid(0).createCache(ccfg)) {
-            if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
-                Ignite ignite = cache.unwrap(Ignite.class);
-                tx = ignite.transactions().txStart();
-            }
 
             int ITERATION_CNT = 100;
             final AtomicBoolean noOneListen = new AtomicBoolean(true);
@@ -192,28 +186,41 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
                     }));
 
                 // Execute query.
-                executeQuery(cache, qry);
+                executeQuery(cache, qry, ccfg.getAtomicityMode() == TRANSACTIONAL);
             }
 
             assert noOneListen.get();
 
         } finally {
-            if (tx != null)
-                tx.close();
-
             ignite(0).destroyCache(ccfg.getName());
         }
     }
 
-    private void executeQuery(IgniteCache<Integer, String> cache, ContinuousQuery<Integer, String> qry) {
+    private void executeQuery(IgniteCache<Integer, String> cache, ContinuousQuery<Integer, String> qry,
+        boolean isTransactional) {
         try (QueryCursor<Cache.Entry<Integer, String>> qryCursor = cache.query(qry)) {
-            for (int key = 0; key < 8; key++)
-                cache.put(key, Integer.toString(key));
 
-            Map<Integer, String> map = new HashMap<>(8);
-            for (int key=8; key<16; key++)
-                map.put(key, Integer.toString(key));
-            cache.putAll(map);
+            Transaction tx = null;
+            if (isTransactional)
+                tx = cache.unwrap(Ignite.class).transactions().txStart();
+
+            try {
+
+                for (int key = 0; key < 8; key++)
+                    cache.put(key, Integer.toString(key));
+
+                Map<Integer, String> map = new HashMap<>(8);
+                for (int key = 8; key < 16; key++)
+                    map.put(key, Integer.toString(key));
+                cache.putAll(map);
+
+                if (isTransactional)
+                    tx.commit();
+
+            } finally {
+                if (isTransactional)
+                    tx.close();
+            }
 
             for (int key = 0; key < 8; key++) {
                 cache.invoke(key, new EntryProcessor<Integer, String, Object>() {
@@ -250,14 +257,7 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
      */
     public void doTestWithEventsEntries(CacheConfiguration<Integer, String> ccfg) throws Exception {
 
-        Transaction tx = null;
-
         try (IgniteCache<Integer, String> cache = grid(0).createCache(ccfg)) {
-
-            if (ccfg.getAtomicityMode() == TRANSACTIONAL) {
-                Ignite ignite = cache.unwrap(Ignite.class);
-                tx = ignite.transactions().txStart();
-            }
 
             // Create new continuous query.
             ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
@@ -284,14 +284,11 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
             });
 
             // Execute query.
-            executeQuery(cache, qry);
+            executeQuery(cache, qry, ccfg.getAtomicityMode() == TRANSACTIONAL);
 
             assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
             assert cnt.get() == 16;
         } finally {
-            if (tx != null)
-                tx.close();
-
             ignite(0).destroyCache(ccfg.getName());
         }
 
