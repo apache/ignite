@@ -819,7 +819,11 @@ namespace Apache.Ignite.Core.Impl.Cache
                 input =>
                 {
                     if (input.ReadBool())
-                        return Unmarshal<TRes>(input);
+                    {
+                        var res = Unmarshal<object>(input);
+
+                        return res == null ? default(TRes) : (TRes) res;
+                    }
 
                     throw ReadProcessorException(input);
                 }
@@ -1160,22 +1164,6 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
 
             return modesEncoded;
-        }
-
-        /// <summary>
-        /// Unwraps an exception.
-        /// </summary>
-        /// <typeparam name="T">Result type.</typeparam>
-        /// <param name="obj">Object.</param>
-        /// <returns>Result.</returns>
-        private static T GetResultOrThrow<T>(object obj)
-        {
-            var err = obj as Exception;
-
-            if (err != null)
-                throw err as CacheEntryProcessorException ?? new CacheEntryProcessorException(err);
-
-            return obj == null ? default(T) : (T) obj;
         }
 
         /// <summary>
