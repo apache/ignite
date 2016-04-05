@@ -3931,7 +3931,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 }
                             }
                         }
-                        else
+                        else if (!cctx.isDatabaseEnabled())
                             clearIndex(prev, ver);
 
                         // Nullify value after swap.
@@ -3985,7 +3985,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                     }
                                 }
                             }
-                            else
+                            else if (!cctx.isDatabaseEnabled())
                                 clearIndex(prevVal, ver);
 
                             // Nullify value after swap.
