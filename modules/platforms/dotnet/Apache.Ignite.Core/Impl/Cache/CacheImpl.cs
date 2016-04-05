@@ -631,7 +631,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            DoOutOp((int) CacheOp.LocEvict, writer => WriteEnumerable(writer, keys));
+            DoOutOp(CacheOp.LocEvict, writer => WriteEnumerable(writer, keys));
         }
 
         /** <inheritdoc /> */
