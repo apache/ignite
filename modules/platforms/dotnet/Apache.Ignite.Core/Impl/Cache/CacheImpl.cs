@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache.Query;
@@ -284,7 +285,12 @@ namespace Apache.Ignite.Core.Impl.Cache
                     writer.WriteObject<CacheEntryFilterHolder>(null);
 
                 writer.WriteArray(args);
-            }, s => ReadResult(s));
+            }, s =>
+            {
+                if (!s.ReadBool())
+                    throw new CacheStoreException("Exception in Cache Store, see inner exception for details",
+                        ReadException(s));
+            });
         }
 
         /** <inheritDoc /> */
