@@ -544,6 +544,8 @@ public class PlatformCache extends PlatformAbstractTarget {
                 case OP_REMOVE_BOOL:
                     writer.writeBoolean(cache.remove(reader.readObjectDetached(), reader.readObjectDetached()));
 
+                    break;
+
                 case OP_REMOVE_ALL:
                     cache.removeAll(PlatformUtils.readSet(reader));
 
