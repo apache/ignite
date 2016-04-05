@@ -4244,10 +4244,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
     }
 
+    /** Increments public size of map. */
     protected void incrementMapPublicSize() {
         cctx.incrementPublicSize(this);
     }
 
+    /** Decrements public size of map. */
     protected void decrementMapPublicSize() {
         cctx.decrementPublicSize(this);
     }

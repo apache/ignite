@@ -717,10 +717,12 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         return S.toString(GridDhtCacheEntry.class, this, "super", super.toString());
     }
 
+    /** {@inheritDoc} */
     @Override protected void incrementMapPublicSize() {
         locPart.incrementPublicSize(this);
     }
 
+    /** {@inheritDoc} */
     @Override protected void decrementMapPublicSize() {
         super.decrementMapPublicSize();
         locPart.decrementPublicSize(this);
