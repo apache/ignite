@@ -296,7 +296,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public Task LoadAllAsync(IEnumerable<TK> keys, bool replaceExistingValues)
         {
-            return GetFuture<object>((futId, futTyp) => DoOutOp((int) CacheOp.LoadAll, writer =>
+            return GetFuture<object>((futId, futTyp) => DoOutOp(CacheOp.LoadAll, writer =>
             {
                 writer.WriteLong(futId);
                 writer.WriteBoolean(replaceExistingValues);
