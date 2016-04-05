@@ -119,7 +119,7 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
      * @param ver Remote version.
      */
     public void onReceived(UUID nodeId, long ver) {
-        if (ver > 0)
+        if (ver > 0) {
             while (true) {
                 long order = this.order.get();
 
@@ -138,6 +138,25 @@ public class GridCacheVersionManager extends GridCacheSharedManagerAdapter {
 
                 break;
             }
+        }
+    }
+
+    /**
+     * @param rcvOrder Received order.
+     */
+    public void onExchange(long rcvOrder) {
+        long order;
+
+        while (true) {
+            order = this.order.get();
+
+            if (rcvOrder > order) {
+                if (this.order.compareAndSet(order, rcvOrder))
+                    break;
+            }
+            else
+                break;
+        }
     }
 
     /**

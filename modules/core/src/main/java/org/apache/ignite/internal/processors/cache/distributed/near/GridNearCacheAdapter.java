@@ -267,7 +267,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             false);
 
         // init() will register future for responses if future has remote mappings.
-        fut.init();
+        fut.init(null);
 
         return fut;
     }
