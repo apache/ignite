@@ -85,9 +85,11 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
             return val == null ? null : ((BinaryObject)val).deserialize();
         }
     };
+
     /** */
     public static final CacheEntryProcessor INC_ENTRY_PROC_BINARY_OBJ = new CacheEntryProcessor() {
         @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
+            assertTrue(entry.getKey() instanceof BinaryObject);
             assertFalse(entry.getKey() instanceof BinaryObjectOffheapImpl);
 
             Object val = entry.getValue();
