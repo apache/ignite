@@ -80,8 +80,8 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void init() {
-        map.setEntryFactory(new GridCacheMapEntryFactory() {
+    @Override protected GridCacheMapEntryFactory entryFactory() {
+        return new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
@@ -92,7 +92,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             ) {
                 return new GridLocalCacheEntry(ctx, key, hash, val);
             }
-        });
+        };
     }
 
     /**

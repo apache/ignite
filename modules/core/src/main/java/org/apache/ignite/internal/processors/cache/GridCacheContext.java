@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
@@ -589,14 +588,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert e != null;
         assert !e.isInternal() : e;
 
-        cache.map().incrementSize(e);
-
-        if (isDht() || isColocated() || isDhtAtomic()) {
-            GridDhtLocalPartition part = topology().localPartition(e.partition(), AffinityTopologyVersion.NONE, false);
-
-            if (part != null)
-                part.incrementPublicSize();
-        }
+        cache.incrementSize(e);
     }
 
     /**
@@ -607,14 +599,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert e != null;
         assert !e.isInternal() : e;
 
-        cache.map().decrementSize(e);
-
-        if (isDht() || isColocated() || isDhtAtomic()) {
-            GridDhtLocalPartition part = topology().localPartition(e.partition(), AffinityTopologyVersion.NONE, false);
-
-            if (part != null)
-                part.decrementPublicSize();
-        }
+        cache.decrementSize(e);
     }
 
     /**

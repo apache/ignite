@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
@@ -103,6 +104,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** Lock. */
     private final StripedCompositeReadWriteLock lock = new StripedCompositeReadWriteLock(16);
 
+    private final GridCacheMapEntryFactory entryFactory;
+
     /** Partition update counter. */
     private Map<Integer, Long> cntrMap = new HashMap<>();
 
@@ -112,10 +115,11 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /**
      * @param cctx Context.
      */
-    GridDhtPartitionTopologyImpl(GridCacheContext<?, ?> cctx) {
+    GridDhtPartitionTopologyImpl(GridCacheContext<?, ?> cctx, GridCacheMapEntryFactory entryFactory) {
         assert cctx != null;
 
         this.cctx = cctx;
+        this.entryFactory = entryFactory;
 
         log = cctx.logger(getClass());
     }
@@ -656,7 +660,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 try {
                     GridDhtLocalPartition old = locParts.putIfAbsent(p,
-                        loc = new GridDhtLocalPartition(cctx, p));
+                        loc = new GridDhtLocalPartition(cctx, p, entryFactory));
 
                     if (old != null)
                         loc = old;
@@ -699,25 +703,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public Collection<GridDhtLocalPartition> currentLocalPartitions() {
         return locParts.values();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry e) {
-        /*
-         * Make sure not to acquire any locks here as this method
-         * may be called from sensitive synchronization blocks.
-         * ===================================================
-         */
-
-        int p = cctx.affinity().partition(e.key());
-
-        GridDhtLocalPartition loc = localPartition(p, topVer, true);
-
-        assert loc != null;
-
-        loc.onAdded(e);
-
-        return loc;
     }
 
     /** {@inheritDoc} */

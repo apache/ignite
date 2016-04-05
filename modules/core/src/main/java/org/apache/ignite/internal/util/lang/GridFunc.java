@@ -287,7 +287,6 @@ public class GridFunc {
         }
     };
 
-
     /** */
     private static final IgniteClosure CACHE_ENTRY_VAL_GET = new IgniteClosure() {
         @SuppressWarnings({"unchecked"})
@@ -1711,6 +1710,25 @@ public class GridFunc {
 
             @Override public boolean isEmpty() {
                 return F.isEmpty(p) ? c.isEmpty() : !iterator().hasNext();
+            }
+        };
+    }
+
+    @SuppressWarnings("RedundantTypeArguments")
+    @SafeVarargs
+    public static <T1, T2> Iterable<T2> viewReadOnly(@Nullable final Iterable<? extends T1> c,
+        final IgniteClosure<? super T1, T2> trans, @Nullable final IgnitePredicate<? super T1>... p) {
+        A.notNull(trans, "trans");
+
+        if (isEmpty(c) || isAlwaysFalse(p))
+            return Collections.emptyList();
+
+        assert c != null;
+
+        return new Iterable<T2>() {
+            @NotNull
+            @Override public Iterator<T2> iterator() {
+                return F.<T1, T2>iterator(c, trans, true, p);
             }
         };
     }
