@@ -1659,6 +1659,19 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalCache<K, V> withNoRetries() {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            return new GridCacheProxyImpl<>(ctx, delegate,
+                new CacheOperationContext(false, null, false, null, true, null));
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);
         out.writeObject(delegate);

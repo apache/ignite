@@ -867,6 +867,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                         tx = new GridDhtTxLocal(
                             ctx.shared(),
+                            req.topologyVersion(),
                             nearNode.id(),
                             req.version(),
                             req.futureId(),

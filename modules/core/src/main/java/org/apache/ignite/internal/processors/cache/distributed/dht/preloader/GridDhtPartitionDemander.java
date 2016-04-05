@@ -407,7 +407,6 @@ public class GridDhtPartitionDemander {
 
                 for (cnt = 0; cnt < lsnrCnt; cnt++) {
                     if (!sParts.get(cnt).isEmpty()) {
-
                         // Create copy.
                         GridDhtPartitionDemandMessage initD = new GridDhtPartitionDemandMessage(d, sParts.get(cnt));
 
@@ -416,11 +415,12 @@ public class GridDhtPartitionDemander {
                         initD.timeout(cctx.config().getRebalanceTimeout());
 
                         synchronized (fut) {
-                            if (!fut.isDone())
+                            if (!fut.isDone()) {
                                 // Future can be already cancelled at this moment and all failovers happened.
                                 // New requests will not be covered by failovers.
                                 cctx.io().sendOrderedMessage(node,
                                     rebalanceTopics.get(cnt), initD, cctx.ioPolicy(), initD.timeout());
+                            }
                         }
 
                         if (log.isDebugEnabled())
@@ -597,9 +597,8 @@ public class GridDhtPartitionDemander {
                         }
                     }
                     else {
-                        if (last) {
+                        if (last)
                             fut.partitionDone(id, p);
-                        }
 
                         if (log.isDebugEnabled())
                             log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
@@ -861,7 +860,7 @@ public class GridDhtPartitionDemander {
                     log.debug("Rebalancing is not required [cache=" + cctx.name() +
                         ", topology=" + topVer + "]");
 
-                checkIsDone(cancelled);
+                checkIsDone(cancelled, true);
             }
         }
 
@@ -885,7 +884,7 @@ public class GridDhtPartitionDemander {
 
                 remaining.clear();
 
-                checkIsDone(true /* cancelled */);
+                checkIsDone(true /* cancelled */, false);
             }
 
             return true;
@@ -1022,13 +1021,14 @@ public class GridDhtPartitionDemander {
          *
          */
         private void checkIsDone() {
-            checkIsDone(false);
+            checkIsDone(false, false);
         }
 
         /**
          * @param cancelled Is cancelled.
+         * @param wasEmpty {@code True} if future was created without assignments.
          */
-        private void checkIsDone(boolean cancelled) {
+        private void checkIsDone(boolean cancelled, boolean wasEmpty) {
             if (remaining.isEmpty()) {
                 if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_STOPPED) && (!cctx.isReplicated() || sndStoppedEvnt))
                     preloadEvent(EVT_CACHE_REBALANCE_STOPPED, exchFut.discoveryEvent());
@@ -1036,7 +1036,8 @@ public class GridDhtPartitionDemander {
                 if (log.isDebugEnabled())
                     log.debug("Completed rebalance future: " + this);
 
-                cctx.shared().exchange().scheduleResendPartitions();
+                if (!wasEmpty)
+                    cctx.shared().exchange().scheduleResendPartitions();
 
                 Collection<Integer> m = new HashSet<>();
 

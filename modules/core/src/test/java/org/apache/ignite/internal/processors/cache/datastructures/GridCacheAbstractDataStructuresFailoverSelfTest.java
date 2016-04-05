@@ -969,6 +969,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
          * @return Future.
          */
         IgniteInternalFuture<?> startChangingTopology(final IgniteClosure<Ignite, ?> cb) {
+            final AtomicInteger nodeIdx = new AtomicInteger(G.allGrids().size());
+
             return GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
@@ -976,17 +978,19 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             if (failed.get())
                                 return;
 
-                            String name = UUID.randomUUID().toString();
+                            int idx = nodeIdx.getAndIncrement();
+
+                            Thread.currentThread().setName("thread-" + getTestGridName(idx));
 
                             try {
-                                log.info("Start node: " + name);
+                                log.info("Start node: " + getTestGridName(idx));
 
-                                Ignite g = startGrid(name);
+                                Ignite g = startGrid(idx);
 
                                 cb.apply(g);
                             }
                             finally {
-                                stopGrid(name);
+                                stopGrid(idx);
                             }
                         }
                     }

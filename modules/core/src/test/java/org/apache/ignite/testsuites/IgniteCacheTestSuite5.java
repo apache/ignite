@@ -23,6 +23,8 @@ import org.apache.ignite.internal.processors.cache.CacheSerializableTransactions
 import org.apache.ignite.internal.processors.cache.GridCacheSwapSpaceSpiConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentFairAffinityTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
 import org.apache.ignite.internal.processors.cache.store.IgniteCacheWriteBehindNoUpdateSelfTest;
 
 /**
@@ -42,6 +44,9 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(IgniteCacheWriteBehindNoUpdateSelfTest.class);
         suite.addTestSuite(IgniteCachePutStackOverflowSelfTest.class);
         suite.addTestSuite(GridCacheSwapSpaceSpiConsistencySelfTest.class);
+
+        suite.addTestSuite(CacheLateAffinityAssignmentTest.class);
+        suite.addTestSuite(CacheLateAffinityAssignmentFairAffinityTest.class);
 
         return suite;
     }

@@ -677,7 +677,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                     if (remapKeys != null) {
                         assert mapErrTopVer != null;
 
-                        remapTopVer = new AffinityTopologyVersion(mapErrTopVer.topologyVersion() + 1);
+                        remapTopVer = cctx.shared().exchange().topologyVersion();
                     }
                     else {
                         if (err != null &&

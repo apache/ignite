@@ -1773,6 +1773,11 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
     /**
+     * @return Cache with no-retries behavior enabled.
+     */
+    public IgniteInternalCache<K, V> withNoRetries();
+
+    /**
      * @param key Key.
      * @param entryProcessor Entry processor.
      * @param args Arguments.

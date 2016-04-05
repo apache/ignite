@@ -126,7 +126,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
+                    f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId), true);
 
                     return true;
                 }
@@ -327,7 +327,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
-                    fut.onResult((ClusterTopologyCheckedException)e);
+                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
                 else
                     fut.onResult(e);
             }
@@ -413,7 +413,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
-                    fut.onResult((ClusterTopologyCheckedException)e);
+                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
                 else
                     fut.onResult(e);
             }
@@ -467,7 +467,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        fut.onResult((ClusterTopologyCheckedException)e);
+                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
                     else
                         fut.onResult(e);
                 }
@@ -563,7 +563,15 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        void onNodeLeft(ClusterTopologyCheckedException e) {
+            onNodeLeft(e, false);
+        }
+
+        /**
+         * @param e Node failure.
+         * @param discoThread {@code True} if executed from discovery thread.
+         */
+        void onNodeLeft(ClusterTopologyCheckedException e, boolean discoThread) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
 

@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -82,6 +83,9 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                 }
 
                 if (block) {
+                    ignite.log().info("Block message [node=" + node.id() +
+                        ", msg=" + ioMsg.message() + ']');
+
                     blockedMsgs.add(new T2<>(node, ioMsg));
 
                     return;
@@ -147,9 +151,19 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     public void stopBlock() {
         synchronized (this) {
             blockCls.clear();
+            blockP = null;
 
-            for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs)
-                super.sendMessage(msg.get1(), msg.get2());
+            for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
+                try {
+                    ignite.log().info("Send blocked message [node=" + msg.get1().id() +
+                        ", msg=" + msg.get2().message() + ']');
+
+                    super.sendMessage(msg.get1(), msg.get2());
+                }
+                catch (Throwable e) {
+                    U.error(ignite.log(), "Failed to send blocked message: " + msg, e);
+                }
+            }
 
             blockedMsgs.clear();
         }

@@ -192,6 +192,7 @@ public class PlatformContextImpl implements PlatformContext {
             in,
             ctx.config().getClassLoader(),
             null,
+            true,
             true);
     }
 

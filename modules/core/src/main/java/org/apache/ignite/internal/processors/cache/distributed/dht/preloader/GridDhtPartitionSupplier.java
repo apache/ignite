@@ -38,8 +38,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheE
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -114,7 +116,6 @@ class GridDhtPartitionSupplier {
      *
      * @param sc Supply context.
      * @param log Logger.
-     * @return true in case context was removed.
      */
     private static void clearContext(
         final SupplyContext sc,
@@ -127,7 +128,7 @@ class GridDhtPartitionSupplier {
                     ((GridCloseableIterator)it).close();
                 }
                 catch (IgniteCheckedException e) {
-                    log.error("Iterator close failed.", e);
+                    U.error(log, "Iterator close failed.", e);
                 }
             }
 
@@ -153,7 +154,7 @@ class GridDhtPartitionSupplier {
             while (it.hasNext()) {
                 T3<UUID, Integer, AffinityTopologyVersion> t = it.next();
 
-                if (topVer.compareTo(t.get3()) > 0) {// Clear all obsolete contexts.
+                if (topVer.compareTo(t.get3()) > 0) { // Clear all obsolete contexts.
                     clearContext(scMap.get(t), log);
 
                     it.remove();
@@ -188,7 +189,7 @@ class GridDhtPartitionSupplier {
 
         T3<UUID, Integer, AffinityTopologyVersion> scId = new T3<>(id, idx, demTop);
 
-        if (d.updateSequence() == -1) {//Demand node requested context cleanup.
+        if (d.updateSequence() == -1) { //Demand node requested context cleanup.
             synchronized (scMap) {
                 clearContext(scMap.remove(scId), log);
 
@@ -214,7 +215,7 @@ class GridDhtPartitionSupplier {
         ClusterNode node = cctx.discovery().node(id);
 
         if (node == null)
-            return; //Context will be cleaned at topology change.
+            return; // Context will be cleaned at topology change.
 
         try {
             SupplyContext sctx;
@@ -675,9 +676,13 @@ class GridDhtPartitionSupplier {
      * Supply context phase.
      */
     private enum SupplyContextPhase {
+        /** */
         NEW,
+        /** */
         ONHEAP,
+        /** */
         SWAP,
+        /** */
         EVICTED
     }
 
@@ -689,12 +694,15 @@ class GridDhtPartitionSupplier {
         private final SupplyContextPhase phase;
 
         /** Partition iterator. */
+        @GridToStringExclude
         private final Iterator<Integer> partIt;
 
         /** Entry iterator. */
+        @GridToStringExclude
         private final Iterator<?> entryIt;
 
         /** Swap listener. */
+        @GridToStringExclude
         private final GridCacheEntryInfoCollectSwapListener swapLsnr;
 
         /** Partition. */
@@ -709,6 +717,8 @@ class GridDhtPartitionSupplier {
         /**
          * @param phase Phase.
          * @param partIt Partition iterator.
+         * @param loc Partition.
+         * @param updateSeq Update sequence.
          * @param entryIt Entry iterator.
          * @param swapLsnr Swap listener.
          * @param part Partition.
@@ -728,6 +738,11 @@ class GridDhtPartitionSupplier {
             this.loc = loc;
             this.updateSeq = updateSeq;
         }
+
+        /** {@inheritDoc} */
+        public String toString() {
+            return S.toString(SupplyContext.class, this);
+        }
     }
 
     @Deprecated//Backward compatibility. To be removed in future.
@@ -743,10 +758,8 @@ class GridDhtPartitionSupplier {
 
     @Deprecated//Backward compatibility. To be removed in future.
     public void stopOldListeners() {
-        if (!cctx.kernalContext().clientNode() && cctx.rebalanceEnabled()) {
-
+        if (!cctx.kernalContext().clientNode() && cctx.rebalanceEnabled())
             cctx.io().removeHandler(cctx.cacheId(), GridDhtPartitionDemandMessage.class);
-        }
     }
 
     /**

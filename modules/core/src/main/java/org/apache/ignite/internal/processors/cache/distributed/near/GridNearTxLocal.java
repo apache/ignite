@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
@@ -344,6 +345,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> loadMissing(
         final GridCacheContext cacheCtx,
+        AffinityTopologyVersion topVer,
         boolean readThrough,
         boolean async,
         final Collection<KeyCacheObject> keys,
@@ -354,6 +356,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     ) {
         if (cacheCtx.isNear()) {
             return cacheCtx.nearTx().txLoadAsync(this,
+                topVer,
                 keys,
                 readThrough,
                 /*deserializeBinary*/false,
@@ -384,7 +387,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     key,
                     readThrough,
                     /*force primary*/needVer,
-                    topologyVersion(),
+                    topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
                     /*deserializeBinary*/false,
@@ -415,7 +418,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     keys,
                     readThrough,
                     /*force primary*/needVer,
-                    topologyVersion(),
+                    topVer,
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
                     /*deserializeBinary*/false,
@@ -445,7 +448,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         else {
             assert cacheCtx.isLocal();
 
-            return super.loadMissing(cacheCtx, readThrough, async, keys, skipVals, keepBinary, needVer, c);
+            return super.loadMissing(cacheCtx,
+                topVer,
+                readThrough,
+                async,
+                keys,
+                skipVals,
+                keepBinary,
+                needVer,
+                c);
         }
     }
 
@@ -512,7 +523,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
                 txEntry.explicitVersion(candVer);
 
-                if (candVer.isLess(minVer))
+                if (candVer.compareTo(minVer) < 0)
                     minVer = candVer;
             }
         }
@@ -715,7 +726,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                         ", tx=" + this + ']');
 
                 // Replace the entry.
-                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
+                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), topologyVersion()));
             }
         }
     }
@@ -1338,6 +1349,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearTxLocal.class, this, "mappings", mappings, "super", super.toString());
+        return S.toString(GridNearTxLocal.class, this,
+            "thread", IgniteUtils.threadName(threadId),
+            "mappings", mappings,
+            "super", super.toString());
     }
 }
