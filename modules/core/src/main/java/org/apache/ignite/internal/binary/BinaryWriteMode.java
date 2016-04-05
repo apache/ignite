@@ -148,6 +148,9 @@ public enum BinaryWriteMode {
     CLASS(GridBinaryMarshaller.CLASS),
 
     /** */
+    PROXY(GridBinaryMarshaller.PROXY),
+
+    /** */
     BINARY(GridBinaryMarshaller.BINARY_OBJ),
 
     /** */

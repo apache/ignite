@@ -17,26 +17,22 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.DataInput;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.DataInput;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
@@ -60,13 +56,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
     /** File descriptor. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private IgfsFileInfo fileInfo;
-
-    /** Parent ID. */
-    private final IgniteUuid parentId;
-
-    /** File name. */
-    private final String fileName;
+    private IgfsEntryInfo fileInfo;
 
     /** Space in file to write data. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -107,8 +97,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param batch Optional secondary file system batch.
      * @param metrics Local IGFS metrics.
      */
-    IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsFileInfo fileInfo, IgniteUuid parentId,
-        int bufSize, IgfsMode mode, @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics) {
+    IgfsOutputStreamImpl(IgfsContext igfsCtx, IgfsPath path, IgfsEntryInfo fileInfo, int bufSize, IgfsMode mode,
+        @Nullable IgfsFileWorkerBatch batch, IgfsLocalMetrics metrics) {
         super(path, optimizeBufferSize(bufSize, fileInfo));
 
         assert fileInfo != null;
@@ -121,7 +111,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         if (fileInfo.lockId() == null)
             throw new IgfsException("Failed to acquire file lock (concurrently modified?): " + path);
 
-        assert !IgfsMetaManager.DELETE_LOCK_ID.equals(fileInfo.lockId());
+        assert !IgfsUtils.DELETE_LOCK_ID.equals(fileInfo.lockId());
 
         this.igfsCtx = igfsCtx;
         meta = igfsCtx.meta();
@@ -130,12 +120,9 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         this.fileInfo = fileInfo;
         this.mode = mode;
         this.batch = batch;
-        this.parentId = parentId;
         this.metrics = metrics;
 
         streamRange = initialStreamRange(fileInfo);
-
-        fileName = path.name();
 
         writeCompletionFut = data.writeStart(fileInfo);
     }
@@ -148,7 +135,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @return Optimized buffer size.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private static int optimizeBufferSize(int bufSize, IgfsFileInfo fileInfo) {
+    private static int optimizeBufferSize(int bufSize, IgfsEntryInfo fileInfo) {
         assert bufSize > 0;
 
         if (fileInfo == null)
@@ -274,7 +261,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             exists = meta.exists(fileInfo.id());
         }
         catch (IgniteCheckedException e) {
-            throw new IOException("File to read file metadata: " + fileInfo.path(), e);
+            throw new IOException("File to read file metadata: " + path, e);
         }
 
         if (!exists) {
@@ -297,8 +284,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             if (space > 0) {
                 data.awaitAllAcksReceived(fileInfo.id());
 
-                IgfsFileInfo fileInfo0 = meta.updateInfo(fileInfo.id(),
-                    new ReserveSpaceClosure(space, streamRange));
+                IgfsEntryInfo fileInfo0 = meta.reserveSpace(path, fileInfo.id(), space, streamRange);
 
                 if (fileInfo0 == null)
                     throw new IOException("File was concurrently deleted: " + path);
@@ -344,7 +330,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 exists = !deleted && meta.exists(fileInfo.id());
             }
             catch (IgniteCheckedException e) {
-                throw new IOException("File to read file metadata: " + fileInfo.path(), e);
+                throw new IOException("File to read file metadata: " + path, e);
             }
 
             if (exists) {
@@ -384,10 +370,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                     throw new IOException("File was concurrently deleted: " + path);
                 }
                 catch (IgniteCheckedException e) {
-                    throw new IOException("File to read file metadata: " + fileInfo.path(), e);
+                    throw new IOException("File to read file metadata: " + path, e);
                 }
-
-                meta.updateParentListingAsync(parentId, fileInfo.id(), fileName, bytes, modificationTime);
 
                 if (err != null)
                     throw err;
@@ -415,11 +399,11 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      * @param fileInfo File info to build initial range for.
      * @return Affinity range.
      */
-    private IgfsFileAffinityRange initialStreamRange(IgfsFileInfo fileInfo) {
+    private IgfsFileAffinityRange initialStreamRange(IgfsEntryInfo fileInfo) {
         if (!igfsCtx.configuration().isFragmentizerEnabled())
             return null;
 
-        if (!Boolean.parseBoolean(fileInfo.properties().get(IgfsEx.PROP_PREFER_LOCAL_WRITES)))
+        if (!Boolean.parseBoolean(fileInfo.properties().get(IgfsUtils.PROP_PREFER_LOCAL_WRITES)))
             return null;
 
         int blockSize = fileInfo.blockSize();
@@ -445,73 +429,5 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgfsOutputStreamImpl.class, this);
-    }
-
-    /**
-     * Helper closure to reserve specified space and update file's length
-     */
-    @GridInternal
-    private static final class ReserveSpaceClosure implements IgniteClosure<IgfsFileInfo, IgfsFileInfo>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Space amount (bytes number) to increase file's length. */
-        private long space;
-
-        /** Affinity range for this particular update. */
-        private IgfsFileAffinityRange range;
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         *
-         */
-        public ReserveSpaceClosure() {
-            // No-op.
-        }
-
-        /**
-         * Constructs the closure to reserve specified space and update file's length.
-         *
-         * @param space Space amount (bytes number) to increase file's length.
-         * @param range Affinity range specifying which part of file was colocated.
-         */
-        private ReserveSpaceClosure(long space, IgfsFileAffinityRange range) {
-            this.space = space;
-            this.range = range;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsFileInfo apply(IgfsFileInfo oldInfo) {
-            IgfsFileMap oldMap = oldInfo.fileMap();
-
-            IgfsFileMap newMap = new IgfsFileMap(oldMap);
-
-            newMap.addRange(range);
-
-            // Update file length.
-            IgfsFileInfo updated = new IgfsFileInfo(oldInfo, oldInfo.length() + space);
-
-            updated.fileMap(newMap);
-
-            return updated;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(space);
-            out.writeObject(range);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            space = in.readLong();
-            range = (IgfsFileAffinityRange)in.readObject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ReserveSpaceClosure.class, this);
-        }
     }
 }

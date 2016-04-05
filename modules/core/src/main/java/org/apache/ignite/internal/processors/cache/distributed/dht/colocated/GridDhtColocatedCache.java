@@ -200,7 +200,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         String taskName,
         final boolean deserializeBinary,
         final boolean skipVals,
-        boolean canRemap) {
+        boolean canRemap,
+        final boolean needVer) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (keyCheck)
@@ -218,7 +219,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         deserializeBinary,
                         skipVals,
                         false,
-                        opCtx != null && opCtx.skipStore());
+                        opCtx != null && opCtx.skipStore(),
+                        needVer);
 
                     return fut.chain(new CX1<IgniteInternalFuture<Map<Object, Object>>, V>() {
                         @SuppressWarnings("unchecked")
@@ -258,7 +260,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
             canRemap,
-            /*needVer*/false,
+            needVer,
             /*keepCacheObjects*/false);
 
         fut.init();
@@ -275,7 +277,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         String taskName,
         final boolean deserializeBinary,
         final boolean skipVals,
-        boolean canRemap
+        boolean canRemap,
+        final boolean needVer
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
@@ -297,7 +300,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                         deserializeBinary,
                         skipVals,
                         false,
-                        opCtx != null && opCtx.skipStore());
+                        opCtx != null && opCtx.skipStore(),
+                        needVer);
                 }
             }, opCtx);
         }
@@ -318,7 +322,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             deserializeBinary,
             skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
             skipVals,
-            canRemap);
+            canRemap,
+            needVer);
     }
 
     /** {@inheritDoc} */
@@ -345,6 +350,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param canRemap Can remap flag.
+     * @param needVer Need version.
      * @return Loaded values.
      */
     public IgniteInternalFuture<Map<K, V>> loadAsync(
@@ -357,7 +363,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        boolean canRemap) {
+        boolean canRemap,
+        boolean needVer) {
         return loadAsync(keys,
             readThrough,
             forcePrimary,
@@ -367,7 +374,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             expiryPlc,
             skipVals,
             canRemap,
-            false,
+            needVer,
             false);
     }
 
@@ -522,17 +529,14 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 if (locVals == null)
                                     locVals = U.newHashMap(keys.size());
 
-                                if (needVer)
-                                    locVals.put((K)key, (V)new T2<>((Object)(skipVals ? true : v), ver));
-                                else {
-                                    ctx.addResult(locVals,
-                                        key,
-                                        v,
-                                        skipVals,
-                                        keepCacheObj,
-                                        deserializeBinary,
-                                        true);
-                                }
+                                ctx.addResult(locVals,
+                                    key,
+                                    v,
+                                    skipVals,
+                                    keepCacheObj,
+                                    deserializeBinary,
+                                    true,
+                                    ver);
                             }
                         }
                         else
