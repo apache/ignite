@@ -83,14 +83,12 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      * @param cacheCtx Cache context.
      * @param map Map to put.
      * @param retval Flag indicating whether a value should be returned.
-     * @param filter Filter.
      * @return Future for put operation.
      */
     public <K, V> IgniteInternalFuture<GridCacheReturn> putAllAsync(
         GridCacheContext cacheCtx,
         Map<? extends K, ? extends V> map,
-        boolean retval,
-        CacheEntryPredicate[] filter);
+        boolean retval);
 
     /**
      * @param cacheCtx Cache context.
@@ -105,7 +103,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
         K key,
         V val,
         boolean retval,
-        CacheEntryPredicate[] filter);
+        CacheEntryPredicate filter);
 
     /**
      * @param cacheCtx Cache context.
@@ -143,7 +141,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
         GridCacheContext cacheCtx,
         Collection<? extends K> keys,
         boolean retval,
-        CacheEntryPredicate[] filter,
+        CacheEntryPredicate filter,
         boolean singleRmv);
 
     /**

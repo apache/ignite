@@ -837,7 +837,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             }
         }
 
-        return F.pair(
+        return new IgnitePair<>(
             committed == null ? Collections.<GridCacheVersion>emptyList() : committed,
             rolledback == null ? Collections.<GridCacheVersion>emptyList() : rolledback);
     }

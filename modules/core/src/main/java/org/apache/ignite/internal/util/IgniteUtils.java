@@ -293,6 +293,9 @@ public abstract class IgniteUtils {
     /** Secure socket protocol to use. */
     private static final String HTTPS_PROTOCOL = "TLS";
 
+    /** Correct Mbean cache name pattern. */
+    private static Pattern MBEAN_CACHE_NAME_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
+
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
 
@@ -4323,7 +4326,10 @@ public abstract class IgniteUtils {
 
         cacheName = maskName(cacheName);
 
-        sb.a("group=").a(cacheName).a(',');
+        if (!MBEAN_CACHE_NAME_PATTERN.matcher(cacheName).matches())
+            sb.a("group=").a('\"').a(cacheName).a('\"').a(',');
+        else
+            sb.a("group=").a(cacheName).a(',');
 
         sb.a("name=").a(name);
 
@@ -5836,7 +5842,7 @@ public abstract class IgniteUtils {
                 Iterable<Field> fields = cached ? tup.get2() : Arrays.asList(cls.getDeclaredFields());
 
                 if (!cached) {
-                    tup = F.t2();
+                    tup = new IgniteBiTuple<>();
 
                     tup.set1(cls);
                 }
@@ -8560,7 +8566,7 @@ public abstract class IgniteUtils {
             throw new IgniteCheckedException("Addresses can not be resolved [addr=" + addrs +
                 ", hostNames=" + hostNames + ']');
 
-        return F.viewListReadOnly(res, F.<InetAddress>identity());
+        return Collections.unmodifiableList(res);
     }
 
     /**
@@ -8607,7 +8613,7 @@ public abstract class IgniteUtils {
             res.add(new InetSocketAddress(addr, port));
         }
 
-        return F.viewListReadOnly(res, F.<InetSocketAddress>identity());
+        return Collections.unmodifiableList(res);
     }
 
     /**

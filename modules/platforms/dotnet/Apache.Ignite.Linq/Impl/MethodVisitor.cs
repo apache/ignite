@@ -58,7 +58,8 @@ namespace Apache.Ignite.Linq.Impl
 
             GetMethod(typeof (Regex), "Replace", new[] {typeof (string), typeof (string), typeof (string)}, 
                 GetFunc("regexp_replace")),
-            GetMethod(typeof (DateTime), "ToString", new[] {typeof (string)}, GetFunc("formatdatetime")),
+            GetMethod(typeof (DateTime), "ToString", new[] {typeof (string)},
+                (e, v) => VisitFunc(e, v, "formatdatetime", ", 'en', 'UTC'")),
 
             GetMathMethod("Abs", typeof (int)),
             GetMathMethod("Abs", typeof (long)),
@@ -122,14 +123,14 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private static VisitMethodDelegate GetFunc(string func, params int[] adjust)
         {
-            return (e, v) => VisitFunc(e, v, func, adjust);
+            return (e, v) => VisitFunc(e, v, func, null, adjust);
         }
 
         /// <summary>
         /// Visits the instance function.
         /// </summary>
         private static void VisitFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, 
-            string func, params int[] adjust)
+            string func, string suffix, params int[] adjust)
         {
             visitor.ResultBuilder.Append(func).Append("(");
 
@@ -161,7 +162,7 @@ namespace Apache.Ignite.Linq.Impl
                 AppendAdjustment(visitor, adjust, i + 1);
             }
 
-            visitor.ResultBuilder.Append(")");
+            visitor.ResultBuilder.Append(suffix).Append(")");
 
             AppendAdjustment(visitor, adjust, 0);
         }
