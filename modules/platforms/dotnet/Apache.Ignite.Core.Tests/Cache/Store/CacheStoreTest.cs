@@ -293,9 +293,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             var err = Assert.Throws<CacheStoreException>(() => cache.Put(1, "1"));
             Assert.IsTrue(err.InnerException is ArithmeticException);
-
-            err = Assert.Throws<CacheStoreException>(() => cache.Remove(1));
-            Assert.IsTrue(err.InnerException is ArithmeticException);
         }
 
         [Test]
