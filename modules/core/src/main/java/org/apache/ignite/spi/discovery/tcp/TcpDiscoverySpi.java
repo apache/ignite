@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -1358,7 +1357,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         IOException err = null;
 
         try {
-            marsh.marshal(msg, new BufferedOutputStream(sock.getOutputStream(), sock.getSendBufferSize()));
+            marsh.marshal(msg, sock.getOutputStream());
         }
         catch (IOException e) {
             err = e;
