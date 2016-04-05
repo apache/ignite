@@ -55,6 +55,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     /** Cache context. */
     private final GridCacheContext ctx;
 
+    /** Public size counter. */
     private final AtomicInteger pubSize = new AtomicInteger();
 
     /**
