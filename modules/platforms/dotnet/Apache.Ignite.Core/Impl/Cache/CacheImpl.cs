@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOp((int)CacheOp.GetAll,
+            return DoOutInOp(CacheOp.GetAll,
                 writer => WriteEnumerable(writer, keys),
                 input =>
                 {
@@ -1367,6 +1367,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         private bool DoOutOp(CacheOp op, Action<BinaryWriter> write)
         {
             return DoOutInOp((int) op, write, s => ReadResult(s));
+        }
+
+        private T DoOutInOp<T>(CacheOp op, Action<BinaryWriter> write, Func<IBinaryStream, T> read)
+        {
+            return DoOutInOp((int)op, write, s =>
+            {
+                if (!s.ReadBool())
+                    throw ReadException(s);
+
+                return read(s);
+            });
         }
     }
 }
