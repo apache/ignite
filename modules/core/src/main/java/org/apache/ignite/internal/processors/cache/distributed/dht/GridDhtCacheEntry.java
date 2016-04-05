@@ -724,7 +724,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
     /** {@inheritDoc} */
     @Override protected void decrementMapPublicSize() {
-        super.decrementMapPublicSize();
         locPart.decrementPublicSize(this);
     }
 
