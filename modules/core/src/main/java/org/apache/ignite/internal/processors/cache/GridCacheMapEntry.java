@@ -4233,15 +4233,23 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             flags |= IS_DELETED_MASK;
 
-            cctx.decrementPublicSize(this);
+            incrementMapPublicSize();
         }
         else {
             assert deletedUnlocked() : this;
 
             flags &= ~IS_DELETED_MASK;
 
-            cctx.incrementPublicSize(this);
+            decrementMapPublicSize();
         }
+    }
+
+    protected void incrementMapPublicSize() {
+        cctx.incrementPublicSize(this);
+    }
+
+    protected void decrementMapPublicSize() {
+        cctx.decrementPublicSize(this);
     }
 
     /**
