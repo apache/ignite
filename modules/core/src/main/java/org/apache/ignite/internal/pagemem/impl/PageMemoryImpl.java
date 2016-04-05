@@ -172,7 +172,6 @@ public class  PageMemoryImpl implements PageMemory {
     @Override public void stop() throws IgniteException {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");
-        U.debug(log, "Stopping page memory.");
 
         if (directMemoryProvider instanceof LifecycleAware)
             ((LifecycleAware)directMemoryProvider).stop();
