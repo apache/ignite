@@ -308,6 +308,7 @@ public class IgfsUtils {
         assert path != null;
 
         GridEventStorageManager evts = kernalCtx.event();
+
         ClusterNode locNode = kernalCtx.discovery().localNode();
 
         if (evts.isRecordable(type)) {

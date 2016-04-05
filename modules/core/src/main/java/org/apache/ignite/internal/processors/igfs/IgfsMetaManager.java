@@ -968,7 +968,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param destParentId New parent directory ID.
      * @throws IgniteCheckedException If failed.
      */
-    private void moveNonTx(IgniteUuid fileId, @Nullable String srcFileName, IgniteUuid srcParentId, String destFileName,
+    private void moveNonTx(IgniteUuid fileId, String srcFileName, IgniteUuid srcParentId, String destFileName,
         IgniteUuid destParentId) throws IgniteCheckedException {
         validTxState(true);
 
@@ -1139,7 +1139,8 @@ public class IgfsMetaManager extends IgfsManager {
 
                     // Prepare trash data.
                     IgfsEntryInfo trashInfo = lockInfos.get(trashId);
-                    final String trashName = victimId.toString();
+
+                    final String trashName = composeNameForTrash(path, victimId);
 
                     assert !trashInfo.hasChild(trashName) : "Failed to add file name into the " +
                         "destination directory (file already exists) [destName=" + trashName + ']';
@@ -1166,17 +1167,31 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
+     * Creates short name of the file in TRASH directory.
+     * The name consists of the whole file path and its unique id.
+     * Upon file cleanup this name will be parsed to extract the path.
+     * Note that in contrast to common practice the composed name contains '/' character.
+     *
+     * @param path The full path of the deleted file.
+     * @param id The file id.
+     * @return The new short name for trash directory.
+     */
+    private static String composeNameForTrash(IgfsPath path, IgniteUuid id) {
+        return path.toString() + '\u0000' + id.toString();
+    }
+
+    /**
      * Move path to the trash directory in existing transaction.
      *
      * @param parentId Parent ID.
-     * @param name Path name.
+     * @param path Path name.
      * @param id Path ID.
-     * @param trashId Trash ID.
+     * @param trashId Trash folder ID.
      * @return ID of an entry located directly under the trash directory.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("RedundantCast")
-    @Nullable private IgniteUuid softDeleteNonTx(@Nullable IgniteUuid parentId, @Nullable String name, IgniteUuid id,
+    @Nullable private IgniteUuid softDeleteNonTx(@Nullable IgniteUuid parentId, IgfsPath path, IgniteUuid id,
         IgniteUuid trashId) throws IgniteCheckedException {
         validTxState(true);
 
@@ -1208,9 +1223,7 @@ public class IgfsMetaManager extends IgfsManager {
                 lockIds(lockIds);
 
                 // Construct new info and move locked entries from root to it.
-                Map<String, IgfsListingEntry> transferListing = new HashMap<>();
-
-                transferListing.putAll(rootListing);
+                Map<String, IgfsListingEntry> transferListing = new HashMap<>(rootListing);
 
                 IgfsEntryInfo newInfo = IgfsUtils.createDirectory(
                     IgniteUuid.randomUuid(),
@@ -1234,7 +1247,7 @@ public class IgfsMetaManager extends IgfsManager {
             // Ensure trash directory existence.
             createSystemDirectoryIfAbsent(trashId);
 
-            moveNonTx(id, name, parentId, id.toString(), trashId);
+            moveNonTx(id, path.name(), parentId, composeNameForTrash(path, id), trashId);
 
             resId = id;
         }
@@ -2406,12 +2419,12 @@ public class IgfsMetaManager extends IgfsManager {
                         if (path.parent() != null) {
                             assert infos.containsKey(path.parent());
 
-                            softDeleteNonTx(infos.get(path.parent()).id(), path.name(), info.id(), trashId);
+                            softDeleteNonTx(infos.get(path.parent()).id(), path, info.id(), trashId);
                         }
                         else {
                             assert IgfsUtils.ROOT_ID.equals(info.id());
 
-                            softDeleteNonTx(null, path.name(), info.id(), trashId);
+                            softDeleteNonTx(null, path, info.id(), trashId);
                         }
 
                         return true; // No additional handling is required.
@@ -2644,7 +2657,6 @@ public class IgfsMetaManager extends IgfsManager {
                 pathIds.add(fileIds(path));
 
             // Start pessimistic.
-
             try (IgniteInternalTx tx = startTx()) {
                 // Lock the very first existing parents and possibly the leaf as well.
                 Map<IgfsPath, IgfsPath> pathToParent = new HashMap<>();
@@ -3101,8 +3113,8 @@ public class IgfsMetaManager extends IgfsManager {
                             // First step: add existing to trash listing.
                             IgniteUuid oldId = pathIds.lastId();
 
-                            id2InfoPrj.invoke(trashId, new IgfsMetaDirectoryListingAddProcessor(oldId.toString(),
-                                new IgfsListingEntry(oldInfo)));
+                            id2InfoPrj.invoke(trashId, new IgfsMetaDirectoryListingAddProcessor(
+                                composeNameForTrash(path, oldId), new IgfsListingEntry(oldInfo)));
 
                             // Second step: replace ID in parent directory.
                             String name = pathIds.lastPart();
