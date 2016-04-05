@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -81,7 +82,7 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
         CacheMemoryMode memoryMode) {
         this.atomicityMode = atomicityMode;
 
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration<Object, Object> cfg = new CacheConfiguration<>();
 
         cfg.setCacheMode(CacheMode.PARTITIONED);
         cfg.setAtomicityMode(atomicityMode);
@@ -184,50 +185,50 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
         for (int i = 0; i < 2 * CNT; i++)
             keys.add(i);
 
-        check(new TestCheck<Integer>() {
-            @Override public void check(Integer key) {
+        check(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer key) {
                 assertFalse(cache.get(key) instanceof BinaryObjectOffheapImpl);
             }
         });
 
-        check(new TestCheck<Integer>() {
-            @Override public void check(Integer key) {
-                assertFalse(cache.getEntry(key) instanceof BinaryObjectOffheapImpl);
+        check(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer key) {
+                assertFalse(cache.getEntry(key).getValue() instanceof BinaryObjectOffheapImpl);
             }
         });
 
-        check(new TestCheck<Integer>() {
-            @Override public void check(Integer key) {
+        check(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer key) {
                 assertFalse(cache.getAndPut(key, cache.get(key)) instanceof BinaryObjectOffheapImpl);
             }
         });
 
-        check(new TestCheck<Integer>() {
-            @Override public void check(Integer key) {
+        check(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer key) {
                 assertFalse(cache.getAndReplace(key, cache.get(key)) instanceof BinaryObjectOffheapImpl);
             }
         });
 
-        check(new TestCheck<Integer>() {
-            @Override public void check(Integer key) {
+        check(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer key) {
                 assertFalse(cache.getAndPutIfAbsent(key, cache.get(key)) instanceof BinaryObjectOffheapImpl);
             }
         });
 
-        check(new TestCheck<Integer>() {
-            @Override public void check(Integer key) {
+        check(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer key) {
                 assertFalse(cache.localPeek(key) instanceof BinaryObjectOffheapImpl);
             }
         });
 
-        check(new TestCheck<Integer>() {
-            @Override public void check(Integer key) {
+        check(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer key) {
                 assertFalse(cache.getAndRemove(key) instanceof BinaryObjectOffheapImpl);
             }
         });
 
-        check(new TestCheck<Integer>() {
-            @Override public void check(Integer key) {
+        check(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer key) {
                 assertFalse(cache.invoke(key, PROC) instanceof BinaryObjectOffheapImpl);
             }
         });
@@ -318,17 +319,17 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
     }
 
     /**
-     *
+     * @param checkOp Check closure.
      */
-    private void check(TestCheck<Integer> checkOp) {
+    private void check(IgniteInClosure<Integer> checkOp) {
         for (int key = 0; key < 2 * CNT; key++) {
-            checkOp.check(key);
+            checkOp.apply(key);
 
             if (atomicityMode == TRANSACTIONAL) {
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
                     for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
                         try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
-                            checkOp.check(key);
+                            checkOp.apply(key);
 
                             tx.commit();
                         }
@@ -356,15 +357,5 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
             field = "str" + key;
             field2 = key;
         }
-    }
-
-    /**
-     *
-     */
-    private static interface TestCheck<T> {
-        /**
-         * @param t Parameter.
-         */
-        public void check(T t);
     }
 }
