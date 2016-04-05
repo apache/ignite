@@ -114,8 +114,10 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="clsName">Exception class name.</param>
         /// <param name="msg">Exception message.</param>
         /// <param name="reader">Error data reader.</param>
+        /// <param name="innerException">Inner exception.</param>
         /// <returns>Exception.</returns>
-        public static Exception GetException(IIgnite ignite, string clsName, string msg, BinaryReader reader = null)
+        public static Exception GetException(IIgnite ignite, string clsName, string msg, BinaryReader reader = null, 
+            Exception innerException = null)
         {
             ExceptionFactoryDelegate ctor;
 
@@ -126,9 +128,9 @@ namespace Apache.Ignite.Core.Impl
                 ExceptionFactoryDelegate innerCtor;
 
                 if (match.Success && Exs.TryGetValue(match.Groups[1].Value, out innerCtor))
-                    return ctor(ignite, msg, innerCtor(ignite, match.Groups[2].Value, null));
+                    return ctor(ignite, msg, innerCtor(ignite, match.Groups[2].Value, innerException));
 
-                return ctor(ignite, msg, null);
+                return ctor(ignite, msg, innerException);
             }
 
             if (ClsNoClsDefFoundErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))

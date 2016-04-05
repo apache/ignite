@@ -1218,16 +1218,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Exception.</returns>
         private Exception ReadException(IBinaryStream inStream)
         {
-            var item = Unmarshal<object>(inStream);
+            var reader = Marshaller.StartUnmarshal(inStream, _flagKeepBinary);
 
-            var clsName = item as string;
-
-            if (clsName == null)
-                return (Exception) item;
-
-            var msg = Unmarshal<string>(inStream);
+            var clsName = reader.ReadString();
+            var msg = reader.ReadString();
+            var inner = reader.ReadBoolean() ? reader.ReadObject<Exception>() : null;
                 
-            return ExceptionUtils.GetException(_ignite, clsName, msg);
+            return ExceptionUtils.GetException(_ignite, clsName, msg, innerException: inner);
         }
 
         /// <summary>
