@@ -3931,8 +3931,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 }
                             }
                         }
-                        else
-                            clearIndex(prev, ver);
+                        // TODO fix
+//                        else
+//                            clearIndex(prev, ver);
 
                         // Nullify value after swap.
                         value(null);

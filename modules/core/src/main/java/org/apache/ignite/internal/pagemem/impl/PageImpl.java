@@ -21,11 +21,9 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
-
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -185,9 +183,6 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
      * Mark dirty.
      */
     private void markDirty() {
-        if (fullId.pageId() == 0x0001000000010001L)
-            U.dumpStack();
-
         pageMem.setDirty(fullId, ptr, true);
     }
 
@@ -196,6 +191,7 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
         if (markDirty)
             markDirty();
 
+        assert getState() == -1;
         assert getExclusiveOwnerThread() == Thread.currentThread() : "illegal monitor state";
 
         setExclusiveOwnerThread(null);

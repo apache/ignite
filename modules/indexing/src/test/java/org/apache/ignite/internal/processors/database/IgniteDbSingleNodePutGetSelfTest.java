@@ -420,6 +420,92 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    public void testPutGetRemoveMultipleForward() throws Exception {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        GridCacheAdapter<Object, Object> internalCache = ig.context().cache().internalCache();
+
+        int cnt = 100_000;
+
+        X.println("Put.");
+
+        for (int i = 0; i < cnt; i++) {
+            DbValue v0 = new DbValue(i, "test-value", i);
+
+//            if (i % 100 == 0)
+//                X.println(" --> " + i);
+
+            cache.put(i, v0);
+
+            checkEmpty(internalCache, i);
+
+            assertEquals(v0, cache.get(i));
+        }
+
+        X.println("Start removing.");
+
+        for (int i = 0; i < cnt; i++) {
+            if (i % 100 == 0) {
+                X.println("-> " + i);
+
+//                assertEquals((long)(cnt - i),
+//                    cache.query(new SqlFieldsQuery("select count(*) from dbvalue")).getAll().get(0).get(0));
+            }
+
+            cache.remove(i);
+
+            assertNull(cache.get(i));
+
+            if (i + 1 < cnt)
+                assertEquals(new DbValue(i + 1, "test-value", i + 1), cache.get(i + 1));
+        }
+    }
+
+    public void testPutGetRemoveMultipleBackward() throws Exception {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        GridCacheAdapter<Object, Object> internalCache = ig.context().cache().internalCache();
+
+        int cnt = 100_000;
+
+        X.println("Put.");
+
+        for (int i = 0; i < cnt; i++) {
+            DbValue v0 = new DbValue(i, "test-value", i);
+
+//            if (i % 100 == 0)
+//                X.println(" --> " + i);
+
+            cache.put(i, v0);
+
+            checkEmpty(internalCache, i);
+
+            assertEquals(v0, cache.get(i));
+        }
+
+        X.println("Start removing in backward direction.");
+
+        for (int i = cnt - 1; i >= 0; i--) {
+            if (i % 100 == 0) {
+                X.println("-> " + i);
+
+//                assertEquals((long)(cnt - i),
+//                    cache.query(new SqlFieldsQuery("select count(*) from dbvalue")).getAll().get(0).get(0));
+            }
+
+            cache.remove(i);
+
+            assertNull(cache.get(i));
+
+            if (i - 1 >= 0)
+                assertEquals(new DbValue(i - 1, "test-value", i - 1), cache.get(i - 1));
+        }
+    }
+
     private void checkEmpty(final GridCacheAdapter internalCache, final int key) throws Exception {
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
