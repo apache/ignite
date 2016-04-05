@@ -140,6 +140,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
             new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
 
+        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
+
         topologyVersion(topVer);
     }
 
@@ -206,6 +208,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         txState = new IgniteTxRemoteStateImpl(
             Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
             new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
+
+        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
 
         topologyVersion(topVer);
     }

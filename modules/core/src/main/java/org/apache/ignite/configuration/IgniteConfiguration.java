@@ -32,6 +32,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -201,6 +203,9 @@ public class IgniteConfiguration {
 
     /** Default value for cache sanity check enabled flag. */
     public static final boolean DFLT_CACHE_SANITY_CHECK_ENABLED = true;
+
+    /** Default value for late affinity assignment flag. */
+    public static final boolean DFLT_LATE_AFF_ASSIGNMENT = true;
 
     /** Default failure detection timeout in millis. */
     @SuppressWarnings("UnnecessaryBoxing")
@@ -441,6 +446,9 @@ public class IgniteConfiguration {
     /** */
     private BinaryConfiguration binaryCfg;
 
+    /** */
+    private boolean lateAffAssignment = DFLT_LATE_AFF_ASSIGNMENT;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -497,6 +505,7 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
+        lateAffAssignment = cfg.isLateAffinityAssignment();
         lifecycleBeans = cfg.getLifecycleBeans();
         locHost = cfg.getLocalHost();
         log = cfg.getGridLogger();
@@ -2517,6 +2526,47 @@ public class IgniteConfiguration {
      */
     public void setPlatformConfiguration(PlatformConfiguration platformCfg) {
         this.platformCfg = platformCfg;
+    }
+
+    /**
+     * Whether or not late affinity assignment mode should be used.
+     * <p>
+     * On each topology change, for each started cache partition-to-node mapping is
+     * calculated using {@link AffinityFunction} configured for cache. When late
+     * affinity assignment mode is disabled then new affinity mapping is applied immediately.
+     * <p>
+     * With late affinity assignment mode if primary node was changed for some partition, but data for this
+     * partition is not rebalanced yet on this node, then current primary is not changed and new primary is temporary
+     * assigned as backup. This nodes becomes primary only when rebalancing for all assigned primary partitions is
+     * finished. This mode can show better performance for cache operations, since when cache primary node
+     * executes some operation and data is not rebalanced yet, then it sends additional message to force rebalancing
+     * from other nodes.
+     * <p>
+     * Note, that {@link Affinity} interface provides assignment information taking into account late assignment,
+     * so while rebalancing for new primary nodes is not finished it can return assignment which differs
+     * from assignment calculated by {@link AffinityFunction#assignPartitions}.
+     * <p>
+     * This property should have the same value for all nodes in cluster.
+     * <p>
+     * If not provided, default value is {@link #DFLT_LATE_AFF_ASSIGNMENT}.
+     *
+     * @return Late affinity assignment flag.
+     * @see AffinityFunction
+     */
+    public boolean isLateAffinityAssignment() {
+        return lateAffAssignment;
+    }
+
+    /**
+     * Sets late affinity assignment flag.
+     *
+     * @param lateAffAssignment Late affinity assignment flag.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setLateAffinityAssignment(boolean lateAffAssignment) {
+        this.lateAffAssignment = lateAffAssignment;
+
+        return this;
     }
 
     /** {@inheritDoc} */

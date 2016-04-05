@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -127,7 +126,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                 break;
                             }
                             catch (GridCacheEntryRemovedException e) {
-                                entry = ctx.cache().entryEx(entry.key());
+                                entry = ctx.cache().entryEx(entry.key(), tx.topologyVersion());
 
                                 txEntry.cached(entry);
                             }
@@ -601,7 +600,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    entry.cached(cacheCtx.near().entryEx(entry.key()));
+                    entry.cached(cacheCtx.near().entryEx(entry.key(), topVer));
                 }
             }
         }
