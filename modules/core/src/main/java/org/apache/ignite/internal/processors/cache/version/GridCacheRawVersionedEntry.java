@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -59,6 +60,10 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
     /** Version. */
     private GridCacheVersion ver;
 
+    /** Cache object context. */
+    @GridToStringExclude
+    private CacheObjectContext coCtx;
+
     /**
      * {@code Externalizable} support.
      */
@@ -79,7 +84,8 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         @Nullable CacheObject val,
         long ttl,
         long expireTime,
-        GridCacheVersion ver) {
+        GridCacheVersion ver,
+        final @Nullable CacheObjectContext coCtx) {
         assert key != null;
 
         this.key = key;
@@ -87,6 +93,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         this.ttl = ttl;
         this.expireTime = expireTime;
         this.ver = ver;
+        this.coCtx = coCtx;
     }
 
     /**
@@ -134,7 +141,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
 
     /** {@inheritDoc} */
     @Override public V value() {
-        return val != null ? val.<V>value(null, false) : null;
+        return val != null ? val.<V>value(coCtx, false) : null;
     }
 
     /**

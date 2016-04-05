@@ -5758,13 +5758,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     ttl = 0;
             }
 
+            final CacheObjectContext coCtx = ctx.cacheObjectContext();
+
             GridCacheRawVersionedEntry e = new GridCacheRawVersionedEntry(ctx.toCacheKeyObject(key),
                 ctx.toCacheObject(val),
                 ttl,
                 0,
-                ver.conflictVersion());
+                ver.conflictVersion(),
+                coCtx);
 
-            e.prepareDirectMarshal(ctx.cacheObjectContext());
+            e.prepareDirectMarshal(coCtx);
 
             col.add(e);
 
