@@ -811,7 +811,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             var holder = new CacheEntryProcessorHolder(processor, arg,
                 (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TArg)a), typeof(TK), typeof(TV));
 
-            return DoOutInOp((int)CacheOp.Invoke, writer =>
+            return DoOutInOp(CacheOp.Invoke, writer =>
             {
                 writer.Write(key);
                 writer.Write(holder);
@@ -849,13 +849,13 @@ namespace Apache.Ignite.Core.Impl.Cache
             var holder = new CacheEntryProcessorHolder(processor, arg,
                 (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TArg)a), typeof(TK), typeof(TV));
 
-            return DoOutInOp((int) CacheOp.InvokeAll,
+            return DoOutInOp(CacheOp.InvokeAll,
                 writer =>
                 {
                     WriteEnumerable(writer, keys);
                     writer.Write(holder);
                 },
-                input => ReadInvokeAllResults<TRes>(input));
+                ReadInvokeAllResults<TRes>);
         }
 
         /** <inheritDoc /> */
@@ -871,7 +871,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp((int)CacheOp.Lock, writer =>
+            return DoOutInOp(CacheOp.Lock, writer =>
             {
                 writer.Write(key);
             }, input => new CacheLock(input.ReadInt(), Target));
@@ -882,7 +882,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOp((int)CacheOp.LockAll, writer =>
+            return DoOutInOp(CacheOp.LockAll, writer =>
             {
                 WriteEnumerable(writer, keys);
             }, input => new CacheLock(input.ReadInt(), Target));
@@ -1339,7 +1339,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         private bool DoOutOp<T1>(CacheOp op, T1 x)
         {
-            return DoOutInOp((int)op, w =>
+            return DoOutInOp((int) op, w =>
             {
                 w.Write(x);
             }, s => ReadResult(s));
@@ -1347,7 +1347,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         private bool DoOutOp<T1, T2>(CacheOp op, T1 x, T2 y)
         {
-            return DoOutInOp((int)op, w =>
+            return DoOutInOp((int) op, w =>
             {
                 w.Write(x);
                 w.Write(y);
@@ -1356,7 +1356,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         private bool DoOutOp<T1, T2, T3>(CacheOp op, T1 x, T2 y, T3 z)
         {
-            return DoOutInOp((int)op, w =>
+            return DoOutInOp((int) op, w =>
             {
                 w.Write(x);
                 w.Write(y);
@@ -1371,7 +1371,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         private T DoOutInOp<T>(CacheOp op, Action<BinaryWriter> write, Func<IBinaryStream, T> read)
         {
-            return DoOutInOp((int)op, write, s =>
+            return DoOutInOp((int) op, write, s =>
             {
                 if (!s.ReadBool())
                     throw ReadException(s);
