@@ -140,8 +140,8 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If row was found.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean onSwap(KeyCacheObject key) throws IgniteCheckedException {
-        return onSwapUnswap(key, null);
+    public boolean onSwap(KeyCacheObject key, int partId) throws IgniteCheckedException {
+        return onSwapUnswap(key, partId, null);
     }
 
     /**
@@ -152,10 +152,10 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If row was found.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean onUnswap(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
+    public boolean onUnswap(KeyCacheObject key, int partId, CacheObject val) throws IgniteCheckedException {
         assert val != null : "Key=" + key;
 
-        return onSwapUnswap(key, val);
+        return onSwapUnswap(key, partId, val);
     }
 
     /**
@@ -167,14 +167,14 @@ public class GridH2Table extends TableBase {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean onSwapUnswap(KeyCacheObject key, @Nullable CacheObject val) throws IgniteCheckedException {
+    private boolean onSwapUnswap(KeyCacheObject key, int partId, @Nullable CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
         GridH2IndexBase pk = pk();
 
         assert desc != null;
 
-        GridH2Row searchRow = desc.createRow(key, null, null, 0);
+        GridH2Row searchRow = desc.createRow(key, partId, null, null, 0);
 
         GridUnsafeMemory mem = desc.memory();
 
@@ -336,11 +336,11 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expirationTime, boolean rmv)
+    public boolean update(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver, long expirationTime, boolean rmv)
         throws IgniteCheckedException {
         assert desc != null;
 
-        GridH2Row row = desc.createRow(key, val, ver, expirationTime);
+        GridH2Row row = desc.createRow(key, partId, val, ver, expirationTime);
 
         return doUpdate(row, rmv);
     }
@@ -352,11 +352,12 @@ public class GridH2Table extends TableBase {
      */
     public IgniteBiTuple<CacheObject, GridCacheVersion> read(
         GridCacheContext cctx,
-        KeyCacheObject key
+        KeyCacheObject key,
+        int partId
     ) throws IgniteCheckedException {
         assert desc != null;
 
-        GridH2Row row = desc.createRow(key, null, null, 0);
+        GridH2Row row = desc.createRow(key, partId, null, null, 0);
 
         GridH2IndexBase primaryIdx = pk();
 

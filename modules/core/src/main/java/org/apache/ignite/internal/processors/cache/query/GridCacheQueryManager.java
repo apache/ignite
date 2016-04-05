@@ -342,12 +342,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param key Key.
      * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(KeyCacheObject key) throws IgniteCheckedException {
+    public void onSwap(KeyCacheObject key, int partId) throws IgniteCheckedException {
         if (!enterBusy())
             return; // Ignore index update when node is stopping.
 
         try {
-            qryProc.onSwap(space, key);
+            qryProc.onSwap(space, key, partId);
         }
         finally {
             leaveBusy();
@@ -361,12 +361,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param val Value
      * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
+    public void onUnswap(KeyCacheObject key, int partId, CacheObject val) throws IgniteCheckedException {
         if (!enterBusy())
             return; // Ignore index update when node is stopping.
 
         try {
-            qryProc.onUnswap(space, key, val);
+            qryProc.onUnswap(space, key, partId, val);
         }
         finally {
             leaveBusy();
@@ -390,7 +390,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException In case of error.
      */
-    public void store(KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expirationTime)
+    public void store(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver, long expirationTime)
         throws IgniteCheckedException {
         assert key != null;
         assert val != null;
@@ -403,7 +403,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            qryProc.store(space, key, val, ver, expirationTime);
+            qryProc.store(space, key, partId, val, ver, expirationTime);
         }
         finally {
             invalidateResultCache();
@@ -416,12 +416,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param key Key to read.
      * @return Value tuple, if available.
      */
-    public IgniteBiTuple<CacheObject, GridCacheVersion> read(KeyCacheObject key) throws IgniteCheckedException {
+    public IgniteBiTuple<CacheObject, GridCacheVersion> read(KeyCacheObject key, int partId) throws IgniteCheckedException {
         if (!enterBusy())
             return null; // Ignore index update when node is stopping.
 
         try {
-            return qryProc.read(space, key);
+            return qryProc.read(space, key, partId);
         }
         finally {
             leaveBusy();
@@ -434,7 +434,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    public void remove(KeyCacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
+    public void remove(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         assert key != null;
 
         if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
@@ -444,7 +444,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            qryProc.remove(space, key, val, ver);
+            qryProc.remove(space, key, partId, val, ver);
         }
         finally {
             invalidateResultCache();

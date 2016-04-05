@@ -85,6 +85,8 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.h2.database.BPlusTreeRefIndex;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
@@ -451,7 +453,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tblToUpdate Table to update.
      * @throws IgniteCheckedException In case of error.
      */
-    private void removeKey(@Nullable String spaceName, KeyCacheObject key, GridCacheVersion ver, TableDescriptor tblToUpdate)
+    private void removeKey(@Nullable String spaceName, KeyCacheObject key, int partId, GridCacheVersion ver, TableDescriptor tblToUpdate)
         throws IgniteCheckedException {
         try {
             Collection<TableDescriptor> tbls = tables(schema(spaceName));
@@ -460,7 +462,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             for (TableDescriptor tbl : tbls) {
                 if (tbl != tblToUpdate && tbl.type().keyClass().isAssignableFrom(keyCls)) {
-                    if (tbl.tbl.update(key, null, ver, 0, true)) {
+                    if (tbl.tbl.update(key, partId, null, ver, 0, true)) {
                         if (tbl.luceneIdx != null)
                             tbl.luceneIdx.remove(key);
 
@@ -512,11 +514,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, KeyCacheObject k, CacheObject v,
-        GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
+    @Override public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, KeyCacheObject k, int partId,
+        CacheObject v, GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
-        removeKey(spaceName, k, ver, tbl);
+        removeKey(spaceName, k, partId, ver, tbl);
 
         if (tbl == null)
             return; // Type was rejected.
@@ -524,7 +526,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (expirationTime == 0)
             expirationTime = Long.MAX_VALUE;
 
-        tbl.tbl.update(k, v, ver, expirationTime, false);
+        tbl.tbl.update(k, partId, v, ver, expirationTime, false);
 
         if (tbl.luceneIdx != null)
             tbl.luceneIdx.store(k, v, ver, expirationTime);
@@ -575,7 +577,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, KeyCacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
+    @Override public void remove(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val,
+        GridCacheVersion ver) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ", val=" + val + ']');
 
@@ -587,7 +590,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         for (TableDescriptor tbl : tables(schema(spaceName))) {
             if (tbl.type().keyClass().isAssignableFrom(keyCls)
                 && (val == null || tbl.type().valueClass().isAssignableFrom(valCls))) {
-                if (tbl.tbl.update(key, val, ver, 0, true)) {
+                if (tbl.tbl.update(key, partId, val, ver, 0, true)) {
                     if (tbl.luceneIdx != null)
                         tbl.luceneIdx.remove(key);
 
@@ -598,7 +601,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<CacheObject, GridCacheVersion> read(String spaceName, KeyCacheObject key) throws IgniteCheckedException {
+    @Override public IgniteBiTuple<CacheObject, GridCacheVersion> read(String spaceName, KeyCacheObject key, int partId) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Reading stored value from cache query index [locId=" + nodeId + ", key=" + key + ']');
 
@@ -612,7 +615,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         for (TableDescriptor tbl : tables(schema(spaceName))) {
             if (tbl.type().keyClass().isAssignableFrom(keyCls)) {
-                res = tbl.tbl.read(cctx, key);
+                res = tbl.tbl.read(cctx, key, partId);
 
                 if (res != null)
                     break;
@@ -623,7 +626,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void onSwap(@Nullable String spaceName, KeyCacheObject key) throws IgniteCheckedException {
+    @Override public void onSwap(@Nullable String spaceName, KeyCacheObject key, int partId) throws IgniteCheckedException {
         Schema schema = schemas.get(schema(spaceName));
 
         if (schema == null)
@@ -634,7 +637,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         for (TableDescriptor tbl : schema.tbls.values()) {
             if (tbl.type().keyClass().isAssignableFrom(keyCls)) {
                 try {
-                    if (tbl.tbl.onSwap(key))
+                    if (tbl.tbl.onSwap(key, partId))
                         return;
                 }
                 catch (IgniteCheckedException e) {
@@ -645,7 +648,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void onUnswap(@Nullable String spaceName, KeyCacheObject key, CacheObject val)
+    @Override public void onUnswap(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val)
         throws IgniteCheckedException {
         assert val != null;
 
@@ -658,7 +661,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (tbl.type().keyClass().isAssignableFrom(keyCls)
                 && tbl.type().valueClass().isAssignableFrom(valCls)) {
                 try {
-                    if (tbl.tbl.onUnswap(key, val))
+                    if (tbl.tbl.onUnswap(key, partId, val))
                         return;
                 }
                 catch (IgniteCheckedException e) {
@@ -1595,9 +1598,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public void registerCache(CacheConfiguration<?,?> ccfg) throws IgniteCheckedException {
         String schema = schemaNameFromCacheConf(ccfg);
 
-        if (schemas.putIfAbsent(schema, new Schema(ccfg.getName(), schema,
+        if (schemas.putIfAbsent(schema, new Schema(
+            ccfg.getName(),
+            schema,
             ccfg.getOffHeapMaxMemory() >= 0 || ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED ?
-            new GridUnsafeMemory(0) : null, ccfg)) != null)
+                new GridUnsafeMemory(0) : null,
+            ctx.config().getDatabaseConfiguration() != null,
+            ccfg)) != null)
             throw new IgniteCheckedException("Schema for cache already registered: " + U.maskName(ccfg.getName()));
 
         space2schema.put(emptyIfNull(ccfg.getName()), schema);
@@ -2055,7 +2062,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             IndexColumn... cols
         ) {
             try {
-                if (ctx.cache().context().database().enabled()) {
+                if (ctx.cache().context().database().enabled() && !ctx.clientNode()) {
                     IgniteCacheH2DatabaseManager dbMgr = ctx.cache().context().cacheContext(cacheId).database();
 
                     return dbMgr.createIndex(name, tbl, pk, keyCol, valCol, cols);
@@ -2257,7 +2264,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final ConcurrentMap<String, TableDescriptor> tbls = new ConcurrentHashMap8<>();
 
         /** Cache for deserialized offheap rows. */
-        private final CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache;
+        private final CacheLongKeyLIRS<GridH2Row> rowCache;
 
         /** */
         private final CacheConfiguration<?,?> ccfg;
@@ -2268,13 +2275,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param offheap Offheap memory.
          * @param ccfg Cache configuration.
          */
-        private Schema(@Nullable String spaceName, String schemaName, GridUnsafeMemory offheap, CacheConfiguration<?,?> ccfg) {
+        private Schema(
+            @Nullable String spaceName,
+            String schemaName,
+            GridUnsafeMemory offheap,
+            boolean dbEnabled,
+            CacheConfiguration<?,?> ccfg
+        ) {
             this.spaceName = spaceName;
             this.schemaName = schemaName;
             this.offheap = offheap;
             this.ccfg = ccfg;
 
-            if (offheap != null)
+            if (offheap != null || dbEnabled)
                 rowCache = new CacheLongKeyLIRS<>(ccfg.getSqlOnheapRowCacheSize(), 1, 128, 256);
             else
                 rowCache = null;
@@ -2379,7 +2392,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public void cache(GridH2KeyValueRowOffheap row) {
+        @Override public void cache(GridH2Row row) {
             long ptr = row.pointer();
 
             assert ptr > 0 : ptr;
@@ -2471,7 +2484,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, GridCacheVersion ver,
+        @Override public GridH2Row createRow(CacheObject key, int partId, @Nullable CacheObject val, GridCacheVersion ver,
             long expirationTime) throws IgniteCheckedException {
             GridH2Row row;
 
@@ -2496,7 +2509,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 row.key = key;
                 row.val = val;
-                row.partId = cctx.affinity().partition(key);
+                row.partId = partId;
             }
 
             return row;
@@ -2547,7 +2560,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         /** {@inheritDoc} */
         @Override public GridH2KeyValueRowOffheap createPointer(long ptr) {
-            GridH2KeyValueRowOffheap row = schema.rowCache.get(ptr);
+            GridH2KeyValueRowOffheap row = (GridH2KeyValueRowOffheap)schema.rowCache.get(ptr);
 
             if (row != null) {
                 assert row.pointer() == ptr : ptr + " " + row.pointer();
@@ -2556,6 +2569,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             return new GridH2KeyValueRowOffheap(this, ptr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridH2Row cachedRow(long link) {
+            return schema.rowCache.get(link);
         }
 
         /** {@inheritDoc} */

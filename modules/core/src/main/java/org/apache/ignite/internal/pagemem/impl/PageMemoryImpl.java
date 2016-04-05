@@ -172,7 +172,6 @@ public class  PageMemoryImpl implements PageMemory {
     @Override public void stop() throws IgniteException {
         if (log.isDebugEnabled())
             log.debug("Stopping page memory.");
-        U.debug(log, "Stopping page memory.");
 
         if (directMemoryProvider instanceof LifecycleAware)
             ((LifecycleAware)directMemoryProvider).stop();
@@ -429,6 +428,26 @@ public class  PageMemoryImpl implements PageMemory {
         finally {
             releasePage(page);
         }
+    }
+
+    /**
+     * @return Total number of loaded pages in memory.
+     */
+    public long totalPages() {
+        long total = 0;
+
+        for (Segment seg : segments) {
+            seg.readLock().lock();
+
+            try {
+                total += seg.loadedPages.size();
+            }
+            finally {
+                seg.readLock().unlock();
+            }
+        }
+
+        return total;
     }
 
     /**
@@ -844,6 +863,9 @@ public class  PageMemoryImpl implements PageMemory {
      *
      */
     private class Segment extends ReentrantReadWriteLock {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Page ID to relative pointer map. */
         private final FullPageIdTable loadedPages;
 

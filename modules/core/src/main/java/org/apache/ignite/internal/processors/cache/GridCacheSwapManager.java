@@ -699,7 +699,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         final GridCacheQueryManager qryMgr = cctx.queries();
 
-        if (qryMgr.enabled() && !readSwapBeforeRemove(key, swapKey, ldr))
+        if (qryMgr.enabled() && !readSwapBeforeRemove(key, part, swapKey, ldr))
             return null; // Not found.
 
         swapMgr.remove(spaceName, swapKey, new CI1<byte[]>() {
@@ -972,7 +972,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             Iterator<SwapKey> iter = unprocessedKeys.iterator();
 
             while (iter.hasNext()) {
-                if (!readSwapBeforeRemove(null, iter.next(), ldr))
+                if (!readSwapBeforeRemove(null, -1, iter.next(), ldr))
                     iter.remove(); // We will not do unswapping further -> need to skip the key.
             }
         }
@@ -1152,7 +1152,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             GridCacheSwapEntry entry = swapEntry(unmarshalSwapEntry(entryBytes, false));
 
             if (entry != null) {
-                cctx.queries().onUnswap(key, entry.value());
+                cctx.queries().onUnswap(key, part, entry.value());
 
                 return entry;
             }
@@ -1170,7 +1170,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return {@code true} If read and unswapped successfully.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean readSwapBeforeRemove(@Nullable KeyCacheObject key, SwapKey swapKey, ClassLoader ldr)
+    private boolean readSwapBeforeRemove(@Nullable KeyCacheObject key, int partId, SwapKey swapKey, ClassLoader ldr)
         throws IgniteCheckedException {
         assert cctx.queries().enabled();
 
@@ -1187,10 +1187,13 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         if (entry == null)
             return false;
 
-        if (key == null)
+        if (key == null) {
             key = cctx.toCacheKeyObject(swapKey.keyBytes());
 
-        cctx.queries().onUnswap(key, entry.value());
+            partId = cctx.affinity().partition(key);
+        }
+
+        cctx.queries().onUnswap(key, partId, entry.value());
 
         return true;
     }
@@ -1229,7 +1232,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
             ClassLoader ldr = cctx.deploy().globalLoader();
 
-            if (qryMgr.enabled() && !readSwapBeforeRemove(key, swapKey, ldr))
+            if (qryMgr.enabled() && !readSwapBeforeRemove(key, part, swapKey, ldr))
                 return; // Not found.
 
             swapMgr.remove(spaceName,
@@ -1297,7 +1300,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         GridCacheQueryManager qryMgr = cctx.queries();
 
         if (qryMgr.enabled())
-            qryMgr.onSwap(key);
+            qryMgr.onSwap(key, part);
     }
 
     /**
@@ -1327,7 +1330,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                         false);
 
                 if (qryMgr.enabled())
-                    qryMgr.onSwap(swapEntry.key());
+                    qryMgr.onSwap(swapEntry.key(), swapEntry.partition());
             }
         }
         else {
@@ -1350,7 +1353,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                         false);
 
                     if (qryMgr.enabled())
-                        qryMgr.onSwap(batchSwapEntry.key());
+                        qryMgr.onSwap(batchSwapEntry.key(), batchSwapEntry.partition());
                 }
             }
 

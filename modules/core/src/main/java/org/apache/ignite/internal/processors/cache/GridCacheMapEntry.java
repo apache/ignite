@@ -483,7 +483,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
                 if (cctx.isDatabaseEnabled()) {
-                    IgniteBiTuple<CacheObject, GridCacheVersion> read = cctx.queries().read(key);
+                    IgniteBiTuple<CacheObject, GridCacheVersion> read = cctx.queries().read(key, partition());
 
                     flags |= IS_UNSWAPPED_MASK;
 
@@ -3753,7 +3753,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             GridCacheQueryManager qryMgr = cctx.queries();
 
             if (qryMgr.enabled())
-                qryMgr.store(key, val, ver, expireTime);
+                qryMgr.store(key, partition(), val, ver, expireTime);
         }
         catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);
@@ -3773,7 +3773,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             GridCacheQueryManager<?, ?> qryMgr = cctx.queries();
 
             if (qryMgr.enabled())
-                qryMgr.remove(key(), prevVal, prevVer);
+                qryMgr.remove(key(), partition(), prevVal, prevVer);
         }
         catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);
@@ -3931,9 +3931,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 }
                             }
                         }
-                        // TODO fix
-//                        else
-//                            clearIndex(prev, ver);
+                        else if (!cctx.isDatabaseEnabled())
+                            clearIndex(prev, ver);
 
                         // Nullify value after swap.
                         value(null);
@@ -3986,7 +3985,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                     }
                                 }
                             }
-                            else
+                            else if (!cctx.isDatabaseEnabled())
                                 clearIndex(prevVal, ver);
 
                             // Nullify value after swap.
@@ -4035,7 +4034,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 GridCacheQueryManager qryMgr = cctx.queries();
 
                 if (qryMgr.enabled())
-                    qryMgr.onUnswap(key, prevVal);
+                    qryMgr.onUnswap(key, partition(), prevVal);
             }
         }
     }

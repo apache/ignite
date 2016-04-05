@@ -73,7 +73,17 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
 
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
-        cfg.setCacheConfiguration(ccfg);
+        CacheConfiguration ccfg2 = new CacheConfiguration("non-primitive");
+
+        ccfg2.setIndexedTypes(DbKey.class, DbValue.class);
+
+        ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        ccfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
+
+        cfg.setCacheConfiguration(ccfg, ccfg2);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -506,7 +516,52 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    private void checkEmpty(final GridCacheAdapter internalCache, final int key) throws Exception {
+    /**
+     * @throws Exception if failed.
+     */
+    public void testObjectKey() throws Exception {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<DbKey, DbValue> cache = ig.cache("non-primitive");
+
+        GridCacheAdapter<Object, Object> internalCache = ig.context().cache().internalCache("non-primitive");
+
+        int cnt = 100_000;
+
+        Map<DbKey, DbValue> map = new HashMap<>();
+
+        X.println("Put start");
+
+        for (int a = 0; a < cnt; a++) {
+            DbValue v0 = new DbValue(a, "test-value", a);
+
+//            if (a % 100 == 0)
+//                X.println(" --> " + k + " = " + i);
+
+            DbKey k0 = new DbKey(a);
+
+            map.put(k0, v0);
+            cache.put(k0, v0);
+
+            checkEmpty(internalCache, k0);
+
+//            assertEquals(v0, cache.get(k0));
+//            for (Map.Entry<Integer,DbValue> entry : map.entrySet())
+//                assertEquals(entry.getValue(), cache.get(entry.getKey()));
+        }
+
+        X.println("Get start: " + map.size());
+
+        for (DbKey i : map.keySet()) {
+//            checkEmpty(internalCache, i);
+
+//            X.println(" <-- " + i);
+
+            assertEquals(map.get(i), cache.get(i));
+        }
+    }
+
+    private void checkEmpty(final GridCacheAdapter internalCache, final Object key) throws Exception {
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 return internalCache.peekEx(key) == null;
@@ -514,6 +569,36 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         }, 5000);
 
         assertNull(internalCache.peekEx(key));
+    }
+
+    /**
+     *
+     */
+    private static class DbKey implements Serializable {
+        /** */
+        private int val;
+
+        private DbKey(int val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || !(o instanceof DbKey))
+                return false;
+
+            DbKey key = (DbKey)o;
+
+            return val == key.val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val;
+        }
     }
 
     /**
