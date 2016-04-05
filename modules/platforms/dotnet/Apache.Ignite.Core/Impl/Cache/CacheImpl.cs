@@ -831,7 +831,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                         return res == null ? default(TRes) : (TRes) res;
                     }
 
-                    throw ReadProcessorException(input);
+                    throw ReadException(input);
                 }
             );
         }
@@ -849,7 +849,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 var hasError = r.ReadBoolean();
 
                 if (hasError)
-                    throw ReadProcessorException(r.Stream);
+                    throw ReadException(r.Stream);
 
                 return r.ReadObject<TRes>();
             });
@@ -1194,21 +1194,11 @@ namespace Apache.Ignite.Core.Impl.Cache
                 var hasError = inStream.ReadBool();
 
                 results[key] = hasError
-                    ? new CacheEntryProcessorResult<T>(ReadProcessorException(inStream))
+                    ? new CacheEntryProcessorResult<T>(ReadException(inStream))
                     : new CacheEntryProcessorResult<T>(Unmarshal<T>(inStream));
             }
 
             return results;
-        }
-
-        /// <summary>
-        /// Reads the exception, either in binary wrapper form, or as a pair of strings.
-        /// </summary>
-        /// <param name="inStream">The stream.</param>
-        /// <returns>Exception.</returns>
-        private CacheEntryProcessorException ReadProcessorException(IBinaryStream inStream)
-        {
-            return new CacheEntryProcessorException(ReadException(inStream));
         }
 
         /// <summary>
