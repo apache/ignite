@@ -562,8 +562,12 @@ public class PlatformCache extends PlatformAbstractTarget {
                 case OP_CONTAINS_KEY:
                     writer.writeBoolean(cache.containsKey(reader.readObjectDetached()));
 
+                    break;
+
                 case OP_CONTAINS_KEYS:
                     writer.writeBoolean(cache.containsKeys(PlatformUtils.readSet(reader)));
+
+                    break;
 
                 case OP_LOC_PROMOTE: {
                     cache.localPromote(PlatformUtils.readSet(reader));
@@ -574,6 +578,8 @@ public class PlatformCache extends PlatformAbstractTarget {
                 case OP_REPLACE_3:
                     writer.writeBoolean(cache.replace(reader.readObjectDetached(), reader.readObjectDetached(),
                             reader.readObjectDetached()));
+
+                    break;
 
                 case OP_LOC_LOAD_CACHE:
                     loadCache0(reader, true);
@@ -607,18 +613,26 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_PUT_IF_ABSENT: {
                     writer.writeBoolean(cache.putIfAbsent(reader.readObjectDetached(), reader.readObjectDetached()));
+
+                    break;
                 }
 
                 case OP_REPLACE_2: {
                     writer.writeBoolean(cache.replace(reader.readObjectDetached(), reader.readObjectDetached()));
+
+                    break;
                 }
 
                 case OP_REMOVE_OBJ: {
                     writer.writeBoolean(cache.remove(reader.readObjectDetached()));
+
+                    break;
                 }
 
                 case OP_IS_LOCAL_LOCKED:
                     writer.writeBoolean(cache.isLocalLocked(reader.readObjectDetached(), reader.readBoolean()));
+
+                    break;
 
                 case OP_LOAD_ALL: {
                     long futId = reader.readLong();
