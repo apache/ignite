@@ -1285,7 +1285,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Result.</returns>
         private CacheResult<TR> DoOutInOpNullable<T1, TR>(int type, T1 val)
         {
-            var res = DoOutInOp(type, w=>w.Write(val), s =>
+            var res = DoOutInOp(type, w => w.Write(val), s =>
             {
                 if (!s.ReadBool())
                     throw ReadException(s);
@@ -1306,7 +1306,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Result.</returns>
         private CacheResult<TR> DoOutInOpNullable<TR>(int type, Action<BinaryWriter> outAction)
         {
-            var res = DoOutInOp<object>(type, outAction);
+            var res = DoOutInOp(type, outAction, s =>
+            {
+                if (!s.ReadBool())
+                    throw ReadException(s);
+
+                return Marshaller.Unmarshal<object>(s);
+            });
 
             return res == null
                 ? new CacheResult<TR>()
@@ -1322,7 +1328,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <returns>Result.</returns>
         private CacheResult<TR> DoOutInOpNullable<T1, T2, TR>(int type, T1 val1, T2 val2)
         {
-            var res = DoOutInOp<T1, T2, object>(type, val1, val2);
+            var res = DoOutInOp(type, w =>
+            {
+                w.Write(val1);
+                w.Write(val2);
+            }, s =>
+            {
+                if (!s.ReadBool())
+                    throw ReadException(s);
+
+                return Marshaller.Unmarshal<object>(s);
+            });
 
             return res == null
                 ? new CacheResult<TR>()
