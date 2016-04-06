@@ -556,7 +556,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             return Ignition.GetIgnite(GridName).GetOrCreateCache<int, string>(cacheName);
         }
 
-        private void CheckCustomStoreError(Exception err)
+        private static void CheckCustomStoreError(Exception err)
         {
             var customErr = err as CacheTestStore.CustomStoreException ??
                          err.InnerException as CacheTestStore.CustomStoreException;
