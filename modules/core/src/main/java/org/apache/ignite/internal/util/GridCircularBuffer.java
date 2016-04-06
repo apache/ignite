@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * This class implements a circular buffer for efficient data exchange.
  */
-public class GridCircularBuffer<T> {
+public class GridCircularBuffer<T> implements GridCircularBufferInterface<T> {
     /** */
     private final long sizeMask;
 
@@ -74,6 +74,10 @@ public class GridCircularBuffer<T> {
         }
 
         return res;
+    }
+
+    @Override public void clear(IgniteInClosure<T> c) {
+        forEach(c);
     }
 
     /**

@@ -42,6 +42,8 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntry
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCircularBuffer;
+import org.apache.ignite.internal.util.GridCircularBufferInterface;
+import org.apache.ignite.internal.util.GridLinkedCircularBuffer;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -108,7 +110,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private final LongAdder8 mapPubSize = new LongAdder8();
 
     /** Remove queue. */
-    private final GridCircularBuffer<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
+    private final GridCircularBufferInterface<T2<KeyCacheObject, GridCacheVersion>> rmvQueue;
 
     /** Group reservations. */
     private final CopyOnWriteArrayList<GridDhtPartitionsReservation> reservations = new CopyOnWriteArrayList<>();
@@ -141,7 +143,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         int delQueueSize = CU.isSystemCache(cctx.name()) ? 100 :
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
 
-        rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
+        rmvQueue = new GridLinkedCircularBuffer<>(U.ceilPow2(delQueueSize));
     }
 
     /**
@@ -798,7 +800,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     private void clearDeferredDeletes() {
-        rmvQueue.forEach(new CI1<T2<KeyCacheObject, GridCacheVersion>>() {
+        rmvQueue.clear(new CI1<T2<KeyCacheObject, GridCacheVersion>>() {
             @Override public void apply(T2<KeyCacheObject, GridCacheVersion> t) {
                 cctx.dht().removeVersionedEntry(t.get1(), t.get2());
             }

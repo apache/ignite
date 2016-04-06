@@ -64,7 +64,7 @@ public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
     }
 
     /**
-     * Test PUT operation.
+     * Test GET operation.
      *
      * @throws Exception If failed.
      */
@@ -76,6 +76,20 @@ public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
     }
 
     /**
+     * Test PUT and REMOVE operations.
+     *
+     * @throws Exception If failed.
+     */
+    @Benchmark
+    public Object putAndRemove() throws Exception {
+        int key = ThreadLocalRandom.current().nextInt(CNT);
+
+        cache.put(key, new IntValue(key));
+
+        return cache.remove(key);
+    }
+
+    /**
      * Run benchmarks.
      *
      * @param args Arguments.
@@ -84,8 +98,10 @@ public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
     public static void main(String[] args) throws Exception {
         run("put", CacheAtomicityMode.ATOMIC);
         run("get", CacheAtomicityMode.ATOMIC);
+        run("putAndRemove", CacheAtomicityMode.ATOMIC);
         run("put", CacheAtomicityMode.TRANSACTIONAL);
         run("get", CacheAtomicityMode.TRANSACTIONAL);
+        run("putAndRemove", CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /**
