@@ -23,7 +23,6 @@ import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -247,8 +246,6 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
      *
      */
     public static class TestStore extends CacheStoreAdapter<Object, Object> {
-        public static boolean shouldFail = false;
-
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
             for (Map.Entry<Object, Object> e : storeMap.entrySet())
@@ -262,9 +259,6 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
-            if (shouldFail)
-                throw new IgniteException("Error in store");
-
             storeMap.put(entry.getKey(), entry.getValue());
         }
 
