@@ -85,6 +85,6 @@ public class IgnteCacheWriteThroughStoreFailTest extends IgniteCacheAbstractTest
 
         TestStore.shouldFail = false;
 
-        assertNull(cache.get(1));
+        assertTrue(cache.size() == 0);
     }
 }
