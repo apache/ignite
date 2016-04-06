@@ -168,19 +168,13 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                     BinaryObject retVal = (BinaryObject)cache.get(key);
 
-                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
-                    if (!(isClient() && nearEnabled()))
-                        assertEquals(val, retVal.deserialize());
+                    assertEquals(val, retVal.deserialize());
 
                     CacheEntry<BinaryObject, BinaryObject> entry = cache.getEntry(key);
 
-                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
-                    if (!(isClient() && nearEnabled()))
-                        assertTrue(entry.getKey() instanceof BinaryObject);
+                    assertTrue(entry.getKey() instanceof BinaryObject);
 
-                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
-                    if (!(isClient() && nearEnabled()))
-                        assertEquals(val, entry.getValue().deserialize());
+                    assertEquals(val, entry.getValue().deserialize());
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
@@ -224,20 +218,14 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     cache.get(key);
                     BinaryObject retVal = (BinaryObject)cache.future().get();
 
-                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
-                    if (!(isClient() && nearEnabled()))
-                        assertEquals(val, retVal.deserialize());
+                    assertEquals(val, retVal.deserialize());
 
                     cache.getEntry(key);
                     CacheEntry<BinaryObject, BinaryObject> e = (CacheEntry<BinaryObject, BinaryObject>)cache.future().get();
 
-                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
-                    if (!(isClient() && nearEnabled()))
-                        assertEquals(key, deserializeBinary(e.getKey()));
+                    assertEquals(key, deserializeBinary(e.getKey()));
 
-                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
-                    if (!(isClient() && nearEnabled()))
-                        assertEquals(val, e.getValue().deserialize());
+                    assertEquals(val, e.getValue().deserialize());
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
@@ -265,7 +253,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                 for (CacheEntry e : entries)
                     assertNull(e.getValue());
 
-                Map keyValMap = new LinkedHashMap(){{
+                Map keyValMap = new LinkedHashMap() {{
                     for (Object key : keys) {
                         Object val = value(valueOf(key));
 
@@ -325,17 +313,13 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                     assertNull(res);
 
-                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
-                    if (!(isClient() && nearEnabled()))
-                        assertEquals(value(0), deserializeBinary(cache.get(key)));
+                    assertEquals(value(0), deserializeBinary(cache.get(key)));
 
                     res = cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
                     assertEquals(value(0), deserializeBinary(res));
 
-                    // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
-                    if (!(isClient() && nearEnabled()))
-                        assertEquals(value(1), deserializeBinary(cache.get(key)));
+                    assertEquals(value(1), deserializeBinary(cache.get(key)));
                 }
 
                 for (Object key : keys)
@@ -350,20 +334,14 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                         assertNull(res);
 
-                        // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
-                        if (!(isClient() && nearEnabled()))
-                            assertEquals(value(0), deserializeBinary(cache.get(key)));
+                        assertEquals(value(0), deserializeBinary(cache.get(key)));
 
                         res = cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
 
-                        info(">>>>> res: " + res.getClass());
+                        // TODO IGNITE-2953: uncomment the following assert when the issue will be fixed.
+//                        assertEquals(value(0), res);
 
-                        // TODO fix it for !deserializeRes case (see IGNITE-2899 and point 1.4.2 in comments)
-//                assertEquals(value(0), res);
-
-                        // TODO fix it (see IGNITE-2899 and point 1.5 in comments)
-                        if (!(isClient() && nearEnabled()))
-                            assertEquals(value(1), deserializeBinary(cache.get(key)));
+                        assertEquals(value(1), deserializeBinary(cache.get(key)));
                     }
                 }
                 finally {
@@ -440,7 +418,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
             Object res = e.getValue().get();
 
-            // TODO fix it for !deserializeRes case (see IGNITE-2899 and point 1.4.2 in comments)
+            // TODO IGNITE-2953: delete the following if when the issue wiil be fixed.
             if (deserializeRes)
                 assertEquals(expRes, deserializeRes ? deserializeBinary(res) : res);
 

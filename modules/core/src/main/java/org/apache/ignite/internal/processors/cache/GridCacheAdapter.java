@@ -1477,7 +1477,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 T2<V, GridCacheVersion> t = f.get();
 
                 CacheEntry val = t != null ? new CacheEntryImplEx<>(key0, t.get1(), t.get2()) : null;
-      
+
                 if (intercept) {
                     V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
@@ -1733,7 +1733,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         return (V)(val);
                     }
 
-                    return map.get(key);
+                    if (!ctx.keepBinary())
+                        return map.get(key);
+                    else
+                        return F.firstValue(map);
                 }
             });
     }
