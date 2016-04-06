@@ -294,10 +294,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             CacheTestStore.ThrowError = true;
 
             var err = Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail"));
-            Assert.IsTrue(err.InnerException is ArithmeticException);
+            Assert.IsInstanceOf<ArithmeticException>(err.InnerException);
 
             CacheTestStore.ThrowError = false;
-            cache.Put(-2, "-2");
         }
 
         [Test]

@@ -149,8 +149,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         public void SessionEnd(bool commit)
         {
-            ThrowIfNeeded();
-
             Debug.Assert(_grid != null);
 
             Debug.Assert(_ses != null);
@@ -171,7 +169,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         private static void ThrowIfNeeded()
         {
             if (ThrowError)
-                throw new ArithmeticException("Exception in cache store");
+                throw new CustomStoreException("Exception in cache store")
+                {
+                    Details = "details"
+                };
+        }
+
+        [Serializable]
+        public class CustomStoreException : Exception
+        {
+            public string Details { get; set; }
+
+            public CustomStoreException(string message) : base(message)
+            {
+            }
         }
     }
 }
