@@ -48,6 +48,8 @@ public class IgnitePersistentStoreTest {
     /** */
     @BeforeClass
     public static void setUpClass() {
+        CassandraHelper.startEmbededCassandra();
+
         if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
             return;
 
@@ -69,9 +71,13 @@ public class IgnitePersistentStoreTest {
         try {
             CassandraHelper.dropTestKeyspaces();
         }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
         finally {
             CassandraHelper.releaseCassandraResources();
         }
+        CassandraHelper.stopEmbededCassandra();
     }
 
     /** */
