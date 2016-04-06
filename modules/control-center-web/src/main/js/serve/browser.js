@@ -30,7 +30,7 @@ module.exports = {
 module.exports.factory = (_, socketio, agentMgr, configure) => {
     const _errorToJson = (err) => {
         return {
-            message: err.message,
+            message: err.message || err,
             code: err.code || 1
         };
     };
@@ -43,6 +43,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
             io.sockets.on('connection', (socket) => {
                 const user = socket.client.request.user;
+
+                const demo = socket.client.request._query.IgniteDemoMode === 'true';
 
                 // Return available drivers to browser.
                 socket.on('schemaImport:drivers', (cb) => {
@@ -78,7 +80,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 });
 
                 // Return topology command result from grid to browser.
-                socket.on('node:topology', (demo, attr, mtr, cb) => {
+                socket.on('node:topology', (attr, mtr, cb) => {
                     agentMgr.findAgent(user._id)
                         .then((agent) => agent.topology(demo, attr, mtr))
                         .then((clusters) => cb(null, clusters))
@@ -86,49 +88,49 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 });
 
                 // Close query on node.
-                socket.on('node:query:close', (args, cb) => {
+                socket.on('node:query:close', (queryId, cb) => {
                     agentMgr.findAgent(user._id)
-                        .then((agent) => agent.queryClose(args.demo, args.queryId))
+                        .then((agent) => agent.queryClose(demo, queryId))
                         .then(() => cb())
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
                 // Execute query on node and return first page to browser.
-                socket.on('node:query', (args, cb) => {
+                socket.on('node:query', (cacheName, pageSize, query, cb) => {
                     agentMgr.findAgent(user._id)
                         .then((agent) => {
-                            if (args.type === 'SCAN')
-                                return agent.scan(args.demo, args.cacheName, args.pageSize);
+                            if (query === null)
+                                return agent.scan(demo, cacheName, pageSize);
 
-                            return agent.fieldsQuery(args.demo, args.cacheName, args.query, args.pageSize);
+                            return agent.fieldsQuery(demo, cacheName, query, pageSize);
                         })
                         .then((res) => cb(null, res))
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
                 // Fetch next page for query and return result to browser.
-                socket.on('node:query:fetch', (args, cb) => {
+                socket.on('node:query:fetch', (queryId, pageSize, cb) => {
                     agentMgr.findAgent(user._id)
-                        .then((agent) => agent.queryFetch(args.demo, args.queryId, args.pageSize))
+                        .then((agent) => agent.queryFetch(demo, queryId, pageSize))
                         .then((res) => cb(null, res))
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
                 // Execute query on node and return full result to browser.
-                socket.on('node:query:getAll', (args, cb) => {
+                socket.on('node:query:getAll', (cacheName, query, cb) => {
                     // Set page size for query.
                     const pageSize = 1024;
 
                     agentMgr.findAgent(user._id)
                         .then((agent) => {
-                            const firstPage = args.type === 'SCAN' ? agent.scan(args.demo, args.cacheName, pageSize)
-                                : agent.fieldsQuery(args.demo, args.cacheName, args.query, pageSize);
+                            const firstPage = query === null ? agent.scan(demo, cacheName, pageSize)
+                                : agent.fieldsQuery(demo, cacheName, query, pageSize);
 
                             const fetchResult = (acc) => {
-                                if (!acc.queryId)
+                                if (acc.last)
                                     return acc;
 
-                                return agent.queryFetch(args.demo, acc.queryId, pageSize)
+                                return agent.queryFetch(demo, acc.queryId, pageSize)
                                     .then((res) => {
                                         acc.rows = acc.rows.concat(res.rows);
 
@@ -146,9 +148,9 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 });
 
                 // Return cache metadata from all nodes in grid.
-                socket.on('node:cache:metadata', (args, cb) => {
+                socket.on('node:cache:metadata', (cacheName, cb) => {
                     agentMgr.findAgent(user._id)
-                        .then((agent) => agent.metadata(args.demo, args.cacheName))
+                        .then((agent) => agent.metadata(demo, cacheName))
                         .then((caches) => {
                             let types = [];
 

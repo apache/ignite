@@ -55,6 +55,7 @@ import 'angular-motion/dist/angular-motion.css!';
 
 import './decorator/select';
 
+import './modules/Demo/Demo.module';
 import './modules/form/form.module';
 import './modules/JavaTypes/JavaTypes.provider';
 import './modules/QueryNotebooks/QueryNotebooks.provider';
@@ -76,6 +77,7 @@ import './modules/getting-started/GettingStarted.provider';
 import './modules/dialog/dialog.module';
 import './modules/Version/Version.provider';
 import './modules/ace.module';
+import './modules/socket.module';
 // endignite
 
 // Directives.
@@ -93,6 +95,7 @@ import igniteBsAffixUpdate from './directives/bs-affix-update.directive';
 
 // Services.
 import cleanup from './services/cleanup.service';
+import confirm from './services/confirm.service';
 import GeneratorXml from './services/Generator/Xml.service';
 import GeneratorJava from './services/Generator/Java.service';
 import IgniteCountries from './services/Countries.service';
@@ -160,6 +163,8 @@ angular
     'ignite-console.JavaTypes',
     'ignite-console.QueryNotebooks',
     'ignite-console.ace',
+    'ignite-console.demo',
+    'ignite-console.socket',
     // States.
     'ignite-console.states.login',
     'ignite-console.states.logout',
@@ -193,6 +198,7 @@ angular
 .directive(...igniteBsAffixUpdate)
 // Services.
 .service(...cleanup)
+.service(...confirm)
 .service(...GeneratorXml)
 .service(...GeneratorJava)
 .service(...IgniteCountries)

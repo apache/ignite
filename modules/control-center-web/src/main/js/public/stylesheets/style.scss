@@ -261,6 +261,7 @@ ul.navbar-nav, .sidebar-nav {
 }
 
 .theme-line header .navbar-nav a {
+    line-height: 25px;
     font-size: 18px;
 }
 
@@ -1983,4 +1984,8 @@ treecontrol.tree-classic {
         -webkit-text-shadow: 0 0 10px rgba(0,0,0,0.31);
         text-shadow: 0 0 10px rgba(0,0,0,0.31);
     }
+}
+
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+    display: none !important;
 }

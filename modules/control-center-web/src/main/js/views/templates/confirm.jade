@@ -23,5 +23,9 @@
             .modal-body(ng-show='content')
                 p(ng-bind-html='content' style='text-align: center;')
             .modal-footer
-                button.btn.btn-default(id='confirm-btn-cancel' ng-click='confirmCancel()') Cancel
-                button.btn.btn-primary(id='confirm-btn-confirm' ng-click='confirmOk()') Confirm
+                button#confirm-btn-cancel.btn.btn-default(ng-click='confirmCancel()') Cancel
+
+                button#confirm-btn-no.btn.btn-default(ng-if='yesNo' ng-click='confirmNo()') No
+                button#confirm-btn-yes.btn.btn-primary(ng-if='yesNo' ng-click='confirmYes()') Yes
+
+                button#confirm-btn-ok.btn.btn-primary(ng-if='!yesNo' ng-click='confirmYes()') Confirm

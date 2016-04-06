@@ -151,7 +151,7 @@ mixin chart-settings(mdl)
                                                         span.caret
                                         .grid(ui-grid='paragraph.gridOptions' ui-grid-auto-resize ui-grid-exporter ng-style='{ height: paragraph.gridOptions.height }')
                                     div(ng-show='paragraph.chart() && paragraph.nonEmpty()')
-                                        div(ng-show='paragraph.queryExecute()')
+                                        div(ng-show='paragraph.queryExecuted()')
                                             +chart-settings
                                             div(ng-show='paragraph.chartColumns.length > 0 && !paragraph.chartColumnsConfigured()')
                                                 .sql-empty-result Cannot display chart. Please configure axis using #[b Chart settings]
@@ -162,7 +162,7 @@ mixin chart-settings(mdl)
                                                     div(ng-repeat='chart in paragraph.charts')
                                                         nvd3(options='chart.options' data='chart.data' api='chart.api')
                                                 .sql-empty-result(ng-show='!paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled()') Pie chart does not support 'TIME_LINE' column for X-axis. Please use another column for X-axis or switch to another chart.
-                                        .sql-empty-result(ng-hide='paragraph.queryExecute()')
+                                        .sql-empty-result(ng-hide='paragraph.queryExecuted()')
                                             .row
                                                 .col-xs-4.col-xs-offset-4
                                                     +result-toolbar
@@ -171,11 +171,11 @@ mixin chart-settings(mdl)
                                                 | &nbsp;and&nbsp;
                                                 b Scan
                                                 | &nbsp;query
-                                    div(ng-show='queryExecuted(paragraph) && !paragraph.refreshExecuting()')
+                                    div(ng-show='paragraph.queryArgs && !paragraph.refreshExecuting()')
                                         -var nextVisibleCondition = 'paragraph.queryId && (paragraph.table() || paragraph.chart() && paragraph.queryExecute() && (paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()))'
 
                                         hr(style='margin-top: 0; margin-bottom: 5px')
-                                        a(ng-show='paragraph.queryArgs.type' style='float: left; margin-left: 10px; margin-bottom: 5px' ng-click='showResultQuery(paragraph)') Show query
+                                        a(style='float: left; margin-left: 10px; margin-bottom: 5px' ng-click='showResultQuery(paragraph)') Show query
                                         .sql-next(ng-show=nextVisibleCondition )
                                             i.fa.fa-chevron-circle-right(ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)')
                                             a(ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)') Next

@@ -33,16 +33,16 @@ const options = {
     minify: true
 };
 
+if (util.env.debug)
+    delete options.minify;
+
+if (util.env.debug || util.env.sourcemaps)
+    options.sourceMaps = true;
+
 gulp.task('bundle', ['eslint', 'bundle:ignite']);
 
 // Package all external dependencies and ignite-console.
 gulp.task('bundle:ignite', (cb) => {
-    if (util.env.debug)
-        delete options.minify;
-
-    if (util.env.debug || util.env.sourcemaps)
-        options.sourceMaps = true;
-
     if (util.env.debug)
         return sequence('bundle:ignite:vendors', 'bundle:ignite:app', cb);
 
@@ -57,8 +57,8 @@ gulp.task('bundle:ignite:vendors', () => {
     const exclude = [
         `${srcDir}/**/*`,
         `${srcDir}/**/*!jade`,
-        './controllers/**/*',
-        './helpers/**/*',
+        './controllers/**/*.js',
+        './helpers/**/*.js',
         './public/**/*!css',
         `${igniteModulesTemp}/**/*`,
         `${igniteModulesTemp}/**/*!jade`

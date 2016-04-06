@@ -52,7 +52,15 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
                 user.becomeUsed = true;
             }
 
-            res.json(user);
+            mongo.Space.findOne({owner: user._id, demo: true}).exec()
+                .then((space) => {
+                    user = user.toJSON();
+
+                    if (space)
+                        user.demoCreated = true;
+
+                    res.json(user);
+                });
         });
 
         /**

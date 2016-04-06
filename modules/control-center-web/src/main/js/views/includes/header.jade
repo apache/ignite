@@ -28,11 +28,19 @@ header#header.header
                             span.caret
 
                     li.sql-notebooks(ng-class='{active: $state.includes("base.sql")}' ng-controller='notebooks')
-                        a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='notebookDropdown' data-placement='bottom-left') SQL
+                        a(ng-if='IgniteDemoMode' ui-sref='base.sql.demo') SQL
+
+                        a(ng-if='!IgniteDemoMode && !notebooks.length' ng-click='inputNotebookName()') SQL
+
+                        a.dropdown-toggle(ng-if='!IgniteDemoMode && notebooks.length' data-toggle='dropdown' bs-dropdown='notebookDropdown' data-placement='bottom-left') SQL
                             span.caret
 
                     li(ui-sref-active='active'  ng-repeat='item in navbar.items')
                         a(ui-sref='{{::item.sref}}') {{::item.text}}
+
+                a(ng-controller='demoController')
+                    button.btn.btn-info(ng-if='!IgniteDemoMode' ng-click='startDemo()') Start demo
+                    button.btn.btn-info(ng-if='IgniteDemoMode' ng-click='toggleDemo()') Stop demo
 
                 ul.nav.navbar-nav.pull-right(ignite-userbar)
                     li(ng-class='{active: $state.includes("settings")}')

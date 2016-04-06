@@ -1143,39 +1143,6 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
         };
     }]);
 
-// Confirm popup service.
-consoleModule.service('$confirm', ['$modal', '$rootScope', '$q', ($modal, $root, $q) => {
-    var scope = $root.$new();
-
-    var deferred;
-
-    var confirmModal = $modal({templateUrl: '/templates/confirm.html', scope: scope, placement: 'center', show: false});
-
-    scope.confirmOk = function () {
-        deferred.resolve(true);
-
-        confirmModal.hide();
-    };
-
-    scope.confirmCancel = function () {
-        deferred.reject('cancelled');
-
-        confirmModal.hide();
-    };
-
-    confirmModal.confirm = function (content) {
-        scope.content = content || 'Confirm?';
-
-        deferred = $q.defer();
-
-        confirmModal.show();
-
-        return deferred.promise;
-    };
-
-    return confirmModal;
-}]);
-
 // Confirm change location.
 consoleModule.service('$unsavedChangesGuard', ['$rootScope', ($root) => {
     return {
@@ -1313,7 +1280,7 @@ consoleModule.service('$clone', ['$modal', '$rootScope', '$q', ($modal, $root, $
 
         deferred = $q.defer();
 
-        cloneModal.show();
+        cloneModal.$promise.then(cloneModal.show);
 
         return deferred.promise;
     };
@@ -1862,18 +1829,14 @@ consoleModule.filter('domainsValidation', ['$common', function ($common) {
 }]);
 
 // Directive to enable validation to match specified value.
-consoleModule.directive('match', function ($parse) {
+consoleModule.directive('match', ['$parse', ($parse) => {
     return {
         require: 'ngModel',
-        link: function (scope, elem, attrs, ctrl) {
-            scope.$watch(function () {
-                return $parse(attrs.match)(scope) === ctrl.$modelValue;
-            }, function (currentValue) {
-                ctrl.$setValidity('mismatch', currentValue);
-            });
+        link: (scope, elem, attrs, ctrl) => {
+            scope.$watch(() => $parse(attrs.match)(scope) === ctrl.$modelValue, (currentValue) => ctrl.$setValidity('mismatch', currentValue));
         }
     };
-});
+}]);
 
 // Directive to bind ENTER key press with some user action.
 consoleModule.directive('onEnter', ['$timeout', ($timeout) => {
@@ -2085,11 +2048,6 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
                 sref: 'base.sql.notebook({noteId:"' + notebook._id + '"})'
             });
         });
-
-        if ($scope.$root.notebooks.length > 0)
-            $scope.notebookDropdown.push({divider: true});
-
-        $scope.notebookDropdown.push({text: 'Demo', sref: 'base.sql.demo', custom: true});
     };
 
     $scope.$root.reloadNotebooks = function() {

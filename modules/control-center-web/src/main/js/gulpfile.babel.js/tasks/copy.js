@@ -86,5 +86,5 @@ gulp.task('copy:ignite_modules:resource', () =>
 gulp.task('copy:watch', (cb) => {
     gulp.watch([resourcePaths, igniteModuleResourcePaths], ['copy:resource', 'copy:ignite_modules:resource']);
 
-    gulp.watch([paths, igniteModulePaths], sequence('copy:js', 'copy:ignite_modules:js', cb));
+    gulp.watch([paths, igniteModulePaths], sequence('copy:js', 'copy:ignite_modules:js', 'bundle:ignite:app' , cb));
 });

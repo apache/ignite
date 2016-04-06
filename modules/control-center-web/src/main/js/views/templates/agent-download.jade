@@ -52,6 +52,5 @@
                         b README.txt
                         | &nbsp; in agent folder for more information
             .modal-footer
-                button.btn.btn-info(ng-if='hasAgents && startDemo' ng-click='startDemo()') Demo
                 button.btn.btn-default(ng-click='back()') {{::backText}}
                 button.btn.btn-primary(ng-if='!hasAgents' ng-click='downloadAgent()') Download zip

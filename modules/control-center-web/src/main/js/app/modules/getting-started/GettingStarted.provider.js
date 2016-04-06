@@ -105,7 +105,7 @@ angular
 
                     _fillPage();
 
-                    dialog.show();
+                    dialog.$promise.then(dialog.show);
                 }
             }
         };

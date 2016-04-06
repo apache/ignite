@@ -38,7 +38,7 @@ module.exports.factory = (_, express, mongo) => {
             const result = {};
             let spacesIds = [];
 
-            mongo.spaces(req.currentUserId())
+            mongo.spaces(req.currentUserId(), req.header('IgniteDemoMode'))
                 .then((spaces) => {
                     result.spaces = spaces;
                     spacesIds = spaces.map((space) => space._id);
@@ -182,35 +182,9 @@ module.exports.factory = (_, express, mongo) => {
          * Remove all domain models.
          */
         router.post('/remove/all', (req, res) => {
-            mongo.spaceIds(req.currentUserId())
+            mongo.spaceIds(req.currentUserId(), req.header('IgniteDemoMode'))
                 .then((spaceIds) => mongo.Cache.update({space: {$in: spaceIds}}, {domains: []}, {multi: true}).exec()
                         .then(() => mongo.DomainModel.remove({space: {$in: spaceIds}}).exec()))
-                .then(() => res.sendStatus(200))
-                .catch((err) => mongo.handleError(res, err));
-        });
-
-        /**
-         * Remove all generated demo domain models and caches.
-         */
-        router.post('/remove/demo', (req, res) => {
-            let spaceIds = [];
-            let domainIds = [];
-            let cacheIds = [];
-
-            mongo.spaceIds(req.currentUserId())
-                .then((_spaceIds) => {
-                    spaceIds = _spaceIds;
-
-                    return mongo.DomainModel.find({$and: [{space: {$in: spaceIds}}, {demo: true}]}).lean().exec();
-                })
-                .then((domains) => domainIds = _.map(domains, (domain) => domain._id))
-                .then(() => mongo.Cache.update({domains: {$in: domainIds}}, {$pull: {domains: {$in: domainIds}}}, {multi: true}).exec())
-                .then(() => mongo.DomainModel.remove({_id: {$in: domainIds}}).exec())
-                .then(() => mongo.Cache.find({$and: [{space: {$in: spaceIds}}, {demo: true}]}).lean().exec())
-                .then((caches) => cacheIds = _.map(caches, (cache) => cache._id))
-                .then(() => mongo.Cluster.update({caches: {$in: cacheIds}}, {$pull: {caches: {$in: cacheIds}}}, {multi: true}).exec())
-                .then(() => mongo.DomainModel.update({caches: {$in: cacheIds}}, {$pull: {caches: {$in: cacheIds}}}, {multi: true}).exec())
-                .then(() => mongo.Cache.remove({$and: [{space: {$in: spaceIds}}, {demo: true}]}).exec())
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });

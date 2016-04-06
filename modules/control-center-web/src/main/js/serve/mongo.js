@@ -87,6 +87,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
     result.Space = mongoose.model('Space', new Schema({
         name: String,
         owner: {type: ObjectId, ref: 'Account'},
+        demo: {type: Boolean, default: false},
         usedBy: [{
             permission: {type: String, enum: ['VIEW', 'FULL']},
             account: {type: ObjectId, ref: 'Account'}
@@ -588,20 +589,22 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
      * Query for user spaces.
      *
      * @param userId User ID.
+     * @param {Boolean} demo Is need use demo space.
      * @returns {Promise}
      */
-    result.spaces = function(userId) {
-        return result.Space.find({owner: userId}).lean().exec();
+    result.spaces = function(userId, demo) {
+        return result.Space.find({owner: userId, demo: !!demo}).lean().exec();
     };
 
     /**
      * Extract IDs from user spaces.
      *
      * @param userId User ID.
+     * @param {Boolean} demo Is need use demo space.
      * @returns {Promise}
      */
-    result.spaceIds = function(userId) {
-        return result.Space.find({owner: userId}).lean().exec()
+    result.spaceIds = function(userId, demo) {
+        return result.Space.find({owner: userId, demo: !!demo}).lean().exec()
             .then((spaces) => spaces.map((space) => space._id));
     };
 

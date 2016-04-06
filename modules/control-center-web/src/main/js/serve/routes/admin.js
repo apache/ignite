@@ -21,10 +21,10 @@
 
 module.exports = {
     implements: 'admin-routes',
-    inject: ['require(lodash)', 'require(express)', 'require(nodemailer)', 'settings', 'mail', 'mongo']
+    inject: ['require(lodash)', 'require(express)', 'settings', 'mail', 'mongo']
 };
 
-module.exports.factory = function(_, express, nodemailer, settings, mail, mongo) {
+module.exports.factory = function(_, express, settings, mail, mongo) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -50,6 +50,7 @@ module.exports.factory = function(_, express, nodemailer, settings, mail, mongo)
                             mongo.Cluster.remove({space: {$in: spaceIds}}).exec(),
                             mongo.Cache.remove({space: {$in: spaceIds}}).exec(),
                             mongo.DomainModel.remove({space: {$in: spaceIds}}).exec(),
+                            mongo.Igfs.remove({space: {$in: spaceIds}}).exec(),
                             mongo.Notebook.remove({space: {$in: spaceIds}}).exec(),
                             mongo.Space.remove({owner: userId}).exec()
                         ]))

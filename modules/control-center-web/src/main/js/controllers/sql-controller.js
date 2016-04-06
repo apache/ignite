@@ -19,8 +19,8 @@
 import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('sqlController', [
-    '$scope', '$http', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', '$common', '$confirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridExporterConstants',
-    function ($scope, $http, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, $common, $confirm, IgniteAgentMonitor, IgniteChartColors, QueryNotebooks, uiGridExporterConstants) {
+    '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', '$common', '$confirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridExporterConstants',
+    function ($scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, $common, $confirm, agentMonitor, IgniteChartColors, QueryNotebooks, uiGridExporterConstants) {
 
         var stopTopology = null;
 
@@ -69,8 +69,6 @@ consoleModule.controller('sqlController', [
                 iCollapsed: 'fa fa-plus-square-o'
             }
         };
-
-        $scope.demo = $state.includes('**.sql.demo');
 
         var _mask = function (cacheName) {
             return _.isEmpty(cacheName) ? '<default>' : cacheName;
@@ -185,9 +183,8 @@ consoleModule.controller('sqlController', [
                 return this.result != 'table' && this.result != 'none';
             };
 
-            paragraph.queryExecute = function () {
-                return this.queryArgs && this.queryArgs.type == 'QUERY';
-            };
+            paragraph.queryExecuted = () =>
+                paragraph.queryArgs && paragraph.queryArgs.query && !paragraph.queryArgs.query.startsWith('EXPLAIN ');
 
             paragraph.table = function () {
                 return this.result == 'table';
@@ -256,9 +253,9 @@ consoleModule.controller('sqlController', [
         };
 
         var _refreshFn = function() {
-            IgniteAgentMonitor.topology($scope.demo)
+            agentMonitor.topology()
                 .then(function(clusters) {
-                    IgniteAgentMonitor.checkModal();
+                    agentMonitor.checkModal();
 
                     var caches = _.flattenDeep(clusters.map(function (cluster) { return cluster.caches; }));
 
@@ -269,7 +266,7 @@ consoleModule.controller('sqlController', [
                     _setActiveCache();
                 })
                 .catch(function (err) {
-                    IgniteAgentMonitor.showNodeError(err.message)
+                    agentMonitor.showNodeError(err.message)
                 })
                 .finally(function () {
                     $loading.finish('loading');
@@ -298,26 +295,24 @@ consoleModule.controller('sqlController', [
             else
                 $scope.rebuildScrollParagraphs();
 
-            IgniteAgentMonitor.startWatch({
+            agentMonitor.startWatch({
                     state: 'base.configuration.clusters',
                     text: 'Back to Configuration',
                     goal: 'execute sql statements'
-                }, function () {
-                    $state.go('base.sql.demo');
                 })
                 .then(function () {
                     $loading.start('loading');
 
                     _refreshFn();
 
-                    if ($scope.demo)
+                    if ($scope.$root.IgniteDemoMode)
                         _.forEach($scope.notebook.paragraphs, $scope.execute);
 
                     stopTopology = $interval(_refreshFn, 5000, 0, false);
                 });
         };
 
-        QueryNotebooks.read($scope.demo, $state.params.noteId)
+        QueryNotebooks.read($state.params.noteId)
             .then(loadNotebook)
             .catch(function() {
                 $scope.notebookLoadFailed = true;
@@ -332,7 +327,7 @@ consoleModule.controller('sqlController', [
             if ($scope.notebook.name != name) {
                 $scope.notebook.name = name;
 
-                QueryNotebooks.save($scope.demo, $scope.notebook)
+                QueryNotebooks.save($scope.notebook)
                     .then(function() {
                         var idx = _.findIndex($scope.$root.notebooks, function (item) {
                             return item._id == $scope.notebook._id;
@@ -355,7 +350,7 @@ consoleModule.controller('sqlController', [
         $scope.removeNotebook = function () {
             $confirm.confirm('Are you sure you want to remove: "' + $scope.notebook.name + '"?')
                 .then(function () {
-                    return QueryNotebooks.remove($scope.demo, $scope.notebook._id);
+                    return QueryNotebooks.remove($scope.notebook._id);
                 })
                 .then(function (notebook) {
                     if (notebook)
@@ -375,7 +370,7 @@ consoleModule.controller('sqlController', [
 
                 $scope.rebuildScrollParagraphs();
 
-                QueryNotebooks.save($scope.demo, $scope.notebook)
+                QueryNotebooks.save($scope.notebook)
                     .then(function () { paragraph.edit = false; })
                     .catch(_handleException);
             }
@@ -456,7 +451,7 @@ consoleModule.controller('sqlController', [
 
                     $scope.rebuildScrollParagraphs();
 
-                    QueryNotebooks.save($scope.demo, $scope.notebook)
+                    QueryNotebooks.save($scope.notebook)
                         .catch(_handleException);
                 });
         };
@@ -634,7 +629,7 @@ consoleModule.controller('sqlController', [
             delete paragraph.errMsg;
 
             // Prepare explain results for display in table.
-            if (paragraph.queryArgs.type == "EXPLAIN" && res.items) {
+            if (paragraph.queryArgs.query && paragraph.queryArgs.query.startsWith('EXPLAIN') && res.items) {
                 paragraph.rows = [];
 
                 res.items.forEach(function (row, i) {
@@ -674,7 +669,7 @@ consoleModule.controller('sqlController', [
 
             _showLoading(paragraph, false);
 
-            if (paragraph.result == 'none' || paragraph.queryArgs.type != "QUERY")
+            if (paragraph.result === 'none' || !paragraph.queryExecuted())
                 paragraph.result = 'table';
             else if (paragraph.chart()) {
                 var resetCharts = queryChanged;
@@ -692,43 +687,43 @@ consoleModule.controller('sqlController', [
             }
         };
 
-        var _executeRefresh = function (paragraph) {
-            IgniteAgentMonitor.awaitAgent()
-                .then(function () {
-                    return IgniteAgentMonitor.queryClose(paragraph.queryArgs);
-                })
-                .then(function () {
-                    return IgniteAgentMonitor.query(paragraph.queryArgs);
-                })
+        const _closeOldQuery = (paragraph) => {
+            const queryId = paragraph.queryArgs && paragraph.queryArgs.queryId;
+
+            return queryId ? agentMonitor.queryClose(queryId) : $q.when();
+        };
+
+        const _executeRefresh = (paragraph) => {
+            const args = paragraph.queryArgs;
+
+            agentMonitor.awaitAgent()
+                .then(() => _closeOldQuery(paragraph))
+                .then(() => agentMonitor.query(args.cacheName, args.pageSize, args.query))
                 .then(_processQueryResult.bind(this, paragraph))
                 .catch(function (errMsg) {
                     paragraph.errMsg = errMsg;
                 });
         };
 
-        var _showLoading = function (paragraph, enable) {
-            paragraph.loading = enable;
-        };
+        const _showLoading = (paragraph, enable) => paragraph.loading = enable;
 
         $scope.execute = function (paragraph) {
-            QueryNotebooks.save($scope.demo, $scope.notebook)
+            QueryNotebooks.save($scope.notebook)
                 .catch(_handleException);
 
             paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
 
             _showLoading(paragraph, true);
 
-            IgniteAgentMonitor.queryClose(paragraph.queryArgs)
+            _closeOldQuery(paragraph)
                 .then(function () {
-                    paragraph.queryArgs = {
-                        demo: $scope.demo,
-                        type: "QUERY",
-                        query: paragraph.query,
+                    const args = paragraph.queryArgs = {
+                        cacheName: paragraph.cacheName,
                         pageSize: paragraph.pageSize,
-                        cacheName: paragraph.cacheName || undefined
+                        query: paragraph.query
                     };
 
-                    return IgniteAgentMonitor.query(paragraph.queryArgs);
+                    return agentMonitor.query(args.cacheName, args.pageSize, args.query);
                 })
                 .then(function (res) {
                     _processQueryResult(paragraph, res);
@@ -752,24 +747,22 @@ consoleModule.controller('sqlController', [
         };
 
         $scope.explain = function (paragraph) {
-            QueryNotebooks.save($scope.demo, $scope.notebook)
+            QueryNotebooks.save($scope.notebook)
                 .catch(_handleException);
 
             _cancelRefresh(paragraph);
 
             _showLoading(paragraph, true);
 
-            IgniteAgentMonitor.queryClose(paragraph.queryArgs)
+            _closeOldQuery(paragraph)
                 .then(function () {
-                    paragraph.queryArgs = {
-                        demo: $scope.demo,
-                        type: "EXPLAIN",
-                        query: 'EXPLAIN ' + paragraph.query,
+                    const args = paragraph.queryArgs = {
+                        cacheName: paragraph.cacheName,
                         pageSize: paragraph.pageSize,
-                        cacheName: paragraph.cacheName || undefined
+                        query: 'EXPLAIN ' + paragraph.query
                     };
 
-                    return IgniteAgentMonitor.query(paragraph.queryArgs);
+                    return agentMonitor.query(args.cacheName, args.pageSize, args.query);
                 })
                 .then(_processQueryResult.bind(this, paragraph))
                 .catch(function (errMsg) {
@@ -783,23 +776,21 @@ consoleModule.controller('sqlController', [
         };
 
         $scope.scan = function (paragraph) {
-            QueryNotebooks.save($scope.demo, $scope.notebook)
+            QueryNotebooks.save($scope.notebook)
                 .catch(_handleException);
 
             _cancelRefresh(paragraph);
 
             _showLoading(paragraph, true);
 
-            IgniteAgentMonitor.queryClose(paragraph.queryArgs)
+            _closeOldQuery(paragraph)
                 .then(function () {
-                    paragraph.queryArgs = {
-                        demo: $scope.demo,
-                        type: "SCAN",
-                        pageSize: paragraph.pageSize,
-                        cacheName: paragraph.cacheName || undefined
+                    const args = paragraph.queryArgs = {
+                        cacheName: paragraph.cacheName,
+                        pageSize: paragraph.pageSize
                     };
 
-                    return IgniteAgentMonitor.query(paragraph.queryArgs);
+                    return agentMonitor.query(args.cacheName, args.pageSize);
                 })
                 .then(_processQueryResult.bind(this, paragraph))
                 .catch(function (errMsg) {
@@ -815,14 +806,9 @@ consoleModule.controller('sqlController', [
         $scope.nextPage = function(paragraph) {
             _showLoading(paragraph, true);
 
-            paragraph.queryArgs = {
-                demo: $scope.demo,
-                queryId: paragraph.queryId,
-                pageSize: paragraph.pageSize,
-                cacheName: paragraph.queryArgs.cacheName
-            };
+            paragraph.queryArgs.pageSize = paragraph.pageSize;
 
-            IgniteAgentMonitor.next(paragraph.queryArgs)
+            agentMonitor.next(paragraph.queryId, paragraph.pageSize)
                 .then(function (res) {
                     paragraph.page++;
 
@@ -867,42 +853,52 @@ consoleModule.controller('sqlController', [
             return res.join('.');
         };
 
-        var _export = function(fileName, meta, rows) {
-            var csvContent = '';
+        const _export = (fileName, columnFilter, meta, rows) => {
+            let csvContent = '';
+
+            const cols = [];
+            const excludedCols = [];
 
             if (meta) {
-                csvContent += meta.map(_fullColName).join(';') + '\n';
+                _.forEach(meta, (col, idx) => {
+                    if (columnFilter(col))
+                        cols.push(_fullColName(col));
+                    else
+                        excludedCols.push(idx);
+                });
+
+                csvContent += cols.join(';') + '\n';
             }
 
-            rows.forEach(function (row) {
+            _.forEach(rows, (row) => {
+                cols.length = 0;
+
                 if (Array.isArray(row)) {
-                    csvContent += row.map(function (elem) {
-                        return elem ? JSON.stringify(elem) : '';
-                    }).join(';');
+                    _.forEach(row, (elem, idx) => {
+                        if (_.includes(excludedCols, idx))
+                            return;
+
+                        cols.push(_.isUndefined(elem) ? '' : JSON.stringify(elem));
+                    });
                 }
                 else {
-                    var first = true;
+                    _.forEach(meta, (col) => {
+                        if (columnFilter(col)) {
+                            const elem = row[col.fieldName];
 
-                    meta.forEach(function (prop) {
-                        if (first)
-                            first = false;
-                        else
-                            csvContent += ';';
-
-                        var elem = row[prop.fieldName];
-
-                        csvContent += elem ? JSON.stringify(elem) : '';
+                            cols.push(_.isUndefined(elem) ? '' : JSON.stringify(elem));
+                        }
                     });
                 }
 
-                csvContent += '\n';
+                csvContent += cols.join(';') + '\n';
             });
 
             $common.download('application/octet-stream;charset=utf-8', fileName, escape(csvContent));
         };
 
         $scope.exportCsv = function(paragraph) {
-            _export(paragraph.name + '.csv', paragraph.meta, paragraph.rows);
+            _export(paragraph.name + '.csv', paragraph.columnFilter, paragraph.meta, paragraph.rows);
 
             //paragraph.gridOptions.api.exporter.csvExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
         };
@@ -912,18 +908,11 @@ consoleModule.controller('sqlController', [
         };
 
         $scope.exportCsvAll = function (paragraph) {
-            IgniteAgentMonitor.queryGetAll({
-                    demo: $scope.demo,
-                    type: paragraph.queryArgs.type,
-                    query: paragraph.queryArgs.query,
-                    cacheName: paragraph.queryArgs.cacheName
-                })
-                .then(function (res) {
-                    _export(paragraph.name + '-all.csv', res.meta, res.rows);
-                })
-                .finally(function () {
-                    paragraph.ace.focus();
-                });
+            const args = paragraph.queryArgs;
+
+            agentMonitor.queryGetAll(args.cacheName, args.query)
+                .then((res) => _export(paragraph.name + '-all.csv', paragraph.columnFilter, res.fieldsMetadata, res.items))
+                .finally(() => paragraph.ace.focus());
         };
 
         $scope.exportPdfAll = function(paragraph) {
@@ -990,7 +979,7 @@ consoleModule.controller('sqlController', [
             paragraph.rate.unit = unit;
             paragraph.rate.installed = true;
 
-            if (paragraph.queryArgs && paragraph.queryArgs.type == "QUERY")
+            if (paragraph.queryExecuted())
                 _tryStartRefresh(paragraph);
         };
 
@@ -1512,7 +1501,7 @@ consoleModule.controller('sqlController', [
 
             $scope.metadata = [];
 
-            IgniteAgentMonitor.metadata($scope.demo)
+            agentMonitor.metadata()
                 .then(function (metadata) {
                     $scope.metadata = _.sortBy(_.filter(metadata, function (meta) {
                         var cache = _.find($scope.caches, { name: meta.cacheName });
@@ -1541,24 +1530,19 @@ consoleModule.controller('sqlController', [
 
         $scope.showResultQuery = function (paragraph) {
             if ($common.isDefined(paragraph)) {
-                var scope = $scope.$new();
+                const scope = $scope.$new();
 
-                switch (paragraph.queryArgs.type) {
-                    case 'QUERY':
-                        scope.title = 'SQL query';
-                        scope.content = [paragraph.queryArgs.query];
-
-                        break;
-
-                    case 'EXPLAIN':
-                        scope.title = 'Explain query';
-                        scope.content = [paragraph.queryArgs.query];
-
-                        break;
-
-                    default:
-                        scope.title = 'SCAN query';
-                        scope.content = ['SCAN query for cache <b>' + paragraph.queryArgs.cacheName + '</b>'];
+                if (paragraph.queryArgs.query === null) {
+                    scope.title = 'SCAN query';
+                    scope.content = ['SCAN query for cache <b>' + paragraph.queryArgs.cacheName + '</b>'];
+                }
+                else if (paragraph.queryArgs.query .startsWith('EXPLAIN ')) {
+                    scope.title = 'Explain query';
+                    scope.content = [paragraph.queryArgs.query];
+                }
+                else {
+                    scope.title = 'SQL query';
+                    scope.content = [paragraph.queryArgs.query];
                 }
 
                 // Show a basic modal from a controller

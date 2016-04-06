@@ -139,18 +139,15 @@ class IgniteAgentMonitor {
 
     /**
      * @param {Object} back
-     * @param {Function} startDemo
      * @returns {Promise}
      */
-    startWatch(back, startDemo) {
+    startWatch(back) {
         this._scope.backState = back.state;
         this._scope.backText = back.text;
 
         this._scope.agentGoal = back.goal;
 
         this._scope.showModal = true;
-
-        this._scope.startDemo = startDemo;
 
         return this.awaitAgent();
     }
@@ -234,56 +231,56 @@ class IgniteAgentMonitor {
     }
 
     /**
-     * @param {Boolean} demo
      * @param {Boolean} [attr]
      * @param {Boolean} [mtr]
      * @returns {Promise}
      */
-    topology(demo, attr, mtr) {
-        return this._rest('node:topology', !!demo, !!attr, !!mtr);
+    topology(attr, mtr) {
+        return this._rest('node:topology', !!attr, !!mtr);
     }
 
     /**
-     * @param {Object} args
+     * @param {int} [queryId]
      * @returns {Promise}
      */
-    queryClose(args) {
-        if (!args || !args.queryId)
-            return this._$q.when();
-
-        return this._rest('node:query:close', {demo: args.demo, cacheName: args.cacheName, queryId: args.queryId});
+    queryClose(queryId) {
+        return this._rest('node:query:close', queryId);
     }
 
     /**
-     * @param {Object} args
+     * @param {String} cacheName Cache name.
+     * @param {int} pageSize
+     * @param {String} [query] Query if null then scan query.
      * @returns {Promise}
      */
-    query(args) {
-        return this._rest('node:query', args);
+    query(cacheName, pageSize, query) {
+        return this._rest('node:query', cacheName, pageSize, query);
     }
 
     /**
-     * @param {Object} args
+     * @param {String} cacheName Cache name.
+     * @param {String} [query] Query if null then scan query.
      * @returns {Promise}
      */
-    queryGetAll(args) {
-        return this._rest('node:query:getAll', args);
+    queryGetAll(cacheName, query) {
+        return this._rest('node:query:getAll', cacheName, query);
     }
 
     /**
-     * @param {Boolean} demo
+     * @param {String} [cacheName] Cache name.
      * @returns {Promise}
      */
-    metadata(demo) {
-        return this._rest('node:cache:metadata', {demo});
+    metadata(cacheName) {
+        return this._rest('node:cache:metadata', cacheName);
     }
 
     /**
-     * @param {Object} args
+     * @param {int} queryId
+     * @param {int} pageSize
      * @returns {Promise}
      */
-    next(args) {
-        return this._rest('node:query:fetch', args);
+    next(queryId, pageSize) {
+        return this._rest('node:query:fetch', queryId, pageSize);
     }
 
     stopWatch() {
@@ -295,6 +292,6 @@ class IgniteAgentMonitor {
     }
 }
 
-IgniteAgentMonitor.$inject = ['socketFactory', '$rootScope', '$q', '$state', '$modal', '$common'];
+IgniteAgentMonitor.$inject = ['igniteSocketFactory', '$rootScope', '$q', '$state', '$modal', '$common'];
 
 export default ['IgniteAgentMonitor', IgniteAgentMonitor];

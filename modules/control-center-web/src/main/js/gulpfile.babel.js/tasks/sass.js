@@ -30,5 +30,5 @@ gulp.task('sass', () =>
 );
 
 gulp.task('sass:watch', (cb) =>
-    gulp.watch(paths, () => sequence('sass', 'bundle', cb))
+    gulp.watch(paths, () => sequence('sass', 'bundle:ignite:app', cb))
 );

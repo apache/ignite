@@ -15,32 +15,20 @@
  * limitations under the License.
  */
 
-// Override AngularStrap "bsSelect" in order to dynamically change placeholder and class.
-export default ['bsSelect', [() => {
-    const link = (scope, $element, attrs, [ngModel]) => {
-        if (!ngModel)
-            return;
+import angular from 'angular';
+import io from 'socket.io-client'; // eslint-disable-line no-unused-vars
 
-        const $render = ngModel.$render;
+angular
+.module('ignite-console.socket', [
+])
+.provider('igniteSocketFactory', [function() {
+    const options = {};
 
-        ngModel.$render = () => {
-            $render();
-
-            const value = ngModel.$viewValue;
-
-            if (value && (!attrs.multiple || value.length))
-                $element.removeClass('placeholder');
-            else {
-                $element.html(attrs.placeholder);
-                $element.addClass('placeholder');
-            }
-        };
+    this.set = ({ ioSocket }) => {
+        options.ioSocket = ioSocket;
     };
 
-    return {
-        priority: 1,
-        restrict: 'A',
-        link,
-        require: ['?ngModel']
-    };
-}]];
+    this.$get = ['socketFactory', function(socketFactory) {
+        return () => socketFactory(options);
+    }];
+}]);

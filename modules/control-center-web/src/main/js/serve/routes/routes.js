@@ -25,6 +25,7 @@ module.exports = {
         'public-routes',
         'admin-routes',
         'profile-routes',
+        'demo-routes',
         'clusters-routes',
         'domains-routes',
         'caches-routes',
@@ -35,8 +36,8 @@ module.exports = {
     ]
 };
 
-module.exports.factory = function(publicRoutes, adminRoutes, profileRoutes, clusterRoutes, domainRoutes, cacheRoutes,
-                                  igfsRoutes, notebookRoutes, agentRoutes, pluginRoutes) {
+module.exports.factory = function(publicRoutes, adminRoutes, profileRoutes, demoRoutes,
+    clusterRoutes, domainRoutes, cacheRoutes, igfsRoutes, notebookRoutes, agentRoutes, pluginRoutes) {
     return {
         register: (app) => {
             app.all('*', (req, res, next) => {
@@ -61,6 +62,7 @@ module.exports.factory = function(publicRoutes, adminRoutes, profileRoutes, clus
             app.use('/', publicRoutes);
             app.use('/admin', _mustAuthenticated, _adminOnly, adminRoutes);
             app.use('/profile', _mustAuthenticated, profileRoutes);
+            app.use('/demo', _mustAuthenticated, demoRoutes);
 
             app.all('/configuration/*', _mustAuthenticated);
 

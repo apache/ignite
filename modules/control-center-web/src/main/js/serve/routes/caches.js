@@ -39,7 +39,7 @@ module.exports.factory = function(_, express, mongo) {
             let spaceIds = [];
 
             // Get owned space and all accessed space.
-            mongo.spaces(req.currentUserId())
+            mongo.spaces(req.currentUserId(), req.header('IgniteDemoMode'))
                 .then((spaces) => {
                     result.spaces = spaces;
                     spaceIds = spaces.map((space) => space._id);
@@ -119,7 +119,7 @@ module.exports.factory = function(_, express, mongo) {
          * Remove all caches.
          */
         router.post('/remove/all', (req, res) => {
-            mongo.spaceIds(req.currentUserId())
+            mongo.spaceIds(req.currentUserId(), req.header('IgniteDemoMode'))
                 .then((spaceIds) =>
                     mongo.Cluster.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec()
                         .then(() => mongo.DomainModel.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec())

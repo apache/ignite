@@ -16,7 +16,7 @@
  */
 
 import gulp from 'gulp';
-import gulpJade from 'gulp-jade';
+import jade from 'gulp-jade';
 import sequence from 'gulp-sequence';
 
 import { igniteModulesDir, destDir } from '../paths';
@@ -39,13 +39,13 @@ gulp.task('jade', (cb) => sequence('jade:source', 'jade:ignite_modules', cb));
 
 gulp.task('jade:source', () =>
     gulp.src(paths)
-        .pipe(gulpJade(jadeOptions))
+        .pipe(jade(jadeOptions))
         .pipe(gulp.dest('./build'))
 );
 
 gulp.task('jade:ignite_modules', () =>
     gulp.src(igniteModulePaths)
-        .pipe(gulpJade(jadeOptions))
+        .pipe(jade(jadeOptions))
         .pipe(gulp.dest(`${destDir}/ignite_modules`))
 );
 

@@ -36,11 +36,6 @@ consoleModule.controller('domainsController', [
         $scope.ui.usePrimitives = true;
         $scope.ui.generatedCachesClusters = [];
 
-        $scope.removeDemoDropdown = [{
-            'text': 'Remove generated demo data',
-            'click': 'removeDemoItems()'
-        }];
-
         function restoreSelection() {
             var lastSelectedDomain = angular.fromJson(sessionStorage.lastSelectedDomain);
 
@@ -70,48 +65,6 @@ consoleModule.controller('domainsController', [
                 }
             });
         }
-
-        $scope.removeDemoItems = function () {
-            $table.tableReset();
-
-            $confirm.confirm('Are you sure you want to remove all generated demo domain models and caches?')
-                .then(function () {
-                    $http.post('/api/v1/configuration/domains/remove/demo')
-                        .success(function () {
-                            $common.showInfo('All demo domain models and caches have been removed');
-
-                            $http.post('/api/v1/configuration/domains/list')
-                                .success(function (data) {
-                                    $scope.spaces = data.spaces;
-                                    $scope.clusters = _.map(data.clusters, function (cluster) {
-                                        return {
-                                            value: cluster._id,
-                                            label: cluster.name
-                                        };
-                                    });
-                                    $scope.caches = _mapCaches(data.caches);
-                                    $scope.domains = data.domains;
-
-                                    $scope.ui.generatedCachesClusters = [];
-
-                                    _.forEach($scope.clusters, function (cluster) {
-                                        $scope.ui.generatedCachesClusters.push(cluster.value);
-                                    });
-
-                                    restoreSelection();
-                                });
-                        })
-                        .error(function (errMsg) {
-                            $common.showError(errMsg);
-                        });
-                });
-        };
-
-        $scope.hasDemoItems = function () {
-            return _.findIndex($scope.domains, function (domain) {
-                    return domain.demo;
-                }) >= 0;
-        };
 
         $scope.joinTip = $common.joinTip;
         $scope.getModel = $common.getModel;
@@ -433,15 +386,15 @@ consoleModule.controller('domainsController', [
 
         /**
          * Show import domain models modal.
-         *
-         * @param demo If 'true' then import domain models from demo database.
          */
-        $scope.showImportDomainModal = function (demo) {
+        $scope.showImportDomainModal = function () {
             $table.tableReset();
 
             $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
                 if ($scope.ui.isDirty())
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
+
+                const demo = $scope.$root.IgniteDemoMode;
 
                 $scope.importDomain = {
                     demo: demo,
@@ -528,10 +481,12 @@ consoleModule.controller('domainsController', [
                 .then(function() {
                     $loading.start('importDomainFromDb');
 
-                    var preset = $scope.importDomain.demo ? $scope.demoConnection : $scope.selectedPreset;
+                    if ($scope.$root.IgniteDemoMode)
+                        return IgniteAgentMonitor.schemas($scope.demoConnection);
 
-                    if (!$scope.importDomain.demo)
-                        _savePreset(preset);
+                    const preset = $scope.selectedPreset;
+
+                    _savePreset(preset);
 
                     return IgniteAgentMonitor.schemas(preset)
                 })
@@ -879,7 +834,6 @@ consoleModule.controller('domainsController', [
                     newDomain.indexes = indexes;
                     newDomain.keyFields = keyFields;
                     newDomain.valueFields = valFields;
-                    newDomain.demo = $scope.importDomain.demo;
 
                     // If value fields not found - copy key fields.
                     if ($common.isEmptyArray(valFields))
@@ -916,7 +870,6 @@ consoleModule.controller('domainsController', [
                         delete newDomain.newCache._id;
                         newDomain.newCache.name = typeName + 'Cache';
                         newDomain.newCache.clusters = $scope.ui.generatedCachesClusters;
-                        newDomain.newCache.demo = $scope.importDomain.demo;
 
                         // POJO store factory is not defined in template.
                         if (!newDomain.newCache.cacheStoreFactory ||

@@ -68,10 +68,10 @@ angular
             expandedParagraphs: [0, 1, 2]
         };
 
-        this.$get = ['$q', '$http', '$rootScope', ($q, $http, $rootScope) => {
+        this.$get = ['$q', '$http', '$rootScope', ($q, $http, $root) => {
             return {
-                read(demo, noteId) {
-                    if (demo)
+                read(noteId) {
+                    if ($root.IgniteDemoMode)
                         return $q.when(angular.copy(_demoNotebook));
 
                     return $http.post('/api/v1/notebooks/get', {noteId})
@@ -79,35 +79,35 @@ angular
                             return data;
                         });
                 },
-                save(demo, notebook) {
-                    if (demo)
+                save(notebook) {
+                    if ($root.IgniteDemoMode)
                         return $q.when();
 
                     return $http.post('/api/v1/notebooks/save', notebook).then(({data}) => {
                         return data;
                     });
                 },
-                remove(demo, nodeId) {
-                    if (demo)
+                remove(nodeId) {
+                    if ($root.IgniteDemoMode)
                         return $q.reject('Removing "SQL demo" notebook is not supported.');
 
                     return $http.post('/api/v1/notebooks/remove', {_id: nodeId})
                         .then(() => {
-                            const idx = _.findIndex($rootScope.notebooks, (item) => {
+                            const idx = _.findIndex($root.notebooks, (item) => {
                                 return item._id === nodeId;
                             });
 
                             if (idx >= 0) {
-                                $rootScope.notebooks.splice(idx, 1);
+                                $root.notebooks.splice(idx, 1);
 
-                                $rootScope.rebuildDropdown();
+                                $root.rebuildDropdown();
 
-                                if (idx < $rootScope.notebooks.length)
-                                    return $rootScope.notebooks[idx];
+                                if (idx < $root.notebooks.length)
+                                    return $root.notebooks[idx];
                             }
 
-                            if ($rootScope.notebooks.length > 0)
-                                return $rootScope.notebooks[$rootScope.notebooks.length - 1];
+                            if ($root.notebooks.length > 0)
+                                return $root.notebooks[$root.notebooks.length - 1];
                         });
                 }
             };
