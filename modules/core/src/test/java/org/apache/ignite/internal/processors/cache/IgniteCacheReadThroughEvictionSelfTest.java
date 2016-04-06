@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.store.CacheStore;
@@ -103,6 +104,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends GridCommonAbstractTe
         cc.setAtomicityMode(atomicityMode());
         cc.setLoadPreviousValue(false);
         cc.setCacheMode(cacheMode());
+        cc.setMemoryMode(cacheMemoryMode());
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
         cc.setBackups(1);
@@ -120,6 +122,11 @@ public class IgniteCacheReadThroughEvictionSelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     protected CacheMode cacheMode() {
         return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    protected CacheMemoryMode cacheMemoryMode() {
+        return CacheMemoryMode.ONHEAP_TIERED;
     }
 
     /**
