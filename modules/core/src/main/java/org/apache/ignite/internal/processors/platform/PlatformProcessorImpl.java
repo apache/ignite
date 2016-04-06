@@ -399,6 +399,18 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         stream.synchronize();
     }
 
+    /** {@inheritDoc} */
+    @Override public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr) {
+        // TODO
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
+        // TODO
+        return null;
+    }
+
     /**
      * Internal store initialization routine.
      *
