@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Runtime.Serialization;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Resource;
@@ -173,13 +174,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         }
 
         [Serializable]
-        public class CustomStoreException : Exception
+        public class CustomStoreException : Exception, ISerializable
         {
             public string Details { get; private set; }
 
             public CustomStoreException(string message) : base(message)
             {
                 Details = message;
+            }
+
+            protected CustomStoreException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)
+            {
+                Details = info.GetString("details");
+            }
+
+            public override void GetObjectData(SerializationInfo info, StreamingContext context)
+            {
+                info.AddValue("details", Details);
             }
         }
     }
