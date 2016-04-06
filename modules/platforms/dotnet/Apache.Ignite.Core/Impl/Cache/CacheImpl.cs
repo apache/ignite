@@ -1331,6 +1331,9 @@ namespace Apache.Ignite.Core.Impl.Cache
                 : new CacheResult<TR>((TR)res);
         }
 
+        /// <summary>
+        /// Reads the result.
+        /// </summary>
         private bool ReadResult(IBinaryStream s)
         {
             if (!s.ReadBool())
@@ -1339,6 +1342,9 @@ namespace Apache.Ignite.Core.Impl.Cache
             return s.Remaining == 0 || s.ReadBool();
         }
 
+        /// <summary>
+        /// Does the out op.
+        /// </summary>
         private bool DoOutOp<T1>(CacheOp op, T1 x)
         {
             return DoOutInOp((int) op, w =>
@@ -1347,6 +1353,9 @@ namespace Apache.Ignite.Core.Impl.Cache
             }, s => ReadResult(s));
         }
 
+        /// <summary>
+        /// Does the out op.
+        /// </summary>
         private bool DoOutOp<T1, T2>(CacheOp op, T1 x, T2 y)
         {
             return DoOutInOp((int) op, w =>
@@ -1356,6 +1365,9 @@ namespace Apache.Ignite.Core.Impl.Cache
             }, s => ReadResult(s));
         }
 
+        /// <summary>
+        /// Does the out op.
+        /// </summary>
         private bool DoOutOp<T1, T2, T3>(CacheOp op, T1 x, T2 y, T3 z)
         {
             return DoOutInOp((int) op, w =>
@@ -1366,11 +1378,17 @@ namespace Apache.Ignite.Core.Impl.Cache
             }, s => ReadResult(s));
         }
 
+        /// <summary>
+        /// Does the out op.
+        /// </summary>
         private bool DoOutOp(CacheOp op, Action<BinaryWriter> write)
         {
             return DoOutInOp((int) op, write, s => ReadResult(s));
         }
 
+        /// <summary>
+        /// Does the out-in op.
+        /// </summary>
         private T DoOutInOp<T>(CacheOp op, Action<BinaryWriter> write, Func<IBinaryStream, T> read)
         {
             return DoOutInOp((int) op, write, s =>
