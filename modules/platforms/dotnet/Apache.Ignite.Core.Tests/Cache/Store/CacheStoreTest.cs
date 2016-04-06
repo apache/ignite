@@ -186,7 +186,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             Assert.IsTrue(cache.IsEmpty(),
                 "Cache is not empty: " +
-                cache.Select(x => string.Format("[{0}:{1}]", x.Key, x.Value)).Aggregate((x, y) => x + ", " + y));
+                string.Join(", ", cache.Select(x => string.Format("[{0}:{1}]", x.Key, x.Value))));
 
             TestUtils.AssertHandleRegistryHasItems(300, _storeCount, Ignition.GetIgnite(GridName));
 
@@ -295,6 +295,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             var err = Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail"));
             Assert.IsTrue(err.InnerException is ArithmeticException);
+
+            CacheTestStore.ThrowError = false;
+            cache.Put(-2, "-2");
         }
 
         [Test]
