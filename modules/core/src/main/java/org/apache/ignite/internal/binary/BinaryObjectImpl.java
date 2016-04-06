@@ -93,6 +93,10 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         this.start = start;
     }
 
+    @Override public int partition() {
+        return -1;
+    }
+
     /** {@inheritDoc} */
     @Override public byte cacheObjectType() {
         return TYPE_BINARY;

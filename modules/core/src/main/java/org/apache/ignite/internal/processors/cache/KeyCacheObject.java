@@ -30,4 +30,9 @@ public interface KeyCacheObject extends CacheObject {
      * @return {@code True} if internal cache key.
      */
     public boolean internal();
+
+    /**
+     * @return Partition ID for this key or -1 if it is unknown.
+     */
+    public int partition();
 }

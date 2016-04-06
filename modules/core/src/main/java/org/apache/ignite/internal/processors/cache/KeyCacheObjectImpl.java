@@ -45,6 +45,10 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
         this.valBytes = valBytes;
     }
 
+    @Override public int partition() {
+        return -1;
+    }
+
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
