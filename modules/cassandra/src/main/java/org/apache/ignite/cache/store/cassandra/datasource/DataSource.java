@@ -17,7 +17,15 @@
 
 package org.apache.ignite.cache.store.cassandra.datasource;
 
-import com.datastax.driver.core.*;
+import com.datastax.driver.core.AuthProvider;
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ConsistencyLevel;
+import com.datastax.driver.core.NettyOptions;
+import com.datastax.driver.core.PoolingOptions;
+import com.datastax.driver.core.ProtocolOptions;
+import com.datastax.driver.core.ProtocolVersion;
+import com.datastax.driver.core.SSLOptions;
+import com.datastax.driver.core.SocketOptions;
 import com.datastax.driver.core.policies.AddressTranslator;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.ReconnectionPolicy;

@@ -48,7 +48,14 @@ public class IgnitePersistentStoreTest {
     /** */
     @BeforeClass
     public static void setUpClass() {
-        CassandraHelper.startEmbededCassandra();
+        if (CassandraHelper.useEmbeddedCassandra()) {
+            try {
+                CassandraHelper.startEmbededCassandra();
+            }
+            catch (Throwable e) {
+                throw new RuntimeException("Failed to start embedded Cassandra instance", e);
+            }
+        }
 
         if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
             return;
@@ -65,19 +72,21 @@ public class IgnitePersistentStoreTest {
     /** */
     @AfterClass
     public static void tearDownClass() {
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
-            return;
-
         try {
             CassandraHelper.dropTestKeyspaces();
         }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
         finally {
             CassandraHelper.releaseCassandraResources();
+
+            if (CassandraHelper.useEmbeddedCassandra()) {
+                try {
+                    CassandraHelper.stopEmbededCassandra();
+                }
+                catch (Throwable e) {
+                    LOGGER.error("Failed to stop embedded Cassandra instance", e);
+                }
+            }
         }
-        CassandraHelper.stopEmbededCassandra();
     }
 
     /** */

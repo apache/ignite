@@ -39,7 +39,8 @@
         <commons-beanutils.version>1.8.3</commons-beanutils.version>
         <junit.version>4.12</junit.version>
         <log4j.version>1.2.17</log4j.version>
-        <cassandra.version>3.0.0</cassandra.version><!-- 2.1.7.1 -->
+        <cassandra-driver.version>3.0.0</cassandra-driver.version>
+        <cassandra-all.version>3.3</cassandra-all.version>
         <kryo.version>3.0.3</kryo.version>
         <reflectasm.version>1.10.1</reflectasm.version>
         <minlog.version>1.3.0</minlog.version>
@@ -50,7 +51,7 @@
         <netty-common.version>4.0.27.Final</netty-common.version>
         <netty-transport.version>4.0.27.Final</netty-transport.version>
         <netty-codec.version>4.0.27.Final</netty-codec.version>
-        <guava.version>19.0</guava.version> <!-- 14.0.1 -->
+        <guava.version>19.0</guava.version>
         <metrics-core.version>3.0.2</metrics-core.version>
     </properties>
 
@@ -117,7 +118,7 @@
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
-            <version>${cassandra.version}</version>
+            <version>${cassandra-driver.version}</version>
         </dependency>
 
         <dependency>
@@ -162,6 +163,13 @@
             <version>${metrics-core.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.cassandra</groupId>
+            <artifactId>cassandra-all</artifactId>
+            <version>${cassandra-all.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- JUnit -->
         <dependency>
             <groupId>junit</groupId>
@@ -177,13 +185,6 @@
             <version>${log4j.version}</version>
             <scope>test</scope>
         </dependency>
-
-	<dependency>
-	    <groupId>org.apache.cassandra</groupId>
-	    <artifactId>cassandra-all</artifactId>
-	    <version>3.3</version>
-	    <scope>provided</scope>
-	</dependency>
 
     </dependencies>
 
