@@ -992,7 +992,7 @@ public class BinaryContext {
         Class<?> cls = null;
 
         try {
-            cls = Class.forName(clsName);
+            cls = U.resolveClassLoader(configuration()).loadClass(clsName);
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
             // No-op.
