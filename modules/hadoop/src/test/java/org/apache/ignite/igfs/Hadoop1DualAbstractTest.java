@@ -19,7 +19,7 @@ package org.apache.ignite.igfs;
 
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
@@ -74,12 +74,16 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
 
         prepareConfiguration();
 
-        IgniteHadoopIgfsSecondaryFileSystem second =
-            new IgniteHadoopIgfsSecondaryFileSystem(secondaryUri, secondaryConfFullPath);
+        CachingHadoopFileSystemFactory factory = new CachingHadoopFileSystemFactory();
 
-        FileSystem fileSystem = second.fileSystem();
+        factory.setUri(secondaryUri);
+        factory.setConfigPaths(secondaryConfFullPath);
 
-        igfsSecondary = new HadoopFileSystemUniversalFileSystemAdapter(fileSystem);
+        IgniteHadoopIgfsSecondaryFileSystem second = new IgniteHadoopIgfsSecondaryFileSystem();
+
+        second.setFileSystemFactory(factory);
+
+        igfsSecondary = new HadoopFileSystemUniversalFileSystemAdapter(factory);
 
         return second;
     }

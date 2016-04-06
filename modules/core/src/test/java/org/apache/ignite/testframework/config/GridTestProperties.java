@@ -79,6 +79,9 @@ public final class GridTestProperties {
     public static final String BINARY_COMPACT_FOOTERS = "binary.marshaller.compact.footers";
 
     /** */
+    public static final String BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER = "binary.marshaller.use.simple.name.mapper";
+
+    /** */
     static {
         // Initialize IGNITE_HOME system property.
         String igniteHome = System.getProperty("IGNITE_HOME");

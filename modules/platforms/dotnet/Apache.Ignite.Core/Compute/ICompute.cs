@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Compute
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cluster;
 
@@ -98,6 +99,19 @@ namespace Apache.Ignite.Core.Compute
         Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg);
 
         /// <summary>
+        /// Executes given Java task on the grid projection. If task for given name has not been deployed yet,
+        /// then 'taskName' will be used as task class name to auto-deploy the task.
+        /// </summary>
+        /// <typeparam name="TRes">Type of task result.</typeparam>
+        /// <param name="taskName">Java task name</param>
+        /// <param name="taskArg">Optional argument of task execution, can be null.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Task result.
+        /// </returns>
+        Task<TRes> ExecuteJavaTaskAsync<TRes>(string taskName, object taskArg, CancellationToken cancellationToken);
+
+        /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
         /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
         /// </summary>
@@ -123,6 +137,22 @@ namespace Apache.Ignite.Core.Compute
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
+        /// refer to <see cref="IComputeTask{A,T,R}" /> documentation.
+        /// </summary>
+        /// <typeparam name="TArg">Argument type.</typeparam>
+        /// <typeparam name="TJobRes">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of final task result.</typeparam>
+        /// <param name="task">Task to execute.</param>
+        /// <param name="taskArg">Optional task argument.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Task result.
+        /// </returns>
+        Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg, 
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
         /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
         /// </summary>
         /// <param name="task">Task to execute.</param>
@@ -140,6 +170,19 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
         /// <typeparam name="TRes">Type of reduce result.</typeparam>
         Task<TRes> ExecuteAsync<TJobRes, TRes>(IComputeTask<TJobRes, TRes> task);
+
+        /// <summary>
+        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
+        /// refer to <see cref="IComputeTask{A,T,R}" /> documentation.
+        /// </summary>
+        /// <typeparam name="TJobRes">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of reduce result.</typeparam>
+        /// <param name="task">Task to execute.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Task result.
+        /// </returns>
+        Task<TRes> ExecuteAsync<TJobRes, TRes>(IComputeTask<TJobRes, TRes> task, CancellationToken cancellationToken);
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -167,6 +210,21 @@ namespace Apache.Ignite.Core.Compute
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
+        /// refer to <see cref="IComputeTask{A,T,R}" /> documentation.
+        /// </summary>
+        /// <typeparam name="TArg">Argument type.</typeparam>
+        /// <typeparam name="TJobRes">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of reduce result.</typeparam>
+        /// <param name="taskType">Task type.</param>
+        /// <param name="taskArg">Optional task argument.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Task result.
+        /// </returns>
+        Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(Type taskType, TArg taskArg, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
         /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
         /// </summary>
         /// <param name="taskType">Task type.</param>
@@ -186,6 +244,19 @@ namespace Apache.Ignite.Core.Compute
         Task<TRes> ExecuteAsync<TJobRes, TRes>(Type taskType);
 
         /// <summary>
+        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
+        /// refer to <see cref="IComputeTask{A,T,R}" /> documentation.
+        /// </summary>
+        /// <typeparam name="TJobRes">Type of job result.</typeparam>
+        /// <typeparam name="TRes">Type of reduce result.</typeparam>
+        /// <param name="taskType">Task type.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Task result.
+        /// </returns>
+        Task<TRes> ExecuteAsync<TJobRes, TRes>(Type taskType, CancellationToken cancellationToken);
+
+        /// <summary>
         /// Executes provided job on a node in this grid projection. The result of the
         /// job execution is returned from the result closure.
         /// </summary>
@@ -202,6 +273,18 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>Job result for this execution.</returns>
         /// <typeparam name="TRes">Type of job result.</typeparam>
         Task<TRes> CallAsync<TRes>(IComputeFunc<TRes> clo);
+
+        /// <summary>
+        /// Executes provided job on a node in this grid projection. The result of the
+        /// job execution is returned from the result closure.
+        /// </summary>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
+        /// <param name="clo">Job to execute.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Job result for this execution.
+        /// </returns>
+        Task<TRes> CallAsync<TRes>(IComputeFunc<TRes> clo, CancellationToken cancellationToken);
 
         /// <summary>
         /// Executes given job on the node where data for provided affinity key is located
@@ -224,6 +307,21 @@ namespace Apache.Ignite.Core.Compute
         /// <returns>Job result for this execution.</returns>
         /// <typeparam name="TRes">Type of job result.</typeparam>
         Task<TRes> AffinityCallAsync<TRes>(string cacheName, object affinityKey, IComputeFunc<TRes> clo);
+
+        /// <summary>
+        /// Executes given job on the node where data for provided affinity key is located
+        /// (a.k.a. affinity co-location).
+        /// </summary>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
+        /// <param name="cacheName">Name of the cache to use for affinity co-location.</param>
+        /// <param name="affinityKey">Affinity key.</param>
+        /// <param name="clo">Job to execute.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Job result for this execution.
+        /// </returns>
+        Task<TRes> AffinityCallAsync<TRes>(string cacheName, object affinityKey, IComputeFunc<TRes> clo, 
+            CancellationToken cancellationToken);
 
         /// <summary>
         /// Executes collection of jobs on nodes within this grid projection.
@@ -249,6 +347,20 @@ namespace Apache.Ignite.Core.Compute
         /// <summary>
         /// Executes collection of jobs on nodes within this grid projection.
         /// </summary>
+        /// <typeparam name="TFuncRes">Type of function result.</typeparam>
+        /// <typeparam name="TRes">Type of result after reduce.</typeparam>
+        /// <param name="clos">Collection of jobs to execute.</param>
+        /// <param name="reducer">Reducer to reduce all job results into one individual return value.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Reduced job result for this execution.
+        /// </returns>
+        Task<TRes> CallAsync<TFuncRes, TRes>(IEnumerable<IComputeFunc<TFuncRes>> clos, 
+            IComputeReducer<TFuncRes, TRes> reducer, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Executes collection of jobs on nodes within this grid projection.
+        /// </summary>
         /// <param name="clos">Collection of jobs to execute.</param>
         /// <returns>Collection of job results for this execution.</returns>
         /// <typeparam name="TRes">Type of job result.</typeparam>
@@ -263,6 +375,18 @@ namespace Apache.Ignite.Core.Compute
         Task<ICollection<TRes>> CallAsync<TRes>(IEnumerable<IComputeFunc<TRes>> clos);
 
         /// <summary>
+        /// Executes collection of jobs on nodes within this grid projection.
+        /// </summary>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
+        /// <param name="clos">Collection of jobs to execute.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Collection of job results for this execution.
+        /// </returns>
+        Task<ICollection<TRes>> CallAsync<TRes>(IEnumerable<IComputeFunc<TRes>> clos, 
+            CancellationToken cancellationToken);
+
+        /// <summary>
         /// Broadcasts given job to all nodes in grid projection. Every participating node will return a job result.
         /// </summary>
         /// <param name="clo">Job to broadcast to all projection nodes.</param>
@@ -275,6 +399,17 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="clo">Job to broadcast to all projection nodes.</param>
         /// <returns>Collection of results for this execution.</returns>
         Task<ICollection<TRes>> BroadcastAsync<TRes>(IComputeFunc<TRes> clo);
+
+        /// <summary>
+        /// Broadcasts given job to all nodes in grid projection. Every participating node will return a job result.
+        /// </summary>
+        /// <typeparam name="TRes">The type of the resource.</typeparam>
+        /// <param name="clo">Job to broadcast to all projection nodes.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Collection of results for this execution.
+        /// </returns>
+        Task<ICollection<TRes>> BroadcastAsync<TRes>(IComputeFunc<TRes> clo, CancellationToken cancellationToken);
 
         /// <summary>
         /// Broadcasts given closure job with passed in argument to all nodes in grid projection.
@@ -299,6 +434,21 @@ namespace Apache.Ignite.Core.Compute
         Task<ICollection<TRes>> BroadcastAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg);
 
         /// <summary>
+        /// Broadcasts given closure job with passed in argument to all nodes in grid projection.
+        /// Every participating node will return a job result.
+        /// </summary>
+        /// <typeparam name="TArg">Type of argument.</typeparam>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
+        /// <param name="clo">Job to broadcast to all projection nodes.</param>
+        /// <param name="arg">Job closure argument.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Collection of results for this execution.
+        /// </returns>
+        Task<ICollection<TRes>> BroadcastAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg, 
+            CancellationToken cancellationToken);
+
+        /// <summary>
         /// Broadcasts given job to all nodes in grid projection.
         /// </summary>
         /// <param name="action">Job to broadcast to all projection nodes.</param>
@@ -311,6 +461,14 @@ namespace Apache.Ignite.Core.Compute
         Task BroadcastAsync(IComputeAction action);
 
         /// <summary>
+        /// Broadcasts given job to all nodes in grid projection.
+        /// </summary>
+        /// <param name="action">Job to broadcast to all projection nodes.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>Task.</returns>
+        Task BroadcastAsync(IComputeAction action, CancellationToken cancellationToken);
+
+        /// <summary>
         /// Executes provided job on a node in this grid projection.
         /// </summary>
         /// <param name="action">Job to execute.</param>
@@ -321,6 +479,13 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         /// <param name="action">Job to execute.</param>
         Task RunAsync(IComputeAction action);
+
+        /// <summary>
+        /// Executes provided job on a node in this grid projection.
+        /// </summary>
+        /// <param name="action">Job to execute.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        Task RunAsync(IComputeAction action, CancellationToken cancellationToken);
 
         /// <summary>
         /// Executes given job on the node where data for provided affinity key is located
@@ -341,6 +506,18 @@ namespace Apache.Ignite.Core.Compute
         Task AffinityRunAsync(string cacheName, object affinityKey, IComputeAction action);
 
         /// <summary>
+        /// Executes given job on the node where data for provided affinity key is located
+        /// (a.k.a. affinity co-location).
+        /// </summary>
+        /// <param name="cacheName">Name of the cache to use for affinity co-location.</param>
+        /// <param name="affinityKey">Affinity key.</param>
+        /// <param name="action">Job to execute.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>Task.</returns>
+        Task AffinityRunAsync(string cacheName, object affinityKey, IComputeAction action, 
+            CancellationToken cancellationToken);
+
+        /// <summary>
         /// Executes collection of jobs on Ignite nodes within this grid projection.
         /// </summary>
         /// <param name="actions">Jobs to execute.</param>
@@ -351,6 +528,14 @@ namespace Apache.Ignite.Core.Compute
         /// </summary>
         /// <param name="actions">Jobs to execute.</param>
         Task RunAsync(IEnumerable<IComputeAction> actions);
+
+        /// <summary>
+        /// Executes collection of jobs on Ignite nodes within this grid projection.
+        /// </summary>
+        /// <param name="actions">Jobs to execute.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>Task.</returns>
+        Task RunAsync(IEnumerable<IComputeAction> actions, CancellationToken cancellationToken);
 
         /// <summary>
         /// Executes provided closure job on a node in this grid projection.
@@ -371,6 +556,19 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="TArg">Type of argument.</typeparam>
         /// <typeparam name="TRes">Type of job result.</typeparam>
         Task<TRes> ApplyAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg);
+
+        /// <summary>
+        /// Executes provided closure job on a node in this grid projection.
+        /// </summary>
+        /// <typeparam name="TArg">Type of argument.</typeparam>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
+        /// <param name="clo">Job to run.</param>
+        /// <param name="arg">Job argument.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Job result for this execution.
+        /// </returns>
+        Task<TRes> ApplyAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, TArg arg, CancellationToken cancellationToken);
 
         /// <summary>
         /// Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -395,6 +593,22 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="TArg">Type of argument.</typeparam>
         /// <typeparam name="TRes">Type of job result.</typeparam>
         Task<ICollection<TRes>> ApplyAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, IEnumerable<TArg> args);
+
+        /// <summary>
+        /// Executes provided closure job on nodes within this grid projection. A new job is executed for
+        /// every argument in the passed in collection. The number of actual job executions will be
+        /// equal to size of the job arguments collection.
+        /// </summary>
+        /// <typeparam name="TArg">Type of argument.</typeparam>
+        /// <typeparam name="TRes">Type of job result.</typeparam>
+        /// <param name="clo">Job to run.</param>
+        /// <param name="args">Job arguments.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Сollection of job results.
+        /// </returns>
+        Task<ICollection<TRes>> ApplyAsync<TArg, TRes>(IComputeFunc<TArg, TRes> clo, IEnumerable<TArg> args,
+            CancellationToken cancellationToken);
 
         /// <summary>
         /// Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -427,5 +641,24 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="TRes">Type of result after reduce.</typeparam>
         Task<TRes> ApplyAsync<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, 
             IComputeReducer<TFuncRes, TRes> rdc);
+
+        /// <summary>
+        /// Executes provided closure job on nodes within this grid projection. A new job is executed for
+        /// every argument in the passed in collection. The number of actual job executions will be
+        /// equal to size of the job arguments collection. The returned job results will be reduced
+        /// into an individual result by provided reducer.
+        /// </summary>
+        /// <typeparam name="TArg">Type of argument.</typeparam>
+        /// <typeparam name="TFuncRes">Type of function result.</typeparam>
+        /// <typeparam name="TRes">Type of result after reduce.</typeparam>
+        /// <param name="clo">Job to run.</param>
+        /// <param name="args">Job arguments.</param>
+        /// <param name="rdc">Reducer to reduce all job results into one individual return value.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// Reduced job result for this execution.
+        /// </returns>
+        Task<TRes> ApplyAsync<TArg, TFuncRes, TRes>(IComputeFunc<TArg, TFuncRes> clo, IEnumerable<TArg> args, 
+            IComputeReducer<TFuncRes, TRes> rdc, CancellationToken cancellationToken);
     }
 }
