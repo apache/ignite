@@ -299,8 +299,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             // Test errors
             CacheTestStore.ThrowError = true;
-
             CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail")).InnerException);
+
+            cache.LocalEvict(new[] { 1 });
+            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Get(1)).InnerException);
         }
 
         [Test]
