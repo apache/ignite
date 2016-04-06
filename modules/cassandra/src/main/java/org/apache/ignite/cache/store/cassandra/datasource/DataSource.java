@@ -23,9 +23,10 @@ import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.NettyOptions;
 import com.datastax.driver.core.PoolingOptions;
 import com.datastax.driver.core.ProtocolOptions;
+import com.datastax.driver.core.ProtocolVersion;
 import com.datastax.driver.core.SSLOptions;
 import com.datastax.driver.core.SocketOptions;
-import com.datastax.driver.core.policies.AddressTranslater;
+import com.datastax.driver.core.policies.AddressTranslator;
 import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.datastax.driver.core.policies.ReconnectionPolicy;
 import com.datastax.driver.core.policies.RetryPolicy;
@@ -98,7 +99,7 @@ public class DataSource {
     private RetryPolicy retryPlc;
 
     /** Address translator to use. */
-    private AddressTranslater addrTranslater;
+    private AddressTranslator addrTranslator;
 
     /** Speculative execution policy to use. */
     private SpeculativeExecutionPolicy speculativeExecutionPlc;
@@ -355,11 +356,11 @@ public class DataSource {
     /**
      * Sets address translator.
      *
-     * @param translater Address translator.
+     * @param translator Address translator.
      */
     @SuppressWarnings("UnusedDeclaration")
-    public void setAddressTranslater(AddressTranslater translater) {
-        this.addrTranslater = translater;
+    public void setAddressTranslator(AddressTranslator translator) {
+        this.addrTranslator = translator;
 
         invalidate();
     }
@@ -465,7 +466,7 @@ public class DataSource {
             builder = builder.withMaxSchemaAgreementWaitSeconds(maxSchemaAgreementWaitSeconds);
 
         if (protoVer != null)
-            builder = builder.withProtocolVersion(protoVer);
+            builder = builder.withProtocolVersion(ProtocolVersion.fromInt(protoVer));
 
         if (compression != null) {
             try {
@@ -500,8 +501,8 @@ public class DataSource {
         if (retryPlc != null)
             builder = builder.withRetryPolicy(retryPlc);
 
-        if (addrTranslater != null)
-            builder = builder.withAddressTranslater(addrTranslater);
+        if (addrTranslator != null)
+            builder = builder.withAddressTranslator(addrTranslator);
 
         if (speculativeExecutionPlc != null)
             builder = builder.withSpeculativeExecutionPolicy(speculativeExecutionPlc);
