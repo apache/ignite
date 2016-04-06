@@ -30,7 +30,9 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 
+import javax.cache.Cache;
 import javax.cache.configuration.Factory;
+import java.util.Iterator;
 
 /**
  * Tests that write behind store is updated if client does not have store.
@@ -43,17 +45,12 @@ public class IgnteCacheWriteThroughStoreFailTest extends IgniteCacheAbstractTest
 
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
+        return CacheMode.LOCAL;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CacheAtomicWriteOrderMode.CLOCK;
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
@@ -74,17 +71,24 @@ public class IgnteCacheWriteThroughStoreFailTest extends IgniteCacheAbstractTest
 
         IgniteCache<Integer, Integer> cache = client.cache(null);
 
+        cache.put(1, 1);
+        assertEquals(cache.size(), 1);
+
         TestStore.shouldFail = true;
 
         try {
-            cache.put(1, 2);
+            cache.put(-2, 1);
             assert false;
         }
         catch (Exception e) {
+            e.printStackTrace();
         }
 
         TestStore.shouldFail = false;
 
-        assertTrue(cache.size() == 0);
+        cache.clear();
+        assertFalse(cache.containsKey(-2));
+        assertEquals(0, cache.size());
+        assertFalse(cache.iterator().hasNext());
     }
 }
