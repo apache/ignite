@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
@@ -347,13 +348,13 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout)
+        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout)
             throws IOException, IgniteCheckedException {
             if (!(msg instanceof TcpDiscoveryPingRequest)) {
                 if (countConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
                     connCheckStatusMsgCntSent++;
 
-                super.writeToSocket(sock, msg, timeout);
+                super.writeToSocket(sock, out, msg, timeout);
 
                 return;
             }
@@ -373,7 +374,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 }
             }
             else
-                super.writeToSocket(sock, msg, timeout);
+                super.writeToSocket(sock, out, msg, timeout);
         }
 
         /** {@inheritDoc} */
