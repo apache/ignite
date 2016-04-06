@@ -856,6 +856,11 @@ namespace ignite
                 }
 
                 /**
+                 * Skip top object.
+                 */
+                void SkipTopObject();
+
+                /**
                  * Get underlying stream.
                  *
                  * @return Stream.

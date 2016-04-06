@@ -85,6 +85,9 @@
     <ClCompile Include="..\..\src\impl\binary\binary_type_handler.cpp">
       <Filter>Code\impl\binary</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\query\query_batch.cpp">
+      <Filter>Code\impl\cache\query</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
@@ -233,6 +236,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_handler.h">
       <Filter>Code\impl\binary</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cache\query\query_batch.h">
+      <Filter>Code\impl\cache\query</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

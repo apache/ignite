@@ -90,7 +90,7 @@ namespace ignite
                     impl::cache::query::QueryCursorImpl* impl0 = impl.Get();
 
                     if (impl0)
-                        return impl0->HasNext(&err);
+                        return impl0->HasNext(err);
                     else
                     {
                         err = IgniteError(IgniteError::IGNITE_ERR_GENERIC, 
@@ -129,7 +129,7 @@ namespace ignite
                     if (impl0) {
                         impl::Out2Operation<K, V> outOp;
 
-                        impl0->GetNext(outOp, &err);
+                        impl0->GetNext(outOp, err);
 
                         if (err.GetCode() == IgniteError::IGNITE_SUCCESS) 
                         {
@@ -177,7 +177,7 @@ namespace ignite
                     if (impl0) {
                         impl::OutQueryGetAllOperation<K, V> outOp(&res);
 
-                        impl0->GetAll(outOp, &err);
+                        impl0->GetAll(outOp, err);
                     }
                     else
                         err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
