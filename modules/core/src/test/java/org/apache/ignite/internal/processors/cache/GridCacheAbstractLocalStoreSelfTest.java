@@ -46,6 +46,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -55,8 +56,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -83,6 +86,9 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
     /** */
     public static final String BACKUP_CACHE = "backup";
+
+    /** */
+    public static volatile boolean primaryWriteOrderMode = false;
 
     /**
      *
@@ -140,6 +146,10 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setAtomicityMode(getAtomicMode());
         cacheCfg.setNearConfiguration(nearConfiguration());
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        if (primaryWriteOrderMode)
+            cacheCfg.setAtomicWriteOrderMode(PRIMARY);
+
         cacheCfg.setRebalanceMode(SYNC);
 
         if (gridName.endsWith("1"))
@@ -263,6 +273,108 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         checkLocalStore(ignite2, LOCAL_STORE_2);
     }
 
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBackupRestorePrimary() throws Exception {
+        try {
+            primaryWriteOrderMode = true;
+
+            testBackupRestore();
+        }
+        finally {
+            primaryWriteOrderMode = false;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBackupRestore() throws Exception {
+        Ignite ignite1 = startGrid(1);
+        Ignite ignite2 = startGrid(2);
+
+        String name = BACKUP_CACHE;
+
+        int key1 = -1;
+        int key2 = -1;
+
+        for (int i = 0; i < KEYS; i++) {
+            if (ignite1.affinity(name).isPrimary(ignite1.cluster().localNode(), i)) {
+                key1 = i;
+
+                break;
+            }
+        }
+
+        for (int i = 0; i < KEYS; i++) {
+            if (!ignite1.affinity(name).isPrimary(ignite1.cluster().localNode(), i)) {
+                key2 = i;
+
+                break;
+            }
+        }
+
+        assertTrue(key1 >= 0);
+        assertTrue(key2 >= 0);
+        assertNotSame(key1, key2);
+
+        assertEquals(0, ignite1.cache(name).size());
+
+        assertEquals(0, LOCAL_STORE_1.map.size());
+        assertEquals(0, LOCAL_STORE_2.map.size());
+
+        try (Transaction tx = ignite1.transactions().txStart()) {
+            ignite1.cache(name).put(key1, key1);
+            ignite1.cache(name).put(key2, key2);
+
+            Map<Integer, Integer> m = new HashMap<>();
+
+            for (int i = KEYS; i < KEYS + 100; i++)
+                m.put(i, i);
+
+            ignite1.cache(name).putAll(m);
+
+            tx.commit();
+        }
+
+        stopGrid(1);
+
+        assertEquals(1, G.allGrids().size());
+
+        assertEquals(key1, ignite2.cache(name).get(key1));
+        assertEquals(key2, ignite2.cache(name).get(key2));
+
+        for (int i = KEYS; i < KEYS + 100; i++)
+            assertEquals(i, ignite2.cache(name).get(i));
+
+        assertEquals(102, ignite2.cache(name).size());
+
+        assertEquals(102, LOCAL_STORE_1.map.size());
+        assertEquals(102, LOCAL_STORE_2.map.size());
+
+        stopGrid(2);
+
+        assertEquals(0, G.allGrids().size());
+
+        assertEquals(102, LOCAL_STORE_1.map.size());
+        assertEquals(102, LOCAL_STORE_2.map.size());
+
+        ignite2 = startGrid(2);
+
+        assertEquals(key1, ignite2.cache(name).get(key1));
+        assertEquals(key2, ignite2.cache(name).get(key2));
+
+        for (int i = KEYS; i < KEYS + 100; i++)
+            assertEquals(i, ignite2.cache(name).get(i));
+
+        assertEquals(102, ignite2.cache(name).size());
+
+        assertEquals(102, LOCAL_STORE_1.map.size());
+        assertEquals(102, LOCAL_STORE_2.map.size());
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -274,33 +386,58 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
 
-        for (int i = 0; i < KEYS; i++)
+        for (int i = 0; i < KEYS; i++) {
             assertEquals(LOCAL_STORE_1.load(i).get1().intValue(), i);
+            assertNull(LOCAL_STORE_2.load(i));
+            assertNull(LOCAL_STORE_3.load(i));
+        }
 
-        // Start 2'nd node.
-        Ignite ignite2 = startGrid(2);
+        startGrid(2);
 
         assertEquals(2, Ignition.allGrids().size());
 
-        checkLocalStoreForBackup(ignite2, LOCAL_STORE_2);
+        for (int i = 0; i < KEYS; i++) {
+            assertEquals(LOCAL_STORE_1.load(i).get1().intValue(), i);
+            assertEquals(LOCAL_STORE_2.load(i).get1().intValue(), i);
+            assertNull(LOCAL_STORE_3.load(i));
+        }
 
-        // Start 3'nd node.
-        Ignite ignite3 = startGrid(3);
+        startGrid(3);
 
         assertEquals(Ignition.allGrids().size(), 3);
 
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i * 3);
 
-        checkLocalStoreForBackup(ignite2, LOCAL_STORE_2);
-        checkLocalStoreForBackup(ignite3, LOCAL_STORE_3);
+        for (int i = 0; i < KEYS; i++) {
+            assertEquals(LOCAL_STORE_1.load(i).get1().intValue(), i * 3);
+            assertEquals(LOCAL_STORE_2.load(i).get1().intValue(), i * 3);
+            assertEquals(LOCAL_STORE_3.load(i).get1().intValue(), i * 3);
+        }
 
         // Stop 3'nd node.
         stopGrid(3, true);
 
+        for (int i = 0; i < KEYS; i++)
+            cache.put(i, i * 7);
+
         assertEquals(Ignition.allGrids().size(), 2);
 
-        checkLocalStoreForBackup(ignite2, LOCAL_STORE_2);
+        for (int i = 0; i < KEYS; i++) {
+            assertEquals(LOCAL_STORE_1.load(i).get1().intValue(), i * 7);
+            assertEquals(LOCAL_STORE_2.load(i).get1().intValue(), i * 7);
+            assertEquals(LOCAL_STORE_3.load(i).get1().intValue(), i * 3);
+        }
+
+        startGrid(3);
+
+        assertEquals(Ignition.allGrids().size(), 3);
+
+        for (int i = 0; i < KEYS; i++) {
+            assertEquals(LOCAL_STORE_1.load(i).get1().intValue(), i * 7);
+            assertEquals(LOCAL_STORE_2.load(i).get1().intValue(), i * 7);
+            assertEquals(LOCAL_STORE_3.load(i).get1().intValue(), i * 7);
+        }
     }
 
     /**
@@ -369,21 +506,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
                 assertEquals(store.load(i).get1().intValue(), i);
             else if (!ignite.affinity(null).isPrimaryOrBackup(ignite.cluster().localNode(), i))
                 assertNull(store.load(i));
-        }
-    }
-
-    /**
-     * Checks that local stores contains only primary entry.
-     *
-     * @param ignite Ignite.
-     * @param store Store.
-     */
-    private void checkLocalStoreForBackup(Ignite ignite, CacheStore<Integer, IgniteBiTuple<Integer, ?>> store) {
-        for (int i = 0; i < KEYS; i++) {
-            if (ignite.affinity(BACKUP_CACHE).isBackup(ignite.cluster().localNode(), i))
-                assertEquals(store.load(i).get1().intValue(), i);
-            else if (!ignite.affinity(BACKUP_CACHE).isPrimaryOrBackup(ignite.cluster().localNode(), i))
-                assertNull(store.load(i).get1());
         }
     }
 

@@ -1413,10 +1413,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         GridCacheReturn retVal = null;
 
-                        if (keys.size() > 1 &&                             // Several keys ...
-                            writeThrough() && !req.skipStore() &&          // and store is enabled ...
-                            !ctx.store().isLocal() &&                      // and this is not local store ...
-                            !ctx.dr().receiveEnabled()                     // and no DR.
+                        if (keys.size() > 1 &&                    // Several keys ...
+                            writeThrough() && !req.skipStore() && // and store is enabled ...
+                            !ctx.store().isLocal() &&             // and this is not local store ...
+                                                                  // (conflict resolver should be used for local store)
+                            !ctx.dr().receiveEnabled()            // and no DR.
                             ) {
                             // This method can only be used when there are no replicated entries in the batch.
                             UpdateBatchResult updRes = updateWithBatch(node,
@@ -2051,7 +2052,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     op,
                     writeVal,
                     req.invokeArguments(),
-                    primary && writeThrough() && !req.skipStore(),
+                    (primary || ctx.store().isLocal()) && writeThrough() && !req.skipStore(),
                     !req.skipStore(),
                     lsnrs != null || sndPrevVal || req.returnValue(),
                     req.keepBinary(),
@@ -2859,7 +2860,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             op,
                             op == TRANSFORM ? entryProcessor : val,
                             op == TRANSFORM ? req.invokeArguments() : null,
-                            /*write-through*/false,
+                            /*write-through*/ctx.store().isLocal(),
                             /*read-through*/false,
                             /*retval*/lsnrs != null,
                             req.keepBinary(),

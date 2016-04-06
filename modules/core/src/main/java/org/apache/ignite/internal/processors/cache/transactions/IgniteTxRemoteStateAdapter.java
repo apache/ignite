@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -98,9 +99,16 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
 
     /** {@inheritDoc} */
     @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
-        assert false;
+        Collection<CacheStoreManager> stores = new ArrayList<>(cctx.cacheContexts().size());
 
-        return null;
+        for (Object cacheCtx : cctx.cacheContexts()) {
+            CacheStoreManager store = ((GridCacheContext)cacheCtx).store();
+
+            if (store.configured() && store.isLocal())
+                stores.add(store);
+        }
+
+        return stores;
     }
 
     /** {@inheritDoc} */
