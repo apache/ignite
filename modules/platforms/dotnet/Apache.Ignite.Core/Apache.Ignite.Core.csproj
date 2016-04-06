@@ -92,6 +92,7 @@
     <Compile Include="Cache\CacheException.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
+    <Compile Include="Cache\Configuration\NearCacheConfiguration.cs" />
     <Compile Include="Cache\Configuration\QueryAlias.cs" />
     <Compile Include="Cache\Configuration\QueryTextFieldAttribute.cs" />
     <Compile Include="Cache\Event\CacheEntryEventType.cs" />
@@ -99,6 +100,9 @@
     <Compile Include="Cache\Event\ICacheEntryEventFilter.cs" />
     <Compile Include="Cache\Event\ICacheEntryEventListener.cs" />
     <Compile Include="Cache\Event\Package-Info.cs" />
+    <Compile Include="Cache\Eviction\FifoEvictionPolicy.cs" />
+    <Compile Include="Cache\Eviction\IEvictionPolicy.cs" />
+    <Compile Include="Cache\Eviction\LruEvictionPolicy.cs" />
     <Compile Include="Cache\Expiry\ExpiryPolicy.cs" />
     <Compile Include="Cache\Expiry\IExpiryPolicy.cs" />
     <Compile Include="Cache\Expiry\Package-Info.cs" />
