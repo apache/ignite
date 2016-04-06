@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Cache.Eviction
     /// table-like data structures. The LRU ordering information is
     /// maintained by attaching ordering metadata to cache entries.
     /// </summary>
-    public class LruEvictionPolicy : IEvictionPolicy
+    public class LruEvictionPolicy : EvictionPolicyBase
     {
         // TODO
     }

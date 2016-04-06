@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System.ComponentModel;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Eviction;
 
     /// <summary>
@@ -38,6 +39,24 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public NearCacheConfiguration()
         {
             NearStartSize = DefaultNearStartSize;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NearCacheConfiguration"/> class.
+        /// </summary>
+        internal NearCacheConfiguration(IBinaryRawReader reader)
+        {
+            NearStartSize = reader.ReadInt();
+            EvictionPolicy = EvictionPolicyBase.Read(reader);
+        }
+
+        /// <summary>
+        /// Writes to the specified writer.
+        /// </summary>
+        internal void Write(IBinaryRawWriter writer)
+        {
+            writer.WriteInt(NearStartSize);
+            EvictionPolicyBase.Write(writer, EvictionPolicy);
         }
 
         /// <summary>

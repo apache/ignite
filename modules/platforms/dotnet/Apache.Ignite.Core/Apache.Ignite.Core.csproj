@@ -100,6 +100,7 @@
     <Compile Include="Cache\Event\ICacheEntryEventFilter.cs" />
     <Compile Include="Cache\Event\ICacheEntryEventListener.cs" />
     <Compile Include="Cache\Event\Package-Info.cs" />
+    <Compile Include="Cache\Eviction\EvictionPolicyBase.cs" />
     <Compile Include="Cache\Eviction\FifoEvictionPolicy.cs" />
     <Compile Include="Cache\Eviction\IEvictionPolicy.cs" />
     <Compile Include="Cache\Eviction\LruEvictionPolicy.cs" />
