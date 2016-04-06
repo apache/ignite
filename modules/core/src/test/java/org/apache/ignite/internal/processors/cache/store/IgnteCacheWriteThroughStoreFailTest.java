@@ -47,7 +47,7 @@ public class IgnteCacheWriteThroughStoreFailTest extends IgniteCacheAbstractTest
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
@@ -64,7 +64,7 @@ public class IgnteCacheWriteThroughStoreFailTest extends IgniteCacheAbstractTest
      * @throws Exception If failed.
      */
     public void testFailOnPut() throws Exception {
-        Ignite client = grid(1);
+        Ignite client = grid(0);
 
         IgniteCache<Integer, Integer> cache = client.cache(null);
 
