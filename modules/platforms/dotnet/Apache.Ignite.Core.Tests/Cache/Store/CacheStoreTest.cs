@@ -215,8 +215,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             // Test exception in store
             CacheTestStore.ThrowError = true;
-            var ex = Assert.Throws<CacheStoreException>(() => cache.LoadCache(new CacheEntryFilter(), 100, 10));
-            Assert.IsInstanceOf<ArithmeticException>(ex.InnerException);
+            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() =>
+                cache.LoadCache(new CacheEntryFilter(), 100, 10)).InnerException);
         }
 
         [Test]
