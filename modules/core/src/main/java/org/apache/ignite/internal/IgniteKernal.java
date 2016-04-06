@@ -869,9 +869,19 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new DataStreamProcessor(ctx));
             startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
-            startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
-                IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
-                IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)));
+
+            final GridComponent cmp;
+
+            if (cfg.isPeerClassLoadingEnabled()) {
+                log.warning("Hadoop module will be disabled since peer class loading is switched on.");
+
+                cmp = IgniteComponentType.HADOOP.create(ctx, true); // No-op when peer class loading is enabled.
+            }
+            else
+                cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null);
+
+            startProcessor((GridProcessor)cmp);
+
             startProcessor(new DataStructuresProcessor(ctx));
             startProcessor(createComponent(PlatformProcessor.class, ctx));
 
