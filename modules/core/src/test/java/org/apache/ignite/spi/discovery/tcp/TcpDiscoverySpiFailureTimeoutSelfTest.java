@@ -350,6 +350,9 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout)
             throws IOException, IgniteCheckedException {
             if (!(msg instanceof TcpDiscoveryPingRequest)) {
+                if (countConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
+                    connCheckStatusMsgCntSent++;
+
                 super.writeToSocket(sock, msg, timeout);
 
                 return;
