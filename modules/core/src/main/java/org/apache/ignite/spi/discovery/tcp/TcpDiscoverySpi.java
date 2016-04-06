@@ -1346,23 +1346,23 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      */
     protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
         IgniteCheckedException {
-        writeToSocket(sock, msg, new BufferedOutputStream(sock.getOutputStream(), sock.getSendBufferSize()), timeout);
+        writeToSocket(sock, new BufferedOutputStream(sock.getOutputStream(), sock.getSendBufferSize()), msg, timeout);
     }
 
     /**
      * Writes message to the socket.
      *
      * @param sock Socket.
-     * @param msg Message.
      * @param out Stream to write to.
+     * @param msg Message.
      * @param timeout Timeout.
      * @throws IOException If IO failed or write timed out.
      * @throws IgniteCheckedException If marshalling failed.
      */
     @SuppressWarnings("ThrowFromFinallyBlock")
     protected void writeToSocket(Socket sock,
-        TcpDiscoveryAbstractMessage msg,
         OutputStream out,
+        TcpDiscoveryAbstractMessage msg,
         long timeout) throws IOException, IgniteCheckedException {
         assert sock != null;
         assert msg != null;
