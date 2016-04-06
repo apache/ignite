@@ -34,6 +34,17 @@ public class HadoopNoHadoopMapReduceTest extends HadoopMapReduceTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        try {
+            super.afterTestsStopped();
+        }
+        finally {
+            // Return the class name back:
+            GridTestUtils.setFieldValue(IgniteComponentType.HADOOP, "clsName", HadoopProcessor.class.getName());
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
