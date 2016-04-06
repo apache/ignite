@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -1339,6 +1340,21 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      *
      * @param sock Socket.
      * @param msg Message.
+     * @param timeout Socket write timeout.
+     * @throws IOException If IO failed or write timed out.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
+        IgniteCheckedException {
+        writeToSocket(sock, msg, null, timeout);
+    }
+
+    /**
+     * Writes message to the socket.
+     *
+     * @param sock Socket.
+     * @param msg Message.
+     * @param out Stream to write to.
      * @param timeout Timeout.
      * @throws IOException If IO failed or write timed out.
      * @throws IgniteCheckedException If marshalling failed.
@@ -1346,18 +1362,22 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     @SuppressWarnings("ThrowFromFinallyBlock")
     protected void writeToSocket(Socket sock,
         TcpDiscoveryAbstractMessage msg,
+        @Nullable OutputStream out,
         long timeout) throws IOException, IgniteCheckedException {
         assert sock != null;
         assert msg != null;
 
         SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
 
-        addTimeoutObject(obj);
-
         IOException err = null;
 
         try {
-            marsh.marshal(msg, sock.getOutputStream());
+            if (out == null)
+                out = new BufferedOutputStream(sock.getOutputStream(), sock.getSendBufferSize());
+
+            addTimeoutObject(obj);
+
+            marsh.marshal(msg, out);
         }
         catch (IOException e) {
             err = e;
