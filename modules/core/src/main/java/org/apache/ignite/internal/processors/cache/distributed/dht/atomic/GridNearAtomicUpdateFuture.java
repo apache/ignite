@@ -440,10 +440,16 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     ) {
         GridCacheAffinityManager affMgr = cctx.affinity();
 
-        // If we can send updates in parallel - do it.
-        return fastMap ?
-            cctx.topology().nodes(affMgr.partition(key), topVer) :
-            Collections.singletonList(affMgr.primary(key, topVer));
+        if (key.partition() == -1) {
+            // If we can send updates in parallel - do it.
+            return fastMap ?
+                cctx.topology().nodes(affMgr.partition(key), topVer) :
+                Collections.singletonList(affMgr.primary(key, topVer));
+        }
+        else
+            return fastMap ?
+                cctx.topology().nodes(key.partition(), topVer) :
+                Collections.singletonList(affMgr.primary(key.partition(), topVer));
     }
 
     /**
@@ -704,7 +710,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                                 remapKeys = new ArrayList<>(failedKeys.size());
 
                                 for (Object key : failedKeys)
-                                    remapKeys.add(cctx.toCacheKeyObject(key));
+                                    remapKeys.add(cctx.toCacheKeyObject(key, true));
 
                                 updVer = null;
                             }
@@ -1055,7 +1061,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 if (val == null && op != GridCacheOperation.DELETE)
                     continue;
 
-                KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
+                KeyCacheObject cacheKey = cctx.toCacheKeyObject(key, true);
 
                 if (remapKeys != null && !remapKeys.contains(cacheKey))
                     continue;
@@ -1170,12 +1176,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             if (val == null && op != GridCacheOperation.DELETE)
                 throw new NullPointerException("Null value.");
 
-            KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
+            KeyCacheObject cacheKey = cctx.toCacheKeyObject(key, true);
 
             if (op != TRANSFORM)
                 val = cctx.toCacheObject(val);
 
-            ClusterNode primary = cctx.affinity().primary(cacheKey, topVer);
+            ClusterNode primary = cctx.affinity().primary(cacheKey.partition(), topVer);
 
             if (primary == null)
                 throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +

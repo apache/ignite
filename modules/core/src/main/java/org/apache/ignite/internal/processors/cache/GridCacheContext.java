@@ -1082,8 +1082,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         for (CacheEntryPredicate p0 : p) {
             if ((p0 instanceof CacheEntrySerializablePredicate) &&
-               ((CacheEntrySerializablePredicate)p0).predicate() instanceof CacheEntryPredicateNoValue)
-            return true;
+                ((CacheEntrySerializablePredicate)p0).predicate() instanceof CacheEntryPredicateNoValue)
+                return true;
         }
 
         return false;
@@ -1140,7 +1140,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings({"unchecked"})
     public IgnitePredicate<Cache.Entry<K, V>>[] vararg(IgnitePredicate<Cache.Entry<K, V>> p) {
-        return p == null ? CU.<K, V>empty() : new IgnitePredicate[]{p};
+        return p == null ? CU.<K, V>empty() : new IgnitePredicate[] {p};
     }
 
     /**
@@ -1304,8 +1304,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         return (opCtx != null && opCtx.skipStore());
     }
-
-
 
     /**
      * @return {@code True} if need check near cache context.
@@ -1789,9 +1787,20 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
+        return toCacheKeyObject(obj, false);
+    }
+
+    /**
+     * @param obj Object.
+     * @return Cache key object.
+     */
+    public KeyCacheObject toCacheKeyObject(Object obj, boolean includePartition) {
         assert validObjectForCache(obj) : obj;
 
-        return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
+        if (includePartition)
+            return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true, affinity().partition(obj));
+        else
+            return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
     }
 
     /**
@@ -1823,8 +1832,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public CacheObject unswapCacheObject(byte type, byte[] bytes, @Nullable IgniteUuid clsLdrId)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         if (ctx.config().isPeerClassLoadingEnabled() && type != CacheObject.TYPE_BYTE_ARR) {
             ClassLoader ldr = clsLdrId != null ? deploy().getClassLoader(clsLdrId) : deploy().localLoader();
 
