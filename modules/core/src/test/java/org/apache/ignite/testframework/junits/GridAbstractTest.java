@@ -153,7 +153,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static long ts = System.currentTimeMillis();
 
     /** Starting grid name. */
-    protected final static ThreadLocal<String> startingGrid = new ThreadLocal<>();
+    protected static final ThreadLocal<String> startingGrid = new ThreadLocal<>();
 
     /**
      *
@@ -452,6 +452,14 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param cfg Configuration to use in Test
+     * @return Test kernal context.
+     */
+    protected GridTestKernalContext newContext(IgniteConfiguration cfg) throws IgniteCheckedException {
+        return new GridTestKernalContext(log(), cfg);
+    }
+
+    /**
      * Called before execution of every test method in class.
      *
      * @throws Exception If failed. {@link #afterTest()} will be called in this case.
@@ -520,7 +528,7 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
-            info(">>> Starting test class: " + GridTestUtils.fullSimpleName(getClass()) + " <<<");
+            info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
@@ -553,7 +561,7 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
 
-        info(">>> Starting test: " + getName() + " <<<");
+        info(">>> Starting test: " + testDescription() + " <<<");
 
         try {
             beforeTest();
@@ -570,6 +578,20 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         ts = System.currentTimeMillis();
+    }
+
+    /**
+     * @return Test description.
+     */
+    protected String testDescription() {
+        return GridTestUtils.fullSimpleName(getClass()) + "#" + getName();
+    }
+
+    /**
+     * @return Test class description.
+     */
+    protected String testClassDescription() {
+        return GridTestUtils.fullSimpleName(getClass());
     }
 
     /**
@@ -730,16 +752,30 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+        return startGrid(gridName, optimize(getConfiguration(gridName)), ctx);
+    }
+    /**
+     * Starts new grid with given name.
+     *
+     * @param gridName Grid name.
+     * @param ctx Spring context.
+     * @return Started grid.
+     * @throws Exception If failed.
+     */
+    protected Ignite startGrid(String gridName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
+        throws Exception {
         if (!isRemoteJvm(gridName)) {
             startingGrid.set(gridName);
 
             try {
-                Ignite node = IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
+                Ignite node = IgnitionEx.start(cfg, ctx);
 
-                IgniteConfiguration cfg = node.configuration();
+                IgniteConfiguration nodeCfg = node.configuration();
 
                 log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
-                    + ", marshaller=" + cfg.getMarshaller() + ", binaryCfg=" + cfg.getBinaryConfiguration() + "]");
+                    + ", marshaller=" + nodeCfg.getMarshaller()
+                    + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
+                    + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
 
                 return node;
             }
@@ -1374,7 +1410,7 @@ public abstract class GridAbstractTest extends TestCase {
     @Override protected void tearDown() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
-        info(">>> Stopping test: " + getName() + " in " + dur + " ms <<<");
+        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
 
         TestCounters cntrs = getTestCounters();
 
@@ -1389,7 +1425,7 @@ public abstract class GridAbstractTest extends TestCase {
             serializedObj.clear();
 
             if (isLastTest()) {
-                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass()) + " <<<");
+                info(">>> Stopping test class: " + testClassDescription() + " <<<");
 
                 TestCounters counters = getTestCounters();
 

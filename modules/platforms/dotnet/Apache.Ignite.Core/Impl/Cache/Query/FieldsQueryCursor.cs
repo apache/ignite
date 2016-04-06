@@ -17,40 +17,44 @@
 
 namespace Apache.Ignite.Core.Impl.Cache.Query
 {
-    using System.Collections;
+    using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Cursor for entry-based queries.
     /// </summary>
-    internal class FieldsQueryCursor : AbstractQueryCursor<IList>
+    internal class FieldsQueryCursor<T> : AbstractQueryCursor<T>
     {
+        /** */
+        private readonly Func<IBinaryRawReader, int, T> _readerFunc;
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaler.</param>
         /// <param name="keepBinary">Keep poratble flag.</param>
-        public FieldsQueryCursor(IUnmanagedTarget target, Marshaller marsh, bool keepBinary)
+        /// <param name="readerFunc">The reader function.</param>
+        public FieldsQueryCursor(IUnmanagedTarget target, Marshaller marsh, bool keepBinary, 
+            Func<IBinaryRawReader, int, T> readerFunc)
             : base(target, marsh, keepBinary)
         {
-            // No-op.
+            Debug.Assert(readerFunc != null);
+
+            _readerFunc = readerFunc;
         }
 
         /** <inheritdoc /> */
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        protected override IList Read(BinaryReader reader)
+        protected override T Read(BinaryReader reader)
         {
             int cnt = reader.ReadInt();
 
-            var res = new ArrayList(cnt);
-
-            for (int i = 0; i < cnt; i++)
-                res.Add(reader.ReadObject<object>());
-
-            return res;
+            return _readerFunc(reader, cnt);
         }
     }
 }

@@ -33,4 +33,12 @@ public class OptimizedMarshallerPooledSelfTest extends OptimizedMarshallerSelfTe
 
         return m;
     }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        // Reset static registry.
+        new OptimizedMarshaller().setPoolSize(0);
+    }
 }

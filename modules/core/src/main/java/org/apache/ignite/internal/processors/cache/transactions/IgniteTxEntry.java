@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -690,8 +692,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : entryProcessors()) {
             try {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(ctx, key, keyVal, cacheVal, val,
-                    ver, keepBinary());
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry(key, keyVal, cacheVal, val,
+                    ver, keepBinary(), cached());
 
                 EntryProcessor processor = t.get1();
 
@@ -868,7 +870,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
         // Unmarshal transform closure anyway if it exists.
         if (transformClosBytes != null && entryProcessorsCol == null)
-            entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes, clsLdr);
+            entryProcessorsCol = ctx.marshaller().unmarshal(transformClosBytes,
+                U.resolveClassLoader(clsLdr, ctx.gridConfig()));
 
         if (filters == null)
             filters = CU.empty0();
@@ -884,7 +887,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         val.unmarshal(this.ctx, clsLdr);
 
         if (expiryPlcBytes != null && expiryPlc == null)
-            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, clsLdr);
+            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(clsLdr, ctx.gridConfig()));
     }
 
     /**
@@ -915,13 +918,6 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         assert entryProcessorCalcVal != null;
 
         this.entryProcessorCalcVal = entryProcessorCalcVal;
-    }
-
-    /**
-     * @return Read version for serializable transaction.
-     */
-    @Nullable public GridCacheVersion serializableReadVersion() {
-        return serReadVer;
     }
 
     /**

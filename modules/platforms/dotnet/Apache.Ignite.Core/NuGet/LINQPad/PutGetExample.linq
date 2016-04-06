@@ -1,5 +1,5 @@
 <Query Kind="Program">
-    <NuGetReference>Apache.Ignite.NET</NuGetReference>
+    <NuGetReference>Apache.Ignite</NuGetReference>
     <Namespace>Apache.Ignite.Core</Namespace>
     <Namespace>Apache.Ignite.Core.Binary</Namespace>
 </Query>
@@ -25,13 +25,13 @@
 /// with binary values. Note that binary object can be retrieved in
 /// fully-deserialized form or in binary object format using special
 /// cache projection.
+/// 
+/// Requirements:
+/// * Java Runtime Environment (JRE): http://www.oracle.com/technetwork/java/javase/downloads/index.html (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
 /// </summary>
 
 void Main()
 {
-	if (!Environment.Is64BitProcess)
-		throw new Exception("x64 LINQPad is required to run this sample (see AnyCPU build: http://www.linqpad.net/Download.aspx)");	
-
 	// Force new LINQPad query process to reinit JVM
 	Util.NewProcess = true;
 	

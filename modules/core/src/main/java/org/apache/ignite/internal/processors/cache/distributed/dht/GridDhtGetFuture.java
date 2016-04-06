@@ -406,6 +406,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             }
             else {
                 fut = tx.getAllAsync(cctx,
+                    null,
                     keys.keySet(),
                     /*deserialize binary*/false,
                     skipVals,
@@ -437,6 +438,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         }
                         else {
                             return tx.getAllAsync(cctx,
+                                null,
                                 keys.keySet(),
                                 /*deserialize binary*/false,
                                 skipVals,

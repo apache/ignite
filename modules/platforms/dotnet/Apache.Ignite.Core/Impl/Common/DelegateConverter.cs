@@ -18,11 +18,13 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Reflection.Emit;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Converts generic and non-generic delegates.
@@ -31,6 +33,9 @@ namespace Apache.Ignite.Core.Impl.Common
     {
         /** */
         private const string DefaultMethodName = "Invoke";
+
+        /** */
+        private static readonly MethodInfo ReadObjectMethod = typeof (IBinaryRawReader).GetMethod("ReadObject");
 
         /// <summary>
         /// Compiles a function without arguments.
@@ -188,7 +193,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <typeparam name="T">Result func type.</typeparam>
         /// <param name="type">Type to be created by ctor.</param>
         /// <param name="argTypes">Argument types.</param>
-        /// <param name="convertResultToObject">if set to <c>true</c> [convert result to object].
+        /// <param name="convertResultToObject">
         /// Flag that indicates whether ctor return value should be converted to object.
         /// </param>
         /// <returns>
@@ -203,6 +208,73 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
+        /// Compiles a contructor that reads all arguments from a binary reader.
+        /// </summary>
+        /// <typeparam name="T">Result type</typeparam>
+        /// <param name="ctor">The ctor.</param>
+        /// <param name="innerCtorFunc">Function to retrieve reading constructor for an argument. 
+        /// Can be null or return null, in this case the argument will be read directly via ReadObject.</param>
+        /// <returns></returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public static Func<IBinaryRawReader, T> CompileCtor<T>(ConstructorInfo ctor, 
+            Func<Type, ConstructorInfo> innerCtorFunc)
+        {
+            Debug.Assert(ctor != null);
+
+            var readerParam = Expression.Parameter(typeof (IBinaryRawReader));
+
+            var ctorExpr = GetConstructorExpression(ctor, innerCtorFunc, readerParam, typeof(T));
+
+            return Expression.Lambda<Func<IBinaryRawReader, T>>(ctorExpr, readerParam).Compile();
+        }
+
+        /// <summary>
+        /// Gets the constructor expression.
+        /// </summary>
+        /// <param name="ctor">The ctor.</param>
+        /// <param name="innerCtorFunc">The inner ctor function.</param>
+        /// <param name="readerParam">The reader parameter.</param>
+        /// <param name="resultType">Type of the result.</param>
+        /// <returns>
+        /// Ctor call expression.
+        /// </returns>
+        private static Expression GetConstructorExpression(ConstructorInfo ctor, 
+            Func<Type, ConstructorInfo> innerCtorFunc, Expression readerParam, Type resultType)
+        {
+            var ctorParams = ctor.GetParameters();
+
+            var paramsExpr = new List<Expression>(ctorParams.Length);
+
+            foreach (var param in ctorParams)
+            {
+                var paramType = param.ParameterType;
+
+                var innerCtor = innerCtorFunc != null ? innerCtorFunc(paramType) : null;
+
+                if (innerCtor != null)
+                {
+                    var readExpr = GetConstructorExpression(innerCtor, innerCtorFunc, readerParam, paramType);
+
+                    paramsExpr.Add(readExpr);
+                }
+                else
+                {
+                    var readMethod = ReadObjectMethod.MakeGenericMethod(paramType);
+
+                    var readExpr = Expression.Call(readerParam, readMethod);
+
+                    paramsExpr.Add(readExpr);
+                }
+            }
+
+            Expression ctorExpr = Expression.New(ctor, paramsExpr);
+
+            ctorExpr = Expression.Convert(ctorExpr, resultType);
+
+            return ctorExpr;
+        }
+
+        /// <summary>
         /// Compiles the field setter.
         /// </summary>
         /// <param name="field">The field.</param>
@@ -211,15 +283,13 @@ namespace Apache.Ignite.Core.Impl.Common
         public static Action<object, object> CompileFieldSetter(FieldInfo field)
         {
             Debug.Assert(field != null);
-            Debug.Assert(field.DeclaringType != null);   // non-static
+            Debug.Assert(field.DeclaringType != null);
 
             var targetParam = Expression.Parameter(typeof(object));
-            var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
-
             var valParam = Expression.Parameter(typeof(object));
             var valParamConverted = Expression.Convert(valParam, field.FieldType);
 
-            var assignExpr = Expression.Call(GetWriteFieldMethod(field), targetParamConverted, valParamConverted);
+            var assignExpr = Expression.Call(GetWriteFieldMethod(field), targetParam, valParamConverted);
 
             return Expression.Lambda<Action<object, object>>(assignExpr, targetParam, valParam).Compile();
         }
@@ -233,7 +303,7 @@ namespace Apache.Ignite.Core.Impl.Common
         public static Action<object, object> CompilePropertySetter(PropertyInfo prop)
         {
             Debug.Assert(prop != null);
-            Debug.Assert(prop.DeclaringType != null);   // non-static
+            Debug.Assert(prop.DeclaringType != null);
 
             var targetParam = Expression.Parameter(typeof(object));
             var targetParamConverted = Expression.Convert(targetParam, prop.DeclaringType);
@@ -249,6 +319,53 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
+        /// Compiles the property setter.
+        /// </summary>
+        /// <param name="prop">The property.</param>
+        /// <returns>Compiled property setter.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public static Func<object, object> CompilePropertyGetter(PropertyInfo prop)
+        {
+            Debug.Assert(prop != null);
+            Debug.Assert(prop.DeclaringType != null);
+
+            var targetParam = Expression.Parameter(typeof(object));
+            var targetParamConverted = prop.GetGetMethod().IsStatic
+                ? null
+                // ReSharper disable once AssignNullToNotNullAttribute (incorrect warning)
+                : Expression.Convert(targetParam, prop.DeclaringType);
+
+            var fld = Expression.Property(targetParamConverted, prop);
+
+            var fldConverted = Expression.Convert(fld, typeof (object));
+
+            return Expression.Lambda<Func<object, object>>(fldConverted, targetParam).Compile();
+        }
+
+        /// <summary>
+        /// Compiles the property setter.
+        /// </summary>
+        /// <param name="field">The field.</param>
+        /// <returns>Compiled property setter.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public static Func<object, object> CompileFieldGetter(FieldInfo field)
+        {
+            Debug.Assert(field != null);
+            Debug.Assert(field.DeclaringType != null);
+
+            var targetParam = Expression.Parameter(typeof(object));
+            var targetParamConverted = field.IsStatic
+                ? null
+                : Expression.Convert(targetParam, field.DeclaringType);
+
+            var fld = Expression.Field(targetParamConverted, field);
+
+            var fldConverted = Expression.Convert(fld, typeof (object));
+
+            return Expression.Lambda<Func<object, object>>(fldConverted, targetParam).Compile();
+        }
+
+        /// <summary>
         /// Gets a method to write a field (including private and readonly).
         /// NOTE: Expression Trees can't write readonly fields.
         /// </summary>
@@ -261,7 +378,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var declaringType = field.DeclaringType;
 
-            Debug.Assert(declaringType != null);  // static fields are not supported
+            Debug.Assert(declaringType != null);
 
             var method = new DynamicMethod(string.Empty, null, new[] { typeof(object), field.FieldType }, 
                 declaringType, true);

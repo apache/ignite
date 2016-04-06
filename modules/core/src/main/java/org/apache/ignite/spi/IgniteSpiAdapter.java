@@ -39,10 +39,12 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -448,6 +450,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     }
 
     /**
+     * @return {@code true} if client cluster nodes should be checked.
+     */
+    private boolean checkClient() {
+        IgniteSpiConsistencyChecked ann = U.getAnnotation(getClass(), IgniteSpiConsistencyChecked.class);
+
+        return ann != null && ann.checkClient();
+    }
+
+    /**
      * Method which is called in the end of checkConfigurationConsistency() method. May be overriden in SPIs.
      *
      * @param spiCtx SPI context.
@@ -480,8 +491,12 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
          */
         boolean optional = checkOptional();
         boolean enabled = checkEnabled();
+        boolean checkClient = checkClient();
 
         if (!enabled)
+            return;
+
+        if (!checkClient && (CU.clientNode(getLocalNode()) || CU.clientNode(node)))
             return;
 
         String clsAttr = createSpiAttributeName(IgniteNodeAttributes.ATTR_SPI_CLASS);

@@ -144,7 +144,7 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param visibleOnly If only visible expressions needed.
      * @return Select clause expressions.
      */
-    public Iterable<GridSqlElement> columns(boolean visibleOnly) {
+    public List<GridSqlElement> columns(boolean visibleOnly) {
         assert visibleCols <= cols.size();
 
         return visibleOnly && visibleCols != cols.size() ?

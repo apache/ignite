@@ -17,18 +17,19 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.Externalizable;
-import java.util.Random;
-import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Externalizable;
+import java.util.Random;
+import java.util.concurrent.Callable;
+
 /**
- * {@link IgfsFileInfo} test case.
+ * {@link IgfsEntryInfo} test case.
  */
 public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
@@ -49,18 +50,7 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
 
             @SuppressWarnings("deprecation") // Suppress due to default constructor should never be used directly.
             @Nullable @Override public Object call() throws IgniteCheckedException {
-                for (int i = 0; i < 10000; i++) {
-                    testSerialization(new IgfsFileInfo());
-                    testSerialization(new IgfsFileInfo());
-                    testSerialization(new IgfsFileInfo(true, null));
-                    testSerialization(new IgfsFileInfo(false, null));
-
-                    IgfsFileInfo rndInfo = new IgfsFileInfo(rnd.nextInt(max), null, false, null);
-
-                    testSerialization(rndInfo);
-                    testSerialization(new IgfsFileInfo(rndInfo, rnd.nextInt(max)));
-                    testSerialization(new IgfsFileInfo(rndInfo, F.asMap("desc", String.valueOf(rnd.nextLong()))));
-                }
+                testSerialization(IgfsUtils.createDirectory(IgniteUuid.randomUuid()));
 
                 return null;
             }
@@ -73,7 +63,7 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
      * @param info Node info to test serialization for.
      * @throws IgniteCheckedException If failed.
      */
-    public void testSerialization(IgfsFileInfo info) throws IgniteCheckedException {
+    public void testSerialization(IgfsEntryInfo info) throws IgniteCheckedException {
         assertEquals(info, mu(info));
     }
 
