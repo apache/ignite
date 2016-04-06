@@ -320,7 +320,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                 AffinityInfo info = new AffinityInfo(
                     cctx.config().getAffinity(),
                     cctx.config().getAffinityMapper(),
-                    new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)),
+                    new GridAffinityAssignment(topVer, cctx.affinity().assignment(topVer)),
                     cctx.cacheObjectContext());
 
                 IgniteInternalFuture<AffinityInfo> old = affMap.putIfAbsent(key, new GridFinishedFuture<>(info));

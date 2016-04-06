@@ -94,7 +94,7 @@ public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
                 TestRecordingCommunicationSpi comm =
                     (TestRecordingCommunicationSpi)ignite(0).configuration().getCommunicationSpi();
 
-                Collection<GridNearLockRequest> reqs = (Collection)comm.recordedMessages();
+                Collection<GridNearLockRequest> reqs = (Collection)comm.recordedMessages(false);
 
                 assertEquals(1, reqs.size());
 

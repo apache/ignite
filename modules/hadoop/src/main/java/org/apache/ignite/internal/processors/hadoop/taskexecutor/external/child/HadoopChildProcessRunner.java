@@ -147,7 +147,7 @@ public class HadoopChildProcessRunner {
                     log.debug("External process initialized [initWaitTime=" +
                         (U.currentTimeMillis() - startTime) + ']');
 
-                initFut.onDone(null, null);
+                initFut.onDone();
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to initialize process: " + req, e);

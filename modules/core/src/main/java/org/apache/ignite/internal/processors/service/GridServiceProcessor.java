@@ -44,6 +44,7 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -51,9 +52,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -90,7 +94,6 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
-import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -102,6 +105,14 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class GridServiceProcessor extends GridProcessorAdapter {
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
+
+    /** */
+    private static final int[] EVTS = {
+        EventType.EVT_NODE_JOINED,
+        EventType.EVT_NODE_LEFT,
+        EventType.EVT_NODE_FAILED,
+        DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
+    };
 
     /** Local service instances. */
     private final Map<String, Collection<ServiceContextImpl>> locSvcs = new HashMap<>();
@@ -168,7 +179,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         cache = ctx.cache().utilityCache();
 
         if (!ctx.clientNode())
-            ctx.event().addLocalEventListener(topLsnr, EVTS_DISCOVERY);
+            ctx.event().addLocalEventListener(topLsnr, EVTS);
 
         try {
             if (ctx.deploy().enabled())
@@ -741,7 +752,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param topVer Topology version.
      * @throws IgniteCheckedException If failed.
      */
-    private void reassign(GridServiceDeployment dep, long topVer) throws IgniteCheckedException {
+    private void reassign(GridServiceDeployment dep, AffinityTopologyVersion topVer) throws IgniteCheckedException {
         ServiceConfiguration cfg = dep.configuration();
 
         Object nodeFilter = cfg.getNodeFilter();
@@ -755,7 +766,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Object affKey = cfg.getAffinityKey();
 
         while (true) {
-            GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer);
+            GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer.topologyVersion());
 
              Collection<ClusterNode> nodes;
 
@@ -785,7 +796,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 Map<UUID, Integer> cnts = new HashMap<>();
 
                 if (affKey != null) {
-                    ClusterNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, new AffinityTopologyVersion(topVer));
+                    ClusterNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, topVer);
 
                     if (n != null) {
                         int cnt = maxPerNodeCnt == 0 ? totalCnt == 0 ? 1 : totalCnt : maxPerNodeCnt;
@@ -1128,7 +1139,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             svcName.set(dep.configuration().getName());
 
                             // Ignore other utility cache events.
-                            long topVer = ctx.discovery().topologyVersion();
+                            AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
                             ClusterNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
@@ -1188,23 +1199,23 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          * @param dep Service deployment.
          * @param topVer Topology version.
          */
-        private void onDeployment(final GridServiceDeployment dep, final long topVer) {
+        private void onDeployment(final GridServiceDeployment dep, final AffinityTopologyVersion topVer) {
             // Retry forever.
             try {
-                long newTopVer = ctx.discovery().topologyVersion();
+                AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
                 // If topology version changed, reassignment will happen from topology event.
-                if (newTopVer == topVer)
+                if (newTopVer.equals(topVer))
                     reassign(dep, topVer);
             }
             catch (IgniteCheckedException e) {
                 if (!(e instanceof ClusterTopologyCheckedException))
                     log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
-                long newTopVer = ctx.discovery().topologyVersion();
+                AffinityTopologyVersion newTopVer = ctx.discovery().topologyVersionEx();
 
-                if (newTopVer != topVer) {
-                    assert newTopVer > topVer;
+                if (!newTopVer.equals(topVer)) {
+                    assert newTopVer.compareTo(topVer) > 0;
 
                     // Reassignment will happen from topology event.
                     return;
@@ -1245,16 +1256,28 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     private class TopologyListener implements GridLocalEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(final Event evt) {
+        @Override public void onEvent(Event evt) {
             if (!busyLock.enterBusy())
                 return;
 
             try {
+                final AffinityTopologyVersion topVer;
+
+                if (evt instanceof DiscoveryCustomEvent) {
+                    DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)evt).customMessage();
+
+                    topVer = ((DiscoveryCustomEvent)evt).affinityTopologyVersion();
+
+                    if (msg instanceof CacheAffinityChangeMessage) {
+                        if (!((CacheAffinityChangeMessage)msg).exchangeNeeded())
+                            return;
+                    }
+                }
+                else
+                    topVer = new AffinityTopologyVersion(((DiscoveryEvent)evt).topologyVersion(), 0);
+
                 depExe.submit(new BusyRunnable() {
                     @Override public void run0() {
-                        AffinityTopologyVersion topVer =
-                            new AffinityTopologyVersion(((DiscoveryEvent)evt).topologyVersion());
-
                         ClusterNode oldest = CU.oldestAliveCacheServerNode(cache.context().shared(), topVer);
 
                         if (oldest != null && oldest.isLocal()) {
@@ -1281,7 +1304,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                         ctx.cache().internalCache(UTILITY_CACHE_NAME).context().affinity().
                                             affinityReadyFuture(topVer).get();
 
-                                        reassign(dep, topVer.topologyVersion());
+                                        reassign(dep, topVer);
                                     }
                                     catch (IgniteCheckedException ex) {
                                         if (!(e instanceof ClusterTopologyCheckedException))
@@ -1298,7 +1321,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             }
 
                             if (!retries.isEmpty())
-                                onReassignmentFailed(topVer.topologyVersion(), retries);
+                                onReassignmentFailed(topVer, retries);
                         }
 
                         // Clean up zombie assignments.
@@ -1335,13 +1358,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
          * @param topVer Topology version.
          * @param retries Retries.
          */
-        private void onReassignmentFailed(final long topVer, final Collection<GridServiceDeployment> retries) {
+        private void onReassignmentFailed(final AffinityTopologyVersion topVer,
+            final Collection<GridServiceDeployment> retries) {
             if (!busyLock.enterBusy())
                 return;
 
             try {
                 // If topology changed again, let next event handle it.
-                if (ctx.discovery().topologyVersion() != topVer)
+                if (ctx.discovery().topologyVersionEx().equals(topVer))
                     return;
 
                 for (Iterator<GridServiceDeployment> it = retries.iterator(); it.hasNext(); ) {
