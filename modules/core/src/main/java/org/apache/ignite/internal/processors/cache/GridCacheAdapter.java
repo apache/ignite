@@ -137,6 +137,7 @@ import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -253,8 +254,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Cache metrics. */
     protected CacheMetricsImpl metrics;
 
+    /** Cache localMxBean. */
+    protected CacheMetricsMXBean localMxBean;
+
     /** Cache mxBean. */
-    protected CacheMetricsMXBean mxBean;
+    protected CacheMetricsMXBean clusterMxBean;
 
     /** Logger. */
     protected IgniteLogger log;
@@ -324,7 +328,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         metrics = new CacheMetricsImpl(ctx);
 
-        mxBean = new CacheMetricsMXBeanImpl(this);
+        localMxBean = new CacheLocalMetricsMXBeanImpl(this);
+        clusterMxBean = new CacheClusterMetricsMXBeanImpl(this);
 
         FileSystemConfiguration[] igfsCfgs = gridCfg.getFileSystemConfiguration();
 
@@ -3294,13 +3299,41 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public CacheMetrics metrics() {
+    @Override public CacheMetrics clusterMetrics() {
+        return clusterMetrics(ctx.grid().cluster().forCacheNodes(ctx.name()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheMetrics clusterMetrics(ClusterGroup grp) {
+        List<CacheMetrics> metrics = new ArrayList<>(grp.nodes().size());
+
+        for (ClusterNode node : grp.nodes()) {
+            Map<Integer, CacheMetrics> nodeCacheMetrics = ((TcpDiscoveryNode)node).cacheMetrics();
+
+            if (nodeCacheMetrics != null) {
+                CacheMetrics e = nodeCacheMetrics.get(context().cacheId());
+
+                if (e != null)
+                    metrics.add(e);
+            }
+        }
+
+        return new CacheMetricsSnapshot(ctx.cache().localMetrics(), metrics);
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheMetrics localMetrics() {
         return new CacheMetricsSnapshot(metrics);
     }
 
     /** {@inheritDoc} */
-    @Override public CacheMetricsMXBean mxBean() {
-        return mxBean;
+    @Override public CacheMetricsMXBean localMxBean() {
+        return localMxBean;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheMetricsMXBean clusterMxBean() {
+        return clusterMxBean;
     }
 
     /**
@@ -5920,7 +5953,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 ctx.toCacheObject(val),
                 ttl,
                 0,
-                ver);
+                ver.conflictVersion());
 
             e.prepareDirectMarshal(ctx.cacheObjectContext());
 

@@ -19,6 +19,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
 {
     using System;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
     /// Address.
@@ -36,15 +37,17 @@ namespace Apache.Ignite.ExamplesDll.Binary
             Street = street;
             Zip = zip;
         }
-        
+
         /// <summary>
         /// Street.
         /// </summary>
+        [QueryTextField]
         public string Street { get; set; }
 
         /// <summary>
         /// ZIP code.
         /// </summary>
+        [QuerySqlField(IsIndexed = true)]
         public int Zip { get; set; }
 
         /// <summary>

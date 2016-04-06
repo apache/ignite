@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Microsoft.Win32;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
     /// <summary>
@@ -45,6 +46,13 @@ namespace Apache.Ignite.Core.Impl
 
         /** Lookup paths. */
         private static readonly string[] JvmDllLookupPaths = {@"jre\bin\server", @"jre\bin\default"};
+
+        /** Registry lookup paths. */
+        private static readonly string[] JreRegistryKeys =
+        {
+            @"Software\JavaSoft\Java Runtime Environment",
+            @"Software\Wow6432Node\JavaSoft\Java Runtime Environment"
+        };
 
         /** File: jvm.dll. */
         internal const string FileJvmDll = "jvm.dll";
@@ -256,19 +264,48 @@ namespace Apache.Ignite.Core.Impl
                 foreach (var path in JvmDllLookupPaths)
                     yield return
                         new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
+
+            // Get paths from the Windows Registry
+            foreach (var regPath in JreRegistryKeys)
+            {
+                using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
+                {
+                    if (jSubKey == null)
+                        continue;
+
+                    var curVer = jSubKey.GetValue("CurrentVersion") as string;
+
+                    // Current version comes first
+                    var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
+
+                    foreach (var ver in versions.Where(v => !string.IsNullOrEmpty(v)))
+                    {
+                        using (var verKey = jSubKey.OpenSubKey(ver))
+                        {
+                            var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
+
+                            if (dllPath != null)
+                                yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Unpacks an embedded resource into a temporary folder and returns the full path of resulting file.
         /// </summary>
         /// <param name="resourceName">Resource name.</param>
-        /// <returns>Path to a temp file with an unpacked resource.</returns>
-        public static string UnpackEmbeddedResource(string resourceName)
+        /// <param name="fileName">Name of the resulting file.</param>
+        /// <returns>
+        /// Path to a temp file with an unpacked resource.
+        /// </returns>
+        public static string UnpackEmbeddedResource(string resourceName, string fileName)
         {
             var dllRes = Assembly.GetExecutingAssembly().GetManifestResourceNames()
                 .Single(x => x.EndsWith(resourceName, StringComparison.OrdinalIgnoreCase));
 
-            return WriteResourceToTempFile(dllRes, resourceName);
+            return WriteResourceToTempFile(dllRes, fileName);
         }
 
         /// <summary>

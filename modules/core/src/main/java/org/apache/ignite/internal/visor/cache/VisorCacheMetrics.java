@@ -179,7 +179,7 @@ public class VisorCacheMetrics implements Serializable {
         mode = cacheProcessor.cacheMode(cacheName);
         sys = cacheProcessor.systemCache(cacheName);
 
-        CacheMetrics m = c.metrics();
+        CacheMetrics m = c.localMetrics();
 
         size = m.getSize();
         keySize = m.getKeySize();
@@ -235,6 +235,15 @@ public class VisorCacheMetrics implements Serializable {
      */
     public String name() {
         return name;
+    }
+
+    /**
+     * Sets cache name.
+     *
+     * @param name New value for cache name.
+     */
+    public void name(String name) {
+        this.name = name;
     }
 
     /**
@@ -403,6 +412,15 @@ public class VisorCacheMetrics implements Serializable {
      */
     public VisorCacheQueryMetrics queryMetrics() {
         return qryMetrics;
+    }
+
+    /**
+     * Sets cache query metrics.
+     *
+     * @param qryMetrics New value for query metrics.
+     */
+    public void queryMetrics(VisorCacheQueryMetrics qryMetrics) {
+        this.qryMetrics = qryMetrics;
     }
 
     /**
