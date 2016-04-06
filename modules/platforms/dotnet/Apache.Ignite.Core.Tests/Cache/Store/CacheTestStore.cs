@@ -191,6 +191,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
                 info.AddValue("details", Details);
+
+                base.GetObjectData(info, context);
             }
         }
     }
