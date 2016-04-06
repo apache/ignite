@@ -558,9 +558,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
         private void CheckCustomStoreError(Exception err)
         {
-            Assert.IsInstanceOf<CacheTestStore.CustomStoreException>(err.InnerException);
+            Assert.IsInstanceOf<CacheTestStore.CustomStoreException>(err);
 
-            var inner = (CacheTestStore.CustomStoreException)err.InnerException;
+            var inner = (CacheTestStore.CustomStoreException)err;
 
             Assert.AreEqual(inner.Message, inner.Details);
         }

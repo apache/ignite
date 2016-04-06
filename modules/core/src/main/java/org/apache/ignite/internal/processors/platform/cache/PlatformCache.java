@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
@@ -715,13 +716,16 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param writer Writer.
      * @param ex Exception.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private static void writeError(BinaryRawWriterEx writer, Exception ex) {
         writer.writeObjectDetached(ex.getClass().getName());
         writer.writeObjectDetached(ex.getMessage());
 
-        if (ex.getCause() instanceof PlatformNativeException) {
+        PlatformNativeException nativeCause = X.cause(ex, PlatformNativeException.class);
+
+        if (nativeCause != null) {
             writer.writeBoolean(true);
-            writer.writeObjectDetached(((PlatformNativeException) ex.getCause()).cause());
+            writer.writeObjectDetached(nativeCause.cause());
         } else
             writer.writeBoolean(false);
     }
