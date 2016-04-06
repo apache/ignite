@@ -387,3 +387,36 @@ mixin preview-xml-java(master, generator, detail)
                 ignite-ui-ace-xml(data-master=master data-generator=generator ng-model='$parent.data' data-detail=detail)
             .preview-content-empty(ng-if='!data')
                 label All Defaults
+
+mixin btn-save(show, click)
+    i.tipField.fa.fa-floppy-o(ng-show=show ng-click=click bs-tooltip='' data-title='Click icon or press [Enter] to save item' data-trigger='hover')
+
+mixin btn-remove(click, tip)
+    i.tipField.fa.fa-remove(ng-click=click bs-tooltip=tip data-trigger='hover')
+
+mixin group-tip(lines)
+    i.group-legend-btn.fa.fa-question-circle(ng-if=lines bs-tooltip='joinTip(#{lines})')
+
+mixin group-btn-add(click, tip)
+    i.group-legend-btn.fa.fa-plus(ng-click=click bs-tooltip=tip)
+
+mixin table-igfs-path-mode-edit(prefix, focusId, index)
+    -var keyModel = 'field.' + prefix + 'Key'
+    -var valModel = 'field.' + prefix + 'Value'
+
+    -var keyFocusId = prefix + 'Key' + focusId
+    -var valFocusId = prefix + 'Value' + focusId
+
+    .col-xs-8.col-sm-8.col-md-8
+        .fieldSep /
+        .input-tip
+            input.form-control(id=keyFocusId enter-focus-next=valFocusId type='text' ng-model=keyModel placeholder='Path' on-escape='tableReset()')
+    .col-xs-4.col-sm-4.col-md-4
+        -var arg = keyModel + ', ' + valModel
+        -var btnVisible = 'tablePairSaveVisible(field, ' + index + ')'
+        -var btnSave = 'tablePairSave(tablePairValid, backupItem, field, ' + index + ')'
+        -var btnVisibleAndSave = btnVisible + ' && ' + btnSave
+        +btn-save(btnVisible, btnSave)
+        .input-tip
+            button.select-toggle.form-control(id=valFocusId bs-select ng-model=valModel data-placeholder='Mode' bs-options='item.value as item.label for item in igfsModes' tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
+

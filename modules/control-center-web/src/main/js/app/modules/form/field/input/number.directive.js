@@ -17,7 +17,7 @@
 
 import template from './number.jade!';
 
-export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
+export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', '$table', (guid, $table) => {
     const link = (scope, el, attrs, [form, label]) => {
         const {id, name} = scope;
         const field = form[name];
@@ -45,6 +45,11 @@ export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
 
         scope.$watch(() => form.$pristine, setAsDefault);
         scope.$watch('value', setAsDefault);
+
+        // TODO LEGACY
+        scope.tableReset = () => {
+            $table.tableSaveAndReset();
+        };
     };
 
     return {
@@ -55,6 +60,8 @@ export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
             placeholder: '@',
             required: '=ngRequired',
             disabled: '=ngDisabled',
+
+            focus: '=ngFocus',
 
             min: '@',
             max: '@',

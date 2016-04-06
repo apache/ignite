@@ -17,7 +17,7 @@
 
 import template from './datalist.jade!';
 
-export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', (guid) => {
+export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (guid, $table) => {
     const link = (scope, $element, attrs, [form]) => {
         const {id, name} = scope;
 
@@ -35,6 +35,11 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', (guid) => {
 
         scope.$watch(() => form.$pristine, setAsDefault);
         scope.$watch('value', setAsDefault);
+
+        // TODO LEGACY
+        scope.tableReset = () => {
+            $table.tableSaveAndReset();
+        };
     };
 
     return {
@@ -44,6 +49,8 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', (guid) => {
             name: '@',
             placeholder: '@',
             disabled: '=ngDisabled',
+
+            focus: '=ngFocus',
 
             options: '=',
             value: '=ngModel'

@@ -17,7 +17,7 @@
 
 import template from './checkbox.jade!';
 
-export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', (guid) => {
+export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', '$table', (guid, $table) => {
     const link = (scope, el, attrs, [form, label]) => {
         const {id, name} = scope;
         const field = form[name];
@@ -39,6 +39,11 @@ export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', (guid) => {
 
         scope.$watch(() => form.$pristine, setAsDefault);
         scope.$watch('value', setAsDefault);
+
+        // TODO LEGACY
+        scope.tableReset = () => {
+            $table.tableSaveAndReset();
+        };
     };
 
     return {
@@ -48,6 +53,8 @@ export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', (guid) => {
             name: '@',
             required: '=ngRequired',
             disabled: '=ngDisabled',
+
+            focus: '=ngFocus',
 
             value: '=ngModel'
         },

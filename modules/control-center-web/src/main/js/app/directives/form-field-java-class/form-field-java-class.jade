@@ -47,6 +47,8 @@ mixin feedback(isCheckPristine, error, errorMessage)
 
         on-enter='onEnter()'
         on-escape='onEscape()'
+
+        data-ng-focus='tableReset()'
     )
 
     +feedback(true, 'javaPackageSpecified', 'does not have package specified!')

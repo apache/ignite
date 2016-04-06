@@ -52,7 +52,7 @@ angular
         }
     };
 }])
-.controller('demoController', ['$scope', '$state', '$window', '$http', '$confirm' ,'$common' , ($scope, $state, $window, $http, $confirm, $common) => {
+.controller('demoController', ['$scope', '$state', '$window', '$http', '$confirm', '$common', ($scope, $state, $window, $http, $confirm, $common) => {
     $scope.toggleDemo = () => {
         const enabled = sessionStorage.getItem('IgniteDemoMode') === 'true';
 

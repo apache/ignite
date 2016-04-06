@@ -18,7 +18,7 @@
 import template from './text.jade!';
 import './text.css!';
 
-export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
+export default ['igniteFormFieldInputText', ['IgniteFormGUID', '$table', (guid, $table) => {
     const link = (scope, el, attrs, [ngModel, form, label]) => {
         const {id, ngModelName} = scope;
 
@@ -86,6 +86,11 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
         ngModel.$render = () => {
             scope.value = ngModel.$modelValue;
         };
+
+        // TODO LEGACY
+        scope.tableReset = () => {
+            $table.tableSaveAndReset();
+        };
     };
 
     return {
@@ -96,6 +101,8 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
             placeholder: '@',
             required: '=ngRequired',
             disabled: '=ngDisabled',
+
+            focus: '=ngFocus',
 
             ngBlur: '&',
 

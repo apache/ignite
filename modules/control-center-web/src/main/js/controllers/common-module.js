@@ -1311,6 +1311,20 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
         $common.hidePopover();
     }
 
+    function _tableSaveAndReset() {
+        var field = table.field;
+
+        var save = $common.isDefined(field) && $common.isDefined(field.save);
+
+        if (!save || !$common.isDefined(field) || field.save(field, table.editIndex, true)) {
+            _tableReset();
+
+            return true;
+        }
+
+        return false;
+    }
+
     function _tableState(field, editIndex, specName) {
         table.field = field;
         table.name = specName || field.model;
@@ -1335,12 +1349,14 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
         return index < 0 ? {key: filed.newKey, value: filed.newValue} : {key: filed.curKey, value: filed.curValue};
     }
 
-    function _tableStartEdit(item, field, index) {
+    function _tableStartEdit(item, field, index, save) {
         _tableState(field, index);
 
         var val = _model(item, field)[field.model][index];
 
         var ui = _tableUI(field);
+
+        field.save = save;
 
         if (ui === 'table-simple') {
             field.curValue = val;
@@ -1409,6 +1425,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
         },
         tableState: _tableState,
         tableReset: _tableReset,
+        tableSaveAndReset: _tableSaveAndReset,
         tableNewItem: _tableNewItem,
         tableNewItemActive: function (field) {
             return table.name === field.model && table.editIndex < 0;

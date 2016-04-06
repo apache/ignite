@@ -33,6 +33,8 @@
         on-enter='{{ onEnter }}'
 
         tabindex='0'
+
+        data-ng-focus='tableReset()'
     )
 
     button.select-toggle.form-control(
@@ -52,6 +54,8 @@
         on-enter='{{ onEnter }}'
 
         tabindex='0'
+
+        data-ng-focus='tableReset()'
     )
 
     span(ng-transclude='')

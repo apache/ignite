@@ -17,7 +17,7 @@
 
 import template from './form-field-java-class.jade!';
 
-export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
+export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', '$table', (guid, $table) => {
     const link = (scope, el, attrs, [ngModel, form, label]) => {
         const {id, ngModelName} = scope;
 
@@ -78,6 +78,11 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
         ngModel.$render = () => {
             scope.value = ngModel.$modelValue;
         };
+
+        // TODO LEGACY
+        scope.tableReset = () => {
+            $table.tableSaveAndReset();
+        };
     };
 
     return {
@@ -88,6 +93,8 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
             placeholder: '@',
             required: '=ngRequired',
             disabled: '=ngDisabled',
+
+            focus: '=ngFocus',
 
             ngBlur: '&',
 

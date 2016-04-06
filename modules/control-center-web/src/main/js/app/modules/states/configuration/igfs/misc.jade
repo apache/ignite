@@ -20,50 +20,6 @@ include ../../../../../app/helpers/jade/mixins.jade
 -var pathModesForm = 'miscPathModes'
 -var pathModes = model + '.pathModes'
 
-mixin pathModeEditor(newItem)
-    -var field = newItem ? 'new' : 'edit'
-    -var path = field + 'Path'
-    -var mode = field + 'Mode'
-    -var reset = newItem ? 'group.add = []' : 'field.edit = false'
-    -var valid = pathModesForm + '.' + path + '.$valid && ' + pathModesForm + '.' + mode + '.$valid'
-    -var item = '{path:' + path + ', mode: ' + mode  + '}'
-    -var save = pathModes + (newItem ? '.push(' + item + ')' : '[$index] = ' + item)
-    -var unique = pathModesForm + '.' + path + '.$error.igniteUnique'
-
-    .col-sm-12
-        .col-sm-8
-            label.fieldSep /
-            ignite-form-field-input-text(
-                data-id=path
-                data-name=path
-                data-ng-model=path
-                enter-focus-next=mode
-                data-ng-required='true'
-                data-ignite-unique=pathModes
-                data-ignite-unique-property='path'
-                data-placeholder='Input path'
-                data-ignite-form-field-input-autofocus='true'
-                on-escape=reset
-            )
-                +unique-feedback(unique, 'Such path already exists!')
-        .col-sm-4
-            .tipField
-                +table-save-button(valid, save, newItem)
-            ignite-form-field-dropdown(
-                data-id=mode
-                data-name=mode
-                data-ng-model=mode
-                data-options='[\
-                    {value: "PRIMARY", label: "PRIMARY"},\
-                    {value: "PROXY", label: "PROXY"},\
-                    {value: "DUAL_SYNC", label: "DUAL_SYNC"},\
-                    {value: "DUAL_ASYNC", label: "DUAL_ASYNC"}\
-                ]',
-                data-ng-required='true'
-                data-placeholder='Mode'
-                on-enter='!(#{valid}) || (#{save}); !(#{valid}) || (#{reset});'
-            )
-
 form.panel.panel-default(name='misc' novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
         ignite-form-panel-chevron
@@ -94,29 +50,30 @@ form.panel.panel-default(name='misc' novalidate)
                     +number('Sequential reads before prefetch:', model + '.sequentialReadsBeforePrefetch', 'sequentialReadsBeforePrefetch', 'true', '0', '0', 'Amount of sequential block reads before prefetch is triggered')
                 .settings-row
                     +number('Trash purge timeout:', model + '.trashPurgeTimeout', 'trashPurgeTimeout', 'true', '1000', '0', 'Maximum timeout awaiting for trash purging in case data cache oversize is detected')
-                .settings-row
+                .settings-row(ng-init='field={type: "pathModes", model: "pathModes", focusId: "pathMode", ui: "table-pair", keyName: "path", valueName: "mode"}')
                     ignite-form-group(ng-model=pathModes ng-form=pathModesForm)
                         ignite-form-field-label
                             | Path modes
                         ignite-form-group-tooltip
                             | Map of path prefixes to IGFS modes used for them
-                        ignite-form-group-add(ng-click='field.edit = false; group.add = [{}];')
+                        ignite-form-group-add(ng-click='tableNewItem(field)')
                             | Add path mode
 
-                        .group-content(ng-if=pathModes + '.length')
-                            ignite-form-field(ng-repeat='model in #{pathModes} track by $index' type='internal' name='Path mode')
-                                +table-remove-button(pathModes, 'Remove path')
-                                span(ng-hide='field.edit')
-                                    a.labelFormField(ng-click='field.edit = true; group.add = []') {{ model.path }} [ {{ model.mode }}]
-                                span(ng-if='field.edit' ng-init='editPath = model.path; editMode = model.mode')
-                                    +pathModeEditor(false)
+                        .group-content-empty(ng-if='!((#{pathModes} && #{pathModes}.length > 0) || tableNewItemActive(field))') Not defined
 
-                        .group-content(ng-repeat='field in group.add')
-                            ignite-form-field(type='internal' name='Path mode')
-                                +pathModeEditor(true)
+                        .group-content(ng-show='(#{pathModes} && #{pathModes}.length > 0) || tableNewItemActive(field)')
+                            table.links-edit(id='{{::field.model}}' st-table=pathModes)
+                                tbody
+                                    tr(ng-repeat='item in #{pathModes}')
+                                        td.col-sm-12(ng-show='!tableEditing(field, $index)')
+                                            a.labelFormField(ng-click='tableStartEdit(backupItem, field, $index)') {{item.path + " [" + item.mode + "]"}}
+                                            +btn-remove('tableRemove(backupItem, field, $index)', '"Remove path"')
+                                        td.col-sm-12(ng-show='tableEditing(field, $index)')
+                                            +table-igfs-path-mode-edit('cur', '{{::field.focusId + $index}}', '$index')
+                                tfoot(ng-show='tableNewItemActive(field)')
+                                    tr
+                                        td.col-sm-12
+                                            +table-igfs-path-mode-edit('new', '{{::field.focusId}}', '-1')
 
-
-                        .group-content-empty(ng-if='!(#{pathModes}.length) && !group.add.length')
-                            | Not defined
             .col-sm-6
                 +preview-xml-java(model, 'igfsMisc')

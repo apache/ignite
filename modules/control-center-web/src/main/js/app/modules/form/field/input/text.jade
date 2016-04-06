@@ -39,6 +39,8 @@ mixin feedback(isCheckPristine, error, errorMessage)
         data-ng-model-options='{debounce: 150}'
 
         data-ignite-form-field-input-autofocus='autofocus || false'
+
+        data-ng-focus='tableReset()'
     )
 
     +feedback(true, 'required', '{{ label.name }} could not be empty!')

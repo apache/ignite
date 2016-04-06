@@ -130,34 +130,34 @@ module.exports.factory = (_, express, settings, mongo) => {
                     return _.map(clusters, (cluster) => {
                         if (cluster.name.endsWith('-caches')) {
                             return Promise.all(_.map(caches, (cache) => {
-                                    const cacheDoc = new mongo.Cache(cache);
+                                const cacheDoc = new mongo.Cache(cache);
 
-                                    cacheDoc.space = cluster.space;
-                                    cacheDoc.clusters.push(cluster._id);
+                                cacheDoc.space = cluster.space;
+                                cacheDoc.clusters.push(cluster._id);
 
-                                    return cacheDoc.save();
-                                }))
-                                .then((cacheDocs) => {
-                                    _.forEach(cacheDocs, (cacheDoc) => {cluster.caches.push(cacheDoc._id)});
+                                return cacheDoc.save();
+                            }))
+                            .then((cacheDocs) => {
+                                _.forEach(cacheDocs, (cacheDoc) => cluster.caches.push(cacheDoc._id));
 
-                                    return cluster.save();
-                                })
+                                return cluster.save();
+                            });
                         }
 
                         if (cluster.name.endsWith('-igfs')) {
                             return Promise.all(_.map(igfss, (igfs) => {
-                                    const igfsDoc = new mongo.Igfs(igfs);
+                                const igfsDoc = new mongo.Igfs(igfs);
 
-                                    igfsDoc.space = cluster.space;
-                                    igfsDoc.clusters.push(cluster._id);
+                                igfsDoc.space = cluster.space;
+                                igfsDoc.clusters.push(cluster._id);
 
-                                    return igfsDoc.save();
-                                }))
-                                .then((igfsDocs) => {
-                                    _.forEach(igfsDocs, (igfsDocs) => {cluster.igfss.push(igfsDocs._id)});
+                                return igfsDoc.save();
+                            }))
+                            .then((igfsDocs) => {
+                                _.forEach(igfsDocs, (igfsDocs) => cluster.igfss.push(igfsDocs._id));
 
-                                    return cluster.save();
-                                })
+                                return cluster.save();
+                            });
                         }
                     });
                 })
