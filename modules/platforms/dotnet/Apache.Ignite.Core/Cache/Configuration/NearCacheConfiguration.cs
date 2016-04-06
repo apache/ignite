@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Core.Cache.Configuration
 {
+    using System.ComponentModel;
+    using Apache.Ignite.Core.Cache.Eviction;
+
     /// <summary>
     /// Defines near cache configuration.
     /// <para />
@@ -26,5 +29,28 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// </summary>
     public class NearCacheConfiguration
     {
+        /// <summary> Initial default near cache size. </summary>
+        public const int DefaultNearStartSize = CacheConfiguration.DefaultStartSize / 4;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NearCacheConfiguration"/> class.
+        /// </summary>
+        public NearCacheConfiguration()
+        {
+            NearStartSize = DefaultNearStartSize;
+        }
+
+        /// <summary>
+        /// Gets or sets the eviction policy.
+        /// Null value means disabled evictions.
+        /// </summary>
+        public IEvictionPolicy EvictionPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the initial cache size for near cache which will be used 
+        /// to pre-create internal hash table after start.
+        /// </summary>
+        [DefaultValue(DefaultNearStartSize)]
+        public int NearStartSize { get; set; }
     }
 }
