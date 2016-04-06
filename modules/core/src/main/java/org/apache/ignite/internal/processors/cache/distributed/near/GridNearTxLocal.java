@@ -207,11 +207,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enforceSerializable() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override protected UUID nearNodeId() {
         return cctx.localNodeId();
     }
@@ -244,16 +239,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         PREP_FUT_UPD.compareAndSet(this, fut, null);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean syncCommit() {
-        return sync();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean syncRollback() {
-        return sync();
-    }
-
     /**
      * Marks transaction to check if commit on backup.
      */
@@ -281,15 +266,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
      */
     public boolean needCheckBackup() {
         return needCheckBackup != null;
-    }
-
-    /**
-     * Checks if transaction is fully synchronous.
-     *
-     * @return {@code True} if transaction is fully synchronous.
-     */
-    private boolean sync() {
-        return super.syncCommit() || txState().sync(cctx);
     }
 
     /**

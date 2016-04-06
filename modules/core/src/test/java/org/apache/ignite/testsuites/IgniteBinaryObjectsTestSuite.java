@@ -44,6 +44,7 @@ import org.apache.ignite.internal.binary.noncompact.BinaryMarshallerNonCompactSe
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderAdditionalNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactDefaultMappersSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectUserClassloaderSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesDefaultMappersSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest;
 import org.apache.ignite.internal.binary.streams.BinaryHeapStreamByteOrderSelfTest;
@@ -79,7 +80,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Binary Objects Test Suite");
 
         suite.addTestSuite(BinarySimpleNameTestPropertySelfTest.class);
-        
+
         suite.addTestSuite(BinaryBasicIdMapperSelfTest.class);
         suite.addTestSuite(BinaryBasicNameMapperSelfTest.class);
 
@@ -137,6 +138,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         // Byte order
         suite.addTestSuite(BinaryHeapStreamByteOrderSelfTest.class);
         suite.addTestSuite(BinaryOffheapStreamByteOrderSelfTest.class);
+
+        suite.addTestSuite(GridCacheBinaryObjectUserClassloaderSelfTest.class);
 
         return suite;
     }

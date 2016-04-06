@@ -1125,6 +1125,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      *
      */
     public void dumpDebugInfo() {
+        dumpDebugInfo(null);
+    }
+
+    /**
+     *
+     */
+    public void dumpDebugInfo(@Nullable AffinityTopologyVersion exchTopVer) {
         U.warn(log, "Ready affinity version: " + readyTopVer.get());
 
         U.warn(log, "Last exchange future: " + lastInitializedFut);
@@ -1156,7 +1163,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        dumpPendingObjects(null);
+        dumpPendingObjects(exchTopVer);
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts())
             cacheCtx.preloader().dumpDebugInfo();
@@ -1170,7 +1177,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @param exchTopVer Exchange topology version.
      */
-    public void dumpPendingObjects(@Nullable AffinityTopologyVersion exchTopVer) {
+    private void dumpPendingObjects(@Nullable AffinityTopologyVersion exchTopVer) {
         IgniteTxManager tm = cctx.tm();
 
         if (tm != null) {

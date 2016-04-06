@@ -72,6 +72,8 @@ import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
@@ -389,7 +391,7 @@ public class IgniteTxHandler {
 
         if (tx != null) {
             if (req.explicitLock())
-                tx.explicitLock(req.explicitLock());
+                tx.explicitLock(true);
 
             tx.transactionNodes(req.transactionNodes());
 
@@ -688,6 +690,14 @@ public class IgniteTxHandler {
             assert tx != null : "Transaction is null for near finish request [nodeId=" +
                 nodeId + ", req=" + req + "]";
 
+            if (req.syncMode() == null) {
+                boolean sync = req.commit() ? req.syncCommit() : req.syncRollback();
+
+                tx.syncMode(sync ? FULL_SYNC : FULL_ASYNC);
+            }
+            else
+                tx.syncMode(req.syncMode());
+
             if (req.commit()) {
                 tx.storeEnabled(req.storeEnabled());
 
@@ -697,9 +707,6 @@ public class IgniteTxHandler {
 
                     return null;
                 }
-
-                if (!tx.syncCommit())
-                    tx.syncCommit(req.syncCommit());
 
                 tx.nearFinishFutureId(req.futureId());
                 tx.nearFinishMiniId(req.miniId());
@@ -712,8 +719,6 @@ public class IgniteTxHandler {
                 return commitFut;
             }
             else {
-                tx.syncRollback(req.syncRollback());
-
                 tx.nearFinishFutureId(req.futureId());
                 tx.nearFinishMiniId(req.miniId());
 
