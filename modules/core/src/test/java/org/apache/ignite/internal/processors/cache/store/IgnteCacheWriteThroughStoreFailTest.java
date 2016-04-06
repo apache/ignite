@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.store;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
@@ -47,7 +48,12 @@ public class IgnteCacheWriteThroughStoreFailTest extends IgniteCacheAbstractTest
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
+        return CacheAtomicityMode.ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return CacheAtomicWriteOrderMode.CLOCK;
     }
 
     /** {@inheritDoc} */
@@ -70,6 +76,15 @@ public class IgnteCacheWriteThroughStoreFailTest extends IgniteCacheAbstractTest
 
         TestStore.shouldFail = true;
 
-        cache.put(1, 2);
+        try {
+            cache.put(1, 2);
+            assert false;
+        }
+        catch (Exception e) {
+        }
+
+        TestStore.shouldFail = false;
+
+        assertNull(cache.get(1));
     }
 }
