@@ -293,10 +293,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             // Test errors
             CacheTestStore.ThrowError = true;
 
-            var err = Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail"));
-            Assert.IsInstanceOf<ArithmeticException>(err.InnerException);
-
-            CacheTestStore.ThrowError = false;
+            CheckCustomStoreError(Assert.Throws<CacheStoreException>(() => cache.Put(-2, "fail")).InnerException);
         }
 
         [Test]
@@ -557,6 +554,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             var cacheName = TemplateStoreCacheName.Replace("*", Guid.NewGuid().ToString());
             
             return Ignition.GetIgnite(GridName).GetOrCreateCache<int, string>(cacheName);
+        }
+
+        private void CheckCustomStoreError(Exception err)
+        {
+            Assert.IsInstanceOf<CacheTestStore.CustomStoreException>(err.InnerException);
+
+            var inner = (CacheTestStore.CustomStoreException)err.InnerException;
+
+            Assert.AreEqual(inner.Message, inner.Details);
         }
     }
 

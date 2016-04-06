@@ -169,19 +169,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         private static void ThrowIfNeeded()
         {
             if (ThrowError)
-                throw new CustomStoreException("Exception in cache store")
-                {
-                    Details = "details"
-                };
+                throw new CustomStoreException("Exception in cache store");
         }
 
         [Serializable]
         public class CustomStoreException : Exception
         {
-            public string Details { get; set; }
+            public string Details { get; private set; }
 
             public CustomStoreException(string message) : base(message)
             {
+                Details = message;
             }
         }
     }
