@@ -2385,7 +2385,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        return 10 * getCostRangeIndex(masks, getRowCountApproximation(), filter, sortOrder);
+        return getCostRangeIndex(masks, getRowCountApproximation(), filter, sortOrder);
     }
 
     /** {@inheritDoc} */
