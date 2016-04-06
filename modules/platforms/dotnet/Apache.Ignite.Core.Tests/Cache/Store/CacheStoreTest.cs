@@ -269,6 +269,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             {
                 Assert.AreEqual("val_" + i, cache.GetAsync(i).Result);
             }
+
+            // Test errors
+            CacheTestStore.ThrowError = true;
+            CheckCustomStoreError(
+                Assert.Throws<AggregateException>(
+                    () => cache.LocalLoadCacheAsync(new CacheEntryFilter(), 100, 10).Wait())
+                    .InnerException);
         }
 
         [Test]

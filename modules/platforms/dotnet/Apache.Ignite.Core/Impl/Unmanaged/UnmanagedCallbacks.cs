@@ -43,7 +43,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Services;
-    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
     using UU = UnmanagedUtils;
 
     /// <summary>
@@ -747,8 +746,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     string errCls = reader.ReadString();
                     string errMsg = reader.ReadString();
+                    Exception inner = reader.ReadBoolean() ? reader.ReadObject<Exception>() : null;
 
-                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, reader);
+                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, reader, inner);
 
                     ProcessFuture(futPtr, fut => { fut.OnError(err); });
                 }

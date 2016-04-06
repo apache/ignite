@@ -38,7 +38,6 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformQueryCursor;
@@ -49,7 +48,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
@@ -657,7 +655,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         catch (Exception e) {
             writer.out().position(0);
             writer.writeBoolean(false);  // error
-            writeError(writer, e);
+            PlatformUtils.writeError(e, writer);
         }
     }
 
@@ -706,28 +704,9 @@ public class PlatformCache extends PlatformAbstractTarget {
             catch (Exception ex) {
                 writer.writeBoolean(true);  // Exception
 
-                writeError(writer, ex);
+                PlatformUtils.writeError(ex, writer);
             }
         }
-    }
-
-    /**
-     * Writes an error to the writer either as a native exception, or as a couple of strings.
-     * @param writer Writer.
-     * @param ex Exception.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    private static void writeError(BinaryRawWriterEx writer, Exception ex) {
-        writer.writeObjectDetached(ex.getClass().getName());
-        writer.writeObjectDetached(ex.getMessage());
-
-        PlatformNativeException nativeCause = X.cause(ex, PlatformNativeException.class);
-
-        if (nativeCause != null) {
-            writer.writeBoolean(true);
-            writer.writeObjectDetached(nativeCause.cause());
-        } else
-            writer.writeBoolean(false);
     }
 
     /** <inheritDoc /> */
@@ -1038,7 +1017,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             else {
                 writer.writeBoolean(true);  // Error.
 
-                writeError(writer, (Exception) err);
+                PlatformUtils.writeError(err, writer);
             }
         }
 
