@@ -270,7 +270,12 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(x.GetType(), y.GetType());
 
-            // TODO
+            var px = (EvictionPolicyBase) x;
+            var py = (EvictionPolicyBase) y;
+
+            Assert.AreEqual(px.BatchSize, py.BatchSize);
+            Assert.AreEqual(px.MaxSize, py.MaxSize);
+            Assert.AreEqual(px.MaxMemorySize, py.MaxMemorySize);
         }
 
         /// <summary>
@@ -500,7 +505,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                     NearStartSize = 456,
                     EvictionPolicy = new LruEvictionPolicy
                     {
-                        // TODO
+                        MaxSize = 25,
+                        MaxMemorySize = 2500,
+                        BatchSize = 3
                     }
                 }
             };
