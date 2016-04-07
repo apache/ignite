@@ -74,7 +74,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     // TODO
     @GridDirectTransient
-    private int part;
+    private int part = -1;
 
     /**
      * For {@link Externalizable}.
