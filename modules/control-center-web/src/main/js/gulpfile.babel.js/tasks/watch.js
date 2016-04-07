@@ -18,4 +18,18 @@
 import gulp from 'gulp';
 import sequence from 'gulp-sequence';
 
-gulp.task('build', (cb) => sequence(['clean', 'clean:ignite-modules-temp'], 'ignite:modules', ['copy', 'jade', 'sass'], 'bundle', cb));
+import { sassPaths, jadePaths, jadeModulePaths, resourcePaths, resourceModulePaths, appPaths, appModulePaths } from '../paths';
+
+// Build + connect + watch task.
+gulp.task('watch', (cb) => sequence('build', 'connect', () => {
+    gulp.watch(sassPaths, () => sequence('sass', 'bundle:ignite:app', cb));
+
+    gulp.watch([jadePaths, jadeModulePaths], ['jade']);
+
+    gulp.watch(resourcePaths, ['copy:resource']);
+    gulp.watch(resourceModulePaths, ['copy:ignite_modules:resource']);
+
+    gulp.watch(appPaths, ['eslint:browser', 'copy:js', 'bundle:ignite:app']);
+    gulp.watch(appModulePaths, () => sequence('clean:ignite-modules-temp', 'ignite:modules', ['eslint:browser', 'copy:ignite_modules:js', 'bundle:ignite:app'], cb));
+}));
+

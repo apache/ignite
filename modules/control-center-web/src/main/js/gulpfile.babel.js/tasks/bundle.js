@@ -23,12 +23,6 @@ import htmlReplace from 'gulp-html-replace';
 
 import { srcDir, destDir, igniteModulesTemp } from '../paths';
 
-const paths = [
-    './app/**/*.js',
-    './app/**/*.jade',
-    './app/data/*.json'
-];
-
 const options = {
     minify: true
 };
@@ -48,10 +42,6 @@ gulp.task('bundle:ignite', (cb) => {
 
     return sequence('bundle:ignite:app-min', 'bundle:ignite:app-min:replace', cb);
 });
-
-gulp.task('bundle:ignite:watch', () =>
-    gulp.watch(paths, ['bundle:ignite:app'])
-);
 
 gulp.task('bundle:ignite:vendors', () => {
     const exclude = [

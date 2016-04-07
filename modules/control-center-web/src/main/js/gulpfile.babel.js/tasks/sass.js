@@ -16,19 +16,12 @@
  */
 
 import gulp from 'gulp';
-import sequence from 'gulp-sequence';
 import sass from 'gulp-sass';
 
-const paths = [
-    './public/stylesheets/style.scss'
-];
+import { sassPaths } from '../paths';
 
 gulp.task('sass', () =>
-    gulp.src(paths)
+    gulp.src(sassPaths)
         .pipe(sass({ outputStyle: 'nested' }).on('error', sass.logError))
         .pipe(gulp.dest('./public/stylesheets'))
-);
-
-gulp.task('sass:watch', (cb) =>
-    gulp.watch(paths, () => sequence('sass', 'bundle:ignite:app', cb))
 );

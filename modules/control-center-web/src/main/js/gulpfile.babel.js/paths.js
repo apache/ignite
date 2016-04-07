@@ -23,9 +23,74 @@ const destDir = './build';
 const igniteModulesDir = process.env.IGNITE_MODULES ? path.normalize(process.env.IGNITE_MODULES) : './ignite_modules';
 const igniteModulesTemp = './ignite_modules_temp';
 
+const sassPaths = [
+    './public/stylesheets/style.scss'
+];
+
+const jadePaths = [
+    '!./views/error.jade',
+    './views/*.jade',
+    './views/**/*.jade'
+];
+
+const jadeModulePaths = [
+    igniteModulesDir + '/**/view/**/*.jade'
+];
+
+const resourcePaths = [
+    './controllers/**/*.json',
+    './public/**/*.png',
+    './public/*.ico'
+];
+
+const resourceModulePaths = [
+    igniteModulesDir + '/**/controllers/models/*.json',
+    igniteModulesDir + '/**/images/*.png'
+];
+
+const jsPaths = [
+    './{app,controllers,helpers}/*.js',
+    './{app,controllers,helpers}/**/*.js'
+];
+
+const jsModulePaths = [
+    igniteModulesTemp + '/index.js',
+    igniteModulesTemp + '/**/main.js',
+    igniteModulesTemp + '/**/module.js',
+    igniteModulesTemp + '/**/app/modules/*.js',
+    igniteModulesTemp + '/**/app/modules/**/*.js'
+];
+
+const appPaths = [
+    './app/**/*.jade',
+    './app/data/*.json'
+].concat(jsPaths);
+
+const appModulePaths = [
+    igniteModulesDir + '/index.js',
+    igniteModulesDir + '/**/main.js',
+    igniteModulesDir + '/**/module.js',
+    igniteModulesDir + '/**/app/modules/*.js',
+    igniteModulesDir + '/**/app/modules/**/*.js'
+];
+
 export {
     srcDir,
     destDir,
     igniteModulesDir,
-    igniteModulesTemp
+    igniteModulesTemp,
+
+    sassPaths,
+
+    jadePaths,
+    jadeModulePaths,
+
+    resourcePaths,
+    resourceModulePaths,
+
+    jsPaths,
+    jsModulePaths,
+
+    appPaths,
+    appModulePaths
 };

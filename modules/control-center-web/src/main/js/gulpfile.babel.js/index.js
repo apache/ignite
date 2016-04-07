@@ -17,7 +17,6 @@
 
 import gulp from 'gulp';
 import requireDir from 'require-dir';
-import sequence from 'gulp-sequence';
 
 // Require all tasks in gulpfile.js/tasks, including subfolders.
 requireDir('./tasks', { recurse: true });
@@ -25,5 +24,3 @@ requireDir('./tasks', { recurse: true });
 // Default no-arg task.
 gulp.task('default', ['build']);
 
-// Build + watch + connect task.
-gulp.task('watch', (cb) => sequence('build', 'connect', ['bundle:ignite:watch', 'sass:watch', 'jade:watch', 'copy:watch'], cb));

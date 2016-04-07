@@ -20,17 +20,12 @@ import inject from 'gulp-inject';
 import clean from 'gulp-rimraf';
 import sequence from 'gulp-sequence';
 
-import { igniteModulesDir, igniteModulesTemp } from '../paths';
-
-const igniteModulePaths = [
-    igniteModulesDir + '/**/*.js',
-    igniteModulesDir + '/**/*.jade'
-];
+import { appModulePaths, igniteModulesTemp } from '../paths';
 
 gulp.task('ignite:modules', (cb) => sequence('ignite:modules:copy', 'ignite:modules:inject', cb));
 
 gulp.task('ignite:modules:copy', () =>
-    gulp.src(igniteModulePaths)
+    gulp.src(appModulePaths)
         .pipe(gulp.dest(igniteModulesTemp))
 );
 
