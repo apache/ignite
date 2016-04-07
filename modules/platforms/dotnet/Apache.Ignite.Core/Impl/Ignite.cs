@@ -583,13 +583,36 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
         {
-            throw new NotImplementedException();
+            return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorCreateNearCache);
         }
 
         /** <inheritdoc /> */
         public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
         {
-            throw new NotImplementedException();
+            return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorGetOrCreateNearCache);
+        }
+
+        /// <summary>
+        /// Gets or create near cache.
+        /// </summary>
+        private ICache<TK, TV> GetOrCreateNearCache0<TK, TV>(string name, NearCacheConfiguration configuration,
+            Func<IUnmanagedTarget, string, long, IUnmanagedTarget> func)
+        {
+            if (configuration == null)
+            {
+                return Cache<TK, TV>(func(_proc, name, 0));
+            }
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
+
+                configuration.Write(writer);
+
+                stream.SynchronizeOutput();
+
+                return Cache<TK, TV>(func(_proc, name, stream.MemoryPointer));
+            }
         }
 
         /// <summary>
