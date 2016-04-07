@@ -224,5 +224,25 @@ namespace Apache.Ignite.Core
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
         IgniteConfiguration GetConfiguration();
+
+        /// <summary>
+        /// Starts a near cache on local node if cache with specified was previously started.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="configuration">The configuration.</param>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        /// <returns>Near cache instance.</returns>
+        ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration);
+
+        /// <summary>
+        /// Gets existing near cache with the given name or creates a new one.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="configuration">The configuration.</param>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        /// <returns>Near cache instance.</returns>
+        ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration);
     }
 }
