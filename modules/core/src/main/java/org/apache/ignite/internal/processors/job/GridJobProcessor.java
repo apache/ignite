@@ -66,8 +66,6 @@ import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
-import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -433,7 +431,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Node that originated task execution has left grid: " + taskNodeId);
 
         // Tuple: error message-response.
-        final IgniteBiTuple<String, GridJobSiblingsResponse> t = F.t2();
+        final IgniteBiTuple<String, GridJobSiblingsResponse> t = new IgniteBiTuple<>();
 
         final Lock lock = new ReentrantLock();
         final Condition cond = lock.newCondition();
@@ -609,19 +607,15 @@ public class GridJobProcessor extends GridProcessorAdapter {
             // If we don't have jobId then we have to iterate
             if (jobId == null) {
                 if (!jobAlwaysActivate) {
-                    // If job gets removed from passive jobs it never gets activated.
-                    F.forEach(passiveJobs.values(), new CI1<GridJobWorker>() {
-                        @Override public void apply(GridJobWorker job) {
+                    for (GridJobWorker job : passiveJobs.values()) {
+                        if (idsMatch.apply(job))
                             cancelPassiveJob(job);
-                        }
-                    }, idsMatch);
-                }
-
-                F.forEach(activeJobs.values(), new CI1<GridJobWorker>() {
-                    @Override public void apply(GridJobWorker job) {
-                        cancelActiveJob(job, sys);
                     }
-                }, idsMatch);
+                }
+                for (GridJobWorker job : activeJobs.values()) {
+                    if (idsMatch.apply(job))
+                        cancelActiveJob(job, sys);
+                }
             }
             else {
                 if (!jobAlwaysActivate) {

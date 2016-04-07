@@ -150,6 +150,7 @@ class GridAffinityUtils {
 
         /**
          * @param cacheName Cache name.
+         * @param topVer Topology version.
          */
         private AffinityJob(@Nullable String cacheName, @NotNull AffinityTopologyVersion topVer) {
             this.cacheName = cacheName;
@@ -182,7 +183,7 @@ class GridAffinityUtils {
             return F.t(
                 affinityMessage(ctx, cctx.config().getAffinity()),
                 affinityMessage(ctx, cctx.config().getAffinityMapper()),
-                new GridAffinityAssignment(topVer, cctx.affinity().assignments(topVer)));
+                new GridAffinityAssignment(topVer, cctx.affinity().assignment(topVer)));
         }
 
         /** {@inheritDoc} */
