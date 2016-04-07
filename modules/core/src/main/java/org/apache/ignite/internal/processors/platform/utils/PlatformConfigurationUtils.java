@@ -28,9 +28,13 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
@@ -159,7 +163,56 @@ import java.util.Map;
             ccfg.setQueryEntities(entities);
         }
 
+        if (in.readBoolean())
+            ccfg.setNearConfiguration(readNearConfiguration(in));
+
         return ccfg;
+    }
+
+    /**
+     * Reads the near config.
+     *
+     * @param in Stream.
+     * @return NearCacheConfiguration.
+     */
+    public static NearCacheConfiguration readNearConfiguration(BinaryRawReader in) {
+        NearCacheConfiguration cfg = new NearCacheConfiguration();
+        cfg.setNearStartSize(in.readInt());
+
+        byte plcTyp = in.readByte();
+
+        switch (plcTyp) {
+            case 0: break;
+            case 1: cfg.setNearEvictionPolicy(new FifoEvictionPolicy()); break;
+            case 2: cfg.setNearEvictionPolicy(new LruEvictionPolicy()); break;
+            default: assert false;
+        }
+
+        return cfg;
+    }
+
+    /**
+     * Reads the near config.
+     *
+     * @param out Stream.
+     * @param cfg NearCacheConfiguration.
+     */
+    public static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
+        assert cfg != null;
+
+        out.writeInt(cfg.getNearStartSize());
+
+        EvictionPolicy p = cfg.getNearEvictionPolicy();
+
+        if (p instanceof FifoEvictionPolicy) {
+            out.writeByte((byte)1);
+        }
+        else if (p instanceof LruEvictionPolicy) {
+            out.writeByte((byte)2);
+        }
+        else {
+            out.writeByte((byte)0);
+        }
     }
 
     /**
