@@ -2449,6 +2449,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 assert newSysExpireTime == CU.EXPIRE_TIME_CALCULATE;
 
                 if (cctx.offheapTiered() && hasValPtr) {
+                    // We cannot use data at offheap after it will be deleted.
+                    // TODO fix it in right way.
+                    if (intercept)
+                        oldVal = cctx.unwrapTemporary(oldVal);
+
                     boolean rmv = cctx.swap().removeOffheap(key);
 
                     assert rmv;
