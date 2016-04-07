@@ -1287,6 +1287,32 @@ namespace ignite
                 return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateCacheFromConfig, errInfo);
             }
 
+            jobject JniContext::ProcessorCreateNearCache(jobject obj, const char* name, long long memPtr)
+            {
+                return ProcessorGetOrCreateNearCache0(obj, name, memPtr, jvm->GetMembers().m_PlatformProcessor_createNearCache);
+            }
+
+            jobject JniContext::ProcessorGetOrCreateNearCache(jobject obj, const char* name, long long memPtr)
+            {
+                return ProcessorGetOrCreateNearCache0(obj, name, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateNearCache);
+            }
+
+            jobject JniContext::ProcessorGetOrCreateNearCache0(jobject obj, const char* name, long long memPtr, jmethodID methodID)
+            {
+                JNIEnv* env = Attach();
+
+                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+
+                jobject cache = env->CallObjectMethod(obj, methodID, name0, memPtr);
+
+                if (name0)
+                    env->DeleteLocalRef(name0);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, cache);
+            }
+
             jobject JniContext::ProcessorAffinity(jobject obj, const char* name) {
                 JNIEnv* env = Attach();
 
