@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_TRANSACTIONS_IMPL
-#define _IGNITE_TRANSACTIONS_IMPL
+#ifndef _IGNITE_TRANSACTION_IMPL
+#define _IGNITE_TRANSACTION_IMPL
 
 #include <ignite/common/concurrent.h>
 #include <ignite/common/java.h>
 
 #include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/transactions/transaction_impl.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/utils.h"
 
@@ -33,14 +32,15 @@ namespace ignite
         namespace transactions
         {
             /**
-             * Transactions implementation.
+             * Transaction implementation.
              */
-            class IGNITE_FRIEND_EXPORT TransactionsImpl
+            class IGNITE_FRIEND_EXPORT TransactionImpl
             {
                 friend class Ignite;
 
-                /** Synonym for Ignite Environment Shared Pointer. */
                 typedef ignite::common::concurrent::SharedPointer<ignite::impl::IgniteEnvironment> IgniteEnvSharedPtr;
+                typedef ignite::common::concurrent::ThreadLocalInstance<TransactionImpl*> TxImplTli;
+
             public:
                 /**
                  * Constructor used to create new instance.
@@ -48,12 +48,36 @@ namespace ignite
                  * @param env Environment.
                  * @param javaRef Reference to java object.
                  */
-                TransactionsImpl(IgniteEnvSharedPtr env, jobject javaRef);
+                TransactionImpl(IgniteEnvSharedPtr env, jobject javaRef);
 
                 /**
                  * Destructor.
                  */
-                ~TransactionsImpl();
+                ~TransactionImpl();
+
+                /**
+                 * Get active transaction for the current thread.
+                 *
+                 * @return Active transaction implementation for current thread
+                 * or null pointer if there is no active transaction for
+                 * the thread.
+                 */
+                static TransactionImpl* GetCurrent()
+                {
+                    // Thread local instance of the transaction.
+                    static TxImplTli threadTx;
+
+                    TransactionImpl* tx = threadTx.Get();
+
+                    //if (tx->IsClosed())
+                    //{
+                    //    tx = 0;
+
+                    //    threadTx.Set(tx);
+                    //}
+
+                    return tx;
+                }
 
             private:
                 /** Environment. */
@@ -62,7 +86,7 @@ namespace ignite
                 /** Native Java counterpart. */
                 jobject javaRef;
 
-                IGNITE_NO_COPY_ASSIGNMENT(TransactionsImpl)
+                IGNITE_NO_COPY_ASSIGNMENT(TransactionImpl)
             };
         }
     }

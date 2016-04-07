@@ -17,16 +17,15 @@
 
 /**
  * @file
- * Declares ignite::transactions::Transactions class.
+ * Declares ignite::transactions::Transaction class.
  */
 
-#ifndef _IGNITE_TRANSACTIONS
-#define _IGNITE_TRANSACTIONS
+#ifndef _IGNITE_TRANSACTION
+#define _IGNITE_TRANSACTION
 
 #include <ignite/common/concurrent.h>
 #include <ignite/common/java.h>
 
-#include "ignite/transactions/transaction.h"
 #include "ignite/impl/transactions/transactions_impl.h"
 
 namespace ignite
@@ -36,13 +35,13 @@ namespace ignite
         /**
          * Transactions.
          */
-        class IGNITE_FRIEND_EXPORT Transactions
+        class IGNITE_FRIEND_EXPORT Transaction
         {
         public:
             /**
              * Constructor.
              */
-            Transactions(ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> impl) :
+            Transaction(impl::transactions::TransactionImpl* impl) :
                 impl(impl)
             {
                 // No-op.
@@ -53,7 +52,7 @@ namespace ignite
              *
              * @param other Other instance.
              */
-            Transactions(const Transactions& other) :
+            Transaction(const Transaction& other) :
                 impl(other.impl)
             {
                 // No-op.
@@ -65,7 +64,7 @@ namespace ignite
              * @param other Other instance.
              * @return This.
              */
-            Transactions& operator=(const Transactions& other)
+            Transaction& operator=(const Transaction& other)
             {
                 impl = other.impl;
 
@@ -75,28 +74,24 @@ namespace ignite
             /**
              * Destructor.
              */
-            ~Transactions()
+            ~Transaction()
             {
                 // No-op.
             }
 
             /**
-             * Get active transaction for the current thread.
+             * Check if the instance is valid and can be used.
              *
-             * @return Active transaction implementation for current thread.
-             * Returned instance is not valid if there is no active transaction
-             * for the thread.
+             * @return True if the instance is valid and can be used.
              */
-            Transaction GetTx()
+            bool IsValid() const
             {
-                using impl::transactions::TransactionImpl;
-
-                return Transaction(TransactionImpl::GetCurrent());
+                return impl != 0;
             }
 
         private:
             /** Implementation delegate. */
-            ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> impl;
+            impl::transactions::TransactionImpl* impl;
         };
     }
 }

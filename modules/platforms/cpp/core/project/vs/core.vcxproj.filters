@@ -91,6 +91,9 @@
     <ClCompile Include="..\..\src\transactions\transactions.cpp">
       <Filter>Code\transactions</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\transactions\transaction_impl.cpp">
+      <Filter>Code\impl\transactions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
@@ -245,6 +248,12 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\transactions\transactions.h">
       <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\transactions\transaction.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_impl.h">
+      <Filter>Code\impl\transactions</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -25,6 +25,7 @@
 
 using namespace ignite;
 using namespace ignite::transactions;
+using namespace ignite::cache;
 using namespace boost::unit_test;
 
 BOOST_AUTO_TEST_SUITE(IgniteTransactionsTestSuite)
@@ -51,18 +52,32 @@ BOOST_AUTO_TEST_CASE(TestIgniteTransactions)
 
     cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test.xml");
 
-    IgniteError err;
+    // Start Ignite instance.
+    Ignite grid = Ignition::Start(cfg, "txTest");
 
-    // Start two Ignite instances.
-    Ignite grid = Ignition::Start(cfg, "txTest", &err);
+    Cache<int, int> cache = grid.CreateCache<int, int>("txCache");
 
-    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-        BOOST_ERROR(err.GetText());
+    Transactions transactions = grid.GetTransactions();
 
-    Transactions tx = grid.GetTransactions(&err);
+    Transaction tx = transactions.GetTx();
 
-    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-        BOOST_ERROR(err.GetText());
+    BOOST_REQUIRE(!tx.IsValid());
+
+    //tx = transactions.TxStart();
+
+    //cache.Put(1, 1);
+
+    //cache.Put(2, 2);
+
+    //tx.Commit();
+
+    //BOOST_REQUIRE_EQUAL(1, cache.Get(1));
+
+    //BOOST_REQUIRE_EQUAL(2, cache.Get(2));
+
+    //tx = transactions.GetTx();
+
+    //BOOST_REQUIRE(!tx.IsValid());
 
     Ignition::Stop(grid.GetName(), true);
 }
