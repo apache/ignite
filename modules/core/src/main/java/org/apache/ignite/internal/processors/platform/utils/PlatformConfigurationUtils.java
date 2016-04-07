@@ -213,6 +213,7 @@ import java.util.Map;
      * @param out Stream.
      * @param cfg NearCacheConfiguration.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     public static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
         assert cfg != null;
 
@@ -222,9 +223,19 @@ import java.util.Map;
 
         if (p instanceof FifoEvictionPolicy) {
             out.writeByte((byte)1);
+
+            FifoEvictionPolicy p0 = (FifoEvictionPolicy)p;
+            out.writeInt(p0.getBatchSize());
+            out.writeInt(p0.getMaxSize());
+            out.writeLong(p0.getMaxMemorySize());
         }
         else if (p instanceof LruEvictionPolicy) {
             out.writeByte((byte)2);
+
+            LruEvictionPolicy p0 = (LruEvictionPolicy)p;
+            out.writeInt(p0.getBatchSize());
+            out.writeInt(p0.getMaxSize());
+            out.writeLong(p0.getMaxMemorySize());
         }
         else {
             out.writeByte((byte)0);
