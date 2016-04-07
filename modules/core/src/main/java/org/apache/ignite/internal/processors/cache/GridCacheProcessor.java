@@ -254,6 +254,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (aff.getHashIdResolver() == null)
                         aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
                 }
+            } else if (cfg.getCacheMode() == LOCAL && !(cfg.getAffinity() instanceof LocalAffinityFunction)){
+                cfg.setAffinity(new LocalAffinityFunction());
+                U.warn(log,"AffinityFunction configuration parameter will be ignored for local cache [cacheName=" + U.maskName(cfg.getName()) + ']');
             }
         }
 
