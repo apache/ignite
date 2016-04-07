@@ -99,9 +99,6 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class BinaryContext {
     /** */
-    private static final ClassLoader dfltLdr = U.gridClassLoader();
-
-    /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
         new BinaryInternalMapper(new BinaryBasicNameMapper(false), new BinaryBasicIdMapper(true), false);
 
@@ -189,6 +186,9 @@ public class BinaryContext {
     /** */
     private IgniteConfiguration igniteCfg;
 
+    /** */
+    private ClassLoader dfltLdr;
+
     /** Logger. */
     private IgniteLogger log;
 
@@ -220,6 +220,8 @@ public class BinaryContext {
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
         this.log = log;
+
+        this.dfltLdr = U.resolveClassLoader(igniteCfg);
 
         colTypes.put(ArrayList.class, GridBinaryMarshaller.ARR_LIST);
         colTypes.put(LinkedList.class, GridBinaryMarshaller.LINKED_LIST);
@@ -992,7 +994,7 @@ public class BinaryContext {
         Class<?> cls = null;
 
         try {
-            cls = U.resolveClassLoader(configuration()).loadClass(clsName);
+            cls = dfltLdr.loadClass(clsName);
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
             // No-op.
