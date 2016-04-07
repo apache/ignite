@@ -373,6 +373,11 @@ mixin clusters(model, tip)
     +dropdown-multiple('<span>Clusters:</span>' + '<a ui-sref="base.configuration.clusters({id: ' + model + '._id})"> (add)</a>',
         model + '.clusters', 'clusters', 'Choose clusters', 'No clusters configured', 'clusters', tip)
 
+//- Mixin for caches dropdown.
+mixin caches(model, tip)
+    +dropdown-multiple('<span>Caches:</span>' + '<a ui-sref="base.configuration.caches({id: ' + model + '._id})"> (add)</a>',
+        model + '.caches', 'caches', 'Choose caches', 'No caches configured', 'caches', tip)
+
 //- Mixin for XML and Java preview.
 mixin preview-xml-java(master, generator, detail)
     ignite-ui-ace-tabs
@@ -388,35 +393,42 @@ mixin preview-xml-java(master, generator, detail)
             .preview-content-empty(ng-if='!data')
                 label All Defaults
 
+//- LEGACY mixin for LEGACY tables.
 mixin btn-save(show, click)
     i.tipField.fa.fa-floppy-o(ng-show=show ng-click=click bs-tooltip='' data-title='Click icon or press [Enter] to save item' data-trigger='hover')
 
+//- LEGACY mixin for LEGACY tables.
+mixin btn-add(click, tip)
+    i.tipField.fa.fa-plus(ng-click=click bs-tooltip=tip data-trigger = 'hover')
+
+//- LEGACY mixin for LEGACY tables.
 mixin btn-remove(click, tip)
     i.tipField.fa.fa-remove(ng-click=click bs-tooltip=tip data-trigger='hover')
 
-mixin group-tip(lines)
-    i.group-legend-btn.fa.fa-question-circle(ng-if=lines bs-tooltip='joinTip(#{lines})')
-
-mixin group-btn-add(click, tip)
-    i.group-legend-btn.fa.fa-plus(ng-click=click bs-tooltip=tip)
-
-mixin table-igfs-path-mode-edit(prefix, focusId, index)
-    -var keyModel = 'field.' + prefix + 'Key'
-    -var valModel = 'field.' + prefix + 'Value'
+//- LEGACY mixin for LEGACY pair values tables.
+mixin table-pair-edit(tbl, prefix, keyPlaceholder, valPlaceholder, keyJavaBuiltInTypes, valueJavaBuiltInTypes, focusId, index, divider)
+    -var keyModel = tbl + '.' + prefix + 'Key'
+    -var valModel = tbl +'.' + prefix + 'Value'
 
     -var keyFocusId = prefix + 'Key' + focusId
     -var valFocusId = prefix + 'Value' + focusId
 
-    .col-xs-8.col-sm-8.col-md-8
-        .fieldSep /
+    .col-xs-6.col-sm-6.col-md-6
+        .fieldSep !{divider}
         .input-tip
-            input.form-control(id=keyFocusId enter-focus-next=valFocusId type='text' ng-model=keyModel placeholder='Path' on-escape='tableReset()')
-    .col-xs-4.col-sm-4.col-md-4
+            if keyJavaBuiltInTypes
+                input.form-control(id=keyFocusId enter-focus-next=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder bs-typeahead container='body' retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' on-escape='tableReset()')
+            else
+                input.form-control(id=keyFocusId enter-focus-next=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder on-escape='tableReset()')
+    .col-xs-6.col-sm-6.col-md-6
         -var arg = keyModel + ', ' + valModel
-        -var btnVisible = 'tablePairSaveVisible(field, ' + index + ')'
-        -var btnSave = 'tablePairSave(tablePairValid, backupItem, field, ' + index + ')'
+        -var btnVisible = 'tablePairSaveVisible(' + tbl + ', ' + index + ')'
+        -var btnSave = 'tablePairSave(tablePairValid, backupItem, ' + tbl + ', ' + index + ')'
         -var btnVisibleAndSave = btnVisible + ' && ' + btnSave
+
         +btn-save(btnVisible, btnSave)
         .input-tip
-            button.select-toggle.form-control(id=valFocusId bs-select ng-model=valModel data-placeholder='Mode' bs-options='item.value as item.label for item in igfsModes' tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
-
+            if valueJavaBuiltInTypes
+                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder bs-typeahead container='body' retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' on-enter=btnVisibleAndSave on-escape='tableReset()')
+            else
+                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder on-enter=btnVisibleAndSave on-escape='tableReset()')

@@ -422,8 +422,16 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
+.group-section {
+    margin-top: 20px;
+}
+
 .settings-row:first-child {
     margin-top: 0;
+
+    .group-section {
+        margin-top: 0;
+    }
 }
 
 .settings-row:last-child {
@@ -997,10 +1005,6 @@ button.form-control {
 
     border-radius: 5px;
     border: thin dotted $ignite-border-color;
-}
-
-.group-section {
-    margin-top: 20px;
 }
 
 .group {

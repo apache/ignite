@@ -19,13 +19,23 @@
 import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('domainsController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', '$modal', '$common', '$focus', '$confirm', '$confirmBatch', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard', 'IgniteAgentMonitor',
-    function ($scope, $http, $state, $filter, $timeout, $modal, $common, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard, IgniteAgentMonitor) {
+    '$scope', '$http', '$state', '$filter', '$timeout', '$modal', '$common', '$focus', '$confirm', '$confirmBatch', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'IgniteAgentMonitor', '$table',
+    function ($scope, $http, $state, $filter, $timeout, $modal, $common, $focus, $confirm, $confirmBatch, $clone, $loading, $cleanup, $unsavedChangesGuard, IgniteAgentMonitor, $table) {
         $unsavedChangesGuard.install($scope);
 
+        var emptyDomain = {empty: true};
+
+        var __original_value;
+
+        var blank = {};
+
+        // We need to initialize backupItem with empty object in order to properly used from angular directives.
+        $scope.backupItem = emptyDomain;
+
         $scope.ui = $common.formUI();
+        $scope.ui.angularWay = true; // TODO We need to distinguish refactored UI from legacy UI.
         $scope.ui.activePanels = [0, 1];
-        $scope.ui.topPanels = [];
+        $scope.ui.topPanels = [0, 1, 2];
 
         var IMPORT_DM_NEW_CACHE = 1;
         var IMPORT_DM_ASSOCIATE_CACHE = 2;
@@ -65,6 +75,12 @@ consoleModule.controller('domainsController', [
                 }
             });
         }
+
+        $scope.contentVisible = function () {
+            var item = $scope.backupItem;
+
+            return !item.empty && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
+        };
 
         $scope.joinTip = $common.joinTip;
         $scope.getModel = $common.getModel;
@@ -172,25 +188,9 @@ consoleModule.controller('domainsController', [
             'It may be a result of import tables from database without primary keys<br/>' +
             'Key field for such key types should be configured manually';
 
-        var previews = [];
-
-        $scope.previewInit = function (preview) {
-            previews.push(preview);
-
-            $preview.previewInit(preview);
-        };
-
-        $scope.previewChanged = $preview.previewChanged;
-
         $scope.hidePopover = $common.hidePopover;
 
         var showPopoverMessage = $common.showPopoverMessage;
-
-        $scope.preview = {
-            general: {xml: '', java: '', allDefaults: true},
-            query: {xml: '', java: '', allDefaults: true},
-            store: {xml: '', java: '', allDefaults: true}
-        };
 
         $scope.indexType = $common.mkOptions(['SORTED', 'FULLTEXT', 'GEOSPATIAL']);
 
@@ -449,7 +449,7 @@ consoleModule.controller('domainsController', [
 
                                     $scope.ui.selectedJdbcDriverJar = $scope.jdbcDriverJars[0].value;
 
-                                    $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
+                                    $common.confirmUnsavedChanges($scope.ui.inputForm.$dirty, function () {
                                         importDomainModal.$promise.then(function () {
                                             $scope.importDomain.action = 'connect';
                                             $scope.importDomain.tables = [];
@@ -1116,51 +1116,49 @@ consoleModule.controller('domainsController', [
 
                 $scope.importCommon.action = IMPORT_DM_NEW_CACHE;
 
-                // Load page descriptor.
-                $http.get('/models/domains.json')
-                    .success(function (data) {
-                        $scope.domainModel = data.domainModel;
+                if ($state.params.id)
+                    $scope.createItem($state.params.id);
+                else {
+                    var lastSelectedDomain = angular.fromJson(sessionStorage.lastSelectedDomain);
 
-                        $scope.ui.groups = data.domainModel;
-
-                        if ($state.params.id)
-                            $scope.createItem($state.params.id);
-                        else
-                            restoreSelection();
-
-                        $timeout(function () {
-                            $scope.$apply();
+                    if (lastSelectedDomain) {
+                        var idx = _.findIndex($scope.domains, function (domain) {
+                            return domain._id === lastSelectedDomain;
                         });
 
-                        $scope.$watch('backupItem', function (val) {
-                            if (val) {
-                                var srcItem = $scope.selectedItem ? $scope.selectedItem : prepareNewItem();
+                        if (idx >= 0)
+                            $scope.selectItem($scope.domains[idx]);
+                        else {
+                            sessionStorage.removeItem('lastSelectedDomain');
 
-                                $scope.ui.checkDirty(val, srcItem);
+                            selectFirstItem();
+                        }
+                    }
+                    else
+                        selectFirstItem();
+                }
 
-                                $scope.preview.general.xml = $generatorXml.domainModelGeneral(val).asString();
-                                $scope.preview.general.java = $generatorJava.domainModelGeneral(val).asString();
-                                $scope.preview.general.allDefaults = $common.isEmptyString($scope.preview.general.xml);
+                $scope.$watch('ui.inputForm.$valid', function(valid) {
+                    if (valid && __original_value === JSON.stringify($cleanup($scope.backupItem))) {
+                        $scope.ui.inputForm.$dirty = false;
+                    }
+                });
 
-                                $scope.preview.query.xml = $generatorXml.domainModelQuery(val).asString();
-                                $scope.preview.query.java = $generatorJava.domainModelQuery(val).asString();
-                                $scope.preview.query.allDefaults = $common.isEmptyString($scope.preview.query.xml);
+                $scope.$watch('backupItem', function (val) {
+                    var form = $scope.ui.inputForm;
 
-                                $scope.preview.store.xml = $generatorXml.domainStore(val).asString();
-                                $scope.preview.store.java = $generatorJava.domainStore(val, false).asString();
-                                $scope.preview.store.allDefaults = $common.isEmptyString($scope.preview.store.xml);
-                            }
-                        }, true);
-                    })
-                    .error(function (errMsg) {
-                        $common.showError(errMsg);
-                    });
+                    if (form.$pristine || (form.$valid && __original_value === JSON.stringify($cleanup(val))))
+                        form.$setPristine();
+                    else
+                        form.$setDirty();
+                }, true);
             })
-            .error(function (errMsg) {
+            .catch(function (errMsg) {
                 $common.showError(errMsg);
             })
             .finally(function () {
                 $scope.ui.ready = true;
+                $scope.ui.inputForm.$setPristine();
                 $loading.finish('loadingDomainModelsScreen');
             });
 
@@ -1168,7 +1166,7 @@ consoleModule.controller('domainsController', [
             function selectItem() {
                 $table.tableReset();
 
-                $scope.selectedItem = angular.copy(item);
+                $scope.selectedItem = item;
 
                 try {
                     if (item && item._id)
@@ -1180,16 +1178,16 @@ consoleModule.controller('domainsController', [
                     // Ignore possible errors when read from storage.
                 }
 
-                _.forEach(previews, function (preview) {
-                    preview.attractAttention = false;
-                });
-
                 if (backup)
                     $scope.backupItem = backup;
                 else if (item)
                     $scope.backupItem = angular.copy(item);
                 else
-                    $scope.backupItem = undefined;
+                    $scope.backupItem = emptyDomain;
+
+                $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
+
+                __original_value = JSON.stringify($cleanup($scope.backupItem));
 
                 if ($common.isDefined($scope.backupItem) && !$common.isDefined($scope.backupItem.queryMetadata))
                     $scope.backupItem.queryMetadata = 'Configuration';
@@ -1201,7 +1199,7 @@ consoleModule.controller('domainsController', [
                     $state.go('base.configuration.domains');
             }
 
-            $common.confirmUnsavedChanges($scope.ui.isDirty(), selectItem);
+            $common.confirmUnsavedChanges($scope.ui.inputForm.$dirty, selectItem);
         };
 
         function prepareNewItem(cacheId) {
@@ -1292,7 +1290,7 @@ consoleModule.controller('domainsController', [
 
             $http.post('/api/v1/configuration/domains/save', item)
                 .success(function (res) {
-                    $scope.ui.markPristine();
+                    $scope.ui.inputForm.$setPristine();
 
                     var savedMeta = res.savedDomains[0];
 
@@ -1388,7 +1386,7 @@ consoleModule.controller('domainsController', [
                                 if (domains.length > 0)
                                     $scope.selectItem(domains[0]);
                                 else
-                                    $scope.selectItem(undefined, undefined);
+                                    $scope.backupItem = emptyDoamin;
                             }
 
                             _checkShowValidPresentation();
@@ -1418,8 +1416,8 @@ consoleModule.controller('domainsController', [
                             $common.showInfo('All domain models have been removed');
 
                             $scope.domains = [];
-                            $scope.ui.markPristine();
-                            $scope.selectItem(undefined, undefined);
+                            $scope.ui.inputForm.$setPristine();
+                            $scope.backupItem = emptyDomain;
                             $scope.ui.showValid = true;
                         })
                         .error(function (errMsg) {
@@ -1442,7 +1440,7 @@ consoleModule.controller('domainsController', [
             }
 
             if (idx === -1)
-                $scope.selectItem(undefined, undefined);
+                $scope.backupItem = emptyDomain;
         };
 
         var pairFields = {
@@ -1754,22 +1752,13 @@ consoleModule.controller('domainsController', [
             index.fields.splice(curIdx, 1);
         };
 
-        $scope.resetItem = function (group) {
-            var resetTo = $scope.selectedItem;
-
-            if (!$common.isDefined(resetTo))
-                resetTo = prepareNewItem();
-
-            $common.resetItem($scope.backupItem, resetTo, $scope.domain, group);
-        };
-
         $scope.resetAll = function () {
             $table.tableReset();
 
             $confirm.confirm('Are you sure you want to undo all changes for current domain model?')
                 .then(function () {
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
-                    $scope.ui.markPristine();
+                    $scope.ui.inputForm.$setPristine();
                 });
         };
     }]

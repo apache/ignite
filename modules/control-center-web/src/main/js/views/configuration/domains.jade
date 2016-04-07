@@ -53,10 +53,13 @@ include ../includes/infos
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add domain model
                 .panel-tip-container(bs-tooltip='' data-title='Import domain models from database' data-placement='bottom')
                     button.btn.btn-primary(ng-click='showImportDomainModal()') Import from database
-                +save-remove-buttons('domain model')
+                +save-remove-buttons-new('domain model')
                 .btn-group.panel-tip-container.pull-right(bs-tooltip='' data-title='Import domain models from demo database' data-placement='bottom')
                 hr
             .bs-affix-fix
-            form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow((displayedRows | domainsValidation:ui.showValid:true), selectedItem)' novalidate)
-                .panel-group(bs-collapse ng-model='ui.activePanels' data-allow-multiple='true')
-                    +groups('domainModel', 'backupItem')
+            div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
+                form.form-horizontal(name='ui.inputForm' ng-show='contentVisible()' novalidate)
+                    .panel-group
+                        ignite-configuration-domains-general
+                        ignite-configuration-domains-query
+                        ignite-configuration-domains-store

@@ -56,6 +56,11 @@ import clustersTime from './configuration/clusters/time.directive';
 import clustersThread from './configuration/clusters/thread.directive';
 import clustersTransactions from './configuration/clusters/transactions.directive';
 
+// Domains screen.
+import domainsGeneral from './configuration/domains/general.directive';
+import domainsQuery from './configuration/domains/query.directive';
+import domainsStore from './configuration/domains/store.directive';
+
 // Caches screen.
 import cachesGeneral from './configuration/caches/general.directive';
 import cachesMemory from './configuration/caches/memory.directive';
@@ -113,6 +118,10 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
     .directive(...clustersGeneralDiscoveryZookeeperRetryOneTime)
     .directive(...clustersGeneralDiscoveryZookeeperRetryForever)
     .directive(...clustersGeneralDiscoveryZookeeperRetryCustom)
+    // Domains screen
+    .directive(...domainsGeneral)
+    .directive(...domainsQuery)
+    .directive(...domainsStore)
     // Caches screen
     .directive(...cachesGeneral)
     .directive(...cachesMemory)
