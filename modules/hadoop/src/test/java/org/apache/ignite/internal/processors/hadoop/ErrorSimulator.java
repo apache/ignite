@@ -9,7 +9,26 @@ import static java.lang.System.out;
  */
 public class ErrorSimulator {
 
-    public static ErrorSimulator noopInstance = new ErrorSimulator();
+    public enum Kind {
+        Noop, Runtime, IOException, Error;
+    }
+
+    public static final ErrorSimulator noopInstance = new ErrorSimulator();
+
+    public static ErrorSimulator create(Kind kind, int bits) {
+        switch (kind) {
+            case Noop:
+                return noopInstance;
+            case Runtime:
+                return new RuntimeExceptionBitErrorSimulator(bits);
+            case IOException:
+                return new IOExceptionBitErrorSimulator(bits);
+            case Error:
+                return new ErrorBitErrorSimulator(bits);
+            default:
+                throw new IllegalStateException("Unknown kind: " + kind);
+        }
+    }
 
     private static final AtomicReference<ErrorSimulator> ref = new AtomicReference<>(noopInstance);
 
@@ -20,7 +39,6 @@ public class ErrorSimulator {
     public static boolean setInstance(ErrorSimulator expect, ErrorSimulator update) {
         return ref.compareAndSet(expect, update);
     }
-
 
     protected ErrorSimulator() {
         // noop
@@ -49,6 +67,9 @@ public class ErrorSimulator {
     }
 
 
+    /**
+     * setConf() does not declare IOException to be thrown.
+     */
     public void onCombineConfigure() {
         //out.println("# combine configure ");
     }
@@ -88,7 +109,7 @@ public class ErrorSimulator {
 
         private final int bits;
 
-        RuntimeExceptionBitErrorSimulator(int b) {
+        protected RuntimeExceptionBitErrorSimulator(int b) {
             bits = b;
         }
 
@@ -96,7 +117,7 @@ public class ErrorSimulator {
             throw new RuntimeException("An error simulated by " + getClass().getSimpleName());
         }
 
-        @Override public void onMapConfigure() {
+        @Override public final void onMapConfigure() {
             try {
                 if ((bits & 1) != 0)
                     simulateError();
@@ -106,24 +127,24 @@ public class ErrorSimulator {
             }
         }
 
-        @Override public void onMapSetup() throws IOException, InterruptedException {
+        @Override public final void onMapSetup() throws IOException, InterruptedException {
             if ((bits & 2) != 0)
                 simulateError();
         }
 
-        @Override public void onMap() throws IOException {
+        @Override public final void onMap() throws IOException {
             if ((bits & 4) != 0)
                 simulateError();
         }
 
-        @Override public void onMapCleanup() throws IOException, InterruptedException {
+        @Override public final void onMapCleanup() throws IOException, InterruptedException {
             if ((bits & 8) != 0)
                 simulateError();
         }
 
 
 
-        @Override public void onCombineConfigure() {
+        @Override public final void onCombineConfigure() {
             try {
                 if ((bits & 16) != 0)
                     simulateError();
@@ -133,24 +154,24 @@ public class ErrorSimulator {
             }
         }
 
-        @Override public void onCombineSetup() throws IOException, InterruptedException {
+        @Override public final void onCombineSetup() throws IOException, InterruptedException {
             if ((bits & 32) != 0)
                 simulateError();
         }
 
-        @Override public void onCombine() throws IOException {
+        @Override public final void onCombine() throws IOException {
             if ((bits & 64) != 0)
                 simulateError();
         }
 
-        @Override public void onCombineCleanup() throws IOException, InterruptedException {
+        @Override public final void onCombineCleanup() throws IOException, InterruptedException {
             if ((bits & 128) != 0)
                 simulateError();
         }
 
 
 
-        @Override public void onReduceConfigure() {
+        @Override public final void onReduceConfigure() {
             try {
                 if ((bits & 256) != 0)
                     simulateError();
@@ -160,17 +181,17 @@ public class ErrorSimulator {
             }
         }
 
-        @Override public void onReduceSetup() throws IOException, InterruptedException {
+        @Override public final void onReduceSetup() throws IOException, InterruptedException {
             if ((bits & 512) != 0)
                 simulateError();
         }
 
-        @Override public void onReduce() throws IOException {
+        @Override public final void onReduce() throws IOException {
             if ((bits & 1024) != 0)
                 simulateError();
         }
 
-        @Override public void onReduceCleanup() throws IOException, InterruptedException {
+        @Override public final void onReduceCleanup() throws IOException, InterruptedException {
             if ((bits & 2048) != 0)
                 simulateError();
         }

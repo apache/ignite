@@ -72,7 +72,7 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopUtils.createJob
 /**
  * Test of whole cycle of map-reduce processing via Job tracker.
  */
-public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
+public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractWordCountTest {
     /** IGFS block size. */
     protected static final int IGFS_BLOCK_SIZE = 512 * 1024;
 
