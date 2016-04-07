@@ -104,6 +104,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** Lock. */
     private final StripedCompositeReadWriteLock lock = new StripedCompositeReadWriteLock(16);
 
+    /** */
     private final GridCacheMapEntryFactory entryFactory;
 
     /** Partition update counter. */
