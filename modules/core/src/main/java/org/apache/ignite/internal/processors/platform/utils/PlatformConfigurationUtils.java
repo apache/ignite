@@ -182,10 +182,26 @@ import java.util.Map;
         byte plcTyp = in.readByte();
 
         switch (plcTyp) {
-            case 0: break;
-            case 1: cfg.setNearEvictionPolicy(new FifoEvictionPolicy()); break;
-            case 2: cfg.setNearEvictionPolicy(new LruEvictionPolicy()); break;
-            default: assert false;
+            case 0:
+                break;
+            case 1: {
+                FifoEvictionPolicy p = new FifoEvictionPolicy();
+                p.setBatchSize(in.readInt());
+                p.setMaxSize(in.readInt());
+                p.setMaxMemorySize(in.readLong());
+                cfg.setNearEvictionPolicy(p);
+                break;
+            }
+            case 2: {
+                LruEvictionPolicy p = new LruEvictionPolicy();
+                p.setBatchSize(in.readInt());
+                p.setMaxSize(in.readInt());
+                p.setMaxMemorySize(in.readLong());
+                cfg.setNearEvictionPolicy(p);
+                break;
+            }
+            default:
+                assert false;
         }
 
         return cfg;
