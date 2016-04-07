@@ -495,7 +495,7 @@ import java.util.Map;
 
         NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
 
-        if (ccfg != null) {
+        if (nearCfg != null) {
             writer.writeBoolean(true);
 
             writeNearConfiguration(writer, nearCfg);
