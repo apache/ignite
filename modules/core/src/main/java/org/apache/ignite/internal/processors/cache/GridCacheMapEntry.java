@@ -959,7 +959,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     boolean hadValPtr = hasOffHeapPointer();
 
-                    // Don't change version for read-through.
                     update(ret, expTime, ttl, nextVer, true);
 
                     if (hadValPtr && cctx.offheapTiered())
