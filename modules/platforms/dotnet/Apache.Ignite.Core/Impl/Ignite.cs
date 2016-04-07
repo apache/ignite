@@ -593,7 +593,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Gets or create near cache.
+        /// Gets or creates near cache.
         /// </summary>
         private ICache<TK, TV> GetOrCreateNearCache0<TK, TV>(string name, NearCacheConfiguration configuration,
             Func<IUnmanagedTarget, string, long, IUnmanagedTarget> func)
