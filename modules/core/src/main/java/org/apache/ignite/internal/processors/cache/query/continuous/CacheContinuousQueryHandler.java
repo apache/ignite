@@ -645,9 +645,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
 
         // Initial query entry or evicted entry. These events should be fired immediately.
-        if (e.updateCounter() == -1L)
-            return F.<CacheEntryEvent<? extends K, ? extends V>>asList(
-                new CacheContinuousQueryEvent<K, V>(cache, cctx, e));
+        if (e.updateCounter() == -1L) {
+            return !e.isFiltered() ? F.<CacheEntryEvent<? extends K, ? extends V>>asList(
+                new CacheContinuousQueryEvent<K, V>(cache, cctx, e)) :
+                Collections.<CacheEntryEvent<? extends K, ? extends V>>emptyList();
+        }
 
         PartitionRecovery rec = getOrCreatePartitionRecovery(ctx, e.partition());
 
@@ -683,9 +685,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         }
                     }
                 }
-                else if (initUpdCntrs != null) {
+                else if (initUpdCntrs != null)
                     partCntr = initUpdCntrs.get(partId);
-                }
             }
 
             rec = new PartitionRecovery(ctx.log(getClass()), initTopVer0, partCntr);
