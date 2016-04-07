@@ -27,9 +27,7 @@ angular
     if (enabled) {
         sessionStorage.setItem('IgniteDemoMode', 'true');
 
-        const ioSocket = io.connect({query: 'IgniteDemoMode=true'});
-
-        igniteSocketFactoryProvider.set({ioSocket});
+        igniteSocketFactoryProvider.set({query: 'IgniteDemoMode=true'});
 
         $httpProvider.interceptors.push('demoInterceptor');
     }

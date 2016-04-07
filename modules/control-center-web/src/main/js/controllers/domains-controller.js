@@ -30,8 +30,8 @@ consoleModule.controller('domainsController', [
         var IMPORT_DM_NEW_CACHE = 1;
         var IMPORT_DM_ASSOCIATE_CACHE = 2;
 
-        $scope.ui.packageName = $commonUtils.toJavaPackageName($scope.$root.user.email.replace('@', '.')
-            .split('.').reverse().join('.') + '.model');
+        $scope.ui.packageNameUserInput = $scope.ui.packageName =
+            $commonUtils.toJavaPackageName($scope.$root.user.email.replace('@', '.').split('.').reverse().join('.') + '.model');
         $scope.ui.builtinKeys = true;
         $scope.ui.usePrimitives = true;
         $scope.ui.generatedCachesClusters = [];
