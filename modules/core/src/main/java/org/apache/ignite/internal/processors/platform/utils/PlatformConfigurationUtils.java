@@ -484,8 +484,7 @@ import java.util.Map;
 
         Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
 
-        if (qryEntities != null)
-        {
+        if (qryEntities != null) {
             writer.writeInt(qryEntities.size());
 
             for (QueryEntity e : qryEntities)
@@ -493,6 +492,16 @@ import java.util.Map;
         }
         else
             writer.writeInt(0);
+
+        NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
+
+        if (ccfg != null) {
+            writer.writeBoolean(true);
+
+            writeNearConfiguration(writer, nearCfg);
+        }
+        else
+            writer.writeBoolean(false);
     }
 
     /**
