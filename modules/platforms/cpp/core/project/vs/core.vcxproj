@@ -236,6 +236,8 @@
     <ClInclude Include="..\..\include\ignite\binary\binary_raw_writer.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_reader.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_writer.h" />
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transactions_impl.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transactions.h" />
     <ClInclude Include="..\..\os\win\include\ignite\impl\utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -267,6 +269,8 @@
     <ClCompile Include="..\..\src\binary\binary_raw_writer.cpp" />
     <ClCompile Include="..\..\src\binary\binary_reader.cpp" />
     <ClCompile Include="..\..\src\binary\binary_writer.cpp" />
+    <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp" />
+    <ClCompile Include="..\..\src\transactions\transactions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\common\project\vs\common.vcxproj">

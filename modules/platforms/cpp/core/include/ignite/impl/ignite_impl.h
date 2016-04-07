@@ -22,6 +22,7 @@
 #include <ignite/common/java.h>
 
 #include "ignite/impl/cache/cache_impl.h"
+#include "ignite/impl/transactions/transactions_impl.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/utils.h"
 
@@ -35,6 +36,9 @@ namespace ignite
         class IGNITE_FRIEND_EXPORT IgniteImpl
         {
             friend class Ignite;
+
+            typedef ignite::common::concurrent::SharedPointer<IgniteEnvironment> IgniteEnvSharedPtr;
+            typedef ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> TxImplSharedPtr;
         public:
             /**
              * Constructor used to create new instance.
@@ -42,7 +46,7 @@ namespace ignite
              * @param env Environment.
              * @param javaRef Reference to java object.
              */
-            IgniteImpl(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+            IgniteImpl(IgniteEnvSharedPtr env, jobject javaRef);
             
             /**
              * Destructor.
@@ -70,7 +74,7 @@ namespace ignite
              * @param err Error.
              */
             template<typename K, typename V> 
-            cache::CacheImpl* GetCache(const char* name, IgniteError* err)
+            cache::CacheImpl* GetCache(const char* name, IgniteError& err)
             {
                 ignite::common::java::JniErrorInfo jniErr;
 
@@ -78,7 +82,7 @@ namespace ignite
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                     return NULL;
                 }
@@ -95,7 +99,7 @@ namespace ignite
              * @param err Error.
              */
             template<typename K, typename V>
-            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError* err)
+            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err)
             {
                 ignite::common::java::JniErrorInfo jniErr;
 
@@ -103,7 +107,7 @@ namespace ignite
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                     return NULL;
                 }
@@ -120,7 +124,7 @@ namespace ignite
              * @param err Error.
              */
             template<typename K, typename V>
-            cache::CacheImpl* CreateCache(const char* name, IgniteError* err)
+            cache::CacheImpl* CreateCache(const char* name, IgniteError& err)
             {
                 ignite::common::java::JniErrorInfo jniErr;
 
@@ -128,7 +132,7 @@ namespace ignite
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                     return NULL;
                 }
@@ -150,13 +154,41 @@ namespace ignite
             {
                 return proxy.impl.Get();
             }
+
+            /**
+             * Get transactions.
+             *
+             * @return TransactionsImpl instance.
+             */
+            TxImplSharedPtr GetTransactions(IgniteError &err)
+            {
+                transactions::TransactionsImpl* tx = txImpl.Get();
+
+                if (!tx)
+                {
+                    ignite::common::java::JniErrorInfo jniErr;
+
+                    jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
+
+                    if (txJavaRef)
+                        txImpl = TxImplSharedPtr(new transactions::TransactionsImpl(env, txJavaRef));
+                    else
+                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                }
+
+                return txImpl;
+            }
+
         private:
             /** Environment. */
-            ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
-            
+            IgniteEnvSharedPtr env;
+
             /** Native Java counterpart. */
-            jobject javaRef;   
-            
+            jobject javaRef;
+
+            /** Transactions implementaion. */
+            TxImplSharedPtr txImpl;
+
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
         };
     }

@@ -85,6 +85,12 @@
     <ClCompile Include="..\..\src\impl\binary\binary_type_handler.cpp">
       <Filter>Code\impl\binary</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp">
+      <Filter>Code\impl\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\transactions\transactions.cpp">
+      <Filter>Code\transactions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
@@ -234,6 +240,12 @@
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_handler.h">
       <Filter>Code\impl\binary</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transactions_impl.h">
+      <Filter>Code\impl\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\transactions\transactions.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">
@@ -262,6 +274,12 @@
     </Filter>
     <Filter Include="Code\impl\binary">
       <UniqueIdentifier>{883773bd-085d-4eb5-81ee-f11188134faf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\transactions">
+      <UniqueIdentifier>{d6f8a3d2-db0e-45ff-9f39-d1f1fa8771f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\transactions">
+      <UniqueIdentifier>{146fe661-0ad3-4d51-83a3-fce8a897e84d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

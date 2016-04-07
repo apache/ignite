@@ -524,6 +524,7 @@ namespace ignite
                 jobject ProcessorAffinity(jobject obj, const char* name);
                 jobject ProcessorDataStreamer(jobject obj, const char* name, bool keepPortable);
                 jobject ProcessorTransactions(jobject obj);
+                jobject ProcessorTransactions(jobject obj, JniErrorInfo* errInfo);
                 jobject ProcessorCompute(jobject obj, jobject prj);
                 jobject ProcessorMessage(jobject obj, jobject prj);
                 jobject ProcessorEvents(jobject obj, jobject prj);

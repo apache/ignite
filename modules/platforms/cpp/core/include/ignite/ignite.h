@@ -24,6 +24,7 @@
 #define _IGNITE
 
 #include "ignite/cache/cache.h"
+#include "ignite/transactions/transactions.h"
 #include "ignite/impl/ignite_impl.h"
 #include "ignite/ignite_configuration.h"
 
@@ -81,7 +82,7 @@ namespace ignite
         template<typename K, typename V>
         cache::Cache<K, V> GetCache(const char* name, IgniteError* err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetCache<K, V>(name, err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetCache<K, V>(name, *err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
@@ -114,7 +115,7 @@ namespace ignite
         template<typename K, typename V>
         cache::Cache<K, V> GetOrCreateCache(const char* name, IgniteError* err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetOrCreateCache<K, V>(name, err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetOrCreateCache<K, V>(name, *err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
@@ -147,9 +148,40 @@ namespace ignite
         template<typename K, typename V>
         cache::Cache<K, V> CreateCache(const char* name, IgniteError* err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->CreateCache<K, V>(name, err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->CreateCache<K, V>(name, *err);
 
             return cache::Cache<K, V>(cacheImpl);
+        }
+
+        /**
+         * Get transactions.
+         *
+         * @return Transaction class instance.
+         */
+        transactions::Transactions GetTransactions()
+        {
+            IgniteError err;
+
+            transactions::Transactions tx = GetTransactions(&err);
+
+            IgniteError::ThrowIfNeeded(err);
+
+            return tx;
+        }
+
+        /**
+         * Get transactions.
+         *
+         * @return Transaction class instance.
+         */
+        transactions::Transactions GetTransactions(IgniteError* err)
+        {
+            using ignite::common::concurrent::SharedPointer;
+            using ignite::impl::transactions::TransactionsImpl;
+
+            SharedPointer<TransactionsImpl> txImpl = impl.Get()->GetTransactions(*err);
+
+            return transactions::Transactions(txImpl);
         }
 
         /**

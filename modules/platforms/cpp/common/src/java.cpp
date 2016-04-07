@@ -1315,11 +1315,15 @@ namespace ignite
             }
 
             jobject JniContext::ProcessorTransactions(jobject obj) {
+                return ProcessorTransactions(obj, NULL);
+            }
+
+            jobject JniContext::ProcessorTransactions(jobject obj, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jobject tx = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_transactions);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return LocalToGlobal(env, tx);
             }
