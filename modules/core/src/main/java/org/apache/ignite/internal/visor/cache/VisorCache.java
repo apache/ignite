@@ -215,7 +215,7 @@ public class VisorCache implements Serializable {
         offHeapAllocatedSize = ca.offHeapAllocatedSize();
         offHeapEntriesCnt = ca.offHeapEntriesCount();
         partitions = ca.affinity().partitions();
-        metrics = VisorCacheMetrics.from(ignite, cacheName);
+        metrics = new VisorCacheMetrics().from(ignite, cacheName);
 
         estimateMemorySize(ignite, ca, sample);
 
@@ -298,6 +298,15 @@ public class VisorCache implements Serializable {
      */
     public String name() {
         return name;
+    }
+
+    /**
+     * Sets new value for cache name.
+     *
+     * @param name New cache name.
+     */
+    public void name(String name) {
+        this.name = name;
     }
 
     /**

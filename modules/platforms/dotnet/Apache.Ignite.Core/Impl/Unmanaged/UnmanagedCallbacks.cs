@@ -162,6 +162,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate long ExtensionCallbackInLongOutLongDelegate(void* target, int typ, long arg1);
         private delegate long ExtensionCallbackInLongLongOutLongDelegate(void* target, int typ, long arg1, long arg2);
 
+        private delegate void OnClientDisconnectedDelegate(void* target);
+        private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
+
         /// <summary>
         /// constructor.
         /// </summary>
@@ -241,7 +244,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
                 
                 extensionCbInLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongOutLongDelegate)ExtensionCallbackInLongOutLong),
-                extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong)
+                extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong),
+
+                onClientDisconnected = CreateFunctionPointer((OnClientDisconnectedDelegate)OnClientDisconnected),
+                ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -728,7 +734,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     string errCls = reader.ReadString();
                     string errMsg = reader.ReadString();
 
-                    Exception err = ExceptionUtils.GetException(errCls, errMsg, reader);
+                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, reader);
 
                     ProcessFuture(futPtr, fut => { fut.OnError(err); });
                 }
@@ -1043,10 +1049,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         // Stream disposal intentionally omitted: IGNITE-1598
                         var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
 
-                        throw ExceptionUtils.GetException(errCls, errMsg, _ignite.Marshaller.StartUnmarshal(stream));
+                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, _ignite.Marshaller.StartUnmarshal(stream));
                     }
 
-                    throw ExceptionUtils.GetException(errCls, errMsg);
+                    throw ExceptionUtils.GetException(_ignite, errCls, errMsg);
 
                 case ErrJvmInit:
                     throw ExceptionUtils.GetJvmInitializeException(errCls, errMsg);
@@ -1059,8 +1065,24 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        private void OnClientDisconnected(void* target)
+        {
+            SafeCall(() =>
+            {
+                _ignite.OnClientDisconnected();
+            });
+        }
+
+        private void OnClientReconnected(void* target, bool clusterRestarted)
+        {
+            SafeCall(() =>
+            {
+                _ignite.OnClientReconnected(clusterRestarted);
+            });
+        }
+
         #endregion
-        
+
         #region HELPERS
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]

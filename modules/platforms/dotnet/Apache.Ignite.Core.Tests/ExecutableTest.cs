@@ -17,6 +17,8 @@
 
 // ReSharper disable UnusedVariable
 // ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Local
+//#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -27,7 +29,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Process;
-    using Microsoft.CSharp;
     using NUnit.Framework;
 
     /// <summary>
@@ -77,7 +78,7 @@ namespace Apache.Ignite.Core.Tests
         {
             TestUtils.KillProcesses();
 
-            Assert.IsTrue(_grid.WaitTopology(1, 30000));
+            Assert.IsTrue(_grid.WaitTopology(1));
 
             IgniteProcess.SaveConfigurationBackup();
         }
@@ -106,7 +107,7 @@ namespace Apache.Ignite.Core.Tests
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath()
                 );
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
 
@@ -133,7 +134,7 @@ namespace Apache.Ignite.Core.Tests
                 "-assembly=test-2.dll"
                 );
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
 
@@ -153,7 +154,7 @@ namespace Apache.Ignite.Core.Tests
                 "-J-DOPT2"
                 );
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             var cfg = RemoteConfig();
 
@@ -173,7 +174,7 @@ namespace Apache.Ignite.Core.Tests
                 "-J-Xmx607m"
                 );
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 506*1024*1024, minMem);
@@ -195,7 +196,7 @@ namespace Apache.Ignite.Core.Tests
                 "-JvmMaxMemoryMB=863"
                 );
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 615*1024*1024, minMem);
@@ -208,16 +209,17 @@ namespace Apache.Ignite.Core.Tests
         /// Test JVM memory options passing from application configuration.
         /// </summary>
         [Test]
-        public void TestJvmMemoryOptsAppConfig()
+        public void TestJvmMemoryOptsAppConfig(
+            [Values("config\\Apache.Ignite.exe.config.test", "config\\Apache.Ignite.exe.config.test2")] string config)
         {
-            IgniteProcess.ReplaceConfiguration("config\\Apache.Ignite.exe.config.test");
+            IgniteProcess.ReplaceConfiguration(config);
 
             GenerateDll("test-1.dll");
             GenerateDll("test-2.dll");
 
             var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath());
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 601*1024*1024, minMem);
@@ -227,14 +229,14 @@ namespace Apache.Ignite.Core.Tests
 
             proc.Kill();
 
-            Assert.IsTrue(_grid.WaitTopology(1, 30000));
+            Assert.IsTrue(_grid.WaitTopology(1));
 
             // Command line options overwrite config file options
             // ReSharper disable once RedundantAssignment
             proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-J-Xms605m", "-J-Xmx706m");
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
             Assert.AreEqual((long) 605*1024*1024, minMem);
@@ -258,7 +260,7 @@ namespace Apache.Ignite.Core.Tests
                 "-JvmMaxMemoryMB=256"
                 );
 
-            Assert.IsTrue(_grid.WaitTopology(2, 30000));
+            Assert.IsTrue(_grid.WaitTopology(2));
 
             // Raw JVM options (Xms/Xmx) should override custom options
             var minMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MinMemTask, null);
@@ -266,6 +268,45 @@ namespace Apache.Ignite.Core.Tests
 
             var maxMem = _grid.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<long>(MaxMemTask, null);
             AssertJvmMaxMemory((long) 666*1024*1024, maxMem);
+        }
+
+        /// <summary>
+        /// Tests the .NET XML configuration specified in app.config.
+        /// </summary>
+        [Test]
+        public void TestXmlConfigurationAppConfig()
+        {
+            IgniteProcess.ReplaceConfiguration("config\\Apache.Ignite.exe.config.test3");
+
+            var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath());
+
+            Assert.IsTrue(_grid.WaitTopology(2));
+
+            var remoteCfg = RemoteConfig();
+            Assert.IsTrue(remoteCfg.JvmOptions.Contains("-DOPT25"));
+
+            proc.Kill();
+
+            Assert.IsTrue(_grid.WaitTopology(1));
+        }
+
+        /// <summary>
+        /// Tests the .NET XML configuration specified in command line.
+        /// </summary>
+        [Test]
+        public void TestXmlConfigurationCmd()
+        {
+            var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
+                "-configFileName=config\\ignite-dotnet-cfg.xml");
+
+            Assert.IsTrue(_grid.WaitTopology(2));
+
+            var remoteCfg = RemoteConfig();
+            Assert.IsTrue(remoteCfg.JvmOptions.Contains("-DOPT25"));
+
+            proc.Kill();
+
+            Assert.IsTrue(_grid.WaitTopology(1));
         }
 
         /// <summary>
@@ -325,21 +366,15 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="outputPath"></param>
         private static void GenerateDll(string outputPath)
         {
-            var codeProvider = new CSharpCodeProvider();
-
-#pragma warning disable 0618
-
-            var icc = codeProvider.CreateCompiler();
-
-#pragma warning restore 0618
-
-            var parameters = new CompilerParameters();
-            parameters.GenerateExecutable = false;
-            parameters.OutputAssembly = outputPath;
+            var parameters = new CompilerParameters
+            {
+                GenerateExecutable = false,
+                OutputAssembly = outputPath
+            };
 
             var src = "namespace Apache.Ignite.Client.Test { public class Foo {}}";
 
-            var results = icc.CompileAssemblyFromSource(parameters, src);
+            var results = CodeDomProvider.CreateProvider("CSharp").CompileAssemblyFromSource(parameters, src);
 
             Assert.False(results.Errors.HasErrors);
         }
@@ -357,7 +392,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Closure which extracts configuration and passes it back.
         /// </summary>
-        public class RemoteConfigurationClosure : IComputeFunc<RemoteConfiguration>
+        private class RemoteConfigurationClosure : IComputeFunc<RemoteConfiguration>
         {
 
 #pragma warning disable 0649
@@ -396,7 +431,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Configuration.
         /// </summary>
-        public class RemoteConfiguration
+        private class RemoteConfiguration
         {
             /// <summary>
             /// GG home.

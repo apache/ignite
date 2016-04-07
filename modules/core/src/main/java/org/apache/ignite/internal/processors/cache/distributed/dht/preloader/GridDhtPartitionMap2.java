@@ -187,14 +187,16 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
 
     /**
      * @param updateSeq New update sequence value.
+     * @param topVer Current topology version.
      * @return Old update sequence value.
      */
-    public long updateSequence(long updateSeq) {
+    public long updateSequence(long updateSeq, AffinityTopologyVersion topVer) {
         long old = this.updateSeq;
 
         assert updateSeq >= old : "Invalid update sequence [cur=" + old + ", new=" + updateSeq + ']';
 
         this.updateSeq = updateSeq;
+        this.top = topVer;
 
         return old;
     }

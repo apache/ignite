@@ -161,6 +161,32 @@ namespace Apache.Ignite.Core.Cache
         Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args);
 
         /// <summary>
+        /// Loads the specified entries into the cache using the configured 
+        /// <see cref="ICacheStore"/>> for the given keys.
+        /// <para />
+        /// If an entry for a key already exists in the cache, a value will be loaded if and only if 
+        /// <paramref name="replaceExistingValues" /> is true.   
+        /// If no loader is configured for the cache, no objects will be loaded.
+        /// </summary>
+        /// <param name="keys">The keys to load.</param>
+        /// <param name="replaceExistingValues">if set to <c>true</c>, existing cache values will
+        /// be replaced by those loaded from a cache store.</param>
+        void LoadAll(IEnumerable<TK> keys, bool replaceExistingValues);
+
+        /// <summary>
+        /// Asynchronously loads the specified entries into the cache using the configured 
+        /// <see cref="ICacheStore"/>> for the given keys.
+        /// <para />
+        /// If an entry for a key already exists in the cache, a value will be loaded if and only if 
+        /// <paramref name="replaceExistingValues" /> is true.   
+        /// If no loader is configured for the cache, no objects will be loaded.
+        /// </summary>
+        /// <param name="keys">The keys to load.</param>
+        /// <param name="replaceExistingValues">if set to <c>true</c>, existing cache values will
+        /// be replaced by those loaded from a cache store.</param>
+        Task LoadAllAsync(IEnumerable<TK> keys, bool replaceExistingValues);
+
+        /// <summary>
         /// Check if cache contains mapping for this key.
         /// </summary>
         /// <param name="key">Key.</param>

@@ -37,7 +37,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -231,7 +230,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             if (create) {
                 hdr = new GridCacheQueueHeader(IgniteUuid.randomUuid(), cap, colloc, 0, 0, null);
 
-                GridCacheQueueHeader old = queueHdrView.getAndPutIfAbsent(key, hdr);
+                GridCacheQueueHeader old = queueHdrView.withNoRetries().getAndPutIfAbsent(key, hdr);
 
                 if (old != null) {
                     if (old.capacity() != cap || old.collocated() != colloc)
@@ -285,7 +284,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                     },
                     new QueueHeaderPredicate(),
                     cctx.isLocal() || (cctx.isReplicated() && cctx.affinityNode()),
-                    true);
+                    true,
+                    false);
             }
 
             GridCacheQueueProxy queue = queuesMap.get(hdr.id());
@@ -385,7 +385,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             GridCacheSetHeader hdr;
 
-            GridCacheAdapter cache = cctx.cache();
+            IgniteInternalCache cache = cctx.cache().withNoRetries();
 
             if (create) {
                 hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);

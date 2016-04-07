@@ -73,7 +73,6 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
@@ -277,7 +276,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 new MetaDataEntryListener(),
                 new MetaDataEntryFilter(),
                 false,
-                true);
+                true,
+                false);
 
             while (true) {
                 ClusterNode oldestSrvNode =
@@ -514,7 +514,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         Object obj0 = binaryMarsh.unmarshal(arr, null);
 
         // Possible if a class has writeObject method.
-        if (obj0 instanceof BinaryObject)
+        if (obj0 instanceof BinaryObjectImpl)
             ((BinaryObjectImpl)obj0).detachAllowed(true);
 
         return obj0;
@@ -782,8 +782,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (((CacheObjectBinaryContext)ctx).binaryEnabled()) {
             obj = toBinary(obj);
 
-            if (obj instanceof BinaryObject)
-                return (BinaryObjectImpl)obj;
+            if (obj instanceof KeyCacheObject)
+                return (KeyCacheObject)obj;
         }
 
         return toCacheKeyObject0(obj, userObj);
@@ -800,8 +800,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         obj = toBinary(obj);
 
-        if (obj instanceof BinaryObject)
-            return (BinaryObjectImpl)obj;
+        if (obj instanceof CacheObject)
+            return (CacheObject)obj;
 
         return toCacheObject0(obj, userObj);
     }
@@ -810,6 +810,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
         if (type == BinaryObjectImpl.TYPE_BINARY)
             return new BinaryObjectImpl(binaryContext(), bytes, 0);
+        else if (type == BinaryObjectImpl.TYPE_BINARY_ENUM)
+            return new BinaryEnumObjectImpl(binaryContext(), bytes);
 
         return super.toCacheObject(ctx, type, bytes);
     }

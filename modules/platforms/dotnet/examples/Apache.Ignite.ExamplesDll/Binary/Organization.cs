@@ -18,21 +18,13 @@
 namespace Apache.Ignite.ExamplesDll.Binary
 {
     using System;
+    using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
     /// Organization.
     /// </summary>
-    [Serializable]
     public class Organization
     {
-        /// <summary>
-        /// Default constructor.
-        /// </summary>
-        public Organization()
-        {
-            // No-op.
-        }
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -51,6 +43,7 @@ namespace Apache.Ignite.ExamplesDll.Binary
         /// <summary>
         /// Name.
         /// </summary>
+        [QuerySqlField(IsIndexed = true)]
         public string Name { get; set; }
 
         /// <summary>

@@ -136,6 +136,8 @@ public class IgniteNode implements BenchmarkServer {
             cc.setWriteThrough(args.isStoreEnabled());
 
             cc.setWriteBehindEnabled(args.isWriteBehind());
+
+            BenchmarkUtils.println(cfg, "Cache configured with the following parameters: " + cc);
         }
 
         TransactionConfiguration tc = c.getTransactionConfiguration();

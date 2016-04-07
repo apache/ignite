@@ -1466,7 +1466,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         try {
             sock.setSoTimeout((int)timeout);
 
-            T res = marsh.unmarshal(in == null ? sock.getInputStream() : in, U.gridClassLoader());
+            T res = marsh.unmarshal(in == null ? sock.getInputStream() : in,
+                U.resolveClassLoader(ignite.configuration()));
 
             return res;
         }
@@ -1700,6 +1701,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @param joiningNodeID Joining node ID.
      * @param nodeId Remote node ID for which data is provided.
      * @param data Collection of marshalled discovery data objects from different components.
+     * @param clsLdr Class loader.
      */
     protected void onExchange(UUID joiningNodeID,
         UUID nodeId,

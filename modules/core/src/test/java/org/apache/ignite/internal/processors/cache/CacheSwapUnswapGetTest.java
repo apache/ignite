@@ -264,7 +264,7 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
                     ", offheap=" + cache.localSize(CachePeekMode.OFFHEAP) +
                     ", swap=" + cache.localSize(CachePeekMode.SWAP) +
                     ", total=" + cache.localSize() +
-                    ", offheapMem=" + cache.metrics().getOffHeapAllocatedSize() + ']');
+                    ", offheapMem=" + cache.localMetrics().getOffHeapAllocatedSize() + ']');
             }
 
             done.set(true);
@@ -282,7 +282,7 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
             int offheapSize = cache.localSize(CachePeekMode.OFFHEAP);
             int swapSize = cache.localSize(CachePeekMode.SWAP);
             int total = cache.localSize();
-            long offheapMem = cache.metrics().getOffHeapAllocatedSize();
+            long offheapMem = cache.localMetrics().getOffHeapAllocatedSize();
 
             log.info("Cache size [heap=" + onheapSize +
                 ", offheap=" + offheapSize +

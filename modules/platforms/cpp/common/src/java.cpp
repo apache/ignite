@@ -352,6 +352,9 @@ namespace ignite
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG = JniMethod("extensionCallbackInLongOutLong", "(JIJ)J", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG = JniMethod("extensionCallbackInLongLongOutLong", "(JIJJ)J", true);
 
+            JniMethod M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_DISCONNECTED = JniMethod("onClientDisconnected", "(J)V", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_RECONNECTED = JniMethod("onClientReconnected", "(JZ)V", true);
+
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
             JniMethod M_PLATFORM_UTILS_ERR_DATA = JniMethod("errorData", "(Ljava/lang/Throwable;)[B", true);
@@ -383,7 +386,7 @@ namespace ignite
 			JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE = JniMethod("withServerKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL = JniMethod("cancel", "(Ljava/lang/String;)V", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL_ALL = JniMethod("cancelAll", "()V", false);
-			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("dotNetServiceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
+			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("serviceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
 
             const char* C_PLATFORM_ATOMIC_LONG = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicLong";
             JniMethod M_PLATFORM_ATOMIC_LONG_GET = JniMethod("get", "()J", false);
@@ -785,7 +788,7 @@ namespace ignite
             /**
              * Create JVM.
              */
-            void CreateJvm(char** opts, int optsLen, JavaVM** jvm, JNIEnv** env) {
+            jint CreateJvm(char** opts, int optsLen, JavaVM** jvm, JNIEnv** env) {
                 JavaVMOption* opts0 = new JavaVMOption[optsLen];
 
                 for (int i = 0; i < optsLen; i++)
@@ -802,13 +805,12 @@ namespace ignite
 
                 delete[] opts0;
 
-                if (res != JNI_OK)
-                    throw JvmException();
+                return res;
             }
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[52];
+					JNINativeMethod methods[54];
 
                     int idx = 0;
 
@@ -882,6 +884,9 @@ namespace ignite
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG, reinterpret_cast<void*>(JniExtensionCallbackInLongOutLong));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG, reinterpret_cast<void*>(JniExtensionCallbackInLongLongOutLong));
 
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_DISCONNECTED, reinterpret_cast<void*>(JniOnClientDisconnected));
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_RECONNECTED, reinterpret_cast<void*>(JniOnClientReconnected));
+
                     jint res = env->RegisterNatives(FindClass(env, C_PLATFORM_CALLBACK_UTILS), methods, idx);
 
                     if (res != JNI_OK)
@@ -895,6 +900,40 @@ namespace ignite
 
             JniContext* JniContext::Create(char** opts, int optsLen, JniHandlers hnds) {
                 return Create(opts, optsLen, hnds, NULL);
+            }
+
+            void GetJniErrorMessage(std::string& errMsg, jint res)
+            {
+                switch (res)
+                {
+                    case JNI_ERR:
+                        errMsg = "Unknown error (JNI_ERR).";
+                        break;
+
+                    case JNI_EDETACHED:
+                        errMsg = "Thread detached from the JVM.";
+                        break;
+
+                    case JNI_EVERSION:
+                        errMsg = "JNI version error.";
+                        break;
+
+                    case JNI_ENOMEM:
+                        errMsg = "Could not reserve enough space for object heap. Check Xmx option.";
+                        break;
+
+                    case JNI_EEXIST:
+                        errMsg = "JVM already created.";
+                        break;
+
+                    case JNI_EINVAL:
+                        errMsg = "Invalid JVM arguments.";
+                        break;
+
+                    default:
+                        errMsg = "Unexpected JNI_CreateJavaVM result.";
+                        break;
+                }
             }
 
             JniContext* JniContext::Create(char** opts, int optsLen, JniHandlers hnds, JniErrorInfo* errInfo)
@@ -920,25 +959,36 @@ namespace ignite
                 int errMsgLen = 0;
 
                 try {
-                    if (!JVM.GetJvm()) {
+                    if (!JVM.GetJvm()) 
+                    {
                         // 1. Create JVM itself.
-                        CreateJvm(opts, optsLen, &jvm, &env);
+                        jint res = CreateJvm(opts, optsLen, &jvm, &env);
 
-                        // 2. Populate members;
-                        javaMembers.Initialize(env);
-                        members.Initialize(env);
+                        if (res == JNI_OK)
+                        {
+                            // 2. Populate members;
+                            javaMembers.Initialize(env);
+                            members.Initialize(env);
 
-                        // 3. Register native functions.
-                        RegisterNatives(env);
+                            // 3. Register native functions.
+                            RegisterNatives(env);
 
-                        // 4. Create JNI JVM.
-                        JVM = JniJvm(jvm, javaMembers, members);
+                            // 4. Create JNI JVM.
+                            JVM = JniJvm(jvm, javaMembers, members);
 
-                        char* printStack = getenv("IGNITE_CPP_PRINT_STACK");
-                        PRINT_EXCEPTION = printStack && strcmp("true", printStack) == 0;
+                            char* printStack = getenv("IGNITE_CPP_PRINT_STACK");
+                            PRINT_EXCEPTION = printStack && strcmp("true", printStack) == 0;
+                        }
+                        else
+                        {
+                            GetJniErrorMessage(errMsg, res);
+
+                            errMsgLen = errMsg.length();
+                        }
                     }
 
-                    ctx = new JniContext(&JVM, hnds);
+                    if (JVM.GetJvm())
+                        ctx = new JniContext(&JVM, hnds);
                 }
                 catch (JvmException)
                 {
@@ -1160,7 +1210,7 @@ namespace ignite
                 return LocalToGlobal(env, cache);
             }
 
-            jobject JniContext::ProcessorCacheFromConfig0(jobject obj, long memPtr, jmethodID mthd, JniErrorInfo* errInfo)
+            jobject JniContext::ProcessorCacheFromConfig0(jobject obj, long long memPtr, jmethodID mthd, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
@@ -1215,20 +1265,20 @@ namespace ignite
                 ExceptionCheck(env, errInfo);
             }
 
-            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long memPtr) {
+            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long long memPtr) {
                 return ProcessorCreateCacheFromConfig(obj, memPtr, NULL);
             }
 
-            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo)
+            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo)
             {
                 return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_createCacheFromConfig, errInfo);
             }
 
-            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr) {
+            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr) {
                 return ProcessorGetOrCreateCacheFromConfig(obj, memPtr, NULL);
             }
 
-            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo)
+            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo)
             {
                 return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateCacheFromConfig, errInfo);
             }
@@ -1373,7 +1423,7 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            void JniContext::ProcessorGetIgniteConfiguration(jobject obj, long memPtr)
+            void JniContext::ProcessorGetIgniteConfiguration(jobject obj, long long memPtr)
             {
                 JNIEnv* env = Attach();
 
@@ -2715,6 +2765,14 @@ namespace ignite
 
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1, jlong arg2) {
                 IGNITE_SAFE_FUNC(env, envPtr, ExtensionCallbackInLongLongOutLongHandler, extensionCallbackInLongLongOutLong, typ, arg1, arg2);
+            }
+            
+            JNIEXPORT void JNICALL JniOnClientDisconnected(JNIEnv *env, jclass cls, jlong envPtr) {
+                IGNITE_SAFE_PROC_NO_ARG(env, envPtr, OnClientDisconnectedHandler, onClientDisconnected);
+            }
+
+            JNIEXPORT void JNICALL JniOnClientReconnected(JNIEnv *env, jclass cls, jlong envPtr, jboolean clusterRestarted) {
+                IGNITE_SAFE_PROC(env, envPtr, OnClientReconnectedHandler, onClientReconnected, clusterRestarted);
             }
         }
     }

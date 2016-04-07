@@ -104,7 +104,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException
     {
-        return ctx.kernalContext().cache().context().marshaller().unmarshal(bytes, clsLdr);
+        return ctx.kernalContext().cache().context().marshaller().unmarshal(bytes, U.resolveClassLoader(clsLdr,
+            ctx.kernalContext().config()));
     }
 
     /** {@inheritDoc} */

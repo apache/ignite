@@ -33,10 +33,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridDirectParser implements GridNioParser {
     /** Message metadata key. */
-    private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Reader metadata key. */
-    private static final int READER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    static final int READER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
     private final IgniteLogger log;

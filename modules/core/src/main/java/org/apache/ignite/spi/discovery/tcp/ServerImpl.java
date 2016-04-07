@@ -68,6 +68,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -81,6 +82,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -136,6 +138,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
@@ -213,7 +216,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private final Collection<SocketAddress> fromAddrs = new GridConcurrentHashSet<>();
 
     /** Response on join request from coordinator (in case of duplicate ID or auth failure). */
-    private final GridTuple<TcpDiscoveryAbstractMessage> joinRes = F.t1();
+    private final GridTuple<TcpDiscoveryAbstractMessage> joinRes = new GridTuple<>();
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -271,7 +274,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> getRemoteNodes() {
-        return F.upcast(ring.visibleRemoteNodes());
+        return upcast(ring.visibleRemoteNodes());
     }
 
     /** {@inheritDoc} */
@@ -313,7 +316,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         else {
             if (F.isEmpty(spi.ipFinder.getRegisteredAddresses()))
                 throw new IgniteSpiException("Non-shared IP finder must have IP addresses specified in " +
-                    "GridTcpDiscoveryIpFinder.getRegisteredAddresses() configuration property " +
+                    "TcpDiscoveryIpFinder.getRegisteredAddresses() configuration property " +
                     "(specify list of IP addresses in configuration).");
 
             ipFinderHasLocAddr = spi.ipFinderHasLocalAddress();
@@ -1277,7 +1280,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.debug("Discovery notification [node=" + node + ", spiState=" + spiState +
                     ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
 
-            Collection<ClusterNode> top = F.upcast(ring.visibleNodes());
+            Collection<ClusterNode> top = upcast(ring.visibleNodes());
 
             Map<Long, Collection<ClusterNode>> hist = updateTopologyHistory(topVer, top);
 
@@ -1288,6 +1291,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.debug("Skipped discovery notification [node=" + node + ", spiState=" + spiState +
                     ", type=" + U.gridEventName(type) + ", topVer=" + topVer + ']');
         }
+    }
+
+    /**
+     * Upcasts collection type.
+     *
+     * @param c Initial collection.
+     * @return Resulting collection.
+     */
+    private static <T extends R, R> Collection<R> upcast(Collection<T> c) {
+        A.notNull(c, "c");
+
+        return (Collection<R>)c;
     }
 
     /**
@@ -2325,7 +2340,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (marshalledMsg == null)
                             marshalledMsg = spi.marsh.marshal(msg);
 
-                        msgClone = spi.marsh.unmarshal(marshalledMsg, null);
+                        msgClone = spi.marsh.unmarshal(marshalledMsg,
+                            U.resolveClassLoader(spi.ignite().configuration()));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to marshal message: " + msg, e);
@@ -3176,6 +3192,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 Boolean rmtMarshUseDfltSuid = node.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
                 boolean rmtMarshUseDfltSuidBool = rmtMarshUseDfltSuid == null ? true : rmtMarshUseDfltSuid;
 
+                Boolean locLateAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
+                // Can be null only in tests.
+                boolean locLateAssignBool = locLateAssign != null ? locLateAssign : false;
+
                 if (locMarshUseDfltSuidBool != rmtMarshUseDfltSuidBool) {
                     String errMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
                         " property value differs from remote node's value " +
@@ -3186,34 +3206,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                         ", rmtNodeAddrs=" + U.addressesAsString(node) +
                         ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    LT.warn(log, null, errMsg);
+                    String sndMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
+                        " property value differs from remote node's value " +
+                        "(to make sure all nodes in topology have identical marshaller settings, " +
+                        "configure system property explicitly) " +
+                        "[locMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
+                        ", rmtMarshUseDfltSuid=" + locMarshUseDfltSuid +
+                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                        ", rmtNodeId=" + locNode.id() + ']';
 
-                    // Always output in debug.
-                    if (log.isDebugEnabled())
-                        log.debug(errMsg);
-
-                    try {
-                        String sndMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
-                            " property value differs from remote node's value " +
-                            "(to make sure all nodes in topology have identical marshaller settings, " +
-                            "configure system property explicitly) " +
-                            "[locMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
-                            ", rmtMarshUseDfltSuid=" + locMarshUseDfltSuid +
-                            ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                            ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                            ", rmtNodeId=" + locNode.id() + ']';
-
-                        trySendMessageDirectly(node,
-                            new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
-                    }
-                    catch (IgniteSpiException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send marshaller check failed message to node " +
-                                "[node=" + node + ", err=" + e.getMessage() + ']');
-
-                        onException("Failed to send marshaller check failed message to node " +
-                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                    }
+                    nodeCheckError(node, errMsg, sndMsg);
 
                     // Ignore join request.
                     return;
@@ -3235,31 +3238,48 @@ class ServerImpl extends TcpDiscoveryImpl {
                         ", rmtNodeAddrs=" + U.addressesAsString(node) +
                         ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    LT.warn(log, null, errMsg);
+                    String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
+                        "the same property on remote node (make sure all nodes in topology have the same value " +
+                        "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
+                        ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
+                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                        ", rmtNodeId=" + locNode.id() + ']';
 
-                    // Always output in debug.
-                    if (log.isDebugEnabled())
-                        log.debug(errMsg);
+                    nodeCheckError(node, errMsg, sndMsg);
 
-                    try {
-                        String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
-                            "the same property on remote node (make sure all nodes in topology have the same value " +
-                            "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
-                            ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
-                            ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                            ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                            ", rmtNodeId=" + locNode.id() + ']';
+                    // Ignore join request.
+                    return;
+                }
 
-                        trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
-                    }
-                    catch (IgniteSpiException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send marshaller check failed message to node " +
-                                "[node=" + node + ", err=" + e.getMessage() + ']');
+                boolean rmtLateAssignBool;
 
-                        onException("Failed to send marshaller check failed message to node " +
-                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                    }
+                if (node.version().compareTo(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0) {
+                    Boolean rmtLateAssign = node.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
+                    // Can be null only in tests.
+                    rmtLateAssignBool = rmtLateAssign != null ? rmtLateAssign : false;
+                }
+                else
+                    rmtLateAssignBool = false;
+
+                if (locLateAssignBool != rmtLateAssignBool) {
+                    String errMsg = "Local node's cache affinity assignment mode differs from " +
+                        "the same property on remote node (make sure all nodes in topology have the same " +
+                        "cache affinity assignment mode) [locLateAssign=" + locLateAssignBool +
+                        ", rmtLateAssign=" + rmtLateAssignBool +
+                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                    String sndMsg = "Local node's cache affinity assignment mode differs from " +
+                        "the same property on remote node (make sure all nodes in topology have the same " +
+                        "cache affinity assignment mode) [locLateAssign=" + rmtLateAssignBool +
+                        ", rmtLateAssign=" + locLateAssign +
+                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                        ", rmtNodeId=" + locNode.id() + ']';
+
+                    nodeCheckError(node, errMsg, sndMsg);
 
                     // Ignore join request.
                     return;
@@ -3283,6 +3303,31 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             else if (sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
+        }
+
+        /**
+         * @param node Joining node.
+         * @param errMsg Message to log.
+         * @param sndMsg Message to send.
+         */
+        private void nodeCheckError(TcpDiscoveryNode node, String errMsg, String sndMsg) {
+            LT.warn(log, null, errMsg);
+
+            // Always output in debug.
+            if (log.isDebugEnabled())
+                log.debug(errMsg);
+
+            try {
+                trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNode.id(), sndMsg));
+            }
+            catch (IgniteSpiException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to send marshaller check failed message to node " +
+                        "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                onException("Failed to send marshaller check failed message to node " +
+                    "[node=" + node + ", err=" + e.getMessage() + ']', e);
+            }
         }
 
         /**
@@ -3545,7 +3590,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             SecurityContext coordSubj = spi.marsh.unmarshal(
                                 node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT),
-                                U.gridClassLoader());
+                                U.resolveClassLoader(spi.ignite().configuration()));
 
                             if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
                                 // Node has not pass authentication.
@@ -3601,7 +3646,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (data != null)
                         spi.onExchange(node.id(), node.id(), data,
-                            U.resolveClassLoader(spi.ignite().configuration().getClassLoader()));
+                            U.resolveClassLoader(spi.ignite().configuration()));
 
                     msg.addDiscoveryData(locNodeId, spi.collectExchangeData(node.id()));
 
@@ -3681,7 +3726,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (dataMap != null) {
                     for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
                         spi.onExchange(node.id(), entry.getKey(), entry.getValue(),
-                            U.resolveClassLoader(spi.ignite().configuration().getClassLoader()));
+                            U.resolveClassLoader(spi.ignite().configuration()));
                 }
 
                 processMessageFailedNodes(msg);
@@ -4608,7 +4653,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     DiscoverySpiCustomMessage msgObj = null;
 
                     try {
-                        msgObj = msg.message(spi.marsh, spi.ignite().configuration().getClassLoader());
+                        msgObj = msg.message(spi.marsh, U.resolveClassLoader(spi.ignite().configuration()));
                     }
                     catch (Throwable e) {
                         U.error(log, "Failed to unmarshal discovery custom message.", e);
@@ -4735,7 +4780,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (node != null) {
                     try {
                         DiscoverySpiCustomMessage msgObj = msg.message(spi.marsh,
-                            spi.ignite().configuration().getClassLoader());
+                            U.resolveClassLoader(spi.ignite().configuration()));
 
                         lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                             msg.topologyVersion(),
@@ -5181,7 +5226,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 while (!isInterrupted()) {
                     try {
-                        TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in, U.gridClassLoader());
+                        TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in,
+                            U.resolveClassLoader(spi.ignite().configuration()));
 
                         msg.senderNodeId(nodeId);
 

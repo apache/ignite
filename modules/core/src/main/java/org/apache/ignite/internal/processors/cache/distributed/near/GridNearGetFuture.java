@@ -141,8 +141,10 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
     /**
      * Initializes future.
+     *
+     * @param topVer Topology version.
      */
-    public void init() {
+    public void init(@Nullable AffinityTopologyVersion topVer) {
         AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
         if (lockedTopVer != null) {
@@ -151,11 +153,15 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), lockedTopVer);
         }
         else {
-            AffinityTopologyVersion topVer = tx == null ?
-                (canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion()) :
-                tx.topologyVersion();
+            AffinityTopologyVersion mapTopVer = topVer;
 
-            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+            if (mapTopVer == null) {
+                mapTopVer = tx == null ?
+                    (canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion()) :
+                    tx.topologyVersion();
+            }
+
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), mapTopVer);
         }
 
         markInitialized();
@@ -982,18 +988,18 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 }
 
                 // Need to wait for next topology version to remap.
-                IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer.topologyVersion());
+                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
 
-                topFut.listen(new CIX1<IgniteInternalFuture<Long>>() {
-                    @Override public void applyx(IgniteInternalFuture<Long> fut) throws IgniteCheckedException {
-                        long readyTopVer = fut.get();
+                topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void applyx(IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
+                        AffinityTopologyVersion readyTopVer = fut.get();
 
                         // This will append new futures to compound list.
                         map(F.view(keys.keySet(), new P1<KeyCacheObject>() {
                             @Override public boolean apply(KeyCacheObject key) {
                                 return invalidParts.contains(cctx.affinity().partition(key));
                             }
-                        }), F.t(node, keys), new AffinityTopologyVersion(readyTopVer));
+                        }), F.t(node, keys), readyTopVer);
 
                         // It is critical to call onDone after adding futures to compound list.
                         onDone(loadEntries(node.id(), keys.keySet(), res.entries(), savedEntries, topVer));

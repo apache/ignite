@@ -67,9 +67,11 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testConcurrentStartStop() throws Exception {
-        checkTopologyVersion(new AffinityTopologyVersion(NODES, 0));
+        awaitPartitionMapExchange();
 
-        int minorVer = 0;
+        int minorVer = ignite(0).configuration().isLateAffinityAssignment() ? 1 : 0;
+
+        checkTopologyVersion(new AffinityTopologyVersion(NODES, minorVer));
 
         for (int i = 0; i < 5; i++) {
             log.info("Iteration: " + i);

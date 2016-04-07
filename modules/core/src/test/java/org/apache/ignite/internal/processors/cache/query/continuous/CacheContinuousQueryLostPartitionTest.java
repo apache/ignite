@@ -138,7 +138,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
         }, 2000L) : "Expected no create events, but got: " + lsnr2.createdCnt.get();
 
         // node2 now becomes the primary for the key.
-        grid(0).close();
+        stopGrid(0);
 
         cache2.put(key, "2");
 

@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.io.Externalizable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
@@ -29,7 +28,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -142,6 +140,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
             new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
 
+        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
+
         topologyVersion(topVer);
     }
 
@@ -209,6 +209,8 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             Collections.<IgniteTxKey, IgniteTxEntry>emptyMap(),
             new ConcurrentLinkedHashMap<IgniteTxKey, IgniteTxEntry>(U.capacity(txSize), 0.75f, 1));
 
+        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
+
         topologyVersion(topVer);
     }
 
@@ -231,17 +233,17 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> masterNodeIds() {
-        return Arrays.asList(nearNodeId, nodeId);
+        Collection<UUID> res = new ArrayList<>(2);
+
+        res.add(nearNodeId);
+        res.add(nodeId);
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public UUID otherNodeId() {
         return nearNodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean enforceSerializable() {
-        return false; // Serializable will be enforced on primary mode.
     }
 
     /** {@inheritDoc} */

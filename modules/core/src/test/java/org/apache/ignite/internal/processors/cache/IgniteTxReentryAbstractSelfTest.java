@@ -99,7 +99,7 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
 
     /** @throws Exception If failed. */
     public void testLockReentry() throws Exception {
-        startGrids(gridCount());
+        startGridsMultiThreaded(gridCount(), true);
 
         try {
             IgniteCache<Object, Object> cache = grid(0).cache(null);

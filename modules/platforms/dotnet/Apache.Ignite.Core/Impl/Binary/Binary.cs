@@ -190,8 +190,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             const int len = BinaryObjectHeader.Size;
 
-            var hdr = new BinaryObjectHeader(desc.TypeId, 0, len, 0, len,
-                desc.UserType ? BinaryObjectHeader.Flag.UserType : BinaryObjectHeader.Flag.None);
+            var flags = desc.UserType ? BinaryObjectHeader.Flag.UserType : BinaryObjectHeader.Flag.None;
+
+            if (_marsh.CompactFooter && desc.UserType)
+                flags |= BinaryObjectHeader.Flag.CompactFooter;
+
+            var hdr = new BinaryObjectHeader(desc.TypeId, 0, len, 0, len, flags);
 
             using (var stream = new BinaryHeapStream(len))
             {

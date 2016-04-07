@@ -64,7 +64,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -72,6 +71,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -108,6 +108,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** Threads started by this processor. */
     private final Map<UUID, IgniteThread> bufCheckThreads = new ConcurrentHashMap8<>();
+
+    /**  */
+    public static final IgniteProductVersion QUERY_MSG_VER_2_SINCE = IgniteProductVersion.fromString("1.5.9");
 
     /** */
     private final ConcurrentMap<IgniteUuid, SyncMessageAckFuture> syncMsgFuts = new ConcurrentHashMap8<>();
@@ -215,25 +218,18 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                             // Update partition counters.
                             if (routine != null && routine.handler().isQuery()) {
+                                Map<UUID, Map<Integer, Long>> cntrsPerNode = msg.updateCountersPerNode();
                                 Map<Integer, Long> cntrs = msg.updateCounters();
 
                                 GridCacheAdapter<Object, Object> interCache =
                                     ctx.cache().internalCache(routine.handler().cacheName());
 
-                                if (interCache != null && cntrs != null && interCache.context() != null
-                                    && !interCache.isLocal() && !CU.clientNode(ctx.grid().localNode())) {
-                                    Map<Integer, Long> map = interCache.context().topology().updateCounters();
+                                GridCacheContext cctx = interCache != null ? interCache.context() : null;
 
-                                    for (Map.Entry<Integer, Long> e : map.entrySet()) {
-                                        Long cntr0 = cntrs.get(e.getKey());
-                                        Long cntr1 = e.getValue();
+                                if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
+                                    cntrsPerNode.put(ctx.localNodeId(), cctx.topology().updateCounters());
 
-                                        if (cntr0 == null || cntr1 > cntr0)
-                                            cntrs.put(e.getKey(), cntr1);
-                                    }
-                                }
-
-                                routine.handler().updateCounters(topVer, msg.updateCounters());
+                                routine.handler().updateCounters(topVer, cntrsPerNode, cntrs);
                             }
 
                             fut.onRemoteRegistered();
@@ -287,7 +283,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 if (msg.data() == null && msg.dataBytes() != null) {
                     try {
-                        msg.data(marsh.unmarshal(msg.dataBytes(), null));
+                        msg.data(marsh.unmarshal(msg.dataBytes(), U.resolveClassLoader(ctx.config())));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to process message (ignoring): " + msg, e);
@@ -592,7 +588,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     if (msg.data() == null && msg.dataBytes() != null) {
                         try {
-                            msg.data(marsh.unmarshal(msg.dataBytes(), null));
+                            msg.data(marsh.unmarshal(msg.dataBytes(), U.resolveClassLoader(ctx.config())));
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to process message (ignoring): " + msg, e);
@@ -614,7 +610,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         startFuts.put(routineId, fut);
 
         try {
-            if (locIncluded && registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true))
+            if (locIncluded
+                && registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true))
                 hnd.onListenerRegistered(routineId, ctx);
 
             ctx.discovery().sendCustomEvent(new StartRoutineDiscoveryMessage(routineId, reqData,
@@ -750,7 +747,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 syncMsgFuts.put(futId, fut);
 
                 try {
-                    sendNotification(nodeId, routineId, futId, F.asList(obj), orderedTopic, msg, null);
+                    sendNotification(nodeId, routineId, futId, F.asList(obj), null, msg, null);
                 }
                 catch (IgniteCheckedException e) {
                     syncMsgFuts.remove(futId);
@@ -849,7 +846,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     if (dep == null)
                         throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
-                    data.p2pUnmarshal(marsh, dep.classLoader());
+                    data.p2pUnmarshal(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
                 }
 
                 hnd.p2pUnmarshal(node.id(), ctx);
@@ -917,11 +914,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             if (proc != null) {
                 GridCacheAdapter cache = ctx.cache().internalCache(hnd0.cacheName());
 
-                if (cache != null && !cache.isLocal()) {
-                    Map<Integer, Long> cntrs = cache.context().topology().updateCounters();
-
-                    req.addUpdateCounters(cntrs);
-                }
+                if (cache != null && !cache.isLocal() && cache.context().userCache())
+                    req.addUpdateCounters(ctx.localNodeId(), cache.context().topology().updateCounters());
             }
         }
 
