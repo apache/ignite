@@ -174,6 +174,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         txMapping = new GridDhtTxMapping();
 
         for (IgniteTxEntry txEntry : tx.allEntries()) {
+            txEntry.clearEntryReadVersion();
+
             GridCacheContext cacheCtx = txEntry.context();
 
             List<ClusterNode> nodes = cacheCtx.affinity().nodes(txEntry.key(), topVer);

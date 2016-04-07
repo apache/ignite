@@ -20,10 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.igfs;
 import java.util.Map;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.ignite.IgniteException;
-
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 
 /**
  * Hadoop file system properties.
@@ -45,10 +42,10 @@ public class HadoopIgfsProperties {
      * @throws IgniteException In case of error.
      */
     public HadoopIgfsProperties(Map<String, String> props) throws IgniteException {
-        usrName = props.get(PROP_USER_NAME);
-        grpName = props.get(PROP_GROUP_NAME);
+        usrName = props.get(IgfsUtils.PROP_USER_NAME);
+        grpName = props.get(IgfsUtils.PROP_GROUP_NAME);
 
-        String permStr = props.get(PROP_PERMISSION);
+        String permStr = props.get(IgfsUtils.PROP_PERMISSION);
 
         if (permStr != null) {
             try {

@@ -136,6 +136,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     /** */
     private boolean mcastErr;
 
+    /** */
     @GridToStringExclude
     private Set<InetSocketAddress> locNodeAddrs;
 
