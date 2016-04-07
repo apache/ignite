@@ -82,14 +82,6 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
     /** Amount of sequential block reads before prefetch is triggered. */
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
 
-    protected static final int red = 10_000;
-    protected static final int blue = 20_000;
-    protected static final int green = 15_000;
-    protected static final int yellow = 7_000;
-
-    // -XX:+ExplicitGCInvokesConcurrentAndUnloadsClasses
-    // Enables invoking of concurrent GC by using the System.gc() request and unloading of classes during the concurrent GC cycle. This option is disabled by default and can be enabled only together with the -XX:+UseConcMarkSweepGC option.
-
     /** Secondary file system URI. */
     protected static final String SECONDARY_URI = "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/";
 
@@ -148,228 +140,85 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
         assertEquals(USER, ownerSec);
     }
 
-
-    public void testRecoveryAfterAnError0_Runtime() throws Exception {
-            doTestRecoveryAfterAnError(0, ErrorSimulator.Kind.Runtime);
-    }
-    public void testRecoveryAfterAnError0_IOException() throws Exception {
-            doTestRecoveryAfterAnError(0, ErrorSimulator.Kind.IOException);
-    }
-    public void testRecoveryAfterAnError0_Error() throws Exception {
-            doTestRecoveryAfterAnError(0, ErrorSimulator.Kind.Error);
-    }
-
-    public void testRecoveryAfterAnError1_Runtime() throws Exception {
-        doTestRecoveryAfterAnError(1, ErrorSimulator.Kind.Runtime);
-    }
-    public void testRecoveryAfterAnError1_IOException() throws Exception {
-        doTestRecoveryAfterAnError(1, ErrorSimulator.Kind.IOException);
-    }
-    public void testRecoveryAfterAnError1_Error() throws Exception {
-        doTestRecoveryAfterAnError(1, ErrorSimulator.Kind.Error);
-    }
-
-    public void testRecoveryAfterAnError2_Runtime() throws Exception {
-        doTestRecoveryAfterAnError(2, ErrorSimulator.Kind.Runtime);
-    }
-    public void testRecoveryAfterAnError2_IOException() throws Exception {
-        doTestRecoveryAfterAnError(2, ErrorSimulator.Kind.IOException);
-    }
-    public void testRecoveryAfterAnError2_Error() throws Exception {
-        doTestRecoveryAfterAnError(2, ErrorSimulator.Kind.Error);
-    }
-
-    public void testRecoveryAfterAnError3_Runtime() throws Exception {
-        doTestRecoveryAfterAnError(3, ErrorSimulator.Kind.Runtime);
-    }
-    public void testRecoveryAfterAnError3_IOException() throws Exception {
-        doTestRecoveryAfterAnError(3, ErrorSimulator.Kind.IOException);
-    }
-    public void testRecoveryAfterAnError3_Error() throws Exception {
-        doTestRecoveryAfterAnError(3, ErrorSimulator.Kind.Error);
-    }
-
-    public void testRecoveryAfterAnError4_Runtime() throws Exception {
-        doTestRecoveryAfterAnError(4, ErrorSimulator.Kind.Runtime);
-    }
-    public void testRecoveryAfterAnError4_IOException() throws Exception {
-        doTestRecoveryAfterAnError(4, ErrorSimulator.Kind.IOException);
-    }
-    public void testRecoveryAfterAnError4_Error() throws Exception {
-        doTestRecoveryAfterAnError(4, ErrorSimulator.Kind.Error);
-    }
-
-    public void testRecoveryAfterAnError5_Runtime() throws Exception {
-        doTestRecoveryAfterAnError(5, ErrorSimulator.Kind.Runtime);
-    }
-    public void testRecoveryAfterAnError5_IOException() throws Exception {
-        doTestRecoveryAfterAnError(5, ErrorSimulator.Kind.IOException);
-    }
-    public void testRecoveryAfterAnError5_Error() throws Exception {
-        doTestRecoveryAfterAnError(5, ErrorSimulator.Kind.Error);
-    }
-
-    public void testRecoveryAfterAnError6_Runtime() throws Exception {
-        doTestRecoveryAfterAnError(6, ErrorSimulator.Kind.Runtime);
-    }
-    public void testRecoveryAfterAnError6_IOException() throws Exception {
-        doTestRecoveryAfterAnError(6, ErrorSimulator.Kind.IOException);
-    }
-    public void testRecoveryAfterAnError6_Error() throws Exception {
-        doTestRecoveryAfterAnError(6, ErrorSimulator.Kind.Error);
-    }
-
-    public void testRecoveryAfterAnError7_Runtime() throws Exception {
-        doTestRecoveryAfterAnError(7, ErrorSimulator.Kind.Runtime);
-    }
-    public void testRecoveryAfterAnError7_IOException() throws Exception {
-        doTestRecoveryAfterAnError(7, ErrorSimulator.Kind.IOException);
-    }
-    public void testRecoveryAfterAnError7_Error() throws Exception {
-        doTestRecoveryAfterAnError(7, ErrorSimulator.Kind.Error);
-    }
-
-
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        gc();
-    }
-
-    @Override protected long getTestTimeout() {
-        return 10 * 60 * 1000L;
-    }
-
     /**
-     * Tests correct work after an error.
-     *
-     * @throws Exception
+     * Tests whole job execution with all phases in all combination of new and old versions of API.
+     * @throws Exception If fails.
      */
-    private void doTestRecoveryAfterAnError(int useNewBits, ErrorSimulator.Kind simulatorKind) throws Exception {
-        try {
-            IgfsPath inDir = new IgfsPath(PATH_INPUT);
+    public void testWholeMapReduceExecution() throws Exception {
+        IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
-            igfs.mkdirs(inDir);
+        igfs.mkdirs(inDir);
 
-            IgfsPath inFile = new IgfsPath(inDir, HadoopWordCount2.class.getSimpleName() + "-input");
+        IgfsPath inFile = new IgfsPath(inDir, HadoopWordCount2.class.getSimpleName() + "-input");
 
-            generateTestFile(inFile.toString(), "red", red, "blue", blue, "green", green, "yellow", yellow);
+        final int red = 10_000;
+        final int blue = 20_000;
+        final int green = 15_000;
+        final int yellow = 7_000;
 
-            boolean useNewMapper = (useNewBits & 1) == 0;
-            boolean useNewCombiner = (useNewBits & 2) == 0;
-            boolean useNewReducer = (useNewBits & 4) == 0;
+        generateTestFile(inFile.toString(), "red", red, "blue", blue, "green", green, "yellow", yellow );
 
-            for (int i = 0; i < 12; i++) {
-                System.out.println("################################################# i = " + i);
+        for (int i = 0; i < 3; i++) {
+            igfs.delete(new IgfsPath(PATH_OUTPUT), true);
 
-                int bits = 1 << i;
+            boolean useNewMapper = (i & 1) == 0;
+            boolean useNewCombiner = (i & 2) == 0;
+            boolean useNewReducer = (i & 4) == 0;
 
-                ErrorSimulator sim = ErrorSimulator.create(simulatorKind, bits);
+            JobConf jobConf = new JobConf();
 
-                doTestWithErrorSimulator(sim, inFile, useNewMapper, useNewCombiner, useNewReducer);
-            }
-        } catch (Throwable t) {
-            t.printStackTrace();
+            jobConf.set(JOB_COUNTER_WRITER_PROPERTY, IgniteHadoopFileSystemCounterWriter.class.getName());
+            jobConf.setUser(USER);
+            jobConf.set(IgniteHadoopFileSystemCounterWriter.COUNTER_WRITER_DIR_PROPERTY, "/xxx/${USER}/zzz");
 
-            fail("Unexpected throwable: " + t);
-        }
-    }
+            //To split into about 40 items for v2
+            jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
 
-    private void doTestWithErrorSimulator(ErrorSimulator sim, IgfsPath inFile, boolean useNewMapper,
-            boolean useNewCombiner, boolean useNewReducer) throws Exception {
-        // Set real simulating error simulator:
-        assertTrue(ErrorSimulator.setInstance(ErrorSimulator.noopInstance, sim));
+            //For v1
+            jobConf.setInt("fs.local.block.size", 65000);
 
-        try {
-            // expect failure there:
-            doTest(inFile, useNewMapper, useNewCombiner, useNewReducer);
+            // File system coordinates.
+            setupFileSystems(jobConf);
 
-            //fail("Exception expected."); Combiner may not be called.
-        }
-        catch (Throwable t) { // This may be an Error.
-            // expected:
-            t.printStackTrace();
-        }
+            HadoopWordCount1.setTasksClasses(jobConf, !useNewMapper, !useNewCombiner, !useNewReducer);
 
-        // Set no-op error simulator:
-        assertTrue(ErrorSimulator.setInstance(sim, ErrorSimulator.noopInstance));
+            Job job = Job.getInstance(jobConf);
 
-        // but expect success there:
-        doTest(inFile, useNewMapper, useNewCombiner, useNewReducer);
+            HadoopWordCount2.setTasksClasses(job, useNewMapper, useNewCombiner, useNewReducer, compressOutputSnappy());
 
-        gc();
-    }
+            job.setOutputKeyClass(Text.class);
+            job.setOutputValueClass(IntWritable.class);
 
+            FileInputFormat.setInputPaths(job, new Path(igfsScheme() + inFile.toString()));
+            FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT));
 
-    // -XX:+UseConcMarkSweepGC -XX:+ExplicitGCInvokesConcurrentAndUnloadsClasses
-    private static void gc() throws Exception {
-        //System.gc();
-    }
+            job.setJarByClass(HadoopWordCount2.class);
 
-    /**
-     *
-     *
-     * @param useNewMapper
-     * @param useNewCombiner
-     * @param useNewReducer
-     */
-    private void doTest(IgfsPath inFile, boolean useNewMapper, boolean useNewCombiner, boolean useNewReducer)
-            throws Exception {
-        igfs.delete(new IgfsPath(PATH_OUTPUT), true);
+            HadoopJobId jobId = new HadoopJobId(UUID.randomUUID(), 1);
 
-        JobConf jobConf = new JobConf();
+            IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
 
-        jobConf.set(JOB_COUNTER_WRITER_PROPERTY, IgniteHadoopFileSystemCounterWriter.class.getName());
-        jobConf.setUser(USER);
-        jobConf.set(IgniteHadoopFileSystemCounterWriter.COUNTER_WRITER_DIR_PROPERTY, "/xxx/${USER}/zzz");
+            fut.get();
 
-        //To split into about 40 items for v2
-        jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
+            checkJobStatistics(jobId);
 
-        //For v1
-        jobConf.setInt("fs.local.block.size", 65000);
+            final String outFile = PATH_OUTPUT + "/" + (useNewReducer ? "part-r-" : "part-") + "00000";
 
-        // File system coordinates.
-        setupFileSystems(jobConf);
+            checkOwner(new IgfsPath(PATH_OUTPUT + "/" + "_SUCCESS"));
 
-        HadoopWordCount1.setTasksClasses(jobConf, !useNewMapper, !useNewCombiner, !useNewReducer);
+            checkOwner(new IgfsPath(outFile));
 
-        Job job = Job.getInstance(jobConf);
+            String actual = readAndSortFile(outFile, job.getConfiguration());
 
-        HadoopWordCount2.setTasksClasses(job, useNewMapper, useNewCombiner, useNewReducer, compressOutputSnappy());
-
-        job.setOutputKeyClass(Text.class);
-        job.setOutputValueClass(IntWritable.class);
-
-        FileInputFormat.setInputPaths(job, new Path(igfsScheme() + inFile.toString()));
-        FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT));
-
-        job.setJarByClass(HadoopWordCount2.class);
-
-        HadoopJobId jobId = new HadoopJobId(UUID.randomUUID(), 1);
-
-        IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
-
-        fut.get();
-
-        checkJobStatistics(jobId);
-
-        final String outFile = PATH_OUTPUT + "/" + (useNewReducer ? "part-r-" : "part-") + "00000";
-
-        checkOwner(new IgfsPath(PATH_OUTPUT + "/" + "_SUCCESS"));
-
-        checkOwner(new IgfsPath(outFile));
-
-        String actual = readAndSortFile(outFile, job.getConfiguration());
-
-        assertEquals("Use new mapper: " + useNewMapper + ", new combiner: " + useNewCombiner + ", new reducer: " +
+            assertEquals("Use new mapper: " + useNewMapper + ", new combiner: " + useNewCombiner + ", new reducer: " +
                 useNewReducer,
-            "blue\t" + blue + "\n" +
+                "blue\t" + blue + "\n" +
                 "green\t" + green + "\n" +
                 "red\t" + red + "\n" +
                 "yellow\t" + yellow + "\n",
-            actual
-        );
+                actual
+            );
+        }
     }
 
     /**
