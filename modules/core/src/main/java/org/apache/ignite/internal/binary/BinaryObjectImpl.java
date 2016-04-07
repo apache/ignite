@@ -72,6 +72,10 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     @GridDirectTransient
     private boolean detachAllowed;
 
+    // TODO
+    @GridDirectTransient
+    private int part;
+
     /**
      * For {@link Externalizable}.
      */
@@ -94,7 +98,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     @Override public int partition() {
-        return -1;
+        return part;
+    }
+
+    public void partition(int part) {
+        this.part = part;
     }
 
     /** {@inheritDoc} */
