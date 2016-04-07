@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using NUnit.Framework;
@@ -237,6 +238,39 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
 
             AssertConfigsAreEqual(x.QueryEntities, y.QueryEntities);
+            AssertConfigsAreEqual(x.NearConfiguration, y.NearConfiguration);
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
+        private static void AssertConfigsAreEqual(NearCacheConfiguration x, NearCacheConfiguration y)
+        {
+            if (x == null)
+            {
+                Assert.IsNull(y);
+                return;
+            }
+
+            Assert.AreEqual(x.NearStartSize, y.NearStartSize);
+
+            AssertConfigsAreEqual(x.EvictionPolicy, y.EvictionPolicy);
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
+        private static void AssertConfigsAreEqual(IEvictionPolicy x, IEvictionPolicy y)
+        {
+            if (x == null)
+            {
+                Assert.IsNull(y);
+                return;
+            }
+
+            Assert.AreEqual(x.GetType(), y.GetType());
+
+            // TODO
         }
 
         /// <summary>
@@ -459,6 +493,14 @@ namespace Apache.Ignite.Core.Tests.Cache
                                 IndexType = QueryIndexType.FullText
                             }
                         }
+                    }
+                },
+                NearConfiguration = new NearCacheConfiguration
+                {
+                    NearStartSize = 456,
+                    EvictionPolicy = new LruEvictionPolicy
+                    {
+                        // TODO
                     }
                 }
             };
