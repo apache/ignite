@@ -38,7 +38,7 @@ export default [
 
             $loading.finish('loading');
 
-            if (!$common.isEmptyArray(clusters)) {
+            if (!_.isEmpty(clusters)) {
                 const idx = sessionStorage.summarySelectedId || 0;
 
                 $scope.selectItem(clusters[idx]);
@@ -231,7 +231,7 @@ export default [
                 }
 
                 _.forEach(cache.domains, (domain) => {
-                    if (!$common.isEmptyArray(domain.keyFields)) {
+                    if (!_.isEmpty(domain.keyFields)) {
                         if (JavaTypes.nonBuiltInClass(domain.keyType))
                             addClass(domain.keyType);
 

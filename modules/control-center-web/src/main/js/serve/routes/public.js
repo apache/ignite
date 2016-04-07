@@ -51,15 +51,18 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
 
                 user.becomeUsed = true;
             }
+            else
+                user = user.toJSON();
 
             mongo.Space.findOne({owner: user._id, demo: true}).exec()
                 .then((space) => {
-                    user = user.toJSON();
-
                     if (space)
                         user.demoCreated = true;
 
                     res.json(user);
+                })
+                .catch((err) => {
+                    res.status(401).send(err.message);
                 });
         });
 

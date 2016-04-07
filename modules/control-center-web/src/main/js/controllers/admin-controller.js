@@ -46,14 +46,12 @@ consoleModule.controller('adminController', [
             $http
                 .get('/api/v1/admin/become', { params: {viewedUserId: user._id}})
                 .then(User.read)
-                .then(function (user) {
+                .then((user) => {
                     $rootScope.$broadcast('user', user);
 
                     $state.go('base.configuration.clusters')
                 })
-                .catch(function (errMsg) {
-                    $common.showError($common.errorMessage(errMsg));
-                });
+                .catch((errMsg) => $common.showError($common.errorMessage(errMsg)));
         };
 
         $scope.removeUser = function (user) {

@@ -291,7 +291,7 @@ consoleModule.controller('cachesController', [
                 return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
             }
 
-            if (item.memoryMode === 'OFFHEAP_VALUES' && !$common.isEmptyArray(item.domains))
+            if (item.memoryMode === 'OFFHEAP_VALUES' && !_.isEmpty(item.domains))
                 return showPopoverMessage($scope.ui, 'memory', 'memoryMode',
                     'Query indexing could not be enabled while values are stored off-heap!');
 

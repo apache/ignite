@@ -59,14 +59,14 @@ $generatorJava.toJavaCode = function (val, type) {
  * @returns Property setter with name by java conventions.
  */
 $generatorJava.setterName = function (propName, setterName) {
-    return setterName ? setterName : $commonUtils.toJavaName('set', propName);
+    return setterName ? setterName : $generatorCommon.toJavaName('set', propName);
 };
 
 // Add constructor argument
 $generatorJava.constructorArg = function (obj, propName, dflt, notFirst, opt) {
     var v = (obj ? obj[propName] : null) || dflt;
 
-    if ($commonUtils.isDefinedAndNotEmpty(v))
+    if ($generatorCommon.isDefinedAndNotEmpty(v))
         return (notFirst ? ', ' : '') + $generatorJava.toJavaCode(v);
     else if (!opt)
         return notFirst ? ', null' : 'null';
@@ -196,11 +196,11 @@ $generatorJava.resetVariables = function (res) {
 $generatorJava.property = function (res, varName, obj, propName, dataType, setterName, dflt) {
     var val = obj[propName];
 
-    if ($commonUtils.isDefinedAndNotEmpty(val)) {
-        var hasDflt = $commonUtils.isDefined(dflt);
+    if ($generatorCommon.isDefinedAndNotEmpty(val)) {
+        var missDflt = _.isNil(dflt);
 
         // Add to result if no default provided or value not equals to default.
-        if (!hasDflt || (hasDflt && val !== dflt)) {
+        if (missDflt || (!missDflt && val !== dflt)) {
             res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
                 '(' + $generatorJava.toJavaCode(val, dataType) + ');');
 
@@ -225,11 +225,11 @@ $generatorJava.property = function (res, varName, obj, propName, dataType, sette
 $generatorJava.enumProperty = function (res, varName, obj, propName, dataType, setterName, dflt) {
     var val = obj[propName];
 
-    if ($commonUtils.isDefinedAndNotEmpty(val)) {
-        var hasDflt = $commonUtils.isDefined(dflt);
+    if ($generatorCommon.isDefinedAndNotEmpty(val)) {
+        var missDflt = _.isNil(dflt);
 
         // Add to result if no default provided or value not equals to default.
-        if (!hasDflt || (hasDflt && val !== dflt)) {
+        if (missDflt || (!missDflt && val !== dflt)) {
             res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
                 '(' + $generatorJava.toJavaCode(val, dataType ? res.importClass(dataType) : null) + ');');
 
@@ -244,7 +244,7 @@ $generatorJava.enumProperty = function (res, varName, obj, propName, dataType, s
 $generatorJava.classNameProperty = function (res, varName, obj, propName) {
     var val = obj[propName];
 
-    if ($commonUtils.isDefined(val)) {
+    if (!_.isNil(val)) {
         res.line(varName + '.' + $generatorJava.setterName(propName) +
             '("' + $dataStructures.fullClassName(val) + '");');
     }
@@ -343,7 +343,7 @@ $generatorJava.multiparamProperty = function (res, varName, obj, propName, dataT
  * @param createBeanAlthoughNoProps If 'true' then create empty bean.
  */
 $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVarName, beanClass, props, createBeanAlthoughNoProps) {
-    if (bean && $commonUtils.hasProperty(bean, props)) {
+    if (bean && $generatorCommon.hasProperty(bean, props)) {
         res.emptyLineIfNeeded();
 
         $generatorJava.declareVariable(res, beanVarName, beanClass);
@@ -399,7 +399,7 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                             break;
 
                         case 'bean':
-                            if ($commonUtils.isDefinedAndNotEmpty(bean[propName]))
+                            if ($generatorCommon.isDefinedAndNotEmpty(bean[propName]))
                                 res.line(beanVarName + '.' + $generatorJava.setterName(propName) + '(new ' + res.importClass(bean[propName]) + '());');
 
                             break;
@@ -543,7 +543,7 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
                 $generatorJava.declareVariable(res, 'ipFinder', 'org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder');
 
                 if (d.ZooKeeper) {
-                    if ($commonUtils.isDefinedAndNotEmpty(d.ZooKeeper.curator))
+                    if ($generatorCommon.isDefinedAndNotEmpty(d.ZooKeeper.curator))
                         res.line(finderVar + '.setCurator(new ' + res.importClass(d.ZooKeeper.curator) + '());');
 
                     $generatorJava.property(res, finderVar, d.ZooKeeper, 'zkConnectionString');
@@ -596,7 +596,7 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
                                 break;
 
                             case 'Custom':
-                                if (retryPolicy && $commonUtils.isDefinedAndNotEmpty(retryPolicy.className))
+                                if (retryPolicy && $generatorCommon.isDefinedAndNotEmpty(retryPolicy.className))
                                     res.line(finderVar + '.setRetryPolicy(new ' + res.importClass(retryPolicy.className) + '());');
 
                                 break;
@@ -635,7 +635,7 @@ $generatorJava.clusterAtomics = function (atomics, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($commonUtils.hasAtLeastOneProperty(atomics, ['cacheMode', 'atomicSequenceReserveSize', 'backups'])) {
+    if ($generatorCommon.hasAtLeastOneProperty(atomics, ['cacheMode', 'atomicSequenceReserveSize', 'backups'])) {
         res.startSafeBlock();
 
         $generatorJava.declareVariable(res, 'atomicCfg', 'org.apache.ignite.configuration.AtomicConfiguration');
@@ -674,24 +674,24 @@ $generatorJava.clusterBinary = function (binary, res) {
 
         $generatorJava.declareVariable(res, varName, 'org.apache.ignite.configuration.BinaryConfiguration');
 
-        if ($commonUtils.isDefinedAndNotEmpty(binary.idMapper))
+        if ($generatorCommon.isDefinedAndNotEmpty(binary.idMapper))
             res.line(varName + '.setIdMapper(new ' + res.importClass(binary.idMapper) + '());');
 
-        if ($commonUtils.isDefinedAndNotEmpty(binary.nameMapper))
+        if ($generatorCommon.isDefinedAndNotEmpty(binary.nameMapper))
             res.line(varName + '.setNameMapper(new ' + res.importClass(binary.nameMapper) + '());');
 
-        if ($commonUtils.isDefinedAndNotEmpty(binary.serializer))
+        if ($generatorCommon.isDefinedAndNotEmpty(binary.serializer))
             res.line(varName + '.setSerializer(new ' + res.importClass(binary.serializer) + '());');
 
-        res.needEmptyLine = $commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.serializer);
+        res.needEmptyLine = $generatorCommon.isDefinedAndNotEmpty(binary.idMapper) || $generatorCommon.isDefinedAndNotEmpty(binary.serializer);
 
-        if ($commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations)) {
+        if ($generatorCommon.isDefinedAndNotEmpty(binary.typeConfigurations)) {
             var arrVar = 'types';
 
             $generatorJava.declareVariable(res, arrVar, 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.binary.BinaryTypeConfiguration');
 
             _.forEach(binary.typeConfigurations, function (type) {
-                if ($commonUtils.isDefinedAndNotEmpty(type.typeName)) {
+                if ($generatorCommon.isDefinedAndNotEmpty(type.typeName)) {
                     // TODO IGNITE-2269 Replace using of separated methods for binary type configurations to extended constructors.
                     res.line(arrVar + '.add(' + $generatorJava.binaryTypeFunctionName(type.typeName) + '());');
                 }
@@ -723,7 +723,7 @@ $generatorJava.binaryTypeFunctionName = function (typeName) {
 
     var shortName = dotIdx > 0 ? typeName.substr(dotIdx + 1) : typeName;
 
-    return $commonUtils.toJavaName('binaryType', shortName);
+    return $generatorCommon.toJavaName('binaryType', shortName);
 };
 
 // TODO IGNITE-2269 Remove specified methods after implamentation of extended constructors.
@@ -746,13 +746,13 @@ $generatorJava.binaryTypeConfiguration = function (type, res) {
 
     $generatorJava.property(res, typeVar, type, 'typeName');
 
-    if ($commonUtils.isDefinedAndNotEmpty(type.idMapper))
+    if ($generatorCommon.isDefinedAndNotEmpty(type.idMapper))
         res.line(typeVar + '.setIdMapper(new ' + res.importClass(type.idMapper) + '());');
 
-    if ($commonUtils.isDefinedAndNotEmpty(type.nameMapper))
+    if ($generatorCommon.isDefinedAndNotEmpty(type.nameMapper))
         res.line(typeVar + '.setNameMapper(new ' + res.importClass(type.nameMapper) + '());');
 
-    if ($commonUtils.isDefinedAndNotEmpty(type.serializer))
+    if ($generatorCommon.isDefinedAndNotEmpty(type.serializer))
         res.line(typeVar + '.setSerializer(new ' + res.importClass(type.serializer) + '());');
 
     $generatorJava.property(res, typeVar, type, 'enum', null, null, false);
@@ -771,7 +771,7 @@ $generatorJava.binaryTypeConfigurations = function (binary, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($commonUtils.isDefined(binary)) {
+    if (!_.isNil(binary)) {
         _.forEach(binary.typeConfigurations, function (type) {
             $generatorJava.binaryTypeConfiguration(type, res);
         });
@@ -808,7 +808,7 @@ $generatorJava.clusterConnector = function (connector, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($commonUtils.isDefined(connector) && connector.enabled) {
+    if (!_.isNil(connector) && connector.enabled) {
         var cfg = _.cloneDeep($generatorCommon.CONNECTOR_CONFIGURATION);
 
         if (connector.sslEnabled) {
@@ -836,7 +836,7 @@ $generatorJava.clusterDeployment = function (cluster, res) {
 
     var p2pEnabled = cluster.peerClassLoadingEnabled;
 
-    if ($commonUtils.isDefined(p2pEnabled)) {
+    if (!_.isNil(p2pEnabled)) {
         $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingEnabled', null, null, false);
 
         if (p2pEnabled) {
@@ -861,7 +861,7 @@ $generatorJava.clusterDiscovery = function (disco, res) {
         $generatorJava.property(res, 'discovery', disco, 'localPort', null, null, 47500);
         $generatorJava.property(res, 'discovery', disco, 'localPortRange', null, null, 100);
 
-        if ($commonUtils.isDefinedAndNotEmpty(disco.addressResolver)) {
+        if ($generatorCommon.isDefinedAndNotEmpty(disco.addressResolver)) {
             $generatorJava.beanProperty(res, 'discovery', disco, 'addressResolver', 'addressResolver', disco.addressResolver, {}, true);
             res.needEmptyLine = false;
         }
@@ -877,17 +877,17 @@ $generatorJava.clusterDiscovery = function (disco, res) {
         $generatorJava.property(res, 'discovery', disco, 'maxMissedClientHeartbeats', null, null, 5);
         $generatorJava.property(res, 'discovery', disco, 'topHistorySize', null, null, 1000);
 
-        if ($commonUtils.isDefinedAndNotEmpty(disco.listener)) {
+        if ($generatorCommon.isDefinedAndNotEmpty(disco.listener)) {
             $generatorJava.beanProperty(res, 'discovery', disco, 'listener', 'listener', disco.listener, {}, true);
             res.needEmptyLine = false;
         }
 
-        if ($commonUtils.isDefinedAndNotEmpty(disco.dataExchange)) {
+        if ($generatorCommon.isDefinedAndNotEmpty(disco.dataExchange)) {
             $generatorJava.beanProperty(res, 'discovery', disco, 'dataExchange', 'dataExchange', disco.dataExchange, {}, true);
             res.needEmptyLine = false;
         }
 
-        if ($commonUtils.isDefinedAndNotEmpty(disco.metricsProvider)) {
+        if ($generatorCommon.isDefinedAndNotEmpty(disco.metricsProvider)) {
             $generatorJava.beanProperty(res, 'discovery', disco, 'metricsProvider', 'metricsProvider', disco.metricsProvider, {}, true);
             res.needEmptyLine = false;
         }
@@ -896,7 +896,7 @@ $generatorJava.clusterDiscovery = function (disco, res) {
         $generatorJava.property(res, 'discovery', disco, 'statisticsPrintFrequency', null, null, 0);
         $generatorJava.property(res, 'discovery', disco, 'ipFinderCleanFrequency', null, null, 60000);
 
-        if ($commonUtils.isDefinedAndNotEmpty(disco.authenticator)) {
+        if ($generatorCommon.isDefinedAndNotEmpty(disco.authenticator)) {
             $generatorJava.beanProperty(res, 'discovery', disco, 'authenticator', 'authenticator', disco.authenticator, {}, true);
             res.needEmptyLine = false;
         }
@@ -1308,16 +1308,16 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
 
                 var domainConfigs = _.filter(domains, function (domain) {
                     return $generatorCommon.domainQueryMetadata(domain) === 'Configuration' &&
-                        $commonUtils.isDefinedAndNotEmpty(domain.databaseTable);
+                        $generatorCommon.isDefinedAndNotEmpty(domain.databaseTable);
                 });
 
-                if ($commonUtils.isDefinedAndNotEmpty(domainConfigs)) {
+                if ($generatorCommon.isDefinedAndNotEmpty(domainConfigs)) {
                     $generatorJava.declareVariable(res, 'jdbcTypes', 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.cache.store.jdbc.JdbcType');
 
                     res.needEmptyLine = true;
 
                     _.forEach(domainConfigs, function (domain) {
-                        if ($commonUtils.isDefinedAndNotEmpty(domain.databaseTable))
+                        if ($generatorCommon.isDefinedAndNotEmpty(domain.databaseTable))
                             res.line('jdbcTypes.add(jdbcType' + $generatorJava.extractType(domain.valueType) + '(' + cacheVarName + '.getName()));');
                     });
 
@@ -1603,7 +1603,7 @@ $generatorJava.domainModelDatabaseFields = function (res, domain, fieldProperty)
 
         res.importClass('java.sql.Types');
 
-        res.startBlock('jdbcType.' + $commonUtils.toJavaName('set', fieldProperty) + '(');
+        res.startBlock('jdbcType.' + $generatorCommon.toJavaName('set', fieldProperty) + '(');
 
         var lastIx = dbFields.length - 1;
 
@@ -1628,20 +1628,20 @@ $generatorJava.domainModelGeneral = function (domain, res) {
 
     switch ($generatorCommon.domainQueryMetadata(domain)) {
         case 'Annotations':
-            if ($commonUtils.isDefinedAndNotEmpty(domain.keyType) || $commonUtils.isDefinedAndNotEmpty(domain.valueType)) {
+            if ($generatorCommon.isDefinedAndNotEmpty(domain.keyType) || $generatorCommon.isDefinedAndNotEmpty(domain.valueType)) {
                 var types = [];
 
-                if ($commonUtils.isDefinedAndNotEmpty(domain.keyType))
+                if ($generatorCommon.isDefinedAndNotEmpty(domain.keyType))
                     types.push($generatorJava.toJavaCode(res.importClass(domain.keyType), 'class'));
                 else
                     types.push('???');
 
-                if ($commonUtils.isDefinedAndNotEmpty(domain.valueType))
+                if ($generatorCommon.isDefinedAndNotEmpty(domain.valueType))
                     types.push($generatorJava.toJavaCode(res.importClass(domain.valueType), 'class'));
                 else
                     types.push('???');
 
-                if ($commonUtils.isDefinedAndNotEmpty(types)) {
+                if ($generatorCommon.isDefinedAndNotEmpty(types)) {
                     res.startBlock('cache.setIndexedTypes(');
 
                     res.line(types.join(', '));
@@ -1656,7 +1656,7 @@ $generatorJava.domainModelGeneral = function (domain, res) {
             $generatorJava.classNameProperty(res, 'jdbcTypes', domain, 'keyType');
             $generatorJava.property(res, 'jdbcTypes', domain, 'valueType');
 
-            if ($commonUtils.isDefinedAndNotEmpty(domain.fields)) {
+            if ($generatorCommon.isDefinedAndNotEmpty(domain.fields)) {
                 res.needEmptyLine = true;
 
                 $generatorJava.classNameProperty(res, 'qryMeta', domain, 'keyType');
@@ -1715,15 +1715,15 @@ $generatorJava.cacheDomains = function (domains, varName, res) {
 
     var domainConfigs = _.filter(domains, function (domain) {
         return $generatorCommon.domainQueryMetadata(domain) === 'Configuration' &&
-            $commonUtils.isDefinedAndNotEmpty(domain.fields);
+            $generatorCommon.isDefinedAndNotEmpty(domain.fields);
     });
 
     // Generate domain model configs.
-    if ($commonUtils.isDefinedAndNotEmpty(domainConfigs)) {
+    if ($generatorCommon.isDefinedAndNotEmpty(domainConfigs)) {
         $generatorJava.declareVariable(res, 'queryEntities', 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.cache.QueryEntity');
 
         _.forEach(domainConfigs, function (domain) {
-            if ($commonUtils.isDefinedAndNotEmpty(domain.fields))
+            if ($generatorCommon.isDefinedAndNotEmpty(domain.fields))
                 res.line('queryEntities.add(queryEntity' + $generatorJava.extractType(domain.valueType) + '());');
         });
 
@@ -1762,14 +1762,14 @@ $generatorJava.clusterDomains = function (caches, res) {
 
     _.forEach(caches, function (cache) {
         _.forEach(cache.domains, function (domain) {
-            if (!$commonUtils.isDefined(_.find(domains, function (m) {
+            if (_.isNil(_.find(domains, function (m) {
                     return m === domain.valueType;
                 }))) {
                 $generatorJava.resetVariables(res);
 
                 var type = $generatorJava.extractType(domain.valueType);
 
-                if ($commonUtils.isDefinedAndNotEmpty(domain.databaseTable)) {
+                if ($generatorCommon.isDefinedAndNotEmpty(domain.databaseTable)) {
                     res.line('/**');
                     res.line(' * Create JDBC type for ' + type + '.');
                     res.line(' *');
@@ -1795,7 +1795,7 @@ $generatorJava.clusterDomains = function (caches, res) {
                 }
 
                 if ($generatorCommon.domainQueryMetadata(domain) === 'Configuration' &&
-                    $commonUtils.isDefinedAndNotEmpty(domain.fields)) {
+                    $generatorCommon.isDefinedAndNotEmpty(domain.fields)) {
                     res.line('/**');
                     res.line(' * Create SQL Query descriptor for ' + type + '.');
                     res.line(' *');
@@ -1832,7 +1832,7 @@ $generatorJava.cacheVariableName = function (cache, names) {
         return name === cacheName + (ix === 0 ? '' : '_' + ix);
     };
 
-    var cacheName = $commonUtils.toJavaName('cache', cache.name);
+    var cacheName = $generatorCommon.toJavaName('cache', cache.name);
 
     var ix = 0;
 
@@ -1885,7 +1885,7 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
 
     var names = [];
 
-    if ($commonUtils.isDefinedAndNotEmpty(caches)) {
+    if ($generatorCommon.isDefinedAndNotEmpty(caches)) {
         res.emptyLineIfNeeded();
 
         _.forEach(caches, function (cache) {
@@ -1895,7 +1895,7 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
         res.needEmptyLine = true;
     }
 
-    if (isSrvCfg && $commonUtils.isDefinedAndNotEmpty(igfss)) {
+    if (isSrvCfg && $generatorCommon.isDefinedAndNotEmpty(igfss)) {
         res.emptyLineIfNeeded();
 
         _.forEach(igfss, function (igfs) {
@@ -2043,7 +2043,7 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
         res.line(' *');
         res.line(' * @return Value for ' + fldName + '.');
         res.line(' */');
-        res.startBlock('public ' + fldType + ' ' + $commonUtils.toJavaName('get', fldName) + '() {');
+        res.startBlock('public ' + fldType + ' ' + $generatorCommon.toJavaName('get', fldName) + '() {');
         res.line('return ' + fldName + ';');
         res.endBlock('}');
 
@@ -2054,7 +2054,7 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
         res.line(' *');
         res.line(' * @param ' + fldName + ' New value for ' + fldName + '.');
         res.line(' */');
-        res.startBlock('public void ' + $commonUtils.toJavaName('set', fldName) + '(' + fldType + ' ' + fldName + ') {');
+        res.startBlock('public void ' + $generatorCommon.toJavaName('set', fldName) + '(' + fldType + ' ' + fldName + ') {');
         res.line('this.' + fldName + ' = ' + fldName + ';');
         res.endBlock('}');
 
@@ -2192,11 +2192,11 @@ $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
             // Skip already generated classes.
             if (!_.find(pojos, {valueType: domain.valueType}) &&
                 // Skip domain models without value fields.
-                $commonUtils.isDefinedAndNotEmpty(domain.valueFields)) {
+                $generatorCommon.isDefinedAndNotEmpty(domain.valueFields)) {
                 var pojo = {};
 
                 // Key class generation only if key is not build in java class.
-                if ($commonUtils.isDefined(domain.keyFields) && domain.keyFields.length > 0) {
+                if (!_.isNil(domain.keyFields) && domain.keyFields.length > 0) {
                     pojo.keyType = domain.keyType;
                     pojo.keyClass = $generatorJava.javaClassCode(domain, true,
                         domain.keyType.substring(0, domain.keyType.lastIndexOf('.')), useConstructor, includeKeyFields);
@@ -2237,15 +2237,15 @@ $generatorJava.clusterSsl = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if (cluster.sslEnabled && $commonUtils.isDefined(cluster.sslContextFactory)) {
+    if (cluster.sslEnabled && !_.isNil(cluster.sslContextFactory)) {
 
-        cluster.sslContextFactory.keyStorePassword = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath) ?
+        cluster.sslContextFactory.keyStorePassword = $generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath) ?
             'props.getProperty("ssl.key.storage.password").toCharArray()' : null;
 
-        cluster.sslContextFactory.trustStorePassword = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath) ?
+        cluster.sslContextFactory.trustStorePassword = $generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath) ?
             'props.getProperty("ssl.trust.storage.password").toCharArray()' : null;
 
-        var propsDesc = $commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
+        var propsDesc = $generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
             $generatorCommon.SSL_CONFIGURATION_TRUST_MANAGER_FACTORY.fields :
             $generatorCommon.SSL_CONFIGURATION_TRUST_FILE_FACTORY.fields;
 
@@ -2270,7 +2270,7 @@ $generatorJava.igfss = function(igfss, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($commonUtils.isDefinedAndNotEmpty(igfss)) {
+    if ($generatorCommon.isDefinedAndNotEmpty(igfss)) {
         res.emptyLineIfNeeded();
 
         var arrayName = 'fileSystems';
@@ -2364,7 +2364,7 @@ $generatorJava.igfsDualMode = function(igfs, varName, res) {
 
     $generatorJava.property(res, varName, igfs, 'dualModeMaxPendingPutsSize', null, null, 0);
 
-    if ($commonUtils.isDefinedAndNotEmpty(igfs.dualModePutExecutorService))
+    if ($generatorCommon.isDefinedAndNotEmpty(igfs.dualModePutExecutorService))
         res.line(varName + '.' + $generatorJava.setterName('dualModePutExecutorService') + '(new ' + res.importClass(igfs.dualModePutExecutorService) + '());');
 
     $generatorJava.property(res, varName, igfs, 'dualModePutExecutorServiceShutdown', null, null, false);
@@ -2381,8 +2381,8 @@ $generatorJava.igfsSecondFS = function(igfs, varName, res) {
     if (igfs.secondaryFileSystemEnabled) {
         var secondFs = igfs.secondaryFileSystem || {};
 
-        var nameDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.userName);
-        var cfgDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.cfgPath);
+        var nameDefined = $generatorCommon.isDefinedAndNotEmpty(secondFs.userName);
+        var cfgDefined = $generatorCommon.isDefinedAndNotEmpty(secondFs.cfgPath);
 
         res.line(varName + '.setSecondaryFileSystem(new ' +
             res.importClass('org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem') + '(' +
@@ -2409,7 +2409,7 @@ $generatorJava.igfsGeneral = function(igfs, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($commonUtils.isDefinedAndNotEmpty(igfs.name)) {
+    if ($generatorCommon.isDefinedAndNotEmpty(igfs.name)) {
         igfs.dataCacheName = $generatorCommon.igfsDataCache(igfs).name;
         igfs.metaCacheName = $generatorCommon.igfsMetaCache(igfs).name;
 
@@ -2494,7 +2494,7 @@ $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     $generatorJava.clusterTransactions(cluster.transactionConfiguration, res);
 
-    var isSrvCfg = !$commonUtils.isDefined(clientNearCfg);
+    var isSrvCfg = _.isNil(clientNearCfg);
 
     if (isSrvCfg)
         $generatorJava.clusterCacheUse(cluster.caches, cluster.igfss, res);
@@ -2538,7 +2538,7 @@ $generatorJava.tryLoadSecretProperties = function (cluster, res) {
 $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
     var res = $generatorCommon.builder();
 
-    var isSrvCfg = !$commonUtils.isDefined(clientNearCfg);
+    var isSrvCfg = _.isNil(clientNearCfg);
 
     if (cluster) {
         var resCfg = $generatorJava.clusterConfiguration(cluster, clientNearCfg, $generatorCommon.builder());
@@ -2632,7 +2632,7 @@ $generatorJava.dataSourceClassName = function (res, storeFactory) {
 
         var varType = res.importClass(dsClsName);
 
-        return $commonUtils.toJavaName(varType, dataSourceBean);
+        return $generatorCommon.toJavaName(varType, dataSourceBean);
     }
 
     return null;
@@ -2857,17 +2857,17 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
         return {
             cache: curCache,
             domains: _.filter(curCache.domains, function (domain) {
-                return domain.demo && $commonUtils.isDefinedAndNotEmpty(domain.valueFields) &&
+                return domain.demo && $generatorCommon.isDefinedAndNotEmpty(domain.valueFields) &&
                     !_.find(cachesWithDataSource, function(checkCache, checkIx) {
                         return checkIx < curIx && _.find(checkCache.domains, domain);
                     });
             })
         }
     }), function (cache) {
-        return $commonUtils.isDefinedAndNotEmpty(cache.domains);
+        return $generatorCommon.isDefinedAndNotEmpty(cache.domains);
     });
 
-    if ($commonUtils.isDefinedAndNotEmpty(demoTypes)) {
+    if ($generatorCommon.isDefinedAndNotEmpty(demoTypes)) {
         var typeByDs = {};
 
         // Group domain modes by data source
@@ -3098,7 +3098,7 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
     if (factoryCls)
         res.importClass(factoryCls);
 
-    if (clientNearCfg || $commonUtils.isDefinedAndNotEmpty(demoTypes))
+    if (clientNearCfg || $generatorCommon.isDefinedAndNotEmpty(demoTypes))
         res.line(res.importClass('org.apache.ignite.Ignite') + ' ignite = ' +
             res.importClass('org.apache.ignite.Ignition') + '.start(' + cfg + ');');
     else
@@ -3107,7 +3107,7 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
     if (clientNearCfg) {
         res.needEmptyLine = true;
 
-        if ($commonUtils.isDefinedAndNotEmpty(cluster.caches)) {
+        if ($generatorCommon.isDefinedAndNotEmpty(cluster.caches)) {
             res.line('// Example of near cache creation on client node.');
 
             var names = [];

@@ -118,7 +118,6 @@ import $generatorProperties from 'helpers/generator/generator-properties';
 import $generatorReadme from 'helpers/generator/generator-readme';
 import $generatorXml from 'helpers/generator/generator-xml';
 
-import $commonUtils from 'helpers/common-utils';
 import $dataStructures from 'helpers/data-structures';
 
 window.$generatorCommon = $generatorCommon;
@@ -129,7 +128,6 @@ window.$generatorPom = $generatorPom;
 window.$generatorProperties = $generatorProperties;
 window.$generatorReadme = $generatorReadme;
 window.$generatorXml = $generatorXml;
-window.$commonUtils = $commonUtils;
 window.$dataStructures = $dataStructures;
 
 // Add legacy logic;

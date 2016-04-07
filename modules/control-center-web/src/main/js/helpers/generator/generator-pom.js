@@ -136,7 +136,7 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
 
     res.needEmptyLine = true;
 
-    if (!$commonUtils.isEmptyArray(mvnRepositories)) {
+    if (!_.isEmpty(mvnRepositories)) {
         res.startBlock('<repositories>');
 
         _.forEach(mvnRepositories, function (repo) {

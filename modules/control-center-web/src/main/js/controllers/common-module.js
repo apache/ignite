@@ -125,13 +125,6 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             return !(v === undefined || v === null);
         }
 
-        function isEmptyArray(arr) {
-            if (isDefined(arr))
-                return arr.length === 0;
-
-            return true;
-        }
-
         function isEmptyString(s) {
             if (isDefined(s))
                 return s.trim().length === 0;
@@ -720,8 +713,8 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
         function domainForStoreConfigured(domain) {
             var isEmpty = !isDefined(domain) || (isEmptyString(domain.databaseSchema) &&
                 isEmptyString(domain.databaseTable) &&
-                isEmptyArray(domain.keyFields) &&
-                isEmptyArray(domain.valueFields));
+                _.isEmpty(domain.keyFields) &&
+                _.isEmpty(domain.valueFields));
 
             return !isEmpty;
         }
@@ -789,7 +782,6 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
                 return false;
             },
-            isEmptyArray: isEmptyArray,
             isEmptyString: isEmptyString,
             errorMessage: errorMessage,
             hideAlert: function () {
@@ -843,9 +835,9 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                 return true;
             },
             domainForQueryConfigured: function (domain) {
-                var isEmpty = !isDefined(domain) || (isEmptyArray(domain.fields) &&
-                    isEmptyArray(domain.aliases) &&
-                    isEmptyArray(domain.indexes));
+                var isEmpty = !isDefined(domain) || (_.isEmpty(domain.fields) &&
+                    _.isEmpty(domain.aliases) &&
+                    _.isEmpty(domain.indexes));
 
                 return !isEmpty;
             },
@@ -1835,7 +1827,7 @@ consoleModule.filter('domainsValidation', ['$common', function ($common) {
         var out = [];
 
         _.forEach(domains, function (domain) {
-            var _valid = !$common.domainForStoreConfigured(domain) || $common.isJavaBuiltInClass(domain.keyType) || !$common.isEmptyArray(domain.keyFields);
+            var _valid = !$common.domainForStoreConfigured(domain) || $common.isJavaBuiltInClass(domain.keyType) || !_.isEmpty(domain.keyFields);
 
             if (valid && _valid || invalid && !_valid)
                 out.push(domain);

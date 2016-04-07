@@ -69,7 +69,7 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
 
                     var varType = res.importClass(dsClsName);
 
-                    var beanClassName = $commonUtils.toJavaName(varType, storeFactory.dataSourceBean);
+                    var beanClassName = $generatorCommon.toJavaName(varType, storeFactory.dataSourceBean);
 
                     if (!_.includes(datasources, beanClassName)) {
                         datasources.push(beanClassName);
@@ -121,10 +121,10 @@ $generatorProperties.sslProperties = function (cluster, res) {
 
         res.needEmptyLine = true;
 
-        if ($commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath))
+        if ($generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath))
             res.line('ssl.key.storage.password=YOUR_SSL_KEY_STORAGE_PASSWORD');
 
-        if ($commonUtils.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath))
+        if ($generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath))
             res.line('ssl.trust.storage.password=YOUR_SSL_TRUST_STORAGE_PASSWORD');
     }
 

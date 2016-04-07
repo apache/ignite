@@ -240,7 +240,7 @@ consoleModule.controller('igfsController', [
                 ipcEndpointEnabled: true,
                 fragmentizerEnabled: true,
                 clusters: id && _.find($scope.clusters, {value: id}) ? [id] :
-                    (!$common.isEmptyArray($scope.clusters) ? [$scope.clusters[0].value] : [])
+                    (!_.isEmpty($scope.clusters) ? [$scope.clusters[0].value] : [])
             };
         }
 

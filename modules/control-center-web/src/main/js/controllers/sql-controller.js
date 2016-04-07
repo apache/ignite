@@ -191,11 +191,11 @@ consoleModule.controller('sqlController', [
             };
 
             paragraph.chartColumnsConfigured = function () {
-                return !$common.isEmptyArray(this.chartKeyCols) && !$common.isEmptyArray(this.chartValCols);
+                return !_.isEmpty(this.chartKeyCols) && !_.isEmpty(this.chartValCols);
             };
 
             paragraph.chartTimeLineEnabled = function () {
-                return !$common.isEmptyArray(this.chartKeyCols) && angular.equals(this.chartKeyCols[0], TIME_LINE);
+                return !_.isEmpty(this.chartKeyCols) && angular.equals(this.chartKeyCols[0], TIME_LINE);
             };
 
             paragraph.timeLineSupported = function () {
@@ -259,9 +259,7 @@ consoleModule.controller('sqlController', [
 
                     var caches = _.flattenDeep(clusters.map(function (cluster) { return cluster.caches; }));
 
-                    $scope.caches = _.sortBy(_.uniq(_.reject(caches, { mode: 'LOCAL' }), function (cache) {
-                        return _mask(cache.name);
-                    }), 'name');
+                    $scope.caches = _.sortBy(_.uniqBy(_.reject(caches, { mode: 'LOCAL' }), 'name'), 'name');
 
                     _setActiveCache();
                 })
@@ -564,7 +562,7 @@ consoleModule.controller('sqlController', [
                 });
 
                 // If nothing was restored, add first acceptable column.
-                if ($common.isEmptyArray(retainedCols)) {
+                if (_.isEmpty(retainedCols)) {
                     var col;
 
                     if (unwantedCols)
@@ -1178,7 +1176,7 @@ consoleModule.controller('sqlController', [
         };
 
         function _saveChartSettings(paragraph) {
-            if (!$common.isEmptyArray(paragraph.charts)) {
+            if (!_.isEmpty(paragraph.charts)) {
                 var chart = paragraph.charts[0].api.getScope().chart;
 
                 if (!$common.isDefined(paragraph.chartsOptions))
@@ -1228,7 +1226,7 @@ consoleModule.controller('sqlController', [
         };
 
         function _xAxisLabel(paragraph) {
-            return $common.isEmptyArray(paragraph.chartKeyCols) ? 'X' : paragraph.chartKeyCols[0].label;
+            return _.isEmpty(paragraph.chartKeyCols) ? 'X' : paragraph.chartKeyCols[0].label;
         }
 
         function _yAxisLabel(paragraph) {
@@ -1236,7 +1234,7 @@ consoleModule.controller('sqlController', [
 
             var tml = paragraph.chartTimeLineEnabled();
 
-            return $common.isEmptyArray(cols) ? 'Y' : _.map(cols, function (col) {
+            return _.isEmpty(cols) ? 'Y' : _.map(cols, function (col) {
                 var lbl = col.label;
 
                 if (tml)
@@ -1329,7 +1327,7 @@ consoleModule.controller('sqlController', [
         function _barChart(paragraph) {
             var datum = _chartDatum(paragraph);
 
-            if ($common.isEmptyArray(paragraph.charts)) {
+            if (_.isEmpty(paragraph.charts)) {
                 var stacked = paragraph.chartsOptions && paragraph.chartsOptions.barChart
                     ? paragraph.chartsOptions.barChart.stacked
                     : true;
@@ -1401,7 +1399,7 @@ consoleModule.controller('sqlController', [
         function _lineChart(paragraph) {
             var datum = _chartDatum(paragraph);
 
-            if ($common.isEmptyArray(paragraph.charts)) {
+            if (_.isEmpty(paragraph.charts)) {
                 var options = {
                     chart: {
                         type: 'lineChart',
@@ -1435,7 +1433,7 @@ consoleModule.controller('sqlController', [
         function _areaChart(paragraph) {
             var datum = _chartDatum(paragraph);
 
-            if ($common.isEmptyArray(paragraph.charts)) {
+            if (_.isEmpty(paragraph.charts)) {
                 var style = paragraph.chartsOptions && paragraph.chartsOptions.areaChart
                     ? paragraph.chartsOptions.areaChart.style
                     : 'stack';

@@ -44,7 +44,7 @@ $dataStructures.JAVA_BUILD_IN_CLASSES = [
  * @returns 'true' if given class name is a java build-in type.
  */
 $dataStructures.isJavaBuiltInClass = function (clsName) {
-    if ($commonUtils.isDefined(clsName)) {
+    if (!_.isNil(clsName)) {
         for (var i = 0; i < $dataStructures.JAVA_BUILD_IN_CLASSES.length; i++) {
             var jbic = $dataStructures.JAVA_BUILD_IN_CLASSES[i];
 
@@ -70,7 +70,7 @@ $dataStructures.isJavaPrimitive = function (clsName) {
  * @returns Full class name for java build-in types or source class otherwise.
  */
 $dataStructures.fullClassName = function (clsName) {
-    if ($commonUtils.isDefined(clsName)) {
+    if (!_.isNil(clsName)) {
         for (var i = 0; i < $dataStructures.JAVA_BUILD_IN_CLASSES.length; i++) {
             var jbic = $dataStructures.JAVA_BUILD_IN_CLASSES[i];
 

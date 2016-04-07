@@ -28,10 +28,22 @@ consoleModule.controller('profileController', [
         if ($scope.user && !$scope.user.token)
             $scope.user.token = 'No security token. Regenerate please.';
 
+        const _randomString = (len) => {
+            const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            const possibleLen = possible.length;
+
+            let res = '';
+
+            for (let i = 0; i < len; i++)
+                res += possible.charAt(Math.floor(Math.random() * possibleLen));
+
+            return res;
+        };
+
         $scope.generateToken = function () {
             $confirm.confirm('Are you sure you want to change security token?')
                 .then(function () {
-                    $scope.user.token = $commonUtils.randomString(20);
+                    $scope.user.token = _randomString(20);
                 })
         };
 

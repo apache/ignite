@@ -303,7 +303,7 @@ consoleModule.controller('clustersController', [
             var b = item.binaryConfiguration;
 
             if ($common.isDefined(b)) {
-                if (!$common.isEmptyArray(b.typeConfigurations)) {
+                if (!_.isEmpty(b.typeConfigurations)) {
                     var sameName = function (t, ix) {
                         return ix < typeIx && t.typeName === type.typeName;
                     };
@@ -399,7 +399,7 @@ consoleModule.controller('clustersController', [
                 if (!$common.isDefined(item.sslContextFactory) || $common.isEmptyString(item.sslContextFactory.keyStoreFilePath))
                     return showPopoverMessage($scope.ui, 'sslConfiguration', 'keyStoreFilePath', 'Key store file should not be empty!');
 
-                if ($common.isEmptyString(item.sslContextFactory.trustStoreFilePath) && $common.isEmptyArray(item.sslContextFactory.trustManagers))
+                if ($common.isEmptyString(item.sslContextFactory.trustStoreFilePath) && _.isEmpty(item.sslContextFactory.trustManagers))
                     return showPopoverMessage($scope.ui, 'sslConfiguration', 'sslConfiguration-title', 'Trust storage file or managers should be configured!');
             }
 

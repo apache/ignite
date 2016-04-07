@@ -40,8 +40,18 @@ consoleModule.controller('domainsController', [
         var IMPORT_DM_NEW_CACHE = 1;
         var IMPORT_DM_ASSOCIATE_CACHE = 2;
 
+        /**
+         * Convert some name to valid java package name.
+         *
+         * @param name to convert.
+         * @returns {string} Valid java package name.
+         */
+        const _toJavaPackage = (name) => {
+            return name ? name.replace(/[^A-Za-z_0-9/.]+/g, '_') : 'org'
+        };
+
         $scope.ui.packageNameUserInput = $scope.ui.packageName =
-            $commonUtils.toJavaPackageName($scope.$root.user.email.replace('@', '.').split('.').reverse().join('.') + '.model');
+            _toJavaPackage($scope.$root.user.email.replace('@', '.').split('.').reverse().join('.') + '.model');
         $scope.ui.builtinKeys = true;
         $scope.ui.usePrimitives = true;
         $scope.ui.generatedCachesClusters = [];
@@ -769,7 +779,7 @@ consoleModule.controller('domainsController', [
                         dupCnt++;
 
                     var typeName = toJavaClassName(tableName);
-                    var valType = $commonUtils.toJavaPackageName($scope.ui.packageName) + '.' + typeName;
+                    var valType = _toJavaPackage($scope.ui.packageName) + '.' + typeName;
 
                     var _containKey = false;
 
@@ -836,7 +846,7 @@ consoleModule.controller('domainsController', [
                     newDomain.valueFields = valFields;
 
                     // If value fields not found - copy key fields.
-                    if ($common.isEmptyArray(valFields))
+                    if (_.isEmpty(valFields))
                         newDomain.valueFields = keyFields.slice();
 
                     // Use Java built-in type for key.
@@ -856,9 +866,7 @@ consoleModule.controller('domainsController', [
                             })
                         });
 
-                        newDomain.indexes = _.filter(newDomain.indexes, function (index) {
-                            return !$common.isEmptyArray(index.fields);
-                        });
+                        newDomain.indexes = _.filter(newDomain.indexes, (index) => !_.isEmpty(index.fields));
                     }
 
                     // Prepare caches for generation.
@@ -1008,8 +1016,7 @@ consoleModule.controller('domainsController', [
 
             switch ($scope.importDomain.action) {
                 case 'schemas':
-                    res = $common.isEmptyArray($scope.importDomain.schemas) ||
-                        _.find($scope.importDomain.schemas, {use: true});
+                    res = _.isEmpty($scope.importDomain.schemas) || _.find($scope.importDomain.schemas, {use: true});
 
                     break;
 
@@ -1070,7 +1077,7 @@ consoleModule.controller('domainsController', [
                     item.cachesOrTemplates.push(DFLT_REPLICATED_CACHE);
                 }
 
-                if (!$common.isEmptyArray($scope.caches)) {
+                if (!_.isEmpty($scope.caches)) {
                     if (item.cachesOrTemplates.length > 0)
                         item.cachesOrTemplates.push(null);
 
@@ -1105,7 +1112,7 @@ consoleModule.controller('domainsController', [
                     $scope.ui.generatedCachesClusters.push(cluster.value);
                 });
 
-                if (!$common.isEmptyArray($scope.caches))
+                if (!_.isEmpty($scope.caches))
                     $scope.importActions.push({
                         label: 'Associate with existing cache',
                         shortLabel: 'Associate',
@@ -1206,7 +1213,7 @@ consoleModule.controller('domainsController', [
             return {
                 space: $scope.spaces[0]._id,
                 caches: cacheId && _.find($scope.caches, {value: cacheId}) ? [cacheId] :
-                    (!$common.isEmptyArray($scope.caches) ? [$scope.caches[0].value] : []),
+                    (!_.isEmpty($scope.caches) ? [$scope.caches[0].value] : []),
                 queryMetadata: 'Configuration'
             };
         }
@@ -1239,14 +1246,14 @@ consoleModule.controller('domainsController', [
             var qry = $common.domainForQueryConfigured(item);
 
             if (item.queryMetadata === 'Configuration' && qry) {
-                if ($common.isEmptyArray(item.fields))
+                if (_.isEmpty(item.fields))
                     return showPopoverMessage($scope.ui, 'query', 'fields-legend', 'Query fields should not be empty');
 
                 var indexes = item.indexes;
 
                 if (indexes && indexes.length > 0) {
                     if (_.find(indexes, function (index, i) {
-                            if ($common.isEmptyArray(index.fields))
+                            if (_.isEmpty(index.fields))
                                 return !showPopoverMessage($scope.ui, 'query', 'indexes' + i, 'Index fields are not specified');
                         }))
                         return false;
@@ -1260,13 +1267,13 @@ consoleModule.controller('domainsController', [
                 if ($common.isEmptyString(item.databaseTable))
                     return showPopoverMessage($scope.ui, 'store', 'databaseTable', 'Database table should not be empty');
 
-                if ($common.isEmptyArray(item.keyFields))
+                if (_.isEmpty(item.keyFields))
                     return showPopoverMessage($scope.ui, 'store', 'keyFields-add', 'Key fields are not specified');
 
                 if ($common.isJavaBuiltInClass(item.keyType) && item.keyFields.length !== 1)
                     return showPopoverMessage($scope.ui, 'store', 'keyFields-add', 'Only one field should be specified in case when key type is a Java built-in type');
 
-                if ($common.isEmptyArray(item.valueFields))
+                if (_.isEmpty(item.valueFields))
                     return showPopoverMessage($scope.ui, 'store', 'valueFields-add', 'Value fields are not specified');
             }
             else if (!qry && item.queryMetadata === 'Configuration') {

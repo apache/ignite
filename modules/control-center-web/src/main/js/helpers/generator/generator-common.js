@@ -64,7 +64,7 @@ $generatorCommon.builder = function (deep) {
     res.safePoint = -1;
 
     res.mergeProps = function (fromRes) {
-        if ($commonUtils.isDefinedAndNotEmpty(fromRes)) {
+        if ($generatorCommon.isDefinedAndNotEmpty(fromRes)) {
             res.datasources = fromRes.datasources;
 
             angular.extend(res.imports, fromRes.imports);
@@ -74,7 +74,7 @@ $generatorCommon.builder = function (deep) {
     };
 
     res.mergeLines = function (fromRes) {
-        if ($commonUtils.isDefinedAndNotEmpty(fromRes)) {
+        if ($generatorCommon.isDefinedAndNotEmpty(fromRes)) {
             if (res.needEmptyLine)
                 res.push('');
 
@@ -498,14 +498,14 @@ $generatorCommon.cacheHasDatasource = function (cache) {
 };
 
 $generatorCommon.secretPropertiesNeeded = function (cluster) {
-    return $commonUtils.isDefined(_.find(cluster.caches, $generatorCommon.cacheHasDatasource)) || cluster.sslEnabled;
+    return !_.isNil(_.find(cluster.caches, $generatorCommon.cacheHasDatasource)) || cluster.sslEnabled;
 };
 
 // Check that binary is configured.
 $generatorCommon.binaryIsDefined = function (binary) {
-    return binary && ($commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.nameMapper) ||
-        $commonUtils.isDefinedAndNotEmpty(binary.serializer) || $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) ||
-        ($commonUtils.isDefined(binary.compactFooter) && !binary.compactFooter));
+    return binary && ($generatorCommon.isDefinedAndNotEmpty(binary.idMapper) || $generatorCommon.isDefinedAndNotEmpty(binary.nameMapper) ||
+        $generatorCommon.isDefinedAndNotEmpty(binary.serializer) || $generatorCommon.isDefinedAndNotEmpty(binary.typeConfigurations) ||
+        (!_.isNil(binary.compactFooter) && !binary.compactFooter));
 };
 
 // Extract domain model metadata location.
@@ -520,9 +520,58 @@ $generatorCommon.domainQueryMetadata = function(domain) {
  * @returns {boolean} True if cluster has caches with demo types.
  */
 $generatorCommon.dataForExampleConfigured = function(cluster) {
-    return $commonUtils.isDefined(_.find(cluster.caches, function (cache) {
-        return _.find(cache.domains, {demo: true});
-    }));
+    return !_.isNil(_.find(cluster.caches, (cache) => _.find(cache.domains, {demo: true})));
+};
+
+/**
+ * @param {Object} obj Object to check.
+ * @param {Array<String>} props Array of properties names.
+ * @returns {boolean} 'true' if
+ */
+$generatorCommon.hasAtLeastOneProperty = function (obj, props) {
+    return obj && props && _.findIndex(props, (prop) => !_.isNil(obj[prop])) >= 0;
+};
+
+/**
+ * Convert some name to valid java name.
+ *
+ * @param prefix To append to java name.
+ * @param name to convert.
+ * @returns {string} Valid java name.
+ */
+$generatorCommon.toJavaName = function (prefix, name) {
+    var javaName = name ? name.replace(/[^A-Za-z_0-9]+/g, '_') : 'dflt';
+
+    return prefix + javaName.charAt(0).toLocaleUpperCase() + javaName.slice(1);
+};
+
+/**
+ * @param v Value to check.
+ * @returns {boolean} 'true' if value defined and not empty string.
+ */
+$generatorCommon.isDefinedAndNotEmpty = function (v) {
+    var defined = !_.isNil(v);
+
+    if (defined && (_.isString(v) || _.isArray(v)))
+        defined = v.length > 0;
+
+    return defined;
+};
+
+/**
+ * @param {Object} obj Object to check.
+ * @param {Array<String>} props Properties names.
+ * @returns {boolean} 'true' if object contains at least one from specified properties.
+ */
+$generatorCommon.hasProperty = function (obj, props) {
+    for (var propName in props) {
+        if (props.hasOwnProperty(propName)) {
+            if (obj[propName])
+                return true;
+        }
+    }
+
+    return false;
 };
 
 export default $generatorCommon;
