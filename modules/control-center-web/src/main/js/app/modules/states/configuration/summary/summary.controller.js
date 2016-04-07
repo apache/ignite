@@ -183,7 +183,7 @@ export default [
 
             node.children.push(children);
 
-            node.children = _.sortByOrder(node.children, ['type', 'name'], ['desc', 'asc']);
+            node.children = _.orderBy(node.children, ['type', 'name'], ['desc', 'asc']);
 
             return getOrCreateFolder(children, path);
         }
