@@ -1185,9 +1185,7 @@ $generatorJava.cacheStoreDataSource = function (storeFactory, res) {
                 break;
 
             case 'PostgreSQL':
-                res.line(varName + '.setDataSourceName("' + dataSourceBean + '");');
-                res.line(varName + '.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
-                res.line(varName + '.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
+                res.line(varName + '.setUrl(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
 
                 break;
 

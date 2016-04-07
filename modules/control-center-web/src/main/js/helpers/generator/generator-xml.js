@@ -1624,9 +1624,7 @@ $generatorXml.generateDataSources = function (datasources, res) {
                     break;
 
                 case 'PostgreSQL':
-                    res.line('<property name="dataSourceName" value="${' + beanId + '.jdbc.url}"/>');
-                    res.line('<property name="serverName" value="${' + beanId + '.jdbc.server_name}"/>');
-                    res.line('<property name="databaseName" value="${' + beanId + '.jdbc.database_name}"/>');
+                    res.line('<property name="url" value="${' + beanId + '.jdbc.url}"/>');
 
                     break;
 

@@ -85,12 +85,6 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
 
                                 break;
 
-                            case 'PostgreSQL':
-                                res.line(beanId + '.jdbc.server_name=YOUR_DATABASE_SERVER_NAME');
-                                res.line(beanId + '.jdbc.database_name=YOUR_DATABASE_NAME');
-
-                                break;
-
                             default:
                                 res.line(beanId + '.jdbc.url=' + $generatorProperties.jdbcUrlTemplate(dialect));
                         }
