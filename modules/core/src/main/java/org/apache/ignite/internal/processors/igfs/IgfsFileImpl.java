@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Collections;
-import java.util.Map;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -30,6 +24,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * File or directory information.
@@ -97,7 +98,7 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
      *
      * @param path Path.
      */
-    public IgfsFileImpl(IgfsPath path, IgfsFileInfo info, long globalGrpBlockSize) {
+    public IgfsFileImpl(IgfsPath path, IgfsEntryInfo info, long globalGrpBlockSize) {
         A.notNull(path, "path");
         A.notNull(info, "info");
 
@@ -122,35 +123,6 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
 
         accessTime = info.accessTime();
         modificationTime = info.modificationTime();
-    }
-
-    /**
-     * Constructs file instance.
-     *
-     * @param path Path.
-     * @param entry Listing entry.
-     */
-    public IgfsFileImpl(IgfsPath path, IgfsListingEntry entry, long globalGrpSize) {
-        A.notNull(path, "path");
-        A.notNull(entry, "entry");
-
-        this.path = path;
-        fileId = entry.fileId();
-
-        blockSize = entry.blockSize();
-
-        // By contract file must have blockSize > 0, while directory's blockSize == 0:
-        assert entry.isFile() == (blockSize > 0);
-        assert entry.isDirectory() == (blockSize == 0);
-
-        grpBlockSize = entry.affinityKey() == null ? globalGrpSize :
-            entry.length() == 0 ? globalGrpSize : entry.length();
-
-        len = entry.length();
-        props = entry.properties();
-
-        accessTime = entry.accessTime();
-        modificationTime = entry.modificationTime();
     }
 
     /** {@inheritDoc} */

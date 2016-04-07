@@ -1905,7 +1905,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                                             /*unmarshal*/true,
                                             /*metrics*/true,
                                             /*events*/!skipVals,
-                                            /*temporary*/true,
+                                            /*temporary*/false,
                                             CU.subjectId(IgniteTxLocalAdapter.this, cctx),
                                             transformClo,
                                             resolveTaskName(),
@@ -2981,9 +2981,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             Object res = null;
 
             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                CacheInvokeEntry<Object, Object> invokeEntry =
-                    new CacheInvokeEntry(txEntry.context(), txEntry.key(), key0, cacheVal, val0, ver,
-                        txEntry.keepBinary());
+                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), key0, cacheVal,
+                    val0, ver, txEntry.keepBinary(), txEntry.cached());
 
                 EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
 

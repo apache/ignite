@@ -1200,8 +1200,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                         Object oldVal = null;
 
-                        CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(ctx, entry.key(), old,
-                            entry.version(), keepBinary);
+                        CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(entry.key(), old,
+                            entry.version(), keepBinary, entry);
 
                         CacheObject updated;
                         Object updatedVal = null;

@@ -238,6 +238,15 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
+     * Sets cache name.
+     *
+     * @param name New value for cache name.
+     */
+    public void name(String name) {
+        this.name = name;
+    }
+
+    /**
      * @return Cache mode.
      */
     public CacheMode mode() {

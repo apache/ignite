@@ -31,18 +31,6 @@ import org.jetbrains.annotations.Nullable;
  * Internal API extension for {@link org.apache.ignite.IgniteFileSystem}.
  */
 public interface IgfsEx extends IgniteFileSystem {
-    /** File property: user name. */
-    public static final String PROP_USER_NAME = "usrName";
-
-    /** File property: group name. */
-    public static final String PROP_GROUP_NAME = "grpName";
-
-    /** File property: permission. */
-    public static final String PROP_PERMISSION = "permission";
-
-    /** File property: prefer writes to local node. */
-    public static final String PROP_PREFER_LOCAL_WRITES = "locWrite";
-
     /**
      * Stops IGFS cleaning all used resources.
      *

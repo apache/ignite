@@ -41,11 +41,12 @@ import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadabl
 import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsProperties;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsSecondaryFileSystemPositionedReadable;
+import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileImpl;
-import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,10 +59,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Callable;
-
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 
 /**
  * Secondary file system which delegates calls to an instance of Hadoop {@link FileSystem}.
@@ -237,8 +234,8 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
         if (perm == null)
             perm = FsPermission.getDefault();
 
-        return F.asMap(PROP_PERMISSION, String.format("%04o", perm.toShort()), PROP_USER_NAME, status.getOwner(),
-            PROP_GROUP_NAME, status.getGroup());
+        return F.asMap(IgfsUtils.PROP_PERMISSION, String.format("%04o", perm.toShort()), IgfsUtils.PROP_USER_NAME,
+            status.getOwner(), IgfsUtils.PROP_GROUP_NAME, status.getGroup());
     }
 
     /** {@inheritDoc} */
@@ -350,13 +347,28 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
 
             Collection<IgfsFile> res = new ArrayList<>(statuses.length);
 
-            for (FileStatus status : statuses) {
-                IgfsFileInfo fsInfo = status.isDirectory() ?
-                    new IgfsFileInfo(true, properties(status), status.getAccessTime(), status.getModificationTime()) :
-                    new IgfsFileInfo((int)status.getBlockSize(), status.getLen(), null, null, false, properties(status),
-                        status.getAccessTime(), status.getModificationTime());
+            for (FileStatus s : statuses) {
+                IgfsEntryInfo fsInfo = s.isDirectory() ?
+                    IgfsUtils.createDirectory(
+                        IgniteUuid.randomUuid(),
+                        null,
+                        properties(s),
+                        s.getAccessTime(),
+                        s.getModificationTime()
+                    ) :
+                    IgfsUtils.createFile(
+                        IgniteUuid.randomUuid(),
+                        (int)s.getBlockSize(),
+                        s.getLen(),
+                        null,
+                        null,
+                        false,
+                        properties(s),
+                        s.getAccessTime(),
+                        s.getModificationTime()
+                    );
 
-                res.add(new IgfsFileImpl(new IgfsPath(path, status.getPath().getName()), fsInfo, 1));
+                res.add(new IgfsFileImpl(new IgfsPath(path, s.getPath().getName()), fsInfo, 1));
             }
 
             return res;

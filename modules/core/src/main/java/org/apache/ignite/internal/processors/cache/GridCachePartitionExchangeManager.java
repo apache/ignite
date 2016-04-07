@@ -88,9 +88,7 @@ import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -107,9 +105,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
 public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /** Exchange history size. */
     private static final int EXCHANGE_HISTORY_SIZE = 1000;
-
-    /** Cleanup history size. */
-    public static final int EXCH_FUT_CLEANUP_HISTORY_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 100);
 
     /** Atomic reference for pending timeout object. */
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
@@ -938,15 +933,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 skipped++;
 
-                if (skipped == EXCH_FUT_CLEANUP_HISTORY_SIZE) {
-                    for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                        if (err == null) {
-                            if (!cacheCtx.isLocal())
-                                cacheCtx.affinity().cleanUpCache(fut.topologyVersion());
-                        }
-                    }
-                }
-
                 if (skipped > 10)
                     fut.cleanUp();
             }
@@ -1264,13 +1250,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             break;
                     }
 
-                    // If not first preloading and no more topology events present,
-                    // then we periodically refresh partition map.
-                    if (!cctx.kernalContext().clientNode() && futQ.isEmpty() && preloadFinished) {
-                        refreshPartitions(timeout);
-
+                    // If not first preloading and no more topology events present.
+                    if (!cctx.kernalContext().clientNode() && futQ.isEmpty() && preloadFinished)
                         timeout = cctx.gridConfig().getNetworkTimeout();
-                    }
 
                     // After workers line up and before preloading starts we initialize all futures.
                     if (log.isDebugEnabled())

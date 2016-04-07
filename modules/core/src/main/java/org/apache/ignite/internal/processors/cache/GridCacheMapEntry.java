@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -904,9 +905,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
         }
 
-        if (ret != null)
+        if (ret != null) {
+            assert tmp || !(ret instanceof BinaryObjectOffheapImpl);
+
             // If return value is consistent, then done.
             return retVer ? new T2<>(ret, resVer) : ret;
+        }
 
         boolean loadedFromStore = false;
 
@@ -984,6 +988,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         assert ret == null || !retVer;
+        assert tmp || !(ret instanceof BinaryObjectOffheapImpl);
 
         return ret;
     }
@@ -1624,7 +1629,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 assert entryProcessor != null;
 
-                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(cctx, key, old, version(), keepBinary);
+                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry<>(key, old, version(), keepBinary, this);
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);
@@ -1917,7 +1922,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                         oldVal = rawGetOrUnmarshalUnlocked(true);
 
-                        CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(cctx, key, oldVal, version(), keepBinary);
+                        CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(key, oldVal, version(),
+                            keepBinary, this);
 
                         try {
                             Object computed = entryProcessor.process(entry, invokeArgs);
@@ -2055,7 +2061,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                     (EntryProcessor<Object, Object, ?>)writeObj;
 
                                 CacheInvokeEntry<Object, Object> entry =
-                                    new CacheInvokeEntry<>(cctx, key, prevVal, version(), keepBinary);
+                                    new CacheInvokeEntry<>(key, prevVal, version(), keepBinary, this);
 
                                 try {
                                     entryProcessor.process(entry, invokeArgs);
@@ -2096,7 +2102,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             null,
                             null,
                             false,
-                            updateCntr0 == null ? 0 : updateCntr0);
+                            0);
                     }
                 }
                 else
@@ -2185,7 +2191,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 EntryProcessor<Object, Object, ?> entryProcessor = (EntryProcessor<Object, Object, ?>)writeObj;
 
-                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(cctx, key, oldVal, version(), keepBinary);
+                CacheInvokeEntry<Object, Object> entry = new CacheInvokeEntry(key, oldVal, version(), keepBinary, this);
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);

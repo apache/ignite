@@ -133,7 +133,7 @@ public class CacheContinuousQueryFactoryFilterTest extends CacheContinuousQueryR
     }
 
     /** {@inheritDoc} */
-    @Override protected void testContinuousQuery(CacheConfiguration<Object, Object> ccfg, ContinuousDeploy deploy)
+    @Override protected void doTestContinuousQuery(CacheConfiguration<Object, Object> ccfg, ContinuousDeploy deploy)
         throws Exception {
         ignite(0).createCache(ccfg);
 
