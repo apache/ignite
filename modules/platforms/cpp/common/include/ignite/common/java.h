@@ -305,6 +305,8 @@ namespace ignite
                 jmethodID m_PlatformProcessor_getOrCreateCache;
                 jmethodID m_PlatformProcessor_createCacheFromConfig;
                 jmethodID m_PlatformProcessor_getOrCreateCacheFromConfig;
+                jmethodID m_PlatformProcessor_createNearCache;
+                jmethodID m_PlatformProcessor_getOrCreateNearCache;
                 jmethodID m_PlatformProcessor_destroyCache;
                 jmethodID m_PlatformProcessor_affinity;
                 jmethodID m_PlatformProcessor_dataStreamer;
