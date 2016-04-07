@@ -50,7 +50,7 @@ form.panel.panel-default(name='misc' novalidate)
                     +number('Sequential reads before prefetch:', model + '.sequentialReadsBeforePrefetch', 'sequentialReadsBeforePrefetch', 'true', '0', '0', 'Amount of sequential block reads before prefetch is triggered')
                 .settings-row
                     +number('Trash purge timeout:', model + '.trashPurgeTimeout', 'trashPurgeTimeout', 'true', '1000', '0', 'Maximum timeout awaiting for trash purging in case data cache oversize is detected')
-                .settings-row(ng-init='field={type: "pathModes", model: "pathModes", focusId: "pathMode", ui: "table-pair", keyName: "path", valueName: "mode"}')
+                .settings-row(ng-init='field={type: "pathModes", model: "pathModes", focusId: "PathMode", ui: "table-pair", keyName: "path", valueName: "mode"}')
                     ignite-form-group(ng-model=pathModes ng-form=pathModesForm)
                         ignite-form-field-label
                             | Path modes

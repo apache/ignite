@@ -22,13 +22,20 @@ angular
 .module('ignite-console.socket', [
 ])
 .provider('igniteSocketFactory', [function() {
-    const options = {};
+    let _options = {};
 
-    this.set = ({ ioSocket }) => {
-        options.ioSocket = ioSocket;
+    /**
+     * @param {Object} options Socket io options.
+     */
+    this.set = (options) => {
+        _options = options;
     };
 
     this.$get = ['socketFactory', function(socketFactory) {
-        return () => socketFactory(options);
+        return () => {
+            const ioSocket = io.connect(_options);
+
+            return socketFactory({ioSocket});
+        };
     }];
 }]);

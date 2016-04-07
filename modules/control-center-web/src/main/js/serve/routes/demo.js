@@ -126,8 +126,8 @@ module.exports.factory = (_, express, settings, mongo) => {
                         return clusterDoc.save();
                     }));
                 })
-                .then((clusters) => {
-                    return _.map(clusters, (cluster) => {
+                .then((clusterDocs) => {
+                    return _.map(clusterDocs, (cluster) => {
                         if (cluster.name.endsWith('-caches')) {
                             return Promise.all(_.map(caches, (cache) => {
                                 const cacheDoc = new mongo.Cache(cache);
@@ -154,7 +154,7 @@ module.exports.factory = (_, express, settings, mongo) => {
                                 return igfsDoc.save();
                             }))
                             .then((igfsDocs) => {
-                                _.forEach(igfsDocs, (igfsDocs) => cluster.igfss.push(igfsDocs._id));
+                                _.forEach(igfsDocs, (igfsDoc) => cluster.igfss.push(igfsDoc._id));
 
                                 return cluster.save();
                             });
