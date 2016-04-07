@@ -248,6 +248,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                     qryId = dsCacheCtx.continuousQueries().executeInternalQuery(new DataStructuresEntryListener(),
                         new DataStructuresEntryFilter(),
                         dsCacheCtx.isReplicated() && dsCacheCtx.affinityNode(),
+                        false,
                         false);
                 }
             }
@@ -257,6 +258,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         super.onKernalStop(cancel);
+
+        for (GridCacheRemovable ds : dsMap.values()) {
+            if (ds instanceof GridCacheSemaphoreEx)
+                ((GridCacheSemaphoreEx)ds).stop();
+        }
 
         if (initLatch.getCount() > 0) {
             initFailed = true;
@@ -926,8 +932,15 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         CacheConfiguration newCfg = cacheConfiguration(cfg, cacheName);
 
-        if (ctx.cache().cache(cacheName) == null)
-            ctx.cache().dynamicStartCache(newCfg, cacheName, null, CacheType.INTERNAL, false, true).get();
+        if (ctx.cache().cache(cacheName) == null) {
+            ctx.cache().dynamicStartCache(newCfg,
+                cacheName,
+                null,
+                CacheType.INTERNAL,
+                false,
+                true,
+                true).get();
+        }
 
         assert ctx.cache().cache(cacheName) != null : cacheName;
 
@@ -947,7 +960,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         IgniteOutClosureX<GridCacheQueueHeader> rmv = new IgniteOutClosureX<GridCacheQueueHeader>() {
             @Override public GridCacheQueueHeader applyx() throws IgniteCheckedException {
-                return (GridCacheQueueHeader)cctx.cache().getAndRemove(new GridCacheQueueHeaderKey(name));
+                return (GridCacheQueueHeader)cctx.cache().withNoRetries().getAndRemove(new GridCacheQueueHeaderKey(name));
             }
         };
 
@@ -1532,7 +1545,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         IgniteOutClosureX<GridCacheSetHeader> rmv = new IgniteOutClosureX<GridCacheSetHeader>() {
             @Override public GridCacheSetHeader applyx() throws IgniteCheckedException {
-                return (GridCacheSetHeader)cctx.cache().getAndRemove(new GridCacheSetHeaderKey(name));
+                return (GridCacheSetHeader)cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
             }
         };
 

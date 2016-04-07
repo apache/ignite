@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Common
     /// <summary>
     /// Indicates future cancellation within Ignite.
     /// </summary>
+    [Serializable]
     public class IgniteFutureCancelledException : IgniteException
     {
         /// <summary>

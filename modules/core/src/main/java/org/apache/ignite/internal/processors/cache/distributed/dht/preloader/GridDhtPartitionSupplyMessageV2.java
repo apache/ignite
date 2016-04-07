@@ -75,9 +75,13 @@ public class GridDhtPartitionSupplyMessageV2 extends GridCacheMessage implements
     /**
      * @param updateSeq Update sequence for this node.
      * @param cacheId Cache ID.
+     * @param topVer Topology version.
      * @param addDepInfo Deployment info flag.
      */
-    GridDhtPartitionSupplyMessageV2(long updateSeq, int cacheId, AffinityTopologyVersion topVer, boolean addDepInfo) {
+    GridDhtPartitionSupplyMessageV2(long updateSeq,
+        int cacheId,
+        AffinityTopologyVersion topVer,
+        boolean addDepInfo) {
         this.cacheId = cacheId;
         this.updateSeq = updateSeq;
         this.topVer = topVer;

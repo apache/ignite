@@ -104,6 +104,7 @@
             <outputDirectory>/platforms/cpp</outputDirectory>
             <includes>
                 <include>README.txt</include>
+                <include>DEVNOTES.txt</include>
             </includes>
         </fileSet>
 

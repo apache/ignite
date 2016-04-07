@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -235,7 +234,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writeItem">Write action to perform on item when it is not null.</param>
         /// <returns>The same writer for chaining.</returns>
         protected static BinaryWriter WriteNullable<T>(BinaryWriter writer, T item,
-            Func<BinaryWriter, T, BinaryWriter> writeItem)
+            Func<BinaryWriter, T, BinaryWriter> writeItem) where T : class
         {
             if (item == null)
             {
@@ -605,32 +604,53 @@ namespace Apache.Ignite.Core.Impl
         {
             DoOutOp(OpMeta, stream =>
             {
-                BinaryWriter metaWriter = _marsh.StartMarshal(stream);
+                BinaryWriter w = _marsh.StartMarshal(stream);
 
-                metaWriter.WriteInt(types.Count);
+                w.WriteInt(types.Count);
 
                 foreach (var meta in types)
                 {
-                    BinaryType meta0 = meta;
+                    w.WriteInt(meta.TypeId);
+                    w.WriteString(meta.TypeName);
+                    w.WriteString(meta.AffinityKeyFieldName);
 
-                    metaWriter.WriteInt(meta0.TypeId);
-                    metaWriter.WriteString(meta0.TypeName);
-                    metaWriter.WriteString(meta0.AffinityKeyFieldName);
+                    IDictionary<string, int> fields = meta.GetFieldsMap();
 
-                    IDictionary<string, int> fields = meta0.GetFieldsMap();
-
-                    metaWriter.WriteInt(fields.Count);
+                    w.WriteInt(fields.Count);
 
                     foreach (var field in fields)
                     {
-                        metaWriter.WriteString(field.Key);
-                        metaWriter.WriteInt(field.Value);
+                        w.WriteString(field.Key);
+                        w.WriteInt(field.Value);
                     }
 
-                    metaWriter.WriteBoolean(meta.IsEnum);
+                    w.WriteBoolean(meta.IsEnum);
+
+                    // Send schemas
+                    var desc = meta.Descriptor;
+                    Debug.Assert(desc != null);
+
+                    var count = 0;
+                    var countPos = stream.Position;
+                    w.WriteInt(0);  // Reserve for count
+
+                    foreach (var schema in desc.Schema.GetAll())
+                    {
+                        w.WriteInt(schema.Key);
+
+                        var ids = schema.Value;
+                        w.WriteInt(ids.Length);
+
+                        foreach (var id in ids)
+                            w.WriteInt(id);
+
+                        count++;
+                    }
+
+                    stream.WriteInt(countPos, count);
                 }
 
-                _marsh.FinishMarshal(metaWriter);
+                _marsh.FinishMarshal(w);
             });
 
             _marsh.OnBinaryTypesSent(types);

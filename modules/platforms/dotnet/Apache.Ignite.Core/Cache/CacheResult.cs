@@ -59,13 +59,25 @@ namespace Apache.Ignite.Core.Cache
             get { return _success; }
         }
 
-        /** <inehritdoc /> */
+        /// <summary>
+        /// Determines whether the specified <see cref="object" />, is equal to this instance.
+        /// </summary>
+        /// <param name="other">The <see cref="object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
         public bool Equals(CacheResult<T> other)
         {
             return EqualityComparer<T>.Default.Equals(_value, other._value) && _success == other._success;
         }
 
-        /** <inehritdoc /> */
+        /// <summary>
+        /// Determines whether the specified <see cref="object" />, is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="object" /> is equal to this instance; otherwise, <c>false</c>.
+        /// </returns>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj))
@@ -74,7 +86,12 @@ namespace Apache.Ignite.Core.Cache
             return obj is CacheResult<T> && Equals((CacheResult<T>) obj);
         }
 
-        /** <inehritdoc /> */
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table. 
+        /// </returns>
         public override int GetHashCode()
         {
             unchecked
@@ -83,13 +100,27 @@ namespace Apache.Ignite.Core.Cache
             }
         }
 
-        /** <inehritdoc /> */
+        /// <summary>
+        /// Implements the operator ==.
+        /// </summary>
+        /// <param name="left">The left.</param>
+        /// <param name="right">The right.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
         public static bool operator ==(CacheResult<T> left, CacheResult<T> right)
         {
             return left.Equals(right);
         }
 
-        /** <inehritdoc /> */
+        /// <summary>
+        /// Implements the operator !=.
+        /// </summary>
+        /// <param name="left">The left.</param>
+        /// <param name="right">The right.</param>
+        /// <returns>
+        /// The result of the operator.
+        /// </returns>
         public static bool operator !=(CacheResult<T> left, CacheResult<T> right)
         {
             return !left.Equals(right);

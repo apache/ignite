@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             TestUtils.JvmDebug = true;
             TestUtils.KillProcesses();
 
-            IgniteConfigurationEx cfg = new IgniteConfigurationEx
+            IgniteConfiguration cfg = new IgniteConfiguration
             {
                 BinaryConfiguration = new BinaryConfiguration
                 {

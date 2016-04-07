@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Common
 {
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -30,6 +31,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Initializes the <see cref="CancelledTask{T}"/> class.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
+            Justification = "Readability.")]
         static CancelledTask()
         {
             TaskCompletionSource = new TaskCompletionSource<T>();

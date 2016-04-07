@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Compute.Closure
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Compute;
 
     /// <summary>
@@ -40,6 +41,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override ComputeJobResultPolicy Result0(IComputeJobResult<T> res)
         {
             _res.Add(res.Data);

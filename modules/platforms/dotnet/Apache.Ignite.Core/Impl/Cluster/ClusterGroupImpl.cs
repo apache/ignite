@@ -96,6 +96,9 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** */
         private const int OpTopology = 14;
 
+        /** */
+        private const int OpSchema = 15;
+
         /** Initial Ignite instance. */
         private readonly Ignite _ignite;
         
@@ -568,6 +571,18 @@ namespace Apache.Ignite.Core.Impl.Cluster
                     res.Add(reader.ReadBoolean() ? new BinaryType(reader) : null);
 
                 return res;
+            });
+        }
+
+        /// <summary>
+        /// Gets the schema.
+        /// </summary>
+        public int[] GetSchema(int typeId, int schemaId)
+        {
+            return DoOutInOp<int[]>(OpSchema, writer =>
+            {
+                writer.WriteInt(typeId);
+                writer.WriteInt(schemaId);
             });
         }
     }

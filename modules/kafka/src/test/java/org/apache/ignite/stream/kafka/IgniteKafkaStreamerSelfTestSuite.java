@@ -18,9 +18,11 @@
 package org.apache.ignite.stream.kafka;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.stream.kafka.connect.IgniteSinkConnectorTest;
+import org.apache.ignite.stream.kafka.connect.IgniteSourceConnectorTest;
 
 /**
- * Apache Kafka streamer tests.
+ * Apache Kafka streamers tests.
  */
 public class IgniteKafkaStreamerSelfTestSuite extends TestSuite {
     /**
@@ -30,7 +32,12 @@ public class IgniteKafkaStreamerSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Apache Kafka streamer Test Suite");
 
+        // Kafka streamer.
         suite.addTest(new TestSuite(KafkaIgniteStreamerSelfTest.class));
+
+        // Kafka streamers via Connect API.
+        suite.addTest(new TestSuite(IgniteSinkConnectorTest.class));
+        suite.addTest(new TestSuite(IgniteSourceConnectorTest.class));
 
         return suite;
     }

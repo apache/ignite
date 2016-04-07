@@ -116,7 +116,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     private String locAddr;
 
     /** Time to live. */
-    private Integer ttl;
+    private int ttl = -1;
 
     /** */
     @GridToStringExclude
@@ -136,6 +136,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     /** */
     private boolean mcastErr;
 
+    /** */
     @GridToStringExclude
     private Set<InetSocketAddress> locNodeAddrs;
 
@@ -267,6 +268,8 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      * <p>
      * If TTL is {@code 0}, packets are not transmitted on the network,
      * but may be delivered locally.
+     * <p>
+     * Default value is {@code -1} which corresponds to system default value.
      *
      * @param ttl Time to live.
      */
@@ -307,7 +310,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             throw new IgniteSpiException("Invalid number of address request attempts, " +
                 "value greater than zero is expected: " + addrReqAttempts);
 
-        if (ttl != null && (ttl < 0 || ttl > 255))
+        if (ttl != -1 && (ttl < 0 || ttl > 255))
             throw new IgniteSpiException("Time-to-live value is out of 0 <= TTL <= 255 range: " + ttl);
 
         if (F.isEmpty(getRegisteredAddresses()))
@@ -545,7 +548,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
                     sock.setSoTimeout(resWaitTime);
 
-                    if (ttl != null)
+                    if (ttl != -1)
                         sock.setTimeToLive(ttl);
 
                     reqPckt.setData(MSG_ADDR_REQ_DATA);
@@ -817,7 +820,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
             sock.joinGroup(mcastGrp);
 
-            if (ttl != null)
+            if (ttl != -1)
                 sock.setTimeToLive(ttl);
 
             return sock;

@@ -62,6 +62,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -118,7 +119,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_KEEP_ALIVE_TIME;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_THREADPOOL_QUEUE_CAP;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_KEEP_ALIVE_TIME;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_MAX_THREAD_CNT;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_THREADPOOL_QUEUE_CAP;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
@@ -986,7 +986,7 @@ public class IgnitionEx {
 
         if (old != null) {
             if (name == null)
-                throw new IgniteCheckedException("Default grid instance has already been started.");
+                throw new IgniteCheckedException("Default Ignite instance has already been started.");
             else
                 throw new IgniteCheckedException("Ignite instance with this name has already been started: " + name);
         }
@@ -1662,7 +1662,7 @@ public class IgnitionEx {
                 "utility",
                 cfg.getGridName(),
                 myCfg.getUtilityCacheThreadPoolSize(),
-                DFLT_SYSTEM_MAX_THREAD_CNT,
+                myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheKeepAliveTime(),
                 new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
 
@@ -1670,7 +1670,7 @@ public class IgnitionEx {
                 "marshaller-cache",
                 cfg.getGridName(),
                 myCfg.getMarshallerCacheThreadPoolSize(),
-                DFLT_SYSTEM_MAX_THREAD_CNT,
+                myCfg.getMarshallerCacheThreadPoolSize(),
                 myCfg.getMarshallerCacheKeepAliveTime(),
                 new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
 
@@ -1950,6 +1950,12 @@ public class IgnitionEx {
             }
 
             cfg.setCacheConfiguration(cacheCfgs.toArray(new CacheConfiguration[cacheCfgs.size()]));
+
+            // Iterate over IGFS caches and prepare their configurations if needed.
+            assert cfg.getCacheConfiguration() != null;
+
+            for (CacheConfiguration ccfg : cfg.getCacheConfiguration())
+                IgfsUtils.prepareCacheConfiguration(cfg, ccfg);
         }
 
         /**

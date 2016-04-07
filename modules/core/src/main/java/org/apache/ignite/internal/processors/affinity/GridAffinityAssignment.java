@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Cached affinity calculations.
  */
-class GridAffinityAssignment implements Serializable {
+public class GridAffinityAssignment implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,6 +48,15 @@ class GridAffinityAssignment implements Serializable {
     /** Map of backup node partitions. */
     private final Map<UUID, Set<Integer>> backup;
 
+    /** Assignment node IDs */
+    private transient volatile List<HashSet<UUID>> assignmentIds;
+
+    /** Nodes having primary partitions assignments. */
+    private transient volatile Set<ClusterNode> primaryPartsNodes;
+
+    /** */
+    private transient List<List<ClusterNode>> idealAssignment;
+
     /**
      * Constructs cached affinity calculations item.
      *
@@ -61,10 +71,18 @@ class GridAffinityAssignment implements Serializable {
     /**
      * @param topVer Topology version.
      * @param assignment Assignment.
+     * @param idealAssignment Ideal assignment.
      */
-    GridAffinityAssignment(AffinityTopologyVersion topVer, List<List<ClusterNode>> assignment) {
+    GridAffinityAssignment(AffinityTopologyVersion topVer,
+        List<List<ClusterNode>> assignment,
+        List<List<ClusterNode>> idealAssignment) {
+        assert topVer != null;
+        assert assignment != null;
+        assert idealAssignment != null;
+
         this.topVer = topVer;
         this.assignment = assignment;
+        this.idealAssignment = idealAssignment;
 
         primary = new HashMap<>();
         backup = new HashMap<>();
@@ -80,8 +98,16 @@ class GridAffinityAssignment implements Serializable {
         this.topVer = topVer;
 
         assignment = aff.assignment;
+        idealAssignment = aff.idealAssignment;
         primary = aff.primary;
         backup = aff.backup;
+    }
+
+    /**
+     * @return Affinity assignment computed by affinity function.
+     */
+    public List<List<ClusterNode>> idealAssignment() {
+        return idealAssignment;
     }
 
     /**
@@ -109,6 +135,61 @@ class GridAffinityAssignment implements Serializable {
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
         return assignment.get(part);
+    }
+
+    /**
+     * Get affinity node IDs for partition.
+     *
+     * @param part Partition.
+     * @return Affinity nodes IDs.
+     */
+    public HashSet<UUID> getIds(int part) {
+        assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
+            " [part=" + part + ", partitions=" + assignment.size() + ']';
+
+        List<HashSet<UUID>> assignmentIds0 = assignmentIds;
+
+        if (assignmentIds0 == null) {
+            assignmentIds0 = new ArrayList<>();
+
+            for (List<ClusterNode> assignmentPart : assignment) {
+                HashSet<UUID> partIds = new HashSet<>();
+
+                for (ClusterNode node : assignmentPart)
+                    partIds.add(node.id());
+
+                assignmentIds0.add(partIds);
+            }
+
+            assignmentIds = assignmentIds0;
+        }
+
+        return assignmentIds0.get(part);
+    }
+
+    /**
+     * @return Nodes having primary partitions assignments.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public Set<ClusterNode> primaryPartitionNodes() {
+        Set<ClusterNode> primaryPartsNodes0 = primaryPartsNodes;
+
+        if (primaryPartsNodes0 == null) {
+            int parts = assignment.size();
+
+            primaryPartsNodes0 = new HashSet<>();
+
+            for (int p = 0; p < parts; p++) {
+                List<ClusterNode> nodes = assignment.get(p);
+
+                if (nodes.size() > 0)
+                    primaryPartsNodes0.add(nodes.get(0));
+            }
+
+            primaryPartsNodes = primaryPartsNodes0;
+        }
+
+        return primaryPartsNodes0;
     }
 
     /**

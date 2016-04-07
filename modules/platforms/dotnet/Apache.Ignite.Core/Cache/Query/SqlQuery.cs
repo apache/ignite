@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Cache.Query
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// SQL Query.
@@ -46,7 +47,7 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <param name="local">Whether query should be executed locally.</param>
         /// <param name="args">Arguments.</param>
         public SqlQuery(Type queryType, string sql, bool local, params object[] args) 
-            : this(queryType.Name, sql, local, args)
+            : this(queryType == null ? null : queryType.Name, sql, local, args)
         {
             // No-op.
         }
@@ -71,6 +72,9 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <param name="args">Arguments.</param>
         public SqlQuery(string queryType, string sql, bool local, params object[] args)
         {
+            IgniteArgumentCheck.NotNullOrEmpty("queryType", queryType);
+            IgniteArgumentCheck.NotNullOrEmpty("sql", sql);
+
             QueryType = queryType;
             Sql = sql;
             Local = local;
