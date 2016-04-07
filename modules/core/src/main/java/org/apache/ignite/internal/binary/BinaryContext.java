@@ -992,7 +992,7 @@ public class BinaryContext {
         Class<?> cls = null;
 
         try {
-            cls = Class.forName(clsName);
+            cls = U.resolveClassLoader(configuration()).loadClass(clsName);
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
             // No-op.
@@ -1046,6 +1046,13 @@ public class BinaryContext {
 
             if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
                 userTypes.put(id, desc);
+            else
+                try {
+                    marshCtx.registerClass(id, cls);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new BinaryObjectException("Failed to register class.", e);
+                }
 
             descByCls.put(cls, desc);
         }
