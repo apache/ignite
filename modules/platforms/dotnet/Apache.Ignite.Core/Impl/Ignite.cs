@@ -580,6 +580,18 @@ namespace Apache.Ignite.Core.Impl
             }
         }
 
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            throw new NotImplementedException();
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Gets internal projection.
         /// </summary>

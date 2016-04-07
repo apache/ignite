@@ -347,6 +347,17 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return _ignite.CreateNearCache<TK, TV>(name, configuration);
+        }
+
+        public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return _ignite.GetOrCreateNearCache<TK, TV>(name, configuration);
+        }
+
+        /** <inheritdoc /> */
         public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
         {
             return _ignite.GetAtomicSequence(name, initialValue, create);
