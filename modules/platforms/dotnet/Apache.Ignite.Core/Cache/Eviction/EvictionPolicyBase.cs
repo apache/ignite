@@ -18,27 +18,43 @@
 namespace Apache.Ignite.Core.Cache.Eviction
 {
     using System;
+    using System.ComponentModel;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
     /// Base class for predefined eviction policies.
     /// </summary>
     public abstract class EvictionPolicyBase : IEvictionPolicy
     {
+        /// <summary> Default batch cache size. </summary>
+        public const int DefaultBatchSize = 1;
+        
+        /// <summary> Default max cache size. </summary>
+        public const int DefaultMaxSize = CacheConfiguration.DefaultCacheSize;
+
+        /// <summary> Default max cache size in bytes. </summary>
+        public const long DefaultMaxMemorySize = 0;
+
         /// <summary>
         /// Gets or sets the size of the eviction batch.
         /// Batch eviction is enabled only if maximum memory limit isn't set (<see cref="MaxMemorySize"/> == 0).
         /// </summary>
+        [DefaultValue(DefaultBatchSize)]
         public int BatchSize { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum allowed cache size (entry count).
+        /// 0 for unlimited.
         /// </summary>
+        [DefaultValue(DefaultMaxSize)]
         public int MaxSize { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum allowed cache size in bytes.
+        /// 0 for unlimited.
         /// </summary>
+        [DefaultValue(DefaultMaxMemorySize)]
         public long MaxMemorySize { get; set; }
 
         /// <summary>
@@ -71,6 +87,10 @@ namespace Apache.Ignite.Core.Cache.Eviction
             }
 
             writer.WriteByte(p is FifoEvictionPolicy ? (byte) 1 : (byte) 2);
+
+            writer.WriteInt(p.BatchSize);
+            writer.WriteInt(p.MaxSize);
+            writer.WriteLong(p.MaxMemorySize);
         }
 
         /// <summary>
@@ -78,13 +98,27 @@ namespace Apache.Ignite.Core.Cache.Eviction
         /// </summary>
         internal static EvictionPolicyBase Read(IBinaryRawReader reader)
         {
+            EvictionPolicyBase p;
+
             switch (reader.ReadByte())
             {
-                case 0: return null;
-                case 1: return new FifoEvictionPolicy();
-                case 2: return new LruEvictionPolicy();
-                default: throw new InvalidOperationException("Unsupported eviction policy.");
+                case 0:
+                    return null;
+                case 1:
+                    p = new FifoEvictionPolicy();
+                    break;
+                case 2:
+                    p = new LruEvictionPolicy();
+                    break;
+                default:
+                    throw new InvalidOperationException("Unsupported eviction policy.");
             }
+
+            p.BatchSize = reader.ReadInt();
+            p.MaxSize = reader.ReadInt();
+            p.MaxMemorySize = reader.ReadLong();
+
+            return p;
         }
     }
 }
