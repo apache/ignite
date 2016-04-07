@@ -57,6 +57,9 @@ public class GridAffinityAssignment implements Serializable {
     /** */
     private transient List<List<ClusterNode>> idealAssignment;
 
+    /** */
+    private final boolean clientEvtChange;
+
     /**
      * Constructs cached affinity calculations item.
      *
@@ -66,6 +69,7 @@ public class GridAffinityAssignment implements Serializable {
         this.topVer = topVer;
         primary = new HashMap<>();
         backup = new HashMap<>();
+        clientEvtChange = false;
     }
 
     /**
@@ -86,6 +90,7 @@ public class GridAffinityAssignment implements Serializable {
 
         primary = new HashMap<>();
         backup = new HashMap<>();
+        clientEvtChange = false;
 
         initPrimaryBackupMaps();
     }
@@ -101,6 +106,16 @@ public class GridAffinityAssignment implements Serializable {
         idealAssignment = aff.idealAssignment;
         primary = aff.primary;
         backup = aff.backup;
+
+        clientEvtChange = true;
+    }
+
+    /**
+     * @return {@code True} if related discovery event did not not cause affinity assignment change and
+     *    this assignment is just reference to the previous one.
+     */
+    public boolean clientEventChange() {
+        return clientEvtChange;
     }
 
     /**
