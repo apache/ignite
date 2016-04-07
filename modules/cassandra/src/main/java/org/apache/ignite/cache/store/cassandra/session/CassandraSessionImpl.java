@@ -420,7 +420,11 @@ public class CassandraSessionImpl implements CassandraSession {
 
         while (attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
             try {
+                log.info("-----------------------------------------------------------------------");
                 log.info("Creating Cassandra keyspace '" + settings.getKeyspace() + "'");
+                log.info("-----------------------------------------------------------------------");
+                log.info(settings.getKeyspaceDDLStatement());
+                log.info("-----------------------------------------------------------------------");
                 session().execute(settings.getKeyspaceDDLStatement());
                 log.info("Cassandra keyspace '" + settings.getKeyspace() + "' was successfully created");
                 return;
@@ -456,7 +460,11 @@ public class CassandraSessionImpl implements CassandraSession {
 
         while (attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
             try {
+                log.info("-----------------------------------------------------------------------");
                 log.info("Creating Cassandra table '" + settings.getTableFullName() + "'");
+                log.info("-----------------------------------------------------------------------");
+                log.info(settings.getTableDDLStatement());
+                log.info("-----------------------------------------------------------------------");
                 session().execute(settings.getTableDDLStatement());
                 log.info("Cassandra table '" + settings.getTableFullName() + "' was successfully created");
                 return;

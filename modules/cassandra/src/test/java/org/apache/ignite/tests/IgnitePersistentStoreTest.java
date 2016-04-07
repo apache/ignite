@@ -57,9 +57,6 @@ public class IgnitePersistentStoreTest {
             }
         }
 
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
-            return;
-
         LOGGER.info("Testing admin connection to Cassandra");
         CassandraHelper.testAdminConnection();
         LOGGER.info("Testing regular connection to Cassandra");
@@ -92,11 +89,6 @@ public class IgnitePersistentStoreTest {
     /** */
     @Test
     public void primitiveStrategyTest() {
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
-            LOGGER.info("Cassandra passwords weren't specified thus skipping primitiveStrategyTest test");
-            return;
-        }
-
         Ignition.stopAll(true);
 
         Map<Integer, Integer> intMap = TestsHelper.generateIntegersMap();
@@ -170,11 +162,6 @@ public class IgnitePersistentStoreTest {
     /** */
     @Test
     public void blobStrategyTest() {
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
-            LOGGER.info("Cassandra passwords weren't specified thus skipping blobStrategyTest test");
-            return;
-        }
-
         Ignition.stopAll(true);
 
         Map<Integer, Integer> intMap = TestsHelper.generateIntegersMap();
@@ -248,11 +235,6 @@ public class IgnitePersistentStoreTest {
     /** */
     @Test
     public void pojoStrategyTest() {
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
-            LOGGER.info("Cassandra passwords weren't specified thus skipping pojoStrategyTest test");
-            return;
-        }
-
         Ignition.stopAll(true);
 
         LOGGER.info("Running POJO strategy write tests");
@@ -342,11 +324,6 @@ public class IgnitePersistentStoreTest {
     /** */
     @Test
     public void loadCacheTest() {
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
-            LOGGER.info("Cassandra passwords weren't specified thus skipping pojoStrategyTest test");
-            return;
-        }
-
         Ignition.stopAll(true);
 
         LOGGER.info("Running loadCache test");

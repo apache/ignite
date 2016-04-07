@@ -200,7 +200,7 @@ public class PropertyMappingHelper {
             return row.getInet(col);
 
         if (Date.class.equals(clazz))
-            return row.getDate(col);
+            return row.getTimestamp(col);
 
         if (UUID.class.equals(clazz))
             return row.getUUID(col);

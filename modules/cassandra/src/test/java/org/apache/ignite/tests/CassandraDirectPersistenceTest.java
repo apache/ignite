@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.tests.pojos.Person;
 import org.apache.ignite.tests.pojos.PersonId;
 import org.apache.ignite.tests.utils.CacheStoreHelper;
@@ -51,9 +52,6 @@ public class CassandraDirectPersistenceTest {
                 throw new RuntimeException("Failed to start embedded Cassandra instance", e);
             }
         }
-
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty())
-            return;
 
         LOGGER.info("Testing admin connection to Cassandra");
         CassandraHelper.testAdminConnection();
@@ -88,11 +86,6 @@ public class CassandraDirectPersistenceTest {
     @Test
     @SuppressWarnings("unchecked")
     public void primitiveStrategyTest() {
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
-            LOGGER.info("Cassandra passwords weren't specified thus skipping primitiveStrategyTest test");
-            return;
-        }
-
         CacheStore store1 = CacheStoreHelper.createCacheStore("intTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml"),
             CassandraHelper.getAdminDataSrc());
@@ -161,11 +154,6 @@ public class CassandraDirectPersistenceTest {
     @Test
     @SuppressWarnings("unchecked")
     public void blobStrategyTest() {
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
-            LOGGER.info("Cassandra passwords weren't specified thus skipping blobStrategyTest test");
-            return;
-        }
-
         CacheStore store1 = CacheStoreHelper.createCacheStore("intTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/blob/persistence-settings-1.xml"),
             CassandraHelper.getAdminDataSrc());
@@ -251,11 +239,6 @@ public class CassandraDirectPersistenceTest {
     @Test
     @SuppressWarnings("unchecked")
     public void pojoStrategyTest() {
-        if (CassandraHelper.getAdminPassword().isEmpty() || CassandraHelper.getRegularPassword().isEmpty()) {
-            LOGGER.info("Cassandra passwords weren't specified thus skipping pojoStrategyTest test");
-            return;
-        }
-
         CacheStore store1 = CacheStoreHelper.createCacheStore("intTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-1.xml"),
             CassandraHelper.getAdminDataSrc());

@@ -32,13 +32,11 @@
     </parent>
 
     <artifactId>ignite-cassandra</artifactId>
-    <version>1.5.1.final-SNAPSHOT</version>
+    <version>1.6.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <properties>
         <commons-beanutils.version>1.8.3</commons-beanutils.version>
-        <junit.version>4.12</junit.version>
-        <log4j.version>1.2.17</log4j.version>
         <cassandra-driver.version>3.0.0</cassandra-driver.version>
         <cassandra-all.version>3.3</cassandra-all.version>
         <kryo.version>3.0.3</kryo.version>
@@ -168,21 +166,18 @@
             <artifactId>cassandra-all</artifactId>
             <version>${cassandra-all.version}</version>
             <scope>provided</scope>
-        </dependency>
-
-        <!-- JUnit -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>log4j-over-slf4j</artifactId>
+                    <groupId>org.slf4j</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Apache log4j -->
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>${log4j.version}</version>
             <scope>test</scope>
         </dependency>
 
