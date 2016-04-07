@@ -929,7 +929,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         U.warn(log, "Failed to wait for partition release future [topVer=" + topologyVersion() +
             ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
 
-        cctx.exchange().dumpPendingObjects();
+        cctx.exchange().dumpDebugInfo();
     }
 
     /**
@@ -993,7 +993,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     locMap = new GridDhtPartitionMap(locMap.nodeId(), locMap.updateSequence(), locMap.map());
 
                 m.addLocalPartitionMap(cacheCtx.cacheId(), locMap);
-                
+
                 m.partitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters());
             }
         }
