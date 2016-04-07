@@ -26,6 +26,22 @@ namespace Apache.Ignite.Core.Cache.Eviction
     public abstract class EvictionPolicyBase : IEvictionPolicy
     {
         /// <summary>
+        /// Gets or sets the size of the eviction batch.
+        /// Batch eviction is enabled only if maximum memory limit isn't set (<see cref="MaxMemorySize"/> == 0).
+        /// </summary>
+        public int BatchSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum allowed cache size (entry count).
+        /// </summary>
+        public int MaxSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum allowed cache size in bytes.
+        /// </summary>
+        public long MaxMemorySize { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="EvictionPolicyBase"/> class.
         /// </summary>
         internal EvictionPolicyBase()
