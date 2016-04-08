@@ -37,12 +37,23 @@ public class HadoopMapReduceTest extends HadoopAbstractMapReduceTest {
 
         generateTestFile(inFile.toString(), "red", red, "blue", blue, "green", green, "yellow", yellow );
 
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i <= maxApiModeBits(); i++) {
             boolean useNewMapper = (i & 1) == 0;
             boolean useNewCombiner = (i & 2) == 0;
             boolean useNewReducer = (i & 4) == 0;
 
             doTest(inFile, useNewMapper, useNewCombiner, useNewReducer);
         }
+    }
+
+    /**
+     * Gets max possible value of API mode bits:
+     * 0th bit is old mapper, 1st bit is old combiner, 2nd bit is old reducer.
+     * All values from 0 to the returned value will be tested.
+     *
+     * @return maximum API bits value to check.
+     */
+    protected int maxApiModeBits() {
+        return 7;
     }
 }

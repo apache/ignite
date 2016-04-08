@@ -25,4 +25,9 @@ public class HadoopSnappyFullMapReduceTest extends HadoopMapReduceTest {
     @Override protected boolean compressOutputSnappy() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override protected int maxApiModeBits() {
+        return 3;
+    }
 }
