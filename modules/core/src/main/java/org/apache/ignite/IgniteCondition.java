@@ -81,9 +81,10 @@ public interface IgniteCondition extends Condition {
      * will be thrown.
      *
      * @throws IgniteInterruptedException if the current thread is interrupted
-     *         for any reason
+     * @throws IgniteException if the node stopped, or
+     *         node owning the lock failed in non-failoversafe mode
      */
-    @Override void await() throws IgniteInterruptedException;
+    @Override void await() throws IgniteInterruptedException, IgniteException;
 
     /**
      * Causes the current thread to wait until it is signalled.
@@ -120,10 +121,10 @@ public interface IgniteCondition extends Condition {
      * {@code Condition} when this method is called. If not, an {@link IllegalMonitorStateException}
      * will be thrown.
      *
-     * @throws IgniteInterruptedException if the node stopped, or
+     * @throws IgniteException if the node stopped, or
      *         node owning the lock failed in non-failoversafe mode
      */
-    @Override void awaitUninterruptibly() throws IgniteInterruptedException;
+    @Override void awaitUninterruptibly() throws IgniteException;
 
     /**
      * Causes the current thread to wait until it is signalled or interrupted,
@@ -207,9 +208,10 @@ public interface IgniteCondition extends Condition {
      *         the desired time.  A value less than or equal to zero
      *         indicates that no time remains.
      * @throws IgniteInterruptedException if the current thread is interrupted
-     *         for any reason
+     * @throws IgniteException if the node stopped, or
+     *         node owning the lock failed in non-failoversafe mode
      */
-    @Override long awaitNanos(long nanosTimeout) throws IgniteInterruptedException;
+    @Override long awaitNanos(long nanosTimeout) throws IgniteInterruptedException, IgniteException;
 
     /**
      * Causes the current thread to wait until it is signalled or interrupted,
@@ -222,9 +224,10 @@ public interface IgniteCondition extends Condition {
      * @return {@code false} if the waiting time detectably elapsed
      *         before return from the method, else {@code true}
      * @throws IgniteInterruptedException if the current thread is interrupted
-     *         for any reason
+     * @throws IgniteException if the node stopped, or
+     *         node owning the lock failed in non-failoversafe mode
      */
-    @Override boolean await(long time, TimeUnit unit) throws IgniteInterruptedException;
+    @Override boolean await(long time, TimeUnit unit) throws IgniteInterruptedException, IgniteException;
 
     /**
      * Causes the current thread to wait until it is signalled or interrupted,
@@ -292,10 +295,11 @@ public interface IgniteCondition extends Condition {
      * @return {@code false} if the deadline has elapsed upon return, else
      *         {@code true}
      * @throws IgniteInterruptedException if the current thread is interrupted
-     *         (and interruption of thread suspension is supported) or node stopped or
+     *         (and interruption of thread suspension is supported)
+     * @throws IgniteException if the node stopped, or
      *         node owning the lock failed in non-failoversafe mode
      */
-    @Override boolean awaitUntil(Date deadline) throws IgniteInterruptedException;
+    @Override boolean awaitUntil(Date deadline) throws IgniteInterruptedException, IgniteException;
 
     /**
      * Wakes up one waiting thread.
@@ -310,10 +314,10 @@ public interface IgniteCondition extends Condition {
      * {@code Condition} when this method is called. If not, an {@link IllegalMonitorStateException}
      * will be thrown.
      *
-     * @throws IgniteInterruptedException if node is stopped or
+     * @throws IgniteException if node is stopped or
      *         node owning the lock failed in non-failoversafe mode
      */
-    @Override void signal() throws IgniteInterruptedException;
+    @Override void signal() throws IgniteException;
 
     /**
      * Wakes up all waiting threads.
@@ -328,8 +332,8 @@ public interface IgniteCondition extends Condition {
      * {@code Condition} when this method is called. If not, an {@link IllegalMonitorStateException}
      * will be thrown.
      *
-     * @throws IgniteInterruptedException if node is stopped or
+     * @throws IgniteException if node is stopped or
      *         node owning the lock failed in non-failoversafe mode
      */
-    @Override void signalAll() throws IgniteInterruptedException;
+    @Override void signalAll() throws IgniteException;
 }

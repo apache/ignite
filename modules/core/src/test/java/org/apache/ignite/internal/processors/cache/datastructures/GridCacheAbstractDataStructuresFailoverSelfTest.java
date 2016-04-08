@@ -644,7 +644,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                 catch (InterruptedException e) {
                     fail("Interrupted exception not expected here.");
                 }
-                catch (IgniteInterruptedException e) {
+                catch (IgniteException e) {
                     isExceptionThrown = true;
                 }
                 finally {
@@ -761,7 +761,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                     try {
                         lock.lock();
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteException e) {
                         // Exception may happen in non-failoversafe mode.
                         if (failoverSafe)
                             throw e;

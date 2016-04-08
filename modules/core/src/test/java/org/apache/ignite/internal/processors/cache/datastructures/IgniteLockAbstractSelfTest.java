@@ -36,6 +36,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCondition;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
@@ -152,7 +153,7 @@ public abstract class IgniteLockAbstractSelfTest extends IgniteAtomicsAbstractTe
 
                         info("Released lock in separate thread.");
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteException e) {
                         if (!failoverSafe)
                             info("Ignored expected exception: " + e);
                         else

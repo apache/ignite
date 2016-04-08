@@ -121,9 +121,9 @@ public interface IgniteLock extends Lock, Closeable {
      *
      * <li>Local node is stopped.
      *
-     * @throws IgniteInterruptedException if the node is stopped or broken in non-failoverSafe mode
+     * @throws IgniteException if the node is stopped or broken in non-failoverSafe mode
      */
-    void lock() throws IgniteInterruptedException;
+    void lock() throws IgniteException;
 
     /**
      * Acquires the lock unless the current thread is
@@ -165,22 +165,30 @@ public interface IgniteLock extends Lock, Closeable {
      * <li>is {@linkplain Thread#interrupt interrupted} while acquiring
      * the lock; or
      *
-     * <li>lock is broken before or during the attempt to acquire this lock; or
+     * then {@link IgniteInterruptedException} is thrown and the current thread's
+     * interrupted status is cleared.
+     *
+     * </ul>
+     *
+     * <p>{@link IgniteException} is thrown in case:
+     *
+     * <ul>
+     *
+     * <li>the lock is broken before or during the attempt to acquire this lock; or
      *
      * <li>local node is stopped,
      *
      * </ul>
-     *
-     * then {@link IgniteInterruptedException} is thrown and the current thread's
-     * interrupted status is cleared.
      *
      * <p>In this implementation, as this method is an explicit
      * interruption point, preference is given to responding to the
      * interrupt over normal or reentrant acquisition of the lock.
      *
      * @throws IgniteInterruptedException if the current thread is interrupted
+     * @throws IgniteException if the lock is broken in non-failoverSafe mode (any node failed while owning this lock),
+     *         or local node is stopped
      */
-    @Override public void lockInterruptibly() throws IgniteInterruptedException;
+    @Override public void lockInterruptibly() throws IgniteInterruptedException, IgniteException;
 
     /**
      * Acquires the lock only if it is free at the time of invocation.
@@ -207,15 +215,14 @@ public interface IgniteLock extends Lock, Closeable {
      * doesn't try to unlock if the lock was not acquired.
      *
      * If node is stopped, or any node failed while owning the lock in non-failoverSafe mode,
-     * then {@link IgniteInterruptedException} is thrown.
+     * then {@link IgniteException} is thrown.
      *
      * @return {@code true} if the lock was acquired and
      *         {@code false} otherwise
      *
-     * @throws IgniteInterruptedException if node is stopped or,
-     *          lock is already broken in non-failover safe mode
+     * @throws IgniteException if node is stopped, or lock is already broken in non-failover safe mode
      */
-    @Override public boolean tryLock() throws IgniteInterruptedException;
+    @Override public boolean tryLock() throws IgniteException;
 
     /**
      * Acquires the lock if it is not held by another thread within the given
@@ -262,13 +269,19 @@ public interface IgniteLock extends Lock, Closeable {
      * <li>is {@linkplain Thread#interrupt interrupted} while
      * acquiring the lock; or
      *
-     * <li>lock is broken before or during the attempt to acquire this lock; or
+     * </ul>
+     * then {@link IgniteInterruptedException} is thrown and the current thread's
+     * interrupted status is cleared.
+     *
+     * <p>{@link IgniteException} is thrown in case:
+     *
+     * <ul>
+     *
+     * <li>the lock is broken before or during the attempt to acquire this lock; or
      *
      * <li>local node is stopped,
      *
      * </ul>
-     * then {@link IgniteInterruptedException} is thrown and the current thread's
-     * interrupted status is cleared.
      *
      * <p>If the specified waiting time elapses then the value {@code false}
      * is returned.  If the time is less than or equal to zero, the method
@@ -286,9 +299,10 @@ public interface IgniteLock extends Lock, Closeable {
      *         thread; and {@code false} if the waiting time elapsed before
      *         the lock could be acquired
      * @throws IgniteInterruptedException if the current thread is interrupted
+     * @throws IgniteException if node is stopped, or lock is already broken in non-failover safe mode
      * @throws NullPointerException if the time unit is null
      */
-    @Override public boolean tryLock(long timeout, TimeUnit unit) throws IgniteInterruptedException;
+    @Override public boolean tryLock(long timeout, TimeUnit unit) throws IgniteInterruptedException, IgniteException;
 
     /**
      * Releases the lock.
@@ -296,10 +310,10 @@ public interface IgniteLock extends Lock, Closeable {
      * If lock is not owned by current thread, then an {@link
      * IllegalMonitorStateException} is thrown.
      * If lock is already broken prior to invocation of this method, and
-     * lock is created in non-failover safe mode, then {@link IgniteInterruptedException} is thrown.
+     * lock is created in non-failover safe mode, then {@link IgniteException} is thrown.
      *
      * @throws IllegalMonitorStateException if not owned by current thread
-     * @throws IgniteInterruptedException if node is stopped or lock is already broken
+     * @throws IgniteException if node is stopped, or lock is already broken in non-failover safe mode
      */
     void unlock() throws IgniteInterruptedException;
 
@@ -331,8 +345,9 @@ public interface IgniteLock extends Lock, Closeable {
      * @param name Name of the distributed condition object
      *
      * @return the Condition object
+     * @throws IgniteException if the lock is not initialized or already removed
      */
-    public IgniteCondition getOrCreateCondition(String name);
+    public IgniteCondition getOrCreateCondition(String name) throws IgniteException;
 
     /**
      * This method is not supported in IgniteLock,
@@ -347,16 +362,18 @@ public interface IgniteLock extends Lock, Closeable {
      *
      * @return the number of holds on this lock by the current thread,
      *         or zero if this lock is not held by the current thread
+     * @throws IgniteException if the lock is not initialized or already removed
      */
-    public int getHoldCount();
+    public int getHoldCount() throws IgniteException;
 
     /**
      * Queries if this lock is held by the current thread.
      *
      * @return {@code true} if current thread holds this lock and
      *         {@code false} otherwise
+     * @throws IgniteException if the lock is not initialized or already removed
      */
-    public boolean isHeldByCurrentThread();
+    public boolean isHeldByCurrentThread() throws IgniteException;
 
     /**
      * Queries if this lock is held by any thread on any node. This method is
@@ -365,8 +382,9 @@ public interface IgniteLock extends Lock, Closeable {
      *
      * @return {@code true} if any thread on this or any other node holds this lock and
      *         {@code false} otherwise
+     * @throws IgniteException if the lock is not initialized or already removed
      */
-    public boolean isLocked();
+    public boolean isLocked() throws IgniteException;
 
     /**
      * Queries whether any threads on this node are waiting to acquire this lock. Note that
@@ -377,8 +395,9 @@ public interface IgniteLock extends Lock, Closeable {
      *
      * @return {@code true} if there may be other threads on this node waiting to
      *         acquire the lock
+     * @throws IgniteException if the lock is not initialized or already removed
      */
-    public boolean hasQueuedThreads();
+    public boolean hasQueuedThreads() throws IgniteException;
 
     /**
      * Queries whether the given thread is waiting to acquire this
@@ -390,8 +409,9 @@ public interface IgniteLock extends Lock, Closeable {
      * @param thread the thread
      * @return {@code true} if the given thread is queued waiting for this lock
      * @throws NullPointerException if the thread is null
+     * @throws IgniteException if the lock is not initialized or already removed
      */
-    public boolean hasQueuedThread(Thread thread);
+    public boolean hasQueuedThread(Thread thread) throws IgniteException;
 
     /**
      * Queries whether any threads on this node are waiting on the given condition
@@ -407,8 +427,9 @@ public interface IgniteLock extends Lock, Closeable {
      * @throws IllegalArgumentException if the given condition is
      *         not associated with this lock
      * @throws NullPointerException if the condition is null
+     * @throws IgniteException if the lock is not initialized or already removed
      */
-    public boolean hasWaiters(IgniteCondition condition);
+    public boolean hasWaiters(IgniteCondition condition) throws IgniteException;
 
     /**
      * Returns an estimate of the number of threads on this node that are waiting on the
@@ -424,8 +445,9 @@ public interface IgniteLock extends Lock, Closeable {
      * @throws IllegalArgumentException if the given condition is
      *         not associated with this lock
      * @throws NullPointerException if the condition is null
+     * @throws IgniteException if the lock is not initialized or already removed
      */
-    public int getWaitQueueLength(IgniteCondition condition);
+    public int getWaitQueueLength(IgniteCondition condition) throws IgniteException;
 
     /**
      * Returns {@code true} if this lock is safe to use after node failure.
@@ -446,8 +468,9 @@ public interface IgniteLock extends Lock, Closeable {
      * Returns true if any node that owned the locked failed before releasing the lock.
      *
      * @return true if any node failed while owning the lock.
+     * @throws IgniteException if the lock is not initialized or already removed
      */
-    public boolean isBroken();
+    public boolean isBroken() throws IgniteException;
 
     /**
      * Gets status of reentrant lock.

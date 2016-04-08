@@ -39,6 +39,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCondition;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
@@ -260,11 +261,11 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
             }
 
             if(interruptAll){
-                throw new IgniteInterruptedException("Lock broken (possible reason: node stopped" +
+                throw new IgniteException("Lock broken (possible reason: node stopped" +
                     " or node owning lock failed while in non-failoversafe mode).");
             }
 
-            // Global queue should be synchronized only if exception should be thrown.
+            // Global queue should be synchronized only if interrupted exception should be thrown.
             if(fair && (throwInterrupt && interrupted) && !interruptAll){
                 this.synchronizeQueue(true, Thread.currentThread());
 
