@@ -157,7 +157,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
                 partition = reader.readInt("partition");
 
                 if (!reader.isLastRead())
-                    partition = -1;
+                    return false;
 
                 reader.incrementState();
         }
