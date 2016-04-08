@@ -45,7 +45,8 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
-        return null;
+        throw new IgniteException(".NET platform is not available on node: " + ctx.grid().localNode().id() + ". " +
+                "Use Apache.Ignite.Core.Ignition.Start() method or Apache.Ignite.exe to start Ignite.NET nodes.");
     }
 
     /** {@inheritDoc} */
