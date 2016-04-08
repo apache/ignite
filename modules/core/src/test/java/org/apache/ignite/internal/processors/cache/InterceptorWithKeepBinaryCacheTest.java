@@ -148,33 +148,47 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                Set keys = new LinkedHashSet() {{
+                final Set keys = new LinkedHashSet() {{
                     for (int i = 0; i < CNT; i++)
                         add(key(i));
                 }};
 
-                for (Object key : keys)
-                    cache.remove(key);
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        for (Object key : keys)
+                            cache.remove(key);
+                    }
+                });
 
-                for (Object key : keys) {
-                    assertNull(cache.get(key));
-                    assertNull(cache.getEntry(key));
-                }
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        for (Object key : keys) {
+                            assertNull(cache.get(key));
+                            assertNull(cache.getEntry(key));
+                        }
+                    }
+                });
 
-                for (Object key : keys) {
-                    Object val = value(valueOf(key));
+                for (final Object key : keys) {
+                    runInAllTxModes(testedGrid(), new TestRunnable() {
+                        @Override public void run() throws Exception {
+                            Object val = value(valueOf(key));
 
-                    cache.put(key, val);
+                            cache.put(key, val);
 
-                    BinaryObject retVal = (BinaryObject)cache.get(key);
+                            BinaryObject retVal = (BinaryObject)cache.get(key);
 
-                    assertEquals(val, retVal.deserialize());
+                            assertEquals(val, retVal.deserialize());
 
-                    CacheEntry<BinaryObject, BinaryObject> entry = cache.getEntry(key);
+                            CacheEntry<BinaryObject, BinaryObject> entry = cache.getEntry(key);
 
-                    assertTrue(entry.getKey() instanceof BinaryObject);
+                            assertTrue(entry.getKey() instanceof BinaryObject);
 
-                    assertEquals(val, entry.getValue().deserialize());
+                            assertEquals(val, entry.getValue().deserialize());
+
+                            assertTrue(cache.remove(key));
+                        }
+                    });
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
@@ -189,43 +203,56 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary().withAsync();
 
-                Set keys = new LinkedHashSet() {{
+                final Set keys = new LinkedHashSet() {{
                     for (int i = 0; i < CNT; i++)
                         add(key(i));
                 }};
 
-                for (Object key : keys) {
-                    cache.remove(key);
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        for (Object key : keys) {
+                            cache.remove(key);
 
-                    cache.future().get();
-                }
+                            cache.future().get();
+                        }
+                    }
+                });
 
-                for (Object key : keys) {
-                    cache.get(key);
-                    assertNull(cache.future().get());
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        for (Object key : keys) {
+                            cache.get(key);
+                            assertNull(cache.future().get());
 
-                    cache.getEntry(key);
-                    assertNull(cache.future().get());
-                }
+                            cache.getEntry(key);
+                            assertNull(cache.future().get());
+                        }
+                    }
+                });
 
-                for (Object key : keys) {
-                    Object val = value(valueOf(key));
 
-                    cache.put(key, val);
+                for (final Object key : keys) {
+                    runInAllTxModes(testedGrid(), new TestRunnable() {
+                        @Override public void run() throws Exception {
+                            Object val = value(valueOf(key));
 
-                    cache.future().get();
+                            cache.put(key, val);
 
-                    cache.get(key);
-                    BinaryObject retVal = (BinaryObject)cache.future().get();
+                            cache.future().get();
 
-                    assertEquals(val, retVal.deserialize());
+                            cache.get(key);
+                            BinaryObject retVal = (BinaryObject)cache.future().get();
 
-                    cache.getEntry(key);
-                    CacheEntry<BinaryObject, BinaryObject> e = (CacheEntry<BinaryObject, BinaryObject>)cache.future().get();
+                            assertEquals(val, retVal.deserialize());
 
-                    assertEquals(key, deserializeBinary(e.getKey()));
+                            cache.getEntry(key);
+                            CacheEntry<BinaryObject, BinaryObject> e = (CacheEntry<BinaryObject, BinaryObject>)cache.future().get();
 
-                    assertEquals(val, e.getValue().deserialize());
+                            assertEquals(key, deserializeBinary(e.getKey()));
+
+                            assertEquals(val, e.getValue().deserialize());
+                        }
+                    });
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
@@ -245,43 +272,141 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                         add(key(i));
                 }};
 
-                for (Object val : cache.getAll(keys).values())
-                    assertNull(val);
-
-                Collection<CacheEntry> entries = cache.<CacheEntry>getEntries(keys);
-
-                for (CacheEntry e : entries)
-                    assertNull(e.getValue());
-
-                Map keyValMap = new LinkedHashMap() {{
-                    for (Object key : keys) {
-                        Object val = value(valueOf(key));
-
-                        put(key, val);
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        for (Object val : cache.getAll(keys).values())
+                            assertNull(val);
                     }
+                });
+
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        Collection<CacheEntry> entries = cache.<CacheEntry>getEntries(keys);
+
+                        for (CacheEntry e : entries)
+                            assertNull(e.getValue());
+                    }
+                });
+
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        // TODO: CODE: implement.
+                    }
+                });
+
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        Map keyValMap = new LinkedHashMap() {{
+                            for (Object key : keys) {
+                                Object val = value(valueOf(key));
+
+                                put(key, val);
+                            }
+                        }};
+
+                        cache.putAll(keyValMap);
+
+                        Set<Map.Entry<BinaryObject, BinaryObject>> set = cache.getAll(keys).entrySet();
+
+                        for (Map.Entry<BinaryObject, BinaryObject> e : set) {
+                            Object expVal = value(valueOf(e.getKey().deserialize()));
+
+                            assertEquals(expVal, e.getValue().deserialize());
+                        }
+
+                        Collection<CacheEntry<BinaryObject, BinaryObject>> entries = cache.getEntries(keys);
+
+                        for (CacheEntry<BinaryObject, BinaryObject> e : entries) {
+                            assertTrue(e.getKey() instanceof BinaryObject);
+
+                            Object expVal = value(valueOf(e.getKey().deserialize()));
+
+                            assertEquals(expVal, e.getValue().deserialize());
+                        }
+
+                        cache.removeAll(keys);
+                    }
+                });
+            }
+        }, PLANE_OBJECT, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("serial")
+    public void testPutAllGetAllAsync() throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                final IgniteCache cache = jcache().withKeepBinary().withAsync();
+
+                final Set keys = new LinkedHashSet() {{
+                    for (int i = 0; i < CNT; i++)
+                        add(key(i));
                 }};
 
-                cache.putAll(keyValMap);
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        cache.getAll(keys);
+                        Map res = (Map)cache.future().get();
 
-                Set<Map.Entry<BinaryObject, BinaryObject>> set = cache.getAll(keys).entrySet();
+                        for (Object val : res.values())
+                            assertNull(val);
+                    }
+                });
 
-                for (Map.Entry<BinaryObject, BinaryObject> e : set) {
-                    Object expVal = value(valueOf(e.getKey().deserialize()));
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        cache.<CacheEntry>getEntries(keys);
 
-                    assertEquals(expVal, e.getValue().deserialize());
-                }
+                        Collection<CacheEntry> entries = (Collection<CacheEntry>)cache.future().get();
 
-                entries = cache.getEntries(keys);
+                        for (CacheEntry e : entries)
+                            assertNull(e.getValue());
+                    }
+                });
 
-                for (CacheEntry<BinaryObject, BinaryObject> e : entries) {
-                    assertTrue(e.getKey() instanceof BinaryObject);
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        Map keyValMap = new LinkedHashMap() {{
+                            for (Object key : keys) {
+                                Object val = value(valueOf(key));
 
-                    Object expVal = value(valueOf(e.getKey().deserialize()));
+                                put(key, val);
+                            }
+                        }};
 
-                    assertEquals(expVal, e.getValue().deserialize());
-                }
+                        cache.putAll(keyValMap);
 
-                cache.removeAll(keys);
+                        cache.future().get();
+
+                        cache.getAll(keys);
+                        Set<Map.Entry<BinaryObject, BinaryObject>> set = ((Map)cache.future().get()).entrySet();
+
+                        for (Map.Entry<BinaryObject, BinaryObject> e : set) {
+                            Object expVal = value(valueOf(e.getKey().deserialize()));
+
+                            assertEquals(expVal, e.getValue().deserialize());
+                        }
+
+                        cache.getEntries(keys);
+
+                        Collection<CacheEntry<BinaryObject, BinaryObject>> entries =
+                            (Collection<CacheEntry<BinaryObject, BinaryObject>>)cache.future().get();
+
+                        for (CacheEntry<BinaryObject, BinaryObject> e : entries) {
+                            assertTrue(e.getKey() instanceof BinaryObject);
+
+                            Object expVal = value(valueOf(e.getKey().deserialize()));
+
+                            assertEquals(expVal, e.getValue().deserialize());
+                        }
+
+                        cache.removeAll(keys);
+
+                        cache.future().get();
+                    }
+                });
             }
         }, PLANE_OBJECT, SERIALIZABLE);
     }
@@ -300,48 +425,163 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                         add(key(i));
                 }};
 
-                for (Object key : keys) {
-                    Object res = cache.invoke(key, NOOP_ENTRY_PROC);
+                for (final Object key : keys) {
+                    runInAllTxModes(testedGrid(), new TestRunnable() {
+                        @Override public void run() throws Exception {
+                            Object res = cache.invoke(key, NOOP_ENTRY_PROC);
 
-                    assertNull(res);
+                            assertNull(res);
 
-                    assertNull(cache.get(key));
+                            assertNull(cache.get(key));
+                        }
+                    });
                 }
 
-                for (Object key : keys) {
-                    Object res = cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+                for (final Object key : keys) {
+                    runInAllTxModes(testedGrid(), new TestRunnable() {
+                        @Override public void run() throws Exception {
+                            Object res = cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
-                    assertNull(res);
+                            assertNull(res);
 
-                    assertEquals(value(0), deserializeBinary(cache.get(key)));
+                            assertEquals(value(0), deserializeBinary(cache.get(key)));
 
-                    res = cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+                            res = cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
-                    assertEquals(value(0), deserializeBinary(res));
+                            assertEquals(value(0), deserializeBinary(res));
 
-                    assertEquals(value(1), deserializeBinary(cache.get(key)));
+                            assertEquals(value(1), deserializeBinary(cache.get(key)));
+
+                            assertTrue(cache.remove(key));
+                        }
+                    });
                 }
-
-                for (Object key : keys)
-                    cache.remove(key);
 
                 // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
                 binaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
-                    for (Object key : keys) {
-                        Object res = cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
+                    for (final Object key : keys) {
+                        runInAllTxModes(testedGrid(), new TestRunnable() {
+                            @Override public void run() throws Exception {
+                                Object res = cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
 
-                        assertNull(res);
+                                assertNull(res);
 
-                        assertEquals(value(0), deserializeBinary(cache.get(key)));
+                                assertEquals(value(0), deserializeBinary(cache.get(key)));
 
-                        res = cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
+                                res = cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
 
-                        // TODO IGNITE-2953: uncomment the following assert when the issue will be fixed.
-//                        assertEquals(value(0), res);
+                                // TODO IGNITE-2953: uncomment the following assert when the issue will be fixed.
+//                               assertEquals(value(0), res);
 
-                        assertEquals(value(1), deserializeBinary(cache.get(key)));
+                                assertEquals(value(1), deserializeBinary(cache.get(key)));
+
+                                assertTrue(cache.remove(key));
+                            }
+                        });
+                    }
+                }
+                finally {
+                    binaryObjExp = true;
+                }
+            }
+        }, PLANE_OBJECT, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("serial")
+    public void testInvokeAsync() throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                final IgniteCache cache = jcache().withKeepBinary().withAsync();
+
+                Set keys = new LinkedHashSet() {{
+                    for (int i = 0; i < CNT; i++)
+                        add(key(i));
+                }};
+
+                for (final Object key : keys) {
+                    runInAllTxModes(testedGrid(), new TestRunnable() {
+                        @Override public void run() throws Exception {
+                            cache.invoke(key, NOOP_ENTRY_PROC);
+
+                            Object res = cache.future().get();
+
+                            assertNull(res);
+
+                            cache.get(key);
+
+                            assertNull(cache.future().get());
+                        }
+                    });
+                }
+
+                for (final Object key : keys) {
+                    runInAllTxModes(testedGrid(), new TestRunnable() {
+                        @Override public void run() throws Exception {
+                            cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+
+                            Object res = cache.future().get();
+
+                            assertNull(res);
+
+                            cache.get(key);
+
+                            assertEquals(value(0), deserializeBinary(cache.future().get()));
+
+                            cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+
+                            res = cache.future().get();
+
+                            assertEquals(value(0), deserializeBinary(res));
+
+                            cache.get(key);
+
+                            assertEquals(value(1), deserializeBinary(cache.future().get()));
+
+                            cache.remove(key);
+
+                            assertTrue((Boolean)cache.future().get());
+                        }
+                    });
+                }
+
+                // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+                binaryObjExp = atomicityMode() == TRANSACTIONAL;
+
+                try {
+                    for (final Object key : keys) {
+                        runInAllTxModes(testedGrid(), new TestRunnable() {
+                            @Override public void run() throws Exception {
+                                cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+                                Object res = cache.future().get();
+
+                                assertNull(res);
+
+                                cache.get(key);
+
+                                assertEquals(value(0), deserializeBinary(cache.future().get()));
+
+                                cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+                                res = cache.future().get();
+
+                                // TODO IGNITE-2953: uncomment the following assert when the issue will be fixed.
+//                              assertEquals(value(0), res);
+
+                                cache.get(key);
+
+                                assertEquals(value(1), deserializeBinary(cache.future().get()));
+
+                                cache.remove(key);
+
+                                assertTrue((Boolean)cache.future().get());
+                            }
+                        });
                     }
                 }
                 finally {
@@ -360,40 +600,56 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
             @Override public void run() throws Exception {
                 final IgniteCache cache = jcache().withKeepBinary();
 
-                Set keys = new LinkedHashSet() {{
+                final Set keys = new LinkedHashSet() {{
                     for (int i = 0; i < CNT; i++)
                         add(key(i));
                 }};
 
-                for (Object key : keys) {
-                    Object res = cache.invoke(key, NOOP_ENTRY_PROC);
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        Map<Object, EntryProcessorResult<Object>> resMap = cache.invokeAll(keys, NOOP_ENTRY_PROC);
 
-                    assertNull(res);
+                        for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
+                            assertTrue("Key:" + e.getKey(), e.getKey() instanceof BinaryObject);
 
-                    assertNull(cache.get(key));
-                }
+                            assertNull(e.getValue().get());
+                        }
+                    }
+                });
 
-                Map<Object, EntryProcessorResult<Object>> resMap = cache.invokeAll(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+                runInAllTxModes(new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        Map<Object, EntryProcessorResult<Object>> resMap = cache.invokeAll(keys,
+                            INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
-                checkInvokeAllResult(cache, resMap, null, value(0), true);
+                        checkInvokeAllResult(cache, resMap, null, value(0), true);
 
-                resMap = cache.invokeAll(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+                        resMap = cache.invokeAll(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
-                checkInvokeAllResult(cache, resMap, value(0), value(1), true);
+                        checkInvokeAllResult(cache, resMap, value(0), value(1), true);
 
-                cache.removeAll(keys);
+                        cache.removeAll(keys);
+                    }
+                });
 
                 // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
                 binaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
-                    resMap = cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
+                    runInAllTxModes(new TestRunnable() {
+                        @Override public void run() throws Exception {
+                            Map<Object, EntryProcessorResult<Object>> resMap = cache.invokeAll(keys,
+                                INC_ENTRY_PROC_USER_OBJ, dataMode);
 
-                    checkInvokeAllResult(cache, resMap, null, value(0), false);
+                            checkInvokeAllResult(cache, resMap, null, value(0), false);
 
-                    resMap = cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
+                            resMap = cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
 
-                    checkInvokeAllResult(cache, resMap, value(0), value(1), false);
+                            checkInvokeAllResult(cache, resMap, value(0), value(1), false);
+
+                            cache.removeAll(keys);
+                        }
+                    });
                 }
                 finally {
                     binaryObjExp = true;
@@ -422,7 +678,118 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
             if (deserializeRes)
                 assertEquals(expRes, deserializeRes ? deserializeBinary(res) : res);
 
+            if (cache.get(e.getKey()) == null)
+                cache.get(e.getKey());
+
             assertEquals(cacheVal, deserializeBinary(cache.get(e.getKey())));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("serial")
+    public void testInvokeAllAsync() throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                final IgniteCache cache = jcache().withKeepBinary().withAsync();
+
+                final Set keys = new LinkedHashSet() {{
+                    for (int i = 0; i < CNT; i++)
+                        add(key(i));
+                }};
+
+                runInAllTxModes(testedGrid(), new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        cache.invokeAll(keys, NOOP_ENTRY_PROC);
+
+                        Map<Object, EntryProcessorResult<Object>> resMap =
+                            (Map<Object, EntryProcessorResult<Object>>)cache.future().get();
+
+                        for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
+                            assertTrue("Key:" + e.getKey(), e.getKey() instanceof BinaryObject);
+
+                            assertNull(e.getValue().get());
+                        }
+                    }
+                });
+
+                runInAllTxModes(new TestRunnable() {
+                    @Override public void run() throws Exception {
+                        cache.invokeAll(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+
+                        Map<Object, EntryProcessorResult<Object>> resMap =
+                            (Map<Object, EntryProcessorResult<Object>>)cache.future().get();
+
+                        checkInvokeAllAsyncResult(cache, resMap, null, value(0), true);
+
+                        cache.invokeAll(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+
+                        resMap = (Map<Object, EntryProcessorResult<Object>>)cache.future().get();
+
+                        checkInvokeAllAsyncResult(cache, resMap, value(0), value(1), true);
+
+                        cache.removeAll(keys);
+
+                        cache.future().get();
+                    }
+                });
+
+                // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+                binaryObjExp = atomicityMode() == TRANSACTIONAL;
+
+                try {
+                    runInAllTxModes(new TestRunnable() {
+                        @Override public void run() throws Exception {
+                            cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+                            Map<Object, EntryProcessorResult<Object>> resMap =
+                                (Map<Object, EntryProcessorResult<Object>>)cache.future().get();
+
+                            checkInvokeAllAsyncResult(cache, resMap, null, value(0), false);
+
+                            cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+                            resMap = (Map<Object, EntryProcessorResult<Object>>)cache.future().get();
+
+                            checkInvokeAllAsyncResult(cache, resMap, value(0), value(1), false);
+
+                            cache.removeAll(keys);
+
+                            cache.future().get();
+                        }
+                    });
+                }
+                finally {
+                    binaryObjExp = true;
+                }
+            }
+        }, PLANE_OBJECT, SERIALIZABLE);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param resMap Result map.
+     * @param expRes Expected result.
+     * @param cacheVal Expected cache value for key.
+     * @param deserializeRes Deseriallize result flag.
+     */
+    private void checkInvokeAllAsyncResult(IgniteCache cache, Map<Object, EntryProcessorResult<Object>> resMap,
+        Object expRes, Object cacheVal, boolean deserializeRes) {
+        for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
+            info("Key: " + e.getKey());
+
+            assertTrue("Key:" + e.getKey(), e.getKey() instanceof BinaryObject);
+
+            Object res = e.getValue().get();
+
+            // TODO IGNITE-2953: delete the following if when the issue wiil be fixed.
+            if (deserializeRes)
+                assertEquals(expRes, deserializeRes ? deserializeBinary(res) : res);
+
+            cache.get(e.getKey());
+
+            assertEquals(cacheVal, deserializeBinary(cache.future().get()));
         }
     }
 
