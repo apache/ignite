@@ -216,6 +216,11 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             try {
                 call.run();
             }
+            catch (Throwable e) {
+                e.printStackTrace();
+
+                throw e;
+            }
             finally {
                 if (i + 1 != DataMode.values().length)
                     afterTest();
