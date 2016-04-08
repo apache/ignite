@@ -483,6 +483,107 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
     /**
      * @throws Exception If failed.
      */
+    public void testInvokeTx() throws Exception {
+        for (TransactionConcurrency conc : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                info(">>>>> Executing test using explicite txs [concurrency=" + conc + ", isolation=" + isolation + "]");
+
+                checkInvokeTx(conc, isolation);
+
+                jcache().removeAll();
+            }
+        }
+    }
+
+    /**
+     * @param conc Concurrency
+     * @param isolation Isolation.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("serial")
+    public void checkInvokeTx(final TransactionConcurrency conc, final TransactionIsolation isolation) throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                final IgniteCache cache = jcache().withKeepBinary();
+
+                Set keys = new LinkedHashSet() {{
+                    for (int i = 0; i < CNT; i++)
+                        add(key(i));
+                }};
+
+                try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                    for (final Object key : keys) {
+                        Object res = cache.invoke(key, NOOP_ENTRY_PROC);
+
+                        assertNull(res);
+
+                        assertNull(cache.get(key));
+                    }
+                }
+
+                for (final Object key : keys) {
+                    Object res;
+
+                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                        res = cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+                    }
+
+                    assertNull(res);
+
+                    assertEquals(value(0), deserializeBinary(cache.get(key)));
+
+                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                        res = cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+                    }
+
+                    assertEquals(value(0), deserializeBinary(res));
+
+                    assertEquals(value(1), deserializeBinary(cache.get(key)));
+
+                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                        assertTrue(cache.remove(key));
+                    }
+                }
+
+                // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+                binaryObjExp = atomicityMode() == TRANSACTIONAL;
+
+                try {
+                    for (final Object key : keys) {
+                        Object res;
+
+                        try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                            res = cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
+                        }
+
+                        assertNull(res);
+
+                        assertEquals(value(0), deserializeBinary(cache.get(key)));
+
+                        try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                            res = cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
+                        }
+
+                        // TODO IGNITE-2953: uncomment the following assert when the issue will be fixed.
+//                               assertEquals(value(0), res);
+
+                        assertEquals(value(1), deserializeBinary(cache.get(key)));
+
+                        try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                            assertTrue(cache.remove(key));
+                        }
+                    }
+                }
+                finally {
+                    binaryObjExp = true;
+                }
+            }
+        }, PLANE_OBJECT, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     @SuppressWarnings("serial")
     public void testInvokeAsync() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -561,6 +662,129 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                         cache.remove(key);
 
                         assertTrue((Boolean)cache.future().get());;
+                    }
+                }
+                finally {
+                    binaryObjExp = true;
+                }
+            }
+        }, PLANE_OBJECT, SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAsyncTx() throws Exception {
+        for (TransactionConcurrency conc : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                checkInvokeAsyncTx(conc, isolation);
+
+                jcache().removeAll();
+            }
+        }
+    }
+
+    /**
+     * @param conc Concurrency.
+     * @param isolation Isolation.
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("serial")
+    public void checkInvokeAsyncTx(final TransactionConcurrency conc, final TransactionIsolation isolation) throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                final IgniteCache cache = jcache().withKeepBinary().withAsync();
+
+                Set keys = new LinkedHashSet() {{
+                    for (int i = 0; i < CNT; i++)
+                        add(key(i));
+                }};
+
+                try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                    for (final Object key : keys) {
+                        cache.invoke(key, NOOP_ENTRY_PROC);
+
+                        Object res = cache.future().get();
+
+                        assertNull(res);
+
+                        cache.get(key);
+
+                        assertNull(cache.future().get());
+                    }
+                }
+
+                for (final Object key : keys) {
+                    Object res;
+
+                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                        cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+
+                        res = cache.future().get();
+                    }
+
+                    assertNull(res);
+
+                    cache.get(key);
+
+                    assertEquals(value(0), deserializeBinary(cache.future().get()));
+
+                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                        cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+                    }
+
+                    res = cache.future().get();
+
+                    assertEquals(value(0), deserializeBinary(res));
+
+                    cache.get(key);
+
+                    assertEquals(value(1), deserializeBinary(cache.future().get()));
+
+                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                        cache.remove(key);
+
+                        assertTrue((Boolean)cache.future().get());
+                    }
+                }
+
+                // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+                binaryObjExp = atomicityMode() == TRANSACTIONAL;
+
+                try {
+                    for (final Object key : keys) {
+                        Object res;
+
+                        try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                            cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+                            res = cache.future().get();
+                        }
+
+                        assertNull(res);
+
+                        cache.get(key);
+
+                        assertEquals(value(0), deserializeBinary(cache.future().get()));
+
+                        try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                            cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+                            res = cache.future().get();
+                        }
+
+                        // TODO IGNITE-2953: uncomment the following assert when the issue will be fixed.
+//                              assertEquals(value(0), res);
+
+                        cache.get(key);
+
+                        assertEquals(value(1), deserializeBinary(cache.future().get()));
+
+                        try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                            cache.remove(key);
+
+                            assertTrue((Boolean)cache.future().get());
+                        }
                     }
                 }
                 finally {
