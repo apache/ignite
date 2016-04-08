@@ -599,9 +599,7 @@ namespace Apache.Ignite.Core.Impl
             Func<IUnmanagedTarget, string, long, IUnmanagedTarget> func)
         {
             if (configuration == null)
-            {
                 return Cache<TK, TV>(func(_proc, name, 0));
-            }
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
