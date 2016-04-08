@@ -97,5 +97,24 @@ namespace Apache.Ignite.Core.Tests.Cache
             nearCache = _grid.CreateNearCache<int, string>(cacheName, new NearCacheConfiguration());
             Assert.AreEqual("1", nearCache[1]);
         }
+
+        /// <summary>
+        /// Tests near cache on the client node.
+        /// </summary>
+        [Test]
+        public void TestOnClientNode()
+        {
+            const string cacheName = "client_cache";
+
+            using (var clientGrid =
+                    Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {ClientMode = true}))
+            {
+                var cache = clientGrid.CreateCache<int, string>(cacheName);
+                cache[1] = "1";
+
+                var nearCache = clientGrid.CreateNearCache<int, string>(cacheName, new NearCacheConfiguration());
+                Assert.AreEqual("1", nearCache[1]);
+            }
+        }
     }
 }
