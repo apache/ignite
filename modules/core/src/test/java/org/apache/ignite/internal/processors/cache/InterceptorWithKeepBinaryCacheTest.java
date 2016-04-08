@@ -511,7 +511,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                         add(key(i));
                 }};
 
-                try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                     for (final Object key : keys) {
                         Object res = cache.invoke(key, NOOP_ENTRY_PROC);
 
@@ -519,29 +519,37 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                         assertNull(cache.get(key));
                     }
+
+                    tx.commit();
                 }
 
                 for (final Object key : keys) {
                     Object res;
 
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                         res = cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+
+                        tx.commit();
                     }
 
                     assertNull(res);
 
                     assertEquals(value(0), deserializeBinary(cache.get(key)));
 
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                         res = cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+
+                        tx.commit();
                     }
 
                     assertEquals(value(0), deserializeBinary(res));
 
                     assertEquals(value(1), deserializeBinary(cache.get(key)));
 
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                         assertTrue(cache.remove(key));
+
+                        tx.commit();
                     }
                 }
 
@@ -552,16 +560,20 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     for (final Object key : keys) {
                         Object res;
 
-                        try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                        try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                             res = cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+                            tx.commit();
                         }
 
                         assertNull(res);
 
                         assertEquals(value(0), deserializeBinary(cache.get(key)));
 
-                        try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                        try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                             res = cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+                            tx.commit();
                         }
 
                         // TODO IGNITE-2953: uncomment the following assert when the issue will be fixed.
@@ -569,8 +581,10 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                         assertEquals(value(1), deserializeBinary(cache.get(key)));
 
-                        try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                        try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                             assertTrue(cache.remove(key));
+
+                            tx.commit();
                         }
                     }
                 }
@@ -661,7 +675,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                         cache.remove(key);
 
-                        assertTrue((Boolean)cache.future().get());;
+                        assertTrue((Boolean)cache.future().get());
                     }
                 }
                 finally {
@@ -700,7 +714,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                         add(key(i));
                 }};
 
-                try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                     for (final Object key : keys) {
                         cache.invoke(key, NOOP_ENTRY_PROC);
 
@@ -712,15 +726,19 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                         assertNull(cache.future().get());
                     }
+
+                    tx.commit();
                 }
 
                 for (final Object key : keys) {
                     Object res;
 
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                         cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
                         res = cache.future().get();
+
+                        tx.commit();
                     }
 
                     assertNull(res);
@@ -729,8 +747,10 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                     assertEquals(value(0), deserializeBinary(cache.future().get()));
 
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                         cache.invoke(key, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+
+                        tx.commit();
                     }
 
                     res = cache.future().get();
@@ -741,10 +761,12 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                     assertEquals(value(1), deserializeBinary(cache.future().get()));
 
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                         cache.remove(key);
 
                         assertTrue((Boolean)cache.future().get());
+
+                        tx.commit();
                     }
                 }
 
@@ -755,10 +777,12 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     for (final Object key : keys) {
                         Object res;
 
-                        try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                        try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                             cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
 
                             res = cache.future().get();
+
+                            tx.commit();
                         }
 
                         assertNull(res);
@@ -767,10 +791,12 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                         assertEquals(value(0), deserializeBinary(cache.future().get()));
 
-                        try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                        try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                             cache.invoke(key, INC_ENTRY_PROC_USER_OBJ, dataMode);
 
                             res = cache.future().get();
+
+                            tx.commit();
                         }
 
                         // TODO IGNITE-2953: uncomment the following assert when the issue will be fixed.
@@ -780,10 +806,12 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                         assertEquals(value(1), deserializeBinary(cache.future().get()));
 
-                        try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                        try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                             cache.remove(key);
 
                             assertTrue((Boolean)cache.future().get());
+
+                            tx.commit();
                         }
                     }
                 }
@@ -877,7 +905,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                         add(key(i));
                 }};
 
-                try (Transaction ignored = testedGrid().transactions().txStart(conc, isol)) {
+                try (Transaction tx = testedGrid().transactions().txStart(conc, isol)) {
                     Map<Object, EntryProcessorResult<Object>> resMap = cache.invokeAll(keys, NOOP_ENTRY_PROC);
 
                     for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
@@ -885,44 +913,58 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                         assertNull(e.getValue().get());
                     }
+
+                    tx.commit();
                 }
 
                 Map<Object, EntryProcessorResult<Object>> resMap;
 
-                try (Transaction ignored = testedGrid().transactions().txStart(conc, isol)) {
+                try (Transaction tx = testedGrid().transactions().txStart(conc, isol)) {
                     resMap = cache.invokeAll(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+
+                    tx.commit();
                 }
 
                 checkInvokeAllResult(cache, resMap, null, value(0), true);
 
-                try (Transaction ignored = testedGrid().transactions().txStart(conc, isol)) {
+                try (Transaction tx = testedGrid().transactions().txStart(conc, isol)) {
                     resMap = cache.invokeAll(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
+
+                    tx.commit();
                 }
 
                 checkInvokeAllResult(cache, resMap, value(0), value(1), true);
 
-                try (Transaction ignored = testedGrid().transactions().txStart(conc, isol)) {
+                try (Transaction tx = testedGrid().transactions().txStart(conc, isol)) {
                     cache.removeAll(keys);
+
+                    tx.commit();
                 }
 
                 // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
                 binaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isol)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isol)) {
                         resMap = cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+                        tx.commit();
                     }
 
                     checkInvokeAllResult(cache, resMap, null, value(0), false);
 
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isol)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isol)) {
                         resMap = cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
+
+                        tx.commit();
                     }
 
                     checkInvokeAllResult(cache, resMap, value(0), value(1), false);
 
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isol)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isol)) {
                         cache.removeAll(keys);
+
+                        tx.commit();
                     }
                 }
                 finally {
@@ -1062,10 +1104,12 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                 Map<Object, EntryProcessorResult<Object>> resMap;
 
-                try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                     cache.invokeAll(keys, NOOP_ENTRY_PROC);
 
                     resMap = (Map<Object, EntryProcessorResult<Object>>)cache.future().get();
+
+                    tx.commit();
                 }
 
                 for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
@@ -1074,52 +1118,64 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     assertNull(e.getValue().get());
                 }
 
-                try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                     cache.invokeAll(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
                     resMap = (Map<Object, EntryProcessorResult<Object>>)cache.future().get();
+
+                    tx.commit();
                 }
 
                 checkInvokeAllAsyncResult(cache, resMap, null, value(0), true);
 
-                try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                     cache.invokeAll(keys, INC_ENTRY_PROC_BINARY_OBJ, dataMode);
 
                     resMap = (Map<Object, EntryProcessorResult<Object>>)cache.future().get();
+
+                    tx.commit();
                 }
 
                 checkInvokeAllAsyncResult(cache, resMap, value(0), value(1), true);
 
-                try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                     cache.removeAll(keys);
 
                     cache.future().get();
+
+                    tx.commit();
                 }
 
                 // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
                 binaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                         cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
 
                         resMap = (Map<Object, EntryProcessorResult<Object>>)cache.future().get();
+
+                        tx.commit();
                     }
 
                     checkInvokeAllAsyncResult(cache, resMap, null, value(0), false);
 
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                         cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
 
                         resMap = (Map<Object, EntryProcessorResult<Object>>)cache.future().get();
+
+                        tx.commit();
                     }
 
                     checkInvokeAllAsyncResult(cache, resMap, value(0), value(1), false);
 
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                         cache.removeAll(keys);
 
                         cache.future().get();
+
+                        tx.commit();
                     }
                 }
                 finally {
@@ -1176,10 +1232,12 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
         if (txShouldBeUsed()) {
             for (TransactionConcurrency conc : TransactionConcurrency.values()) {
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    try (Transaction ignored = testedGrid().transactions().txStart(conc, isolation)) {
+                    try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
                         info("Executing explicite tx [isolation" + isolation + ", concurrency=" + conc + "]");
 
                         task.run();
+
+                        tx.commit();
                     }
                 }
             }
