@@ -695,18 +695,18 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         try {
             loc = locParts[p];
 
-            boolean belongs = create && cctx.affinity().localNode(p, topVer);
+            boolean belongs = cctx.affinity().localNode(p, topVer);
 
             if (loc != null && loc.state() == EVICTED) {
                 locParts[p] = loc = null;
 
-                if (create && !belongs)
+                if (!belongs)
                     throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition " +
                         "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
                         "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
             }
 
-            if (loc == null && create) {
+            if (loc == null) {
                 if (!belongs)
                     throw new GridDhtInvalidPartitionException(p, "Creating partition which does not belong to " +
                         "local node (often may be caused by inconsistent 'key.hashCode()' implementation) " +
