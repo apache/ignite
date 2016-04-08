@@ -155,17 +155,6 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Clean up outdated cache items.
-     *
-     * @param topVer Actual topology version, older versions will be removed.
-     */
-    public void cleanUpCache(AffinityTopologyVersion topVer) {
-        assert !cctx.isLocal();
-
-        aff.cleanUpCache(topVer);
-    }
-
-    /**
      * @param topVer Topology version.
      * @return Affinity assignments.
      */

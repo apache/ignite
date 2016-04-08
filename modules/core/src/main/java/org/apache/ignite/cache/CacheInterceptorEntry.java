@@ -15,34 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.cache;
 
 import javax.cache.Cache;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.EventType;
 
 /**
- * A Cache continuous query entry event.
+ * A cache interceptor map entry.
  *
  * @param <K> The type of key.
  * @param <V> The type of value.
  */
-public abstract class CacheQueryEntryEvent<K, V> extends CacheEntryEvent<K, V> {
-    /**
-     * Constructs a cache entry event from a given cache as source.
-     *
-     * @param src The cache that originated the event.
-     * @param evtType Event type.
-     */
-    public CacheQueryEntryEvent(Cache src, EventType evtType) {
-        super(src, evtType);
-    }
-
+public abstract class CacheInterceptorEntry<K, V> implements Cache.Entry<K, V> {
     /**
      * Each cache update increases partition counter. The same cache updates have on the same value of counter
      * on primary and backup nodes. This value can be useful to communicate with external applications.
+     * The value has sense only for entries get by {@link CacheInterceptor#onAfterPut(Cache.Entry)} and
+     * {@link CacheInterceptor#onAfterRemove(Cache.Entry)} methods. For entries got by other methods will return
+     * {@code 0}.
      *
-     * @return Value of counter for this event.
+     * @return Value of counter for this entry.
      */
     public abstract long getPartitionUpdateCounter();
 }
