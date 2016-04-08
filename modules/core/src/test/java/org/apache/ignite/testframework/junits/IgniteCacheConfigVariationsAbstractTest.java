@@ -45,8 +45,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.configvariations.CacheStartMode;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -482,35 +480,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
      */
     protected boolean txShouldBeUsed() {
         return txEnabled() && !isMultiJvm();
-    }
-
-    /**
-     * @param task Task.
-     */
-    protected void runInAllTxModes(TestRunnable task) throws Exception {
-        runInAllTxModes(testedGrid(), task);
-    }
-
-    /**
-     * @param ignite Ignite.
-     * @param task Task.
-     */
-    protected void runInAllTxModes(Ignite ignite, TestRunnable task) throws Exception {
-        info("Executing implicite tx");
-
-        task.run();
-
-        if (txShouldBeUsed()) {
-            for (TransactionConcurrency conc : TransactionConcurrency.values()) {
-                for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    try (Transaction ignored = ignite.transactions().txStart(conc, isolation)) {
-                        info("Executing explicite tx [isolation" + isolation + ", concurrency=" + conc + "]");
-
-                        task.run();
-                    }
-                }
-            }
-        }
     }
 
     /**
