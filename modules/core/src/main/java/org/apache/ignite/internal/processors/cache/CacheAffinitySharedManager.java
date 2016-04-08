@@ -925,16 +925,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param topVer Actual topology version.
-     */
-    public void cleanUpCache(AffinityTopologyVersion topVer) {
-        for (CacheHolder cache : caches.values()) {
-            if (cache.client())
-                cache.affinity().cleanUpCache(topVer);
-        }
-    }
-
-    /**
      * @param fut Exchange future.
      * @throws IgniteCheckedException If failed.
      */
