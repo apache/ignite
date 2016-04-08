@@ -106,8 +106,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             const string cacheName = "client_cache";
 
-            using (var clientGrid =
-                    Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {ClientMode = true}))
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                ClientMode = true,
+                GridName = "clientGrid"
+            };
+
+            using (var clientGrid = Ignition.Start(cfg))
             {
                 var cache = clientGrid.CreateCache<int, string>(cacheName);
                 cache[1] = "1";
