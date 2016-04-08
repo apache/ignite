@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -39,6 +38,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -98,8 +98,11 @@ import org.jsr166.ConcurrentHashMap8;
  * Binary context.
  */
 public class BinaryContext {
-    /** */
-    private static final ClassLoader dfltLdr = U.gridClassLoader();
+    /** System loader.*/
+    private static final ClassLoader sysLdr = U.gridClassLoader();
+
+    /** Reference to class loader set in IgniteConfiguration.classLoader */
+    private final ClassLoader cfgLdr;
 
     /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
@@ -153,8 +156,9 @@ public class BinaryContext {
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
 
-    /** Holds classes loaded by default class loader only. */
-    private final ConcurrentMap<Integer, BinaryClassDescriptor> userTypes = new ConcurrentHashMap8<>();
+    /** Cached types for system and configuration class loader. */
+    private final ConcurrentMap<ClassLoader, ConcurrentMap<Integer, BinaryClassDescriptor>> cachedTypes =
+        new ConcurrentHashMap8<>();
 
     /** */
     private final Map<Integer, BinaryClassDescriptor> predefinedTypes = new HashMap<>();
@@ -202,13 +206,6 @@ public class BinaryContext {
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
 
     /**
-     * For {@link Externalizable}.
-     */
-    public BinaryContext() {
-        // No-op.
-    }
-
-    /**
      * @param metaHnd Meta data handler.
      * @param igniteCfg Ignite configuration.
      * @param log Logger.
@@ -220,6 +217,7 @@ public class BinaryContext {
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
         this.log = log;
+        this.cfgLdr = igniteCfg.getClassLoader();
 
         colTypes.put(ArrayList.class, GridBinaryMarshaller.ARR_LIST);
         colTypes.put(LinkedList.class, GridBinaryMarshaller.LINKED_LIST);
@@ -593,12 +591,11 @@ public class BinaryContext {
             return desc;
 
         if (ldr == null)
-            ldr = dfltLdr;
+            ldr = sysLdr;
 
-        // If the type hasn't been loaded by default class loader then we mustn't return the descriptor from here
-        // giving a chance to a custom class loader to reload type's class.
-        if (userType && ldr.equals(dfltLdr)) {
-            desc = userTypes.get(typeId);
+        // Classes re-loading is unsupported for both system and configuration loaders.
+        if (userType && (ldr.equals(sysLdr) || ldr.equals(cfgLdr))) {
+            desc = descriptor(typeId, ldr);
 
             if (desc != null)
                 return desc;
@@ -613,14 +610,14 @@ public class BinaryContext {
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(dfltLdr) && (desc = descriptorForTypeId(true, typeId, dfltLdr, deserialize)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
                 return desc;
 
             throw new BinaryInvalidTypeException(e);
         }
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(dfltLdr) && (desc = descriptorForTypeId(true, typeId, dfltLdr, deserialize)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
                 return desc;
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
@@ -723,10 +720,10 @@ public class BinaryContext {
                 new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas, desc.isEnum()).wrap(this));
         }
 
-        // perform put() instead of putIfAbsent() because "registered" flag might have been changed or class loader
-        // might have reloaded described class.
-        if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
-            userTypes.put(typeId, desc);
+        ClassLoader ldr = IgniteUtils.detectClassLoader(cls);
+
+        if (ldr.equals(sysLdr) || ldr.equals(cfgLdr))
+            cacheDescriptor(typeId, desc, ldr);
 
         descByCls.put(cls, desc);
 
@@ -992,7 +989,7 @@ public class BinaryContext {
         Class<?> cls = null;
 
         try {
-            cls = Class.forName(clsName);
+            cls = U.resolveClassLoader(configuration()).loadClass(clsName);
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
             // No-op.
@@ -1044,8 +1041,10 @@ public class BinaryContext {
             fieldsMeta = desc.fieldsMeta();
             schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
-            if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
-                userTypes.put(id, desc);
+            ClassLoader ldr = IgniteUtils.detectClassLoader(cls);
+
+            if (ldr.equals(sysLdr) || ldr.equals(cfgLdr))
+                cacheDescriptor(id, desc, ldr);
 
             descByCls.put(cls, desc);
         }
@@ -1168,6 +1167,30 @@ public class BinaryContext {
      */
     OptimizedMarshaller optimizedMarsh() {
         return optmMarsh;
+    }
+
+    private BinaryClassDescriptor descriptor(int typeId, ClassLoader ldr) {
+        ConcurrentMap<Integer, BinaryClassDescriptor> map = cachedTypes.get(ldr);
+
+        if (map != null)
+            return map.get(typeId);
+
+        return null;
+    }
+
+    private void cacheDescriptor(int typeId, BinaryClassDescriptor dsc, ClassLoader ldr) {
+        ConcurrentMap<Integer, BinaryClassDescriptor> ldrMap = cachedTypes.get(ldr);
+
+        if (ldrMap == null) {
+            ConcurrentMap<Integer, BinaryClassDescriptor> old = cachedTypes.putIfAbsent(ldr,
+                ldrMap = new ConcurrentHashMap<>());
+
+            if (old != null)
+                ldrMap = old;
+        }
+
+        // Don't use putIfAbsent because descriptor's "registered" flag might has been changed.
+        ldrMap.put(typeId, dsc);
     }
 
     /**
