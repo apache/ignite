@@ -57,6 +57,18 @@ namespace ignite
                 ~TransactionsImpl();
 
                 /**
+                 * Get active transaction for the current thread.
+                 *
+                 * @return Active transaction implementation for current thread.
+                 * Returned instance is not valid if there is no active transaction
+                 * for the thread.
+                 */
+                TxImplSharedPtr GetTx()
+                {
+                    return TransactionImpl::GetCurrent();
+                }
+
+                /**
                  * Start new transaction.
                  *
                  * @param concurrency Concurrency.

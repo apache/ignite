@@ -91,7 +91,7 @@ namespace ignite
             {
                 using impl::transactions::TransactionImpl;
 
-                return Transaction(TransactionImpl::GetCurrent());
+                return Transaction(impl.Get()->GetTx());
             }
 
             /**
@@ -191,8 +191,6 @@ namespace ignite
                 TransactionIsolation isolation, int64_t timeout,
                 int32_t txSize, IgniteError& err)
             {
-                using impl::transactions::TransactionsImpl;
-
                 return Transaction(impl.Get()->TxStart(concurrency,
                     isolation, timeout, txSize, err));
             }

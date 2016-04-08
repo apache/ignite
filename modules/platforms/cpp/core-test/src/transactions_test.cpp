@@ -28,33 +28,55 @@ using namespace ignite::transactions;
 using namespace ignite::cache;
 using namespace boost::unit_test;
 
-BOOST_AUTO_TEST_SUITE(IgniteTransactionsTestSuite)
+/*
+ * Test setup fixture.
+ */
+struct TransactionsTestSuiteFixture {
+    Ignite grid;
 
-BOOST_AUTO_TEST_CASE(TestIgniteTransactionGet)
-{
-    IgniteConfiguration cfg;
+    /*
+     * Constructor.
+     */
+    TransactionsTestSuiteFixture()
+    {
+        IgniteConfiguration cfg;
 
-    cfg.jvmOpts.push_back("-Xdebug");
-    cfg.jvmOpts.push_back("-Xnoagent");
-    cfg.jvmOpts.push_back("-Djava.compiler=NONE");
-    cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-    cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
+        cfg.jvmOpts.push_back("-Xdebug");
+        cfg.jvmOpts.push_back("-Xnoagent");
+        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
+        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
+        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
 
 #ifdef IGNITE_TESTS_32
-    cfg.jvmInitMem = 256;
-    cfg.jvmMaxMem = 768;
+        cfg.jvmInitMem = 256;
+        cfg.jvmMaxMem = 768;
 #else
-    cfg.jvmInitMem = 1024;
-    cfg.jvmMaxMem = 4096;
+        cfg.jvmInitMem = 1024;
+        cfg.jvmMaxMem = 4096;
 #endif
 
-    char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
+        char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
 
-    cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test.xml");
+        cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test.xml");
 
-    // Start Ignite instance.
-    Ignite grid = Ignition::Start(cfg, "txTest");
+        grid = Ignition::Start(cfg, "txTest");
+    }
 
+    /*
+     * Destructor.
+     */
+    ~TransactionsTestSuiteFixture()
+    {
+        Ignition::Stop(grid.GetName(), true);
+
+        grid = Ignite();
+    }
+};
+
+BOOST_FIXTURE_TEST_SUITE(TransactionsTestSuite, TransactionsTestSuiteFixture)
+
+BOOST_AUTO_TEST_CASE(TransactionGet)
+{
     Cache<int, int> cache = grid.CreateCache<int, int>("txCache");
 
     Transactions transactions = grid.GetTransactions();
@@ -69,9 +91,9 @@ BOOST_AUTO_TEST_CASE(TestIgniteTransactionGet)
 
     BOOST_REQUIRE(tx2.IsValid());
 
-    //cache.Put(1, 1);
+    cache.Put(1, 1);
 
-    //cache.Put(2, 2);
+    cache.Put(2, 2);
 
     //tx.Commit();
 
@@ -82,8 +104,31 @@ BOOST_AUTO_TEST_CASE(TestIgniteTransactionGet)
     //tx = transactions.GetTx();
 
     //BOOST_REQUIRE(!tx.IsValid());
-
-    Ignition::Stop(grid.GetName(), true);
 }
+
+//BOOST_AUTO_TEST_CASE(TransactionGetNe)
+//{
+//    Cache<int, int> cache = grid.CreateCache<int, int>("txCache");
+//
+//    IgniteError err;
+//
+//    Transactions transactions = grid.GetTransactions(&err);
+//
+//    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+//        BOOST_FAIL(err.GetText());
+//
+//    Transaction tx = transactions.GetTx();
+//
+//    BOOST_REQUIRE(!tx.IsValid());
+//
+//    tx = transactions.TxStart(err);
+//
+//    if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
+//        BOOST_FAIL(err.GetText());
+//
+//    Transaction tx2 = transactions.GetTx();
+//
+//    BOOST_REQUIRE(tx2.IsValid());
+//}
 
 BOOST_AUTO_TEST_SUITE_END()
