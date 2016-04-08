@@ -180,168 +180,6 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractWordCountT
             doTestRecoveryAfterAnError(0, ErrorSimulator.Kind.Error);
     }
 
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError1_Runtime() throws Exception {
-//        doTestRecoveryAfterAnError(1, ErrorSimulator.Kind.Runtime);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError1_IOException() throws Exception {
-//        doTestRecoveryAfterAnError(1, ErrorSimulator.Kind.IOException);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError1_Error() throws Exception {
-//        doTestRecoveryAfterAnError(1, ErrorSimulator.Kind.Error);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError2_Runtime() throws Exception {
-//        doTestRecoveryAfterAnError(2, ErrorSimulator.Kind.Runtime);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError2_IOException() throws Exception {
-//        doTestRecoveryAfterAnError(2, ErrorSimulator.Kind.IOException);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError2_Error() throws Exception {
-//        doTestRecoveryAfterAnError(2, ErrorSimulator.Kind.Error);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError3_Runtime() throws Exception {
-//        doTestRecoveryAfterAnError(3, ErrorSimulator.Kind.Runtime);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError3_IOException() throws Exception {
-//        doTestRecoveryAfterAnError(3, ErrorSimulator.Kind.IOException);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError3_Error() throws Exception {
-//        doTestRecoveryAfterAnError(3, ErrorSimulator.Kind.Error);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError4_Runtime() throws Exception {
-//        doTestRecoveryAfterAnError(4, ErrorSimulator.Kind.Runtime);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError4_IOException() throws Exception {
-//        doTestRecoveryAfterAnError(4, ErrorSimulator.Kind.IOException);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError4_Error() throws Exception {
-//        doTestRecoveryAfterAnError(4, ErrorSimulator.Kind.Error);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError5_Runtime() throws Exception {
-//        doTestRecoveryAfterAnError(5, ErrorSimulator.Kind.Runtime);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError5_IOException() throws Exception {
-//        doTestRecoveryAfterAnError(5, ErrorSimulator.Kind.IOException);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError5_Error() throws Exception {
-//        doTestRecoveryAfterAnError(5, ErrorSimulator.Kind.Error);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError6_Runtime() throws Exception {
-//        doTestRecoveryAfterAnError(6, ErrorSimulator.Kind.Runtime);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError6_IOException() throws Exception {
-//        doTestRecoveryAfterAnError(6, ErrorSimulator.Kind.IOException);
-//    }
-//
-//    /**
-//     * Tests recovery.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testRecoveryAfterAnError6_Error() throws Exception {
-//        doTestRecoveryAfterAnError(6, ErrorSimulator.Kind.Error);
-//    }
-
     /**
      * Tests recovery.
      *
@@ -400,7 +238,8 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractWordCountT
             boolean useNewReducer = (useNewBits & 4) == 0;
 
             for (int i = 0; i < 12; i++) {
-                System.out.println("############################ Simulator = " + simulatorKind + ", bits = " + i);
+                System.out.println("############################ Simulator kind = " + simulatorKind
+                    + ", Stage bits = " + i);
 
                 int bits = 1 << i;
 
@@ -459,11 +298,11 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractWordCountT
     }
 
     /**
+     * Does actual test job
      *
-     *
-     * @param useNewMapper
-     * @param useNewCombiner
-     * @param useNewReducer
+     * @param useNewMapper flag to use new mapper API.
+     * @param useNewCombiner flag to use new combiner API.
+     * @param useNewReducer flag to use new reducer API.
      */
     private void doTest(IgfsPath inFile, boolean useNewMapper, boolean useNewCombiner, boolean useNewReducer)
             throws Exception {
