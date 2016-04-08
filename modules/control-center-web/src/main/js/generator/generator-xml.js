@@ -80,7 +80,7 @@ $generatorXml.classNameProperty = function (res, obj, propName) {
     var val = obj[propName];
 
     if (!_.isNil(val))
-        $generatorXml.element(res, 'property', 'name', propName, 'value', $dataStructures.fullClassName(val));
+        $generatorXml.element(res, 'property', 'name', propName, 'value', $generatorCommon.JavaTypes.fullClassName(val));
 };
 
 // Add list property.
@@ -904,8 +904,8 @@ $generatorXml.cacheQuery = function(cache, res) {
         res.startBlock('<list>');
 
         _.forEach(indexedTypes, function(domain) {
-            res.line('<value>' + $dataStructures.fullClassName(domain.keyType) + '</value>');
-            res.line('<value>' + $dataStructures.fullClassName(domain.valueType) + '</value>');
+            res.line('<value>' + $generatorCommon.JavaTypes.fullClassName(domain.keyType) + '</value>');
+            res.line('<value>' + $generatorCommon.JavaTypes.fullClassName(domain.valueType) + '</value>');
         });
 
         res.endBlock('</list>');
@@ -1131,7 +1131,7 @@ $generatorXml.domainModelQueryFields = function (res, domain) {
         res.startBlock('<map>');
 
         _.forEach(fields, function (field) {
-            $generatorXml.element(res, 'entry', 'key', field.name, 'value', $dataStructures.fullClassName(field.className));
+            $generatorXml.element(res, 'entry', 'key', field.name, 'value', $generatorCommon.JavaTypes.fullClassName(field.className));
         });
 
         res.endBlock('</map>');
@@ -1248,12 +1248,12 @@ $generatorXml.domainModelGeneral = function(domain, res) {
                 res.startBlock('<list>');
 
                 if ($generatorCommon.isDefinedAndNotEmpty(domain.keyType))
-                    res.line('<value>' + $dataStructures.fullClassName(domain.keyType) + '</value>');
+                    res.line('<value>' + $generatorCommon.JavaTypes.fullClassName(domain.keyType) + '</value>');
                 else
                     res.line('<value>???</value>');
 
                 if ($generatorCommon.isDefinedAndNotEmpty(domain.valueType))
-                    res.line('<value>' + $dataStructures.fullClassName(domain.valueType) + '</value>');
+                    res.line('<value>' + $generatorCommon.JavaTypes.fullClassName(domain.valueType) + '</value>');
                 else
                     res.line('<value>>???</value>');
 

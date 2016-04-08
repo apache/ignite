@@ -176,7 +176,11 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             'java.lang.String', 'java.sql.Time', 'java.sql.Timestamp', 'java.util.UUID'
         ];
 
-        function isJavaBuiltInClass(cls) {
+        /**
+         * @param clsName Class name to check.
+         * @returns 'true' if given class name is a java build-in type.
+         */
+        function isJavaBuiltInClass(clsName) {
             if (isEmptyString(cls))
                 return false;
 

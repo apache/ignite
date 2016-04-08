@@ -49,8 +49,8 @@ const resourceModulePaths = [
 ];
 
 const jsPaths = [
-    './{app,controllers,helpers}/*.js',
-    './{app,controllers,helpers}/**/*.js'
+    './{app,controllers,generator}/*.js',
+    './{app,controllers,generator}/**/*.js'
 ];
 
 const jsModulePaths = [

@@ -47,6 +47,9 @@ $generatorCommon.mainComment = function mainComment() {
 
 // Create result holder with service functions and properties for XML and java code generation.
 $generatorCommon.builder = function (deep) {
+    if (_.isNil($generatorCommon.JavaTypes))
+        $generatorCommon.JavaTypes = angular.element(document.getElementById('app')).injector().get('JavaTypes');
+
     var res = [];
 
     res.deep = deep || 0;
@@ -179,10 +182,10 @@ $generatorCommon.builder = function (deep) {
      * @returns {String} Short class name or full class name in case of names conflict.
      */
     res.importClass = function (clsName) {
-        if ($dataStructures.isJavaPrimitive(clsName))
+        if ($generatorCommon.JavaTypes.isJavaPrimitive(clsName))
             return clsName;
 
-        var fullClassName = $dataStructures.fullClassName(clsName);
+        var fullClassName = $generatorCommon.JavaTypes.fullClassName(clsName);
 
         var dotIdx = fullClassName.lastIndexOf('.');
 
@@ -550,7 +553,7 @@ $generatorCommon.toJavaName = function (prefix, name) {
  * @returns {boolean} 'true' if value defined and not empty string.
  */
 $generatorCommon.isDefinedAndNotEmpty = function (v) {
-    var defined = !_.isNil(v);
+    var defined = !_.isNil(v)
 
     if (defined && (_.isString(v) || _.isArray(v)))
         defined = v.length > 0;

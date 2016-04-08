@@ -17,11 +17,11 @@
 
 import angular from 'angular';
 
-// Java built-in short class names.
+// Java built-in class names.
 import JAVA_CLASSES from 'app/data/java-classes.json!';
 
-// Java built-in full class names.
-import JAVA_FULLNAME_CLASSES from 'app/data/java-fullname-classes.json!';
+// Java build-in primitive.
+import JAVA_PRIMITIVES from 'app/data/java-primitives.json!';
 
 import JAVA_KEYWORDS from 'app/data/java-keywords.json!';
 
@@ -31,14 +31,23 @@ angular
         this.$get = [function() {
             return {
                 /**
-                 * @param cls Class name to check.
+                 * @param {String} clsName Class name to check.
                  * @returns boolean 'true' if given class name non a Java built-in type.
                  */
-                nonBuiltInClass(cls) {
-                    return !(_.includes(JAVA_CLASSES, cls) || _.includes(JAVA_FULLNAME_CLASSES, cls));
+                nonBuiltInClass(clsName) {
+                    return _.isNil(_.find(JAVA_CLASSES, (clazz) => clsName === clazz.short || clsName === clazz.full));
                 },
                 /**
-                 * @param value text to check.
+                 * @param clsName Class name to check.
+                 * @returns Full class name for java build-in types or source class otherwise.
+                 */
+                fullClassName(clsName) {
+                    const type = _.find(JAVA_CLASSES, (clazz) => clsName === clazz.short);
+
+                    return type ? type.full : clsName;
+                },
+                /**
+                 * @param {String} value text to check.
                  * @returns boolean 'true' if given text is valid Java identifier.
                  */
                 validIdentifier(value) {
@@ -47,7 +56,7 @@ angular
                     return value === '' || regexp.test(value);
                 },
                 /**
-                 * @param value text to check.
+                 * @param {String} value text to check.
                  * @returns boolean 'true' if given text is valid Java package.
                  */
                 validPackage(value) {
@@ -56,11 +65,18 @@ angular
                     return value === '' || regexp.test(value);
                 },
                 /**
-                 * @param value text to check.
+                 * @param {String} value text to check.
                  * @returns boolean 'true' if given text non Java keyword.
                  */
                 isKeywords(value) {
                     return _.includes(JAVA_KEYWORDS, value);
+                },
+                /**
+                 * @param {String} clsName Class name to check.
+                 * @returns {boolean} 'true' if givent class name is java primitive.
+                 */
+                isJavaPrimitive(clsName) {
+                    return _.includes(JAVA_PRIMITIVES, clsName);
                 }
             };
         }];

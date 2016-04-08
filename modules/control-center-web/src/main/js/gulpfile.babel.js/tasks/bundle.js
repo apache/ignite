@@ -48,7 +48,7 @@ gulp.task('bundle:ignite:vendors', () => {
         `${srcDir}/**/*`,
         `${srcDir}/**/*!jade`,
         './controllers/**/*.js',
-        './helpers/**/*.js',
+        './generator/**/*.js',
         './public/**/*!css',
         `${igniteModulesTemp}/**/*`,
         `${igniteModulesTemp}/**/*!jade`

@@ -246,7 +246,7 @@ $generatorJava.classNameProperty = function (res, varName, obj, propName) {
 
     if (!_.isNil(val)) {
         res.line(varName + '.' + $generatorJava.setterName(propName) +
-            '("' + $dataStructures.fullClassName(val) + '");');
+            '("' + $generatorCommon.JavaTypes.fullClassName(val) + '");');
     }
 };
 
@@ -1509,7 +1509,7 @@ $generatorJava.domainModelQueryFields = function (res, domain) {
         $generatorJava.declareVariable(res, 'fields', 'java.util.LinkedHashMap', 'java.util.LinkedHashMap', 'java.lang.String', 'java.lang.String');
 
         _.forEach(fields, function (field) {
-            res.line('fields.put("' + field.name + '", "' + $dataStructures.fullClassName(field.className) + '");');
+            res.line('fields.put("' + field.name + '", "' + $generatorCommon.JavaTypes.fullClassName(field.className) + '");');
         });
 
         res.needEmptyLine = true;
@@ -2083,7 +2083,7 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
         var javaName = field.javaFieldName;
         var javaType = field.javaFieldType;
 
-        if ($dataStructures.isJavaPrimitive(javaType)) {
+        if ($generatorCommon.JavaTypes.isJavaPrimitive(javaType)) {
             if ('float' === javaType)
                 res.startBlock('if (Float.compare(' + javaName + ', that.' + javaName + ') != 0)');
             else if ('double' === javaType)
@@ -2119,7 +2119,7 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
         if (!first)
             res.needEmptyLine = true;
 
-        if ($dataStructures.isJavaPrimitive(javaType)) {
+        if ($generatorCommon.JavaTypes.isJavaPrimitive(javaType)) {
             if ('boolean' === javaType)
                 res.line(first ? 'int res = ' + javaName + ' ? 1 : 0;' : 'res = 31 * res + (' + javaName + ' ? 1 : 0);');
             else if ('byte' === javaType || 'short' === javaType)

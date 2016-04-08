@@ -108,17 +108,15 @@ import IgniteAgentMonitor from './services/AgentMonitor.service';
 import hasPojo from './filters/hasPojo.filter';
 import byName from './filters/byName.filter';
 
-// Helpers
-import $generatorCommon from 'helpers/generator/generator-common';
-import $generatorDocker from 'helpers/generator/generator-docker';
-import $generatorJava from 'helpers/generator/generator-java';
-import $generatorOptional from 'helpers/generator/generator-optional';
-import $generatorPom from 'helpers/generator/generator-pom';
-import $generatorProperties from 'helpers/generator/generator-properties';
-import $generatorReadme from 'helpers/generator/generator-readme';
-import $generatorXml from 'helpers/generator/generator-xml';
-
-import $dataStructures from 'helpers/data-structures';
+// Generators
+import $generatorCommon from 'generator/generator-common';
+import $generatorDocker from 'generator/generator-docker';
+import $generatorJava from 'generator/generator-java';
+import $generatorOptional from 'generator/generator-optional';
+import $generatorPom from 'generator/generator-pom';
+import $generatorProperties from 'generator/generator-properties';
+import $generatorReadme from 'generator/generator-readme';
+import $generatorXml from 'generator/generator-xml';
 
 window.$generatorCommon = $generatorCommon;
 window.$generatorDocker = $generatorDocker;
@@ -128,7 +126,6 @@ window.$generatorPom = $generatorPom;
 window.$generatorProperties = $generatorProperties;
 window.$generatorReadme = $generatorReadme;
 window.$generatorXml = $generatorXml;
-window.$dataStructures = $dataStructures;
 
 // Add legacy logic;
 import consoleModule from 'controllers/common-module';
