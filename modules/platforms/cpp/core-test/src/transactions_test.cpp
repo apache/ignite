@@ -30,7 +30,7 @@ using namespace boost::unit_test;
 
 BOOST_AUTO_TEST_SUITE(IgniteTransactionsTestSuite)
 
-BOOST_AUTO_TEST_CASE(TestIgniteTransactions)
+BOOST_AUTO_TEST_CASE(TestIgniteTransactionGet)
 {
     IgniteConfiguration cfg;
 
@@ -63,7 +63,11 @@ BOOST_AUTO_TEST_CASE(TestIgniteTransactions)
 
     BOOST_REQUIRE(!tx.IsValid());
 
-    //tx = transactions.TxStart();
+    tx = transactions.TxStart();
+
+    Transaction tx2 = transactions.GetTx();
+
+    BOOST_REQUIRE(tx2.IsValid());
 
     //cache.Put(1, 1);
 

@@ -36,24 +36,27 @@ namespace ignite
              */
             class IGNITE_FRIEND_EXPORT TransactionImpl
             {
-                friend class Ignite;
-
-                typedef ignite::common::concurrent::SharedPointer<ignite::impl::IgniteEnvironment> IgniteEnvSharedPtr;
-                typedef ignite::common::concurrent::ThreadLocalInstance<TransactionImpl*> TxImplTli;
-
             public:
-                /**
-                 * Constructor used to create new instance.
-                 *
-                 * @param env Environment.
-                 * @param javaRef Reference to java object.
-                 */
-                TransactionImpl(IgniteEnvSharedPtr env, jobject javaRef);
+                typedef ignite::common::concurrent::SharedPointer<TransactionImpl> TxImplSharedPtr;
 
                 /**
                  * Destructor.
                  */
                 ~TransactionImpl();
+
+                /**
+                 * Factory method. Create new instance of the class.
+                 *
+                 * @param id Transaction id.
+                 * @param concurrency Concurrency.
+                 * @param isolation Isolation.
+                 * @param timeout Timeout in milliseconds.
+                 * @param txSize Transaction size.
+                 *
+                 * @return Shared pointer to new instance.
+                 */
+                static TxImplSharedPtr Create(int64_t id, int concurrency,
+                    int isolation, int64_t timeout, int32_t txSize);
 
                 /**
                  * Get active transaction for the current thread.
@@ -62,29 +65,40 @@ namespace ignite
                  * or null pointer if there is no active transaction for
                  * the thread.
                  */
-                static TransactionImpl* GetCurrent()
-                {
-                    // Thread local instance of the transaction.
-                    static TxImplTli threadTx;
-
-                    TransactionImpl* tx = threadTx.Get();
-
-                    //if (tx->IsClosed())
-                    //{
-                    //    tx = 0;
-
-                    //    threadTx.Set(tx);
-                    //}
-
-                    return tx;
-                }
+                static TxImplSharedPtr GetCurrent();
 
             private:
-                /** Environment. */
-                IgniteEnvSharedPtr env;
+                /**
+                 * Constructor.
+                 *
+                 * @param id Transaction id.
+                 * @param concurrency Concurrency.
+                 * @param isolation Isolation.
+                 * @param timeout Timeout in milliseconds.
+                 * @param txSize Transaction size.
+                 */
+                TransactionImpl(int64_t id, int concurrency, int isolation,
+                    int64_t timeout, int32_t txSize);
 
-                /** Native Java counterpart. */
-                jobject javaRef;
+                typedef ignite::common::concurrent::ThreadLocalInstance<TxImplSharedPtr> TxImplSharedPtrTli;
+
+                /** Thread local instance of the transaction. */
+                static TxImplSharedPtrTli threadTx;
+
+                /** Transaction ID. */
+                int64_t id;
+
+                /** Concurrency. */
+                int concurrency;
+
+                /** Isolation. */
+                int isolation;
+
+                /** Timeout in milliseconds. */
+                int64_t timeout;
+
+                /** Transaction size. */
+                int32_t txSize;
 
                 IGNITE_NO_COPY_ASSIGNMENT(TransactionImpl)
             };

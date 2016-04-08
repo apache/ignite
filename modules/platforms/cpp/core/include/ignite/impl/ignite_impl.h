@@ -35,10 +35,8 @@ namespace ignite
          */
         class IGNITE_FRIEND_EXPORT IgniteImpl
         {
-            friend class Ignite;
-
             typedef ignite::common::concurrent::SharedPointer<IgniteEnvironment> IgniteEnvSharedPtr;
-            typedef ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> TxImplSharedPtr;
+            typedef ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> TxsImplSharedPtr;
         public:
             /**
              * Constructor used to create new instance.
@@ -160,7 +158,7 @@ namespace ignite
              *
              * @return TransactionsImpl instance.
              */
-            TxImplSharedPtr GetTransactions(IgniteError &err)
+            TxsImplSharedPtr GetTransactions(IgniteError &err)
             {
                 transactions::TransactionsImpl* tx = txImpl.Get();
 
@@ -171,7 +169,7 @@ namespace ignite
                     jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
 
                     if (txJavaRef)
-                        txImpl = TxImplSharedPtr(new transactions::TransactionsImpl(env, txJavaRef));
+                        txImpl = TxsImplSharedPtr(new transactions::TransactionsImpl(env, txJavaRef));
                     else
                         IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
                 }
@@ -187,7 +185,7 @@ namespace ignite
             jobject javaRef;
 
             /** Transactions implementaion. */
-            TxImplSharedPtr txImpl;
+            TxsImplSharedPtr txImpl;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
         };

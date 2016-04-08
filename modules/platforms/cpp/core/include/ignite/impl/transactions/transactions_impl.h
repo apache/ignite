@@ -20,9 +20,10 @@
 
 #include <ignite/common/concurrent.h>
 #include <ignite/common/java.h>
+#include <ignite/transactions/transaction.h>
 
 #include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/transactions/transaction_impl.h"
+//#include "ignite/impl/transactions/transaction_impl.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/utils.h"
 
@@ -37,10 +38,10 @@ namespace ignite
              */
             class IGNITE_FRIEND_EXPORT TransactionsImpl
             {
-                friend class Ignite;
-
-                /** Synonym for Ignite Environment Shared Pointer. */
                 typedef ignite::common::concurrent::SharedPointer<ignite::impl::IgniteEnvironment> IgniteEnvSharedPtr;
+                typedef ignite::transactions::TransactionConcurrency TransactionConcurrency;
+                typedef ignite::transactions::TransactionIsolation TransactionIsolation;
+                typedef TransactionImpl::TxImplSharedPtr TxImplSharedPtr;
             public:
                 /**
                  * Constructor used to create new instance.
@@ -54,6 +55,20 @@ namespace ignite
                  * Destructor.
                  */
                 ~TransactionsImpl();
+
+                /**
+                 * Start new transaction.
+                 *
+                 * @param concurrency Concurrency.
+                 * @param isolation Isolation.
+                 * @param timeout Timeout in milliseconds.
+                 * @param txSize Number of entries participating in transaction (may be approximate).
+                 * @param err Error.
+                 * @return New transaction instance.
+                 */
+                TxImplSharedPtr TxStart(TransactionConcurrency concurrency,
+                    TransactionIsolation isolation, int64_t timeout,
+                    int32_t txSize, IgniteError& err);
 
             private:
                 /** Environment. */

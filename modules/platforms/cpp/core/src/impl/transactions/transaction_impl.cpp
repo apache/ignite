@@ -25,16 +25,47 @@ namespace ignite
     {
         namespace transactions
         {
-            TransactionImpl::TransactionImpl(IgniteEnvSharedPtr env, jobject javaRef) :
-                env(env),
-                javaRef(javaRef)
+            TransactionImpl::TxImplSharedPtrTli TransactionImpl::threadTx;
+
+            TransactionImpl::TransactionImpl(int64_t id, int concurrency,
+                int isolation, int64_t timeout, int32_t txSize) :
+                id(id),
+                concurrency(concurrency),
+                isolation(isolation),
+                timeout(timeout),
+                txSize(txSize)
             {
                 // No-op.
             }
 
+            TransactionImpl::TxImplSharedPtr TransactionImpl::Create(int64_t id,
+                int concurrency, int isolation, int64_t timeout, int32_t txSize)
+            {
+                TxImplSharedPtr tx = TxImplSharedPtr(new TransactionImpl(id,
+                    concurrency, isolation, timeout, txSize));
+
+                threadTx.Set(tx);
+
+                return tx;
+            }
+
             TransactionImpl::~TransactionImpl()
             {
-                JniContext::Release(javaRef);
+                // No-op.
+            }
+
+            TransactionImpl::TxImplSharedPtr TransactionImpl::GetCurrent()
+            {
+                TxImplSharedPtr tx = threadTx.Get();
+
+                //if (tx->IsClosed())
+                //{
+                //    tx = 0;
+
+                //    threadTx.Set(tx);
+                //}
+
+                return tx;
             }
         }
     }

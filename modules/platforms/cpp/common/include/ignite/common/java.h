@@ -601,7 +601,7 @@ namespace ignite
                 bool QueryCursorIteratorHasNext(jobject obj, JniErrorInfo* errInfo = NULL);
                 void QueryCursorClose(jobject obj, JniErrorInfo* errInfo = NULL);
 
-                long long TransactionsStart(jobject obj, int concurrency, int isolation, long long timeout, int txSize);
+                long long TransactionsStart(jobject obj, int concurrency, int isolation, long long timeout, int txSize, JniErrorInfo* errInfo = NULL);
                 int TransactionsCommit(jobject obj, long long id);
                 void TransactionsCommitAsync(jobject obj, long long id, long long futId);
                 int TransactionsRollback(jobject obj, long long id);

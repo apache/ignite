@@ -26,12 +26,39 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/common/java.h>
 
-#include "ignite/impl/transactions/transactions_impl.h"
+#include "ignite/impl/transactions/transaction_impl.h"
 
 namespace ignite
 {
     namespace transactions
     {
+        /**
+         * Transaction concurrency control.
+         */
+        enum TransactionConcurrency
+        {
+            /** Optimistic concurrency control. */
+            IGNITE_TX_CONCURRENCY_OPTIMISTIC = 0,
+
+            /** Pessimistic concurrency control. */
+            IGNITE_TX_CONCURRENCY_PESSIMISTIC = 1
+        };
+
+        /**
+         * Defines different cache transaction isolation levels.
+         */
+        enum TransactionIsolation
+        {
+            /** Read committed isolation level. */
+            IGNITE_TX_ISOLATION_READ_COMMITTED = 0,
+
+            /** Repeatable read isolation level. */
+            IGNITE_TX_ISOLATION_REPEATABLE_READ = 1,
+
+            /** Serializable isolation level. */
+            IGNITE_TX_ISOLATION_SERIALIZABLE = 2
+        };
+
         /**
          * Transactions.
          */
@@ -41,7 +68,7 @@ namespace ignite
             /**
              * Constructor.
              */
-            Transaction(impl::transactions::TransactionImpl* impl) :
+            Transaction(common::concurrent::SharedPointer<impl::transactions::TransactionImpl> impl) :
                 impl(impl)
             {
                 // No-op.
@@ -86,12 +113,12 @@ namespace ignite
              */
             bool IsValid() const
             {
-                return impl != 0;
+                return impl.IsValid();
             }
 
         private:
             /** Implementation delegate. */
-            impl::transactions::TransactionImpl* impl;
+            common::concurrent::SharedPointer<impl::transactions::TransactionImpl> impl;
         };
     }
 }

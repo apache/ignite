@@ -1962,12 +1962,15 @@ namespace ignite
                 ExceptionCheck(env, errInfo);
             }
 
-            long long JniContext::TransactionsStart(jobject obj, int concurrency, int isolation, long long timeout, int txSize) {
+            long long JniContext::TransactionsStart(jobject obj, int concurrency,
+                int isolation, long long timeout, int txSize, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
-                long long id = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformTransactions_txStart, concurrency, isolation, timeout, txSize);
+                long long id = env->CallLongMethod(obj,
+                    jvm->GetMembers().m_PlatformTransactions_txStart,
+                    concurrency, isolation, timeout, txSize);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return id;
             }

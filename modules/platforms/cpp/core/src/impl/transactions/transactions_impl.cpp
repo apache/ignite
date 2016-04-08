@@ -36,6 +36,29 @@ namespace ignite
             {
                 JniContext::Release(javaRef);
             }
+
+            TransactionsImpl::TxImplSharedPtr TransactionsImpl::TxStart(
+                TransactionConcurrency concurrency, TransactionIsolation isolation,
+                int64_t timeout, int32_t txSize, IgniteError & err)
+            {
+                using impl::transactions::TransactionsImpl;
+                using namespace ignite::common::java;
+                using namespace ignite::common::concurrent;
+
+                SharedPointer<TransactionImpl> txImpl;
+
+                JniErrorInfo jniErr;
+
+                int64_t id = env.Get()->Context()->TransactionsStart(javaRef,
+                    concurrency, isolation, timeout, txSize, &jniErr);
+
+                if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
+                    txImpl = TransactionImpl::Create(id, concurrency, isolation, timeout, txSize);
+                else
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+                return txImpl;
+            }
         }
     }
 }

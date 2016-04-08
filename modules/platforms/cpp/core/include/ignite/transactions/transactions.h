@@ -94,6 +94,109 @@ namespace ignite
                 return Transaction(TransactionImpl::GetCurrent());
             }
 
+            /**
+             * Start new transaction.
+             *
+             * @return New transaction instance.
+             */
+            Transaction TxStart()
+            {
+                IgniteError err;
+
+                Transaction tx = TxStart(err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return tx;
+            }
+
+            /**
+             * Start new transaction.
+             *
+             * @param err Error.
+             * @return New transaction instance.
+             */
+            Transaction TxStart(IgniteError& err)
+            {
+                return TxStart(IGNITE_TX_CONCURRENCY_OPTIMISTIC,
+                    IGNITE_TX_ISOLATION_READ_COMMITTED, 0, 0, err);
+            }
+
+            /**
+             * Start new transaction.
+             *
+             * @param concurrency Concurrency.
+             * @param isolation Isolation.
+             * @return New transaction instance.
+             */
+            Transaction TxStart(TransactionConcurrency concurrency,
+                TransactionIsolation isolation)
+            {
+                IgniteError err;
+
+                Transaction tx = TxStart(concurrency, isolation, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return tx;
+            }
+
+            /**
+             * Start new transaction.
+             *
+             * @param concurrency Concurrency.
+             * @param isolation Isolation.
+             * @param err Error.
+             * @return New transaction instance.
+             */
+            Transaction TxStart(TransactionConcurrency concurrency,
+                TransactionIsolation isolation, IgniteError& err)
+            {
+                return TxStart(concurrency, isolation, 0, 0, err);
+            }
+
+            /**
+             * Start new transaction.
+             *
+             * @param concurrency Concurrency.
+             * @param isolation Isolation.
+             * @param timeout Timeout.
+             * @param txSize Number of entries participating in transaction (may be approximate).
+             * @return New transaction instance.
+             */
+            Transaction TxStart(TransactionConcurrency concurrency,
+                TransactionIsolation isolation, int64_t timeout,
+                int32_t txSize)
+            {
+                IgniteError err;
+
+                Transaction tx = TxStart(concurrency, isolation, timeout, txSize, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return tx;
+            }
+
+            /**
+             * Start new transaction.
+             *
+             * @param concurrency Concurrency.
+             * @param isolation Isolation.
+             * @param timeout Timeout.
+             * @param txSize Number of entries participating in transaction (may be approximate).
+             * @param err Error.
+             * @return New transaction instance.
+             */
+            Transaction TxStart(TransactionConcurrency concurrency,
+                TransactionIsolation isolation, int64_t timeout,
+                int32_t txSize, IgniteError& err)
+            {
+                using impl::transactions::TransactionsImpl;
+
+                return Transaction(impl.Get()->TxStart(concurrency,
+                    isolation, timeout, txSize, err));
+            }
+
         private:
             /** Implementation delegate. */
             ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> impl;
