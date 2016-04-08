@@ -425,8 +425,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
      * @return Near config.
      */
     private NearCacheConfiguration getNearCacheConfiguration(long memPtr) {
-        if (memPtr == 0)
-            return new NearCacheConfiguration();
+        assert memPtr != 0;
 
         BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
         return PlatformConfigurationUtils.readNearConfiguration(reader);
