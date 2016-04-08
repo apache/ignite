@@ -20,29 +20,23 @@ package org.apache.ignite.transactions;
 import org.apache.ignite.IgniteException;
 
 /**
- * Exception thrown whenever transactions time out. Because transaction can be timed out due to a deadlock
- * this exception can contain {@link TransactionDeadlockException} as cause.
+ * Transaction deadlock exception.
+ * <p>
+ * This exception can be thrown from any cache method that modifies or reads data within transaction
+ * (explicit or implicit) with timeout in case when deadlock detection is enabled (enabled by default).
+ * <p>
+ * Usually this exception is cause for {@link TransactionTimeoutException}.
  */
-public class TransactionTimeoutException extends IgniteException {
-    /** */
+public class TransactionDeadlockException extends IgniteException {
+    /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new timeout exception with given error message.
+     * Creates new deadlock exception with given error message.
      *
      * @param msg Error message.
      */
-    public TransactionTimeoutException(String msg) {
+    public TransactionDeadlockException(String msg) {
         super(msg);
-    }
-
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
-     */
-    public TransactionTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
     }
 }
