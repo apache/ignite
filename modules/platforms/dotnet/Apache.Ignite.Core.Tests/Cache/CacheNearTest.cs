@@ -71,7 +71,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache[1] = "1";
 
-            var nearCache = _grid.GetOrCreateNearCache<int, string>(null, null);
+            var nearCache = _grid.GetOrCreateNearCache<int, string>(null, new NearCacheConfiguration());
 
             Assert.AreEqual("1", nearCache[1]);
         }

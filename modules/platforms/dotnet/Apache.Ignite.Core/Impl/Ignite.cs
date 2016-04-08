@@ -583,12 +583,16 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
         {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
             return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorCreateNearCache);
         }
 
         /** <inheritdoc /> */
         public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
         {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
             return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorGetOrCreateNearCache);
         }
 
@@ -598,8 +602,7 @@ namespace Apache.Ignite.Core.Impl
         private ICache<TK, TV> GetOrCreateNearCache0<TK, TV>(string name, NearCacheConfiguration configuration,
             Func<IUnmanagedTarget, string, long, IUnmanagedTarget> func)
         {
-            if (configuration == null)
-                return Cache<TK, TV>(func(_proc, name, 0));
+            Debug.Assert(configuration != null);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
