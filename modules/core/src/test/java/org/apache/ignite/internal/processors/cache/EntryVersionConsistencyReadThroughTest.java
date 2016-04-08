@@ -50,7 +50,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Tests consistency of entry's versions after invokeAll.
  */
-public class EnryVersionConsistencyTest extends GridCommonAbstractTest {
+public class EntryVersionConsistencyReadThroughTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 5;
 
@@ -70,7 +70,7 @@ public class EnryVersionConsistencyTest extends GridCommonAbstractTest {
      * @param atomicityMode Atomicity mode.
      * @return Cache configuration.
      */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private CacheConfiguration<String, List<Double>> createCacheConfiguration(CacheAtomicityMode atomicityMode) {
         CacheConfiguration<String, List<Double>> cc = new CacheConfiguration<>();
 
@@ -142,21 +142,23 @@ public class EnryVersionConsistencyTest extends GridCommonAbstractTest {
      *
      * @param single Single invoke or invokeAll.
      * @param cc Cache configuration.
-     * @throws GridCacheEntryRemovedException
+     * @throws Exception If failed.
      */
     @SuppressWarnings("serial")
-    private void check(boolean single, CacheConfiguration cc) throws GridCacheEntryRemovedException {
+    private void check(boolean single, CacheConfiguration cc) throws Exception {
         grid(0).getOrCreateCache(cc);
 
         try {
             final int cnt = 100;
 
-            final Set<String> keys = new LinkedHashSet<String>() {{
-                for (int i = 0; i < cnt; i++)
-                    add("key" + i);
-            }};
-
             for (int i = 0; i < NODES_CNT; i++) {
+                final int iter = i;
+
+                final Set<String> keys = new LinkedHashSet<String>() {{
+                    for (int i = 0; i < cnt; i++)
+                        add("key-" + iter + "-" + i);
+                }};
+
                 IgniteEx grid = grid(i);
 
                 final IgniteCache<String, Integer> cache = grid.cache(null);
@@ -167,7 +169,7 @@ public class EnryVersionConsistencyTest extends GridCommonAbstractTest {
                 else
                     cache.invokeAll(keys, new DummyEntryProcessor());
 
-                // Check entry versions concistency.
+                // Check entry versions consistency.
                 for (String key : keys) {
                     Collection<ClusterNode> nodes = grid.affinity(null).mapKeyToPrimaryAndBackups(key);
 
@@ -191,15 +193,12 @@ public class EnryVersionConsistencyTest extends GridCommonAbstractTest {
                             val0 = val;
                         }
 
-                        assertEquals("Key=" + key, ver0, ver);
+                        assertEquals("Invalid version for key: " + key, ver0, ver);
 
-                        assertNotNull("Key=" + key, val);
-                        assertEquals("Key=" + key, val0, val);
+                        assertNotNull("No value for key: " + key, val);
+                        assertEquals("Invalid value for key: " + key, val0, val);
                     }
                 }
-
-                // After test.
-                cache.removeAll(keys);
             }
         }
         finally {
@@ -232,8 +231,7 @@ public class EnryVersionConsistencyTest extends GridCommonAbstractTest {
      */
     private static class DummyEntryProcessor implements EntryProcessor<String, Integer, Integer> {
         /** {@inheritDoc} */
-        @Override public Integer process(MutableEntry<String, Integer> entry, Object... arguments)
-            throws EntryProcessorException {
+        @Override public Integer process(MutableEntry<String, Integer> entry, Object... arguments) {
             Integer currVal = entry.getValue();
 
             if (currVal == null)

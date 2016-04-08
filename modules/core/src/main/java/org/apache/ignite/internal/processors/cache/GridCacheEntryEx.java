@@ -289,6 +289,7 @@ public interface GridCacheEntryEx {
      * @param transformClo Transform closure to record event.
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
+     * @param keepBinary Keep binary flag.
      * @return Cached value.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -320,6 +321,7 @@ public interface GridCacheEntryEx {
      * @param transformClo Transform closure to record event.
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
+     * @param keepBinary Keep binary flag.
      * @return Cached value and entry version.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -358,6 +360,7 @@ public interface GridCacheEntryEx {
      * @param ttl Time to live.
      * @param evt Flag to signal event notification.
      * @param metrics Flag to signal metrics update.
+     * @param keepBinary Keep binary flag.
      * @param topVer Topology version.
      * @param filter Filter.
      * @param drType DR type.
@@ -401,6 +404,7 @@ public interface GridCacheEntryEx {
      * @param retval {@code True} if value should be returned (and unmarshalled if needed).
      * @param evt Flag to signal event notification.
      * @param metrics Flag to signal metrics notification.
+     * @param keepBinary Keep binary flag.
      * @param topVer Topology version.
      * @param filter Filter.
      * @param drType DR type.
