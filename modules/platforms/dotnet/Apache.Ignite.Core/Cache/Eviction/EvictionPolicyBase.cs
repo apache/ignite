@@ -62,7 +62,9 @@ namespace Apache.Ignite.Core.Cache.Eviction
         /// </summary>
         internal EvictionPolicyBase()
         {
-            // No-op.
+            BatchSize = DefaultBatchSize;
+            MaxSize = DefaultMaxSize;
+            MaxMemorySize = DefaultMaxMemorySize;
         }
         
         /// <summary>
