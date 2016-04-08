@@ -82,7 +82,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestCreateNearCache()
         {
-            
+            const string cacheName = "dyn_cache";
+
+            var cache = _grid.CreateCache<int, string>(cacheName);
+
+            cache[1] = "1";
+
+            var nearCache = _grid.CreateNearCache<int, string>(cacheName, new NearCacheConfiguration());
+
+            Assert.AreEqual("1", nearCache[1]);
         }
     }
 }
