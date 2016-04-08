@@ -402,8 +402,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr) {
-        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
-        NearCacheConfiguration cfg = PlatformConfigurationUtils.readNearConfiguration(reader);
+        NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
 
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createNearCache(cacheName, cfg);
 
@@ -412,12 +411,25 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
-        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
-        NearCacheConfiguration cfg = PlatformConfigurationUtils.readNearConfiguration(reader);
+        NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
 
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateNearCache(cacheName, cfg);
 
         return new PlatformCache(platformCtx, cache.keepBinary(), false);
+    }
+
+    /**
+     * Gets the near cache config.
+     *
+     * @param memPtr Memory pointer.
+     * @return Near config.
+     */
+    private NearCacheConfiguration getNearCacheConfiguration(long memPtr) {
+        if (memPtr == 0)
+            return null;
+
+        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
+        return PlatformConfigurationUtils.readNearConfiguration(reader);
     }
 
     /**
