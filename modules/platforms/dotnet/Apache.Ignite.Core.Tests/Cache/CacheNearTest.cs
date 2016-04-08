@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using NUnit.Framework;
@@ -114,11 +115,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             using (var clientGrid = Ignition.Start(cfg))
             {
-                var cache = clientGrid.CreateCache<int, string>(cacheName);
-                cache[1] = "1";
+                clientGrid.CreateCache<int, string>(cacheName);
 
-                var nearCache = clientGrid.CreateNearCache<int, string>(cacheName, new NearCacheConfiguration());
-                Assert.AreEqual("1", nearCache[1]);
+                // Near cache can't be started on client node
+                Assert.Throws<CacheException>(
+                    () => clientGrid.CreateNearCache<int, string>(cacheName, new NearCacheConfiguration()));
             }
         }
     }
