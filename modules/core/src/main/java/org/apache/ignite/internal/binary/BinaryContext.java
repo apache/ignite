@@ -1028,6 +1028,18 @@ public class BinaryContext {
                     serializer = new BinaryReflectiveSerializer();
             }
 
+            boolean registered = true;
+
+            ClassLoader clsLdr = IgniteUtils.detectClassLoader(cls);
+
+            if (!clsLdr.equals(dfltLdr))
+                try {
+                    registered = marshCtx.registerClass(id, cls);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new BinaryObjectException("Failed to register class.", e);
+                }
+
             BinaryClassDescriptor desc = new BinaryClassDescriptor(
                 this,
                 cls,
@@ -1038,21 +1050,14 @@ public class BinaryContext {
                 mapper,
                 serializer,
                 true,
-                true /* registered */
+                registered
             );
 
             fieldsMeta = desc.fieldsMeta();
             schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
-            if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
+            if (clsLdr.equals(dfltLdr))
                 userTypes.put(id, desc);
-            else
-                try {
-                    marshCtx.registerClass(id, cls);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new BinaryObjectException("Failed to register class.", e);
-                }
 
             descByCls.put(cls, desc);
         }

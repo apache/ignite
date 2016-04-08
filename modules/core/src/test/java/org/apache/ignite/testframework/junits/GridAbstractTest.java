@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import junit.framework.TestCase;
+import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -457,7 +458,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTest()} will be called in this case.
      */
     protected void beforeTest() throws Exception {
-        // No-op.
+        U.resolveWorkDirectory("marshaller", true);
     }
 
     /**
