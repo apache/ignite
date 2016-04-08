@@ -326,7 +326,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                                 case 8:
                                     log.info("Create atomic reentrant lock, grid: " + ignite.name());
 
-                                    res = ignite.reentrantLock(name, true, true);
+                                    res = ignite.reentrantLock(name, true, true, true);
 
                                     break;
                                 default:

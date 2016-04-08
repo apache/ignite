@@ -359,7 +359,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<Ignite> reentrantLockReadClos =
         new CIX1<Ignite>() {
             @Override public void applyx(Ignite ignite) {
-                IgniteLock r = ignite.reentrantLock(TEST_REENTRANT_LOCK_NAME, true, true);
+                IgniteLock r = ignite.reentrantLock(TEST_REENTRANT_LOCK_NAME, true, false, true);
 
                 for (int i = 0; i < operationsPerTx; i++) {
                     r.isLocked();
@@ -376,7 +376,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private final CIX1<Ignite> reentrantLockWriteClos =
         new CIX1<Ignite>() {
             @Override public void applyx(Ignite ignite) {
-                IgniteLock r = ignite.reentrantLock(TEST_REENTRANT_LOCK_NAME, true, true);
+                IgniteLock r = ignite.reentrantLock(TEST_REENTRANT_LOCK_NAME, true, false, true);
 
                 for (int i = 0; i < operationsPerTx; i++) {
                     if ((i % 2) == 0)

@@ -1347,15 +1347,17 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
     /**
      * Gets or creates reentrant lock. If reentrant lock is not found in cache,
-     * it is created using provided name and count parameter.
+     * it is created using provided name, failover mode, and fairness mode parameters.
      *
      * @param name Name of the reentrant lock.
+     * @param failoverSafe Flag indicating behaviour in case of failure.
+     * @param fair Flag indicating fairness policy of this lock.
      * @param create If {@code true} reentrant lock will be created in case it is not in cache.
      * @return ReentrantLock for the given name or {@code null} if it is not found and
      *      {@code create} is false.
      * @throws IgniteCheckedException If operation failed.
      */
-    public IgniteLock reentrantLock(final String name, final boolean failoverSafe, final boolean create)
+    public IgniteLock reentrantLock(final String name, final boolean failoverSafe, final boolean fair, final boolean create)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
@@ -1387,7 +1389,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                         return null;
 
                     if (val == null) {
-                        val = new GridCacheLockState(0, dsCacheCtx.nodeId(), 0, failoverSafe);
+                        val = new GridCacheLockState(0, dsCacheCtx.nodeId(), 0, failoverSafe, fair);
 
                         dsView.put(key, val);
                     }

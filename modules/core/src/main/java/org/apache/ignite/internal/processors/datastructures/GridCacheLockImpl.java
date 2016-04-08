@@ -23,11 +23,14 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,10 +47,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -143,6 +148,12 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
         /** FailoverSafe flag. */
         private final boolean failoverSafe;
 
+        /** Fairness flag. */
+        private final boolean fair;
+
+        /** Threads that are waiting on this lock. */
+        private Set<Long> waitingThreads;
+
         protected Sync(GridCacheLockState state) {
             setState(state.get());
 
@@ -157,6 +168,10 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
             outgoingSignals = new HashMap<>();
 
             failoverSafe = state.isFailoverSafe();
+
+            fair = state.isFair();
+
+            waitingThreads = new ConcurrentSkipListSet<Long>();
         }
 
         /** */
@@ -221,27 +236,39 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                 this.currentOwnerThreadId = tempThreadID;
             }
 
+            // Interrupt any future call to acquire/release on this sync object.
+            interruptAll = true;
+
             // Interrupt any ongoing transactions.
             for(Thread t: getQueuedThreads()){
                 t.interrupt();
             }
-
-            // Interrupt any future call to acquire/release on this sync object.
-            interruptAll = true;
         }
 
         /** Check if lock is in correct state (i.e. not broken in non-failoversafe mode),
          * if not throw  {@linkplain IgniteInterruptedException} */
-        private void validate(final boolean checkInterrupt){
-            // Interrupted flag is not always cleared
-            // (e.g. lock() doesn't throw exception and doesn't clear interrupted)
+        private void validate(final boolean throwInterrupt){
+            // Interrupted flag shouldn't be always cleared
+            // (e.g. lock() method doesn't throw exception and doesn't clear interrupted)
             // but should be cleared if this method is called after lock breakage or node stop.
             // If interruptAll is set, exception is thrown anyway.
-            boolean clearInterrupt = checkInterrupt || interruptAll;
+            boolean interrupted = Thread.currentThread().isInterrupted();
 
-            if((clearInterrupt && Thread.interrupted()) || interruptAll){
+            // Clear interrupt flag.
+            if(throwInterrupt || interruptAll){
+                Thread.interrupted();
+            }
+
+            if(interruptAll){
                 throw new IgniteInterruptedException("Lock broken (possible reason: node stopped" +
                     " or node owning lock failed while in non-failoversafe mode).");
+            }
+
+            // Global queue should be synchronized only if exception should be thrown.
+            if(fair && (throwInterrupt && interrupted) && !interruptAll){
+                this.synchronizeQueue(true, Thread.currentThread());
+
+                throw new IgniteInterruptedException("Lock is interrupted.");
             }
         }
 
@@ -316,10 +343,37 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
             this.isBroken = isBroken;
         }
 
+        /** */
+        protected synchronized boolean hasPredecessor(LinkedList<UUID> nodes){
+            if(!fair)
+                return false;
+
+            for (Iterator<UUID> it = nodes.iterator(); it.hasNext(); ) {
+                UUID node = it.next();
+
+                if (ctx.discovery().node(node) == null) {
+                    it.remove();
+
+                    continue;
+                }
+
+                if (node.equals(thisNode)) {
+                    return false;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
         /**
-         * Performs non-fair tryLock.
+         * Performs tryLock.
+         * @param acquires Number of permits to acquire.
+         * @param fair Fairness parameter.
+         * @result true if succeeded, false otherwise.
          */
-        final boolean nonfairTryAcquire(int acquires) {
+        final boolean tryAcquire(final int acquires, final boolean fair) {
             // If broken in non-failoversafe mode, exit immediately.
             if(interruptAll){
                 return true;
@@ -327,18 +381,31 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
             final Thread current = Thread.currentThread();
 
-            final UUID currentOwner = this.currentOwnerNode;
+            boolean failed = false;
 
             int c = getState();
 
+            // Wait for lock to reach stable state.
+            while(c != 0){
+                UUID currentOwner = this.currentOwnerNode;
+
+                if(currentOwner != null) {
+                    failed = ctx.discovery().node(currentOwner) == null;
+
+                    break;
+                }
+
+                c = getState();
+            }
+
             // Check if lock is released or current owner failed.
-            if(c == 0 || ctx.discovery().node(currentOwner) == null){
-                if (compareAndSetGlobalState(0, acquires, current.getId())){
+            if(c == 0 || failed){
+                if (compareAndSetGlobalState(0, acquires, current, fair)){
 
                     // Not used for synchronization (we use ThreadID), but updated anyway.
                     setExclusiveOwnerThread(current);
 
-                    while(getState() != acquires)
+                    while(!isHeldExclusively() && !interruptAll)
                         Thread.yield();
 
                     return true;
@@ -355,6 +422,10 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                 return true;
             }
 
+            if(fair && !isQueued(current)){
+                synchronizeQueue(false, current);
+            }
+
             return false;
         }
 
@@ -362,12 +433,12 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
          * Performs lock.
          */
         final void lock() {
-             acquire(1);
+            acquire(1);
         }
 
         /** {@inheritDoc} */
         protected final boolean tryAcquire(int acquires) {
-            return nonfairTryAcquire(acquires);
+            return tryAcquire(acquires, fair);
         }
 
         /** {@inheritDoc} */
@@ -379,12 +450,16 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
             }
 
             // If broken in non-failoversafe mode, exit immediately.
-            if(interruptAll)
+            if(interruptAll) {
                 return true;
+            }
 
             int c = getState() - releases;
 
             if (!isHeldExclusively()) {
+                log.error("Lock.unlock() is called in illegal state [callerNodeId=" + thisNode + ", ownerNodeId="
+                    + currentOwnerNode + ", callerThreadId=" + Thread.currentThread().getId() + ", ownerThreadId="
+                    + currentOwnerThreadId + ", lockState=" + getState() + "]");
                 throw new IllegalMonitorStateException();
             }
 
@@ -395,7 +470,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
                 setGlobalState(0, processAwait(), processSignal());
 
-                while(getState() != 0)
+                while(isHeldExclusively() && !interruptAll)
                     Thread.yield();
             }
             else
@@ -438,7 +513,8 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
         /**
          * This method is used for synchronizing the reentrant lock state across all nodes.
          */
-        protected boolean compareAndSetGlobalState(final int expVal, final int newVal, final long newThreadID) {
+        protected boolean compareAndSetGlobalState(final int expVal, final int newVal,
+            final Thread newThread, final boolean bargingProhibited) {
             try {
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
@@ -450,26 +526,62 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                                 if (val == null)
                                     throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
 
-                                if (val.get() == expVal || ctx.discovery().node(val.getId()) == null) {
-                                    val.set(newVal);
+                                final long newThreadID = newThread.getId();
 
-                                    val.setId(thisNode);
+                                LinkedList<UUID> nodes = val.getNodes();
 
-                                    val.setThreadId(newThreadID);
+                                // Barging is prohibited in fair mode unless tryLock() is called.
+                                if(!(bargingProhibited && hasPredecessor(nodes))){
+                                    if (val.get() == expVal || ctx.discovery().node(val.getId()) == null) {
+                                        val.set(newVal);
 
-                                    val.setSignals(null);
+                                        val.setId(thisNode);
 
-                                    lockView.put(key, val);
+                                        val.setThreadId(newThreadID);
 
-                                    tx.commit();
+                                        val.setSignals(null);
 
-                                    return true;
+                                        // This node is already in queue, except in cases where this is the only node
+                                        // or this is a call to tryLock(), in which case barging is ok.
+                                        // Queue is only updated if this is fair lock.
+                                        if(val.isFair() && (nodes.isEmpty() || !bargingProhibited)){
+                                            nodes.addFirst(thisNode);
+                                        }
+
+                                        val.setNodes(nodes);
+
+                                        val.setChanged(true);
+
+                                        lockView.put(key, val);
+
+                                        tx.commit();
+
+                                        return true;
+                                    }
                                 }
 
                                 return false;
                             }
                             catch (Error | Exception e) {
-                                U.error(log, "Failed to compare and set: " + this, e);
+                                if(interruptAll){
+                                    log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
+                                        " aborting transaction.");
+
+                                    // Return immediately, exception will be thrown later.
+                                    return true;
+                                }
+                                else{
+                                    if(Thread.currentThread().isInterrupted()){
+                                        log.info("Thread is interrupted while attempting to acquire lock.");
+
+                                        // Delegate the decision to throw InterruptedException to the AQS.
+                                        sync.release(0);
+
+                                        return false;
+                                    }
+
+                                    U.error(log, "Failed to compare and set: " + this, e);
+                                }
 
                                 throw e;
                             }
@@ -480,6 +592,105 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
             }
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
+            }
+        }
+
+        /**
+         * This method is used for synchronizing the number of acquire attempts on this lock across all nodes.
+         *
+         * @param cancelled true if acquire attempt is cancelled, false if acquire attempt should be registered.
+         */
+        protected boolean synchronizeQueue(final boolean cancelled, final Thread thread) {
+            final AtomicBoolean interrupted = new AtomicBoolean(false);
+
+            try {
+                return CU.outTx(
+                    retryTopologySafe(new Callable<Boolean>() {
+                        @Override public Boolean call() throws Exception {
+                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, lockView, PESSIMISTIC, REPEATABLE_READ)) {
+
+                                GridCacheLockState val = lockView.get(key);
+
+                                if (val == null)
+                                    throw new IgniteCheckedException("Failed to find reentrant lock with given name: " + name);
+
+                                LinkedList<UUID> nodes = val.getNodes();
+
+                                if(!cancelled){
+                                    nodes.add(thisNode);
+
+                                    val.setChanged(false);
+
+                                    lockView.put(key, val);
+
+                                    tx.commit();
+
+                                    // Keep track of all threads that are queued in global queue.
+                                    // We deliberately don't use #sync.isQueued(), because AQS
+                                    // cancel threads immediately after throwing interrupted exception.
+                                    sync.waitingThreads.add(thread.getId());
+
+                                    return true;
+                                }
+                                else {
+                                    if (sync.waitingThreads.contains(thread.getId())) {
+                                        // Update other nodes if this is the first node in queue.
+                                        val.setChanged(nodes.lastIndexOf(thisNode) == 0);
+
+                                        nodes.removeLastOccurrence(thisNode);
+
+                                        lockView.put(key, val);
+
+                                        tx.commit();
+
+                                        sync.waitingThreads.remove(thread.getId());
+
+                                        return true;
+                                    }
+                                }
+
+                                return false;
+                            }
+                            catch (Error | Exception e) {
+                                if(interruptAll){
+                                    log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
+                                        " aborting transaction.");
+
+                                    // Abort this attempt to synchronize queue and start another one,
+                                    // that will return immediately.
+                                    sync.release(0);
+
+                                    return false;
+                                }
+                                else{
+                                    // If thread got interrupted, abort this attempt to synchronize queue,
+                                    // clear interrupt flag and try again, and let the AQS decide
+                                    // whether to throw an exception or ignore it.
+                                    if(Thread.interrupted() || X.hasCause(e, InterruptedException.class)){
+                                        interrupted.set(true);
+
+                                        throw new TransactionRollbackException("Thread got interrupted " +
+                                            "while synchronizing the global queue, retrying. ");
+                                    }
+
+                                    U.error(log, "Failed to synchronize global lock queue: " + this, e);
+                                }
+
+                                throw e;
+                            }
+                        }
+                    }),
+                    ctx
+                );
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+            finally {
+                // Restore interrupt flag and let AQS decide what to do with it.
+                if(interrupted.get()) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
 
@@ -503,9 +714,20 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
                                 val.set(newVal);
 
-                                val.setId(null);
+                                if(newVal == 0) {
+                                    val.setId(null);
 
-                                val.setThreadId(LOCK_FREE);
+                                    val.setThreadId(LOCK_FREE);
+                                }
+
+                                val.setChanged(true);
+
+                                // If this lock is fair, remove this node from queue.
+                                if(val.isFair() && newVal == 0) {
+                                    UUID removedNode = val.getNodes().removeFirst();
+
+                                    assert(thisNode.equals(removedNode));
+                                }
 
                                 // Get global condition queue.
                                 Map<String, LinkedList<UUID>> condMap = val.getConditionMap();
@@ -585,7 +807,15 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                                 return true;
                             }
                             catch (Error | Exception e) {
-                                U.error(log, "Failed to compare and set: " + this, e);
+                                if(interruptAll){
+                                    log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
+                                        " aborting transaction.");
+
+                                    return true;
+                                }
+                                else{
+                                    U.error(log, "Failed to release: " + this, e);
+                                }
 
                                 throw e;
                             }
@@ -891,20 +1121,24 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
         try {
             updateLock.lock();
 
+            // If this update is a result of unsuccessful acquire in fair mode, no local update should be done.
+            if(!val.isChanged())
+                return;
+
             // Check if update came from this node.
             boolean local = sync.isLockedLocally(val.getId());
 
             // Process any incoming signals.
             boolean incomingSignals = sync.checkIncomingSignals(val);
 
+            // Update permission count.
+            sync.setPermits(val.get());
+
             // Update owner's node id.
             sync.setCurrentOwnerNode(val.getId());
 
             // Update owner's thread id.
             sync.setCurrentOwnerThread(val.getThreadId());
-
-            // Update permission count.
-            sync.setPermits(val.get());
 
             // Check if any threads waiting on this node need to be notified.
             if ((incomingSignals || sync.getPermits() == 0) && !local) {
@@ -928,10 +1162,10 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                 if(!sync.failoverSafe){
                     sync.interruptAll();
                 }
-
-                // Try to notify any waiting threads.
-                sync.release(0);
             }
+
+            // Try to notify any waiting threads.
+            sync.release(0);
         }
         finally {
             updateLock.unlock();
@@ -993,6 +1227,9 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
             throw U.convertException(e);
         }
         catch (InterruptedException e) {
+            if(sync.fair)
+                sync.synchronizeQueue(true, Thread.currentThread());
+
             throw new IgniteInterruptedException(e);
         }
         finally {
@@ -1007,7 +1244,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
         try{
             initializeReentrantLock();
 
-            boolean result = sync.nonfairTryAcquire(1);
+            boolean result = sync.tryAcquire(1, false);
 
             sync.validate(false);
 
@@ -1038,6 +1275,9 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
             throw U.convertException(e);
         }
         catch (InterruptedException e){
+            if(sync.fair)
+                sync.synchronizeQueue(true, Thread.currentThread());
+
             throw new IgniteInterruptedException(e);
         }
         finally {
@@ -1092,7 +1332,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
     /** {@inheritDoc} */
     @Override public int getHoldCount() {
-       try{
+        try{
             initializeReentrantLock();
 
             return sync.getHoldCount();
@@ -1186,6 +1426,10 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
     @Override public boolean isFailoverSafe() {
         return sync.failoverSafe;
+    }
+
+    @Override public boolean isFair() {
+        return sync.fair;
     }
 
     /** {@inheritDoc} */

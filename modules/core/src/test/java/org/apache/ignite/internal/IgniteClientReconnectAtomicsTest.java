@@ -780,17 +780,23 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
      * @throws Exception If failed.
      */
     public void testReentrantLockReconnect() throws Exception {
+        testReentrantLockReconnect(false);
+
+        testReentrantLockReconnect(true);
+    }
+
+    private void testReentrantLockReconnect(final boolean fair) throws Exception {
         Ignite client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());
 
         Ignite srv = clientRouter(client);
 
-        IgniteLock clientLock = client.reentrantLock("lock1", true, true);
+        IgniteLock clientLock = client.reentrantLock("lock1", true, fair, true);
 
         assertEquals(false, clientLock.isLocked());
 
-        final IgniteLock srvLock = srv.reentrantLock("lock1", true, true);
+        final IgniteLock srvLock = srv.reentrantLock("lock1", true, fair, true);
 
         assertEquals(false, srvLock.isLocked());
 

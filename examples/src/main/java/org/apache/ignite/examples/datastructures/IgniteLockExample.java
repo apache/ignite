@@ -74,7 +74,7 @@ public class IgniteLockExample {
             final String reentrantLockName = UUID.randomUUID().toString();
 
             // Initialize lock.
-            IgniteLock lock = ignite.reentrantLock(reentrantLockName, true, true);
+            IgniteLock lock = ignite.reentrantLock(reentrantLockName, true, false, true);
 
             // Init distributed cache.
             IgniteCache<String, Integer> cache = ignite.getOrCreateCache(CACHE_NAME);
@@ -152,7 +152,7 @@ public class IgniteLockExample {
         @Override public void run() {
             System.out.println("Producer started. ");
 
-            IgniteLock lock = Ignition.ignite().reentrantLock(reentrantLockName, true, true);
+            IgniteLock lock = Ignition.ignite().reentrantLock(reentrantLockName, true, false, true);
 
             // Condition to wait on when queue is full.
             IgniteCondition notFull = lock.getOrCreateCondition(NOT_FULL);
@@ -231,7 +231,7 @@ public class IgniteLockExample {
 
             Ignite g = Ignition.ignite();
 
-            IgniteLock lock = g.reentrantLock(reentrantLockName, true, true);
+            IgniteLock lock = g.reentrantLock(reentrantLockName, true, false, true);
 
             // Condition to wait on when queue is full.
             IgniteCondition notFull = lock.getOrCreateCondition(NOT_FULL);

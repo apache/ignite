@@ -343,10 +343,10 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
      * @throws Exception If failed.
      */
     private void testReentrantLock(Ignite creator, final Ignite other) throws Exception {
-        assertNull(creator.reentrantLock("lock1", true, false));
-        assertNull(other.reentrantLock("lock1", true, false));
+        assertNull(creator.reentrantLock("lock1", true, false, false));
+        assertNull(other.reentrantLock("lock1", true, false, false));
 
-        try (IgniteLock lock = creator.reentrantLock("lock1", true, true)) {
+        try (IgniteLock lock = creator.reentrantLock("lock1", true, false, true)) {
             assertNotNull(lock);
 
             assertFalse(lock.isLocked());
@@ -355,7 +355,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    IgniteLock lock0 = other.reentrantLock("lock1", true, false);
+                    IgniteLock lock0 = other.reentrantLock("lock1", true, false, false);
 
                     lock0.lock();
 
@@ -390,8 +390,8 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
             assertFalse(lock.isLocked());
         }
 
-        assertNull(creator.reentrantLock("lock1", true, false));
-        assertNull(other.reentrantLock("lock1", true, false));
+        assertNull(creator.reentrantLock("lock1", true, false, false));
+        assertNull(other.reentrantLock("lock1", true, false, false));
     }
 
     /**

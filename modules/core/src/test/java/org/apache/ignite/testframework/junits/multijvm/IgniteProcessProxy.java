@@ -547,7 +547,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteLock reentrantLock(String name, boolean failoverSafe,
-        boolean create) throws IgniteException {
+        boolean fair, boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 

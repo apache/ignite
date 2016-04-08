@@ -370,6 +370,7 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Nullable @Override public IgniteLock reentrantLock(String name,
         boolean failoverSafe,
+        boolean fair,
         boolean create)
     {
         return null;

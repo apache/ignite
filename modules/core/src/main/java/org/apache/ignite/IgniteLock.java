@@ -29,7 +29,66 @@ import java.util.concurrent.locks.Lock;
  * Distributed reentrant lock provides functionality similar to {@code java.util.concurrent.ReentrantLock}.
  * <h1 class="header">Creating Distributed ReentrantLock</h1>
  * Instance of cache reentrant lock can be created by calling the following method:
- * {@link Ignite#reentrantLock(String, boolean, boolean)}.
+ * {@link Ignite#reentrantLock(String, boolean, boolean, boolean)}.
+ * <h1 class="header">Protection from failover</h1>
+ * Ignite lock can automatically recover from node failure.
+ * <ul>
+ * <li>If failoverSafe flag is set to true upon creation,
+ * in case a node owning the lock fails, lock will be automatically released and become available for threads on other
+ * nodes to acquire. No exception will be thrown.
+ * <li>If failoverSafe flag is set to false upon creation,
+ * in case a node owning the lock fails, {@code IgniteException} will be thrown on every other node attempting to
+ * perform any operation on this lock. No automatic recovery will be attempted,
+ * and lock will be marked as broken (i.e. unusable), which can be checked using the method #isBroken().
+ * Broken lock cannot be reused again.
+ * </ul>
+ *
+ * <h1 class="header">Implementation issues</h1>
+ * Ignite lock comes in two flavours: fair and non-fair. Non-fair lock assumes no ordering should be imposed
+ * on acquiring threads; in case of contention, threads from all nodes compete for the lock once the lock is released.
+ * In most cases this is the desired behaviour. However, in some cases, using the non-fair lock can lead to uneven load
+ * distribution among nodes.
+ * Fair lock solves this issue by imposing strict FIFO ordering policy at a cost of an additional transaction.
+ * This ordering does not guarantee fairness of thread scheduling (similar to {@code java.util.concurrent.ReentrantLock}).
+ * Thus, one of many threads on any node using a fair lock may obtain it multiple times in succession while other
+ * active threads are not progressing and not currently holding the lock. Also note that the untimed tryLock method
+ * does not honor the fairness setting. It will succeed if the lock is available even if other threads are waiting.
+ *
+ * </p>
+ * As a rule of thumb, whenever there is a reasonable time window between successive calls to release and acquire
+ * the lock, non-fair lock should be preferred:
+ *
+ * <pre> {@code
+ *      while(someCondition){
+ *          // do anything
+ *          lock.lock();
+ *          try{
+ *              // ...
+ *          }
+ *          finally {
+ *              lock.unlock();
+ *          }
+ *      }
+ * }</pre>
+ *
+ * If successive calls to release/acquire are following immediately,
+ * e.g.
+ *
+ * <pre> {@code
+ *      while(someCondition){
+ *          lock.lock();
+ *          try {
+ *              // do something
+ *          }
+ *          finally {
+ *              lock.unlock();
+ *          }
+ *      }
+ * }</pre>
+ *
+ * using the fair lock is reasonable in order to allow even distribution of load among nodes
+ * (although overall throughput may be lower due to increased overhead).
+ *
  */
 public interface IgniteLock extends Lock, Closeable {
 
@@ -375,6 +434,13 @@ public interface IgniteLock extends Lock, Closeable {
      * @return {@code true} if this reentrant lock has failoverSafe set true
      */
     public boolean isFailoverSafe();
+
+    /**
+     * Returns {@code true} if this lock is fair. Fairness flag can only be set on lock creation.
+     *
+     * @return {@code true} if this reentrant lock has fairness flag set true.
+     */
+    public boolean isFair();
 
     /**
      * Returns true if any node that owned the locked failed before releasing the lock.

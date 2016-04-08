@@ -22,10 +22,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -59,13 +57,27 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
     @GridToStringInclude
     private Map<UUID, LinkedList<String>> signals;
 
+    /** Flag indicating lock fairness. */
+    private boolean fair;
+
+    /** Queue containing nodes that are waiting to acquire this lock, used to ensure fairness. */
+    @GridToStringInclude
+    private LinkedList<UUID> nodes;
+
+    /** Flag indicating that global state changed. Used in fair mode to ensure that only successful acquires
+     *  and releases trigger update. */
+    private boolean changed;
+
     /**
      * Constructor.
      *
      * @param cnt Initial count.
      * @param id UUID of owning node.
+     * @param threadID ID of the current thread.
+     * @param failoverSafe true if created in failoverSafe mode.
+     * @param fair true if created in fair mode.
      */
-    public GridCacheLockState(int cnt, UUID id, long threadID, boolean failoverSafe) {
+    public GridCacheLockState(int cnt, UUID id, long threadID, boolean failoverSafe, boolean fair) {
         assert cnt >= 0;
 
         this.id = id;
@@ -75,6 +87,10 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
         conditionMap = new HashMap();
 
         signals = null;
+
+        nodes = new LinkedList<UUID>();
+
+        this.fair = fair;
 
         this.failoverSafe = failoverSafe;
     }
@@ -152,6 +168,26 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
         this.signals = signals;
     }
 
+    public LinkedList<UUID> getNodes() {
+        return nodes;
+    }
+
+    public void setNodes(LinkedList<UUID> nodes) {
+        this.nodes = nodes;
+    }
+
+    public boolean isFair() {
+        return fair;
+    }
+
+    public boolean isChanged() {
+        return changed;
+    }
+
+    public void setChanged(boolean changed) {
+        this.changed = changed;
+    }
+
     /** {@inheritDoc} */
     @Override public Object clone() throws CloneNotSupportedException {
         return super.clone();
@@ -165,6 +201,10 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
 
         out.writeBoolean(failoverSafe);
 
+        out.writeBoolean(fair);
+
+        out.writeBoolean(changed);
+
         out.writeBoolean(conditionMap != null);
 
         if (conditionMap != null) {
@@ -176,7 +216,7 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
                 out.writeInt(e.getValue().size());
 
                 for(UUID uuid:e.getValue()){
-                    U.writeUuid(out,uuid);
+                    U.writeUuid(out, uuid);
                 }
             }
         }
@@ -196,6 +236,16 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
                 }
             }
         }
+
+        out.writeBoolean(nodes != null);
+
+        if (nodes != null) {
+            out.writeInt(nodes.size());
+
+            for (UUID uuid: nodes) {
+                U.writeUuid(out, uuid);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -205,6 +255,10 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
         id = U.readUuid(in);
 
         failoverSafe = in.readBoolean();
+
+        fair = in.readBoolean();
+
+        changed = in.readBoolean();
 
         if (in.readBoolean()) {
             int size = in.readInt();
@@ -249,6 +303,19 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
         }
         else{
             signals = null;
+        }
+
+        if (in.readBoolean()) {
+            int size = in.readInt();
+
+            nodes = new LinkedList();
+
+            for (int i = 0; i < size; i++) {
+                nodes.add(U.readUuid(in));
+            }
+        }
+        else{
+            nodes = null;
         }
     }
 
