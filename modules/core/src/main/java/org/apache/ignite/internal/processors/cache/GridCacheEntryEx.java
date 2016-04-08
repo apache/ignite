@@ -694,11 +694,12 @@ public interface GridCacheEntryEx {
     /**
      * Create versioned entry for this cache entry.
      *
+     * @param keepBinary Keep binary flag.
      * @return Versioned entry.
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public <K, V> GridCacheVersionedEntryEx<K, V> versionedEntry()
+    public <K, V> GridCacheVersionedEntryEx<K, V> versionedEntry(final boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -919,7 +920,7 @@ public interface GridCacheEntryEx {
      * @param ver Version.
      * @param ttl Time to live.
      */
-    public void updateTtl(@Nullable GridCacheVersion ver, long ttl);
+    public void updateTtl(@Nullable GridCacheVersion ver, long ttl) throws GridCacheEntryRemovedException;
 
     /**
      * Tries to do offheap -> swap eviction.

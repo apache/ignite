@@ -17,27 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -74,10 +53,33 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
@@ -85,9 +87,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
 import static org.apache.ignite.igfs.IgfsMode.PROXY;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
-import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 
 /**
  * Test fo regular igfs operations.
@@ -227,6 +226,20 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
+     * @return Relaxed consistency flag.
+     */
+    protected boolean relaxedConsistency() {
+        return false;
+    }
+
+    /**
+     * @return Use optimzied marshaller flag.
+     */
+    protected boolean useOptimizedMarshaller() {
+        return false;
+    }
+
+    /**
      * Data chunk.
      *
      * @param len Length.
@@ -304,6 +317,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setSecondaryFileSystem(secondaryFs);
         igfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         igfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
+        igfsCfg.setRelaxedConsistency(relaxedConsistency());
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
@@ -325,6 +339,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        if (useOptimizedMarshaller())
+            cfg.setMarshaller(new OptimizedMarshaller());
 
         cfg.setGridName(gridName);
 
@@ -802,10 +819,12 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         if (dual)
             // Check only permissions because user and group will always be present in Hadoop Fs.
-            assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(SUBSUBDIR.toString()).get(PROP_PERMISSION));
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+                igfsSecondary.properties(SUBSUBDIR.toString()).get(IgfsUtils.PROP_PERMISSION));
 
         // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(PROP_PERMISSION), igfs.info(SUBSUBDIR).properties().get(PROP_PERMISSION));
+        assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+            igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
     }
 
     /**
@@ -823,10 +842,11 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
         if (dual)
             // check permission only since Hadoop Fs will always have user and group:
-            assertEquals(props.get(PROP_PERMISSION), igfsSecondary.properties(DIR.toString()).get(PROP_PERMISSION));
+            assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
+                igfsSecondary.properties(DIR.toString()).get(IgfsUtils.PROP_PERMISSION));
 
         // We check only permission because IGFS client adds username and group name explicitly.
-        assertEquals(props.get(PROP_PERMISSION), igfs.info(DIR).properties().get(PROP_PERMISSION));
+        assertEquals(props.get(IgfsUtils.PROP_PERMISSION), igfs.info(DIR).properties().get(IgfsUtils.PROP_PERMISSION));
     }
 
     /**
@@ -1449,19 +1469,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                         createCtr.incrementAndGet();
                     }
                     catch (IgniteException e) {
-                        Throwable[] chain = X.getThrowables(e);
-
-                        Throwable cause = chain[chain.length - 1];
-
-                        if (!e.getMessage().startsWith("Failed to overwrite file (file is opened for writing)")
-                                && (cause == null
-                                    || !cause.getMessage().startsWith("Failed to overwrite file (file is opened for writing)"))) {
-
-                            System.out.println("Failed due to IgniteException exception. Cause:");
-                            cause.printStackTrace(System.out);
-
-                            err.compareAndSet(null, e);
-                        }
+                        // No-op.
                     }
                     catch (IOException e) {
                         err.compareAndSet(null, e);
@@ -1937,15 +1945,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
 
                         chunksCtr.incrementAndGet();
                     }
-                    catch (IgniteException e) {
-                        Throwable[] chain = X.getThrowables(e);
-
-                        Throwable cause = chain[chain.length - 1];
-
-                        if (!e.getMessage().startsWith("Failed to open file (file is opened for writing)")
-                                && (cause == null
-                                || !cause.getMessage().startsWith("Failed to open file (file is opened for writing)")))
-                            err.compareAndSet(null, e);
+                    catch (IgniteException ignore) {
+                        // No-op.
                     }
                     catch (IOException e) {
                         err.compareAndSet(null, e);
@@ -2386,6 +2387,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     private void checkDeadlocksRepeat(final int lvlCnt, final int childrenDirPerLvl, final int childrenFilePerLvl,
         int primaryLvlCnt, int renCnt, int delCnt,
         int updateCnt, int mkdirsCnt, int createCnt) throws Exception {
+        if (relaxedConsistency())
+            return;
+
         for (int i = 0; i < REPEAT_CNT; i++) {
             try {
                 checkDeadlocks(lvlCnt, childrenDirPerLvl, childrenFilePerLvl, primaryLvlCnt, renCnt, delCnt,
@@ -2744,7 +2748,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         finally {
             U.closeQuiet(os);
 
-            IgfsEx igfsEx = uni.getAdapter(IgfsEx.class);
+            IgfsEx igfsEx = uni.unwrap(IgfsEx.class);
 
             if (igfsEx != null)
                 awaitFileClose(igfsEx.asSecondary(), file);
@@ -2868,7 +2872,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     protected void checkExist(UniversalFileSystemAdapter uni, IgfsPath... paths) throws IgniteCheckedException {
-        IgfsEx ex = uni.getAdapter(IgfsEx.class);
+        IgfsEx ex = uni.unwrap(IgfsEx.class);
         for (IgfsPath path : paths) {
             if (ex != null)
                 assert ex.context().meta().fileId(path) != null : "Path doesn't exist [igfs=" + ex.name() +
@@ -2921,7 +2925,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void checkNotExist(UniversalFileSystemAdapter uni, IgfsPath... paths) throws Exception {
-        IgfsEx ex = uni.getAdapter(IgfsEx.class);
+        IgfsEx ex = uni.unwrap(IgfsEx.class);
         for (IgfsPath path : paths) {
             if (ex != null)
                 assert ex.context().meta().fileId(path) == null : "Path exists [igfs=" + ex.name() + ", path=" +
@@ -3044,13 +3048,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         Map<String, String> props = new HashMap<>();
 
         if (username != null)
-            props.put(PROP_USER_NAME, username);
+            props.put(IgfsUtils.PROP_USER_NAME, username);
 
         if (grpName != null)
-            props.put(PROP_GROUP_NAME, grpName);
+            props.put(IgfsUtils.PROP_GROUP_NAME, grpName);
 
         if (perm != null)
-            props.put(PROP_PERMISSION, perm);
+            props.put(IgfsUtils.PROP_PERMISSION, perm);
 
         return props;
     }
@@ -3099,7 +3103,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @param igfs The IGFS instance.
      * @return The data cache.
      */
-    protected static GridCacheAdapter<IgniteUuid, IgfsFileInfo> getMetaCache(IgniteFileSystem igfs) {
+    protected static GridCacheAdapter<IgniteUuid, IgfsEntryInfo> getMetaCache(IgniteFileSystem igfs) {
         String dataCacheName = igfs.configuration().getMetaCacheName();
 
         IgniteEx igniteEx = ((IgfsEx)igfs).context().kernalContext().grid();
@@ -3129,7 +3133,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 entry.getValue().await();
             }
             catch (IgniteCheckedException e) {
-                if (!entry.getValue().cancelled())
+                if (!(e instanceof IgfsFileWorkerBatchCancelledException))
                     throw e;
             }
         }
@@ -3138,14 +3142,22 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         igfs.format();
 
         int prevDifferentSize = Integer.MAX_VALUE; // Previous different size.
-        int size;
         int constCnt = 0, totalCnt = 0;
         final int constThreshold = 20;
         final long sleepPeriod = 500L;
         final long totalThreshold = CACHE_EMPTY_TIMEOUT / sleepPeriod;
 
         while (true) {
-            size = sumCacheSize(igfs);
+            int metaSize = 0;
+
+            for (IgniteUuid metaId : getMetaCache(igfs).keySet()) {
+                if (!IgfsUtils.isRootOrTrashId(metaId))
+                    metaSize++;
+            }
+
+            int dataSize = getDataCache(igfs).size();
+
+            int size = metaSize + dataSize;
 
             if (size <= 2)
                 return; // Caches are cleared, we're done. (2 because ROOT & TRASH always exist).
@@ -3206,15 +3218,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Gets summary IGFS cache size.
-     * @param igfs The IGFS to measure.
-     * @return data cache size + meta cache size.
-     */
-    private static int sumCacheSize(IgniteFileSystem igfs) {
-        return getMetaCache(igfs).size() + getDataCache(igfs).size();
-    }
-
-    /**
      * Clear particular {@link UniversalFileSystemAdapter}.
      *
      * @param uni IGFS.
@@ -3222,7 +3225,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public static void clear(UniversalFileSystemAdapter uni) throws Exception {
-        IgfsEx igfsEx = uni.getAdapter(IgfsEx.class);
+        IgfsEx igfsEx = uni.unwrap(IgfsEx.class);
 
         if (igfsEx != null)
             clear(igfsEx);

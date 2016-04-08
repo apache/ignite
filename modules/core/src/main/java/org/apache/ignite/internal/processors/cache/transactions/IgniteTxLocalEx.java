@@ -76,7 +76,8 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
         boolean deserializeBinary,
         boolean skipVals,
         boolean keepCacheObjects,
-        boolean skipStore);
+        boolean skipStore,
+        boolean needVer);
 
     /**
      * @param cacheCtx Cache context.
