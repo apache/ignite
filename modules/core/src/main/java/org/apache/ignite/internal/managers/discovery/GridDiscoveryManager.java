@@ -1066,7 +1066,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             boolean rmtLateAssign;
 
-            if (n.version().compareTo(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0)
+            if (n.version().compareToIgnoreTimestamp(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0)
                 rmtLateAssign = n.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
             else
                 rmtLateAssign = false;
