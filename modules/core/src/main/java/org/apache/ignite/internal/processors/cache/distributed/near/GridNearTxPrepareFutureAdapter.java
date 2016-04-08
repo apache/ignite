@@ -73,6 +73,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     protected GridCacheSharedContext<?, ?> cctx;
 
     /** Future ID. */
+    @GridToStringInclude
     protected IgniteUuid futId;
 
     /** Transaction. */

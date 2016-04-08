@@ -188,6 +188,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TX_SALVAGE_TIMEOUT = "IGNITE_TX_SALVAGE_TIMEOUT";
 
     /**
+     * Enables/disables transactions deadlock detection.
+     */
+    public static final String IGNITE_TX_DEADLOCK_DETECTION_ENABLED = "IGNITE_TX_DEADLOCK_DETECTION_ENABLED";
+
+    /**
      * System property to override multicast group taken from configuration.
      * Used for testing purposes.
      */

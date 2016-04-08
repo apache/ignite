@@ -19,11 +19,14 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -32,13 +35,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.TxDeadlockException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,6 +73,10 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     /** Lock owner thread. */
     @GridToStringInclude
     private long threadId;
+
+    /** Keys for locking. */
+    @GridToStringExclude
+    private Collection<KeyCacheObject> keys;
 
     /** Keys locked so far. */
     @GridToStringExclude
@@ -128,6 +138,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
         futId = IgniteUuid.randomUuid();
+
+        this.keys = keys;
 
         entries = new ArrayList<>(keys.size());
 
@@ -440,7 +452,47 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            onComplete(false);
+            if (inTx() && cctx.tm().deadlockDetection()) {
+                Set<KeyCacheObject> keys = new HashSet<>();
+
+                List<GridLocalCacheEntry> entries = entries();
+
+                for (int i = 0; i < entries.size(); i++) {
+                    GridLocalCacheEntry e = entries.get(i);
+
+                    List<GridCacheMvccCandidate> mvcc = e.mvccAllLocs();
+
+                    if (mvcc == null)
+                        continue;
+
+                    GridCacheMvccCandidate cand = mvcc.get(0);
+
+                    if (cand.owner() && cand.tx() && !cand.version().equals(tx.xidVersion()))
+                        keys.add(e.key());
+                }
+
+                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx.nearXidVersion(), cctx, keys);
+
+                fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
+                    @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
+                        try {
+                            TxDeadlock deadlock = fut.get();
+
+                            if (deadlock != null)
+                                err.compareAndSet(null, new TxDeadlockException(deadlock.toString(cctx.shared())));
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Unexpected error: ", e);
+
+                            err.compareAndSet(null, e);
+                        }
+
+                        onComplete(false);
+                    }
+                });
+            }
+            else
+                onComplete(false);
         }
 
         /** {@inheritDoc} */
