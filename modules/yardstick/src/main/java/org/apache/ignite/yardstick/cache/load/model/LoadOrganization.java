@@ -1,10 +1,9 @@
 package org.apache.ignite.yardstick.cache.load.model;
 
 /**
- * Created by pyatkov-vd on 07.04.2016.
+ *
  */
 public class LoadOrganization {
-
     /** Organization ID. */
     private int id;
 

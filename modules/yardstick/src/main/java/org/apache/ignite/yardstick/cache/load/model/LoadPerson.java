@@ -1,12 +1,9 @@
 package org.apache.ignite.yardstick.cache.load.model;
 
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-
 /**
- * Created by pyatkov-vd on 07.04.2016.
+ *
  */
-public class LoadPersone {
-
+public class LoadPerson {
     private int id;
 
     private String firstName;
@@ -18,12 +15,11 @@ public class LoadPersone {
     /**
      * Constructs empty person.
      */
-    public LoadPersone() {
+    public LoadPerson() {
         // No-op.
     }
 
-
-    public LoadPersone(Integer id) {
+    public LoadPerson(Integer id) {
         this.id = id;
         firstName = "Name " + id;
         lastName = "Last " + id;
@@ -68,7 +64,7 @@ public class LoadPersone {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        LoadPersone persone = (LoadPersone)o;
+        LoadPerson persone = (LoadPerson)o;
 
         if (id != persone.id)
             return false;

@@ -24,17 +24,22 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Created by pyatkov-vd on 07.04.2016.
+ *
  */
 public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark {
-
+    /** */
     public static final String LOAD_MODEL_PACKAGE = "org.apache.ignite.yardstick.cache.load.model";
+
+    /** */
     public static final int operations = Operation.values().length;
 
+    /** */
     private Map<IgniteCache, CacheFrame> availableCaches;
 
+    /**
+     * @throws Exception If failed.
+     */
     private void searchCache() throws Exception {
-
         availableCaches = new HashMap<>();
 
         Ignite ignite = ignite();
@@ -42,7 +47,6 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         Class[] classes = loadModelClasses();
 
         for (String name: ignite.cacheNames()) {
-
             IgniteCache<Object, Object> cache = ignite.cache(name);
 
             Constructor keyConstructor = classes[nextRandom(classes.length)].getConstructor(Integer.class);
@@ -51,9 +55,10 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             cacheFrame.setKeyConstructor(keyConstructor);
             cacheFrame.setValueConstructor(valueConstructor);
             CacheConfiguration configuration = cache.getConfiguration(CacheConfiguration.class);
-            if (configuration.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL) {
+
+            if (configuration.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
                 cacheFrame.setTransactional(true);
-            }
+
             availableCaches.put(cache, cacheFrame);
         }
     }
@@ -79,45 +84,55 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                     entry.getValue().getValueConstructor().newInstance(i));
     }
 
-    @Override
-    protected void init() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void init() throws Exception {
         super.init();
+
         searchCache();
+
         preLoading();
     }
 
-    @Override
-    public boolean test(Map<Object, Object> map) throws Exception {
-
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> map) throws Exception {
         for (Map.Entry<IgniteCache, CacheFrame> entry: availableCaches.entrySet()) {
             switch (Operation.valueOf(nextRandom(operations))) {
                 case PUT:
                     doPut(entry);
                     break;
+
                 case PUTALL:
                     doPutAll(entry);
                     break;
+
                 case GET:
                     doGet(entry);
                     break;
+
                 case GETALL:
                     doGetAll(entry);
                     break;
+
                 case INVOKE:
                     doInvoke(entry);
                     break;
+
                 case INVOKEALL:
                     doInvokeAll(entry);
                     break;
+
                 case REMOVE:
                     doRemove(entry);
                     break;
+
                 case REMOVEALL:
                     doRemoveAll(entry);
                     break;
+
                 case PUTIFABSENT:
                     doPutIfAbsent(entry);
                     break;
+
                 case REPLACE:
                     doReplace(entry);
             }
@@ -177,7 +192,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             keys.add(entry.getValue().getKeyConstructor().newInstance(i));
         }
         entry.getKey().invokeAll(keys, new EntryProcessor() {
-                @Override public Object process(MutableEntry entry1, Object... arguments) throws EntryProcessorException {
+                @Override public Object process(MutableEntry entry1, Object... arguments) {
                     try {
                         int i = nextRandom(args.range()/2);
                         entry1.setValue(entry.getValue().getValueConstructor().newInstance(i + 1));
@@ -218,21 +233,33 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             entry.getValue().getValueConstructor().newInstance(i + 1));
     }
 
+    /**
+     *
+     */
     static enum Operation {
+        /** */
         PUT,
+        /** */
         PUTALL,
+        /** */
         GET ,
+        /** */
         GETALL ,
+        /** */
         INVOKE,
+        /** */
         INVOKEALL,
+        /** */
         REMOVE,
+        /** */
         REMOVEALL,
+        /** */
         PUTIFABSENT,
+        /** */
         REPLACE;
 
         public static Operation valueOf(int num) {
             return values()[num];
         }
     }
-
 }
