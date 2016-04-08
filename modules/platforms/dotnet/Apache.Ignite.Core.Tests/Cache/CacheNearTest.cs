@@ -26,8 +26,12 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// </summary>
     public class CacheNearTest
     {
-        private IIgnite grid;
+        /** */
+        private IIgnite _grid;
 
+        /// <summary>
+        /// Fixture set up.
+        /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
@@ -45,21 +49,36 @@ namespace Apache.Ignite.Core.Tests.Cache
                 }
             };
 
-            grid = Ignition.Start(cfg);
+            _grid = Ignition.Start(cfg);
         }
 
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
         }
 
+        /// <summary>
+        /// Tests the existing near cache.
+        /// </summary>
         [Test]
         public void TestExistingNearCache()
         {
-            
+            var cache = _grid.GetCache<int, string>(null);
+
+            cache[1] = "1";
+
+            var nearCache = _grid.GetOrCreateNearCache<int, string>(null, null);
+
+            Assert.AreEqual("1", nearCache[1]);
         }
 
+        /// <summary>
+        /// Tests the created near cache.
+        /// </summary>
         [Test]
         public void TestCreateNearCache()
         {
