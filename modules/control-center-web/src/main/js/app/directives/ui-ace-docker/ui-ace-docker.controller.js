@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['$scope', function($scope) {
+export default ['$scope', 'GeneratorDocker', function($scope, docker) {
     const ctrl = this;
 
     // Watchers definition.
@@ -25,8 +25,7 @@ export default ['$scope', function($scope) {
         if (!$scope.cluster)
             return;
 
-        // TODO IGNITE-2058: need move $generatorDocker to services.
-        ctrl.data = $generatorDocker.clusterDocker($scope.cluster, 'latest');
+        ctrl.data = docker.generate($scope.cluster, 'latest');
     };
 
     // Setup watchers.

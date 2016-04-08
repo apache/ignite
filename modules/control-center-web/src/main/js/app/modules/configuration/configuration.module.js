@@ -20,6 +20,10 @@ import angular from 'angular';
 import igniteEventGroups from './EventGroups.provider';
 import igniteSidebar from './Sidebar.provider';
 
+import GeneratorXml from './generator/Xml.service';
+import GeneratorJava from './generator/Java.service';
+import GeneratorDocker from './generator/Docker.service';
+
 import igniteSidebarDirective from './sidebar.directive';
 
 // Ignite events groups.
@@ -29,4 +33,7 @@ angular
 ])
 .provider(...igniteEventGroups)
 .provider(...igniteSidebar)
-.directive(...igniteSidebarDirective);
+.directive(...igniteSidebarDirective)
+.service(...GeneratorXml)
+.service(...GeneratorJava)
+.service(...GeneratorDocker);

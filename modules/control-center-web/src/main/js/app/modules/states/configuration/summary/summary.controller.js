@@ -19,8 +19,8 @@ import _ from 'lodash';
 import JSZip from 'jszip';
 
 export default [
-    '$scope', '$http', '$common', '$loading', '$table', '$filter', '$timeout', 'ConfigurationSummaryResource', 'JavaTypes', 'IgniteVersion',
-    function($scope, $http, $common, $loading, $table, $filter, $timeout, Resource, JavaTypes, IgniteVersion) {
+    '$scope', '$http', '$common', '$loading', '$table', '$filter', '$timeout', 'ConfigurationSummaryResource', 'JavaTypes', 'IgniteVersion', 'GeneratorDocker',
+    function($scope, $http, $common, $loading, $table, $filter, $timeout, Resource, JavaTypes, IgniteVersion, docker) {
         const ctrl = this;
 
         $loading.start('loading');
@@ -269,10 +269,10 @@ export default [
                 ctrl.data = {};
 
             if (!ctrl.data.docker)
-                ctrl.data.docker = $generatorDocker.clusterDocker(cluster, 'latest');
+                ctrl.data.docker = docker.generate(cluster, 'latest');
 
             zip.file('Dockerfile', ctrl.data.docker);
-            zip.file('.dockerignore', $generatorDocker.ignoreFile());
+            zip.file('.dockerignore', docker.ignoreFile());
 
             const builder = $generatorProperties.generateProperties(cluster);
 

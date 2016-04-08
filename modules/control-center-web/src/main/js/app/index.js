@@ -96,8 +96,6 @@ import igniteBsAffixUpdate from './directives/bs-affix-update.directive';
 // Services.
 import cleanup from './services/cleanup.service';
 import confirm from './services/confirm.service';
-import GeneratorXml from './services/Generator/Xml.service';
-import GeneratorJava from './services/Generator/Java.service';
 import IgniteCountries from './services/Countries.service';
 import IgniteChartColors from './services/ChartColors.service';
 import IgniteAgentMonitor from './services/AgentMonitor.service';
@@ -110,7 +108,6 @@ import byName from './filters/byName.filter';
 
 // Generators
 import $generatorCommon from 'generator/generator-common';
-import $generatorDocker from 'generator/generator-docker';
 import $generatorJava from 'generator/generator-java';
 import $generatorOptional from 'generator/generator-optional';
 import $generatorPom from 'generator/generator-pom';
@@ -119,7 +116,6 @@ import $generatorReadme from 'generator/generator-readme';
 import $generatorXml from 'generator/generator-xml';
 
 window.$generatorCommon = $generatorCommon;
-window.$generatorDocker = $generatorDocker;
 window.$generatorJava = $generatorJava;
 window.$generatorOptional = $generatorOptional;
 window.$generatorPom = $generatorPom;
@@ -194,8 +190,6 @@ angular
 // Services.
 .service(...cleanup)
 .service(...confirm)
-.service(...GeneratorXml)
-.service(...GeneratorJava)
 .service(...IgniteCountries)
 .service(...IgniteChartColors)
 .service(...IgniteAgentMonitor)
