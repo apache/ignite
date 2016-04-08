@@ -781,8 +781,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (!((CacheObjectBinaryContext)ctx).binaryEnabled())
             return super.toCacheKeyObject(ctx, obj, userObj, partition);
 
-        if (obj instanceof KeyCacheObject)
+        if (obj instanceof KeyCacheObject) {
+            ((KeyCacheObject)obj).partition(partition);
             return (KeyCacheObject)obj;
+        }
 
         if (((CacheObjectBinaryContext)ctx).binaryEnabled()) {
             obj = toBinary(obj);

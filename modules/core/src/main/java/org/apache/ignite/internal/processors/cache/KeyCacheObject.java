@@ -35,4 +35,6 @@ public interface KeyCacheObject extends CacheObject {
      * @return Partition ID for this key or -1 if it is unknown.
      */
     public int partition();
+
+    public void partition(int part);
 }

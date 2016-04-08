@@ -30,7 +30,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** */
     private static final long serialVersionUID = 0L;
 
-    private int partition;
+    private int part;
 
     /**
      *
@@ -51,16 +51,20 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
      * @param val Value.
      * @param valBytes Value bytes.
      */
-    public KeyCacheObjectImpl(Object val, byte[] valBytes, int partition) {
+    public KeyCacheObjectImpl(Object val, byte[] valBytes, int part) {
         assert val != null;
 
         this.val = val;
         this.valBytes = valBytes;
-        this.partition = partition;
+        this.part = part;
     }
 
     @Override public int partition() {
-        return partition;
+        return part;
+    }
+
+    @Override public void partition(int part) {
+        this.part = part;
     }
 
     /** {@inheritDoc} */
@@ -133,7 +137,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
         switch (writer.state()) {
             case 1:
-                if (!writer.writeInt("partition", partition))
+                if (!writer.writeInt("partition", part))
                     return false;
 
                 writer.incrementState();
@@ -154,7 +158,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
 
         switch (reader.state()) {
             case 1:
-                partition = reader.readInt("partition");
+                part = reader.readInt("partition");
 
                 if (!reader.isLastRead())
                     return false;
