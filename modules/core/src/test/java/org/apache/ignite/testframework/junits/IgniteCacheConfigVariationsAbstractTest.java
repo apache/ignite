@@ -503,7 +503,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
         if (txShouldBeUsed()) {
             for (TransactionConcurrency conc : TransactionConcurrency.values()) {
                 for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                    try (Transaction ignored = ignite.transactions().txStart()) {
+                    try (Transaction ignored = ignite.transactions().txStart(conc, isolation)) {
                         info("Executing explicite tx [isolation" + isolation + ", concurrency=" + conc + "]");
 
                         task.run();
