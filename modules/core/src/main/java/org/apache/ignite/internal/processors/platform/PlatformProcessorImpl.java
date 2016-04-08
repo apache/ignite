@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -401,14 +402,22 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr) {
-        // TODO
-        return null;
+        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
+        NearCacheConfiguration cfg = PlatformConfigurationUtils.readNearConfiguration(reader);
+
+        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createNearCache(cacheName, cfg);
+
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
-        // TODO
-        return null;
+        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
+        NearCacheConfiguration cfg = PlatformConfigurationUtils.readNearConfiguration(reader);
+
+        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateNearCache(cacheName, cfg);
+
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
 
     /**
