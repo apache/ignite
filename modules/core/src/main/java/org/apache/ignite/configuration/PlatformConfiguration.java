@@ -21,5 +21,5 @@ package org.apache.ignite.configuration;
  * Platform configuration marker interface.
  */
 public interface PlatformConfiguration {
-    // No-op.
+    String processorClassName();
 }

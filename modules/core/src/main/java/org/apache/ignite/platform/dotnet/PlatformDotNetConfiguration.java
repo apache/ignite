@@ -18,6 +18,7 @@
 package org.apache.ignite.platform.dotnet;
 
 import org.apache.ignite.configuration.PlatformConfiguration;
+import org.apache.ignite.internal.processors.platform.PlatformProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.ArrayList;
@@ -93,5 +94,10 @@ public class PlatformDotNetConfiguration implements PlatformConfiguration {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PlatformDotNetConfiguration.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String processorClassName() {
+        return PlatformProcessorImpl.class.getName();
     }
 }

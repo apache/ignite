@@ -75,12 +75,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
@@ -3203,9 +3198,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             String clsName;
 
             // Handle special case for PlatformProcessor
-            if (cls.equals(PlatformProcessor.class))
-                clsName = ctx.config().getPlatformConfiguration() == null ?
-                    PlatformNoopProcessor.class.getName() : cls.getName() + "Impl";
+            if (cls.equals(PlatformProcessor.class)) {
+                PlatformConfiguration platformCfg = ctx.config().getPlatformConfiguration();
+                clsName = platformCfg != null
+                        ? platformCfg.processorClassName()
+                        : PlatformNoopProcessor.class.getName();
+            }
             else
                 clsName = componentClassName(cls);
 
