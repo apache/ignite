@@ -371,7 +371,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             txNodes = F.viewReadOnly(txNodesMsg, MSG_TO_COL);
 
         if (txNodesBytes != null && txNodes == null)
-            txNodes = ctx.marshaller().unmarshal(txNodesBytes, ldr);
+            txNodes = ctx.marshaller().unmarshal(txNodesBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */

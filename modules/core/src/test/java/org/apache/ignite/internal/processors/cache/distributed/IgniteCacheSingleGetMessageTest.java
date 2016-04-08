@@ -21,26 +21,19 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -69,7 +62,7 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        TestCommunicationSpi commSpi = new TestCommunicationSpi();
+        TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -156,7 +149,7 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
 
         Ignite node = cache.unwrap(Ignite.class);
 
-        TestCommunicationSpi spi = (TestCommunicationSpi)node.configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)node.configuration().getCommunicationSpi();
 
         spi.record(GridNearSingleGetRequest.class);
 
@@ -164,17 +157,24 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
 
         assertNotSame(node, primary);
 
-        TestCommunicationSpi primarySpi = (TestCommunicationSpi)primary.configuration().getCommunicationSpi();
+        TestRecordingCommunicationSpi primarySpi =
+            (TestRecordingCommunicationSpi)primary.configuration().getCommunicationSpi();
 
         primarySpi.record(GridNearSingleGetResponse.class);
 
         assertNull(cache.get(key));
 
-        checkMessages(spi, primarySpi);
+        if (backup)
+            checkNoMessages(spi, primarySpi);
+        else
+            checkMessages(spi, primarySpi);
 
         assertFalse(cache.containsKey(key));
 
-        checkMessages(spi, primarySpi);
+        if (backup)
+            checkNoMessages(spi, primarySpi);
+        else
+            checkMessages(spi, primarySpi);
 
         cache.put(key, 1);
 
@@ -201,7 +201,10 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
                 tx.commit();
             }
 
-            checkMessages(spi, primarySpi);
+            if (backup)
+                checkNoMessages(spi, primarySpi);
+            else
+                checkMessages(spi, primarySpi);
 
             try (Transaction tx = node.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 assertFalse(cache.containsKey(key));
@@ -209,7 +212,10 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
                 tx.commit();
             }
 
-            checkMessages(spi, primarySpi);
+            if (backup)
+                checkNoMessages(spi, primarySpi);
+            else
+                checkMessages(spi, primarySpi);
 
             cache.put(key, 1);
 
@@ -241,7 +247,7 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
      * @param spi Near node SPI.
      * @param primarySpi Primary node SPI.
      */
-    private void checkMessages(TestCommunicationSpi spi, TestCommunicationSpi primarySpi) {
+    private void checkMessages(TestRecordingCommunicationSpi spi, TestRecordingCommunicationSpi primarySpi) {
         List<Object> msgs = spi.recordedMessages();
 
         assertEquals(1, msgs.size());
@@ -257,7 +263,7 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
      * @param spi Near node SPI.
      * @param primarySpi Primary node SPI.
      */
-    private void checkNoMessages(TestCommunicationSpi spi, TestCommunicationSpi primarySpi) {
+    private void checkNoMessages(TestRecordingCommunicationSpi spi, TestRecordingCommunicationSpi primarySpi) {
         List<Object> msgs = spi.recordedMessages();
         assertEquals(0, msgs.size());
 
@@ -305,53 +311,5 @@ public class IgniteCacheSingleGetMessageTest extends GridCommonAbstractTest {
             ccfg.setBackups(backups);
 
         return ccfg;
-    }
-
-    /**
-     *
-     */
-    private static class TestCommunicationSpi extends TcpCommunicationSpi {
-        /** */
-        private Class<?> recordCls;
-
-        /** */
-        private List<Object> recordedMsgs = new ArrayList<>();
-
-        /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
-            throws IgniteSpiException {
-            if (msg instanceof GridIoMessage) {
-                Object msg0 = ((GridIoMessage)msg).message();
-
-                synchronized (this) {
-                    if (recordCls != null && msg0.getClass().equals(recordCls))
-                        recordedMsgs.add(msg0);
-                }
-            }
-
-            super.sendMessage(node, msg, ackC);
-        }
-
-        /**
-         * @param recordCls Message class to record.
-         */
-        void record(@Nullable Class<?> recordCls) {
-            synchronized (this) {
-                this.recordCls = recordCls;
-            }
-        }
-
-        /**
-         * @return Recorded messages.
-         */
-        List<Object> recordedMessages() {
-            synchronized (this) {
-                List<Object> msgs = recordedMsgs;
-
-                recordedMsgs = new ArrayList<>();
-
-                return msgs;
-            }
-        }
     }
 }

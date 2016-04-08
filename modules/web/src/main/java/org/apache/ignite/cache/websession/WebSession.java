@@ -94,12 +94,15 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /**
+     * @param id Session ID.
      * @param ses Session.
      */
-    WebSession(HttpSession ses) {
+    WebSession(String id, HttpSession ses) {
+        assert id != null;
         assert ses != null;
 
-        id = ses.getId();
+        this.id = id;
+
         createTime = ses.getCreationTime();
         accessTime = ses.getLastAccessedTime();
         maxInactiveInterval = ses.getMaxInactiveInterval();
@@ -117,20 +120,14 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /**
+     * @param id Session ID.
      * @param ses Session.
      * @param isNew Is new flag.
      */
-    WebSession(HttpSession ses, boolean isNew) {
-        this(ses);
+    WebSession(String id, HttpSession ses, boolean isNew) {
+        this(id, ses);
 
         this.isNew = isNew;
-    }
-
-    /**
-     * @param accessTime Last access time.
-     */
-    void accessTime(long accessTime) {
-        this.accessTime = accessTime;
     }
 
     /**
@@ -252,13 +249,6 @@ class WebSession implements HttpSession, Externalizable {
         updates = null;
 
         lsnr.destroySession(id);
-    }
-
-    /**
-     * @param isNew New session flag.
-     */
-    void setNew(boolean isNew) {
-        this.isNew = isNew;
     }
 
     /** {@inheritDoc} */
