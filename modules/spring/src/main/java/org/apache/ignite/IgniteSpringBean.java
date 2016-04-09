@@ -97,6 +97,11 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    public IgniteConfiguration getConfiguration() {
+        return cfg;
+    }
+
     /**
      * Sets grid configuration.
      *
