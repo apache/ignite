@@ -1393,7 +1393,7 @@ consoleModule.controller('domainsController', [
                                 if (domains.length > 0)
                                     $scope.selectItem(domains[0]);
                                 else
-                                    $scope.backupItem = emptyDoamin;
+                                    $scope.backupItem = emptyDomain;
                             }
 
                             _checkShowValidPresentation();
