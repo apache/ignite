@@ -177,9 +177,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                     }
                 }
                 catch (IOException e) {
-                    throw new IgniteCheckedException("Class definition not found. " +
-                        "Failed to read class name from file [id=" + id +
-                        ", file=" + file.getAbsolutePath() + ']', e);
+                    throw new IgniteCheckedException("Class definition was not found " +
+                        "at marshaller cache and local file. " +
+                        "[id=" + id + ", file=" + file.getAbsolutePath() + ']');
                 }
             }
             finally {

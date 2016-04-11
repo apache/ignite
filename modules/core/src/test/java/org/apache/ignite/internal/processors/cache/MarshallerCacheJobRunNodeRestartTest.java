@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.File;
+import java.io.Serializable;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -141,7 +141,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     static class Job1 implements IgniteCallable {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return new Job2();
+            return new Class1();
         }
     }
 
@@ -151,7 +151,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     static class Job2 implements IgniteCallable {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return new Job3();
+            return new Class2();
         }
     }
 
@@ -161,7 +161,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     static class Job3 implements IgniteCallable {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return new Job4();
+            return new Class3();
         }
     }
 
@@ -171,7 +171,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     static class Job4 implements IgniteCallable {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return new Job5();
+            return new Class4();
         }
     }
 
@@ -181,7 +181,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     static class Job5 implements IgniteCallable {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return new Job6();
+            return new Class5();
         }
     }
 
@@ -191,7 +191,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     static class Job6 implements IgniteCallable {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return new Job7();
+            return new Class6();
         }
     }
 
@@ -201,7 +201,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     static class Job7 implements IgniteCallable {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return new Job8();
+            return new Class7();
         }
     }
 
@@ -211,7 +211,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     static class Job8 implements IgniteCallable {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return new Job9();
+            return new Class8();
         }
     }
 
@@ -221,7 +221,7 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     static class Job9 implements IgniteCallable {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return new Job10();
+            return new Class9();
         }
     }
 
@@ -231,7 +231,77 @@ public class MarshallerCacheJobRunNodeRestartTest extends GridCommonAbstractTest
     static class Job10 implements IgniteCallable {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            return new Job1();
+            return new Class10();
         }
+    }
+
+    /**
+     *
+     */
+    static class Class1 implements Serializable {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    static class Class2 implements Serializable {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    static class Class3 implements Serializable {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    static class Class4 implements Serializable {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    static class Class5 implements Serializable {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    static class Class6 implements Serializable {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    static class Class7 implements Serializable {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    static class Class8 implements Serializable {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    static class Class9 implements Serializable {
+        // No-op.
+    }
+
+    /**
+     *
+     */
+    static class Class10 implements Serializable {
+        // No-op.
     }
 }
