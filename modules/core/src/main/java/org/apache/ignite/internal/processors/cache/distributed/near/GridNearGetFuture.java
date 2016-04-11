@@ -441,6 +441,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     if (needVer) {
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
+                            null,
                             /*swap*/true,
                             /*unmarshal*/true,
                             /**update-metrics*/true,
@@ -457,7 +458,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         }
                     }
                     else {
-                        v = entry.innerGet(tx,
+                        v = entry.innerGet(
+                            null,
+                            tx,
                             /*swap*/false,
                             /*read-through*/false,
                             /*fail-fast*/true,
@@ -580,6 +583,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     if (needVer) {
                         T2<CacheObject, GridCacheVersion> res = dhtEntry.innerGetVersioned(
                             null,
+                            null,
                             /*swap*/true,
                             /*unmarshal*/true,
                             /**update-metrics*/false,
@@ -596,7 +600,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         }
                     }
                     else {
-                        v = dhtEntry.innerGet(tx,
+                        v = dhtEntry.innerGet(
+                            null,
+                            tx,
                             /*swap*/true,
                             /*read-through*/false,
                             /*fail-fast*/true,
