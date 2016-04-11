@@ -64,7 +64,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -394,7 +393,18 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override @Nullable public Serializable collectDiscoveryData(UUID nodeId) {
         if (!nodeId.equals(ctx.localNodeId()) || !locInfos.isEmpty()) {
-            DiscoveryData data = new DiscoveryData(ctx.localNodeId(), clientInfos);
+            Map<UUID, Map<UUID, LocalRoutineInfo>> clientInfos0 = U.newHashMap(clientInfos.size());
+
+            for (Map.Entry<UUID, Map<UUID, LocalRoutineInfo>> e : clientInfos.entrySet()) {
+                Map<UUID, LocalRoutineInfo> copy = U.newHashMap(e.getValue().size());
+
+                for (Map.Entry<UUID, LocalRoutineInfo> e0 : e.getValue().entrySet())
+                    copy.put(e0.getKey(), e0.getValue());
+
+                clientInfos0.put(e.getKey(), copy);
+            }
+
+            DiscoveryData data = new DiscoveryData(ctx.localNodeId(), clientInfos0);
 
             // Collect listeners information (will be sent to joining node during discovery process).
             for (Map.Entry<UUID, LocalRoutineInfo> e : locInfos.entrySet()) {

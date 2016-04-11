@@ -122,8 +122,7 @@ public class HadoopContext {
      * @return Hadoop-enabled nodes.
      */
     public Collection<ClusterNode> nodes() {
-        return ctx.discovery().cacheNodes(CU.SYS_CACHE_HADOOP_MR,
-            new AffinityTopologyVersion(ctx.discovery().topologyVersion()));
+        return ctx.discovery().cacheNodes(CU.SYS_CACHE_HADOOP_MR, ctx.discovery().topologyVersionEx());
     }
 
     /**

@@ -172,13 +172,14 @@ public final class GridTestUtils {
      * @param sent Sent or received.
      */
     public static void addMessage(UUID from, UUID to, Message msg, boolean sent) {
-        IgnitePair<UUID> key = F.pair(from, to);
+        IgnitePair<UUID> key = new IgnitePair<>(from, to);
 
         IgnitePair<Queue<Message>> val = msgMap.get(key);
 
         if (val == null) {
             IgnitePair<Queue<Message>> old = msgMap.putIfAbsent(key,
-                val = F.<Queue<Message>>pair(new ConcurrentLinkedQueue<Message>(), new ConcurrentLinkedQueue<Message>()));
+                val = new IgnitePair<Queue<Message>>(
+                    new ConcurrentLinkedQueue<Message>(), new ConcurrentLinkedQueue<Message>()));
 
             if (old != null)
                 val = old;
