@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests
     /// <summary>
     /// Client reconnect tests.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class ReconnectTest
     {
         /// <summary>
@@ -36,7 +37,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = "config\\compute\\compute-grid1.xml",
+                SpringConfigUrl = "config\\reconnect-test.xml",
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions()
             };
@@ -49,7 +50,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 Assert.IsTrue(ignite.GetCluster().ClientReconnectTask.IsCompleted);
 
-                var cache = ignite.GetCache<int, int>(null);
+                var cache = ignite.CreateCache<int, int>("c");
 
                 cache[1] = 1;
 
