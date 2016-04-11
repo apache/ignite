@@ -1889,7 +1889,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             /*unmarshal*/true,
                                             /*metrics*/true,
                                             /*events*/!skipVals,
-                                            /*temporary*/true,
+                                            /*temporary*/false,
                                             CU.subjectId(IgniteTxLocalAdapter.this, cctx),
                                             transformClo,
                                             resolveTaskName(),

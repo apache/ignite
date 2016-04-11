@@ -266,7 +266,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
             X.println(appName + " distribution is invalid and it will be deleted.");
 
             if (!U.delete(home))
-                throw new IOException("Failed to delete directory: " + install.getAbsolutePath());
+                throw new IOException("Failed to delete directory: " + home.getAbsolutePath());
         }
 
         for (String url : urls) {
@@ -330,7 +330,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
             catch (Exception e) {
                 e.printStackTrace();
 
-                U.delete(install);
+                U.delete(home);
             }
         }
 
