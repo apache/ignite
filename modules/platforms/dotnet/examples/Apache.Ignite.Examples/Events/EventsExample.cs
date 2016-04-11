@@ -16,17 +16,15 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Events;
 using Apache.Ignite.ExamplesDll.Compute;
 using Apache.Ignite.ExamplesDll.Events;
+using Apache.Ignite.ExamplesDll.Binary;
 
 namespace Apache.Ignite.Examples.Events
 {
-    using Apache.Ignite.ExamplesDll.Binary;
-
     /// <summary>
     /// Example demonstrating Ignite events.
     /// <para />
@@ -49,13 +47,7 @@ namespace Apache.Ignite.Examples.Events
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\examples-config.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx512m" }
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
             {
                 Console.WriteLine(">>> Events example started.");
                 Console.WriteLine();
