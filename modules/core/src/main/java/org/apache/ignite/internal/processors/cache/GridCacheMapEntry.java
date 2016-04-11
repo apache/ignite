@@ -3748,7 +3748,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         synchronized (this) {
             checkObsolete();
 
-            updateTtl(ttl);
+            if (hasValueUnlocked())
+                updateTtl(ttl);
 
             /*
             TODO IGNITE-305.

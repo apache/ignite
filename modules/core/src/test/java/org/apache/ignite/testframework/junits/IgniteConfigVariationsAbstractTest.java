@@ -234,6 +234,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
      * @return Key.
      */
     public static Object key(int keyId, DataMode mode) {
+        if (mode == null)
+            mode = DataMode.SERIALIZABLE;
+
         switch (mode) {
             case SERIALIZABLE:
                 return new SerializableObject(keyId);
@@ -263,6 +266,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
      * @return Value.
      */
     public static Object value(int idx, DataMode mode) {
+        if (mode == null)
+            mode = DataMode.SERIALIZABLE;
+
         switch (mode) {
             case SERIALIZABLE:
                 return new SerializableObject(idx);

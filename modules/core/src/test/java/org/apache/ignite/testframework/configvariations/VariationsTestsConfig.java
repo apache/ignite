@@ -48,6 +48,9 @@ public class VariationsTestsConfig {
     private boolean stopCache;
 
     /** */
+    private boolean awaitPartMapExchange = true;
+
+    /** */
     private boolean withClients;
 
     /**
@@ -61,9 +64,10 @@ public class VariationsTestsConfig {
         String desc,
         boolean stopNodes,
         CacheStartMode cacheStartMode,
-        int gridCnt
+        int gridCnt,
+        boolean awaitPartMapExchange
     ) {
-        this(factory, desc, stopNodes, true, true, cacheStartMode, gridCnt, 0, false);
+        this(factory, desc, stopNodes, true, true, cacheStartMode, gridCnt, 0, false, awaitPartMapExchange);
     }
 
     /**
@@ -81,7 +85,8 @@ public class VariationsTestsConfig {
         CacheStartMode cacheStartMode,
         int gridCnt,
         int testedNodeIdx,
-        boolean withClients
+        boolean withClients,
+        boolean awaitPartMapExchange
     ) {
         A.ensure(gridCnt >= 1, "Grids count cannot be less then 1.");
 
@@ -94,6 +99,7 @@ public class VariationsTestsConfig {
         this.startCache = startCache;
         this.stopCache = stopCache;
         this.withClients = withClients;
+        this.awaitPartMapExchange = awaitPartMapExchange;
     }
 
     /**
@@ -157,5 +163,12 @@ public class VariationsTestsConfig {
      */
     public boolean withClients() {
         return withClients;
+    }
+
+    /**
+     * @return Partition map exchange wait flag.
+     */
+    public boolean awaitPartitionMapExchange() {
+        return awaitPartMapExchange;
     }
 }
