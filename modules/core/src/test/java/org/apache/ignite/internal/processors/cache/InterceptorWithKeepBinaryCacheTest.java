@@ -449,7 +449,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     assertTrue(cache.remove(key));
                 }
 
-                // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+                // TODO IGNITE-2973: should be always false.
                 binaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
@@ -557,7 +557,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     }
                 }
 
-                // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+                // TODO IGNITE-2973: should be always false.
                 binaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
@@ -651,7 +651,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     assertTrue((Boolean)cache.future().get());
                 }
 
-                // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+                // TODO IGNITE-2973: should be always false.
                 binaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
@@ -781,7 +781,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     }
                 }
 
-                // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+                // TODO IGNITE-2973: should be always false.
                 binaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
@@ -865,7 +865,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                 cache.removeAll(keys);
 
-                // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+                // TODO IGNITE-2973: should be always false.
                 binaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
@@ -956,7 +956,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     tx.commit();
                 }
 
-                // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+                // TODO IGNITE-2973: should be always false.
                 binaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
@@ -1057,7 +1057,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                 cache.future().get();
 
-                // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+                // TODO IGNITE-2973: should be always false.
                 binaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
@@ -1161,7 +1161,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     tx.commit();
                 }
 
-                // TODO fix it (see IGNITE-2899 and point 1.3 in comments)
+                // TODO IGNITE-2973: should be always false.
                 binaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
@@ -1268,7 +1268,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
         /** {@inheritDoc} */
         @Nullable @Override public V onGet(K key, V val) {
-            // TODO we should always validate key here, but cann't due to a bug (see IGNITE-2899 and point 1.3 in comments).
+            // TODO IGNITE-2973: should always validate key here, but cannot due to the bug.
             validate(key, val, false, true);
 
             return val;
@@ -1323,7 +1323,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     assertTrue("Key: " + key, key instanceof BinaryObject);
 
                 if (val != null) {
-                    // TODO we should always do this check, but cann't due to a bug (see IGNITE-2899 and point 1.3 in comments).
+                    // TODO IGNITE-2973: should always do this check, but cannot due to the bug.
                     if (validateVal && binaryObjExp)
                         assertTrue("Val: " + val, val instanceof BinaryObject);
                 }
