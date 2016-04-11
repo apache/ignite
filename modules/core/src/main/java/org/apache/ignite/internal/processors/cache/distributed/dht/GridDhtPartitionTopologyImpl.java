@@ -77,9 +77,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     private final IgniteLogger log;
 
     /** */
-//    private final ConcurrentMap<Integer, GridDhtLocalPartition> locParts =
-//        new ConcurrentHashMap8<>();
-
     private final GridDhtLocalPartition[] locParts;
 
     /** Node to partition map. */

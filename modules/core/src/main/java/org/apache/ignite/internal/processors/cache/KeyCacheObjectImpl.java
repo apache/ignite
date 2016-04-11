@@ -30,6 +30,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
     private int part;
 
     /**
@@ -50,6 +51,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /**
      * @param val Value.
      * @param valBytes Value bytes.
+     * @param part Partition.
      */
     public KeyCacheObjectImpl(Object val, byte[] valBytes, int part) {
         assert val != null;
@@ -59,10 +61,12 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
         this.part = part;
     }
 
+    /** {@inheritDoc} */
     @Override public int partition() {
         return part;
     }
 
+    /** {@inheritDoc} */
     @Override public void partition(int part) {
         this.part = part;
     }
@@ -117,6 +121,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
         return 90;
     }
 
+    /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 2;
     }

@@ -112,8 +112,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         return toCacheKeyObject(ctx, obj, userObj, -1);
     }
 
-    @Override
-    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj, int partition) {
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj, int partition) {
         if (obj instanceof KeyCacheObject) {
             ((KeyCacheObject)obj).partition(partition);
             return (KeyCacheObject)obj;

@@ -36,5 +36,6 @@ public interface KeyCacheObject extends CacheObject {
      */
     public int partition();
 
+    /** TODO */
     public void partition(int part);
 }
