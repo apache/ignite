@@ -1351,7 +1351,13 @@ consoleModule.controller('sqlController', [
                         },
                         color: IgniteChartColors,
                         stacked: stacked,
-                        showControls: true
+                        showControls: true,
+                        legend: {
+                            vers: 'furious',
+                            margin: {
+                                right: -25
+                            }
+                        }
                     }
                 };
 
@@ -1382,7 +1388,13 @@ consoleModule.controller('sqlController', [
                             labelThreshold: 0.05,
                             labelType: 'percent',
                             donut: true,
-                            donutRatio: 0.35
+                            donutRatio: 0.35,
+                            legend: {
+                                vers: 'furious',
+                                margin: {
+                                    right: -25
+                                }
+                            }
                         },
                         title: {
                             enable: true,
@@ -1418,7 +1430,13 @@ consoleModule.controller('sqlController', [
                             tickFormat: _yAxisFormat
                         },
                         color: IgniteChartColors,
-                        useInteractiveGuideline: true
+                        useInteractiveGuideline: true,
+                        legend: {
+                            vers: 'furious',
+                            margin: {
+                                right: -25
+                            }
+                        }
                     }
                 };
 
@@ -1456,7 +1474,13 @@ consoleModule.controller('sqlController', [
                         tickFormat: _yAxisFormat
                     },
                     color: IgniteChartColors,
-                    style: style
+                    style: style,
+                    legend: {
+                        vers: 'furious',
+                        margin: {
+                            right: -25
+                        }
+                    }
                 }
             };
 

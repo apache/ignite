@@ -178,13 +178,13 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
         /**
          * @param clsName Class name to check.
-         * @returns 'true' if given class name is a java build-in type.
+         * @returns {Boolean} 'true' if given class name is a java build-in type.
          */
         function isJavaBuiltInClass(clsName) {
-            if (isEmptyString(cls))
+            if (isEmptyString(clsName))
                 return false;
 
-            return _.includes(javaBuiltInClasses, cls) || _.includes(javaBuiltInFullNameClasses, cls);
+            return _.includes(javaBuiltInClasses, clsName) || _.includes(javaBuiltInFullNameClasses, clsName);
         }
 
         var SUPPORTED_JDBC_TYPES = [
