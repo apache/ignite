@@ -35,43 +35,51 @@ public class HadoopNoopProcessor extends HadoopProcessorAdapter {
         super(ctx);
     }
 
+    /**
+     * Creates an exception to be uniformly thrown from all the methods.
+     */
+    private IllegalStateException createException() {
+        return new IllegalStateException("Hadoop module is not loaded (please ensure that ignite-hadoop.jar is in " +
+            "classpath).");
+    }
+
     /** {@inheritDoc} */
     @Override public Hadoop hadoop() {
-        throw new IllegalStateException("Hadoop module is not found in class path.");
+        throw createException();
     }
 
     /** {@inheritDoc} */
     @Override public HadoopConfiguration config() {
-        return null;
+        throw createException();
     }
 
     /** {@inheritDoc} */
     @Override public HadoopJobId nextJobId() {
-        return null;
+        throw createException();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> submit(HadoopJobId jobId, HadoopJobInfo jobInfo) {
-        return new GridFinishedFuture<>(new IgniteCheckedException("Hadoop is not available."));
+        return new GridFinishedFuture<>(createException());
     }
 
     /** {@inheritDoc} */
     @Override public HadoopJobStatus status(HadoopJobId jobId) throws IgniteCheckedException {
-        return null;
+        throw createException();
     }
 
     /** {@inheritDoc} */
     @Override public HadoopCounters counters(HadoopJobId jobId) {
-        return null;
+        throw createException();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> finishFuture(HadoopJobId jobId) throws IgniteCheckedException {
-        return null;
+        throw createException();
     }
 
     /** {@inheritDoc} */
     @Override public boolean kill(HadoopJobId jobId) throws IgniteCheckedException {
-        return false;
+        throw createException();
     }
 }
