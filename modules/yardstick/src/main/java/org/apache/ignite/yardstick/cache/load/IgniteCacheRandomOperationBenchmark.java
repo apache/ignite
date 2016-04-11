@@ -17,6 +17,15 @@
 
 package org.apache.ignite.yardstick.cache.load;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -27,31 +36,22 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.load.model.ModelUtil;
 
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
 /**
  * Ignite cache random operation benchmark
  */
 public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark {
-
     /** */
     public static final int operations = Operation.values().length;
 
     /** list off all available cache*/
     private List<IgniteCache> availableCaches;
+
     /** list of available transactional cache*/
     private List<IgniteCache> transactionalCaches;
+
     /** Map cache name on key classes*/
     private Map<String, Class[]> keysCacheClasses;
+
     /** Map cache name on value classes*/
     private Map<String, Class[]> valuesCacheClasses;
 
@@ -68,6 +68,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             IgniteCache<Object, Object> cache = ignite().cache(name);
 
             CacheConfiguration configuration = cache.getConfiguration(CacheConfiguration.class);
+
             if (configuration.getIndexedTypes() != null && configuration.getIndexedTypes().length != 0) {
                 ArrayList<Class> keys = new ArrayList<>();
                 ArrayList<Class> values = new ArrayList<>();
@@ -85,8 +86,6 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
                 keysCacheClasses.put(name, keys.toArray(new Class[]{}));
                 valuesCacheClasses.put(name, values.toArray(new Class[]{}));
-
-
             }
 
             if (configuration.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
@@ -97,23 +96,24 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     }
 
     /**
-     * Preloading
      * @throws Exception if fail
      */
     private void preLoading() throws Exception {
-        for (IgniteCache cache: availableCaches)
-            for (int i=0; i<args.preloadAmount(); i++) {
+        for (IgniteCache cache: availableCaches) {
+            for (int i = 0; i < args.preloadAmount(); i++) {
                 int id = nextRandom(args.range());
-                cache.put(createRandomKye(id, cache.getName()), createRandomValue(id, cache.getName()));
+
+                cache.put(createRandomKey(id, cache.getName()), createRandomValue(id, cache.getName()));
             }
+        }
     }
 
     /**
-     * @param id object identifier
-     * @param cacheName name of Ignite cache
-     * @return random object
+     * @param id Object identifier.
+     * @param cacheName Name of Ignite cache.
+     * @return Random object.
      */
-    private Object createRandomKye(int id, String cacheName) {
+    private Object createRandomKey(int id, String cacheName) {
         int cntKeys;
         Class[] keys;
         if (keysCacheClasses.containsKey(cacheName)) {
@@ -134,6 +134,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private Object createRandomValue(int id, String cacheName) {
         int cntValues;
         Class[] values;
+
         if (valuesCacheClasses.containsKey(cacheName)) {
             cntValues = valuesCacheClasses.get(cacheName).length;
             values = valuesCacheClasses.get(cacheName);
@@ -141,6 +142,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             cntValues = ModelUtil.valueClasses().length;
             values = ModelUtil.valueClasses();
         }
+
         return ModelUtil.create(values[nextRandom(cntValues)], id);
     }
 
@@ -154,26 +156,29 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean test(Map<Object, Object> map) throws Exception {
-        boolean executeInTransaction = nextRandom(100) % 2 == 0;
-        if (executeInTransaction) {
+    @Override public boolean test(Map<Object, Object> map) throws Exception {
+        boolean execInTransaction = nextRandom(100) % 2 == 0;
+
+        if (execInTransaction) {
             executeInTransaction();
+
             executeWithoutTransaction(true);
         }
         else
             executeWithoutTransaction(false);
+
         return true;
     }
 
     /**
-     * @param withoutTransactionCache without transaction cache
-     * @throws Exception if fail
+     * @param withoutTransactionCache Without transaction cache.
+     * @throws Exception If fail.
      */
     private void executeWithoutTransaction(boolean withoutTransactionCache) throws Exception {
-        for (IgniteCache cache: availableCaches) {
+        for (IgniteCache cache : availableCaches) {
             if (withoutTransactionCache && transactionalCaches.contains(cache))
                 continue;
+
             executeRandomOperation(cache);
         }
     }
@@ -226,31 +231,31 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
             case SCANQUERY:
                 doScanQuery(cache);
-
         }
     }
 
     /**
-     * Execute operations in transaction
-     * @throws Exception if faiil
+     * Execute operations in transaction.
+     *
+     * @throws Exception if fail.
      */
     private void executeInTransaction() throws Exception {
         try (Transaction tx = ignite().transactions().txStart(args.txConcurrency(), args.txIsolation())){
-            for (IgniteCache cache: transactionalCaches) {
+            for (IgniteCache cache : transactionalCaches)
                 executeRandomOperation(cache);
-            }
+
             tx.commit();
         }
     }
 
     /**
-     * @param cache ignite cache
-     * @throws Exception If failed
+     * @param cache Ignite cache.
+     * @throws Exception If failed.
      */
     private void doPut(IgniteCache cache) throws Exception {
         int i = nextRandom(args.range());
-        cache.put(createRandomKye(i, cache.getName()),
-            createRandomValue(i, cache.getName()));
+
+        cache.put(createRandomKey(i, cache.getName()), createRandomValue(i, cache.getName()));
     }
 
     /**
@@ -259,11 +264,13 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void doPutAll(IgniteCache cache) throws Exception {
         Map putMap = new TreeMap();
-        for (int cnt=0; cnt<args.batch(); cnt++) {
+
+        for (int cnt = 0; cnt < args.batch(); cnt++) {
             int i = nextRandom(args.range());
-            putMap.put(createRandomKye(i, cache.getName()),
-                createRandomValue(i, cache.getName()));
+
+            putMap.put(createRandomKey(i, cache.getName()), createRandomValue(i, cache.getName()));
         }
+
         cache.putAll(putMap);
     }
 
@@ -273,7 +280,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void doGet(IgniteCache cache) throws Exception {
         int i = nextRandom(args.range());
-        cache.get(createRandomKye(i, cache.getName()));
+
+        cache.get(createRandomKey(i, cache.getName()));
     }
 
     /**
@@ -282,10 +290,13 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void doGetAll(IgniteCache cache) throws Exception {
         Set keys = new TreeSet();
-        for (int cnt=0; cnt<args.batch(); cnt++) {
+
+        for (int cnt = 0; cnt < args.batch(); cnt++) {
             int i = nextRandom(args.range());
-            keys.add(createRandomKye(i, cache.getName()));
+
+            keys.add(createRandomKey(i, cache.getName()));
         }
+
         cache.get(keys);
     }
 
@@ -295,13 +306,11 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void doInvoke(final IgniteCache cache) throws Exception {
         final int i = nextRandom(args.range());
-        cache.invoke(createRandomKye(i, cache.getName()), new EntryProcessor() {
-                @Override public Object process(MutableEntry entry1, Object... arguments) throws EntryProcessorException {
-                    try {
-                        entry1.setValue(createRandomValue(i + 1, cache.getName()));
-                    } catch (Exception e) {
-                        throw new EntryProcessorException(e);
-                    }
+
+        cache.invoke(createRandomKey(i, cache.getName()), new EntryProcessor() {
+                @Override public Object process(MutableEntry entry1, Object... arguments) {
+                    entry1.setValue(createRandomValue(i + 1, cache.getName()));
+
                     return null;
                 }
             }
@@ -314,18 +323,19 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void doInvokeAll(final IgniteCache cache) throws Exception {
         Set keys = new TreeSet();
+
         for (int cnt=0; cnt<args.batch(); cnt++) {
             int i = nextRandom(args.range());
-            keys.add(createRandomKye(i, cache.getName()));
+
+            keys.add(createRandomKey(i, cache.getName()));
         }
+
         cache.invokeAll(keys, new EntryProcessor() {
                 @Override public Object process(MutableEntry entry1, Object... arguments) {
-                    try {
-                        int i = nextRandom(args.range());
-                        entry1.setValue(createRandomValue(i + 1, cache.getName()));
-                    } catch (Exception e) {
-                        throw new EntryProcessorException(e);
-                    }
+                    int i = nextRandom(args.range());
+
+                    entry1.setValue(createRandomValue(i + 1, cache.getName()));
+
                     return null;
                 }
             }
@@ -338,7 +348,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void doRemove(IgniteCache cache) throws Exception {
         int i = nextRandom(args.range());
-        cache.remove(createRandomKye(i, cache.getName()));
+
+        cache.remove(createRandomKey(i, cache.getName()));
     }
 
     /**
@@ -347,10 +358,13 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void doRemoveAll(IgniteCache cache) throws Exception {
         Set keys = new TreeSet();
-        for (int cnt=0; cnt<args.batch(); cnt++) {
+
+        for (int cnt = 0; cnt < args.batch(); cnt++) {
             int i = nextRandom(args.range());
-            keys.add(createRandomKye(i, cache.getName()));
+
+            keys.add(createRandomKey(i, cache.getName()));
         }
+
         cache.removeAll(keys);
     }
 
@@ -360,8 +374,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void doPutIfAbsent(IgniteCache cache) throws Exception {
         int i = nextRandom(args.range());
-        cache.putIfAbsent(createRandomKye(i, cache.getName()),
-            createRandomValue(i, cache.getName()));
+
+        cache.putIfAbsent(createRandomKey(i, cache.getName()), createRandomValue(i, cache.getName()));
     }
 
     /**
@@ -370,7 +384,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void doReplace(IgniteCache cache) throws Exception {
         int i = nextRandom(args.range());
-        cache.replace(createRandomKye(i, cache.getName()),
+
+        cache.replace(createRandomKey(i, cache.getName()),
             createRandomValue(i, cache.getName()),
             createRandomValue(i + 1, cache.getName()));
     }

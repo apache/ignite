@@ -18,7 +18,6 @@ import java.util.UUID;
  * Util class for model
  */
 public class ModelUtil {
-
     /**
      * Classes of keys
      */
