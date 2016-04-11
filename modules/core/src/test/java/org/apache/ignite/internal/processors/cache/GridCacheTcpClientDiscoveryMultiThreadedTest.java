@@ -145,7 +145,7 @@ public class GridCacheTcpClientDiscoveryMultiThreadedTest extends GridCacheAbstr
                                 assertEquals(i, (int) cache.get(i));
 
                                 if (isNearCacheNode)
-                                    assertEquals(i, (int) cache.localPeek(i, CachePeekMode.ONHEAP));
+                                    assertEquals((Integer)i, cache.localPeek(i, CachePeekMode.ONHEAP));
                             }
 
                             stopGrid(clientIdx);

@@ -123,7 +123,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
 
                     assertNull(cache.get(key));
 
-                    List<Object> msgs = spi.recordedMessages();
+                    List<Object> msgs = spi.recordedMessages(false);
 
                     assertEquals(1, msgs.size());
                 }
@@ -216,7 +216,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
 
                     assertNull(cache.get(key));
 
-                    List<Object> msgs = newNodeSpi.recordedMessages();
+                    List<Object> msgs = newNodeSpi.recordedMessages(false);
 
                     assertEquals(1, msgs.size());
 
@@ -234,7 +234,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
                         TestRecordingCommunicationSpi spi =
                             (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
 
-                        spi.stopBlock();
+                        spi.stopBlock(true);
                     }
 
                     awaitPartitionMapExchange();
@@ -304,7 +304,7 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
             TestRecordingCommunicationSpi spi =
                 (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
 
-            List<Object> msgs = spi.recordedMessages();
+            List<Object> msgs = spi.recordedMessages(false);
 
             assertEquals(0, msgs.size());
         }
@@ -330,14 +330,14 @@ public class IgniteCacheReadFromBackupTest extends GridCommonAbstractTest {
         if (nearKey != null) {
             assertNull(cache.get(nearKey));
 
-            msgs = spi.recordedMessages();
+            msgs = spi.recordedMessages(false);
 
             assertEquals(1, msgs.size());
         }
 
         assertNull(cache.get(backupKey));
 
-        msgs = spi.recordedMessages();
+        msgs = spi.recordedMessages(false);
 
         assertTrue(msgs.isEmpty());
     }

@@ -73,18 +73,6 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * Callback by exchange manager when new exchange future is added to worker.
-     */
-    public void onExchangeFutureAdded();
-
-    /**
-     * Updates last exchange future.
-     *
-     * @param lastFut Last future.
-     */
-    public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut);
-
-    /**
      * @param exchFut Exchange future to assign.
      * @return Assignments or {@code null} if detected that there are pending exchanges.
      */
@@ -192,11 +180,9 @@ public interface GridCachePreloader {
     public void evictPartitionAsync(GridDhtLocalPartition part);
 
     /**
-     * Handles new topology.
-     *
-     * @param topVer Topology version.
+     * @param lastFut Last future.
      */
-    public void onTopologyChanged(AffinityTopologyVersion topVer);
+    public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut);
 
     /**
      * Dumps debug information.

@@ -70,6 +70,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 
 /**
@@ -250,20 +251,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      */
     private boolean isInvalidate() {
         return tx != null && tx.isInvalidate();
-    }
-
-    /**
-     * @return {@code True} if commit is synchronous.
-     */
-    private boolean syncCommit() {
-        return tx != null && tx.syncCommit();
-    }
-
-    /**
-     * @return {@code True} if rollback is synchronous.
-     */
-    private boolean syncRollback() {
-        return tx != null && tx.syncRollback();
     }
 
     /**
@@ -897,7 +884,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         timeout,
                                         mappedKeys.size(),
                                         inTx() ? tx.size() : mappedKeys.size(),
-                                        inTx() && tx.syncCommit(),
+                                        inTx() && tx.syncMode() == FULL_SYNC,
                                         inTx() ? tx.subjectId() : null,
                                         inTx() ? tx.taskNameHash() : 0,
                                         read ? accessTtl : -1L,
