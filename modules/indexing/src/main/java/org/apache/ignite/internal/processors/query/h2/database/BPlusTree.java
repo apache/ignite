@@ -1281,12 +1281,12 @@ public abstract class BPlusTree<L, T extends L> {
      */
     private T insertWithSplit(Page meta, BPlusIO<T> io, final ByteBuffer buf, T row,
         int idx, long rightId, int lvl) throws IgniteCheckedException {
-        try (Page fwdPage = allocatePage()) {
+        try (Page fwd = allocatePage()) {
             // Need to check this before the actual split, because after the split we will have new forward page here.
             boolean hadFwd = io.getForward(buf) != 0;
 
-            ByteBuffer fwdBuf = fwdPage.getForInitialWrite();
-            io.initNewPage(fwdBuf, fwdPage.id());
+            ByteBuffer fwdBuf = fwd.getForInitialWrite();
+            io.initNewPage(fwdBuf, fwd.id());
 
             splitPage(io, buf, fwdBuf);
 
@@ -1296,7 +1296,8 @@ public abstract class BPlusTree<L, T extends L> {
             if (idx <= cnt) {
                 insertSimple(io, buf, row, idx, rightId);
 
-                if (idx == cnt && !io.isLeaf()) // Fix leftmost child of fwdPage, because newly inserted row will go up.
+                // Fix leftmost child of forward page, because newly inserted row will go up.
+                if (idx == cnt && !io.isLeaf())
                     inner(io).setLeft(fwdBuf, 0, rightId);
             }
             else
@@ -1306,7 +1307,7 @@ public abstract class BPlusTree<L, T extends L> {
             cnt = io.getCount(buf);
 
             assert io.canGetRow(); // TODO refactor to use io.store for move up, this assert is wrong in general case
-            T moveUpRow = getRow(io, buf, cnt - 1); // Last item from backward goes up.
+            T moveUpRow = getRow(io, buf, cnt - 1); // Last item from backward row goes up.
 
             if (!io.isLeaf()) // Leaf pages must contain all the links, inner pages remove moveUpLink.
                 io.setCount(buf, cnt - 1);
@@ -1327,7 +1328,7 @@ public abstract class BPlusTree<L, T extends L> {
                     io.setCount(newRootBuf, 1);
                     inner(io).setLeft(newRootBuf, 0, PageIO.getPageId(buf));
                     io.store(newRootBuf, 0, moveUpRow); // TODO refactor
-                    inner(io).setRight(newRootBuf, 0, fwdPage.id());
+                    inner(io).setRight(newRootBuf, 0, fwd.id());
                 }
 
                 int res = writePage(meta, updateRoot, newRootId, lvl + 1, FALSE);
