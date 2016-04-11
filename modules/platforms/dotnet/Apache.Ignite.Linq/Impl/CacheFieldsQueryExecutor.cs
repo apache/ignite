@@ -126,7 +126,7 @@ namespace Apache.Ignite.Linq.Impl
             if ((qryOrderParams.Count != qryData.Parameters.Count) ||
                 (qryOrderParams.Count != userOrderParams.Count))
                 throw new InvalidOperationException("Error compiling query: all compiled query arguments " +
-                                                    "should come from enclosing lambda expression");
+                                                    "should come from enclosing delegate parameters.");
 
             var indices = qryOrderParams.Select(x => userOrderParams.IndexOf(x)).ToArray();
 
