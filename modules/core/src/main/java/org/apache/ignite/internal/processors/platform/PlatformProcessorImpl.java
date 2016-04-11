@@ -58,6 +58,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -218,6 +219,15 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
+        // This method is a single point of entry for all remote closures
+        // CPP platform does not currently support remote code execution
+        // Therefore, all remote execution attempts come from .NET
+        // Throw an error if current platform is not .NET
+        if (!PlatformUtils.PLATFORM_DOTNET.equals(interopCfg.platform())) {
+            throw new IgniteException(".NET platform is not available on node: " + ctx.grid().localNode().id() + ". " +
+                "Use Apache.Ignite.Core.Ignition.Start() method or Apache.Ignite.exe to start Ignite.NET nodes.");
+        }
+
         return platformCtx;
     }
 
