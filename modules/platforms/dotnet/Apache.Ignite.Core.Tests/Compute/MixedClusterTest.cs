@@ -130,6 +130,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.Fail("InvokeAll unexpectedly succeeded in mixed-platform cluter.");
         }
 
+        /// <summary>
+        /// Gets the cache.
+        /// </summary>
         private ICache<int, int> GetCache()
         {
             var cache = _ignite.GetOrCreateCache<int, int>("mixedCache");
