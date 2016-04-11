@@ -1123,7 +1123,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 CacheObject val = null;
 
                                 if (ret)
-                                    val = e.innerGet(tx,
+                                    val = e.innerGet(
+                                        null,
+                                        tx,
                                         /*swap*/true,
                                         /*read-through*/false,
                                         /*fail-fast.*/false,
