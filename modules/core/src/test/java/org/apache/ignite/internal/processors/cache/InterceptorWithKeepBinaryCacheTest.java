@@ -492,7 +492,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
         for (TransactionConcurrency conc : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                // TODO IGNITE-2971: delete this if when the isuue will be fixed.
+                // TODO IGNITE-2971: delete this if when the issue will be fixed.
                 if (conc == TransactionConcurrency.OPTIMISTIC && isolation == TransactionIsolation.SERIALIZABLE)
                     continue;
 
@@ -704,6 +704,10 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
         for (TransactionConcurrency conc : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                // TODO IGNITE-2971: delete this if when the issue will be fixed.
+                if (conc == TransactionConcurrency.OPTIMISTIC && isolation == TransactionIsolation.SERIALIZABLE)
+                    continue;
+
                 checkInvokeAsyncTx(conc, isolation);
 
                 jcache().removeAll();
