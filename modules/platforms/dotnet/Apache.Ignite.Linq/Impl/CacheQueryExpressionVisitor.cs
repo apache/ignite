@@ -402,6 +402,7 @@ namespace Apache.Ignite.Linq.Impl
         protected override Expression VisitConstant(ConstantExpression expression)
         {
             AppendParameter(expression.Value);
+            _modelVisitor.ParameterExpressions.Add(expression);
 
             return expression;
         }

@@ -110,10 +110,12 @@ namespace Apache.Ignite.Linq.Impl
 
             var qryText = qryData.QueryText;
 
+            var qryArgs = qryData.Parameters.ToArray();
+
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
             if (queryCaller == null)
-                return args => _cache.QueryFields(new SqlFieldsQuery(qryText, _local, args), selector);
+                return args => _cache.QueryFields(new SqlFieldsQuery(qryText, _local, qryArgs), selector);
 
             // Compiled query is a delegate with query parameters
             // Delegate parameters order and query parameters order may differ
