@@ -16,15 +16,13 @@
  */
 
 using System;
-using System.Collections.Generic;
 using Apache.Ignite.Core;
+using Apache.Ignite.Core.Cache.Configuration;
+using Apache.Ignite.ExamplesDll.Binary;
 using Apache.Ignite.Core.Transactions;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
-    using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.ExamplesDll.Binary;
-
     /// <summary>
     /// This example demonstrates how to use transactions on Apache cache.
     /// <para />
@@ -50,13 +48,7 @@ namespace Apache.Ignite.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\examples-config.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx512m" }
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Transaction example started.");
