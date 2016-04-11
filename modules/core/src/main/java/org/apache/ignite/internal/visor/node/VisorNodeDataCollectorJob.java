@@ -55,7 +55,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     private static final IgniteProductVersion VER_1_4_1 = IgniteProductVersion.fromString("1.4.1");
 
     /** */
-    private static final IgniteProductVersion VER_1_5_9 = IgniteProductVersion.fromString("1.5.9");
+    private static final IgniteProductVersion VER_1_5_10 = IgniteProductVersion.fromString("1.5.10");
 
     /**
      * Create job with given argument.
@@ -153,7 +153,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
                     try {
                         VisorCache cache = (compatibleWith(VER_1_4_1) ? new VisorCache() :
-                                compatibleWith(VER_1_5_9) ? new VisorCacheV2() : new VisorCacheV3())
+                                compatibleWith(VER_1_5_10) ? new VisorCacheV2() : new VisorCacheV3())
                                     .from(ignite, cacheName, arg.sample());
 
                         if (cache != null)
