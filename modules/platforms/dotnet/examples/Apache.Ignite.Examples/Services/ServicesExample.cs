@@ -16,7 +16,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.ExamplesDll.Services;
 
@@ -44,13 +43,7 @@ namespace Apache.Ignite.Examples.Services
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\examples-config.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx512m" }
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
             {
                 Console.WriteLine(">>> Services example started.");
                 Console.WriteLine();
