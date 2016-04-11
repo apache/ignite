@@ -638,28 +638,12 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
      * @return Partition.
      */
     private GridDhtLocalPartition createPartition(int p) {
-        GridDhtLocalPartition loc;
+        assert lock.isWriteLockedByCurrentThread();
 
-        lock.readLock().lock();
-        try {
-            loc = locParts[p];
-        }
-        finally {
-            lock.readLock().unlock();
-        }
+        GridDhtLocalPartition loc = locParts[p];
 
-        if (loc == null || loc.state() == EVICTED) {
-            lock.writeLock().lock();
-            try {
-                loc = locParts[p];
-
-                if (loc == null || loc.state() == EVICTED)
-                    locParts[p] = loc = new GridDhtLocalPartition(cctx, p, entryFactory);
-            }
-            finally {
-                lock.writeLock().unlock();
-            }
-        }
+        if (loc == null || loc.state() == EVICTED)
+            locParts[p] = loc = new GridDhtLocalPartition(cctx, p, entryFactory);
 
         return loc;
     }
