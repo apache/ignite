@@ -33,12 +33,14 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Tests.Binary;
+    using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
     /// <summary>
@@ -52,7 +54,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestPredefinedXml()
         {
-            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10'>
+            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true'>
                             <localhost>127.1.1.1</localhost>
                             <binaryConfiguration compactFooter='false'>
                                 <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' bar='testBar' />
@@ -94,6 +96,9 @@ namespace Apache.Ignite.Core.Tests
                                 <int>TaskFailed</int>
                                 <int>JobFinished</int>
                             </includedEventTypes>
+                            <userAttributes><pair key='myNode' value='true' /></userAttributes>
+                            <atomicConfiguration backups='2' cacheMode='Local' atomicSequenceReserveSize='250' />
+                            <transactionConfiguration defaultTransactionConcurrency='Optimistic' defaultTransactionIsolation='RepeatableRead' defaultTimeout='0:1:2' pessimisticTransactionLogSize='15' pessimisticTransactionLogLinger='0:0:33' />
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
@@ -101,6 +106,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual("c:", cfg.WorkDirectory);
             Assert.AreEqual("127.1.1.1", cfg.Localhost);
+            Assert.IsTrue(cfg.IsDaemon);
             Assert.AreEqual(1024, cfg.JvmMaxMemoryMb);
             Assert.AreEqual(TimeSpan.FromSeconds(10), cfg.MetricsLogFrequency);
             Assert.AreEqual(TimeSpan.FromMinutes(1), ((TcpDiscoverySpi)cfg.DiscoverySpi).JoinTimeout);
@@ -133,6 +139,20 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(QueryIndexType.Geospatial, queryEntity.Indexes.Single().IndexType);
             Assert.AreEqual("indexFld", queryEntity.Indexes.Single().Fields.Single().Name);
             Assert.AreEqual(true, queryEntity.Indexes.Single().Fields.Single().IsDescending);
+
+            Assert.AreEqual(new Dictionary<string, object> {{"myNode", "true"}}, cfg.UserAttributes);
+
+            var atomicCfg = cfg.AtomicConfiguration;
+            Assert.AreEqual(2, atomicCfg.Backups);
+            Assert.AreEqual(CacheMode.Local, atomicCfg.CacheMode);
+            Assert.AreEqual(250, atomicCfg.AtomicSequenceReserveSize);
+
+            var tx = cfg.TransactionConfiguration;
+            Assert.AreEqual(TransactionConcurrency.Optimistic, tx.DefaultTransactionConcurrency);
+            Assert.AreEqual(TransactionIsolation.RepeatableRead, tx.DefaultTransactionIsolation);
+            Assert.AreEqual(new TimeSpan(0,1,2), tx.DefaultTimeout);
+            Assert.AreEqual(15, tx.PessimisticTransactionLogSize);
+            Assert.AreEqual(TimeSpan.FromSeconds(33), tx.PessimisticTransactionLogLinger);
         }
 
         /// <summary>
@@ -248,7 +268,7 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            var props = type.GetProperties();
+            var props = type.GetProperties().Where(p => p.GetIndexParameters().Length == 0);
 
             foreach (var propInfo in props)
             {
@@ -307,7 +327,7 @@ namespace Apache.Ignite.Core.Tests
                             Serializer = new TestSerializer()
                         }
                     },
-                    Types = new [] {typeof(string).FullName },
+                    Types = new[] {typeof (string).FullName},
                     DefaultIdMapper = new IdMapper(),
                     DefaultKeepDeserialized = true,
                     DefaultNameMapper = new NameMapper(),
@@ -348,7 +368,7 @@ namespace Apache.Ignite.Core.Tests
                                 },
                                 Indexes = new[]
                                 {
-                                    new QueryIndex("field") { IndexType = QueryIndexType.FullText }
+                                    new QueryIndex("field") {IndexType = QueryIndexType.FullText}
                                 },
                                 Aliases = new[]
                                 {
@@ -399,7 +419,7 @@ namespace Apache.Ignite.Core.Tests
                 JvmDllPath = @"c:\jvm",
                 JvmInitialMemoryMb = 1024,
                 JvmMaxMemoryMb = 2048,
-                LifecycleBeans = new[] {new LifecycleBean(), new LifecycleBean() },
+                LifecycleBeans = new[] {new LifecycleBean(), new LifecycleBean()},
                 MetricsExpireTime = TimeSpan.FromSeconds(15),
                 MetricsHistorySize = 45,
                 MetricsLogFrequency = TimeSpan.FromDays(2),
@@ -408,7 +428,23 @@ namespace Apache.Ignite.Core.Tests
                 NetworkSendRetryDelay = TimeSpan.FromSeconds(98),
                 NetworkTimeout = TimeSpan.FromMinutes(4),
                 SuppressWarnings = true,
-                WorkDirectory = @"c:\work"
+                WorkDirectory = @"c:\work",
+                IsDaemon = true,
+                UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x),
+                AtomicConfiguration = new AtomicConfiguration
+                {
+                    CacheMode = CacheMode.Replicated,
+                    AtomicSequenceReserveSize = 200,
+                    Backups = 2
+                },
+                TransactionConfiguration = new TransactionConfiguration
+                {
+                    PessimisticTransactionLogSize = 23,
+                    DefaultTransactionIsolation = TransactionIsolation.ReadCommitted,
+                    DefaultTimeout = TimeSpan.FromDays(2),
+                    DefaultTransactionConcurrency = TransactionConcurrency.Optimistic,
+                    PessimisticTransactionLogLinger = TimeSpan.FromHours(3)
+                }
             };
         }
 
