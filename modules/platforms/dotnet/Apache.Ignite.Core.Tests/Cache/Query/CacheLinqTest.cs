@@ -854,9 +854,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetPersonCache().AsCacheQueryable();
 
-            // const args
-            var qry = CompiledQuery.Compile(() => cache.Where(x => x.Key < 5 && x.Key > -10));
-            Assert.AreEqual(5, qry().GetAll().Count);
+            // const args are not allowed
+            Assert.Throws<InvalidOperationException>(()=>CompiledQuery.Compile(() => cache.Where(x => x.Key < 5)));
 
             // 0 arg
             var qry0 = CompiledQuery.Compile(() => cache.Select(x => x.Value.Name));
@@ -875,11 +874,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var qry2R =
                 CompiledQuery.Compile((string s, int i) => cache.Where(x => x.Key < i && x.Value.Name.StartsWith(s)));
             Assert.AreEqual(5, qry2R(" Pe", 5).ToArray().Length);
-
-            // Changed param order and constants
-            var qry2Rc = CompiledQuery.Compile(
-                    (string s, int i) => cache.Where(x => x.Key < i && x.Key > -5 && x.Value.Name.StartsWith(s)));
-            Assert.AreEqual(5, qry2Rc(" Pe", 5).ToArray().Length);
 
             // 3 arg
             var qry3 = CompiledQuery.Compile((int i, string s, double d) => 
