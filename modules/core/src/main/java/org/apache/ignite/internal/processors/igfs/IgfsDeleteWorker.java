@@ -250,7 +250,7 @@ public class IgfsDeleteWorker extends IgfsThread {
                     boolean ret = meta.delete(trashId, name, id);
 
                     if (ret) {
-                        IgfsPath path = extractPath(name);
+                        IgfsPath path = IgfsUtils.extractPath(name);
 
                         if (path != null)
                             IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_PURGED);
@@ -262,23 +262,6 @@ public class IgfsDeleteWorker extends IgfsThread {
             else
                 return false; // Entry was deleted concurrently.
         }
-    }
-
-    /**
-     * Parses the TRASH file name to extract the original path.
-     *
-     * @param name The TRASH short (entry) name.
-     * @return The original path, or null in case of failure.
-     */
-    static IgfsPath extractPath(String name) {
-        int zeroIdx = name.indexOf('\u0000');
-
-        if (zeroIdx < 0)
-            return null;
-
-        String path = name.substring(0, zeroIdx);
-
-        return new IgfsPath(path);
     }
 
     /**

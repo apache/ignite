@@ -1140,7 +1140,7 @@ public class IgfsMetaManager extends IgfsManager {
                     // Prepare trash data.
                     IgfsEntryInfo trashInfo = lockInfos.get(trashId);
 
-                    final String trashName = composeNameForTrash(path, victimId);
+                    final String trashName = IgfsUtils.composeNameForTrash(path, victimId);
 
                     assert !trashInfo.hasChild(trashName) : "Failed to add file name into the " +
                         "destination directory (file already exists) [destName=" + trashName + ']';
@@ -1164,20 +1164,6 @@ public class IgfsMetaManager extends IgfsManager {
         else
             throw new IllegalStateException("Failed to perform soft delete because Grid is " +
                 "stopping [path=" + path + ']');
-    }
-
-    /**
-     * Creates short name of the file in TRASH directory.
-     * The name consists of the whole file path and its unique id.
-     * Upon file cleanup this name will be parsed to extract the path.
-     * Note that in contrast to common practice the composed name contains '/' character.
-     *
-     * @param path The full path of the deleted file.
-     * @param id The file id.
-     * @return The new short name for trash directory.
-     */
-    private static String composeNameForTrash(IgfsPath path, IgniteUuid id) {
-        return path.toString() + '\u0000' + id.toString();
     }
 
     /**
@@ -1247,7 +1233,7 @@ public class IgfsMetaManager extends IgfsManager {
             // Ensure trash directory existence.
             createSystemDirectoryIfAbsent(trashId);
 
-            moveNonTx(id, path.name(), parentId, composeNameForTrash(path, id), trashId);
+            moveNonTx(id, path.name(), parentId, IgfsUtils.composeNameForTrash(path, id), trashId);
 
             resId = id;
         }
@@ -3114,7 +3100,7 @@ public class IgfsMetaManager extends IgfsManager {
                             IgniteUuid oldId = pathIds.lastId();
 
                             id2InfoPrj.invoke(trashId, new IgfsMetaDirectoryListingAddProcessor(
-                                composeNameForTrash(path, oldId), new IgfsListingEntry(oldInfo)));
+                                IgfsUtils.composeNameForTrash(path, oldId), new IgfsListingEntry(oldInfo)));
 
                             // Second step: replace ID in parent directory.
                             String name = pathIds.lastPart();
