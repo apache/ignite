@@ -296,12 +296,6 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                 runInAllTxModes(new TestRunnable() {
                     @Override public void run() throws Exception {
-                        // TODO: CODE: implement.
-                    }
-                });
-
-                runInAllTxModes(new TestRunnable() {
-                    @Override public void run() throws Exception {
                         Map keyValMap = new LinkedHashMap() {{
                             for (Object key : keys) {
                                 Object val = value(valueOf(key));
@@ -1274,7 +1268,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
         /** {@inheritDoc} */
         @Nullable @Override public V onGet(K key, V val) {
-            // TODO file a bug on false.
+            // TODO we should always validate key here, but cann't due to a bug (see IGNITE-2899 and point 1.3 in comments).
             validate(key, val, false, true);
 
             return val;
@@ -1329,7 +1323,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     assertTrue("Key: " + key, key instanceof BinaryObject);
 
                 if (val != null) {
-                    // TODO we should always do this check, but cann't due to a bug (see IGNITE-2899 and point 1.3 in comments)
+                    // TODO we should always do this check, but cann't due to a bug (see IGNITE-2899 and point 1.3 in comments).
                     if (validateVal && binaryObjExp)
                         assertTrue("Val: " + val, val instanceof BinaryObject);
                 }
