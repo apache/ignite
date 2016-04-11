@@ -478,7 +478,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public V tryPutIfAbsent(K key, V val) throws IgniteCheckedException {
+    @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
         return (V)updateAllAsync0(F0.asMap(key, val),
@@ -488,7 +488,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             null,
             true,
             false,
-            ctx.noValArray(),
+            null,
             false,
             UPDATE).get();
     }
