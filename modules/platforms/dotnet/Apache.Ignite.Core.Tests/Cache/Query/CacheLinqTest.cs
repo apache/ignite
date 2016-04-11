@@ -876,6 +876,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 CompiledQuery.Compile((string s, int i) => cache.Where(x => x.Key < i && x.Value.Name.StartsWith(s)));
             Assert.AreEqual(5, qry2R(" Pe", 5).ToArray().Length);
 
+            // Changed param order and constants
+            var qry2Rc = CompiledQuery.Compile(
+                    (string s, int i) => cache.Where(x => x.Key < i && x.Key > -5 && x.Value.Name.StartsWith(s)));
+            Assert.AreEqual(5, qry2Rc(" Pe", 5).ToArray().Length);
+
             // 3 arg
             var qry3 = CompiledQuery.Compile((int i, string s, double d) => 
                 cache.Where(x => x.Value.Address.Zip > d && x.Key < i && x.Value.Name.Contains(s)));
