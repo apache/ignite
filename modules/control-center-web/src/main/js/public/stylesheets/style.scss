@@ -1993,3 +1993,7 @@ treecontrol.tree-classic {
 [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
     display: none !important;
 }
+
+.nvd3 .nv-axis .nv-axisMaxMin text {
+    font-weight: normal; /* Here the text can be modified*/
+}
