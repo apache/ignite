@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.hadoop.igfs;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -408,52 +407,48 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
         }
 
         // 4. Try local TCP connection.
-        if (curDelegate == null) {
-            final boolean isLocAddr = isLocAddr(endpoint.host());
+        boolean skipLocTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP, authority, false);
 
-            boolean skipLocTcp = parameter(conf, PARAM_IGFS_ENDPOINT_NO_LOCAL_TCP, authority, false);
+        if (curDelegate == null && !skipLocTcp) {
+            HadoopIgfsEx hadoop = null;
 
-            if (!skipLocTcp && isLocAddr) {
-                HadoopIgfsEx hadoop = null;
+            try {
+                hadoop = new HadoopIgfsOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.igfs(),
+                    log, userName);
 
-                try {
-                    hadoop = new HadoopIgfsOutProc(LOCALHOST, endpoint.port(), endpoint.grid(), endpoint.igfs(),
-                        log, userName);
-
-                    curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    if (e instanceof HadoopIgfsCommunicationException)
-                        hadoop.close(true);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
-                            ", port=" + endpoint.port() + ']', e);
-
-                    errTcp = e;
-                }
+                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
             }
+            catch (IOException | IgniteCheckedException e) {
+                if (e instanceof HadoopIgfsCommunicationException)
+                    hadoop.close(true);
 
-            // 5. Try remote TCP connection, if a non-local address specified:
-            if (curDelegate == null && !isLocAddr) {
-                HadoopIgfsEx hadoop = null;
+                if (log.isDebugEnabled())
+                    log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
+                        ", port=" + endpoint.port() + ']', e);
 
-                try {
-                    hadoop = new HadoopIgfsOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.igfs(),
-                        log, userName);
+                errTcp = e;
+            }
+        }
 
-                    curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
-                }
-                catch (IOException | IgniteCheckedException e) {
-                    if (e instanceof HadoopIgfsCommunicationException)
-                        hadoop.close(true);
+        // 5. Try remote TCP connection.
+        if (curDelegate == null && (skipLocTcp || !F.eq(LOCALHOST, endpoint.host()))) {
+            HadoopIgfsEx hadoop = null;
 
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
-                            ", port=" + endpoint.port() + ']', e);
+            try {
+                hadoop = new HadoopIgfsOutProc(endpoint.host(), endpoint.port(), endpoint.grid(), endpoint.igfs(),
+                    log, userName);
 
-                    errTcp = e;
-                }
+                curDelegate = new Delegate(hadoop, hadoop.handshake(logDir));
+            }
+            catch (IOException | IgniteCheckedException e) {
+                if (e instanceof HadoopIgfsCommunicationException)
+                    hadoop.close(true);
+
+                if (log.isDebugEnabled())
+                    log.debug("Failed to connect to IGFS using TCP [host=" + endpoint.host() +
+                        ", port=" + endpoint.port() + ']', e);
+
+                errTcp = e;
             }
         }
 
@@ -476,30 +471,6 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
 
             throw new HadoopIgfsCommunicationException(errMsg.toString());
         }
-    }
-
-    /**
-     * Determines if the given address is local.
-     *
-     * @param host The host to check
-     * @return If the address is a local address.
-     */
-    private static boolean isLocAddr(String host) {
-        if (F.isEmpty(host))
-            // empty address treated as local address:
-            return true;
-
-        final InetAddress x;
-
-        try {
-            x = InetAddress.getByName(host);
-        }
-        catch (IOException ioe) {
-            // Local address must be resolvable:
-            return false;
-        }
-
-        return x.isLoopbackAddress();
     }
 
     /**

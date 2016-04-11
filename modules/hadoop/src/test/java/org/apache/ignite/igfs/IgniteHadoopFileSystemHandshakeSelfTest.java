@@ -105,13 +105,13 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkValid(IGFS_NAME + ":" + GRID_NAME + "@");
         checkValid(IGFS_NAME + ":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
 
-        checkInvalid(IGFS_NAME + "@");
+        checkValid(IGFS_NAME + "@"); // Embedded mode fails, but remote tcp succeeds.
         checkInvalid(IGFS_NAME + "@" + HOST_PORT_UNUSED);
 
-        checkInvalid(":" + GRID_NAME + "@");
+        checkValid(":" + GRID_NAME + "@"); // Embedded mode fails, but remote tcp succeeds.
         checkInvalid(":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
 
-        checkInvalid("@");
+        checkValid("@"); // Embedded mode fails, but remote tcp succeeds.
         checkInvalid("@" + HOST_PORT_UNUSED);
     }
 
@@ -152,7 +152,7 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkInvalid(":" + GRID_NAME + "@");
         checkInvalid(":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
 
-        checkInvalid("@");
+        checkValid("@"); // Embedded mode fails, but remote tcp succeeds.
         checkInvalid("@" + HOST_PORT_UNUSED);
     }
 
@@ -162,7 +162,7 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testHandshakeDefaultIgfs() throws Exception {
-        startUp(false, true);
+        startUp(false/*grid name*/, true/*default igfs*/);
 
         tcp = true;
 
@@ -193,7 +193,7 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
         checkValid(":" + GRID_NAME + "@");
         checkValid(":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
 
-        checkInvalid("@");
+        checkValid("@"); // NB: in embedded mode this fails, but remote TCP still succeeds.
         checkInvalid("@" + HOST_PORT_UNUSED);
     }
 
