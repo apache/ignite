@@ -2171,11 +2171,6 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
-     * @return Allocated page.
-     */
-    protected abstract Page allocatePage() throws IgniteCheckedException;
-
-    /**
      * @param io IO.
      * @param buf Buffer.
      * @param cnt Row count.
@@ -2207,15 +2202,6 @@ public abstract class BPlusTree<L, T extends L> {
 
     /**
      * @param buf Buffer.
-     * @param idx Index of row in the given buffer.
-     * @param row Lookup row.
-     * @return Comparison result as in {@link Comparator#compare(Object, Object)}.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected abstract int compare(BPlusIO<T> io, ByteBuffer buf, int idx, L row) throws IgniteCheckedException;
-
-    /**
-     * @param buf Buffer.
      * @return IO.
      */
     private BPlusIO<T> io(ByteBuffer buf) {
@@ -2225,6 +2211,14 @@ public abstract class BPlusTree<L, T extends L> {
         int ver = PageIO.getVersion(buf);
 
         return io(type, ver);
+    }
+
+    /**
+     * @param io IO.
+     * @return Inner page IO.
+     */
+    private static BPlusIOInner inner(BPlusIO io) {
+        return (BPlusIOInner)io;
     }
 
     /**
@@ -2245,21 +2239,25 @@ public abstract class BPlusTree<L, T extends L> {
     protected abstract BPlusIOLeaf<T> latestLeafIO();
 
     /**
-     * @param io IO.
-     * @return Inner page IO.
+     * @param buf Buffer.
+     * @param idx Index of row in the given buffer.
+     * @param row Lookup row.
+     * @return Comparison result as in {@link Comparator#compare(Object, Object)}.
+     * @throws IgniteCheckedException If failed.
      */
-    private static BPlusIOInner inner(BPlusIO io) {
-        return (BPlusIOInner)io;
-    }
+    protected abstract int compare(BPlusIO<T> io, ByteBuffer buf, int idx, L row) throws IgniteCheckedException;
 
     /**
-     * Get page by ID.
-     *
      * @param pageId Page ID.
      * @return Page.
      * @throws IgniteCheckedException If failed.
      */
     protected abstract Page page(long pageId) throws IgniteCheckedException;
+
+    /**
+     * @return Allocated page.
+     */
+    protected abstract Page allocatePage() throws IgniteCheckedException;
 
     /**
      * Forward cursor.
