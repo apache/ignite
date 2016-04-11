@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
@@ -94,13 +95,48 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestScanQuery()
         {
-            var cache = _ignite.GetOrCreateCache<int, int>("scanCache");
+            var cache = GetCache();
+            
+            // Scan query does not work in the mixed cluster.
+            Assert.Throws<IgniteException>(() => cache.Query(new ScanQuery<int, int>(new ScanFilter())).GetAll());
+        }
+
+        /// <summary>
+        /// Tests the cache invoke.
+        /// </summary>
+        [Test]
+        public void TestCacheInvoke()
+        {
+            var cache = GetCache();
+
+            var results = cache.InvokeAll(cache.Select(x => x.Key), new CacheProcessor(), 0);
+
+            foreach (var res in results)
+            {
+                try
+                {
+                    Assert.AreEqual(0, res.Value.Result);
+                }
+                catch (CacheEntryProcessorException ex)
+                {
+                    // At least some results should throw an error
+                    Assert.IsTrue(ex.ToString().Contains(".NET platform is not available on node:"),
+                        "Unexpected error: " + ex);
+
+                    return;
+                }
+            }
+
+            Assert.Fail("InvokeAll unexpectedly succeeded in mixed-platform cluter.");
+        }
+
+        private ICache<int, int> GetCache()
+        {
+            var cache = _ignite.GetOrCreateCache<int, int>("mixedCache");
 
             cache.PutAll(Enumerable.Range(1, 1000).ToDictionary(x => x, x => x));
 
-            var res = cache.Query(new ScanQuery<int, int>(new ScanFilter())).GetAll();
-
-            Assert.AreEqual(100, res.Count);
+            return cache;
         }
 
         /// <summary>
@@ -126,6 +162,19 @@ namespace Apache.Ignite.Core.Tests.Compute
             public bool Invoke(ICacheEntry<int, int> entry)
             {
                 return entry.Key < 100;
+            }
+        }
+
+        /// <summary>
+        /// Test processor.
+        /// </summary>
+        [Serializable]
+        private class CacheProcessor : ICacheEntryProcessor<int, int, int, int>
+        {
+            /** <inheritdoc /> */
+            public int Process(IMutableCacheEntry<int, int> entry, int arg)
+            {
+                return arg;
             }
         }
     }
