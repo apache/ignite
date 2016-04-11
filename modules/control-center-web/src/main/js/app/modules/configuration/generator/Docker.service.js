@@ -31,7 +31,7 @@ class GeneratorDocker {
             '# Start from Apache Ignite image.',
             `FROM apacheignite/ignite:${ver}`
         ].join('\n');
-    };
+    }
 
     /**
      * Generate Docker file for cluster.
@@ -72,7 +72,7 @@ class GeneratorDocker {
             'target',
             'Dockerfile'
         ].join('\n');
-    };
+    }
 }
 
 export default ['GeneratorDocker', GeneratorDocker];

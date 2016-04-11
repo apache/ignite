@@ -71,7 +71,8 @@ const appModulePaths = [
     igniteModulesDir + '/**/main.js',
     igniteModulesDir + '/**/module.js',
     igniteModulesDir + '/**/app/modules/*.js',
-    igniteModulesDir + '/**/app/modules/**/*.js'
+    igniteModulesDir + '/**/app/modules/**/*.js',
+    igniteModulesDir + '/**/app/modules/**/*.jade'
 ];
 
 export {
