@@ -18,7 +18,6 @@
 package org.apache.ignite.platform.cpp;
 
 import org.apache.ignite.configuration.PlatformConfiguration;
-import org.apache.ignite.internal.processors.platform.PlatformProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -44,10 +43,5 @@ public class PlatformCppConfiguration implements PlatformConfiguration {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(PlatformConfiguration.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String processorClassName() {
-        return PlatformProcessorImpl.class.getName();
     }
 }
