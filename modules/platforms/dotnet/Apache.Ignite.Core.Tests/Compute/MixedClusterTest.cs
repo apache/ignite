@@ -29,6 +29,8 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// </summary>
     public class MixedClusterTest
     {
+        private IIgnite _ignite;
+        private string _javaNodeName;
         /** */
         private const string SpringConfig = @"Config\Compute\compute-grid1.xml";
 
@@ -41,39 +43,32 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** */
         private const string StopTask = "org.apache.ignite.platform.PlatformStopIgniteTask";
 
-        /// <summary>
-        /// Tests the compute.
-        /// </summary>
-        [Test]
-        public void TestCompute()
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration()) {SpringConfigUrl = SpringConfig};
 
-            using (var ignite = Ignition.Start(cfg))
-            {
-                var javaNodeName = StartJavaNode(ignite, SpringConfig2);
+            _ignite = Ignition.Start(cfg);
 
-                try
-                {
-                    Assert.IsTrue(ignite.WaitTopology(2));
+            _javaNodeName = _ignite.GetCompute().ExecuteJavaTask<string>(StartTask, SpringConfig2);
 
-                    TestDotNetTask(ignite);
-                    TestJavaTask(ignite);
-                }
-                finally
-                {
-                    StopJavaNode(ignite, javaNodeName);
-                }
-            }
+            Assert.IsTrue(_ignite.WaitTopology(2));
+        }
+
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            _ignite.GetCompute().ExecuteJavaTask<object>(StopTask, _javaNodeName);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
         /// Tests the dot net task.
         /// </summary>
-        /// <param name="ignite">The ignite.</param>
-        private static void TestDotNetTask(IIgnite ignite)
+        [Test]
+        public void TestDotNetTask()
         {
-            var results = ignite.GetCompute().Broadcast(new ComputeFunc());
+            var results = _ignite.GetCompute().Broadcast(new ComputeFunc());
 
             // There are two nodes, but only one can execute .NET jobs.
             Assert.AreEqual(new[] {int.MaxValue}, results.ToArray());
@@ -82,29 +77,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the dot net task.
         /// </summary>
-        /// <param name="ignite">The ignite.</param>
-        private static void TestJavaTask(IIgnite ignite)
+        [Test]
+        public void TestJavaTask()
         {
             // Java task can execute on both nodes.
-            var res = ignite.GetCompute().ExecuteJavaTask<ICollection>(ComputeApiTest.BroadcastTask, null);
+            var res = _ignite.GetCompute().ExecuteJavaTask<ICollection>(ComputeApiTest.BroadcastTask, null);
 
             Assert.AreEqual(2, res.Count);
-        }
-
-        /// <summary>
-        /// Starts the java node.
-        /// </summary>
-        private static string StartJavaNode(IIgnite grid, string config)
-        {
-            return grid.GetCompute().ExecuteJavaTask<string>(StartTask, config);
-        }
-
-        /// <summary>
-        /// Stops the java node.
-        /// </summary>
-        private static void StopJavaNode(IIgnite grid, string name)
-        {
-            grid.GetCompute().ExecuteJavaTask<object>(StopTask, name);
         }
 
         /// <summary>
