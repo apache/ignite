@@ -20,13 +20,10 @@ import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('profileController', [
     '$rootScope', '$scope', '$http', '$common', '$focus', '$confirm', 'IgniteCountries',
-    function ($rootScope, $scope, $http, $common, $focus, $confirm, countries) {
-        $scope.user = angular.copy($scope.$root.user);
+    function ($root, $scope, $http, $common, $focus, $confirm, countries) {
+        $scope.user = angular.copy($root.user);
 
         $scope.countries = countries;
-
-        if ($scope.user && !$scope.user.token)
-            $scope.user.token = 'No security token. Regenerate please.';
 
         const _randomString = (len) => {
             const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -40,54 +37,60 @@ consoleModule.controller('profileController', [
             return res;
         };
 
-        $scope.generateToken = function () {
+        $scope.generateToken = () => {
             $confirm.confirm('Are you sure you want to change security token?')
-                .then(function () {
-                    $scope.user.token = _randomString(20);
-                })
+                .then(() => $scope.user.token = _randomString(20))
         };
 
-        function _profileChanged() {
-            var old = $rootScope.user;
-            var cur = $scope.user;
+        const _cleanup = () => {
+            const _user = $scope.user;
 
-            return !_.isEqual(old, cur) || ($scope.expandedPassword && !$common.isEmptyString($scope.newPassword));
-        }
+            if (!$scope.expandedToken)
+                _user.token = $root.user.token;
 
-        $scope.profileCouldBeSaved = function () {
-            return _profileChanged() && $scope.profileForm && $scope.profileForm.$valid;
+            if (!$scope.expandedPassword) {
+                delete _user.password;
+
+                delete _user.confirm;
+            }
         };
 
-        $scope.saveBtnTipText = function () {
+        const _profileChanged = () => {
+            _cleanup();
+
+            const old = $root.user;
+            const cur = $scope.user;
+
+            return !_.isEqual(old, cur);
+        };
+
+        $scope.profileCouldBeSaved = () => _profileChanged() && $scope.profileForm && $scope.profileForm.$valid;
+
+        $scope.saveBtnTipText = () => {
             if (!_profileChanged())
                 return 'Nothing to save';
 
             return $scope.profileForm && $scope.profileForm.$valid ? 'Save profile' : 'Invalid profile settings';
         };
 
-        $scope.saveUser = function () {
-            var _user = angular.copy($scope.user);
+        $scope.saveUser = () => {
+            _cleanup();
 
-            if ($scope.expandedPassword)
-                _user.password = $scope.newPassword;
+            $http.post('/api/v1/profile/save', $scope.user)
+                .success(() => {
+                    $scope.expandedPassword = false;
 
-            $http.post('/api/v1/profile/save', _user)
-                .success(function () {
+                    _cleanup();
+
                     $scope.expandedToken = false;
 
-                    $scope.expandedToken = false;
-                    $scope.newPassword = '';
-                    $scope.confirmPassword = '';
-
-                    $rootScope.user = angular.copy($scope.user);
+                    $root.user = angular.copy($scope.user);
 
                     $common.showInfo('Profile saved.');
 
                     $focus('profile-username');
                 })
-                .error(function (err) {
-                    $common.showError('Failed to save profile: ' + $common.errorMessage(err));
-                });
+                .error((err) => $common.showError('Failed to save profile: ' + $common.errorMessage(err)));
         };
     }]
 );
