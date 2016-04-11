@@ -69,6 +69,9 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
     /** */
     public static final CacheEntryProcessor INC_ENTRY_PROC_USER_OBJ = new CacheEntryProcessor() {
         @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
+            assertTrue(entry.getKey() instanceof BinaryObject);
+            assertFalse(entry.getKey() instanceof BinaryObjectOffheapImpl);
+
             Object val = entry.getValue();
 
             int valId = 0;
@@ -484,8 +487,15 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
      * @throws Exception If failed.
      */
     public void testInvokeTx() throws Exception {
+        if (!txShouldBeUsed())
+            return;
+
         for (TransactionConcurrency conc : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                // TODO IGNITE-2971: delete this if when the isuue will be fixed.
+                if (conc == TransactionConcurrency.OPTIMISTIC && isolation == TransactionIsolation.SERIALIZABLE)
+                    continue;
+
                 info(">>>>> Executing test using explicite txs [concurrency=" + conc + ", isolation=" + isolation + "]");
 
                 checkInvokeTx(conc, isolation);
@@ -689,6 +699,9 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
      * @throws Exception If failed.
      */
     public void testInvokeAsyncTx() throws Exception {
+        if (!txShouldBeUsed())
+            return;
+
         for (TransactionConcurrency conc : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 checkInvokeAsyncTx(conc, isolation);
@@ -878,12 +891,16 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
      */
     @SuppressWarnings("serial")
     public void testInvokeAllTx() throws Exception {
-        for (TransactionConcurrency conc : TransactionConcurrency.values())
+        if (!txShouldBeUsed())
+            return;
+
+        for (TransactionConcurrency conc : TransactionConcurrency.values()) {
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 checkInvokeAllTx(conc, isolation);
 
                 jcache().removeAll();
             }
+        }
     }
 
     /**
@@ -986,7 +1003,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
         for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
             info("Key: " + e.getKey());
 
-            assertTrue("Key:" + e.getKey(), e.getKey() instanceof BinaryObject);
+            assertTrue("Wrong key type, binary object expected: " + e.getKey(), e.getKey() instanceof BinaryObject);
 
             Object res = e.getValue().get();
 
@@ -1021,7 +1038,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     (Map<Object, EntryProcessorResult<Object>>)cache.future().get();
 
                 for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
-                    assertTrue("Key:" + e.getKey(), e.getKey() instanceof BinaryObject);
+                    assertTrue("Wrong key type, binary object expected: " + e.getKey(), e.getKey() instanceof BinaryObject);
 
                     assertNull(e.getValue().get());
                 }
@@ -1197,7 +1214,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
         for (Map.Entry<Object, EntryProcessorResult<Object>> e : resMap.entrySet()) {
             info("Key: " + e.getKey());
 
-            assertTrue("Key:" + e.getKey(), e.getKey() instanceof BinaryObject);
+            assertTrue("Wrong key type, binary object expected: " + e.getKey(), e.getKey() instanceof BinaryObject);
 
             Object res = e.getValue().get();
 
