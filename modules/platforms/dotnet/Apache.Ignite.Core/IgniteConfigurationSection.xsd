@@ -269,6 +269,29 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="userAttributes" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element maxOccurs="unbounded" name="pair"  />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="atomicConfiguration" minOccurs="0">
+                    <xs:complexType>
+                        <xs:attribute name="cacheMode" type="xs:string" />
+                        <xs:attribute name="backups" type="xs:int" />
+                        <xs:attribute name="atomicSequenceReserveSize" type="xs:int" />
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="transactionConfiguration" minOccurs="0">
+                    <xs:complexType>
+                        <xs:attribute name="defaultTransactionConcurrency" type="xs:string" />
+                        <xs:attribute name="defaultTransactionIsolation" type="xs:string" />
+                        <xs:attribute name="defaultTimeout" type="xs:string" />
+                        <xs:attribute name="pessimisticTransactionLogSize" type="xs:int" />
+                        <xs:attribute name="pessimisticTransactionLogLinger" type="xs:string" />
+                    </xs:complexType>
+                </xs:element>
             </xs:all>
             <xs:attribute name="gridName" type="xs:string" />
             <xs:attribute name="jvmDllPath" type="xs:string" />
@@ -287,6 +310,7 @@
             <xs:attribute name="networkTimeout" type="xs:string" />
             <xs:attribute name="workDirectory" type="xs:string" />
             <xs:attribute name="localhost" type="xs:string" />
+            <xs:attribute name="isDaemon" type="xs:boolean" />
         </xs:complexType>
     </xs:element>    
 </xs:schema>
