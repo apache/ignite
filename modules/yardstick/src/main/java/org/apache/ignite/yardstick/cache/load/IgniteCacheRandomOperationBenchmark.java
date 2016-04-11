@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -39,10 +40,10 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.apache.ignite.yardstick.IgniteBenchmarkUtils;
 import org.apache.ignite.yardstick.cache.load.model.ModelUtil;
 import org.springframework.util.CollectionUtils;
 
@@ -98,7 +99,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             CacheConfiguration configuration = cache.getConfiguration(CacheConfiguration.class);
 
             if (isClassDefinedinConfig(configuration)) {
-                //if (true) continue;
+                if (true) continue;
 
                 ArrayList<Class> keys = new ArrayList<>();
                 ArrayList<Class> values = new ArrayList<>();
@@ -333,16 +334,18 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @throws Exception if fail.
      */
     private void executeInTransaction() throws Exception {
-        try (Transaction tx = ignite().transactions().txStart(
+        IgniteBenchmarkUtils.doInTransaction(ignite().transactions(),
             TransactionConcurrency.fromOrdinal(nextRandom(TransactionConcurrency.values().length)),
-            TransactionIsolation.fromOrdinal(nextRandom(TransactionIsolation.values().length)))) {
-
-            for (IgniteCache cache : transactionalCaches)
-                if (nextBoolean())
-                    executeRandomOperation(cache);
-
-            tx.commit();
-        }
+            TransactionIsolation.fromOrdinal(nextRandom(TransactionIsolation.values().length)),
+            new Callable<Object>() {
+                @Override
+                public Object call() throws Exception {
+                    for (IgniteCache cache : transactionalCaches)
+                        if (nextBoolean())
+                            executeRandomOperation(cache);
+                    return null;
+                }
+            });
     }
 
     /**
