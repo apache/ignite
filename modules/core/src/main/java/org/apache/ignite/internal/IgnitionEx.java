@@ -60,6 +60,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.RedisConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -1429,6 +1430,9 @@ public class IgnitionEx {
         /** REST requests executor service. */
         private ExecutorService restExecSvc;
 
+        /** Redis requests executor service. */
+        private ExecutorService redisExecSvc;
+
         /** Utility cache executor service. */
         private ExecutorService utilityCacheExecSvc;
 
@@ -1658,6 +1662,17 @@ public class IgnitionEx {
                 );
             }
 
+            if (myCfg.getRedisConfiguration() != null) {
+                redisExecSvc = new IgniteThreadPoolExecutor(
+                    "redis",
+                    myCfg.getGridName(),
+                    myCfg.getRedisConfiguration().getThreadPoolSize(),
+                    myCfg.getRedisConfiguration().getThreadPoolSize(),
+                    RedisConfiguration.DFLT_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(RedisConfiguration.DFLT_THREADPOOL_QUEUE_CAP)
+                );
+            }
+
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
                 "utility",
                 cfg.getGridName(),
@@ -1686,7 +1701,7 @@ public class IgnitionEx {
                 grid = grid0;
 
                 grid0.start(myCfg, utilityCacheExecSvc, marshCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc,
-                    igfsExecSvc, restExecSvc,
+                    igfsExecSvc, restExecSvc, redisExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
@@ -2281,6 +2296,11 @@ public class IgnitionEx {
                 U.shutdownNow(getClass(), restExecSvc, log);
 
             restExecSvc = null;
+
+            if (redisExecSvc != null)
+                U.shutdownNow(getClass(), redisExecSvc, log);
+
+            redisExecSvc = null;
 
             U.shutdownNow(getClass(), utilityCacheExecSvc, log);
 

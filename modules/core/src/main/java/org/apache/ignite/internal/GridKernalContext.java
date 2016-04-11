@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.redis.GridRedisProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
@@ -239,6 +240,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return REST processor.
      */
     public GridRestProcessor rest();
+
+    /**
+     * Gets REdis Serialization Protocol (RESP) processor.
+     *
+     * @return RESP processor.
+     */
+    public GridRedisProcessor redis();
 
     /**
      * Gets segmentation processor.
@@ -445,7 +453,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @param ldr Class loader.
      * @return User version for given class loader or empty string if no version
-     *      was explicitly specified.
+     * was explicitly specified.
      */
     public String userVersion(ClassLoader ldr);
 
@@ -466,7 +474,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
 
     /**
      * @return Thread pool implementation to be used in grid to process job execution
-     *      requests and user messages sent to the node.
+     * requests and user messages sent to the node.
      */
     public ExecutorService getExecutorService();
 
@@ -482,13 +490,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
      *
      * @return Thread pool implementation to be used in grid for internal and Visor
-     *      jobs processing.
+     * jobs processing.
      */
     public ExecutorService getManagementExecutorService();
 
     /**
      * @return Thread pool implementation to be used for peer class loading
-     *      requests handling.
+     * requests handling.
      */
     public ExecutorService getPeerClassLoadingExecutorService();
 
@@ -504,9 +512,17 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * processing of client messages (REST requests).
      *
      * @return Thread pool implementation to be used for processing of client
-     *      messages.
+     * messages.
      */
     public ExecutorService getRestExecutorService();
+
+    /**
+     * Should return an instance of fully configured thread pool to be used for
+     * processing of Redis client messages.
+     *
+     * @return Thread pool implementation to be used for processing of Redis client messages.
+     */
+    public ExecutorService getRedisExecutorService();
 
     /**
      * Gets exception registry.
