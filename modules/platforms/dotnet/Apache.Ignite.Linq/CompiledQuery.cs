@@ -57,7 +57,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery(query(default(T1)), null);
+            var compiledQuery = GetCompiledQuery(query(default(T1)), query);
 
             return x => compiledQuery(new object[] {x});
         }
