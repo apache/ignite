@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database;
+package org.apache.ignite.internal.processors.query.h2.database.util;
 
 import java.math.BigDecimal;
 import org.apache.ignite.IgniteCheckedException;

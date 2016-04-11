@@ -30,10 +30,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.h2.database.DataStore;
+import org.apache.ignite.internal.processors.query.h2.database.H2RowStore;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -91,6 +92,9 @@ public class GridH2Table extends TableBase {
     /** */
     private final boolean snapshotEnabled;
 
+    /** */
+    private final H2RowStore dataStore;
+
     /**
      * Creates table.
      *
@@ -108,6 +112,7 @@ public class GridH2Table extends TableBase {
         this.desc = desc;
         this.spaceName = spaceName;
 
+        dataStore = idxsFactory.createDataStore(this);
         idxs = idxsFactory.createIndexes(this);
 
         assert idxs != null;
@@ -405,6 +410,14 @@ public class GridH2Table extends TableBase {
             desc.guard().begin();
 
         try {
+            if (dataStore != null) {
+                assert row.link == 0;
+
+                dataStore.writeRowData(row);
+
+                assert row.link != 0;
+            }
+
             GridH2IndexBase pk = pk();
 
             if (!del) {
@@ -680,6 +693,13 @@ public class GridH2Table extends TableBase {
     }
 
     /**
+     * @return Data store.
+     */
+    public DataStore<GridH2Row> dataStore() {
+        return dataStore;
+    }
+
+    /**
      * H2 Table engine.
      */
     @SuppressWarnings({"PublicInnerClass", "FieldAccessedSynchronizedAndUnsynchronized"})
@@ -750,6 +770,12 @@ public class GridH2Table extends TableBase {
          * @return List of indexes.
          */
         ArrayList<Index> createIndexes(GridH2Table tbl);
+
+        /**
+         * @param tbl Table.
+         * @return Data store.
+         */
+        H2RowStore createDataStore(GridH2Table tbl);
     }
 
     /**

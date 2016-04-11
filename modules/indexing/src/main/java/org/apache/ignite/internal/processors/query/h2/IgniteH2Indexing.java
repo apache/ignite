@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -85,8 +86,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
-import org.apache.ignite.internal.processors.query.h2.database.BPlusTreeRefIndex;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow;
+import org.apache.ignite.internal.processors.query.h2.database.H2RowStore;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOffheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
@@ -1978,6 +1978,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
+        @Override public H2RowStore createDataStore(GridH2Table tbl) {
+            int cacheId = CU.cacheId(schema.ccfg.getName());
+
+            IgniteCacheH2DatabaseManager dbMgr = databaseManager(cacheId);
+
+            if (dbMgr != null)
+                return dbMgr.createDataStore(tbl);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public ArrayList<Index> createIndexes(GridH2Table tbl) {
             this.tbl = tbl;
 
@@ -2044,6 +2056,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /**
+         * @return Database manager if we are in database mode, {@code null} otherwise.
+         */
+        private IgniteCacheH2DatabaseManager databaseManager(int cacheId) {
+            GridCacheSharedContext<Object,Object> scctx = ctx.cache().context();
+
+            if (scctx.database().enabled() && !ctx.clientNode())
+                return scctx.cacheContext(cacheId).database();
+
+            return null;
+        }
+
+        /**
          * @param name Index name,
          * @param tbl Table.
          * @param pk Primary key flag.
@@ -2062,13 +2086,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             IndexColumn... cols
         ) {
             try {
-                if (ctx.cache().context().database().enabled() && !ctx.clientNode()) {
-                    IgniteCacheH2DatabaseManager dbMgr = ctx.cache().context().cacheContext(cacheId).database();
+                IgniteCacheH2DatabaseManager dbMgr = databaseManager(cacheId);
 
+                if (dbMgr != null)
                     return dbMgr.createIndex(name, tbl, pk, keyCol, valCol, cols);
-                }
-                else
-                    return new GridH2TreeIndex(name, tbl, pk, keyCol, valCol, cols);
+
+                return new GridH2TreeIndex(name, tbl, pk, keyCol, valCol, cols);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

@@ -20,7 +20,8 @@ package org.apache.ignite.internal.processors.cache.database;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
-import org.apache.ignite.internal.processors.query.h2.database.BPlusTreeRefIndex;
+import org.apache.ignite.internal.processors.query.h2.database.BPlusTreeIndex;
+import org.apache.ignite.internal.processors.query.h2.database.H2RowStore;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.index.Index;
@@ -63,7 +64,7 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
             log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name +
                 ", rootPageId=" + page.get1() + ", allocated=" + page.get2() + ']');
 
-        Index idx = new BPlusTreeRefIndex(
+        Index idx = new BPlusTreeIndex(
             cctx,
             dbMgr.pageMemory(),
             page.get1(),
@@ -84,5 +85,15 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
         }
 
         return idx;
+    }
+
+    /**
+     * @param tbl Table.
+     * @return New data store for table.
+     */
+    public H2RowStore createDataStore(GridH2Table tbl) {
+        IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
+
+        return new H2RowStore(dbMgr.pageMemory(), tbl.rowDescriptor(), cctx);
     }
 }

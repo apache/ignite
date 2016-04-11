@@ -1,4 +1,21 @@
-package org.apache.ignite.internal.processors.query.h2.database;
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.query.h2.database.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
@@ -8,11 +25,13 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
- *
+ * Data pages IO.
  */
 public class DataPageIO extends PageIO {
     /** */
-    private static final DataPageIO V1 = new DataPageIO();
+    public static final IORegistry<DataPageIO> VERSIONS = new IORegistry<>(
+        new DataPageIO(1)
+    );
 
     /** */
     private static final int OCCUPIED_SIZE_OFF = COMMON_HEADER_END;
@@ -30,38 +49,10 @@ public class DataPageIO extends PageIO {
     private static final int ITEM_SIZE = 2;
 
     /**
-     * @param buf Buffer.
-     * @return Instance.
+     * @param ver Page format version.
      */
-    public static DataPageIO forPage(ByteBuffer buf) {
-        assert getType(buf) == T_DATA;
-
-        return forVersion(getVersion(buf));
-    }
-
-    /**
-     * @return Latest data page format.
-     */
-    public static DataPageIO latest() {
-        return V1;
-    }
-
-    /**
-     * @param ver Version.
-     * @return Instance for version.
-     */
-    public static DataPageIO forVersion(int ver) {
-        switch (ver){
-            case 1:
-                return V1;
-
-            default:
-                throw new IgniteException("Unsupported version: " + ver);
-        }
-    }
-
-    protected DataPageIO() {
-        // No-op.
+    protected DataPageIO(int ver) {
+        super(ver);
     }
 
     /** {@inheritDoc} */
@@ -70,13 +61,9 @@ public class DataPageIO extends PageIO {
     }
 
     /** {@inheritDoc} */
-    @Override public int getVersion() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
     @Override public void initNewPage(ByteBuffer buf, long pageId) {
         super.initNewPage(buf, pageId);
+
         setAllCount(buf, 0);
         setLiveCount(buf, 0);
         setOccupiedSize(buf, 0);

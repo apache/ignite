@@ -26,43 +26,27 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.processors.query.h2.database.io.BPlusIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.BPlusIOInner;
+import org.apache.ignite.internal.processors.query.h2.database.io.BPlusIOLeaf;
+import org.apache.ignite.internal.processors.query.h2.database.io.BPlusIOMeta;
+import org.apache.ignite.internal.processors.query.h2.database.io.PageIO;
+import org.apache.ignite.internal.processors.query.h2.database.util.PageHandler;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.h2.engine.Session;
-import org.h2.index.Cursor;
-import org.h2.index.IndexType;
-import org.h2.message.DbException;
-import org.h2.result.Row;
-import org.h2.result.SearchRow;
-import org.h2.result.SortOrder;
-import org.h2.table.IndexColumn;
-import org.h2.table.Table;
-import org.h2.table.TableFilter;
 
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.dwordsOffset;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.linkFromDwordOffset;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.processors.query.h2.database.util.PageHandler.readPage;
+import static org.apache.ignite.internal.processors.query.h2.database.util.PageHandler.writePage;
 
 /**
- * B+Tree index over references to data stored in data pages ({@link DataPageIO}).
+ * Abstract B+Tree.
  */
-public class BPlusTreeRefIndex extends PageMemoryIndex {
+public abstract class BPlusTree<L, T extends L> {
     /** */
     private static final byte FALSE = 0;
 
@@ -82,22 +66,13 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     private final float maxFill;
 
     /** */
-    private PageMemory pageMem;
-
-    /** */
-    private GridCacheContext<?,?> cctx;
-
-    /** */
-    private CacheObjectContext coctx;
-
-    /** */
     private final long metaPageId;
 
     /** */
-    private volatile long lastDataPageId;
+    private final AtomicLong globalRmvId = new AtomicLong(U.currentTimeMillis() * 1000_000); // TODO init from WAL?
 
     /** */
-    private final AtomicLong globalRmvId = new AtomicLong(U.currentTimeMillis() * 1000_000); // TODO init from WAL?
+    private final DataStore<T> dataStore;
 
     /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
@@ -112,7 +87,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 ByteBuffer buf = page.getForRead();
 
                 try {
-                    IndexPageIO io = IndexPageIO.forPage(buf);
+                    BPlusIO io = io(buf);
 
                     if (io.isLeaf())
                         return null;
@@ -159,7 +134,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 ByteBuffer buf = page.getForRead();
 
                 try {
-                    IndexPageIO io = IndexPageIO.forPage(buf);
+                    BPlusIO<T> io = io(buf);
 
                     return printPage(io, buf, keys);
                 }
@@ -175,7 +150,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /** */
     private final PageHandler<Get> search = new GetPageHandler<Get>() {
-        @Override public int run0(Page page, ByteBuffer buf, IndexPageIO io, Get g, int lvl)
+        @Override public int run0(Page page, ByteBuffer buf, BPlusIO<T> io, Get g, int lvl)
             throws IgniteCheckedException {
             g.backId = 0; // Usually we'll go left down.
 
@@ -232,7 +207,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /** */
     private final PageHandler<Put> replace = new GetPageHandler<Put>() {
-        @Override public int run0(Page page, ByteBuffer buf, IndexPageIO io, Put p, int lvl)
+        @Override public int run0(Page page, ByteBuffer buf, BPlusIO<T> io, Put p, int lvl)
             throws IgniteCheckedException {
             assert p.btmLvl == 0 : "split is impossible with replace";
 
@@ -251,23 +226,19 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
             // Replace link at idx with new one.
             // Need to read link here because `p.finish()` will clear row.
-            long newLink = p.row().link;
-
-            assert newLink != 0;
+            T newRow = p.row();
 
             if (io.isLeaf()) { // Get old row in leaf page to reduce contention at upper level.
                 assert p.oldRow == null;
+                assert io.canGetRow();
 
-                long oldLink = io.getLink(buf, idx);
-
-                p.oldRow = getRow(oldLink);
-                p.oldRow.link = oldLink;
+                p.oldRow = getRow(io, buf, idx);
 
                 p.finish();
                 // We can't erase data page here because it can be referred from other indexes.
             }
 
-            io.setLink(buf, idx, newLink);
+            io.store(buf, idx, newRow);
 
             return Put.FOUND;
         }
@@ -275,7 +246,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /** */
     private final PageHandler<Put> insert = new GetPageHandler<Put>() {
-        @Override public int run0(Page page, ByteBuffer buf, IndexPageIO io, Put p, int lvl)
+        @Override public int run0(Page page, ByteBuffer buf, BPlusIO<T> io, Put p, int lvl)
             throws IgniteCheckedException {
             assert p.btmLvl == lvl: "we must always insert at the bottom level: " + p.btmLvl + " " + lvl;
 
@@ -291,7 +262,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 return Put.RETRY;
 
             // Do insert.
-            GridH2Row moveUpRow = insert(p.meta, io, buf, p.row(), idx, p.rightId, lvl);
+            T moveUpRow = insert(p.meta, io, buf, p.row(), idx, p.rightId, lvl);
 
             // Check if split happened.
             if (moveUpRow != null) {
@@ -314,11 +285,12 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /** */
     private final PageHandler<Remove> removeFromLeaf = new GetPageHandler<Remove>() {
-        @Override public int run0(Page leaf, ByteBuffer buf, IndexPageIO io, Remove r, int lvl)
+        @Override public int run0(Page leaf, ByteBuffer buf, BPlusIO<T> io, Remove r, int lvl)
             throws IgniteCheckedException {
             assert lvl == 0: lvl;
             assert r.removed == null;
             assert io.isLeaf();
+            assert io.canGetRow();
 
             int cnt = io.getCount(buf);
             int idx = findInsertionPoint(io, buf, cnt, r.row);
@@ -326,7 +298,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             if (idx < 0)
                 return Remove.RETRY;
 
-            r.removed = getRow(io.getLink(buf, idx));
+            r.removed = getRow(io, buf, idx);
 
             doRemove(io, leaf, buf, cnt, idx, r.meta, lvl, false);
 
@@ -346,7 +318,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /** */
     private final PageHandler<Remove> lockBackAndRemoveFromLeaf = new GetPageHandler<Remove>() {
-        @Override protected int run0(Page back, ByteBuffer buf, IndexPageIO io, Remove r, int lvl)
+        @Override protected int run0(Page back, ByteBuffer buf, BPlusIO<T> io, Remove r, int lvl)
             throws IgniteCheckedException {
             // Check that we have consistent view of the world.
             if (io.getForward(buf) != r.pageId)
@@ -368,7 +340,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /** */
     private final PageHandler<Remove> lockBackAndTail = new GetPageHandler<Remove>() {
-        @Override public int run0(Page back, ByteBuffer buf, IndexPageIO io, Remove r, int lvl)
+        @Override public int run0(Page back, ByteBuffer buf, BPlusIO<T> io, Remove r, int lvl)
             throws IgniteCheckedException {
             // Check that we have consistent view of the world.
             if (io.getForward(buf) != r.pageId)
@@ -386,7 +358,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /** */
     private final PageHandler<Remove> lockTail = new GetPageHandler<Remove>() {
-        @Override public int run0(Page page, ByteBuffer buf, IndexPageIO io, Remove r, int lvl)
+        @Override public int run0(Page page, ByteBuffer buf, BPlusIO<T> io, Remove r, int lvl)
             throws IgniteCheckedException {
             int cnt = io.getCount(buf);
             int idx = findInsertionPoint(io, buf, cnt, r.row);
@@ -433,13 +405,13 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
     /** */
     private final PageHandler<Remove> mergePages = new GetPageHandler<Remove>() {
-        @Override protected int run0(Page fwd, ByteBuffer fwdBuf, IndexPageIO io, Remove r, int lvl)
+        @Override protected int run0(Page fwd, ByteBuffer fwdBuf, BPlusIO<T> io, Remove r, int lvl)
             throws IgniteCheckedException {
-            Tail prnt = r.getTail(lvl + 1, false);
+            Tail<T> prnt = r.getTail(lvl + 1, false);
 
             assert prnt != null;
 
-            Tail t = r.getTail(lvl, false);
+            Tail<T> t = r.getTail(lvl, false);
 
             assert t.io == io : "must be the same"; // Otherwise may be not compatible.
 
@@ -448,28 +420,11 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     };
 
     /** */
-    private final PageHandler<GridH2Row> writeRow = new PageHandler<GridH2Row>() {
-        @Override public int run(Page page, ByteBuffer buf, GridH2Row row, int lvl) throws IgniteCheckedException {
-            DataPageIO io = DataPageIO.forPage(buf);
-
-            int idx = io.addRow(coctx, buf, row.key, row.val, row.ver);
-
-            if (idx != -1) {
-                row.link = linkFromDwordOffset(page.id(), idx);
-
-                assert row.link != 0;
-            }
-
-            return idx;
-        }
-    };
-
-    /** */
     private final PageHandler<Long> updateLeftmost = new PageHandler<Long>() {
         @Override public int run(Page page, ByteBuffer buf, Long pageId, int lvl) throws IgniteCheckedException {
             assert pageId != null;
 
-            MetaPageIO io = MetaPageIO.forPage(buf);
+            BPlusIOMeta io = BPlusIOMeta.VERSIONS.forPage(buf);
 
             assert io.getLevelsCount(buf) > lvl;
 
@@ -488,7 +443,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     /** */
     private final PageHandler<Long> updateRoot = new PageHandler<Long>() {
         @Override public int run(Page page, ByteBuffer buf, Long rootPageId, int lvl) throws IgniteCheckedException {
-            MetaPageIO io = MetaPageIO.forPage(buf);
+            BPlusIOMeta io = BPlusIOMeta.VERSIONS.forPage(buf);
 
             int cnt = io.getLevelsCount(buf);
 
@@ -504,71 +459,42 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     };
 
     /**
-     * @param cctx Cache context.
-     * @param pageMem Page memory.
+     * @param dataStore Data store.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
-     * @param keyCol Key column.
-     * @param valCol Value column.
-     * @param tbl Table.
-     * @param name Index name.
-     * @param pk Primary key.
-     * @param cols Index columns.
      * @throws IgniteCheckedException If failed.
      */
-    public BPlusTreeRefIndex(
-        GridCacheContext<?,?> cctx,
-        PageMemory pageMem,
+    public BPlusTree(
+        DataStore<T> dataStore,
         FullPageId metaPageId,
-        boolean initNew,
-        int keyCol,
-        int valCol,
-        Table tbl,
-        String name,
-        boolean pk,
-        IndexColumn[] cols
+        boolean initNew
     ) throws IgniteCheckedException {
-        super(keyCol, valCol);
+        assert dataStore != null;
+
+        this.dataStore = dataStore;
 
         // TODO make configurable: 0 <= minFill <= maxFill <= 1
         minFill = 0f; // Testing worst case when merge happens only on empty page.
         maxFill = 0f; // Avoiding random effects on testing.
 
-        assert cctx.cacheId() == metaPageId.cacheId();
-
-        if (!pk) {
-            // For other indexes we add primary key at the end to avoid conflicts.
-            cols = Arrays.copyOf(cols, cols.length + 1);
-
-            cols[cols.length - 1] = ((GridH2Table)tbl).indexColumn(keyCol, SortOrder.ASCENDING);
-        }
-
-        this.cctx = cctx;
-        this.pageMem = pageMem;
-
-        coctx = cctx.cacheObjectContext();
-
-        initBaseIndex(tbl, 0, name, cols,
-            pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
+        this.metaPageId = metaPageId.pageId();
 
         if (initNew) { // Init new index.
-            try (Page meta = pageMem.page(metaPageId)) {
+            try (Page meta = page(this.metaPageId)) {
                 ByteBuffer buf = meta.getForInitialWrite();
 
-                MetaPageIO io = MetaPageIO.latest();
+                BPlusIOMeta io = BPlusIOMeta.VERSIONS.latest();
 
                 io.initNewPage(buf, metaPageId.pageId());
 
-                try (Page root = allocatePage(-1, FLAG_IDX)) {
-                    LeafPageIO.latest().initNewPage(root.getForInitialWrite(), root.id());
+                try (Page root = allocatePage()) {
+                    latestLeafIO().initNewPage(root.getForInitialWrite(), root.id());
 
                     io.setLevelsCount(buf, 1);
                     io.setLeftmostPageId(buf, 0, root.id());
                 }
             }
         }
-
-        this.metaPageId = metaPageId.pageId();
     }
 
     /**
@@ -578,7 +504,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         ByteBuffer buf = meta.getForRead();
 
         try {
-            return MetaPageIO.forPage(buf).getRootLevel(buf);
+            return BPlusIOMeta.VERSIONS.forPage(buf).getRootLevel(buf);
         }
         finally {
             meta.releaseRead();
@@ -594,7 +520,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         ByteBuffer buf = meta.getForRead();
 
         try {
-            MetaPageIO io = MetaPageIO.forPage(buf);
+            BPlusIOMeta io = BPlusIOMeta.VERSIONS.forPage(buf);
 
             if (lvl == Integer.MIN_VALUE)
                 lvl = io.getRootLevel(buf);
@@ -613,7 +539,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @param upper Upper bound.
      * @return Cursor.
      */
-    private Cursor findNoLower(SearchRow upper) throws IgniteCheckedException {
+    private GridCursor<T> findNoLower(L upper) throws IgniteCheckedException {
         ForwardCursor cursor = new ForwardCursor(upper);
 
         long firstPageId;
@@ -628,9 +554,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             try {
                 cursor.bootstrap(buf, 0);
             }
-            catch (IgniteCheckedException e) {
-                throw DbException.convert(e);
-            }
             finally {
                 first.releaseRead();
             }
@@ -639,35 +562,34 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         return cursor;
     }
 
-    /** {@inheritDoc} */
-    @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
-        try {
-            if (lower == null)
-                return findNoLower(upper);
+    /**
+     * @param lower Lower bound.
+     * @param upper Upper bound.
+     * @return Cursor.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
+        if (lower == null)
+            return findNoLower(upper);
 
-            GetCursor g = new GetCursor(lower, upper);
+        GetCursor g = new GetCursor(lower, upper);
 
-            doFind(g);
+        doFind(g);
 
-            return g.cursor;
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
+        return g.cursor;
     }
 
-    /** {@inheritDoc} */
-    @Override public GridH2Row findOne(GridH2Row row) {
+    /**
+     * @param row Lookup row for exact match.
+     * @return Found row.
+     */
+    @SuppressWarnings("unchecked")
+    public T findOne(L row) throws IgniteCheckedException {
         GetOne g = new GetOne(row);
 
-        try {
-            doFind(g);
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
-        }
+        doFind(g);
 
-        return (GridH2Row)g.row;
+        return (T)g.row;
     }
 
     /**
@@ -687,7 +609,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         ByteBuffer buf = g.meta.getForRead();
 
         try {
-            MetaPageIO io = MetaPageIO.forPage(buf);
+            BPlusIOMeta io = BPlusIOMeta.VERSIONS.forPage(buf);
 
             rootLvl = io.getRootLevel(buf);
             rootId = io.getLeftmostPageId(buf, rootLvl);
@@ -781,46 +703,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     }
 
     /**
-     * @param expLastDataPageId Expected last data page ID.
-     * @return Next data page ID.
-     */
-    private synchronized long nextDataPage(long expLastDataPageId, int partId) throws IgniteCheckedException {
-        if (expLastDataPageId != lastDataPageId)
-            return lastDataPageId;
-
-        long pageId;
-
-        try (Page page = allocatePage(partId, FLAG_DATA)) {
-            pageId = page.id();
-
-            ByteBuffer buf = page.getForInitialWrite();
-
-            DataPageIO.latest().initNewPage(buf, page.id());
-        }
-
-        return lastDataPageId = pageId;
-    }
-
-    /**
-     * @param row Row.
-     */
-    private void writeRowData(GridH2Row row) throws IgniteCheckedException {
-        while (row.link == 0) {
-            long pageId = lastDataPageId;
-
-            if (pageId == 0)
-                pageId = nextDataPage(0, row.partId);
-
-            try (Page page = page(pageId)) {
-                if (writePage(page, writeRow, row, -1, -1) >= 0)
-                    return; // Successful write.
-            }
-
-            nextDataPage(pageId, row.partId);
-        }
-    }
-
-    /**
      * For debug.
      *
      * @return Tree as {@link String}.
@@ -846,7 +728,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @return String.
      * @throws IgniteCheckedException If failed.
      */
-    private String printPage(IndexPageIO io, ByteBuffer buf, boolean keys) throws IgniteCheckedException {
+    private String printPage(BPlusIO<T> io, ByteBuffer buf, boolean keys) throws IgniteCheckedException {
         StringBuilder b = new StringBuilder();
 
         b.append(formatPageId(PageIO.getPageId(buf)));
@@ -881,24 +763,23 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @return Keys as String.
      * @throws IgniteCheckedException If failed.
      */
-    private String printPageKeys(IndexPageIO io, ByteBuffer buf) throws IgniteCheckedException {
+    private String printPageKeys(BPlusIO<T> io, ByteBuffer buf) throws IgniteCheckedException {
         int cnt = io.getCount(buf);
 
         StringBuilder b = new StringBuilder();
 
         b.append('[');
 
-        for (int i = 0; i < cnt; i++) {
-            if (i != 0)
-                b.append(',');
+        if (io.canGetRow()) {
+            for (int i = 0; i < cnt; i++) {
+                if (i != 0)
+                    b.append(',');
 
-            long link = io.getLink(buf, i);
-
-            if (pageId(link) == 0)
-                b.append("<!X!>");
-            else
-                b.append(getRow(link).key.value(coctx, true));
+                b.append(getRow(io, buf, i));
+            }
         }
+        else
+            b.append("<can't get keys>");
 
         b.append(']');
 
@@ -922,8 +803,12 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             throw new IgniteInterruptedCheckedException("Interrupted.");
     }
 
-    /** {@inheritDoc} */
-    @Override public GridH2Row remove(SearchRow row) {
+    /**
+     * @param row Lookup row.
+     * @return Removed row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public T remove(L row) throws IgniteCheckedException {
         Remove r = new Remove(row);
 
         try {
@@ -946,9 +831,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         return r.removed;
                 }
             }
-        }
-        catch (IgniteCheckedException e) {
-            throw DbException.convert(e);
         }
         finally {
             r.releaseTail();
@@ -974,7 +856,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @param kickLeftChild If we are dropping left child instead of the right one.
      * @throws IgniteCheckedException If failed.
      */
-    private void doRemove(IndexPageIO io, Page page, ByteBuffer buf, int cnt, int idx, Page meta, int lvl,
+    private void doRemove(BPlusIO io, Page page, ByteBuffer buf, int cnt, int idx, Page meta, int lvl,
         boolean kickLeftChild) throws IgniteCheckedException {
         assert cnt > 0;
         assert idx >= 0;
@@ -1168,9 +1050,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @param fwdBuf Forward buffer.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean mergePages(Page meta, Tail prnt, Tail cur, Page fwd, ByteBuffer fwdBuf)
+    private boolean mergePages(Page meta, Tail<T> prnt, Tail<T> cur, Page fwd, ByteBuffer fwdBuf)
         throws IgniteCheckedException {
-        assert IndexPageIO.forPage(fwdBuf) == cur.io;
+        assert io(fwdBuf) == cur.io;
 
         int cnt = cur.io.getCount(cur.buf);
         int fwdCnt = cur.io.getCount(fwdBuf);
@@ -1190,7 +1072,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             if (prntIdx == prntCnt) // It was a right turn.
                 prntIdx--;
 
-            cur.io.setLink(cur.buf, cnt, prnt.io.getLink(prnt.buf, prntIdx));
+            cur.io.store(cur.buf, cnt, prnt.io, prnt.buf, prntIdx);
 
             cnt++;
         }
@@ -1244,7 +1126,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @param lvl Level.
      * @throws IgniteCheckedException If failed.
      */
-    private void freePage(Page page, ByteBuffer buf, IndexPageIO io, Page meta, int lvl)
+    private void freePage(Page page, ByteBuffer buf, BPlusIO io, Page meta, int lvl)
         throws IgniteCheckedException {
         if (getLeftmostPageId(meta, lvl) == page.id()) {
             // This logic will handle root as well.
@@ -1302,17 +1184,15 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         return writePage(r.page, lockTail, r, lvl, Remove.RETRY);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("StatementWithEmptyBody")
-    @Override public GridH2Row put(GridH2Row row) {
+    /**
+     * @param row Row.
+     * @return Old row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public T put(T row) throws IgniteCheckedException {
         Put p = new Put(row);
 
         try {
-            if (getIndexType().isPrimaryKey()) // TODO move out of index
-                writeRowData(row); // Write data if not already written.
-
-            assert row.link != 0;
-
             for (;;) { // Go down with retries.
                 initOperation(p);
 
@@ -1329,9 +1209,6 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         return p.oldRow;
                 }
             }
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
         }
         finally {
             p.releaseMeta();
@@ -1351,7 +1228,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @param fwdBuf Forward buffer.
      * @throws IgniteCheckedException If failed.
      */
-    private void splitPage(IndexPageIO io, ByteBuffer buf, ByteBuffer fwdBuf)
+    private void splitPage(BPlusIO io, ByteBuffer buf, ByteBuffer fwdBuf)
         throws IgniteCheckedException {
         int cnt = io.getCount(buf);
         int mid = 1 + (cnt >>> 1);
@@ -1377,17 +1254,15 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @param rightId Right page ID.
      * @throws IgniteCheckedException If failed.
      */
-    private void insertSimple(IndexPageIO io, ByteBuffer buf, GridH2Row row, int idx, long rightId)
+    private void insertSimple(BPlusIO<T> io, ByteBuffer buf, T row, int idx, long rightId)
         throws IgniteCheckedException {
-        assert row.link != 0;
-
         int cnt = io.getCount(buf);
 
         // Move right all the greater elements to make a free slot for a new row link.
         io.copyItems(buf, buf, idx, idx + 1, cnt - idx, false);
 
         io.setCount(buf, cnt + 1);
-        io.setLink(buf, idx, row.link);
+        io.store(buf, idx, row);
 
         if (!io.isLeaf()) // Setup reference to the right page on split.
             inner(io).setRight(buf, idx, rightId);
@@ -1404,9 +1279,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @return Move up row.
      * @throws IgniteCheckedException If failed.
      */
-    private GridH2Row insertWithSplit(Page meta, IndexPageIO io, final ByteBuffer buf, GridH2Row row,
+    private T insertWithSplit(Page meta, BPlusIO<T> io, final ByteBuffer buf, T row,
         int idx, long rightId, int lvl) throws IgniteCheckedException {
-        try (Page fwdPage = allocatePage(-1, FLAG_IDX)) {
+        try (Page fwdPage = allocatePage()) {
             // Need to check this before the actual split, because after the split we will have new forward page here.
             boolean hadFwd = io.getForward(buf) != 0;
 
@@ -1430,7 +1305,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             // Do move up.
             cnt = io.getCount(buf);
 
-            long moveUpLink = io.getLink(buf, cnt - 1); // Last item from backward goes up.
+            assert io.canGetRow(); // TODO refactor to use io.store for move up, this assert is wrong in general case
+            T moveUpRow = getRow(io, buf, cnt - 1); // Last item from backward goes up.
 
             if (!io.isLeaf()) // Leaf pages must contain all the links, inner pages remove moveUpLink.
                 io.setCount(buf, cnt - 1);
@@ -1438,11 +1314,11 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             if (!hadFwd && lvl == getRootLevel(meta)) { // We are splitting root.
                 long newRootId;
 
-                try (Page newRoot = allocatePage(-1, FLAG_IDX)) {
+                try (Page newRoot = allocatePage()) {
                     newRootId = newRoot.id();
 
                     if (io.isLeaf())
-                        io = InnerPageIO.latest();
+                        io = latestInnerIO();
 
                     ByteBuffer newRootBuf = newRoot.getForInitialWrite();
 
@@ -1450,7 +1326,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
                     io.setCount(newRootBuf, 1);
                     inner(io).setLeft(newRootBuf, 0, PageIO.getPageId(buf));
-                    io.setLink(newRootBuf, 0, moveUpLink);
+                    io.store(newRootBuf, 0, moveUpRow); // TODO refactor
                     inner(io).setRight(newRootBuf, 0, fwdPage.id());
                 }
 
@@ -1460,12 +1336,9 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
                 return null; // We've just moved link up to root, nothing to return here.
             }
-            else { // Regular split.
-                row = getRow(moveUpLink);
-                row.link = moveUpLink;
 
-                return row;
-            }
+            // Regular split.
+            return moveUpRow;
         }
     }
 
@@ -1480,7 +1353,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      * @return Move up row.
      * @throws IgniteCheckedException If failed.
      */
-    private GridH2Row insert(Page meta, IndexPageIO io, ByteBuffer buf, GridH2Row row, int idx, long rightId, int lvl)
+    private T insert(Page meta, BPlusIO<T> io, ByteBuffer buf, T row, int idx, long rightId, int lvl)
         throws IgniteCheckedException {
         int maxCnt = io.getMaxCount(buf);
         int cnt = io.getCount(buf);
@@ -1518,7 +1391,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             ByteBuffer buf = page.getForRead();
 
             try {
-                IndexPageIO io = IndexPageIO.forPage(buf);
+                BPlusIO<T> io = io(buf);
 
                 assert io.getCount(buf) > 0;
 
@@ -1540,7 +1413,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         ByteBuffer buf = page.getForRead();
 
         try {
-            IndexPageIO io = IndexPageIO.forPage(buf);
+            BPlusIO<T> io = io(buf);
 
             return io.getCount(buf);
         }
@@ -1629,9 +1502,20 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     }
 
     /**
+     * @param io IO.
+     * @param buf Buffer.
+     * @param idx Index.
+     * @return Full data row.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected final T getRow(BPlusIO<T> io, ByteBuffer buf, int idx) throws IgniteCheckedException {
+        return dataStore.getRow(io, buf, idx);
+    }
+
+    /**
      * Get operation.
      */
-    private static abstract class Get {
+    private abstract class Get {
         /** */
         static final int GO_DOWN = 1;
 
@@ -1660,7 +1544,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         Page meta;
 
         /** */
-        SearchRow row;
+        L row;
 
         /** In/Out parameter: Page ID. */
         long pageId;
@@ -1674,7 +1558,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         /**
          * @param row Row.
          */
-        public Get(SearchRow row) {
+        public Get(L row) {
             assert row != null;
 
             this.row = row;
@@ -1699,7 +1583,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * @return {@code true} If we need to stop.
          * @throws IgniteCheckedException If failed.
          */
-        abstract boolean found(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException;
+        abstract boolean found(BPlusIO<T> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException;
 
         /**
          * @param io IO.
@@ -1709,7 +1593,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * @return {@code true} If we need to stop.
          * @throws IgniteCheckedException If failed.
          */
-        boolean notFound(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+        boolean notFound(BPlusIO<T> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
             assert lvl >= 0;
 
             return lvl == 0; // We are not at the bottom.
@@ -1742,13 +1626,19 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         /**
          * @param row Row.
          */
-        public GetOne(SearchRow row) {
+        public GetOne(L row) {
             super(row);
         }
 
         /** {@inheritDoc} */
-        @Override boolean found(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
-            row = getRow(io.getLink(buf, idx));
+        @Override boolean found(BPlusIO<T> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+            if (!io.canGetRow()) {
+                assert !io.isLeaf();
+
+                return false;
+            }
+
+            row = getRow(io, buf, idx);
 
             return true;
         }
@@ -1762,16 +1652,17 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         private ForwardCursor cursor;
 
         /**
-         * @param lower Row.
+         * @param lower Lower bound.
+         * @param upper Upper bound.
          */
-        public GetCursor(SearchRow lower, SearchRow upper) {
+        public GetCursor(L lower, L upper) {
             super(lower);
 
             cursor = new ForwardCursor(upper);
         }
 
         /** {@inheritDoc} */
-        @Override boolean found(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+        @Override boolean found(BPlusIO<T> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
             if (!io.isLeaf())
                 return false;
 
@@ -1781,7 +1672,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         /** {@inheritDoc} */
-        @Override boolean notFound(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+        @Override boolean notFound(BPlusIO<T> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
             assert lvl >= 0 : lvl;
 
             if (lvl != 0)
@@ -1798,12 +1689,12 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     /**
      * Put operation.
      */
-    private static class Put extends Get {
+    private class Put extends Get {
         /** Right child page ID for split row. */
         long rightId;
 
         /** Replaced row if any. */
-        GridH2Row oldRow;
+        T oldRow;
 
         /**
          * This page is kept locked after split until insert to the upper level will not be finished.
@@ -1823,19 +1714,20 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         /**
          * @param row Row.
          */
-        Put(GridH2Row row) {
+        Put(T row) {
             super(row);
         }
 
         /**
          * @return Row.
          */
-        GridH2Row row() {
-            return (GridH2Row)row;
+        @SuppressWarnings("unchecked")
+        T row() {
+            return (T)row;
         }
 
         /** {@inheritDoc} */
-        @Override boolean found(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+        @Override boolean found(BPlusIO<T> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
             if (io.isLeaf())
                 return true;
 
@@ -1846,7 +1738,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         /** {@inheritDoc} */
-        @Override boolean notFound(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+        @Override boolean notFound(BPlusIO<T> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
             assert btmLvl >= 0 : btmLvl;
             assert lvl >= btmLvl : lvl;
 
@@ -1890,7 +1782,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
      */
     private class Remove extends Get {
         /** We may need to lock part of the tree branch from the bottom to up for multiple levels. */
-        Tail tail;
+        Tail<T> tail;
 
         /** */
         byte needReplaceInner = FALSE;
@@ -1899,7 +1791,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         byte needMerge = FALSE;
 
         /** Removed row. */
-        GridH2Row removed;
+        T removed;
 
         /** Current page. */
         public Page page;
@@ -1910,12 +1802,12 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         /**
          * @param row Row.
          */
-        public Remove(SearchRow row) {
+        public Remove(L row) {
             super(row);
         }
 
         /** {@inheritDoc} */
-        @Override boolean found(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+        @Override boolean found(BPlusIO<T> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
             if (!io.isLeaf() && needReplaceInner == FALSE)
                 needReplaceInner = TRUE;
 
@@ -1923,7 +1815,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         /** {@inheritDoc} */
-        @Override boolean notFound(IndexPageIO io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+        @Override boolean notFound(BPlusIO<T> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
             if (io.isLeaf()) {
                 assert tail == null;
 
@@ -1997,8 +1889,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             assert tail.lvl > 0;
             assert innerIdx >= 0;
 
-            Tail leaf = getTail(0, false);
-            Tail inner = getTail(tail.lvl, false);
+            Tail<T> leaf = getTail(0, false);
+            Tail<T> inner = getTail(tail.lvl, false);
 
             assert innerIdx < inner.io.getCount(inner.buf);
 
@@ -2023,9 +1915,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
 
             // If after leaf merge parent have lost inner key, we don't need to update it anymore.
             if (innerIdx < inner.io.getCount(inner.buf)) {
-                long maxLink = leaf.io.getLink(leaf.buf, cnt - 1);
-
-                inner.io.setLink(inner.buf, innerIdx, maxLink);
+                inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, cnt - 1);
                 leaf.io.setRemoveId(leaf.buf, globalRmvId.get());
             }
             else {
@@ -2034,7 +1924,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             }
 
             // Try to merge the whole branch up if possible.
-            for (int i = 1, end = tail.lvl - 1; i < end; i++) {
+            for (int i = 1, end = tail.lvl - 1; i < end; i++) { // TODO fix deadlock here
                 if (!merge(i, false, true))
                     break;
             }
@@ -2049,13 +1939,13 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         private boolean merge(int lvl, boolean skipMayMerge, boolean releaseMerged) throws IgniteCheckedException {
             assert tail.lvl > lvl;
 
-            Tail prnt = getTail(lvl + 1, false);
+            Tail<T> prnt = getTail(lvl + 1, false);
 
             if (prnt.io.getCount(prnt.buf) == 0)
                 return false; // Parent is an empty routing page, forward page will have another parent.
 
-            Tail cur = getTail(lvl, false);
-            Tail back = getTail(lvl, true);
+            Tail<T> cur = getTail(lvl, false);
+            Tail<T> back = getTail(lvl, true);
 
             if (back == null) {
                 // We don't have a back page -> last move was to the left.
@@ -2182,8 +2072,8 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * @param back If the given page is back page for the current tail, otherwise it must be an upper level page.
          * @param idx Insertion index.
          */
-        void addTail(Page page, ByteBuffer buf, IndexPageIO io, int lvl, boolean back, int idx) {
-            Tail t = new Tail(page, buf, io, lvl, idx);
+        void addTail(Page page, ByteBuffer buf, BPlusIO<T> io, int lvl, boolean back, int idx) {
+            Tail<T> t = new Tail<>(page, buf, io, lvl, idx);
 
             if (back) {
                 assert tail != null;
@@ -2215,10 +2105,10 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * @param back Back page.
          * @return Tail.
          */
-        public Tail getTail(int lvl, boolean back) {
+        public Tail<T> getTail(int lvl, boolean back) {
             assert lvl <= tail.lvl: "level is too high";
 
-            Tail t = tail;
+            Tail<T> t = tail;
 
             while (t.lvl != lvl) {
                 if (t.fwd != null)
@@ -2239,7 +2129,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     /**
      * Tail for remove.
      */
-    private static class Tail {
+    private static class Tail<T> {
         /** */
         final Page page;
 
@@ -2247,7 +2137,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         final ByteBuffer buf;
 
         /** */
-        final IndexPageIO io;
+        final BPlusIO<T> io;
 
         /** */
         final int lvl;
@@ -2256,10 +2146,10 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         final int idx;
 
         /** */
-        Tail fwd;
+        Tail<T> fwd;
 
         /** */
-        Tail down;
+        Tail<T> down;
 
         /**
          * @param page Write locked page.
@@ -2268,7 +2158,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * @param lvl Level.
          * @param idx Insertion index.
          */
-        private Tail(Page page, ByteBuffer buf, IndexPageIO io, int lvl, int idx) {
+        private Tail(Page page, ByteBuffer buf, BPlusIO<T> io, int lvl, int idx) {
             assert page != null;
 
             this.page = page;
@@ -2280,35 +2170,28 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     }
 
     /**
-     * @param part Partition.
-     * @param flag Flag.
-     * @return Allocated page ID.
+     * @return Allocated page.
      */
-    private Page allocatePage(int part, byte flag) throws IgniteCheckedException {
-        FullPageId pageId = pageMem.allocatePage(cctx.cacheId(), part, flag);
-
-        return pageMem.page(pageId);
-    }
+    protected abstract Page allocatePage() throws IgniteCheckedException;
 
     /**
+     * @param io IO.
      * @param buf Buffer.
      * @param cnt Row count.
-     * @param row Row.
+     * @param row Lookup row.
      * @return Insertion point as in {@link Arrays#binarySearch(Object[], Object, Comparator)}.
      */
-    private int findInsertionPoint(IndexPageIO io, ByteBuffer buf, int cnt, SearchRow row)
+    private int findInsertionPoint(BPlusIO<T> io, ByteBuffer buf, int cnt, L row)
         throws IgniteCheckedException {
+        assert row != null;
+
         int low = 0;
         int high = cnt - 1;
 
         while (low <= high) {
             int mid = (low + high) >>> 1;
 
-            long link = io.getLink(buf, mid);
-
-            GridH2Row midRow = getRow(link);
-
-            int cmp = compareRows(midRow, row);
+            int cmp = compare(io, buf, mid, row);
 
             if (cmp < 0)
                 low = mid + 1;
@@ -2322,182 +2205,67 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
     }
 
     /**
-     * !!! This method must be invoked in read or write lock of referring index page. It is needed to
-     * !!! make sure that row at this link will be invisible, when the link will be removed from
-     * !!! from all the index pages, so that row can be safely erased from the data page.
-     *
-     * @param link Link.
-     * @return Row.
+     * @param buf Buffer.
+     * @param idx Index of row in the given buffer.
+     * @param row Lookup row.
+     * @return Comparison result as in {@link Comparator#compare(Object, Object)}.
+     * @throws IgniteCheckedException If failed.
      */
-    private GridH2Row getRow(long link) throws IgniteCheckedException {
-        try (Page page = page(pageId(link))) {
-            ByteBuffer buf = page.getForRead();
+    protected abstract int compare(BPlusIO<T> io, ByteBuffer buf, int idx, L row) throws IgniteCheckedException;
 
-            try {
-                GridH2RowDescriptor desc = ((GridH2Table)table).rowDescriptor();
+    /**
+     * @param buf Buffer.
+     * @return IO.
+     */
+    private BPlusIO<T> io(ByteBuffer buf) {
+        assert buf != null;
 
-                GridH2Row existing = desc.cachedRow(link);
+        int type = PageIO.getType(buf);
+        int ver = PageIO.getVersion(buf);
 
-                if (existing != null)
-                    return existing;
-
-                DataPageIO io = DataPageIO.forPage(buf);
-
-                int dataOff = io.getDataOffset(buf, dwordsOffset(link));
-
-                buf.position(dataOff);
-
-                // Skip key-value size.
-                buf.getShort();
-
-                CacheObject key = coctx.processor().toCacheObject(coctx, buf);
-                CacheObject val = coctx.processor().toCacheObject(coctx, buf);
-
-                int topVer = buf.getInt();
-                int nodeOrderDrId = buf.getInt();
-                long globalTime = buf.getLong();
-                long order = buf.getLong();
-
-                GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
-
-                GridH2Row res;
-
-                try {
-                    res = ((GridH2Table)getTable()).rowDescriptor().createRow(key, PageIdUtils.partId(link), val, ver, 0);
-
-                    res.link = link;
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-
-                assert res.ver != null;
-
-                desc.cache(res);
-
-                return res;
-            }
-            finally {
-                page.releaseRead();
-            }
-        }
+        return io(type, ver);
     }
 
-    /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        return getCostRangeIndex(masks, getRowCountApproximation(), filter, sortOrder);
-    }
+    /**
+     * @param type Page type.
+     * @param ver Page version.
+     * @return IO.
+     */
+    protected abstract BPlusIO<T> io(int type, int ver);
 
-    /** {@inheritDoc} */
-    @Override public long getRowCount(Session ses) {
-        Cursor cursor = find(ses, null, null);
+    /**
+     * @return Latest version of inner page IO.
+     */
+    protected abstract BPlusIOInner<T> latestInnerIO();
 
-        long res = 0;
-
-        while (cursor.next())
-            res++;
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getRowCountApproximation() {
-        return 10_000; // TODO
-    }
+    /**
+     * @return Latest version of leaf page IO.
+     */
+    protected abstract BPlusIOLeaf<T> latestLeafIO();
 
     /**
      * @param io IO.
      * @return Inner page IO.
      */
-    private static InnerPageIO inner(IndexPageIO io) {
-        return (InnerPageIO)io;
+    private static BPlusIOInner inner(BPlusIO io) {
+        return (BPlusIOInner)io;
     }
 
     /**
-     * @param page Page.
-     * @param h Handler.
-     * @param arg Argument.
-     * @param lvl Level.
-     * @param dfltRes Default result in case of page invalidation.
-     * @return Handler result.
-     * @throws IgniteCheckedException If failed.
-     */
-    private static <X> int readPage(Page page, PageHandler<X> h, X arg, int lvl, int dfltRes)
-        throws IgniteCheckedException {
-        if (page == null)
-            return dfltRes;
-
-        ByteBuffer buf = page.getForRead();
-
-        if (buf == null)
-            return dfltRes;
-
-        try {
-            return h.run(page, buf, arg, lvl);
-        }
-        finally {
-            page.releaseRead();
-        }
-    }
-
-    /**
-     * @param page Page.
-     * @param h Handler.
-     * @param arg Argument.
-     * @param lvl Level.
-     * @param dfltRes Default result in case of page invalidation.
-     * @return Handler result.
-     * @throws IgniteCheckedException If failed.
-     */
-    private static <X> int writePage(Page page, PageHandler<X> h, X arg, int lvl, int dfltRes)
-        throws IgniteCheckedException {
-        if (page == null)
-            return dfltRes;
-
-        int res;
-
-        boolean ok = false;
-
-        ByteBuffer buf = page.getForWrite();
-
-        if (buf == null)
-            return dfltRes;
-
-        try {
-            // TODO we need a set of CRC markers: LOADED, UPDATING, DIRTY
-            // Mark update start.
-            PageIO.setCrc(buf, 0xFAFABABA);
-
-            res = h.run(page, buf, arg, lvl);
-
-            // Mark update end.
-            PageIO.setCrc(buf, 0x0BABEB00);
-
-            ok = true;
-        }
-        finally {
-            if (h.releaseAfterWrite(page, arg, lvl))
-                page.releaseWrite(ok);
-        }
-
-        return res;
-    }
-
-    /**
+     * Get page by ID.
+     *
      * @param pageId Page ID.
      * @return Page.
      * @throws IgniteCheckedException If failed.
      */
-    private Page page(long pageId) throws IgniteCheckedException {
-        return pageMem.page(new FullPageId(pageId, cctx.cacheId()));
-    }
+    protected abstract Page page(long pageId) throws IgniteCheckedException;
 
     /**
      * Forward cursor.
      */
-    private class ForwardCursor implements Cursor {
+    protected class ForwardCursor implements GridCursor<T> {
         /** */
-        private List<GridH2Row> rows;
+        private List<T> rows;
 
         /** */
         private int row;
@@ -2509,12 +2277,12 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         private ByteBuffer buf;
 
         /** */
-        private final SearchRow upperBound;
+        private final L upperBound;
 
         /**
          * @param upperBound Upper bound.
          */
-        ForwardCursor(SearchRow upperBound) {
+        protected ForwardCursor(L upperBound) {
             this.upperBound = upperBound;
         }
 
@@ -2540,14 +2308,17 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                 return false;
 
             for (;;) {
-                IndexPageIO io = LeafPageIO.forPage(buf);
+                BPlusIO<T> io = io(buf);
+
+                assert io.isLeaf();
+                assert io.canGetRow();
 
                 int cnt = io.getCount(buf);
                 long fwdId = io.getForward(buf);
 
                 if (cnt > 0) {
                     if (upperBound != null) {
-                        int cmp = compareRows(getRow(io.getLink(buf, cnt - 1)), upperBound);
+                        int cmp = compare(io, buf, cnt - 1, upperBound);
 
                         if (cmp > 0) {
                             cnt = findInsertionPoint(io, buf, cnt, upperBound) + 1;
@@ -2562,7 +2333,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
                         rows = new ArrayList<>();
 
                     for (int i = startIdx; i < cnt; i++)
-                        rows.add(getRow(io.getLink(buf, i)));
+                        rows.add(getRow(io, buf, i));
                 }
 
                 Page prevPage = page;
@@ -2597,7 +2368,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean next() {
+        @Override public boolean next() throws IgniteCheckedException {
             if (rows == null)
                 return false;
 
@@ -2607,564 +2378,24 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
             row = 0;
             rows.clear();
 
-            try {
-                return fillFromBuffer(0);
-            }
-            catch (IgniteCheckedException e) {
-                throw DbException.convert(e);
-            }
+            return fillFromBuffer(0);
         }
 
         /** {@inheritDoc} */
-        @Override public Row get() {
+        @Override public T get() {
             return rows.get(row);
-        }
-
-        /** {@inheritDoc} */
-        @Override public SearchRow getSearchRow() {
-            return get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean previous() {
-            throw DbException.getUnsupportedException("previous");
-        }
-    }
-
-    /**
-     * Abstract index page IO routines.
-     */
-    private static abstract class IndexPageIO extends PageIO {
-        /** */
-        static final int CNT_OFF = COMMON_HEADER_END;
-
-        /** */
-        static final int FORWARD_OFF = CNT_OFF + 2;
-
-        /** */
-        static final int REMOVE_ID_OFF = FORWARD_OFF + 8;
-
-        /** */
-        static final int ITEMS_OFF = REMOVE_ID_OFF + 8;
-
-        /**
-         * @param buf Buffer.
-         * @return IO.
-         */
-        @SuppressWarnings("unchecked")
-        public static IndexPageIO forPage(ByteBuffer buf) {
-            int type = getType(buf);
-            int ver = getVersion(buf);
-
-            switch (type) {
-                case T_BPLUS_REF3_INNER:
-                    return InnerPageIO.forVersion(ver);
-
-                case T_BPLUS_REF3_LEAF:
-                    return LeafPageIO.forVersion(ver);
-
-                default:
-                    throw new IgniteException("Unsupported page type: " + type);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initNewPage(ByteBuffer buf, long pageId) {
-            super.initNewPage(buf, pageId);
-
-            setCount(buf, 0);
-            setForward(buf, 0);
-            setRemoveId(buf, 0);
-        }
-
-        /**
-         * @param buf Buffer.
-         * @return Forward page ID.
-         */
-        public long getForward(ByteBuffer buf) {
-            return buf.getLong(FORWARD_OFF);
-        }
-
-        /**
-         * @param buf Buffer.
-         * @param pageId Forward page ID.
-         */
-        public void setForward(ByteBuffer buf, long pageId) {
-            buf.putLong(FORWARD_OFF, pageId);
-
-            assert getForward(buf) == pageId;
-        }
-
-        /**
-         * @param buf Buffer.
-         * @return Remove ID.
-         */
-        public long getRemoveId(ByteBuffer buf) {
-            return buf.getLong(REMOVE_ID_OFF);
-        }
-
-        /**
-         * @param buf Buffer.
-         * @param rmvId Remove ID.
-         */
-        public void setRemoveId(ByteBuffer buf, long rmvId) {
-            buf.putLong(REMOVE_ID_OFF, rmvId);
-
-            assert getRemoveId(buf) == rmvId;
-        }
-
-        /**
-         * @return {@code true} if it is a leaf page.
-         */
-        public final boolean isLeaf() {
-            return getType() == T_BPLUS_REF3_LEAF;
-        }
-
-        /**
-         * @param buf Buffer.
-         * @return Max items count.
-         */
-        public abstract int getMaxCount(ByteBuffer buf);
-
-        /**
-         * @param buf Buffer.
-         * @return Items count in the page.
-         */
-        public int getCount(ByteBuffer buf) {
-            int cnt = buf.getShort(CNT_OFF) & 0xFFFF;
-
-            assert cnt >= 0: cnt;
-
-            return cnt;
-        }
-
-        /**
-         * @param buf Buffer.
-         * @param cnt Count.
-         */
-        public void setCount(ByteBuffer buf, int cnt) {
-            assert cnt >= 0: cnt;
-
-            buf.putShort(CNT_OFF, (short)cnt);
-
-            assert getCount(buf) == cnt;
-        }
-
-        /**
-         * @param buf Buffer.
-         * @param idx Index.
-         * @return Link for the given index.
-         */
-        public abstract long getLink(ByteBuffer buf, int idx);
-
-        /**
-         * @param buf Buffer.
-         * @param idx Index.
-         * @param link Link.
-         */
-        public abstract void setLink(ByteBuffer buf, int idx, long link);
-
-        /**
-         * @param src Source buffer.
-         * @param dst Destination buffer.
-         * @param srcIdx Source begin index.
-         * @param dstIdx Destination begin index.
-         * @param cnt Items count.
-         * @param cpLeft Copy leftmost link (makes sense only for inner pages).
-         */
-        public abstract void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt, boolean cpLeft);
-    }
-
-    /**
-     * Inner page IO routines.
-     */
-    private static final class InnerPageIO extends IndexPageIO {
-        /** */
-        private static final InnerPageIO V1 = new InnerPageIO();
-
-        /** */
-        private static final int ITEM_SIZE = 16;
-
-        /** */
-        private static final int SHIFT_LEFT = ITEMS_OFF;
-
-        /** */
-        private static final int SHIFT_LINK = ITEMS_OFF + 8;
-
-        /** */
-        private static final int SHIFT_RIGHT = ITEMS_OFF + 16;
-
-        /**
-         * @param ver version.
-         * @return IO.
-         */
-        public static InnerPageIO forVersion(int ver) {
-            switch (ver){
-                case 1:
-                    return V1;
-
-                default:
-                    throw new IgniteException("Unsupported version: " + ver);
-            }
-        }
-
-        /**
-         * @return Latest.
-         */
-        public static InnerPageIO latest() {
-            return V1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getType() {
-            return T_BPLUS_REF3_INNER;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getVersion() {
-            return 1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getMaxCount(ByteBuffer buf) {
-            //  (capacity - ITEMS_OFF - RIGHTMOST_PAGE_ID_SLOT_SIZE) / ITEM_SIZE
-            return (buf.capacity() - ITEMS_OFF - 8) >>> 4;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getLink(ByteBuffer buf, int idx) {
-            assert idx < getCount(buf): idx;
-
-            return buf.getLong(offset(idx, SHIFT_LINK));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setLink(ByteBuffer buf, int idx, long link) {
-            buf.putLong(offset(idx, SHIFT_LINK), link);
-
-            assert getLink(buf, idx) == link;
-        }
-
-        /**
-         * @param buf Buffer.
-         * @param idx Index.
-         * @return Page ID.
-         */
-        long getLeft(ByteBuffer buf, int idx) {
-            return buf.getLong(offset(idx, SHIFT_LEFT));
-        }
-
-        /**
-         * @param buf Buffer.
-         * @param idx Index.
-         * @param pageId Page ID.
-         */
-        void setLeft(ByteBuffer buf, int idx, long pageId) {
-            buf.putLong(offset(idx, SHIFT_LEFT), pageId);
-
-            assert pageId == getLeft(buf, idx);
-        }
-
-        /**
-         * @param buf Buffer.
-         * @param idx Index.
-         * @return Page ID.
-         */
-        long getRight(ByteBuffer buf, int idx) {
-            return buf.getLong(offset(idx, SHIFT_RIGHT));
-        }
-
-        /**
-         * @param buf Buffer.
-         * @param idx Index.
-         * @param pageId Page ID.
-         */
-        void setRight(ByteBuffer buf, int idx, long pageId) {
-            buf.putLong(offset(idx, SHIFT_RIGHT), pageId);
-
-            assert pageId == getRight(buf, idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt,
-            boolean cpLeft) {
-            assert srcIdx != dstIdx || src != dst;
-
-            if (dstIdx > srcIdx) {
-                for (int i = cnt - 1; i >= 0; i--) {
-                    dst.putLong(offset(dstIdx + i, SHIFT_RIGHT), src.getLong(offset(srcIdx + i, SHIFT_RIGHT)));
-                    dst.putLong(offset(dstIdx + i, SHIFT_LINK), src.getLong(offset(srcIdx + i, SHIFT_LINK)));
-                }
-
-                if (cpLeft)
-                    dst.putLong(offset(dstIdx, SHIFT_LEFT), src.getLong(offset(srcIdx, SHIFT_LEFT)));
-            }
-            else {
-                if (cpLeft)
-                    dst.putLong(offset(dstIdx, SHIFT_LEFT), src.getLong(offset(srcIdx, SHIFT_LEFT)));
-
-                for (int i = 0; i < cnt; i++) {
-                    dst.putLong(offset(dstIdx + i, SHIFT_RIGHT), src.getLong(offset(srcIdx + i, SHIFT_RIGHT)));
-                    dst.putLong(offset(dstIdx + i, SHIFT_LINK), src.getLong(offset(srcIdx + i, SHIFT_LINK)));
-                }
-            }
-        }
-
-        /**
-         * @param idx Index of element.
-         * @param shift It can be either link itself or left or right page ID.
-         * @return Offset from byte buffer begin in bytes.
-         */
-        private static int offset(int idx, int shift) {
-            assert idx >= 0: idx;
-
-            return shift + ITEM_SIZE * idx;
-        }
-    }
-
-    /**
-     * Leaf page IO routines.
-     */
-    private static final class LeafPageIO extends IndexPageIO {
-        /** */
-        private static final LeafPageIO V1 = new LeafPageIO();
-
-        /** */
-        private static final int ITEM_SIZE = 8;
-
-        /**
-         * @param ver Version.
-         * @return IO instance.
-         */
-        public static LeafPageIO forVersion(int ver) {
-            switch (ver) {
-                case 1:
-                    return V1;
-
-                default:
-                    throw new IgniteException("Unsupported version: " + ver);
-            }
-        }
-
-        /**
-         * @return Latest.
-         */
-        public static LeafPageIO latest() {
-            return V1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getType() {
-            return T_BPLUS_REF3_LEAF;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getVersion() {
-            return 1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getMaxCount(ByteBuffer buf) {
-            return (buf.capacity() - ITEMS_OFF) >>> 3; // divide by ITEM_SIZE
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getLink(ByteBuffer buf, int idx) {
-            assert idx < getCount(buf): idx;
-
-            return buf.getLong(offset(idx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setLink(ByteBuffer buf, int idx, long link) {
-            buf.putLong(offset(idx), link);
-
-            assert getLink(buf, idx) == link;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt,
-            boolean cpLeft) {
-            assert srcIdx != dstIdx || src != dst;
-
-            if (dstIdx > srcIdx) {
-                for (int i = cnt - 1; i >= 0; i--)
-                    dst.putLong(offset(dstIdx + i), src.getLong(offset(srcIdx + i)));
-            }
-            else {
-                for (int i = 0; i < cnt; i++)
-                    dst.putLong(offset(dstIdx + i), src.getLong(offset(srcIdx + i)));
-            }
-        }
-
-        /**
-         * @param idx Index of item.
-         * @return Offset.
-         */
-        private static int offset(int idx) {
-            assert idx >= 0: idx;
-
-            return ITEMS_OFF + idx * ITEM_SIZE;
-        }
-    }
-
-    /**
-     * Meta page IO.
-     */
-    private static class MetaPageIO extends PageIO {
-        /** */
-        static final MetaPageIO V1 = new MetaPageIO();
-
-        /** */
-        static final int LVLS_OFF = COMMON_HEADER_END;
-
-        /** */
-        static final int REFS_OFF = LVLS_OFF + 1;
-
-        /**
-         * @param buf Buffer.
-         * @return IO.
-         */
-        static MetaPageIO forPage(ByteBuffer buf) {
-            assert getType(buf) == T_BPLUS_REF3_META;
-
-            return forVersion(getVersion(buf));
-        }
-
-        /**
-         * @param ver Version.
-         * @return IO.
-         */
-        static MetaPageIO forVersion(int ver) {
-            switch (ver) {
-                case 1:
-                    return V1;
-
-                default:
-                    throw new IgniteException("Unsupported version: " + ver);
-            }
-        }
-
-        /**
-         * @return Instance.
-         */
-        static MetaPageIO latest() {
-            return V1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getType() {
-            return T_BPLUS_REF3_META;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getVersion() {
-            return 1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initNewPage(ByteBuffer buf, long pageId) {
-            super.initNewPage(buf, pageId);
-
-            setLevelsCount(buf, 0);
-        }
-
-        /**
-         * @param buf Buffer.
-         * @return Number of levels in this tree.
-         */
-        public int getLevelsCount(ByteBuffer buf) {
-            return buf.get(LVLS_OFF);
-        }
-
-        /**
-         * @param buf  Buffer.
-         * @param lvls Number of levels in this tree.
-         */
-        public void setLevelsCount(ByteBuffer buf, int lvls) {
-            assert lvls >= 0 && lvls < 30;
-
-            buf.put(LVLS_OFF, (byte)lvls);
-
-            assert getLevelsCount(buf) == lvls;
-        }
-
-        /**
-         * @param lvl Level.
-         * @return Offset for page reference.
-         */
-        private static int offset(int lvl) {
-            return lvl * 8 + REFS_OFF;
-        }
-
-        /**
-         * @param buf Buffer.
-         * @param lvl Level.
-         * @return Page reference at that level.
-         */
-        public long getLeftmostPageId(ByteBuffer buf, int lvl) {
-            return buf.getLong(offset(lvl));
-        }
-
-        /**
-         * @param buf    Buffer.
-         * @param lvl    Level.
-         * @param pageId Page ID.
-         */
-        public void setLeftmostPageId(ByteBuffer buf, int lvl, long pageId) {
-            assert lvl >= 0 && lvl < getLevelsCount(buf);
-
-            buf.putLong(offset(lvl), pageId);
-
-            assert getLeftmostPageId(buf, lvl) == pageId;
-        }
-
-        /**
-         * @param buf Buffer.
-         * @return Root level.
-         */
-        public int getRootLevel(ByteBuffer buf) {
-            int lvls = getLevelsCount(buf); // The highest level page is root.
-
-            assert lvls > 0 : lvls;
-
-            return lvls - 1;
-        }
-    }
-    /**
-     * Page handler.
-     */
-    private static abstract class PageHandler<X> {
-        /**
-         * @param page Page.
-         * @param buf Page buffer.
-         * @param arg Argument.
-         * @param lvl Level.
-         * @return Result.
-         * @throws IgniteCheckedException If failed.
-         */
-        public abstract int run(Page page, ByteBuffer buf, X arg, int lvl) throws IgniteCheckedException;
-
-        /**
-         * @param page Page.
-         * @param arg Argument.
-         * @param lvl Level.
-         * @return {@code true} If release.
-         */
-        public boolean releaseAfterWrite(Page page, X arg, int lvl) {
-            return true;
         }
     }
 
     /**
      * Page handler for basic {@link Get} operation.
      */
-    private static abstract class GetPageHandler<G extends Get> extends PageHandler<G> {
+    private abstract class GetPageHandler<G extends Get> extends PageHandler<G> {
         /** {@inheritDoc} */
         @Override public final int run(Page page, ByteBuffer buf, G g, int lvl) throws IgniteCheckedException {
-            IndexPageIO io = IndexPageIO.forPage(buf);
+            BPlusIO<T> io = io(buf);
 
-            // In case of intersection with complex multilevel remove operation
+            // In case of intersection with inner replace remove operation
             // we need to restart our operation from the root.
             if (g.rmvId < io.getRemoveId(buf))
                 return Get.RETRY_ROOT;
@@ -3181,7 +2412,7 @@ public class BPlusTreeRefIndex extends PageMemoryIndex {
          * @return Result code.
          * @throws IgniteCheckedException If failed.
          */
-        protected abstract int run0(Page page, ByteBuffer buf, IndexPageIO io, G g, int lvl)
+        protected abstract int run0(Page page, ByteBuffer buf, BPlusIO<T> io, G g, int lvl)
             throws IgniteCheckedException;
 
         /** {@inheritDoc} */
