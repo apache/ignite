@@ -482,15 +482,15 @@ namespace Apache.Ignite.Core.Impl
         {
             using (PlatformMemoryStream stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                    BinaryWriter writer = _marsh.StartMarshal(stream);
+                BinaryWriter writer = _marsh.StartMarshal(stream);
 
-                    outAction(writer);
+                outAction(writer);
 
-                    FinishMarshal(writer);
+                FinishMarshal(writer);
 
-                    var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+                var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
 
-                if (res == 0)
+                if (res != True)
                     return default(TR);
 
                 stream.SynchronizeInput();
