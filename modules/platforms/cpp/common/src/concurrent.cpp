@@ -70,7 +70,8 @@ namespace ignite
                 }
             }
 
-            SharedPointerImpl::SharedPointerImpl(void* ptr) : ptr(ptr), refCnt(1)
+            SharedPointerImpl::SharedPointerImpl(void* ptr, DeleterType deleter) :
+                ptr(ptr), deleter(deleter), refCnt(1)
             {
                 Memory::Fence();
             }
@@ -78,6 +79,11 @@ namespace ignite
             void* SharedPointerImpl::Pointer()
             {
                 return ptr;
+            }
+
+            SharedPointerImpl::DeleterType SharedPointerImpl::Deleter()
+            {
+                return deleter;
             }
 
             void SharedPointerImpl::Increment()
