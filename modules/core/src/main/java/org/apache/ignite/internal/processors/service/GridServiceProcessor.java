@@ -573,7 +573,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         if (node.version().compareTo(ServiceTopologyCallable.SINCE_VER) >= 0) {
             return ctx.closure().callAsyncNoFailover(
-                GridClosureCallMode.BALANCE,
+                GridClosureCallMode.BROADCAST,
                 new ServiceTopologyCallable(name),
                 Collections.singletonList(node),
                 false

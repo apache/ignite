@@ -3260,7 +3260,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 boolean rmtLateAssignBool;
 
-                if (node.version().compareTo(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0) {
+                if (node.version().compareToIgnoreTimestamp(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0) {
                     Boolean rmtLateAssign = node.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
                     // Can be null only in tests.
                     rmtLateAssignBool = rmtLateAssign != null ? rmtLateAssign : false;
