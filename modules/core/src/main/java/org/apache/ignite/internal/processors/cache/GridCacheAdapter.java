@@ -1889,7 +1889,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         }
 
                         try {
-                            T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(null,
+                            T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                                null,
+                                null,
                                 ctx.isSwapOrOffheapEnabled(),
                                 /*unmarshal*/true,
                                 /*update-metrics*/!skipVals,
@@ -2334,7 +2336,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 throws IgniteCheckedException {
                 Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = F.viewAsMap(keys,
                     new C1<K, EntryProcessor<K, V, Object>>() {
-                            @Override public EntryProcessor apply(K k) {
+                        @Override public EntryProcessor apply(K k) {
                             return entryProcessor;
                         }
                     });
@@ -2544,7 +2546,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V tryPutIfAbsent(K key, V val) throws IgniteCheckedException {
+    @Nullable @Override public V tryGetAndPut(K key, V val) throws IgniteCheckedException {
         // Supported only in ATOMIC cache.
         throw new UnsupportedOperationException();
     }
@@ -4821,6 +4823,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         throws IgniteCheckedException, GridCacheEntryRemovedException
     {
         CacheObject val = entry.innerGet(
+            null,
             null,
             false,
             false,
