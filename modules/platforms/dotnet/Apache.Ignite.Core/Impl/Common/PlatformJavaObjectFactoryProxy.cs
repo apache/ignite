@@ -17,14 +17,15 @@
 
 namespace Apache.Ignite.Core.Impl.Common
 {
+    using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Maps to PlatformJavaObjectFactoryProxy.
+    /// Maps to PlatformJavaObjectFactoryProxy in Java.
     /// </summary>
-    internal class JavaObjectFactoryProxy : IBinaryWriteAware
+    internal class PlatformJavaObjectFactoryProxy : IBinaryWriteAware
     {
         /// <summary>
         /// Represents the factory type.
@@ -45,16 +46,25 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly object _payload;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="JavaObjectFactoryProxy"/> class.
+        /// Initializes a new instance of the <see cref="PlatformJavaObjectFactoryProxy"/> class.
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="factoryClassName">Name of the factory class.</param>
         /// <param name="payload">The payload.</param>
-        public JavaObjectFactoryProxy(FactoryType type, string factoryClassName, object payload)
+        protected PlatformJavaObjectFactoryProxy(FactoryType type, string factoryClassName, object payload)
         {
             _factoryType = (int) type;
             _factoryClassName = factoryClassName;
             _payload = payload;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PlatformJavaObjectFactoryProxy"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        public PlatformJavaObjectFactoryProxy(IBinaryReader reader)
+        {
+            throw new InvalidOperationException(GetType() + " should never be deserialized on .NET side.");
         }
 
         /** <inheritdoc /> */

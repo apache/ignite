@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Common.JavaObjects
     /// </summary>
     /// <typeparam name="TK">Key type.</typeparam>
     /// <typeparam name="TV">Value type.</typeparam>
-    internal class JavaCacheEntryEventFilter<TK, TV> : JavaObjectFactoryProxy, ICacheEntryEventFilter<TK, TV>
+    internal class JavaCacheEntryEventFilter<TK, TV> : PlatformJavaObjectFactoryProxy, ICacheEntryEventFilter<TK, TV>
     {
         /** <inheritdoc /> */
         public bool Evaluate(ICacheEntryEvent<TK, TV> evt)
