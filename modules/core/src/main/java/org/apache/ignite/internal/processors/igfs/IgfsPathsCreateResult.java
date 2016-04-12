@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 
 import java.util.List;
 
@@ -31,22 +30,17 @@ public class IgfsPathsCreateResult {
     private final List<IgfsPath> paths;
 
     /** Info of the last created file. */
-    private final IgfsFileInfo info;
-
-    /** Parent ID. */
-    private final IgniteUuid parentId;
+    private final IgfsEntryInfo info;
 
     /**
      * Constructor.
      *
      * @param paths Created paths.
      * @param info Info of the last created file.
-     * @param parentId Parent ID.
      */
-    public IgfsPathsCreateResult(List<IgfsPath> paths, IgfsFileInfo info, IgniteUuid parentId) {
+    public IgfsPathsCreateResult(List<IgfsPath> paths, IgfsEntryInfo info) {
         this.paths = paths;
         this.info = info;
-        this.parentId = parentId;
     }
 
     /**
@@ -59,15 +53,8 @@ public class IgfsPathsCreateResult {
     /**
      * @return Info of the last created file.
      */
-    public IgfsFileInfo info() {
+    public IgfsEntryInfo info() {
         return info;
-    }
-
-    /**
-     * @return Parent ID.
-     */
-    public IgniteUuid parentId() {
-        return parentId;
     }
 
     /** {@inheritDoc} */

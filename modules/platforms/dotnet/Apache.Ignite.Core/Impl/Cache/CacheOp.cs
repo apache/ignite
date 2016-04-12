@@ -60,6 +60,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         RemoveObj = 36,
         Replace2 = 37,
         Replace3 = 38,
-        GetConfig = 39
+        GetConfig = 39,
+        LoadAll = 40
     }
 }

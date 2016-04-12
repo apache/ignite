@@ -44,30 +44,31 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileCreateProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileLockProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileReserveSpaceProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingReplaceProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import javax.cache.processor.EntryProcessorResult;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -86,16 +87,15 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 
-import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.builder;
+import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_RENAMED;
+import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_RENAMED;
 
 /**
  * Cache based structure (meta data) manager.
  */
-@SuppressWarnings("all")
 public class IgfsMetaManager extends IgfsManager {
     /** Comparator for Id sorting. */
-    private static final Comparator<IgniteUuid> PATH_ID_SORTING_COMPARATOR
-            = new Comparator<IgniteUuid>() {
+    private static final Comparator<IgniteUuid> PATH_ID_SORTING_COMPARATOR = new Comparator<IgniteUuid>() {
         @Override public int compare(IgniteUuid u1, IgniteUuid u2) {
             if (u1 == u2)
                 return 0;
@@ -117,7 +117,7 @@ public class IgfsMetaManager extends IgfsManager {
     private CountDownLatch metaCacheStartLatch;
 
     /** File ID to file info projection. */
-    private IgniteInternalCache<IgniteUuid, IgfsFileInfo> id2InfoPrj;
+    private IgniteInternalCache<IgniteUuid, IgfsEntryInfo> id2InfoPrj;
 
     /** Predefined key for sampling mode value. */
     private GridCacheInternal sampling;
@@ -137,8 +137,20 @@ public class IgfsMetaManager extends IgfsManager {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
+    /** Relaxed flag. */
+    private final boolean relaxed;
+
     /**
+     * Constructor.
      *
+     * @param relaxed Relaxed mode flag.
+     */
+    public IgfsMetaManager(boolean relaxed) {
+        this.relaxed = relaxed;
+    }
+
+    /**
+     * Await initialization.
      */
     void awaitInit() {
         try {
@@ -163,6 +175,7 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("RedundantCast")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         metaCache = igfsCtx.kernalContext().cache().getOrStartCache(cfg.getMetaCacheName());
 
@@ -175,7 +188,7 @@ public class IgfsMetaManager extends IgfsManager {
                 }
             });
 
-        id2InfoPrj = (IgniteInternalCache<IgniteUuid, IgfsFileInfo>)metaCache.<IgniteUuid, IgfsFileInfo>cache();
+        id2InfoPrj = (IgniteInternalCache<IgniteUuid, IgfsEntryInfo>)metaCache.<IgniteUuid, IgfsEntryInfo>cache();
 
         locNode = igfsCtx.kernalContext().discovery().localNode();
 
@@ -440,17 +453,17 @@ public class IgfsMetaManager extends IgfsManager {
      * @return File info.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgfsFileInfo info(@Nullable IgniteUuid fileId) throws IgniteCheckedException {
+    @Nullable public IgfsEntryInfo info(@Nullable IgniteUuid fileId) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 if (fileId == null)
                     return null;
 
-                IgfsFileInfo info = getInfo(fileId);
+                IgfsEntryInfo info = getInfo(fileId);
 
                 // Force root ID always exist in cache.
                 if (info == null && IgfsUtils.ROOT_ID.equals(fileId))
-                    info = createSystemEntryIfAbsent(fileId);
+                    info = createSystemDirectoryIfAbsent(fileId);
 
                 return info;
             }
@@ -469,7 +482,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Files details.
      * @throws IgniteCheckedException If failed.
      */
-    public Map<IgniteUuid, IgfsFileInfo> infos(Collection<IgniteUuid> fileIds) throws IgniteCheckedException {
+    public Map<IgniteUuid, IgfsEntryInfo> infos(Collection<IgniteUuid> fileIds) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 validTxState(false);
@@ -479,13 +492,13 @@ public class IgfsMetaManager extends IgfsManager {
                 if (F.isEmpty(fileIds))
                     return Collections.emptyMap();
 
-                Map<IgniteUuid, IgfsFileInfo> map = getInfos(fileIds);
+                Map<IgniteUuid, IgfsEntryInfo> map = getInfos(fileIds);
 
                 // Force root ID always exist in cache.
                 if (fileIds.contains(IgfsUtils.ROOT_ID) && !map.containsKey(IgfsUtils.ROOT_ID)) {
                     map = new GridLeanMap<>(map);
 
-                    map.put(IgfsUtils.ROOT_ID, createSystemEntryIfAbsent(IgfsUtils.ROOT_ID));
+                    map.put(IgfsUtils.ROOT_ID, createSystemDirectoryIfAbsent(IgfsUtils.ROOT_ID));
                 }
 
                 return map;
@@ -502,22 +515,20 @@ public class IgfsMetaManager extends IgfsManager {
      * Lock the file explicitly outside of transaction.
      *
      * @param fileId File ID to lock.
-     * @param delete If file is being locked for delete.
+     * @param del If file is being locked for delete.
      * @return Locked file info or {@code null} if file cannot be locked or doesn't exist.
      * @throws IgniteCheckedException If the file with such id does not exist, or on another failure.
      */
-    public @Nullable IgfsFileInfo lock(IgniteUuid fileId, boolean delete) throws IgniteCheckedException {
+    public @Nullable IgfsEntryInfo lock(IgniteUuid fileId, boolean del) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 validTxState(false);
 
                 assert fileId != null;
 
-                IgniteInternalTx tx = startTx();
-
-                try {
+                try (IgniteInternalTx tx = startTx()) {
                     // Lock file ID for this transaction.
-                    IgfsFileInfo oldInfo = info(fileId);
+                    IgfsEntryInfo oldInfo = info(fileId);
 
                     if (oldInfo == null)
                         return null;
@@ -525,7 +536,7 @@ public class IgfsMetaManager extends IgfsManager {
                     if (oldInfo.lockId() != null)
                         return null; // The file is already locked, we cannot lock it.
 
-                    IgfsFileInfo newInfo = invokeLock(fileId, delete);
+                    IgfsEntryInfo newInfo = invokeLock(fileId, del);
 
                     tx.commit();
 
@@ -533,9 +544,6 @@ public class IgfsMetaManager extends IgfsManager {
                 }
                 catch (GridClosureException e) {
                     throw U.cast(e);
-                }
-                finally {
-                    tx.close();
                 }
             }
             finally {
@@ -549,11 +557,11 @@ public class IgfsMetaManager extends IgfsManager {
     /**
      * Create file lock ID.
      *
-     * @param delete If lock ID is required for file deletion.
+     * @param del If lock ID is required for file deletion.
      * @return Lock ID.
      */
-    private IgniteUuid createFileLockId(boolean delete) {
-        if (delete)
+    private IgniteUuid createFileLockId(boolean del) {
+        if (del)
             return IgfsUtils.DELETE_LOCK_ID;
 
         return IgniteUuid.fromUuid(locNode.id());
@@ -566,7 +574,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param modificationTime Modification time to write to file info.
      * @throws IgniteCheckedException If failed.
      */
-    public void unlock(final IgfsFileInfo info, final long modificationTime) throws IgniteCheckedException {
+    public void unlock(final IgfsEntryInfo info, final long modificationTime) throws IgniteCheckedException {
         validTxState(false);
 
         assert info != null;
@@ -589,18 +597,18 @@ public class IgfsMetaManager extends IgfsManager {
                             IgniteUuid fileId = info.id();
 
                             // Lock file ID for this transaction.
-                            IgfsFileInfo oldInfo = info(fileId);
+                            IgfsEntryInfo oldInfo = info(fileId);
 
                             if (oldInfo == null)
                                 throw fsException(new IgfsPathNotFoundException("Failed to unlock file (file not " +
                                     "found): " + fileId));
 
-                            if (!info.lockId().equals(oldInfo.lockId()))
+                            if (!F.eq(info.lockId(), oldInfo.lockId()))
                                 throw new IgniteCheckedException("Failed to unlock file (inconsistent file lock ID) " +
                                     "[fileId=" + fileId + ", lockId=" + info.lockId() + ", actualLockId=" +
                                     oldInfo.lockId() + ']');
 
-                            id2InfoPrj.invoke(fileId, new FileUnlockProcessor(modificationTime));
+                            id2InfoPrj.invoke(fileId, new IgfsMetaFileUnlockProcessor(modificationTime));
 
                             return null;
                         }
@@ -628,7 +636,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Locked file details. Resulting map doesn't contain details for not-existent files.
      * @throws IgniteCheckedException If failed.
      */
-    private Map<IgniteUuid, IgfsFileInfo> lockIds(IgniteUuid... fileIds) throws IgniteCheckedException {
+    private Map<IgniteUuid, IgfsEntryInfo> lockIds(IgniteUuid... fileIds) throws IgniteCheckedException {
         validTxState(true);
 
         assert fileIds != null && fileIds.length > 0;
@@ -668,7 +676,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Map with lock info.
      * @throws IgniteCheckedException If failed.
      */
-    private Map<IgniteUuid, IgfsFileInfo> lockIds(Collection<IgniteUuid> fileIds) throws IgniteCheckedException {
+    private Map<IgniteUuid, IgfsEntryInfo> lockIds(Collection<IgniteUuid> fileIds) throws IgniteCheckedException {
         assert isSorted(fileIds);
         validTxState(true);
 
@@ -676,7 +684,7 @@ public class IgfsMetaManager extends IgfsManager {
             log.debug("Locking file ids: " + fileIds);
 
         // Lock files and get their infos.
-        Map<IgniteUuid, IgfsFileInfo> map = getInfos(fileIds);
+        Map<IgniteUuid, IgfsEntryInfo> map = getInfos(fileIds);
 
         if (log.isDebugEnabled())
             log.debug("Locked file ids: " + fileIds);
@@ -684,7 +692,7 @@ public class IgfsMetaManager extends IgfsManager {
         for (IgniteUuid fileId : fileIds) {
             if (IgfsUtils.isRootOrTrashId(fileId)) {
                 if (!map.containsKey(fileId))
-                    map.put(fileId, createSystemEntryIfAbsent(fileId));
+                    map.put(fileId, createSystemDirectoryIfAbsent(fileId));
             }
         }
 
@@ -699,13 +707,13 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Value of created or existing system entry.
      * @throws IgniteCheckedException On error.
      */
-    private IgfsFileInfo createSystemEntryIfAbsent(IgniteUuid id)
+    private IgfsEntryInfo createSystemDirectoryIfAbsent(IgniteUuid id)
         throws IgniteCheckedException {
         assert IgfsUtils.isRootOrTrashId(id);
 
-        IgfsFileInfo info = new IgfsFileInfo(id);
+        IgfsEntryInfo info = IgfsUtils.createDirectory(id);
 
-        IgfsFileInfo oldInfo = id2InfoPrj.getAndPutIfAbsent(id, info);
+        IgfsEntryInfo oldInfo = id2InfoPrj.getAndPutIfAbsent(id, info);
 
         if (oldInfo != null)
             info = oldInfo;
@@ -740,7 +748,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return First qualified file info.
      * @throws IgniteCheckedException If failed to get file for fragmentizer.
      */
-    public IgfsFileInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws IgniteCheckedException {
+    public IgfsEntryInfo fileForFragmentizer(Collection<IgniteUuid> exclude) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 return fileForFragmentizer0(IgfsUtils.ROOT_ID, exclude);
@@ -761,9 +769,9 @@ public class IgfsMetaManager extends IgfsManager {
      * @return First qualified file info.
      * @throws IgniteCheckedException If failed to get file for fragmentizer.
      */
-    private IgfsFileInfo fileForFragmentizer0(IgniteUuid parentId, Collection<IgniteUuid> exclude)
+    private IgfsEntryInfo fileForFragmentizer0(IgniteUuid parentId, Collection<IgniteUuid> exclude)
         throws IgniteCheckedException {
-        IgfsFileInfo info = info(parentId);
+        IgfsEntryInfo info = info(parentId);
 
         // Check if file was concurrently deleted.
         if (info == null)
@@ -775,7 +783,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         for (IgfsListingEntry entry : listing.values()) {
             if (entry.isFile()) {
-                IgfsFileInfo fileInfo = info(entry.fileId());
+                IgfsEntryInfo fileInfo = info(entry.fileId());
 
                 if (fileInfo != null) {
                     if (!exclude.contains(fileInfo.id()) &&
@@ -785,7 +793,7 @@ public class IgfsMetaManager extends IgfsManager {
                 }
             }
             else {
-                IgfsFileInfo fileInfo = fileForFragmentizer0(entry.fileId(), exclude);
+                IgfsEntryInfo fileInfo = fileForFragmentizer0(entry.fileId(), exclude);
 
                 if (fileInfo != null)
                     return fileInfo;
@@ -807,7 +815,7 @@ public class IgfsMetaManager extends IgfsManager {
         throws IgniteCheckedException {
         assert fileId != null;
 
-        IgfsFileInfo info = skipTx ? id2InfoPrj.getAllOutTx(Collections.singleton(fileId)).get(fileId) :
+        IgfsEntryInfo info = skipTx ? id2InfoPrj.getAllOutTx(Collections.singleton(fileId)).get(fileId) :
             getInfo(fileId);
 
         return info == null ? Collections.<String, IgfsListingEntry>emptyMap() : info.listing();
@@ -822,7 +830,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return File id already stored in meta cache or {@code null} if passed file info was stored.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteUuid putIfAbsentNonTx(IgniteUuid parentId, String fileName, IgfsFileInfo newFileInfo)
+    private IgniteUuid putIfAbsentNonTx(IgniteUuid parentId, String fileName, IgfsEntryInfo newFileInfo)
         throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Locking parent id [parentId=" + parentId + ", fileName=" + fileName + ", newFileInfo=" +
@@ -831,7 +839,7 @@ public class IgfsMetaManager extends IgfsManager {
         validTxState(true);
 
         // Lock only parent file ID.
-        IgfsFileInfo parentInfo = info(parentId);
+        IgfsEntryInfo parentInfo = info(parentId);
 
         if (parentInfo == null)
             throw fsException(new IgfsPathNotFoundException("Failed to lock parent directory (not found): " +
@@ -854,11 +862,10 @@ public class IgfsMetaManager extends IgfsManager {
      * Move routine.
      *
      * @param srcPath Source path.
-     * @param dstPath Destinatoin path.
-     * @return File info of renamed entry.
+     * @param dstPath Destination path.
      * @throws IgniteCheckedException In case of exception.
      */
-    public IgfsFileInfo move(IgfsPath srcPath, IgfsPath dstPath) throws IgniteCheckedException {
+    public void move(IgfsPath srcPath, IgfsPath dstPath) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 validTxState(false);
@@ -895,26 +902,24 @@ public class IgfsMetaManager extends IgfsManager {
                 // Lock participating IDs.
                 final Set<IgniteUuid> lockIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                srcPathIds.addExistingIds(lockIds);
-                dstPathIds.addExistingIds(lockIds);
+                srcPathIds.addExistingIds(lockIds, relaxed);
+                dstPathIds.addExistingIds(lockIds, relaxed);
 
-                IgniteInternalTx tx = startTx();
-
-                try {
+                try (IgniteInternalTx tx = startTx()) {
                     // Obtain the locks.
-                    final Map<IgniteUuid, IgfsFileInfo> lockInfos = lockIds(lockIds);
+                    final Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
                     // Verify integrity of source and destination paths.
-                    if (!srcPathIds.verifyIntegrity(lockInfos))
+                    if (!srcPathIds.verifyIntegrity(lockInfos, relaxed))
                         throw new IgfsPathNotFoundException("Failed to perform move because source directory " +
                             "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
 
-                    if (!dstPathIds.verifyIntegrity(lockInfos))
+                    if (!dstPathIds.verifyIntegrity(lockInfos, relaxed))
                         throw new IgfsPathNotFoundException("Failed to perform move because destination directory " +
                             "structure changed concurrently [src=" + srcPath + ", dst=" + dstPath + ']');
 
                     // Addiional check: is destination directory?
-                    IgfsFileInfo dstParentInfo = lockInfos.get(dstPathIds.lastId());
+                    IgfsEntryInfo dstParentInfo = lockInfos.get(dstPathIds.lastId());
 
                     if (dstParentInfo.isFile())
                         throw new IgfsPathAlreadyExistsException("Failed to perform move because destination points " +
@@ -927,9 +932,9 @@ public class IgfsMetaManager extends IgfsManager {
                             ", dst=" + dstPath + ']');
 
                     // Actual move: remove from source parent and add to destination target.
-                    IgfsFileInfo srcParentInfo = lockInfos.get(srcPathIds.lastParentId());
+                    IgfsEntryInfo srcParentInfo = lockInfos.get(srcPathIds.lastParentId());
 
-                    IgfsFileInfo srcInfo = lockInfos.get(srcPathIds.lastId());
+                    IgfsEntryInfo srcInfo = lockInfos.get(srcPathIds.lastId());
                     String srcName = srcPathIds.lastPart();
                     IgfsListingEntry srcEntry = srcParentInfo.listing().get(srcName);
 
@@ -937,13 +942,11 @@ public class IgfsMetaManager extends IgfsManager {
 
                     tx.commit();
 
+                    // Fire events.
                     IgfsPath newPath = new IgfsPath(dstPathIds.path(), dstName);
 
-                    // Set the new path to the info to simplify event creation:
-                    return IgfsFileInfo.builder(srcInfo).path(newPath).build();
-                }
-                finally {
-                    tx.close();
+                    IgfsUtils.sendEvents(igfsCtx.kernalContext(), srcPath, newPath,
+                        srcInfo.isFile() ? EVT_IGFS_FILE_RENAMED : EVT_IGFS_DIR_RENAMED);
                 }
             }
             finally {
@@ -956,41 +959,6 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Verify path integrity.
-     *
-     * @param path Path to verify.
-     * @param expIds Expected IDs for this path. Might contain additional elements, e.g. because they were created
-     *     on a child path.
-     * @param infos Locked infos.
-     * @return verification result.
-     */
-    private static boolean verifyPathIntegrity(IgfsPath path, List<IgniteUuid> expIds,
-        Map<IgniteUuid, IgfsFileInfo> infos) {
-        List<String> pathParts = path.components();
-
-        assert pathParts.size() < expIds.size();
-
-        for (int i = 0; i < pathParts.size(); i++) {
-            IgniteUuid parentId = expIds.get(i);
-
-            // If parent ID is null, it doesn't exist.
-            if (parentId != null) {
-                IgfsFileInfo parentInfo = infos.get(parentId);
-
-                // If parent info is null, it doesn't exist.
-                if (parentInfo != null) {
-                    if (parentInfo.hasChild(pathParts.get(i), expIds.get(i + 1)))
-                        continue;
-                }
-            }
-
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Move or rename file in existing transaction.
      *
      * @param fileId File ID to move or rename.
@@ -1000,7 +968,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param destParentId New parent directory ID.
      * @throws IgniteCheckedException If failed.
      */
-    private void moveNonTx(IgniteUuid fileId, @Nullable String srcFileName, IgniteUuid srcParentId, String destFileName,
+    private void moveNonTx(IgniteUuid fileId, String srcFileName, IgniteUuid srcParentId, String destFileName,
         IgniteUuid destParentId) throws IgniteCheckedException {
         validTxState(true);
 
@@ -1019,9 +987,9 @@ public class IgfsMetaManager extends IgfsManager {
         }
 
         // Lock file ID and parent IDs for this transaction.
-        Map<IgniteUuid, IgfsFileInfo> infoMap = lockIds(srcParentId, fileId, destParentId);
+        Map<IgniteUuid, IgfsEntryInfo> infoMap = lockIds(srcParentId, fileId, destParentId);
 
-        IgfsFileInfo srcInfo = infoMap.get(srcParentId);
+        IgfsEntryInfo srcInfo = infoMap.get(srcParentId);
 
         if (srcInfo == null)
             throw fsException(new IgfsPathNotFoundException("Failed to lock source directory (not found?)" +
@@ -1030,7 +998,7 @@ public class IgfsMetaManager extends IgfsManager {
         if (!srcInfo.isDirectory())
             throw fsException(new IgfsPathIsNotDirectoryException("Source is not a directory: " + srcInfo));
 
-        IgfsFileInfo destInfo = infoMap.get(destParentId);
+        IgfsEntryInfo destInfo = infoMap.get(destParentId);
 
         if (destInfo == null)
             throw fsException(new IgfsPathNotFoundException("Failed to lock destination directory (not found?)" +
@@ -1039,7 +1007,7 @@ public class IgfsMetaManager extends IgfsManager {
         if (!destInfo.isDirectory())
             throw fsException(new IgfsPathIsNotDirectoryException("Destination is not a directory: " + destInfo));
 
-        IgfsFileInfo fileInfo = infoMap.get(fileId);
+        IgfsEntryInfo fileInfo = infoMap.get(fileId);
 
         if (fileInfo == null)
             throw fsException(new IgfsPathNotFoundException("Failed to lock target file (not found?) [fileId=" +
@@ -1069,6 +1037,7 @@ public class IgfsMetaManager extends IgfsManager {
      * elements moved to TRASH folder.
      * @throws IgniteCheckedException On error.
      */
+    @SuppressWarnings("RedundantCast")
     IgniteUuid format() throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
@@ -1076,11 +1045,9 @@ public class IgfsMetaManager extends IgfsManager {
 
                 IgniteUuid trashId = IgfsUtils.randomTrashId();
 
-                final IgniteInternalTx tx = startTx();
-
-                try {
+                try (IgniteInternalTx tx = startTx()) {
                     // NB: We may lock root because its id is less than any other id:
-                    final IgfsFileInfo rootInfo = lockIds(IgfsUtils.ROOT_ID, trashId).get(IgfsUtils.ROOT_ID);
+                    final IgfsEntryInfo rootInfo = lockIds(IgfsUtils.ROOT_ID, trashId).get(IgfsUtils.ROOT_ID);
 
                     assert rootInfo != null;
 
@@ -1094,22 +1061,23 @@ public class IgfsMetaManager extends IgfsManager {
                     // Construct new info and move locked entries from root to it.
                     Map<String, IgfsListingEntry> transferListing = new HashMap<>(rootListingMap);
 
-                    IgfsFileInfo newInfo = new IgfsFileInfo(transferListing);
+                    IgfsEntryInfo newInfo = IgfsUtils.createDirectory(
+                        IgniteUuid.randomUuid(),
+                        transferListing,
+                        (Map<String, String>) null
+                    );
 
                     createNewEntry(newInfo, trashId, newInfo.id().toString());
 
                     // Remove listing entries from root.
                     // Note that root directory properties and other attributes are preserved:
-                    id2InfoPrj.put(IgfsUtils.ROOT_ID, new IgfsFileInfo(null/*listing*/, rootInfo));
+                    id2InfoPrj.put(IgfsUtils.ROOT_ID, rootInfo.listing(null));
 
                     tx.commit();
 
                     delWorker.signal();
 
                     return newInfo.id();
-                }
-                finally {
-                    tx.close();
                 }
             }
             finally {
@@ -1123,9 +1091,8 @@ public class IgfsMetaManager extends IgfsManager {
     /**
      * Move path to the trash directory.
      *
-     * @param parentId Parent ID.
-     * @param pathName Path name.
-     * @param pathId Path ID.
+     * @param path Path.
+     * @param recursive Recursive flag.
      * @return ID of an entry located directly under the trash directory.
      * @throws IgniteCheckedException If failed.
      */
@@ -1149,23 +1116,21 @@ public class IgfsMetaManager extends IgfsManager {
                 // Prepare IDs to lock.
                 SortedSet<IgniteUuid> allIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                pathIds.addExistingIds(allIds);
+                pathIds.addExistingIds(allIds, relaxed);
 
                 IgniteUuid trashId = IgfsUtils.randomTrashId();
 
                 allIds.add(trashId);
 
-                IgniteInternalTx tx = startTx();
-
-                try {
+                try (IgniteInternalTx tx = startTx()) {
                     // Lock participants.
-                    Map<IgniteUuid, IgfsFileInfo> lockInfos = lockIds(allIds);
+                    Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(allIds);
 
                     // Ensure that all participants are still in place.
-                    if (!pathIds.verifyIntegrity(lockInfos))
+                    if (!pathIds.verifyIntegrity(lockInfos, relaxed))
                         return null;
 
-                    IgfsFileInfo victimInfo = lockInfos.get(victimId);
+                    IgfsEntryInfo victimInfo = lockInfos.get(victimId);
 
                     // Cannot delete non-empty directory if recursive flag is not set.
                     if (!recursive && victimInfo.hasChildren())
@@ -1173,28 +1138,23 @@ public class IgfsMetaManager extends IgfsManager {
                             "empty and recursive flag is not set).");
 
                     // Prepare trash data.
-                    IgfsFileInfo trashInfo = lockInfos.get(trashId);
-                    final String trashName = victimId.toString();
+                    IgfsEntryInfo trashInfo = lockInfos.get(trashId);
+
+                    final String trashName = IgfsUtils.composeNameForTrash(path, victimId);
 
                     assert !trashInfo.hasChild(trashName) : "Failed to add file name into the " +
                         "destination directory (file already exists) [destName=" + trashName + ']';
 
                     IgniteUuid parentId = pathIds.lastParentId();
-                    IgfsFileInfo parentInfo = lockInfos.get(parentId);
+                    IgfsEntryInfo parentInfo = lockInfos.get(parentId);
 
                     transferEntry(parentInfo.listing().get(victimName), parentId, victimName, trashId, trashName);
-
-                    if (victimInfo.isFile())
-                        invokeUpdatePath(victimId, path);
 
                     tx.commit();
 
                     delWorker.signal();
 
                     return victimId;
-                }
-                finally {
-                    tx.close();
                 }
             }
             finally {
@@ -1210,15 +1170,15 @@ public class IgfsMetaManager extends IgfsManager {
      * Move path to the trash directory in existing transaction.
      *
      * @param parentId Parent ID.
-     * @param name Path name.
+     * @param path Path name.
      * @param id Path ID.
-     * @param trashId Trash ID.
+     * @param trashId Trash folder ID.
      * @return ID of an entry located directly under the trash directory.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IgniteUuid softDeleteNonTx(@Nullable IgniteUuid parentId, @Nullable String name, IgniteUuid id,
-        IgniteUuid trashId)
-        throws IgniteCheckedException {
+    @SuppressWarnings("RedundantCast")
+    @Nullable private IgniteUuid softDeleteNonTx(@Nullable IgniteUuid parentId, IgfsPath path, IgniteUuid id,
+        IgniteUuid trashId) throws IgniteCheckedException {
         validTxState(true);
 
         IgniteUuid resId;
@@ -1227,13 +1187,13 @@ public class IgfsMetaManager extends IgfsManager {
             // Handle special case when we deleting root directory.
             assert IgfsUtils.ROOT_ID.equals(id);
 
-            IgfsFileInfo rootInfo = getInfo(IgfsUtils.ROOT_ID);
+            IgfsEntryInfo rootInfo = getInfo(IgfsUtils.ROOT_ID);
 
             if (rootInfo == null)
                 return null; // Root was never created.
 
             // Ensure trash directory existence.
-            createSystemEntryIfAbsent(trashId);
+            createSystemDirectoryIfAbsent(trashId);
 
             Map<String, IgfsListingEntry> rootListing = rootInfo.listing();
 
@@ -1249,17 +1209,20 @@ public class IgfsMetaManager extends IgfsManager {
                 lockIds(lockIds);
 
                 // Construct new info and move locked entries from root to it.
-                Map<String, IgfsListingEntry> transferListing = new HashMap<>();
+                Map<String, IgfsListingEntry> transferListing = new HashMap<>(rootListing);
 
-                transferListing.putAll(rootListing);
-
-                IgfsFileInfo newInfo = new IgfsFileInfo(transferListing);
+                IgfsEntryInfo newInfo = IgfsUtils.createDirectory(
+                    IgniteUuid.randomUuid(),
+                    transferListing,
+                    (Map<String,String>)null
+                );
 
                 createNewEntry(newInfo, trashId, newInfo.id().toString());
 
                 // Remove listing entries from root.
                 for (Map.Entry<String, IgfsListingEntry> entry : transferListing.entrySet())
-                    id2InfoPrj.invoke(IgfsUtils.ROOT_ID, new ListingRemoveProcessor(entry.getKey(), entry.getValue().fileId()));
+                    id2InfoPrj.invoke(IgfsUtils.ROOT_ID,
+                        new IgfsMetaDirectoryListingRemoveProcessor(entry.getKey(), entry.getValue().fileId()));
 
                 resId = newInfo.id();
             }
@@ -1268,9 +1231,9 @@ public class IgfsMetaManager extends IgfsManager {
         }
         else {
             // Ensure trash directory existence.
-            createSystemEntryIfAbsent(trashId);
+            createSystemDirectoryIfAbsent(trashId);
 
-            moveNonTx(id, name, parentId, id.toString(), trashId);
+            moveNonTx(id, path.name(), parentId, IgfsUtils.composeNameForTrash(path, id), trashId);
 
             resId = id;
         }
@@ -1295,9 +1258,7 @@ public class IgfsMetaManager extends IgfsManager {
                 assert listing != null;
                 validTxState(false);
 
-                IgniteInternalTx tx = startTx();
-
-                try {
+                try (IgniteInternalTx tx = startTx()) {
                     Collection<IgniteUuid> res = new HashSet<>();
 
                     // Obtain all necessary locks in one hop.
@@ -1310,9 +1271,9 @@ public class IgfsMetaManager extends IgfsManager {
                     for (IgfsListingEntry childEntry : listing.values())
                         allIds[i++] = childEntry.fileId();
 
-                    Map<IgniteUuid, IgfsFileInfo> locks = lockIds(allIds);
+                    Map<IgniteUuid, IgfsEntryInfo> locks = lockIds(allIds);
 
-                    IgfsFileInfo parentInfo = locks.get(parentId);
+                    IgfsEntryInfo parentInfo = locks.get(parentId);
 
                     // Ensure parent is still in place.
                     if (parentInfo != null) {
@@ -1327,7 +1288,7 @@ public class IgfsMetaManager extends IgfsManager {
                             String childName = entry.getKey();
                             IgniteUuid childId = entry.getValue().fileId();
 
-                            IgfsFileInfo entryInfo = locks.get(childId);
+                            IgfsEntryInfo entryInfo = locks.get(childId);
 
                             if (entryInfo != null) {
                                 // File must be locked for deletion:
@@ -1351,15 +1312,12 @@ public class IgfsMetaManager extends IgfsManager {
                         }
 
                         // Update parent listing.
-                        id2InfoPrj.put(parentId, new IgfsFileInfo(newListing, parentInfo));
+                        id2InfoPrj.put(parentId, parentInfo.listing(newListing));
                     }
 
                     tx.commit();
 
                     return res;
-                }
-                finally {
-                    tx.close();
                 }
             }
             finally {
@@ -1386,43 +1344,36 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 validTxState(false);
 
-                IgniteInternalTx tx = startTx();
+                try (IgniteInternalTx tx = startTx()) {
+                    Map<IgniteUuid, IgfsEntryInfo> infos = lockIds(parentId, id);
 
-                try {
-                    boolean res = false;
-
-                    Map<IgniteUuid, IgfsFileInfo> infos = lockIds(parentId, id);
-
-                    IgfsFileInfo victim = infos.get(id);
+                    IgfsEntryInfo victim = infos.get(id);
 
                     if (victim == null)
-                        return res;
+                        return false;
 
                     assert victim.isDirectory() || IgfsUtils.DELETE_LOCK_ID.equals(victim.lockId()) :
                         " isDir: " + victim.isDirectory() + ", lockId: " + victim.lockId();
 
                     // Proceed only in case both parent and child exist.
                     if (infos.containsKey(parentId) && infos.containsKey(id)) {
-                        IgfsFileInfo parentInfo = infos.get(parentId);
+                        IgfsEntryInfo parentInfo = infos.get(parentId);
 
                         assert parentInfo != null;
 
                         IgfsListingEntry childEntry = parentInfo.listing().get(name);
 
                         if (childEntry != null)
-                            id2InfoPrj.invoke(parentId, new ListingRemoveProcessor(name, id));
+                            id2InfoPrj.invoke(parentId, new IgfsMetaDirectoryListingRemoveProcessor(name, id));
 
                         id2InfoPrj.remove(id);
 
-                        res = true;
+                        tx.commit();
+
+                        return true;
                     }
 
-                    tx.commit();
-
-                    return res;
-                }
-                finally {
-                    tx.close();
+                    return false;
                 }
             }
             finally {
@@ -1448,7 +1399,7 @@ public class IgfsMetaManager extends IgfsManager {
                 for (int i = 0; i < IgfsUtils.TRASH_CONCURRENCY; i++) {
                     IgniteUuid trashId = IgfsUtils.trashId(i);
 
-                    IgfsFileInfo trashInfo = getInfo(trashId);
+                    IgfsEntryInfo trashInfo = getInfo(trashId);
 
                     if (trashInfo != null && trashInfo.hasChildren()) {
                         for (IgfsListingEntry entry : trashInfo.listing().values())
@@ -1474,7 +1425,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Updated file info or {@code null} if such file ID not found.
      * @throws IgniteCheckedException If operation failed.
      */
-    @Nullable private IgfsFileInfo updatePropertiesNonTx(final IgniteUuid fileId, Map<String, String> props)
+    @Nullable private IgfsEntryInfo updatePropertiesNonTx(final IgniteUuid fileId, Map<String, String> props)
         throws IgniteCheckedException {
         assert fileId != null;
         assert !F.isEmpty(props) : "Expects not-empty file's properties";
@@ -1485,12 +1436,12 @@ public class IgfsMetaManager extends IgfsManager {
             log.debug("Update file properties [fileId=" + fileId + ", props=" + props + ']');
 
         try {
-            final IgfsFileInfo oldInfo = info(fileId);
+            final IgfsEntryInfo oldInfo = info(fileId);
 
             if (oldInfo == null)
                 return null;
 
-            return invokeAndGet(fileId, new UpdatePropertiesProcessor(props));
+            return invokeAndGet(fileId, new IgfsMetaUpdatePropertiesProcessor(props));
         }
         catch (GridClosureException e) {
             throw U.cast(e);
@@ -1505,23 +1456,18 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Updated file info or {@code null} if such file ID not found.
      * @throws IgniteCheckedException If operation failed.
      */
-    @Nullable public IgfsFileInfo updateProperties(IgniteUuid fileId, Map<String, String> props)
+    @Nullable public IgfsEntryInfo updateProperties(IgniteUuid fileId, Map<String, String> props)
         throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 validTxState(false);
 
-                IgniteInternalTx tx = startTx();
-
-                try {
-                    IgfsFileInfo info = updatePropertiesNonTx(fileId, props);
+                try (IgniteInternalTx tx = startTx()) {
+                    IgfsEntryInfo info = updatePropertiesNonTx(fileId, props);
 
                     tx.commit();
 
                     return info;
-                }
-                finally {
-                    tx.close();
                 }
             }
             finally {
@@ -1542,7 +1488,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param affRange Affinity range.
      * @return New file info.
      */
-    public IgfsFileInfo reserveSpace(IgfsPath path, IgniteUuid fileId, long space, IgfsFileAffinityRange affRange)
+    public IgfsEntryInfo reserveSpace(IgfsPath path, IgniteUuid fileId, long space, IgfsFileAffinityRange affRange)
         throws IgniteCheckedException {
         validTxState(false);
 
@@ -1551,16 +1497,15 @@ public class IgfsMetaManager extends IgfsManager {
                 if (log.isDebugEnabled())
                     log.debug("Reserve file space [path=" + path + ", id=" + fileId + ']');
 
-                IgniteInternalTx tx = startTx();
-
-                try {
+                try (IgniteInternalTx tx = startTx()) {
                     // Lock file ID for this transaction.
-                    IgfsFileInfo oldInfo = info(fileId);
+                    IgfsEntryInfo oldInfo = info(fileId);
 
                     if (oldInfo == null)
                         throw fsException("File has been deleted concurrently [path=" + path + ", id=" + fileId + ']');
 
-                    IgfsFileInfo newInfo = invokeAndGet(fileId, new FileReserveSpaceProcessor(space, affRange));
+                    IgfsEntryInfo newInfo =
+                        invokeAndGet(fileId, new IgfsMetaFileReserveSpaceProcessor(space, affRange));
 
                     tx.commit();
 
@@ -1568,9 +1513,6 @@ public class IgfsMetaManager extends IgfsManager {
                 }
                 catch (GridClosureException e) {
                     throw U.cast(e);
-                }
-                finally {
-                    tx.close();
                 }
             }
             finally {
@@ -1590,8 +1532,8 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Updated file info or {@code null} if such file ID not found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgfsFileInfo updateInfo(IgniteUuid fileId,
-        EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo> proc) throws IgniteCheckedException {
+    @Nullable public IgfsEntryInfo updateInfo(IgniteUuid fileId,
+        EntryProcessor<IgniteUuid, IgfsEntryInfo, IgfsEntryInfo> proc) throws IgniteCheckedException {
         validTxState(false);
         assert fileId != null;
         assert proc != null;
@@ -1601,20 +1543,18 @@ public class IgfsMetaManager extends IgfsManager {
                 if (log.isDebugEnabled())
                     log.debug("Update file info [fileId=" + fileId + ", proc=" + proc + ']');
 
-                IgniteInternalTx tx = startTx();
-
-                try {
+                try (IgniteInternalTx tx = startTx()) {
                     // Lock file ID for this transaction.
-                    IgfsFileInfo oldInfo = info(fileId);
+                    IgfsEntryInfo oldInfo = info(fileId);
 
                     if (oldInfo == null)
                         return null; // File not found.
 
-                    IgfsFileInfo newInfo = invokeAndGet(fileId, proc);
+                    IgfsEntryInfo newInfo = invokeAndGet(fileId, proc);
 
                     if (newInfo == null)
                         throw fsException("Failed to update file info with null value" +
-                            " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", proc=" + proc + ']');
+                            " [oldInfo=" + oldInfo + ", newInfo=null, proc=" + proc + ']');
 
                     if (!oldInfo.id().equals(newInfo.id()))
                         throw fsException("Failed to update file info (file IDs differ)" +
@@ -1630,9 +1570,6 @@ public class IgfsMetaManager extends IgfsManager {
                 }
                 catch (GridClosureException e) {
                     throw U.cast(e);
-                }
-                finally {
-                    tx.close();
                 }
             }
             finally {
@@ -1664,18 +1601,14 @@ public class IgfsMetaManager extends IgfsManager {
                     // Prepare lock IDs. Essentially, they consist of two parts: existing IDs and potential new IDs.
                     Set<IgniteUuid> lockIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                    pathIds.addExistingIds(lockIds);
+                    pathIds.addExistingIds(lockIds, relaxed);
                     pathIds.addSurrogateIds(lockIds);
 
-                    assert lockIds.size() == pathIds.count();
-
                     // Start TX.
-                    IgniteInternalTx tx = startTx();
+                    try (IgniteInternalTx tx = startTx()) {
+                        final Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
-                    try {
-                        final Map<IgniteUuid, IgfsFileInfo> lockInfos = lockIds(lockIds);
-
-                        if (!pathIds.verifyIntegrity(lockInfos))
+                        if (!pathIds.verifyIntegrity(lockInfos, relaxed))
                             // Directory structure changed concurrently. So we simply re-try.
                             continue;
 
@@ -1701,9 +1634,6 @@ public class IgfsMetaManager extends IgfsManager {
                         // We are done.
                         return true;
                     }
-                    finally {
-                        tx.close();
-                    }
                 }
                 finally {
                     busyLock.leaveBusy();
@@ -1726,17 +1656,12 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 validTxState(false);
 
-                IgniteInternalTx tx = startTx();
-
-                try {
+                try (IgniteInternalTx tx = startTx()) {
                     Object prev = val != null ? metaCache.getAndPut(sampling, val) : metaCache.getAndRemove(sampling);
 
                     tx.commit();
 
                     return !F.eq(prev, val);
-                }
-                finally {
-                    tx.close();
                 }
             }
             finally {
@@ -1779,14 +1704,14 @@ public class IgfsMetaManager extends IgfsManager {
      * @param name Name in parent.
      * @throws IgniteCheckedException If failed.
      */
-    private void createNewEntry(IgfsFileInfo info, IgniteUuid parentId, String name) throws IgniteCheckedException {
+    private void createNewEntry(IgfsEntryInfo info, IgniteUuid parentId, String name) throws IgniteCheckedException {
         validTxState(true);
 
         if (!id2InfoPrj.putIfAbsent(info.id(), info))
             throw fsException("Failed to create new metadata entry due to ID conflict: " + info.id());
 
         if (parentId != null)
-            id2InfoPrj.invoke(parentId, new ListingAddProcessor(name, new IgfsListingEntry(info)));
+            id2InfoPrj.invoke(parentId, new IgfsMetaDirectoryListingAddProcessor(name, new IgfsListingEntry(info)));
     }
 
     /**
@@ -1803,33 +1728,20 @@ public class IgfsMetaManager extends IgfsManager {
         IgniteUuid destId, String destName) throws IgniteCheckedException {
         validTxState(true);
 
-        id2InfoPrj.invoke(srcId, new ListingRemoveProcessor(srcName, entry.fileId()));
-        id2InfoPrj.invoke(destId, new ListingAddProcessor(destName, entry));
+        id2InfoPrj.invoke(srcId, new IgfsMetaDirectoryListingRemoveProcessor(srcName, entry.fileId()));
+        id2InfoPrj.invoke(destId, new IgfsMetaDirectoryListingAddProcessor(destName, entry));
     }
 
     /**
      * Invoke lock processor.
      *
      * @param id File ID.
-     * @param delete Whether lock is taken for delete.
+     * @param del Whether lock is taken for delete.
      * @return Resulting file info.
      * @throws IgniteCheckedException If failed.
      */
-    private IgfsFileInfo invokeLock(IgniteUuid id, boolean delete) throws IgniteCheckedException {
-        return invokeAndGet(id, new FileLockProcessor(createFileLockId(delete)));
-    }
-
-    /**
-     * Invoke path update processor.
-     *
-     * @param id File ID.
-     * @param path Path to be updated.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void invokeUpdatePath(IgniteUuid id, IgfsPath path) throws IgniteCheckedException {
-        validTxState(true);
-
-        id2InfoPrj.invoke(id, new UpdatePathProcessor(path));
+    private IgfsEntryInfo invokeLock(IgniteUuid id, boolean del) throws IgniteCheckedException {
+        return invokeAndGet(id, new IgfsMetaFileLockProcessor(createFileLockId(del)));
     }
 
     /**
@@ -1840,11 +1752,15 @@ public class IgfsMetaManager extends IgfsManager {
      * @return New file info.
      * @throws IgniteCheckedException If failed.
      */
-    private IgfsFileInfo invokeAndGet(IgniteUuid id, EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo> proc)
+    private IgfsEntryInfo invokeAndGet(IgniteUuid id, EntryProcessor<IgniteUuid, IgfsEntryInfo, IgfsEntryInfo> proc)
         throws IgniteCheckedException {
         validTxState(true);
 
-        return id2InfoPrj.invoke(id, proc).get();
+        EntryProcessorResult<IgfsEntryInfo> res = id2InfoPrj.invoke(id, proc);
+
+        assert res != null;
+
+        return res.get();
     }
 
     /**
@@ -1854,7 +1770,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Info.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IgfsFileInfo getInfo(IgniteUuid id) throws IgniteCheckedException {
+    @Nullable private IgfsEntryInfo getInfo(IgniteUuid id) throws IgniteCheckedException {
         return id2InfoPrj.get(id);
     }
 
@@ -1865,8 +1781,128 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Infos map.
      * @throws IgniteCheckedException If failed.
      */
-    private Map<IgniteUuid, IgfsFileInfo> getInfos(Collection<IgniteUuid> ids) throws IgniteCheckedException {
+    private Map<IgniteUuid, IgfsEntryInfo> getInfos(Collection<IgniteUuid> ids) throws IgniteCheckedException {
         return id2InfoPrj.getAll(ids);
+    }
+
+    /**
+     * A delegate method that performs file creation in the synchronization task.
+     *
+     * @param fs File system.
+     * @param path Path.
+     * @param simpleCreate "Simple create" flag.
+     * @param props Properties..
+     * @param overwrite Overwrite flag.
+     * @param bufSize Buffer size.
+     * @param replication Replication factor.
+     * @param blockSize Block size.
+     * @param affKey Affinity key.
+     * @param infos Map from paths to corresponding infos.
+     * @param pendingEvts A non-null collection the events are to be accumulated in.
+     * @param t1 A signle-object tuple to hold the created output stream.
+     * @return Output stream descriptor.
+     * @throws Exception On error.
+     */
+    IgfsSecondaryOutputStreamDescriptor onSuccessCreate(IgfsSecondaryFileSystem fs, IgfsPath path,
+        boolean simpleCreate, @Nullable final Map<String, String> props, boolean overwrite,
+        int bufSize, short replication, long blockSize, IgniteUuid affKey, Map<IgfsPath, IgfsEntryInfo> infos,
+        final Deque<IgfsEvent> pendingEvts, final T1<OutputStream> t1) throws Exception {
+        validTxState(true);
+
+        assert !infos.isEmpty();
+
+        // Determine the first existing parent.
+        IgfsPath parentPath = null;
+
+        for (IgfsPath curPath : infos.keySet()) {
+            if (parentPath == null || curPath.isSubDirectoryOf(parentPath))
+                parentPath = curPath;
+        }
+
+        assert parentPath != null;
+
+        IgfsEntryInfo parentInfo = infos.get(parentPath);
+
+        // Delegate to the secondary file system.
+        OutputStream out = simpleCreate ? fs.create(path, overwrite) :
+            fs.create(path, bufSize, overwrite, replication, blockSize, props);
+
+        t1.set(out);
+
+        IgfsPath parent0 = path.parent();
+
+        assert parent0 != null : "path.parent() is null (are we creating ROOT?): " + path;
+
+        // If some of the parent directories were missing, synchronize again.
+        if (!parentPath.equals(parent0)) {
+            parentInfo = synchronize(fs, parentPath, parentInfo, parent0, true, null);
+
+            // Fire notification about missing directories creation.
+            if (evts.isRecordable(EventType.EVT_IGFS_DIR_CREATED)) {
+                IgfsPath evtPath = parent0;
+
+                while (!parentPath.equals(evtPath)) {
+                    pendingEvts.addFirst(new IgfsEvent(evtPath, locNode,
+                        EventType.EVT_IGFS_DIR_CREATED));
+
+                    evtPath = evtPath.parent();
+
+                    assert evtPath != null; // If this fails, then ROOT does not exist.
+                }
+            }
+        }
+
+        // Get created file info.
+        IgfsFile status = fs.info(path);
+
+        if (status == null)
+            throw fsException("Failed to open output stream to the file created in " +
+                "the secondary file system because it no longer exists: " + path);
+        else if (status.isDirectory())
+            throw fsException("Failed to open output stream to the file created in " +
+                "the secondary file system because the path points to a directory: " + path);
+
+        IgfsEntryInfo newInfo = IgfsUtils.createFile(
+            IgniteUuid.randomUuid(),
+            status.blockSize(),
+            status.length(),
+            affKey,
+            createFileLockId(false),
+            igfsCtx.igfs().evictExclude(path, false),
+            status.properties(),
+            status.accessTime(),
+            status.modificationTime()
+        );
+
+        // Add new file info to the listing optionally removing the previous one.
+        assert parentInfo != null;
+
+        IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
+
+        if (oldId != null) {
+            IgfsEntryInfo oldInfo = info(oldId);
+
+            assert oldInfo != null; // Otherwise cache is in inconsistent state.
+
+            // The contact is that we cannot overwrite a file locked for writing:
+            if (oldInfo.lockId() != null)
+                throw fsException("Failed to overwrite file (file is opened for writing) [path=" +
+                    path + ", fileId=" + oldId + ", lockId=" + oldInfo.lockId() + ']');
+
+            id2InfoPrj.remove(oldId); // Remove the old one.
+            id2InfoPrj.invoke(parentInfo.id(), new IgfsMetaDirectoryListingRemoveProcessor(
+                path.name(), parentInfo.listing().get(path.name()).fileId()));
+
+            createNewEntry(newInfo, parentInfo.id(), path.name()); // Put new one.
+
+            igfsCtx.data().delete(oldInfo);
+        }
+
+        // Record CREATE event if needed.
+        if (oldId == null && evts.isRecordable(EventType.EVT_IGFS_FILE_CREATED))
+            pendingEvts.add(new IgfsEvent(path, locNode, EventType.EVT_IGFS_FILE_CREATED));
+
+        return new IgfsSecondaryOutputStreamDescriptor(newInfo, out);
     }
 
     /**
@@ -1905,100 +1941,18 @@ public class IgfsMetaManager extends IgfsManager {
 
                 SynchronizationTask<IgfsSecondaryOutputStreamDescriptor> task =
                     new SynchronizationTask<IgfsSecondaryOutputStreamDescriptor>() {
-                        /** Output stream to the secondary file system. */
-                        private OutputStream out;
+                        /** Container for the secondary file system output stream. */
+                        private final T1<OutputStream> outT1 = new T1<>(null);
 
                         @Override public IgfsSecondaryOutputStreamDescriptor onSuccess(Map<IgfsPath,
-                            IgfsFileInfo> infos) throws Exception {
-                            validTxState(true);
-
-                            assert !infos.isEmpty();
-
-                            // Determine the first existing parent.
-                            IgfsPath parentPath = null;
-
-                            for (IgfsPath curPath : infos.keySet()) {
-                                if (parentPath == null || curPath.isSubDirectoryOf(parentPath))
-                                    parentPath = curPath;
-                            }
-
-                            assert parentPath != null;
-
-                            IgfsFileInfo parentInfo = infos.get(parentPath);
-
-                            // Delegate to the secondary file system.
-                            out = simpleCreate ? fs.create(path, overwrite) :
-                                fs.create(path, bufSize, overwrite, replication, blockSize, props);
-
-                            IgfsPath parent0 = path.parent();
-
-                            assert parent0 != null : "path.parent() is null (are we creating ROOT?): " + path;
-
-                            // If some of the parent directories were missing, synchronize again.
-                            if (!parentPath.equals(parent0)) {
-                                parentInfo = synchronize(fs, parentPath, parentInfo, parent0, true, null);
-
-                                // Fire notification about missing directories creation.
-                                if (evts.isRecordable(EventType.EVT_IGFS_DIR_CREATED)) {
-                                    IgfsPath evtPath = parent0;
-
-                                    while (!parentPath.equals(evtPath)) {
-                                        pendingEvts.addFirst(new IgfsEvent(evtPath, locNode,
-                                            EventType.EVT_IGFS_DIR_CREATED));
-
-                                        evtPath = evtPath.parent();
-
-                                        assert evtPath != null; // If this fails, then ROOT does not exist.
-                                    }
-                                }
-                            }
-
-                            // Get created file info.
-                            IgfsFile status = fs.info(path);
-
-                            if (status == null)
-                                throw fsException("Failed to open output stream to the file created in " +
-                                    "the secondary file system because it no longer exists: " + path);
-                            else if (status.isDirectory())
-                                throw fsException("Failed to open output stream to the file created in " +
-                                    "the secondary file system because the path points to a directory: " + path);
-
-                            IgfsFileInfo newInfo = new IgfsFileInfo(status.blockSize(), status.length(), affKey,
-                                createFileLockId(false), igfsCtx.igfs().evictExclude(path, false), status.properties(),
-                                status.accessTime(), status.modificationTime());
-
-                            // Add new file info to the listing optionally removing the previous one.
-                            IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
-
-                            if (oldId != null) {
-                                IgfsFileInfo oldInfo = info(oldId);
-
-                                assert oldInfo != null; // Otherwise cache is in inconsistent state.
-
-                                // The contact is that we cannot overwrite a file locked for writing:
-                                if (oldInfo.lockId() != null)
-                                    throw fsException("Failed to overwrite file (file is opened for writing) [path=" +
-                                        path + ", fileId=" + oldId + ", lockId=" + oldInfo.lockId() + ']');
-
-                                id2InfoPrj.remove(oldId); // Remove the old one.
-                                id2InfoPrj.invoke(parentInfo.id(),
-                                    new ListingRemoveProcessor(path.name(), parentInfo.listing().get(path.name()).fileId()));
-
-                                createNewEntry(newInfo, parentInfo.id(), path.name()); // Put new one.
-
-                                IgniteInternalFuture<?> delFut = igfsCtx.data().delete(oldInfo);
-                            }
-
-                            // Record CREATE event if needed.
-                            if (evts.isRecordable(EventType.EVT_IGFS_FILE_CREATED))
-                                pendingEvts.add(new IgfsEvent(path, locNode, EventType.EVT_IGFS_FILE_CREATED));
-
-                            return new IgfsSecondaryOutputStreamDescriptor(parentInfo.id(), newInfo, out);
+                            IgfsEntryInfo> infos) throws Exception {
+                            return onSuccessCreate(fs, path, simpleCreate, props,
+                                overwrite, bufSize, replication, blockSize, affKey, infos, pendingEvts, outT1);
                         }
 
                         @Override public IgfsSecondaryOutputStreamDescriptor onFailure(Exception err)
                             throws IgniteCheckedException {
-                            U.closeQuiet(out);
+                            U.closeQuiet(outT1.get());
 
                             U.error(log, "File create in DUAL mode failed [path=" + path + ", simpleCreate=" +
                                 simpleCreate + ", props=" + props + ", overwrite=" + overwrite + ", bufferSize=" +
@@ -2031,77 +1985,96 @@ public class IgfsMetaManager extends IgfsManager {
      * @param fs File system.
      * @param path Path.
      * @param bufSize Buffer size.
+     * @param create Create flag.
      * @return Output stream descriptor.
      * @throws IgniteCheckedException If output stream open for append has failed.
      */
-    public IgfsSecondaryOutputStreamDescriptor appendDual(final IgfsSecondaryFileSystem fs, final IgfsPath path,
-        final int bufSize) throws IgniteCheckedException {
+    IgfsSecondaryOutputStreamDescriptor appendDual(final IgfsSecondaryFileSystem fs, final IgfsPath path,
+        final int bufSize, final boolean create) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
                 assert path != null;
 
+                // Events to fire (can be done outside of a transaction).
+                final Deque<IgfsEvent> pendingEvts = new LinkedList<>();
+
                 SynchronizationTask<IgfsSecondaryOutputStreamDescriptor> task =
                     new SynchronizationTask<IgfsSecondaryOutputStreamDescriptor>() {
-                        /** Output stream to the secondary file system. */
-                        private OutputStream out;
+                        /** Container for the secondary file system output stream. */
+                        private final T1<OutputStream> outT1 = new T1<>(null);
 
                         @Override public IgfsSecondaryOutputStreamDescriptor onSuccess(Map<IgfsPath,
-                            IgfsFileInfo> infos) throws Exception {
+                            IgfsEntryInfo> infos) throws Exception {
                             validTxState(true);
 
-                            final IgfsFileInfo info = infos.get(path);
+                            final IgfsEntryInfo info = infos.get(path);
 
-                            if (info.isDirectory())
-                                throw fsException("Failed to open output stream to the file in the " +
-                                    "secondary file system because the path points to a directory: " + path);
+                            final IgfsEntryInfo lockedInfo;
 
-                            out = fs.append(path, bufSize, false, null);
+                            if (info == null)
+                                return onSuccessCreate(fs, path, true/*simpleCreate*/, null,
+                                        false/*overwrite*/, bufSize, (short)0, 0, null, infos, pendingEvts, outT1);
+                            else {
+                                if (info.isDirectory())
+                                    throw fsException("Failed to open output stream to the file in the " +
+                                        "secondary file system because the path points to a directory: " + path);
 
-                            // Synchronize file ending.
-                            long len = info.length();
-                            int blockSize = info.blockSize();
+                                outT1.set(fs.append(path, bufSize, false, null));
 
-                            int remainder = (int)(len % blockSize);
+                                // Synchronize file ending.
+                                long len = info.length();
+                                int blockSize = info.blockSize();
 
-                            if (remainder > 0) {
-                                int blockIdx = (int)(len / blockSize);
+                                int remainder = (int) (len % blockSize);
 
-                                IgfsSecondaryFileSystemPositionedReadable reader = fs.open(path, bufSize);
+                                if (remainder > 0) {
+                                    int blockIdx = (int) (len / blockSize);
 
-                                try {
-                                    igfsCtx.data().dataBlock(info, path, blockIdx, reader).get();
+                                    try (IgfsSecondaryFileSystemPositionedReadable reader = fs.open(path, bufSize)) {
+                                        IgniteInternalFuture<byte[]> fut =
+                                            igfsCtx.data().dataBlock(info, path, blockIdx, reader);
+
+                                        assert fut != null;
+
+                                        fut.get();
+                                    }
                                 }
-                                finally {
-                                    reader.close();
+
+                                if (info.lockId() != null) {
+                                    throw fsException("Failed to open file (file is opened for writing) [path=" +
+                                        path + ", fileId=" + info.id() + ", lockId=" + info.lockId() + ']');
                                 }
+
+                                // Set lock and return.
+                                lockedInfo = invokeLock(info.id(), false);
                             }
 
-                            if (info.lockId() != null) {
-                                throw fsException("Failed to open file (file is opened for writing) [path=" +
-                                    path + ", fileId=" + info.id() + ", lockId=" + info.lockId() + ']');
-                            }
+                            if (evts.isRecordable(EventType.EVT_IGFS_FILE_OPENED_WRITE))
+                                pendingEvts.add(new IgfsEvent(path, locNode, EventType.EVT_IGFS_FILE_OPENED_WRITE));
 
-                            // Set lock and return.
-                            IgfsFileInfo lockedInfo = invokeLock(info.id(), false);
-
-                            return new IgfsSecondaryOutputStreamDescriptor(infos.get(path.parent()).id(),
-                                lockedInfo, out);
+                            return new IgfsSecondaryOutputStreamDescriptor(lockedInfo, outT1.get());
                         }
 
                         @Override public IgfsSecondaryOutputStreamDescriptor onFailure(@Nullable Exception err)
                             throws IgniteCheckedException {
-                            U.closeQuiet(out);
+                            U.closeQuiet(outT1.get());
 
                             U.error(log, "File append in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
                                 ']', err);
 
                             throw new IgniteCheckedException("Failed to append to the file due to secondary file " +
                                 "system exception: " + path, err);
-                        }
-                    };
+                    }
+                };
 
-                return synchronizeAndExecute(task, fs, true, path);
+                try {
+                    return synchronizeAndExecute(task, fs, !create/*strict*/, path);
+                }
+                finally {
+                    for (IgfsEvent evt : pendingEvts)
+                        evts.record(evt);
+                }
             }
             finally {
                 busyLock.leaveBusy();
@@ -2129,7 +2102,7 @@ public class IgfsMetaManager extends IgfsManager {
                 assert path != null;
 
                 // First, try getting file info without any transactions and synchronization.
-                IgfsFileInfo info = info(fileId(path));
+                IgfsEntryInfo info = info(fileId(path));
 
                 if (info != null) {
                     if (!info.isFile())
@@ -2143,8 +2116,8 @@ public class IgfsMetaManager extends IgfsManager {
                 SynchronizationTask<IgfsSecondaryInputStreamDescriptor> task =
                     new SynchronizationTask<IgfsSecondaryInputStreamDescriptor>() {
                         @Override public IgfsSecondaryInputStreamDescriptor onSuccess(
-                            Map<IgfsPath, IgfsFileInfo> infos) throws Exception {
-                            IgfsFileInfo info = infos.get(path);
+                            Map<IgfsPath, IgfsEntryInfo> infos) throws Exception {
+                            IgfsEntryInfo info = infos.get(path);
 
                             if (info == null)
                                 throw fsException(new IgfsPathNotFoundException("File not found: " + path));
@@ -2183,7 +2156,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return File info or {@code null} if file not found.
      * @throws IgniteCheckedException If sync task failed.
      */
-    @Nullable public IgfsFileInfo synchronizeFileDual(final IgfsSecondaryFileSystem fs, final IgfsPath path)
+    @Nullable public IgfsEntryInfo synchronizeFileDual(final IgfsSecondaryFileSystem fs, final IgfsPath path)
         throws IgniteCheckedException {
         assert fs != null;
         assert path != null;
@@ -2191,20 +2164,20 @@ public class IgfsMetaManager extends IgfsManager {
         if (busyLock.enterBusy()) {
             try {
                 // First, try getting file info without any transactions and synchronization.
-                IgfsFileInfo info = info(fileId(path));
+                IgfsEntryInfo info = info(fileId(path));
 
                 if (info != null)
                     return info;
 
                 // If failed, try synchronize.
-                SynchronizationTask<IgfsFileInfo> task =
-                    new SynchronizationTask<IgfsFileInfo>() {
-                        @Override public IgfsFileInfo onSuccess(Map<IgfsPath, IgfsFileInfo> infos)
+                SynchronizationTask<IgfsEntryInfo> task =
+                    new SynchronizationTask<IgfsEntryInfo>() {
+                        @Override public IgfsEntryInfo onSuccess(Map<IgfsPath, IgfsEntryInfo> infos)
                             throws Exception {
                             return infos.get(path);
                         }
 
-                        @Override public IgfsFileInfo onFailure(@Nullable Exception err) throws IgniteCheckedException {
+                        @Override public IgfsEntryInfo onFailure(@Nullable Exception err) throws IgniteCheckedException {
                             throw new IgniteCheckedException("Failed to synchronize path due to secondary file " +
                                 "system exception: " + path, err);
                         }
@@ -2246,7 +2219,7 @@ public class IgfsMetaManager extends IgfsManager {
                 final Deque<IgfsEvent> pendingEvts = new LinkedList<>();
 
                 SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
-                    @Override public Boolean onSuccess(Map<IgfsPath, IgfsFileInfo> infos) throws Exception {
+                    @Override public Boolean onSuccess(Map<IgfsPath, IgfsEntryInfo> infos) throws Exception {
                         fs.mkdirs(path, props);
 
                         assert !infos.isEmpty();
@@ -2261,7 +2234,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                         assert parentPath != null;
 
-                        IgfsFileInfo parentPathInfo = infos.get(parentPath);
+                        IgfsEntryInfo parentPathInfo = infos.get(parentPath);
 
                         synchronize(fs, parentPath, parentPathInfo, path, true, null);
 
@@ -2330,11 +2303,11 @@ public class IgfsMetaManager extends IgfsManager {
                 final Collection<IgfsEvent> pendingEvts = new LinkedList<>();
 
                 SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
-                    @Override public Boolean onSuccess(Map<IgfsPath, IgfsFileInfo> infos) throws Exception {
-                        IgfsFileInfo srcInfo = infos.get(src);
-                        IgfsFileInfo srcParentInfo = infos.get(src.parent());
-                        IgfsFileInfo destInfo = infos.get(dest);
-                        IgfsFileInfo destParentInfo = dest.parent() != null ? infos.get(dest.parent()) : null;
+                    @Override public Boolean onSuccess(Map<IgfsPath, IgfsEntryInfo> infos) throws Exception {
+                        IgfsEntryInfo srcInfo = infos.get(src);
+                        IgfsEntryInfo srcParentInfo = infos.get(src.parent());
+                        IgfsEntryInfo destInfo = infos.get(dest);
+                        IgfsEntryInfo destParentInfo = dest.parent() != null ? infos.get(dest.parent()) : null;
 
                         // Source path and destination (or destination parent) must exist.
                         if (srcInfo == null)
@@ -2349,12 +2322,8 @@ public class IgfsMetaManager extends IgfsManager {
                         fs.rename(src, dest);
 
                         // Rename was successful, perform compensation in the local file system.
-                        if (destInfo == null) {
-                            // Move and rename.
-                            assert destParentInfo != null;
-
+                        if (destInfo == null)
                             moveNonTx(srcInfo.id(), src.name(), srcParentInfo.id(), dest.name(), destParentInfo.id());
-                        }
                         else {
                             // Move.
                             if (destInfo.isFile())
@@ -2424,8 +2393,8 @@ public class IgfsMetaManager extends IgfsManager {
                 final IgniteUuid trashId = IgfsUtils.randomTrashId();
 
                 SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
-                    @Override public Boolean onSuccess(Map<IgfsPath, IgfsFileInfo> infos) throws Exception {
-                        IgfsFileInfo info = infos.get(path);
+                    @Override public Boolean onSuccess(Map<IgfsPath, IgfsEntryInfo> infos) throws Exception {
+                        IgfsEntryInfo info = infos.get(path);
 
                         if (info == null)
                             return false; // File doesn't exist in the secondary file system.
@@ -2436,16 +2405,13 @@ public class IgfsMetaManager extends IgfsManager {
                         if (path.parent() != null) {
                             assert infos.containsKey(path.parent());
 
-                            softDeleteNonTx(infos.get(path.parent()).id(), path.name(), info.id(), trashId);
+                            softDeleteNonTx(infos.get(path.parent()).id(), path, info.id(), trashId);
                         }
                         else {
                             assert IgfsUtils.ROOT_ID.equals(info.id());
 
-                            softDeleteNonTx(null, path.name(), info.id(), trashId);
+                            softDeleteNonTx(null, path, info.id(), trashId);
                         }
-
-                        // Update the deleted file info with path information for delete worker.
-                        invokeUpdatePath(info.id(), path);
 
                         return true; // No additional handling is required.
                     }
@@ -2482,7 +2448,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Update file info.
      * @throws IgniteCheckedException If update failed.
      */
-    public IgfsFileInfo updateDual(final IgfsSecondaryFileSystem fs, final IgfsPath path,
+    public IgfsEntryInfo updateDual(final IgfsSecondaryFileSystem fs, final IgfsPath path,
         final Map<String, String> props) throws IgniteCheckedException {
         assert fs != null;
         assert path != null;
@@ -2490,8 +2456,8 @@ public class IgfsMetaManager extends IgfsManager {
 
         if (busyLock.enterBusy()) {
             try {
-                SynchronizationTask<IgfsFileInfo> task = new SynchronizationTask<IgfsFileInfo>() {
-                    @Override public IgfsFileInfo onSuccess(Map<IgfsPath, IgfsFileInfo> infos) throws Exception {
+                SynchronizationTask<IgfsEntryInfo> task = new SynchronizationTask<IgfsEntryInfo>() {
+                    @Override public IgfsEntryInfo onSuccess(Map<IgfsPath, IgfsEntryInfo> infos) throws Exception {
                         if (infos.get(path) == null)
                             return null;
 
@@ -2500,7 +2466,7 @@ public class IgfsMetaManager extends IgfsManager {
                         return updatePropertiesNonTx(infos.get(path).id(), props);
                     }
 
-                    @Override public IgfsFileInfo onFailure(@Nullable Exception err) throws IgniteCheckedException {
+                    @Override public IgfsEntryInfo onFailure(@Nullable Exception err) throws IgniteCheckedException {
                         U.error(log, "Path update in DUAL mode failed [path=" + path + ", properties=" + props + ']',
                             err);
 
@@ -2531,12 +2497,12 @@ public class IgfsMetaManager extends IgfsManager {
      * @return File info of the end path.
      * @throws IgniteCheckedException If failed.
      */
-    private IgfsFileInfo synchronize(IgfsSecondaryFileSystem fs,
+    private IgfsEntryInfo synchronize(IgfsSecondaryFileSystem fs,
         IgfsPath startPath,
-        IgfsFileInfo startPathInfo,
+        IgfsEntryInfo startPathInfo,
         IgfsPath endPath,
         boolean strict,
-        @Nullable Map<IgfsPath, IgfsFileInfo> created)
+        @Nullable Map<IgfsPath, IgfsEntryInfo> created)
         throws IgniteCheckedException
     {
         assert fs != null;
@@ -2544,7 +2510,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         validTxState(true);
 
-        IgfsFileInfo parentInfo = startPathInfo;
+        IgfsEntryInfo parentInfo = startPathInfo;
 
         List<String> components = endPath.components();
 
@@ -2585,11 +2551,27 @@ public class IgfsMetaManager extends IgfsManager {
                 }
 
                 // Recreate the path locally.
-                IgfsFileInfo curInfo = status.isDirectory() ?
-                    new IgfsFileInfo(true, status.properties(), status.accessTime(), status.modificationTime()) :
-                    new IgfsFileInfo(igfsCtx.configuration().getBlockSize(), status.length(),
-                        igfsCtx.igfs().evictExclude(curPath, false), status.properties(),
-                        status.accessTime(), status.modificationTime());
+                IgfsEntryInfo curInfo = status.isDirectory() ?
+                    IgfsUtils.createDirectory(
+                        IgniteUuid.randomUuid(),
+                        null,
+                        status.properties(),
+                        status.accessTime(),
+                        status.modificationTime()
+                    ) :
+                    IgfsUtils.createFile(
+                        IgniteUuid.randomUuid(),
+                        igfsCtx.configuration().getBlockSize(),
+                        status.length(),
+                        null,
+                        null,
+                        igfsCtx.igfs().evictExclude(curPath, false),
+                        status.properties(),
+                        status.accessTime(),
+                        status.modificationTime()
+                    );
+
+                assert parentInfo != null;
 
                 IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), components.get(i), curInfo);
 
@@ -2638,13 +2620,9 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Result of task execution.
      * @throws IgniteCheckedException If failed.
      */
-    private <T> T synchronizeAndExecute(SynchronizationTask<T> task,
-        IgfsSecondaryFileSystem fs,
-        boolean strict,
-        @Nullable Collection<IgniteUuid> extraLockIds,
-        IgfsPath... paths)
-        throws IgniteCheckedException
-    {
+    @SuppressWarnings({"Contract", "ConstantConditions"})
+    private <T> T synchronizeAndExecute(SynchronizationTask<T> task, IgfsSecondaryFileSystem fs, boolean strict,
+        @Nullable Collection<IgniteUuid> extraLockIds, IgfsPath... paths) throws IgniteCheckedException {
         assert task != null;
         assert fs != null;
         assert paths != null && paths.length > 0;
@@ -2665,9 +2643,7 @@ public class IgfsMetaManager extends IgfsManager {
                 pathIds.add(fileIds(path));
 
             // Start pessimistic.
-            IgniteInternalTx tx = startTx();
-
-            try {
+            try (IgniteInternalTx tx = startTx()) {
                 // Lock the very first existing parents and possibly the leaf as well.
                 Map<IgfsPath, IgfsPath> pathToParent = new HashMap<>();
 
@@ -2719,7 +2695,7 @@ public class IgfsMetaManager extends IgfsManager {
                         lockArr[idx++] = id;
                 }
 
-                Map<IgniteUuid, IgfsFileInfo> idToInfo = lockIds(lockArr);
+                Map<IgniteUuid, IgfsEntryInfo> idToInfo = lockIds(lockArr);
 
                 if (extraLockIds != null) {
                     for (IgniteUuid id : extraLockIds)
@@ -2762,9 +2738,9 @@ public class IgfsMetaManager extends IgfsManager {
                         continue; // Release all locks and try again.
                     else {
                         // Perform synchronization.
-                        Map<IgfsPath, IgfsFileInfo> infos = new HashMap<>();
+                        Map<IgfsPath, IgfsEntryInfo> infos = new HashMap<>();
 
-                        TreeMap<IgfsPath, IgfsFileInfo> created = new TreeMap<>();
+                        TreeMap<IgfsPath, IgfsEntryInfo> created = new TreeMap<>();
 
                         for (IgfsPath path : paths) {
                             IgfsPath parentPath = path.parent();
@@ -2781,7 +2757,7 @@ public class IgfsMetaManager extends IgfsManager {
                                 assert firstParentPath != null;
                                 assert pathToId.get(firstParentPath) != null;
 
-                                IgfsFileInfo info = synchronize(fs,
+                                IgfsEntryInfo info = synchronize(fs,
                                     firstParentPath,
                                     idToInfo.get(pathToId.get(firstParentPath)),
                                     path,
@@ -2833,31 +2809,9 @@ public class IgfsMetaManager extends IgfsManager {
                 else
                     throw e;
             }
-            finally {
-                tx.close();
-            }
         }
 
         return res;
-    }
-
-    /**
-     * Update cached value with closure.
-     *
-     * @param cache Cache projection to work with.
-     * @param key Key to retrieve/update the value for.
-     * @param c Closure to apply to cached value.
-     * @return {@code True} if value was stored in cache, {@code false} otherwise.
-     * @throws IgniteCheckedException If operation failed.
-     */
-    private <K, V> boolean putx(IgniteInternalCache<K, V> cache, K key, IgniteClosure<V, V> c)
-        throws IgniteCheckedException {
-        validTxState(true);
-
-        V oldVal = cache.get(key);
-        V newVal = c.apply(oldVal);
-
-        return newVal == null ? cache.remove(key) : cache.put(key, newVal);
     }
 
     /**
@@ -2896,18 +2850,16 @@ public class IgfsMetaManager extends IgfsManager {
                 validTxState(false);
 
                 // Start pessimistic transaction.
-                IgniteInternalTx tx = startTx();
+                try (IgniteInternalTx tx = startTx()) {
+                    Map<IgniteUuid, IgfsEntryInfo> infoMap = lockIds(fileId, parentId);
 
-                try {
-                    Map<IgniteUuid, IgfsFileInfo> infoMap = lockIds(fileId, parentId);
-
-                    IgfsFileInfo fileInfo = infoMap.get(fileId);
+                    IgfsEntryInfo fileInfo = infoMap.get(fileId);
 
                     if (fileInfo == null)
                         throw fsException(new IgfsPathNotFoundException("Failed to update times " +
-                                "(path was not found): " + fileName));
+                            "(path was not found): " + fileName));
 
-                    IgfsFileInfo parentInfo = infoMap.get(parentId);
+                    IgfsEntryInfo parentInfo = infoMap.get(parentId);
 
                     if (parentInfo == null)
                         throw fsException(new IgfsPathNotFoundException("Failed to update times " +
@@ -2916,19 +2868,16 @@ public class IgfsMetaManager extends IgfsManager {
                     // Validate listing.
                     if (!parentInfo.hasChild(fileName, fileId))
                         throw fsException(new IgfsConcurrentModificationException("Failed to update times " +
-                                "(file concurrently modified): " + fileName));
+                            "(file concurrently modified): " + fileName));
 
                     assert parentInfo.isDirectory();
 
-                    id2InfoPrj.invoke(fileId, new UpdateTimesProcessor(
+                    id2InfoPrj.invoke(fileId, new IgfsMetaUpdateTimesProcessor(
                         accessTime == -1 ? fileInfo.accessTime() : accessTime,
                         modificationTime == -1 ? fileInfo.modificationTime() : modificationTime)
                     );
 
                     tx.commit();
-                }
-                finally {
-                    tx.close();
                 }
             }
             finally {
@@ -2949,7 +2898,7 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * @param msg Error message.
+     * @param err Unchecked exception.
      * @return Checked exception.
      */
     private static IgniteCheckedException fsException(IgfsException err) {
@@ -2967,7 +2916,7 @@ public class IgfsMetaManager extends IgfsManager {
          * @return Task result.
          * @throws Exception If failed.
          */
-        public T onSuccess(Map<IgfsPath, IgfsFileInfo> infos) throws Exception;
+        public T onSuccess(Map<IgfsPath, IgfsEntryInfo> infos) throws Exception;
 
         /**
          * Callback handler in case synchronization failed.
@@ -2980,363 +2929,6 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Path descriptor.
-     */
-    private static class PathDescriptor {
-        /** Path. */
-        private final IgfsPath path;
-
-        /** Resolved IDs. */
-        private final List<IgniteUuid> ids;
-
-        /** Parent path. */
-        private IgfsPath parentPath;
-
-        /** Parent path info. */
-        private IgfsFileInfo parentInfo;
-
-        /**
-         * Constructor.
-         *
-         * @param path Path.
-         * @param ids Resolved path IDs.
-         * @param parentPath Parent path.
-         * @param parentInfo Parent info.
-         */
-        PathDescriptor(IgfsPath path, List<IgniteUuid> ids, IgfsPath parentPath, IgfsFileInfo parentInfo) {
-            assert path != null;
-            assert ids != null && !ids.isEmpty();
-            assert parentPath == null && parentInfo == null || parentPath != null && parentInfo != null;
-            assert parentPath == null || parentPath != null && path.isSubDirectoryOf(parentPath);
-
-            this.path = path;
-            this.ids = ids;
-            this.parentPath = parentPath;
-            this.parentInfo = parentInfo;
-        }
-
-        /**
-         * Get resolved path ids.
-         *
-         * @return Path ids.
-         */
-        private Collection<IgniteUuid> ids() {
-            return ids;
-        }
-
-        /**
-         * Get path ID from the end. E.g. endId(1) will return the last element.
-         * @param i Element index from the end.
-         *
-         * @return Path ID from the end.
-         */
-        private IgniteUuid endId(int i) {
-            return ids.get(ids.size() - i);
-        }
-
-        /**
-         * Update ID with the given index.
-         *
-         * @param newParentPath New parent path.
-         * @param newParentInfo New parent info.
-         */
-        private void updateParent(IgfsPath newParentPath, IgfsFileInfo newParentInfo) {
-            assert newParentPath != null;
-            assert newParentInfo != null;
-            assert path.isSubDirectoryOf(newParentPath);
-
-            parentPath = newParentPath;
-            parentInfo = newParentInfo;
-
-            ids.set(newParentPath.components().size(), newParentInfo.id());
-        }
-
-        /**
-         * Get parent path.
-         *
-         * @return Parent path.
-         */
-        private IgfsPath parentPath() {
-            return parentPath;
-        }
-
-        /**
-         * Get parent path info.
-         *
-         * @return Parent path info.
-         */
-        private IgfsFileInfo parentInfo() {
-            return parentInfo;
-        }
-    }
-
-    /**
-     * Remove entry from directory listing.
-     */
-    @GridInternal
-    private static final class ListingRemoveProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** File name. */
-        private String fileName;
-
-        /** Expected ID. */
-        private IgniteUuid fileId;
-
-        /**
-         * Default constructor.
-         */
-        public ListingRemoveProcessor() {
-            // No-op.
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param fileName File name.
-         * @param fileId File ID.
-         */
-        public ListingRemoveProcessor(String fileName, IgniteUuid fileId) {
-            this.fileName = fileName;
-            this.fileId = fileId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> e, Object... args)
-            throws EntryProcessorException {
-            IgfsFileInfo fileInfo = e.getValue();
-
-            assert fileInfo != null;
-            assert fileInfo.isDirectory();
-
-            Map<String, IgfsListingEntry> listing = new HashMap<>(fileInfo.listing());
-
-            listing.putAll(fileInfo.listing());
-
-            IgfsListingEntry oldEntry = listing.get(fileName);
-
-            if (oldEntry == null || !oldEntry.fileId().equals(fileId))
-                throw new IgniteException("Directory listing doesn't contain expected file" +
-                    " [listing=" + listing + ", fileName=" + fileName + "]");
-
-            // Modify listing in-place.
-            listing.remove(fileName);
-
-            e.setValue(new IgfsFileInfo(listing, fileInfo));
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeString(out, fileName);
-            U.writeGridUuid(out, fileId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            fileName = U.readString(in);
-            fileId = U.readGridUuid(in);
-        }
-    }
-
-    /**
-     * Update directory listing closure.
-     */
-    @GridInternal
-    private static final class ListingAddProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** File name to add into parent listing. */
-        private String fileName;
-
-        /** File ID.*/
-        private IgfsListingEntry entry;
-
-        /**
-         * Empty constructor required for {@link Externalizable}.
-         *
-         */
-        public ListingAddProcessor() {
-            // No-op.
-        }
-
-        /**
-         * Constructs update directory listing closure.
-         *
-         * @param fileName File name to add into parent listing.
-         * @param entry Listing entry to add or remove.
-         */
-        private ListingAddProcessor(String fileName, IgfsListingEntry entry) {
-            assert fileName != null;
-            assert entry != null;
-
-            this.fileName = fileName;
-            this.entry = entry;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> e, Object... args) {
-            IgfsFileInfo fileInfo = e.getValue();
-
-            assert fileInfo.isDirectory();
-
-            Map<String, IgfsListingEntry> listing = new HashMap<>(fileInfo.listing());
-
-            // Modify listing in-place.
-            IgfsListingEntry oldEntry = listing.put(fileName, entry);
-
-            if (oldEntry != null && !oldEntry.fileId().equals(entry.fileId()))
-                throw new IgniteException("Directory listing contains unexpected file" +
-                    " [listing=" + listing + ", fileName=" + fileName + ", entry=" + entry +
-                    ", oldEntry=" + oldEntry + ']');
-
-            e.setValue(new IgfsFileInfo(listing, fileInfo));
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeString(out, fileName);
-            out.writeObject(entry);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            fileName = U.readString(in);
-            entry = (IgfsListingEntry)in.readObject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ListingAddProcessor.class, this);
-        }
-    }
-
-    /**
-     * Listing replace processor.
-     */
-    private static final class ListingReplaceProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Name. */
-        private String name;
-
-        /** New ID. */
-        private IgniteUuid id;
-
-        /**
-         * Constructor.
-         */
-        public ListingReplaceProcessor() {
-            // No-op.
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param name Name.
-         * @param id ID.
-         */
-        public ListingReplaceProcessor(String name, IgniteUuid id) {
-            this.name = name;
-            this.id = id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> e, Object... args)
-            throws EntryProcessorException {
-            IgfsFileInfo fileInfo = e.getValue();
-
-            assert fileInfo.isDirectory();
-
-            Map<String, IgfsListingEntry> listing = new HashMap<>(fileInfo.listing());
-
-            // Modify listing in-place.
-            IgfsListingEntry oldEntry = listing.get(name);
-
-            if (oldEntry == null)
-                throw new IgniteException("Directory listing doesn't contain expected entry: " + name);
-
-            listing.put(name, new IgfsListingEntry(id, oldEntry.isDirectory()));
-
-            e.setValue(new IgfsFileInfo(listing, fileInfo));
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeString(out, name);
-            out.writeObject(id);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            name = U.readString(in);
-            id = (IgniteUuid)in.readObject();
-        }
-    }
-
-    /**
-     * Update path closure.
-     */
-    @GridInternal
-    private static final class UpdatePathProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** New path. */
-        private IgfsPath path;
-
-        /**
-         * @param path Path.
-         */
-        private UpdatePathProcessor(IgfsPath path) {
-            this.path = path;
-        }
-
-        /**
-         * Default constructor (required by Externalizable).
-         */
-        public UpdatePathProcessor() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> e, Object... args) {
-            IgfsFileInfo info = e.getValue();
-
-            e.setValue(builder(info).path(path).build());
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(path);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            path = (IgfsPath)in.readObject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(UpdatePathProcessor.class, this);
-        }
-    }
-
-    /**
      * Append routine.
      *
      * @param path Path.
@@ -3346,10 +2938,10 @@ public class IgfsMetaManager extends IgfsManager {
      * @param affKey Affinity key.
      * @param evictExclude Evict exclude flag.
      * @param fileProps File properties.
-     * @return Tuple containing the file info and its parent id.
+     * @return Resulting info.
      * @throws IgniteCheckedException If failed.
      */
-    IgniteBiTuple<IgfsFileInfo, IgniteUuid> append(
+    IgfsEntryInfo append(
         final IgfsPath path,
         Map<String, String> dirProps,
         final boolean create,
@@ -3372,22 +2964,20 @@ public class IgfsMetaManager extends IgfsManager {
                     // Prepare lock IDs.
                     Set<IgniteUuid> lockIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                    pathIds.addExistingIds(lockIds);
+                    pathIds.addExistingIds(lockIds, relaxed);
                     pathIds.addSurrogateIds(lockIds);
 
                     // Start TX.
-                    IgniteInternalTx tx = startTx();
+                    try (IgniteInternalTx tx = startTx()) {
+                        Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
-                    try {
-                        Map<IgniteUuid, IgfsFileInfo> lockInfos = lockIds(lockIds);
-
-                        if (!pathIds.verifyIntegrity(lockInfos))
+                        if (!pathIds.verifyIntegrity(lockInfos, relaxed))
                             // Directory structure changed concurrently. So we simply re-try.
                             continue;
 
                         if (pathIds.allExists()) {
                             // All participants are found. Simply open the stream.
-                            IgfsFileInfo info = lockInfos.get(pathIds.lastId());
+                            IgfsEntryInfo info = lockInfos.get(pathIds.lastId());
 
                             // Check: is it a file?
                             if (!info.isFile())
@@ -3400,13 +2990,11 @@ public class IgfsMetaManager extends IgfsManager {
                             // At this point we can open the stream safely.
                             info = invokeLock(info.id(), false);
 
-                            IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(info, pathIds.lastParentId());
-
                             tx.commit();
 
                             IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EventType.EVT_IGFS_FILE_OPENED_WRITE);
 
-                            return t2;
+                            return info;
                         }
                         else {
                             // Create file and parent folders.
@@ -3422,11 +3010,8 @@ public class IgfsMetaManager extends IgfsManager {
                             // Generate events.
                             generateCreateEvents(res.createdPaths(), true);
 
-                            return new T2<>(res.info(), res.parentId());
+                            return res.info();
                         }
-                    }
-                    finally {
-                        tx.close();
                     }
                 }
                 finally {
@@ -3439,18 +3024,19 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
-     * Create a new file.
+     * Create a file.
      *
      * @param path Path.
-     * @param bufSize Buffer size.
+     * @param dirProps Directory properties.
      * @param overwrite Overwrite flag.
+     * @param blockSize Block size.
      * @param affKey Affinity key.
-     * @param replication Replication factor.
-     * @param props Properties.
-     * @param simpleCreate Whether new file should be created in secondary FS using create(Path, boolean) method.
-     * @return Tuple containing the created file info and its parent id.
+     * @param evictExclude Evict exclude flag.
+     * @param fileProps File properties.
+     * @return @return Resulting info.
+     * @throws IgniteCheckedException If failed.
      */
-    IgniteBiTuple<IgfsFileInfo, IgniteUuid> create(
+    IgfsEntryInfo create(
         final IgfsPath path,
         Map<String, String> dirProps,
         final boolean overwrite,
@@ -3469,7 +3055,7 @@ public class IgfsMetaManager extends IgfsManager {
                     // Prepare lock IDs.
                     Set<IgniteUuid> lockIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                    pathIds.addExistingIds(lockIds);
+                    pathIds.addExistingIds(lockIds, relaxed);
                     pathIds.addSurrogateIds(lockIds);
 
                     // In overwrite mode we also lock ID of potential replacement as well as trash ID.
@@ -3485,18 +3071,16 @@ public class IgfsMetaManager extends IgfsManager {
                     }
 
                     // Start TX.
-                    IgniteInternalTx tx = startTx();
+                    try (IgniteInternalTx tx = startTx()) {
+                        Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(lockIds);
 
-                    try {
-                        Map<IgniteUuid, IgfsFileInfo> lockInfos = lockIds(lockIds);
-
-                        if (!pathIds.verifyIntegrity(lockInfos))
+                        if (!pathIds.verifyIntegrity(lockInfos, relaxed))
                             // Directory structure changed concurrently. So we simply re-try.
                             continue;
 
                         if (pathIds.allExists()) {
                             // All participants found.
-                            IgfsFileInfo oldInfo = lockInfos.get(pathIds.lastId());
+                            IgfsEntryInfo oldInfo = lockInfos.get(pathIds.lastId());
 
                             // Check: is it a file?
                             if (!oldInfo.isFile())
@@ -3515,32 +3099,27 @@ public class IgfsMetaManager extends IgfsManager {
                             // First step: add existing to trash listing.
                             IgniteUuid oldId = pathIds.lastId();
 
-                            id2InfoPrj.invoke(trashId, new ListingAddProcessor(oldId.toString(),
-                                new IgfsListingEntry(oldId, true)));
+                            id2InfoPrj.invoke(trashId, new IgfsMetaDirectoryListingAddProcessor(
+                                IgfsUtils.composeNameForTrash(path, oldId), new IgfsListingEntry(oldInfo)));
 
                             // Second step: replace ID in parent directory.
                             String name = pathIds.lastPart();
                             IgniteUuid parentId = pathIds.lastParentId();
 
-                            id2InfoPrj.invoke(parentId, new ListingReplaceProcessor(name, overwriteId));
+                            id2InfoPrj.invoke(parentId, new IgfsMetaDirectoryListingReplaceProcessor(name, overwriteId));
 
                             // Third step: create the file.
                             long createTime = System.currentTimeMillis();
 
-                            IgfsFileInfo newInfo = invokeAndGet(overwriteId, new FileCreateProcessor(createTime,
+                            IgfsEntryInfo newInfo = invokeAndGet(overwriteId, new IgfsMetaFileCreateProcessor(createTime,
                                 fileProps, blockSize, affKey, createFileLockId(false), evictExclude));
 
-                            // Fourth step: update path of remove file.
-                            invokeUpdatePath(oldId, path);
-
                             // Prepare result and commit.
-                            IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(newInfo, parentId);
-
                             tx.commit();
 
                             IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EventType.EVT_IGFS_FILE_OPENED_WRITE);
 
-                            return t2;
+                            return newInfo;
                         }
                         else {
                             // Create file and parent folders.
@@ -3556,11 +3135,8 @@ public class IgfsMetaManager extends IgfsManager {
                             // Generate events.
                             generateCreateEvents(res.createdPaths(), true);
 
-                            return new T2<>(res.info(), res.parentId());
+                            return res.info();
                         }
-                    }
-                    finally {
-                        tx.close();
                     }
                 }
                 finally {
@@ -3581,7 +3157,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Result or {@code} if the first parent already contained child with the same name.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable IgfsPathsCreateResult createDirectory(IgfsPathIds pathIds, Map<IgniteUuid, IgfsFileInfo> lockInfos,
+    @Nullable IgfsPathsCreateResult createDirectory(IgfsPathIds pathIds, Map<IgniteUuid, IgfsEntryInfo> lockInfos,
         Map<String, String> dirProps) throws IgniteCheckedException {
         // Check if entry we are going to write to is directory.
         if (lockInfos.get(pathIds.lastExistingId()).isFile())
@@ -3604,7 +3180,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Result or {@code} if the first parent already contained child with the same name.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private IgfsPathsCreateResult createFile(IgfsPathIds pathIds, Map<IgniteUuid, IgfsFileInfo> lockInfos,
+    @Nullable private IgfsPathsCreateResult createFile(IgfsPathIds pathIds, Map<IgniteUuid, IgfsEntryInfo> lockInfos,
         Map<String, String> dirProps, Map<String, String> fileProps, int blockSize, @Nullable IgniteUuid affKey,
         boolean evictExclude) throws IgniteCheckedException{
         // Check if entry we are going to write to is directory.
@@ -3630,11 +3206,11 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     private IgfsPathsCreateResult createFileOrDirectory(boolean dir, IgfsPathIds pathIds,
-        Map<IgniteUuid, IgfsFileInfo> lockInfos, Map<String, String> dirProps, Map<String, String> fileProps,
+        Map<IgniteUuid, IgfsEntryInfo> lockInfos, Map<String, String> dirProps, Map<String, String> fileProps,
         int blockSize, @Nullable IgniteUuid affKey, boolean evictExclude) throws IgniteCheckedException {
         // This is our starting point.
         int lastExistingIdx = pathIds.lastExistingIndex();
-        IgfsFileInfo lastExistingInfo = lockInfos.get(pathIds.lastExistingId());
+        IgfsEntryInfo lastExistingInfo = lockInfos.get(pathIds.lastExistingId());
 
         // If current info already contains entry with the same name as it's child, then something
         // has changed concurrently. We must re-try because we cannot get info of this unexpected
@@ -3643,13 +3219,12 @@ public class IgfsMetaManager extends IgfsManager {
 
         String curPart = pathIds.part(curIdx);
         IgniteUuid curId = pathIds.surrogateId(curIdx);
-        IgniteUuid curParentId = lastExistingInfo.id();
 
         if (lastExistingInfo.hasChild(curPart))
             return null;
 
         // First step: add new entry to the last existing element.
-        id2InfoPrj.invoke(lastExistingInfo.id(), new ListingAddProcessor(curPart,
+        id2InfoPrj.invoke(lastExistingInfo.id(), new IgfsMetaDirectoryListingAddProcessor(curPart,
             new IgfsListingEntry(curId, dir || !pathIds.isLastIndex(curIdx))));
 
         // Events support.
@@ -3666,7 +3241,7 @@ public class IgfsMetaManager extends IgfsManager {
             String nextPart = pathIds.part(nextIdx);
             IgniteUuid nextId = pathIds.surrogateId(nextIdx);
 
-            id2InfoPrj.invoke(curId, new DirectoryCreateProcessor(createTime, dirProps,
+            id2InfoPrj.invoke(curId, new IgfsMetaDirectoryCreateProcessor(createTime, dirProps,
                 nextPart, new IgfsListingEntry(nextId, dir || !pathIds.isLastIndex(nextIdx))));
 
             // Save event.
@@ -3677,24 +3252,22 @@ public class IgfsMetaManager extends IgfsManager {
             // Advance things further.
             curIdx++;
 
-            curParentId = curId;
-
             curPart = nextPart;
             curId = nextId;
         }
 
         // Third step: create leaf.
-        IgfsFileInfo info;
+        IgfsEntryInfo info;
 
         if (dir)
-            info = invokeAndGet(curId, new DirectoryCreateProcessor(createTime, dirProps));
+            info = invokeAndGet(curId, new IgfsMetaDirectoryCreateProcessor(createTime, dirProps));
         else
-            info = invokeAndGet(curId, new FileCreateProcessor(createTime, fileProps,
+            info = invokeAndGet(curId, new IgfsMetaFileCreateProcessor(createTime, fileProps,
                 blockSize, affKey, createFileLockId(false), evictExclude));
 
         createdPaths.add(pathIds.path());
 
-        return new IgfsPathsCreateResult(createdPaths, info, curParentId);
+        return new IgfsPathsCreateResult(createdPaths, info);
     }
 
     /**
@@ -3718,468 +3291,5 @@ public class IgfsMetaManager extends IgfsManager {
         }
         else
             IgfsUtils.sendEvents(igfsCtx.kernalContext(), leafPath, EventType.EVT_IGFS_DIR_CREATED);
-    }
-
-    /**
-     * File create processor.
-     */
-    private static class FileCreateProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Create time. */
-        private long createTime;
-
-        /** Properties. */
-        private Map<String, String> props;
-
-        /** Block size. */
-        private int blockSize;
-
-        /** Affintiy key. */
-        private IgniteUuid affKey;
-
-        /** Lcok ID. */
-        private IgniteUuid lockId;
-
-        /** Evict exclude flag. */
-        private boolean evictExclude;
-
-        /**
-         * Constructor.
-         */
-        public FileCreateProcessor() {
-            // No-op.
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param createTime Create time.
-         * @param props Properties.
-         * @param blockSize Block size.
-         * @param affKey Affinity key.
-         * @param lockId Lock ID.
-         * @param evictExclude Evict exclude flag.
-         */
-        public FileCreateProcessor(long createTime, Map<String, String> props, int blockSize,
-            @Nullable IgniteUuid affKey, IgniteUuid lockId, boolean evictExclude) {
-            this.createTime = createTime;
-            this.props = props;
-            this.blockSize = blockSize;
-            this.affKey = affKey;
-            this.lockId = lockId;
-            this.evictExclude = evictExclude;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
-            throws EntryProcessorException {
-            IgfsFileInfo info = new IgfsFileInfo(blockSize, 0L, affKey, lockId, evictExclude, props,
-                createTime, createTime);
-
-            info.id(entry.getKey());
-
-            entry.setValue(info);
-
-            return info;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(createTime);
-            U.writeStringMap(out, props);
-            out.writeInt(blockSize);
-            out.writeObject(affKey);
-            out.writeObject(lockId);
-            out.writeBoolean(evictExclude);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            createTime = in.readLong();
-            props = U.readStringMap(in);
-            blockSize = in.readInt();
-            affKey = (IgniteUuid)in.readObject();
-            lockId = (IgniteUuid)in.readObject();
-            evictExclude = in.readBoolean();
-        }
-    }
-
-    /**
-     * Directory create processor.
-     */
-    private static class DirectoryCreateProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Create time. */
-        private long createTime;
-
-        /** Properties. */
-        private Map<String, String> props;
-
-        /** Child name (optional). */
-        private String childName;
-
-        /** Child entry (optional. */
-        private IgfsListingEntry childEntry;
-
-        /**
-         * Constructor.
-         */
-        public DirectoryCreateProcessor() {
-            // No-op.
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param createTime Create time.
-         * @param props Properties.
-         */
-        public DirectoryCreateProcessor(long createTime, Map<String, String> props) {
-            this(createTime, props, null, null);
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param createTime Create time.
-         * @param props Properties.
-         * @param childName Child name.
-         * @param childEntry Child entry.
-         */
-        public DirectoryCreateProcessor(long createTime, Map<String, String> props, String childName,
-            IgfsListingEntry childEntry) {
-            this.createTime = createTime;
-            this.props = props;
-            this.childName = childName;
-            this.childEntry = childEntry;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
-            throws EntryProcessorException {
-
-            IgfsFileInfo info = new IgfsFileInfo(true, props, createTime, createTime);
-
-            if (childName != null)
-                info = new IgfsFileInfo(Collections.singletonMap(childName, childEntry), info);
-
-            info.id(entry.getKey());
-
-            entry.setValue(info);
-
-            return info;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(createTime);
-            U.writeStringMap(out, props);
-
-            if (childName != null) {
-                out.writeBoolean(true);
-
-                U.writeString(out, childName);
-                out.writeObject(childEntry);
-            }
-            else
-                out.writeBoolean(false);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            createTime = in.readLong();
-            props = U.readStringMap(in);
-
-            if (in.readBoolean()) {
-                childName = U.readString(in);
-                childEntry = (IgfsListingEntry)in.readObject();
-            }
-        }
-    }
-
-    /**
-     * File lock entry processor.
-     */
-    private static class FileLockProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Lock Id. */
-        private IgniteUuid lockId;
-
-        /**
-         * Default constructor.
-         */
-        public FileLockProcessor() {
-            // No-op.
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param lockId Lock ID.
-         */
-        public FileLockProcessor(IgniteUuid lockId) {
-            this.lockId = lockId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
-            throws EntryProcessorException {
-            IgfsFileInfo oldInfo = entry.getValue();
-
-            IgfsFileInfo newInfo =  new IgfsFileInfo(oldInfo, lockId, oldInfo.modificationTime());
-
-            entry.setValue(newInfo);
-
-            return newInfo;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeGridUuid(out, lockId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            lockId = U.readGridUuid(in);
-        }
-    }
-
-    /**
-     * File unlock entry processor.
-     */
-    private static class FileUnlockProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Modification time. */
-        private long modificationTime;
-
-        /**
-         * Default constructor.
-         */
-        public FileUnlockProcessor() {
-            // No-op.
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param modificationTime Modification time.
-         */
-        public FileUnlockProcessor(long modificationTime) {
-            this.modificationTime = modificationTime;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
-            throws EntryProcessorException {
-            IgfsFileInfo old = entry.getValue();
-
-            entry.setValue(new IgfsFileInfo(old, null, modificationTime));
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(modificationTime);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            modificationTime = in.readLong();
-        }
-    }
-
-    /**
-     * File reserve space entry processor.
-     */
-    private static class FileReserveSpaceProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Space. */
-        private long space;
-
-        /** Affinity range. */
-        private IgfsFileAffinityRange affRange;
-
-        /**
-         * Default constructor.
-         */
-        public FileReserveSpaceProcessor() {
-            // No-op.
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param space Space.
-         * @param affRange
-         */
-        public FileReserveSpaceProcessor(long space, IgfsFileAffinityRange affRange) {
-            this.space = space;
-            this.affRange = affRange;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
-            throws EntryProcessorException {
-            IgfsFileInfo oldInfo = entry.getValue();
-
-            IgfsFileMap newMap = new IgfsFileMap(oldInfo.fileMap());
-
-            newMap.addRange(affRange);
-
-            IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, oldInfo.length() + space);
-
-            newInfo.fileMap(newMap);
-
-            entry.setValue(newInfo);
-
-            return newInfo;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(space);
-            out.writeObject(affRange);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            space = in.readLong();
-            affRange = (IgfsFileAffinityRange)in.readObject();
-        }
-    }
-
-    /**
-     * Update properties processor.
-     */
-    private static class UpdatePropertiesProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, IgfsFileInfo>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Properties to be updated. */
-        private Map<String, String> props;
-
-        /**
-         * Constructor.
-         */
-        public UpdatePropertiesProcessor() {
-            // No-op.
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param props Properties.
-         */
-        public UpdatePropertiesProcessor(Map<String, String> props) {
-            this.props = props;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsFileInfo process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
-            throws EntryProcessorException {
-            IgfsFileInfo oldInfo = entry.getValue();
-
-            Map<String, String> tmp = oldInfo.properties();
-
-            tmp = tmp == null ? new GridLeanMap<String, String>(props.size()) : new GridLeanMap<>(tmp);
-
-            for (Map.Entry<String, String> e : props.entrySet()) {
-                if (e.getValue() == null)
-                    // Remove properties with 'null' values.
-                    tmp.remove(e.getKey());
-                else
-                    // Add/overwrite property.
-                    tmp.put(e.getKey(), e.getValue());
-            }
-
-            IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, tmp);
-
-            entry.setValue(newInfo);
-
-            return newInfo;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeStringMap(out, props);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            props = U.readStringMap(in);
-        }
-    }
-
-    /**
-     * Update times entry processor.
-     */
-    private static class UpdateTimesProcessor implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Access time. */
-        private long accessTime;
-
-        /** Modification time. */
-        private long modificationTime;
-
-        /**
-         * Default constructor.
-         */
-        public UpdateTimesProcessor() {
-            // No-op.
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param accessTime Access time.
-         * @param modificationTime Modification time.
-         */
-        public UpdateTimesProcessor(long accessTime, long modificationTime) {
-            this.accessTime = accessTime;
-            this.modificationTime = modificationTime;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> entry, Object... args)
-            throws EntryProcessorException {
-
-            IgfsFileInfo oldInfo = entry.getValue();
-
-            entry.setValue(new IgfsFileInfo(oldInfo, accessTime, modificationTime));
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeLong(accessTime);
-            out.writeLong(modificationTime);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            accessTime = in.readLong();
-            modificationTime = in.readLong();
-        }
     }
 }

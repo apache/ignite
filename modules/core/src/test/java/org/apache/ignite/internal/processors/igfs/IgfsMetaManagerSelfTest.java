@@ -147,12 +147,12 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         IgfsListingEntry dirEntry = mgr.directoryListing(ROOT_ID).get("dir");
         assertNotNull(dirEntry);
         assertTrue(dirEntry.isDirectory());
-        IgfsFileInfo dir = mgr.info(dirEntry.fileId());
+        IgfsEntryInfo dir = mgr.info(dirEntry.fileId());
 
         IgfsListingEntry fileEntry = mgr.directoryListing(ROOT_ID).get("file");
         assertNotNull(fileEntry);
         assertTrue(!fileEntry.isDirectory());
-        IgfsFileInfo file = mgr.info(fileEntry.fileId());
+        IgfsEntryInfo file = mgr.info(fileEntry.fileId());
 
         assertEquals(2, mgr.directoryListing(ROOT_ID).size());
 
@@ -166,7 +166,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             String key1 = UUID.randomUUID().toString();
             String key2 = UUID.randomUUID().toString();
 
-            IgfsFileInfo info = mgr.info(fileId);
+            IgfsEntryInfo info = mgr.info(fileId);
 
             assertNull("Unexpected stored properties: " + info, info.properties().get(key1));
             assertNull("Unexpected stored properties: " + info, info.properties().get(key2));
@@ -197,29 +197,29 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertNull(mgr.updateProperties(dir.id(), F.asMap("p", "7")));
     }
 
-    private IgfsFileInfo mkdirsAndGetInfo(String path) throws IgniteCheckedException {
+    private IgfsEntryInfo mkdirsAndGetInfo(String path) throws IgniteCheckedException {
         IgfsPath p = path(path);
 
         mgr.mkdirs(p, IgfsImpl.DFLT_DIR_META);
 
         IgniteUuid id = mgr.fileId(p);
 
-        IgfsFileInfo info = mgr.info(id);
+        IgfsEntryInfo info = mgr.info(id);
 
         assert info.isDirectory();
 
         return info;
     }
 
-    private IgfsFileInfo createFileAndGetInfo(String path) throws IgniteCheckedException {
+    private IgfsEntryInfo createFileAndGetInfo(String path) throws IgniteCheckedException {
         IgfsPath p = path(path);
 
-        IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = mgr.create(p, null, false, 400, null, false, null);
+        IgfsEntryInfo res = mgr.create(p, null, false, 400, null, false, null);
 
-        assert t2 != null;
-        assert !t2.get1().isDirectory();
+        assert res != null;
+        assert !res.isDirectory();
 
-        return t2.get1();
+        return res;
     }
 
     /**
@@ -228,7 +228,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStructure() throws Exception {
-        IgfsFileInfo rootInfo = new IgfsFileInfo();
+        IgfsEntryInfo rootInfo = IgfsUtils.createDirectory(ROOT_ID);
 
         // Test empty structure.
         assertEmpty(mgr.directoryListing(ROOT_ID));
@@ -236,15 +236,15 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertEquals(F.asMap(ROOT_ID, rootInfo), mgr.infos(Arrays.asList(ROOT_ID)));
 
         // Directories:
-        IgfsFileInfo a = mkdirsAndGetInfo("/a");
-        IgfsFileInfo b = mkdirsAndGetInfo("/a/b");
-        IgfsFileInfo k = mkdirsAndGetInfo("/a/b/k");
-        IgfsFileInfo z = mkdirsAndGetInfo("/a/k");
+        IgfsEntryInfo a = mkdirsAndGetInfo("/a");
+        IgfsEntryInfo b = mkdirsAndGetInfo("/a/b");
+        IgfsEntryInfo k = mkdirsAndGetInfo("/a/b/k");
+        IgfsEntryInfo z = mkdirsAndGetInfo("/a/k");
 
         // Files:
-        IgfsFileInfo f1 = createFileAndGetInfo("/f1");
-        IgfsFileInfo f2 = createFileAndGetInfo("/a/f2");
-        IgfsFileInfo f3 = createFileAndGetInfo("/a/b/f3");
+        IgfsEntryInfo f1 = createFileAndGetInfo("/f1");
+        IgfsEntryInfo f2 = createFileAndGetInfo("/a/f2");
+        IgfsEntryInfo f3 = createFileAndGetInfo("/a/b/f3");
 
         assertEquals(F.asMap("a", new IgfsListingEntry(a), "f1", new IgfsListingEntry(f1)),
             mgr.directoryListing(ROOT_ID));
@@ -256,11 +256,11 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             "k", new IgfsListingEntry(k)), mgr.directoryListing(b.id()));
 
         // Validate empty files listings.
-        for (IgfsFileInfo info : Arrays.asList(f1, f2, f3))
+        for (IgfsEntryInfo info : Arrays.asList(f1, f2, f3))
             assertEmpty(mgr.directoryListing(info.id()));
 
         // Validate 'file info' operations.
-        for (IgfsFileInfo info : Arrays.asList(rootInfo, a, b, f1, f2, f3)) {
+        for (IgfsEntryInfo info : Arrays.asList(rootInfo, a, b, f1, f2, f3)) {
             assertEquals(info, mgr.info(info.id()));
             assertEquals(F.asMap(info.id(), info), mgr.infos(Arrays.asList(info.id())));
         }

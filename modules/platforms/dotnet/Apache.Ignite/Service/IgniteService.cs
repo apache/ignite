@@ -25,7 +25,6 @@ namespace Apache.Ignite.Service
     using System.Runtime.InteropServices;
     using System.ServiceProcess;
     using System.Text;
-    using Apache.Ignite.Config;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Common;
 
@@ -35,21 +34,21 @@ namespace Apache.Ignite.Service
     internal class IgniteService : ServiceBase
     {
         /** Service name. */
-        internal static readonly string SvcName = "Apache Ignite.NET";
+        private static readonly string SvcName = "Apache Ignite.NET";
 
         /** Service display name. */
-        internal static readonly string SvcDisplayName = "Apache Ignite.NET " + 
+        private static readonly string SvcDisplayName = "Apache Ignite.NET " + 
             Assembly.GetExecutingAssembly().GetName().Version.ToString(4);
 
         /** Service description. */
-        internal static readonly string SvcDesc = "Apache Ignite.NET Service.";
+        private static readonly string SvcDesc = "Apache Ignite.NET Service.";
 
         /** Current executable name. */
-        internal static readonly string ExeName =
+        private static readonly string ExeName =
             new FileInfo(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath).FullName;
 
         /** Current executable fully qualified name. */
-        internal static readonly string FullExeName = Path.GetFileName(FullExeName);
+        private static readonly string FullExeName = Path.GetFileName(FullExeName);
 
         /** Ignite configuration to start with. */
         private readonly IgniteConfiguration _cfg;
@@ -81,8 +80,8 @@ namespace Apache.Ignite.Service
         /// <summary>
         /// Install service programmatically.
         /// </summary>
-        /// <param name="cfg">Ignite configuration.</param>
-        internal static void DoInstall(IgniteConfiguration cfg)
+        /// <param name="args">The arguments.</param>
+        internal static void DoInstall(Tuple<string, string>[] args)
         {
             // 1. Check if already defined.
             if (ServiceController.GetServices().Any(svc => SvcName.Equals(svc.ServiceName)))
@@ -92,8 +91,6 @@ namespace Apache.Ignite.Service
             }
 
             // 2. Create startup arguments.
-            var args = ArgsConfigurator.ToArgs(cfg);
-
             if (args.Length > 0)
             {
                 Console.WriteLine("Installing \"" + SvcName + "\" service with the following startup " +
@@ -140,13 +137,13 @@ namespace Apache.Ignite.Service
         /// Native service installation.
         /// </summary>
         /// <param name="args">Arguments.</param>
-        private static void Install0(string[] args)
+        private static void Install0(Tuple<string, string>[] args)
         {
             // 1. Prepare arguments.
             var binPath = new StringBuilder(FullExeName).Append(" ").Append(IgniteRunner.Svc);
 
             foreach (var arg in args)
-                binPath.Append(" ").Append(arg);
+                binPath.Append(" ").AppendFormat("-{0}={1}", arg.Item1, arg.Item2);
 
             // 2. Get SC manager.
             var scMgr = OpenServiceControlManager();

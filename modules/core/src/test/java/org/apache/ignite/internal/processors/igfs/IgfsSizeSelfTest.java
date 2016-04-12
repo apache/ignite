@@ -17,17 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -54,6 +43,18 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jsr166.ThreadLocalRandom8;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -505,12 +506,12 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         os.write(chunk((int)igfsMaxData));
         os.close();
 
-        final IgniteCache<IgniteUuid, IgfsFileInfo> metaCache = igfs.context().kernalContext().cache().jcache(
+        final IgniteCache<IgniteUuid, IgfsEntryInfo> metaCache = igfs.context().kernalContext().cache().jcache(
             igfs.configuration().getMetaCacheName());
 
         // Start a transaction in a separate thread which will lock file ID.
         final IgniteUuid id = igfs.context().meta().fileId(path);
-        final IgfsFileInfo info = igfs.context().meta().info(id);
+        final IgfsEntryInfo info = igfs.context().meta().info(id);
 
         final AtomicReference<Throwable> err = new AtomicReference<>();
 
@@ -543,15 +544,15 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
                     new IgfsListingEntry(info));
 
                 // Clear root listing.
-                metaCache.put(IgfsUtils.ROOT_ID, new IgfsFileInfo(IgfsUtils.ROOT_ID));
+                metaCache.put(IgfsUtils.ROOT_ID, IgfsUtils.createDirectory(IgfsUtils.ROOT_ID));
 
                 // Add file to trash listing.
-                IgfsFileInfo trashInfo = metaCache.get(trashId);
+                IgfsEntryInfo trashInfo = metaCache.get(trashId);
 
                 if (trashInfo == null)
-                    metaCache.put(trashId, new IgfsFileInfo(listing, new IgfsFileInfo(trashId)));
+                    metaCache.put(trashId, IgfsUtils.createDirectory(trashId).listing(listing));
                 else
-                    metaCache.put(trashId, new IgfsFileInfo(listing, trashInfo));
+                    metaCache.put(trashId, trashInfo.listing(listing));
 
                 tx.commit();
             }

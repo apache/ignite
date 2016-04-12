@@ -17,17 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.Cache;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -46,6 +35,7 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -55,6 +45,18 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.Cache;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -227,8 +229,8 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
             IgfsFileImpl info = (IgfsFileImpl)igfs.info(path);
 
             for (int i = 0; i < nodesCount(); i++) {
-                IgfsFileInfo fileInfo =
-                    (IgfsFileInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), ONHEAP_PEEK_MODES, null);
+                IgfsEntryInfo fileInfo =
+                    (IgfsEntryInfo)grid(i).cachex(metaCacheName).localPeek(info.fileId(), ONHEAP_PEEK_MODES, null);
 
                 assertNotNull(fileInfo);
                 assertNotNull(fileInfo.listing());
@@ -693,10 +695,10 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         IgniteUuid fileId = U.field(igfs.info(path), "fileId");
 
-        GridCacheAdapter<IgniteUuid, IgfsFileInfo> metaCache = ((IgniteKernal)grid(0)).internalCache(META_CACHE_NAME);
+        GridCacheAdapter<IgniteUuid, IgfsEntryInfo> metaCache = ((IgniteKernal)grid(0)).internalCache(META_CACHE_NAME);
         GridCacheAdapter<IgfsBlockKey, byte[]> dataCache = ((IgniteKernal)grid(0)).internalCache(DATA_CACHE_NAME);
 
-        IgfsFileInfo info = metaCache.get(fileId);
+        IgfsEntryInfo info = metaCache.get(fileId);
 
         assertNotNull(info);
         assertTrue(info.isFile());
@@ -778,14 +780,18 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         assert !igfs.exists(path(dirPath));
         assert !igfs.exists(path(filePath));
 
-        int metaSize = 0;
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                int metaSize = 0;
 
-        for (Object metaId : grid(0).cachex(igfs.configuration().getMetaCacheName()).keySet()) {
-            if (!IgfsUtils.isRootOrTrashId((IgniteUuid)metaId))
-                metaSize++;
-        }
+                for (Object metaId : grid(0).cachex(igfs.configuration().getMetaCacheName()).keySet()) {
+                    if (!IgfsUtils.isRootOrTrashId((IgniteUuid)metaId))
+                        metaSize++;
+                }
 
-        assert metaSize == 0;
+                return metaSize == 0;
+            }
+        }, 5000);
     }
 
     /**

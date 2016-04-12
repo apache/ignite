@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.cache.VisorCache;
 import org.apache.ignite.internal.visor.cache.VisorCacheV2;
+import org.apache.ignite.internal.visor.cache.VisorCacheV3;
 import org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsEndpoint;
@@ -52,6 +53,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
     /** */
     private static final IgniteProductVersion VER_1_4_1 = IgniteProductVersion.fromString("1.4.1");
+
+    /** */
+    private static final IgniteProductVersion VER_1_5_9 = IgniteProductVersion.fromString("1.5.9");
 
     /**
      * Create job with given argument.
@@ -120,6 +124,18 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     }
 
     /**
+     * @param ver Version to check.
+     * @return {@code true} if compatible.
+     */
+    private boolean compatibleWith(IgniteProductVersion ver) {
+        for (ClusterNode node : ignite.cluster().nodes())
+            if (node.version().compareToIgnoreTimestamp(ver) <= 0)
+                return true;
+
+        return false;
+    }
+
+    /**
      * Collect caches.
      *
      * @param res Job result.
@@ -136,18 +152,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                     long start0 = U.currentTimeMillis();
 
                     try {
-                        boolean compatibility = false;
-
-                        for (ClusterNode node : ignite.cluster().nodes()) {
-                            if (node.version().compareToIgnoreTimestamp(VER_1_4_1) <= 0) {
-                                compatibility = true;
-
-                                break;
-                            }
-                        }
-
-                        VisorCache cache = (compatibility ? new VisorCache() : new VisorCacheV2())
-                                .from(ignite, cacheName, arg.sample());
+                        VisorCache cache = (compatibleWith(VER_1_4_1) ? new VisorCache() :
+                                compatibleWith(VER_1_5_9) ? new VisorCacheV2() : new VisorCacheV3())
+                                    .from(ignite, cacheName, arg.sample());
 
                         if (cache != null)
                             res.caches().add(cache);

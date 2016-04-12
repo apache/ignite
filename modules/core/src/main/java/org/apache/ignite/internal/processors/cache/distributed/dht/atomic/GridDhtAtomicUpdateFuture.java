@@ -135,9 +135,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         keys = new ArrayList<>(updateReq.keys().size());
         mappings = U.newHashMap(updateReq.keys().size());
 
-        boolean topLocked = updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest());
-
-        waitForExchange = !topLocked;
+        waitForExchange = !(updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest()));
     }
 
     /**

@@ -110,9 +110,9 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         TestRecordingCommunicationSpi spi1 = (TestRecordingCommunicationSpi)g1.configuration().getCommunicationSpi();
         TestRecordingCommunicationSpi spi2 = (TestRecordingCommunicationSpi)g2.configuration().getCommunicationSpi();
 
-        info(spi0.recordedMessages().size() + " " +
-            spi1.recordedMessages().size() + " " +
-            spi2.recordedMessages().size());
+        info(spi0.recordedMessages(false).size() + " " +
+            spi1.recordedMessages(false).size() + " " +
+            spi2.recordedMessages(false).size());
 
         checkCache(c0, cnt);
         checkCache(c1, cnt);

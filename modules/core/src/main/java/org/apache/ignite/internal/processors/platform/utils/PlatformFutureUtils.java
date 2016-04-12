@@ -182,7 +182,7 @@ public class PlatformFutureUtils {
      * @param writer Optional writer.
      */
     @SuppressWarnings("unchecked")
-    private static void listen(final PlatformContext ctx, PlatformListenable listenable, final long futPtr, final
+    public static void listen(final PlatformContext ctx, PlatformListenable listenable, final long futPtr, final
         int typ, @Nullable final Writer writer, final PlatformAbstractTarget target) {
         final PlatformCallbackGateway gate = ctx.gateway();
 

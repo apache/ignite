@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Provides mapping between Java and .NET basic types.
@@ -43,7 +44,18 @@ namespace Apache.Ignite.Core.Impl.Binary
             {typeof (double), "java.lang.Double"},
             {typeof (string), "java.lang.String"},
             {typeof (decimal), "java.math.BigDecimal"},
-            {typeof (Guid), "java.util.UUID"}
+            {typeof (Guid), "java.util.UUID"},
+            {typeof (DateTime), "java.sql.Timestamp"},
+            {typeof (DateTime?), "java.sql.Timestamp"},
+        };
+
+        /** */
+        private static readonly Dictionary<Type, Type> IndirectMappingTypes = new Dictionary<Type, Type>
+        {
+            {typeof (sbyte), typeof (byte)},
+            {typeof (ushort), typeof (short)},
+            {typeof (uint), typeof (int)},
+            {typeof (ulong), typeof (long)}
         };
 
         /** */
@@ -55,15 +67,26 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /// <summary>
         /// Gets the corresponding Java type name.
+        /// Logs a warning for indirectly mapped types.
         /// </summary>
-        public static string GetJavaTypeName(Type type)
+        public static string GetJavaTypeNameAndLogWarning(Type type)
         {
             if (type == null)
                 return null;
 
             string res;
 
-            return NetToJava.TryGetValue(type, out res) ? res : null;
+            if (!NetToJava.TryGetValue(type, out res))
+                return null;
+
+            Type directType;
+
+            if (IndirectMappingTypes.TryGetValue(type, out directType))
+                Logger.LogWarning("Type '{0}' maps to Java type '{1}' using unchecked conversion. " +
+                                  "This may cause issues in SQL queries. " +
+                                  "You can use '{2}' instead to achieve direct mapping.", type, res, directType);
+
+            return res;
         }
 
         /// <summary>

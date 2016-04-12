@@ -55,6 +55,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
@@ -72,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
 
@@ -146,10 +148,13 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private transient int cacheId;
 
     /** */
-    private Map<Integer, Long> initUpdCntrs;
+    private transient volatile Map<Integer, Long> initUpdCntrs;
 
     /** */
-    private AffinityTopologyVersion initTopVer;
+    private transient volatile Map<UUID, Map<Integer, Long>> initUpdCntrsPerNode;
+
+    /** */
+    private transient volatile AffinityTopologyVersion initTopVer;
 
     /** */
     private transient boolean ignoreClsNotFound;
@@ -264,9 +269,11 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<Integer, Long> cntrs) {
-        this.initTopVer = topVer;
+    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<UUID, Map<Integer, Long>> cntrsPerNode,
+        Map<Integer, Long> cntrs) {
+        this.initUpdCntrsPerNode = cntrsPerNode;
         this.initUpdCntrs = cntrs;
+        this.initTopVer = topVer;
     }
 
     /** {@inheritDoc} */
@@ -295,20 +302,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
         assert !skipPrimaryCheck || loc;
-
-        final GridCacheContext<K, V> cctx = cacheContext(ctx);
-
-        if (!internal && cctx != null && initUpdCntrs != null) {
-            Map<Integer, Long> map = cctx.topology().updateCounters();
-
-            for (Map.Entry<Integer, Long> e : map.entrySet()) {
-                Long cntr0 = initUpdCntrs.get(e.getKey());
-                Long cntr1 = e.getValue();
-
-                if (cntr0 == null || cntr1 > cntr0)
-                    initUpdCntrs.put(e.getKey(), cntr1);
-            }
-        }
 
         CacheContinuousQueryListener<K, V> lsnr = new CacheContinuousQueryListener<K, V>() {
             @Override public void onExecution() {
@@ -370,26 +363,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     if (primary || skipPrimaryCheck) {
                         if (loc) {
                             if (!locCache) {
-                                Collection<CacheContinuousQueryEntry> entries = handleEvent(ctx, entry);
+                                Collection<CacheEntryEvent<? extends K, ? extends V>> entries = handleEvent(ctx, entry);
 
                                 if (!entries.isEmpty()) {
-                                    final IgniteCache cache = cctx.kernalContext().cache().jcache(cctx.name());
-
-                                    Iterable<CacheEntryEvent<? extends K, ? extends V>> evts = F.viewReadOnly(entries,
-                                        new C1<CacheContinuousQueryEntry, CacheEntryEvent<? extends K, ? extends V>>() {
-                                            @Override public CacheEntryEvent<? extends K, ? extends V> apply(
-                                                CacheContinuousQueryEntry e) {
-                                                return new CacheContinuousQueryEvent<>(cache, cctx, e);
-                                            }
-                                        },
-                                        new IgnitePredicate<CacheContinuousQueryEntry>() {
-                                            @Override public boolean apply(CacheContinuousQueryEntry entry) {
-                                                return !entry.isFiltered();
-                                            }
-                                        }
-                                    );
-
-                                    locLsnr.onUpdated(evts);
+                                    locLsnr.onUpdated(entries);
 
                                     if (!internal && !skipPrimaryCheck)
                                         sendBackupAcknowledge(ackBuf.onAcknowledged(entry), routineId, ctx);
@@ -561,6 +538,20 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             entry.prepareMarshal(cctx);
     }
 
+    /**
+     * Wait topology.
+     */
+    public void waitTopologyFuture(GridKernalContext ctx) throws IgniteCheckedException {
+        GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+        if (!cctx.isLocal()) {
+            cacheContext(ctx).affinity().affinityReadyFuture(initTopVer).get();
+
+            for (int partId = 0; partId < cacheContext(ctx).affinity().partitions(); partId++)
+                getOrCreatePartitionRecovery(ctx, partId);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
         // No-op.
@@ -599,7 +590,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         final GridCacheContext cctx = cacheContext(ctx);
 
-        Collection<CacheContinuousQueryEntry> entries0 = new ArrayList<>();
+        Collection<CacheEntryEvent<? extends K, ? extends V>> entries0 = new ArrayList<>();
 
         for (CacheContinuousQueryEntry e : entries) {
             GridCacheDeploymentManager depMgr = cctx.deploy();
@@ -628,24 +619,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             }
         }
 
-        final IgniteCache cache = cctx.kernalContext().cache().jcache(cctx.name());
-
-        if (!entries0.isEmpty()) {
-            Iterable<CacheEntryEvent<? extends K, ? extends V>> evts = F.viewReadOnly(entries0,
-                new C1<CacheContinuousQueryEntry, CacheEntryEvent<? extends K, ? extends V>>() {
-                    @Override public CacheEntryEvent<? extends K, ? extends V> apply(CacheContinuousQueryEntry e) {
-                        return new CacheContinuousQueryEvent<>(cache, cctx, e);
-                    }
-                },
-                new IgnitePredicate<CacheContinuousQueryEntry>() {
-                    @Override public boolean apply(CacheContinuousQueryEntry entry) {
-                        return !entry.isFiltered();
-                    }
-                }
-            );
-
-            locLsnr.onUpdated(evts);
-        }
+        if (!entries0.isEmpty())
+            locLsnr.onUpdated(entries0);
     }
 
     /**
@@ -653,34 +628,76 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param e entry.
      * @return Entry collection.
      */
-    private Collection<CacheContinuousQueryEntry> handleEvent(GridKernalContext ctx,
+    private Collection<CacheEntryEvent<? extends K, ? extends V>> handleEvent(GridKernalContext ctx,
         CacheContinuousQueryEntry e) {
         assert e != null;
+
+        GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+        final IgniteCache cache = cctx.kernalContext().cache().jcache(cctx.name());
 
         if (internal) {
             if (e.isFiltered())
                 return Collections.emptyList();
             else
-                return F.asList(e);
+                return F.<CacheEntryEvent<? extends K, ? extends V>>asList(
+                    new CacheContinuousQueryEvent<K, V>(cache, cctx, e));
         }
 
         // Initial query entry or evicted entry. These events should be fired immediately.
-        if (e.updateCounter() == -1L)
-            return F.asList(e);
+        if (e.updateCounter() == -1L) {
+            return !e.isFiltered() ? F.<CacheEntryEvent<? extends K, ? extends V>>asList(
+                new CacheContinuousQueryEvent<K, V>(cache, cctx, e)) :
+                Collections.<CacheEntryEvent<? extends K, ? extends V>>emptyList();
+        }
 
-        PartitionRecovery rec = rcvs.get(e.partition());
+        PartitionRecovery rec = getOrCreatePartitionRecovery(ctx, e.partition());
+
+        return rec.collectEntries(cctx, cache, e);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param partId Partition id.
+     * @return Partition recovery.
+     */
+    @NotNull private PartitionRecovery getOrCreatePartitionRecovery(GridKernalContext ctx, int partId) {
+        PartitionRecovery rec = rcvs.get(partId);
 
         if (rec == null) {
-            rec = new PartitionRecovery(ctx.log(getClass()), initTopVer,
-                initUpdCntrs == null ? null : initUpdCntrs.get(e.partition()));
+            Long partCntr = null;
 
-            PartitionRecovery oldRec = rcvs.putIfAbsent(e.partition(), rec);
+            AffinityTopologyVersion initTopVer0 = initTopVer;
+
+            if (initTopVer0 != null) {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                GridCacheAffinityManager aff = cctx.affinity();
+
+                if (initUpdCntrsPerNode != null) {
+                    for (ClusterNode node : aff.nodes(partId, initTopVer)) {
+                        Map<Integer, Long> map = initUpdCntrsPerNode.get(node.id());
+
+                        if (map != null) {
+                            partCntr = map.get(partId);
+
+                            break;
+                        }
+                    }
+                }
+                else if (initUpdCntrs != null)
+                    partCntr = initUpdCntrs.get(partId);
+            }
+
+            rec = new PartitionRecovery(ctx.log(getClass()), initTopVer0, partCntr);
+
+            PartitionRecovery oldRec = rcvs.putIfAbsent(partId, rec);
 
             if (oldRec != null)
                 rec = oldRec;
         }
 
-        return rec.collectEntries(e);
+        return rec;
     }
 
     /**
@@ -759,19 +776,24 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         /**
          * Add continuous entry.
          *
+         * @param cctx Cache context.
+         * @param cache Cache.
          * @param entry Cache continuous query entry.
-         * @return Collection entries which will be fired.
+         * @return Collection entries which will be fired. This collection should contains only non-filtered events.
          */
-        public Collection<CacheContinuousQueryEntry> collectEntries(CacheContinuousQueryEntry entry) {
+        public <K, V> Collection<CacheEntryEvent<? extends K, ? extends V>> collectEntries(GridCacheContext cctx,
+            IgniteCache cache,
+            CacheContinuousQueryEntry entry) {
             assert entry != null;
 
             if (entry.topologyVersion() == null) { // Possible if entry is sent from old node.
                 assert entry.updateCounter() == 0L : entry;
 
-                return F.asList(entry);
+                return F.<CacheEntryEvent<? extends K, ? extends V>>
+                    asList(new CacheContinuousQueryEvent<K, V>(cache, cctx, entry));
             }
 
-            List<CacheContinuousQueryEntry> entries;
+            List<CacheEntryEvent<? extends K, ? extends V>> entries;
 
             synchronized (pendingEvts) {
                 // Received first event.
@@ -780,7 +802,10 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     curTop = entry.topologyVersion();
 
-                    return F.asList(entry);
+                    return !entry.isFiltered() ?
+                        F.<CacheEntryEvent<? extends K, ? extends V>>
+                            asList(new CacheContinuousQueryEvent<K, V>(cache, cctx, entry)) :
+                        Collections.<CacheEntryEvent<? extends K, ? extends V>>emptyList();
                 }
 
                 if (curTop.compareTo(entry.topologyVersion()) < 0) {
@@ -789,7 +814,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                         for (CacheContinuousQueryEntry evt : pendingEvts.values()) {
                             if (evt != HOLE && !evt.isFiltered())
-                                entries.add(evt);
+                                entries.add(new CacheContinuousQueryEvent<K, V>(cache, cctx, evt));
                         }
 
                         pendingEvts.clear();
@@ -798,7 +823,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                         lastFiredEvt = entry.updateCounter();
 
-                        entries.add(entry);
+                        if (!entry.isFiltered())
+                            entries.add(new CacheContinuousQueryEvent<K, V>(cache, cctx, entry));
 
                         return entries;
                     }
@@ -837,7 +863,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         Map.Entry<Long, CacheContinuousQueryEntry> e = iter.next();
 
                         if (e.getValue() != HOLE && !e.getValue().isFiltered())
-                            entries.add(e.getValue());
+                            entries.add(new CacheContinuousQueryEvent<K, V>(cache, cctx, e.getValue()));
 
                         lastFiredEvt = e.getKey();
 
@@ -853,7 +879,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                             ++lastFiredEvt;
 
                             if (e.getValue() != HOLE && !e.getValue().isFiltered())
-                                entries.add(e.getValue());
+                                entries.add(new CacheContinuousQueryEvent<K, V>(cache, cctx, e.getValue()));
 
                             iter.remove();
                         }

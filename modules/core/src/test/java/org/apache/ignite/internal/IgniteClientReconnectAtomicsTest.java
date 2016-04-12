@@ -193,7 +193,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
         Ignite srv = clientRouter(client);
 
-        BlockTpcCommunicationSpi commSpi = commSpi(srv);
+        BlockTcpCommunicationSpi commSpi = commSpi(srv);
 
         final IgniteAtomicSequence clientAtomicSeq = client.atomicSequence("atomicSeqInProg", 0, true);
 
@@ -361,7 +361,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
         assertTrue(srvAtomicRef.compareAndSet("2st value", "3st value"));
         assertEquals("3st value", srvAtomicRef.get());
 
-        BlockTpcCommunicationSpi servCommSpi = commSpi(srv);
+        BlockTcpCommunicationSpi servCommSpi = commSpi(srv);
 
         servCommSpi.blockMessage(GridNearLockResponse.class);
 
@@ -521,7 +521,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
         assertEquals(2, srvAtomicStamped.value());
         assertEquals(2, srvAtomicStamped.stamp());
 
-        BlockTpcCommunicationSpi servCommSpi = commSpi(srv);
+        BlockTcpCommunicationSpi servCommSpi = commSpi(srv);
 
         servCommSpi.blockMessage(GridNearLockResponse.class);
 
@@ -649,7 +649,7 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
         Ignite srv = clientRouter(client);
 
-        BlockTpcCommunicationSpi commSpi = commSpi(srv);
+        BlockTcpCommunicationSpi commSpi = commSpi(srv);
 
         final IgniteAtomicLong clientAtomicLong = client.atomicLong("atomicLongInProggress", 0, true);
 
