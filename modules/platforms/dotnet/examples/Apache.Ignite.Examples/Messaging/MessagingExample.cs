@@ -16,7 +16,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using Apache.Ignite.Core;
 using Apache.Ignite.ExamplesDll.Messaging;
@@ -42,13 +41,7 @@ namespace Apache.Ignite.Examples.Messaging
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\examples-config.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx512m" }
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
             {
                 var remotes = ignite.GetCluster().ForRemotes();
 

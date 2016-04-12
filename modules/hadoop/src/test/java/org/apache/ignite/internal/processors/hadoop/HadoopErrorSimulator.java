@@ -6,8 +6,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Error simulator.
  */
-public class ErrorSimulator {
-
+public class HadoopErrorSimulator {
     /**
      * Error kind.
      */
@@ -25,7 +24,7 @@ public class ErrorSimulator {
     /**
      * No-op instance.
      */
-    public static final ErrorSimulator noopInstance = new ErrorSimulator();
+    public static final HadoopErrorSimulator noopInstance = new HadoopErrorSimulator();
 
     /**
      * Creates simulator of given kind with given stage bits.
@@ -34,42 +33,42 @@ public class ErrorSimulator {
      * @param bits The stage bits.
      * @return The simulator.
      */
-    public static ErrorSimulator create(Kind kind, int bits) {
+    public static HadoopErrorSimulator create(Kind kind, int bits) {
         switch (kind) {
             case Noop:
                 return noopInstance;
             case Runtime:
-                return new RuntimeExceptionBitErrorSimulator(bits);
+                return new RuntimeExceptionBitHadoopErrorSimulator(bits);
             case IOException:
-                return new IOExceptionBitErrorSimulator(bits);
+                return new IOExceptionBitHadoopErrorSimulator(bits);
             case Error:
-                return new ErrorBitErrorSimulator(bits);
+                return new ErrorBitHadoopErrorSimulator(bits);
             default:
                 throw new IllegalStateException("Unknown kind: " + kind);
         }
     }
 
     /** Instance ref. */
-    private static final AtomicReference<ErrorSimulator> ref = new AtomicReference<>(noopInstance);
+    private static final AtomicReference<HadoopErrorSimulator> ref = new AtomicReference<>(noopInstance);
 
     /**
      * Gets instance.
      */
-    public static ErrorSimulator instance() {
+    public static HadoopErrorSimulator instance() {
         return ref.get();
     }
 
     /**
      * Sets instance.
      */
-    public static boolean setInstance(ErrorSimulator expect, ErrorSimulator update) {
+    public static boolean setInstance(HadoopErrorSimulator expect, HadoopErrorSimulator update) {
         return ref.compareAndSet(expect, update);
     }
 
     /**
      * Constructor.
      */
-    private ErrorSimulator() {
+    private HadoopErrorSimulator() {
         // noop
     }
 
@@ -155,7 +154,7 @@ public class ErrorSimulator {
     /**
      * Runtime error simulator.
      */
-    public static class RuntimeExceptionBitErrorSimulator extends ErrorSimulator {
+    public static class RuntimeExceptionBitHadoopErrorSimulator extends HadoopErrorSimulator {
 
         /** Stage bits. */
         private final int bits;
@@ -163,7 +162,7 @@ public class ErrorSimulator {
         /**
          * Constructor.
          */
-        protected RuntimeExceptionBitErrorSimulator(int b) {
+        protected RuntimeExceptionBitHadoopErrorSimulator(int b) {
             bits = b;
         }
 
@@ -265,11 +264,11 @@ public class ErrorSimulator {
     /**
      * Error simulator.
      */
-    public static class ErrorBitErrorSimulator extends RuntimeExceptionBitErrorSimulator {
+    public static class ErrorBitHadoopErrorSimulator extends RuntimeExceptionBitHadoopErrorSimulator {
         /**
          * Constructor.
          */
-        public ErrorBitErrorSimulator(int bits) {
+        public ErrorBitHadoopErrorSimulator(int bits) {
             super(bits);
         }
 
@@ -282,11 +281,11 @@ public class ErrorSimulator {
     /**
      * IOException simulator.
      */
-    public static class IOExceptionBitErrorSimulator extends RuntimeExceptionBitErrorSimulator {
+    public static class IOExceptionBitHadoopErrorSimulator extends RuntimeExceptionBitHadoopErrorSimulator {
         /**
          * Constructor.
          */
-        public IOExceptionBitErrorSimulator(int bits) {
+        public IOExceptionBitHadoopErrorSimulator(int bits) {
             super(bits);
         }
 
