@@ -61,8 +61,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Initializes a new instance of the <see cref="PlatformJavaObjectFactoryProxy"/> class.
         /// </summary>
-        /// <param name="reader">The reader.</param>
-        public PlatformJavaObjectFactoryProxy(IBinaryReader reader)
+        public PlatformJavaObjectFactoryProxy()
         {
             throw new InvalidOperationException(GetType() + " should never be deserialized on .NET side.");
         }
