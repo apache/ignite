@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.redis;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.RedisConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -79,9 +79,12 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
 
         assert cfg.getConnectorConfiguration() == null;
 
-        RedisConfiguration redisCfg = new RedisConfiguration();
+        ConnectorConfiguration redisCfg = new ConnectorConfiguration();
 
-        cfg.setRedisConfiguration(redisCfg);
+        redisCfg.setHost(HOST);
+        redisCfg.setPort(PORT);
+
+        cfg.setConnectorConfiguration(redisCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

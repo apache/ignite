@@ -411,9 +411,6 @@ public class IgniteConfiguration {
     /** Client access configuration. */
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
 
-    /** Redis protocol configuration. */
-    private RedisConfiguration redisCfg;
-
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
@@ -521,7 +518,6 @@ public class IgniteConfiguration {
         pluginCfgs = cfg.getPluginConfigurations();
         pubPoolSize = cfg.getPublicThreadPoolSize();
         rebalanceThreadPoolSize = cfg.getRebalanceThreadPoolSize();
-        redisCfg = cfg.getRedisConfiguration();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
         segResolveAttempts = cfg.getSegmentationResolveAttempts();
@@ -2297,23 +2293,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setConnectorConfiguration(ConnectorConfiguration connectorCfg) {
         this.connectorCfg = connectorCfg;
-
-        return this;
-    }
-
-    /**
-     * @return Redis configuration.
-     */
-    public RedisConfiguration getRedisConfiguration() {
-        return redisCfg;
-    }
-
-    /**
-     * @param redisCfg Redis configuration.
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setRedisConfiguration(RedisConfiguration redisCfg) {
-        this.redisCfg = redisCfg;
 
         return this;
     }

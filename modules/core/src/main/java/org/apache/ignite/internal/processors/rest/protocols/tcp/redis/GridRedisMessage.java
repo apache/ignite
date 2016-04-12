@@ -15,19 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.redis;
+package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
-import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 
 /**
  * Message to communicate with Redis client. Contains command, its attributes and response.
  */
-public class GridRedisMessage implements Serializable {
+public class GridRedisMessage implements GridClientMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Request byte. */
+    public static final byte RESP_REQ_FLAG = GridRedisProtocolParser.ARRAY;
 
     private static final int CMD_POS = 0;
 
@@ -73,5 +77,45 @@ public class GridRedisMessage implements Serializable {
 
     @Override public String toString() {
         return "GridRedisMessage [msg: " + msgParts + "]";
+    }
+
+    /** {@inheritDoc} */
+    @Override public long requestId() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void requestId(long reqId) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID clientId() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clientId(UUID id) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID destinationId() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destinationId(UUID id) {
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] sessionToken() {
+        return new byte[0];
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sessionToken(byte[] sesTok) {
+
     }
 }

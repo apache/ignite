@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.redis.GridRedisProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
@@ -240,13 +239,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return REST processor.
      */
     public GridRestProcessor rest();
-
-    /**
-     * Gets REdis Serialization Protocol (RESP) processor.
-     *
-     * @return RESP processor.
-     */
-    public GridRedisProcessor redis();
 
     /**
      * Gets segmentation processor.
@@ -515,14 +507,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * messages.
      */
     public ExecutorService getRestExecutorService();
-
-    /**
-     * Should return an instance of fully configured thread pool to be used for
-     * processing of Redis client messages.
-     *
-     * @return Thread pool implementation to be used for processing of Redis client messages.
-     */
-    public ExecutorService getRedisExecutorService();
 
     /**
      * Gets exception registry.

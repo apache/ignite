@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.redis.handler;
+package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler;
 
 import java.util.Collection;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.redis.GridRedisCommand;
-import org.apache.ignite.internal.processors.redis.GridRedisMessage;
-import org.apache.ignite.internal.processors.redis.GridRedisProtocolParser;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.redis.GridRedisCommand.ECHO;
-import static org.apache.ignite.internal.processors.redis.GridRedisCommand.PING;
-import static org.apache.ignite.internal.processors.redis.GridRedisCommand.QUIT;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.ECHO;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.PING;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.QUIT;
 
 /**
  * Redis connection handler.

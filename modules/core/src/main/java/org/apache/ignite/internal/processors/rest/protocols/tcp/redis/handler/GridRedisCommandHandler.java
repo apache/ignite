@@ -15,32 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.redis;
+package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler;
+
+import java.util.Collection;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 
 /**
- * Supported Redis commands.
+ * Command handler.
  */
-public enum GridRedisCommand {
-    // Connections.
-    /** Ping. */
-    PING("PING"),
-    /** Connection close. */
-    QUIT("QUIT"),
-    /** Echo. */
-    ECHO("ECHO"),
+public interface GridRedisCommandHandler {
+    /**
+     * @return Collection of supported commands.
+     */
+    Collection<GridRedisCommand> supportedCommands();
 
-    // Cache operations.
-    /** Get. */
-    GET("GET");
-
-    /** String for command. */
-    private final String cmd;
-
-    GridRedisCommand(String cmd) {
-        this.cmd = cmd;
-    }
-
-    public String cmd() {
-        return cmd;
-    }
+    /**
+     * @param msg Request message.
+     * @return Future.
+     */
+    IgniteInternalFuture<GridRedisMessage> handleAsync(GridRedisMessage msg);
 }

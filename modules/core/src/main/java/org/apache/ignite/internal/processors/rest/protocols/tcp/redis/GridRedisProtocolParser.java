@@ -15,22 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.redis;
+package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.nio.GridNioParser;
-import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Parser to decode/encode Redis protocol requests.
  */
-public class GridRedisProtocolParser implements GridNioParser {
-    private final IgniteLogger log;
-
+public class GridRedisProtocolParser {
     /** + prefix. */
     private static final byte SIMPLE_STRING = 43;
 
@@ -41,7 +34,7 @@ public class GridRedisProtocolParser implements GridNioParser {
     private static final byte INTEGER = 58;
 
     /** * */
-    private static final byte ARRAY = 42;
+    static final byte ARRAY = 42;
 
     /** - */
     private static final byte ERROR = 45;
@@ -55,27 +48,14 @@ public class GridRedisProtocolParser implements GridNioParser {
     /** CRLF. */
     private static final byte[] CRLF = new byte[] {13, 10};
 
-    public GridRedisProtocolParser(IgniteLogger log) {
-        this.log = log;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public GridRedisMessage decode(GridNioSession ses, ByteBuffer buf)
-        throws IOException, IgniteCheckedException {
-        return readArray(buf);
-    }
-
-    /** {@inheritDoc} */
-    @Override public ByteBuffer encode(GridNioSession ses, Object msg0) throws IOException, IgniteCheckedException {
-        assert msg0 != null;
-
-        GridRedisMessage msg = (GridRedisMessage)msg0;
-
-        return msg.getResponse();
-    }
-
-    private GridRedisMessage readArray(ByteBuffer buf) throws IgniteCheckedException {
-        System.out.println(new String(buf.array()));
+    /**
+     * Reads array.
+     *
+     * @param buf
+     * @return
+     * @throws IgniteCheckedException
+     */
+    public static GridRedisMessage readArray(ByteBuffer buf) throws IgniteCheckedException {
         byte b = buf.get();
 
         if (b != ARRAY)
@@ -91,7 +71,14 @@ public class GridRedisProtocolParser implements GridNioParser {
         return msg;
     }
 
-    private String readBulkStr(ByteBuffer buf) throws IgniteCheckedException {
+    /**
+     * Reads a bulk string.
+     *
+     * @param buf
+     * @return
+     * @throws IgniteCheckedException
+     */
+    public static String readBulkStr(ByteBuffer buf) throws IgniteCheckedException {
         byte b = buf.get();
 
         if (b != BULK_STRING)
@@ -109,10 +96,12 @@ public class GridRedisProtocolParser implements GridNioParser {
     }
 
     /**
+     * Counts elements.
+     *
      * @param buf
      * @return Count of elements.
      */
-    private int elCnt(ByteBuffer buf) throws IgniteCheckedException {
+    private static int elCnt(ByteBuffer buf) throws IgniteCheckedException {
         byte[] arrLen = new byte[9];
 
         int idx = 0;
