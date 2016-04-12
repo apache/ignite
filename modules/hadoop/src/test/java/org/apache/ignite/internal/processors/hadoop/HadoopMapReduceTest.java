@@ -37,23 +37,30 @@ public class HadoopMapReduceTest extends HadoopAbstractMapReduceTest {
 
         generateTestFile(inFile.toString(), "red", red, "blue", blue, "green", green, "yellow", yellow );
 
-        for (int i = 0; i <= maxApiModeBits(); i++) {
-            boolean useNewMapper = (i & 1) == 0;
-            boolean useNewCombiner = (i & 2) == 0;
-            boolean useNewReducer = (i & 4) == 0;
+        for (boolean[] apiMode: getApiModes()) {
+            assert apiMode.length == 3;
+
+            boolean useNewMapper = apiMode[0];
+            boolean useNewCombiner = apiMode[1];
+            boolean useNewReducer = apiMode[2];
 
             doTest(inFile, useNewMapper, useNewCombiner, useNewReducer);
         }
     }
 
     /**
-     * Gets max possible value of API mode bits:
-     * 0th bit is old mapper, 1st bit is old combiner, 2nd bit is old reducer.
-     * All values from 0 to the returned value will be tested.
+     * Gets API mode combinations to be tested.
+     * Each boolean[] is { newMapper, newCombiner, newReducer } flag triplet.
      *
-     * @return maximum API bits value to check.
+     * @return Arrays of booleans indicating API combinations to test.
      */
-    protected int maxApiModeBits() {
-        return 7;
+    protected boolean[][] getApiModes() {
+        return new boolean[][] {
+            { false, false, false },
+            { false, false, true },
+            { false, true,  false },
+            { true,  false, false },
+            { true,  true,  true },
+        };
     }
 }

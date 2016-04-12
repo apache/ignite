@@ -34,7 +34,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      * @throws Exception If failed.
      */
     public void testRecoveryAfterAnError0_Runtime() throws Exception {
-            doTestRecoveryAfterAnError(0, ErrorSimulator.Kind.Runtime);
+        doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.Runtime);
     }
 
     /**
@@ -43,7 +43,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      * @throws Exception If failed.
      */
     public void testRecoveryAfterAnError0_IOException() throws Exception {
-            doTestRecoveryAfterAnError(0, ErrorSimulator.Kind.IOException);
+        doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.IOException);
     }
 
     /**
@@ -52,7 +52,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      * @throws Exception If failed.
      */
     public void testRecoveryAfterAnError0_Error() throws Exception {
-            doTestRecoveryAfterAnError(0, ErrorSimulator.Kind.Error);
+        doTestRecoveryAfterAnError(0, HadoopErrorSimulator.Kind.Error);
     }
 
     /**
@@ -61,7 +61,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      * @throws Exception If failed.
      */
     public void testRecoveryAfterAnError7_Runtime() throws Exception {
-        doTestRecoveryAfterAnError(7, ErrorSimulator.Kind.Runtime);
+        doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.Runtime);
     }
     /**
      * Tests recovery.
@@ -69,7 +69,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      * @throws Exception If failed.
      */
     public void testRecoveryAfterAnError7_IOException() throws Exception {
-        doTestRecoveryAfterAnError(7, ErrorSimulator.Kind.IOException);
+        doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.IOException);
     }
     /**
      * Tests recovery.
@@ -77,7 +77,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      * @throws Exception If failed.
      */
     public void testRecoveryAfterAnError7_Error() throws Exception {
-        doTestRecoveryAfterAnError(7, ErrorSimulator.Kind.Error);
+        doTestRecoveryAfterAnError(7, HadoopErrorSimulator.Kind.Error);
     }
 
     /** {@inheritDoc} */
@@ -88,9 +88,9 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
     /**
      * Tests correct work after an error.
      *
-     * @throws Exception
+     * @throws Exception On error.
      */
-    private void doTestRecoveryAfterAnError(int useNewBits, ErrorSimulator.Kind simulatorKind) throws Exception {
+    private void doTestRecoveryAfterAnError(int useNewBits, HadoopErrorSimulator.Kind simulatorKind) throws Exception {
         try {
             IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
@@ -105,12 +105,12 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
             boolean useNewReducer = (useNewBits & 4) == 0;
 
             for (int i = 0; i < 12; i++) {
-                System.out.println("############################ Simulator kind = " + simulatorKind
-                    + ", Stage bits = " + i);
-
                 int bits = 1 << i;
 
-                ErrorSimulator sim = ErrorSimulator.create(simulatorKind, bits);
+                System.out.println("############################ Simulator kind = " + simulatorKind
+                    + ", Stage bits = " + bits);
+
+                HadoopErrorSimulator sim = HadoopErrorSimulator.create(simulatorKind, bits);
 
                 doTestWithErrorSimulator(sim, inFile, useNewMapper, useNewCombiner, useNewReducer);
             }
@@ -123,6 +123,7 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
 
     /**
      * Performs test with given error simulator.
+     *
      * @param sim The simulator.
      * @param inFile Input file.
      * @param useNewMapper If the use new mapper API.
@@ -130,24 +131,24 @@ public class HadoopMapReduceErrorResilienceTest extends HadoopAbstractMapReduceT
      * @param useNewReducer If to use new reducer API.
      * @throws Exception If failed.
      */
-    private void doTestWithErrorSimulator(ErrorSimulator sim, IgfsPath inFile, boolean useNewMapper,
+    private void doTestWithErrorSimulator(HadoopErrorSimulator sim, IgfsPath inFile, boolean useNewMapper,
             boolean useNewCombiner, boolean useNewReducer) throws Exception {
         // Set real simulating error simulator:
-        assertTrue(ErrorSimulator.setInstance(ErrorSimulator.noopInstance, sim));
+        assertTrue(HadoopErrorSimulator.setInstance(HadoopErrorSimulator.noopInstance, sim));
 
         try {
-            // expect failure there:
+            // Expect failure there:
             doTest(inFile, useNewMapper, useNewCombiner, useNewReducer);
         }
         catch (Throwable t) { // This may be an Error.
-            // expected:
-            t.printStackTrace(); // Ignore, continue the test.
+            // Expected:
+            System.out.println(t.toString()); // Ignore, continue the test.
         }
 
         // Set no-op error simulator:
-        assertTrue(ErrorSimulator.setInstance(sim, ErrorSimulator.noopInstance));
+        assertTrue(HadoopErrorSimulator.setInstance(sim, HadoopErrorSimulator.noopInstance));
 
-        // but expect success there:
+        // Expect success there:
         doTest(inFile, useNewMapper, useNewCombiner, useNewReducer);
     }
 }

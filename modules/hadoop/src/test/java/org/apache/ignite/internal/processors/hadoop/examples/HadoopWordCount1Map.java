@@ -27,7 +27,7 @@ import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.Mapper;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.ignite.internal.processors.hadoop.ErrorSimulator;
+import org.apache.ignite.internal.processors.hadoop.HadoopErrorSimulator;
 
 /**
  * Mapper phase of WordCount job.
@@ -58,7 +58,7 @@ public class HadoopWordCount1Map extends MapReduceBase implements Mapper<LongWri
             output.collect(word, one);
         }
 
-        ErrorSimulator.instance().onMap();
+        HadoopErrorSimulator.instance().onMap();
     }
 
     /** {@inheritDoc} */
@@ -67,12 +67,13 @@ public class HadoopWordCount1Map extends MapReduceBase implements Mapper<LongWri
 
         wasConfigured = true;
 
-        ErrorSimulator.instance().onMapConfigure();
+        HadoopErrorSimulator.instance().onMapConfigure();
     }
 
+    /** {@inheritDoc} */
     @Override public void close() throws IOException {
         super.close();
 
-        ErrorSimulator.instance().onMapClose();
+        HadoopErrorSimulator.instance().onMapClose();
     }
 }

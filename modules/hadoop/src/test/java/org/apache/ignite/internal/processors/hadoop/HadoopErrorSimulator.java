@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.hadoop;
 
 import java.io.IOException;
@@ -7,24 +24,11 @@ import java.util.concurrent.atomic.AtomicReference;
  * Error simulator.
  */
 public class HadoopErrorSimulator {
-    /**
-     * Error kind.
-     */
-    public enum Kind {
-        /** No error. */
-        Noop,
-        /** Runtime. */
-        Runtime,
-        /** IOException. */
-        IOException,
-        /** java.lang.Error. */
-        Error
-    }
-
-    /**
-     * No-op instance.
-     */
+    /** No-op singleton instance. */
     public static final HadoopErrorSimulator noopInstance = new HadoopErrorSimulator();
+
+    /** Instance ref. */
+    private static final AtomicReference<HadoopErrorSimulator> ref = new AtomicReference<>(noopInstance);
 
     /**
      * Creates simulator of given kind with given stage bits.
@@ -48,11 +52,8 @@ public class HadoopErrorSimulator {
         }
     }
 
-    /** Instance ref. */
-    private static final AtomicReference<HadoopErrorSimulator> ref = new AtomicReference<>(noopInstance);
-
     /**
-     * Gets instance.
+     * Gets the error simulator instance.
      */
     public static HadoopErrorSimulator instance() {
         return ref.get();
@@ -69,94 +70,119 @@ public class HadoopErrorSimulator {
      * Constructor.
      */
     private HadoopErrorSimulator() {
-        // noop
+        // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
     public void onMapConfigure() {
+        // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
     public void onMapSetup()  throws IOException, InterruptedException {
+        // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
     public void onMap() throws IOException {
+        // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
     public void onMapCleanup()  throws IOException, InterruptedException {
+        // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
     public void onMapClose()  throws IOException {
+        // no-op
     }
 
     /**
      * setConf() does not declare IOException to be thrown.
      */
     public void onCombineConfigure() {
+        // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
     public void onCombineSetup() throws IOException, InterruptedException {
+        // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
     public void onCombine() throws IOException {
+        // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
     public void onCombineCleanup() throws IOException, InterruptedException {
+        // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
     public void onReduceConfigure() {
+        // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
     public void onReduceSetup()  throws IOException, InterruptedException {
+        // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
     public void onReduce()  throws IOException {
+        // no-op
     }
 
     /**
      * Invoked on the named stage.
      */
     public void onReduceCleanup()  throws IOException, InterruptedException {
+        // no-op
     }
 
+    /**
+     * Error kind.
+     */
+    public enum Kind {
+        /** No error. */
+        Noop,
+        /** Runtime. */
+        Runtime,
+        /** IOException. */
+        IOException,
+        /** java.lang.Error. */
+        Error
+    }
 
     /**
      * Runtime error simulator.
      */
     public static class RuntimeExceptionBitHadoopErrorSimulator extends HadoopErrorSimulator {
-
-        /** Stage bits. */
+        /** Stage bits: defines what map-reduce stages will cause errors. */
         private final int bits;
 
         /**
@@ -262,7 +288,7 @@ public class HadoopErrorSimulator {
     }
 
     /**
-     * Error simulator.
+     * java.lang.Error simulator.
      */
     public static class ErrorBitHadoopErrorSimulator extends RuntimeExceptionBitHadoopErrorSimulator {
         /**
@@ -291,7 +317,7 @@ public class HadoopErrorSimulator {
 
         /** {@inheritDoc} */
         @Override protected void simulateError() throws IOException {
-            throw new IOException("An error simulated by " + getClass().getSimpleName());
+            throw new IOException("An IOException simulated by " + getClass().getSimpleName());
         }
     }
 }

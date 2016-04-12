@@ -26,7 +26,7 @@ import org.apache.hadoop.mapred.MapReduceBase;
 import org.apache.hadoop.mapred.OutputCollector;
 import org.apache.hadoop.mapred.Reducer;
 import org.apache.hadoop.mapred.Reporter;
-import org.apache.ignite.internal.processors.hadoop.ErrorSimulator;
+import org.apache.ignite.internal.processors.hadoop.HadoopErrorSimulator;
 
 /**
  * Combiner and Reducer phase of WordCount job.
@@ -47,7 +47,7 @@ public class HadoopWordCount1Reduce extends MapReduceBase implements Reducer<Tex
 
         output.collect(key, new IntWritable(sum));
 
-        ErrorSimulator.instance().onReduce();
+        HadoopErrorSimulator.instance().onReduce();
     }
 
     /** {@inheritDoc} */
@@ -56,6 +56,6 @@ public class HadoopWordCount1Reduce extends MapReduceBase implements Reducer<Tex
 
         wasConfigured = true;
 
-        ErrorSimulator.instance().onReduceConfigure();
+        HadoopErrorSimulator.instance().onReduceConfigure();
     }
 }

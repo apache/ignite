@@ -24,7 +24,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.ignite.internal.processors.hadoop.ErrorSimulator;
+import org.apache.ignite.internal.processors.hadoop.HadoopErrorSimulator;
 
 /**
  * Mapper phase of WordCount job.
@@ -55,7 +55,7 @@ public class HadoopWordCount2Mapper extends Mapper<Object, Text, Text, IntWritab
             ctx.write(word, one);
         }
 
-        ErrorSimulator.instance().onMap();
+        HadoopErrorSimulator.instance().onMap();
     }
 
     /** {@inheritDoc} */
@@ -64,21 +64,21 @@ public class HadoopWordCount2Mapper extends Mapper<Object, Text, Text, IntWritab
 
         wasSetUp = true;
 
-        ErrorSimulator.instance().onMapSetup();
+        HadoopErrorSimulator.instance().onMapSetup();
     }
 
     /** {@inheritDoc} */
     @Override protected void cleanup(Context ctx) throws IOException, InterruptedException {
         super.cleanup(ctx);
 
-        ErrorSimulator.instance().onMapCleanup();
+        HadoopErrorSimulator.instance().onMapCleanup();
     }
 
     /** {@inheritDoc} */
     @Override public void setConf(Configuration conf) {
         wasConfigured = true;
 
-        ErrorSimulator.instance().onMapConfigure();
+        HadoopErrorSimulator.instance().onMapConfigure();
     }
 
     /** {@inheritDoc} */
