@@ -287,6 +287,113 @@ public class PlatformCache extends PlatformAbstractTarget {
         return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
     }
 
+    /** {@inheritDoc} */
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_PUT:
+                cache.put(reader.readObjectDetached(), reader.readObjectDetached());
+
+                return TRUE;
+
+            case OP_REMOVE_BOOL:
+                return cache.remove(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
+
+            case OP_REMOVE_ALL:
+                cache.removeAll(PlatformUtils.readSet(reader));
+
+                return TRUE;
+
+            case OP_PUT_ALL:
+                cache.putAll(PlatformUtils.readMap(reader));
+
+                return TRUE;
+
+            case OP_LOC_EVICT:
+                cache.localEvict(PlatformUtils.readCollection(reader));
+
+                return TRUE;
+
+            case OP_CONTAINS_KEY:
+                return cache.containsKey(reader.readObjectDetached()) ? TRUE : FALSE;
+
+            case OP_CONTAINS_KEYS:
+                return cache.containsKeys(PlatformUtils.readSet(reader)) ? TRUE : FALSE;
+
+            case OP_LOC_PROMOTE: {
+                cache.localPromote(PlatformUtils.readSet(reader));
+
+                break;
+            }
+
+            case OP_REPLACE_3:
+                return cache.replace(reader.readObjectDetached(), reader.readObjectDetached(),
+                    reader.readObjectDetached()) ? TRUE : FALSE;
+
+            case OP_LOC_LOAD_CACHE:
+                loadCache0(reader, true);
+
+                break;
+
+            case OP_LOAD_CACHE:
+                loadCache0(reader, false);
+
+                break;
+
+            case OP_CLEAR:
+                cache.clear(reader.readObjectDetached());
+
+                break;
+
+            case OP_CLEAR_ALL:
+                cache.clearAll(PlatformUtils.readSet(reader));
+
+                break;
+
+            case OP_LOCAL_CLEAR:
+                cache.localClear(reader.readObjectDetached());
+
+                break;
+
+            case OP_LOCAL_CLEAR_ALL:
+                cache.localClearAll(PlatformUtils.readSet(reader));
+
+                break;
+
+            case OP_PUT_IF_ABSENT: {
+                return cache.putIfAbsent(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
+            }
+
+            case OP_REPLACE_2: {
+                return cache.replace(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
+            }
+
+            case OP_REMOVE_OBJ: {
+                return cache.remove(reader.readObjectDetached()) ? TRUE : FALSE;
+            }
+
+            case OP_IS_LOCAL_LOCKED:
+                return cache.isLocalLocked(reader.readObjectDetached(), reader.readBoolean()) ? TRUE : FALSE;
+
+            case OP_LOAD_ALL: {
+                long futId = reader.readLong();
+                boolean replaceExisting = reader.readBoolean();
+
+                CompletionListenable fut = new CompletionListenable();
+
+                PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, null, this);
+
+                cache.loadAll(PlatformUtils.readSet(reader), replaceExisting, fut);
+
+                return TRUE;
+            }
+
+            default:
+                return super.processInStreamOutLong(type, reader);
+        }
+
+        return TRUE;
+    }
+
     /**
      * Loads cache via localLoadCache or loadCache.
      */
