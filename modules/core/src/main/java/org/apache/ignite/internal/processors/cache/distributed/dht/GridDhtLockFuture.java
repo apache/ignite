@@ -303,13 +303,6 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         return futId;
     }
 
-    /**
-     * @return Near lock version.
-     */
-    public GridCacheVersion nearLockVersion() {
-        return nearLockVer;
-    }
-
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheVersion mappedVersion() {
         return tx == null ? nearLockVer : null;

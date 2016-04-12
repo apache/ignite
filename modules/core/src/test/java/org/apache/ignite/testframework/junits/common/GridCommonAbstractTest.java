@@ -75,10 +75,12 @@ import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -459,7 +461,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             if (readyVer.topologyVersion() > 0 && c.context().started()) {
                                 // Must map on updated version of topology.
                                 Collection<ClusterNode> affNodes =
-                                    g0.affinity(cfg.getName()).mapPartitionToPrimaryAndBackups(p);
+                                    dht.context().affinity().assignment(readyVer).idealAssignment().get(p);
 
                                 int exp = affNodes.size();
 
@@ -479,12 +481,12 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
                                         ", topVer=" + top.topologyVersion() +
-                                        ", topFut=" + topFut +
                                         ", p=" + p +
                                         ", affNodesCnt=" + exp +
                                         ", ownersCnt=" + actual +
-                                        ", affNodes=" + affNodes +
-                                        ", owners=" + owners +
+                                        ", affNodes=" + F.nodeIds(affNodes) +
+                                        ", owners=" + F.nodeIds(owners) +
+                                        ", topFut=" + topFut +
                                         ", locNode=" + g.cluster().localNode() + ']');
                                 }
                                 else
@@ -631,27 +633,67 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is primary.
      */
     @SuppressWarnings("unchecked")
-    protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
+    protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom) {
+        return findKeys(cache, cnt, startFrom, 0);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is primary.
+     */
+    @SuppressWarnings("unchecked")
+    protected List<Integer> findKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom, final int type) {
         assert cnt > 0 : cnt;
 
-        List<Integer> found = new ArrayList<>(cnt);
+        final List<Integer> found = new ArrayList<>(cnt);
 
-        ClusterNode locNode = localNode(cache);
+        final ClusterNode locNode = localNode(cache);
 
-        Affinity<Integer> aff = (Affinity<Integer>)affinity(cache);
+        final Affinity<Integer> aff = (Affinity<Integer>)affinity(cache);
 
-        for (int i = startFrom; i < startFrom + 100_000; i++) {
-            Integer key = i;
+        try {
+            GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    for (int i = startFrom; i < startFrom + 100_000; i++) {
+                        Integer key = i;
 
-            if (aff.isPrimary(locNode, key)) {
-                found.add(key);
+                        boolean ok;
 
-                if (found.size() == cnt)
-                    return found;
-            }
+                        if (type == 0)
+                            ok = aff.isPrimary(locNode, key);
+                        else if (type == 1)
+                            ok = aff.isBackup(locNode, key);
+                        else if (type == 2)
+                            ok = !aff.isPrimaryOrBackup(locNode, key);
+                        else {
+                            fail();
+
+                            return false;
+                        }
+
+                        if (ok) {
+                            if (!found.contains(key))
+                                found.add(key);
+
+                            if (found.size() == cnt)
+                                return true;
+                        }
+                    }
+
+                    return false;
+                }
+            }, 5000);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
 
-        throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
+        if (found.size() != cnt)
+            throw new IgniteException("Unable to find " + cnt + " requied keys.");
+
+        return found;
     }
 
     /**
@@ -684,26 +726,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     @SuppressWarnings("unchecked")
     protected List<Integer> backupKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
-        assert cnt > 0 : cnt;
-
-        List<Integer> found = new ArrayList<>(cnt);
-
-        ClusterNode locNode = localNode(cache);
-
-        Affinity<Integer> aff = affinity((IgniteCache<Integer, ?>)cache);
-
-        for (int i = startFrom; i < startFrom + 100_000; i++) {
-            Integer key = i;
-
-            if (aff.isBackup(locNode, key)) {
-                found.add(key);
-
-                if (found.size() == cnt)
-                    return found;
-            }
-        }
-
-        throw new IgniteException("Unable to find " + cnt + " keys as backup for cache.");
+        return findKeys(cache, cnt, startFrom, 1);
     }
 
     /**
@@ -716,26 +739,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("unchecked")
     protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
-        assert cnt > 0 : cnt;
-
-        List<Integer> found = new ArrayList<>(cnt);
-
-        ClusterNode locNode = localNode(cache);
-
-        Affinity<Integer> aff = affinity((IgniteCache<Integer, ?>)cache);
-
-        for (int i = startFrom; i < startFrom + 100_000; i++) {
-            Integer key = i;
-
-            if (!aff.isPrimaryOrBackup(locNode, key)) {
-                found.add(key);
-
-                if (found.size() == cnt)
-                    return found;
-            }
-        }
-
-        throw new IgniteCheckedException("Unable to find " + cnt + " keys as near for cache.");
+        return findKeys(cache, cnt, startFrom, 2);
     }
 
     /**

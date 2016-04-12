@@ -356,6 +356,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             }
             else {
                 fut = tx.getAllAsync(cctx,
+                    null,
                     Collections.singleton(key),
                     /*deserialize binary*/false,
                     skipVals,
@@ -390,6 +391,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                         }
                         else {
                             fut0 = tx.getAllAsync(cctx,
+                                null,
                                 Collections.singleton(key),
                                 /*deserialize binary*/false,
                                 skipVals,
