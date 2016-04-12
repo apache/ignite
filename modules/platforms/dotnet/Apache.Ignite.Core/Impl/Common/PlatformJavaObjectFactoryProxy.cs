@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
 
@@ -44,17 +45,23 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Optional payload. */
         private readonly object _payload;
 
+        /** Properties to set */
+        private IDictionary<string, object> _properties;
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="PlatformJavaObjectFactoryProxy"/> class.
+        /// Initializes a new instance of the <see cref="PlatformJavaObjectFactoryProxy" /> class.
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="factoryClassName">Name of the factory class.</param>
         /// <param name="payload">The payload.</param>
-        protected PlatformJavaObjectFactoryProxy(FactoryType type, string factoryClassName, object payload)
+        /// <param name="properties">The properties.</param>
+        protected PlatformJavaObjectFactoryProxy(FactoryType type, string factoryClassName, object payload, 
+            IDictionary<string, object> properties)
         {
             _factoryType = type;
             _factoryClassName = factoryClassName;
             _payload = payload;
+            _properties = properties;
         }
 
         /// <summary>

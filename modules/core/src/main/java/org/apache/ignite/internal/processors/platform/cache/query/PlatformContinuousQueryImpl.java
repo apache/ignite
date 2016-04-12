@@ -103,9 +103,9 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
             BinaryObjectImpl bo = (BinaryObjectImpl)filter;
 
             if (bo.typeId() == GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY) {
-                PlatformJavaObjectFactoryProxy f = bo.deserialize();
+                PlatformJavaObjectFactoryProxy prx = bo.deserialize();
 
-                return  (CacheEntryEventFilter)f.factory(ctx).create();
+                return (CacheEntryEventFilter)prx.factory(ctx).create();
             }
         }
 
