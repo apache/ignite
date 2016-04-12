@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopFileSystemsTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopGroupingTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobTrackerSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceEmbeddedSelfTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceErrorResilienceTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopNoHadoopMapReduceTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerializationWrapperSelfTest;
@@ -168,6 +169,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopNoHadoopMapReduceTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceErrorResilienceTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceEmbeddedSelfTest.class.getName())));
 
@@ -246,15 +248,15 @@ public class IgniteHadoopTestSuite extends TestSuite {
 
         X.println("tmp: " + tmpPath);
 
-        File install = new File(tmpPath + File.separatorChar + "__hadoop");
+        final File install = new File(tmpPath + File.separatorChar + "__hadoop");
 
-        File home = new File(install, destName);
+        final File home = new File(install, destName);
 
         X.println("Setting " + homeVariable + " to " + home.getAbsolutePath());
 
         System.setProperty(homeVariable, home.getAbsolutePath());
 
-        File successFile = new File(home, "__success");
+        final File successFile = new File(home, "__success");
 
         if (home.exists()) {
             if (successFile.exists()) {
