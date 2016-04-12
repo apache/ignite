@@ -113,6 +113,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
+import org.apache.ignite.internal.processors.hadoop.HadoopNoopProcessor;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
@@ -1102,28 +1103,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Create Hadoop component.
      *
-     * @return Non-null Hadoop component.
+     * @return Non-null Hadoop component: workable or no-op.
      * @throws IgniteCheckedException if the component is mandatory and cannot be initialized.
      */
     private GridComponent createHadoopComponent() throws IgniteCheckedException {
-        final GridComponent cmp;
+        boolean peer = cfg.isPeerClassLoadingEnabled();
 
-        try {
-            cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, true/*mandatory*/);
+        GridComponent cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx,
+            cfg.getHadoopConfiguration() != null && !peer);
 
-            if (cfg.isPeerClassLoadingEnabled())
-                log.warning("Hadoop module will be disabled since peer class loading is switched on.");
-            else
-                return cmp;
-        }
-        catch (IgniteCheckedException ex) {
-            if (cfg.getHadoopConfiguration() != null)
-                // Hadoop is a mandatory component:
-                throw ex;
+        // Hadoop component cannot be used if peer class loading is enabled:
+        if (peer) {
+            log.warning("Hadoop module will be disabled since peer class loading is switched on.");
+
+            if (!(cmp instanceof HadoopNoopProcessor))
+                cmp = IgniteComponentType.HADOOP.create(ctx, true/*no-op*/);
         }
 
-        // Re-create no-op Hadoop component:
-        return IgniteComponentType.HADOOP.create(ctx, true);
+        return cmp;
     }
 
     /**
