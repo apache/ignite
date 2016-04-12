@@ -92,6 +92,7 @@
     <Compile Include="Cache\CacheException.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
+    <Compile Include="Common\JavaObjects.cs" />
     <Compile Include="DataStructures\Configuration\AtomicConfiguration.cs" />
     <Compile Include="Cache\Configuration\QueryAlias.cs" />
     <Compile Include="Cache\Configuration\QueryTextFieldAttribute.cs" />
@@ -144,6 +145,8 @@
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
+    <Compile Include="Impl\Common\JavaObjectFactoryProxy.cs" />
+    <Compile Include="Impl\Common\JavaObjects\JavaCacheEntryEventFilter.cs" />
     <Compile Include="Impl\Common\Platform.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
     <Compile Include="Compute\ComputeJobAdapter.cs" />
