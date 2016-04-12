@@ -21,11 +21,13 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
+import java.io.Serializable;
 
 /**
  * Test filter factory
  */
-public class PlatformCacheEntryEventFilterFactory implements PlatformJavaObjectFactory<CacheEntryEventSerializableFilter> {
+public class PlatformCacheEntryEventFilterFactory implements Serializable,
+    PlatformJavaObjectFactory<CacheEntryEventSerializableFilter> {
     /** Property to be set from platform. */
     @SuppressWarnings("FieldCanBeLocal")
     private String startsWith = "-";
