@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             var cache = ignite.GetOrCreateCache<int, string>("qry");
 
             var pred = JavaObjectFactory.CreateCacheEntryEventFilter<int, string>(
-                "org.apache.ignite.platform.CacheEntryEventFilter");
+                "org.apache.ignite.platform.PlatformCacheEntryEventFilter");
 
             var qry = new ContinuousQuery<int, string>(new QueryListener(), pred);
 
@@ -85,9 +85,15 @@ namespace Apache.Ignite.Core.Tests.Compute
             {
                 QueryListener.Event = null;
 
-                cache[1] = "value";
+                cache[1] = "validValue";
 
                 Assert.AreEqual(cache[1], QueryListener.Event.Value);
+
+                QueryListener.Event = null;
+
+                cache[2] = "invalidValue";
+
+                Assert.IsNull(QueryListener.Event);
             }
         }
 
