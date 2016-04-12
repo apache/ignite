@@ -19,7 +19,6 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
@@ -90,17 +89,37 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Tests the java objects.
+        /// Tests the filter.
         /// </summary>
         [Test]
         public void TestFilter()
         {
-            var cache = _ignite.GetOrCreateCache<int, string>("qry");
-
-            var pred = JavaObjectFactory.CreateCacheEntryEventFilter<int, string>(
+            var filter = JavaObjectFactory.CreateCacheEntryEventFilter<int, string>(
                 "org.apache.ignite.platform.PlatformCacheEntryEventFilter",
                 new Dictionary<string, object> {{"startsWith", "valid"}});
 
+            TestFilter(filter);
+        }
+
+        /// <summary>
+        /// Tests the filter.
+        /// </summary>
+        [Test]
+        public void TestFactory()
+        {
+            var filter = JavaObjectFactory.CreateCacheEntryEventFilterFactory<int, string>(
+                "org.apache.ignite.platform.PlatformCacheEntryEventFilterFactory",
+                new Dictionary<string, object> {{"startsWith", "valid"}});
+
+            TestFilter(filter);
+        }
+
+        /// <summary>
+        /// Tests the specified filter.
+        /// </summary>
+        private void TestFilter(ICacheEntryEventFilter<int, string> pred)
+        {
+            var cache = _ignite.GetOrCreateCache<int, string>("qry");
             var qry = new ContinuousQuery<int, string>(new QueryListener(), pred);
 
             using (cache.QueryContinuous(qry))
