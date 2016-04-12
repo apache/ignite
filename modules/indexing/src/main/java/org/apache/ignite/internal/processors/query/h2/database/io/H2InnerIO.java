@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.query.h2.database.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
+import org.h2.result.SearchRow;
 
 /**
  * Inner page for H2 row references.
  */
-public class H2InnerIO extends BPlusIOInner<GridH2Row> implements H2RowLinkIO {
+public class H2InnerIO extends BPlusIOInner<SearchRow> implements H2RowLinkIO {
     /** */
     public static final IORegistry<H2InnerIO> VERSIONS = new IORegistry<>(
         new H2InnerIO(1)
@@ -42,14 +43,16 @@ public class H2InnerIO extends BPlusIOInner<GridH2Row> implements H2RowLinkIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(ByteBuffer buf, int idx, GridH2Row row) {
-        assert row.link != 0;
+    @Override public void store(ByteBuffer buf, int idx, SearchRow row) {
+        GridH2Row row0 = (GridH2Row)row;
 
-        setLink(buf, idx, row.link);
+        assert row0.link != 0;
+
+        setLink(buf, idx, row0.link);
     }
 
     /** {@inheritDoc} */
-    @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<GridH2Row> srcIo, ByteBuffer src, int srcIdx) {
+    @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<SearchRow> srcIo, ByteBuffer src, int srcIdx) {
         long link = ((H2RowLinkIO)srcIo).getLink(src, srcIdx);
 
         setLink(dst, dstIdx, link);

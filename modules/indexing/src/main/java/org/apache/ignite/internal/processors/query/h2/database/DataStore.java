@@ -31,5 +31,5 @@ public interface DataStore<T> {
      * @param idx Index.
      * @return Data row.
      */
-    public T getRow(BPlusIO<T> io, ByteBuffer buf, int idx) throws IgniteCheckedException;
+    public T getRow(BPlusIO<?> io, ByteBuffer buf, int idx) throws IgniteCheckedException;
 }

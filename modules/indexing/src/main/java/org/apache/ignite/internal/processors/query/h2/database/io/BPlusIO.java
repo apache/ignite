@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.query.h2.database.DataStore;
 /**
  * Abstract IO routines for B+Tree pages.
  */
-public abstract class BPlusIO<T> extends PageIO {
+public abstract class BPlusIO<L> extends PageIO {
     /** */
     protected static final int CNT_OFF = COMMON_HEADER_END;
 
@@ -128,9 +128,9 @@ public abstract class BPlusIO<T> extends PageIO {
      *
      * @param buf Buffer.
      * @param idx Index.
-     * @param row Row.
+     * @param row Lookup or full row.
      */
-    public abstract void store(ByteBuffer buf, int idx, T row);
+    public abstract void store(ByteBuffer buf, int idx, L row);
 
     /**
      * Store row info from the given source.
@@ -141,7 +141,7 @@ public abstract class BPlusIO<T> extends PageIO {
      * @param src Source buffer.
      * @param srcIdx Source index.
      */
-    public abstract void store(ByteBuffer dst, int dstIdx, BPlusIO<T> srcIo, ByteBuffer src, int srcIdx);
+    public abstract void store(ByteBuffer dst, int dstIdx, BPlusIO<L> srcIo, ByteBuffer src, int srcIdx);
 
     /**
      * @return {@code true} If we can get the whole row from this page using {@link DataStore}.

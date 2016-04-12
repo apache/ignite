@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 /**
  * Abstract IO routines for B+Tree inner pages.
  */
-public abstract class BPlusIOInner<T> extends BPlusIO<T> {
+public abstract class BPlusIOInner<L> extends BPlusIO<L> {
     /** */
     protected static final int ITEM_SIZE = 16;
 

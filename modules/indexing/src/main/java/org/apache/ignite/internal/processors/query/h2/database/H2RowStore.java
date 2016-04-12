@@ -90,7 +90,7 @@ public class H2RowStore implements DataStore<GridH2Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row getRow(BPlusIO<GridH2Row> io, ByteBuffer buf, int idx) throws IgniteCheckedException {
+    @Override public GridH2Row getRow(BPlusIO<?> io, ByteBuffer buf, int idx) throws IgniteCheckedException {
         long link = ((H2RowLinkIO)io).getLink(buf, idx);
 
         return getRow(link);

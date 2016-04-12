@@ -240,7 +240,7 @@ public class BPlusTreeIndex extends PageMemoryIndex {
         }
 
         /** {@inheritDoc} */
-        @Override protected BPlusIO<GridH2Row> io(int type, int ver) {
+        @Override protected BPlusIO<SearchRow> io(int type, int ver) {
             if (type == PageIO.T_H2_REF_INNER)
                 return H2InnerIO.VERSIONS.forVersion(ver);
 
@@ -250,17 +250,17 @@ public class BPlusTreeIndex extends PageMemoryIndex {
         }
 
         /** {@inheritDoc} */
-        @Override protected BPlusIOInner<GridH2Row> latestInnerIO() {
+        @Override protected BPlusIOInner<SearchRow> latestInnerIO() {
             return H2InnerIO.VERSIONS.latest();
         }
 
         /** {@inheritDoc} */
-        @Override protected BPlusIOLeaf<GridH2Row> latestLeafIO() {
+        @Override protected BPlusIOLeaf<SearchRow> latestLeafIO() {
             return H2LeafIO.VERSIONS.latest();
         }
 
         /** {@inheritDoc} */
-        @Override protected int compare(BPlusIO<GridH2Row> io, ByteBuffer buf, int idx, SearchRow row)
+        @Override protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
             throws IgniteCheckedException {
             return compareRows(getRow(io, buf, idx), row);
         }
