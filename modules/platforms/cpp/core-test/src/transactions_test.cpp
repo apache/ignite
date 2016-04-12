@@ -82,28 +82,24 @@ BOOST_AUTO_TEST_CASE(TransactionGet)
     Transactions transactions = grid.GetTransactions();
 
     Transaction tx = transactions.GetTx();
-
     BOOST_REQUIRE(!tx.IsValid());
 
     tx = transactions.TxStart();
 
     Transaction tx2 = transactions.GetTx();
-
     BOOST_REQUIRE(tx2.IsValid());
 
     cache.Put(1, 1);
-
     cache.Put(2, 2);
 
-    //tx.Commit();
+    tx.Commit();
 
-    //BOOST_REQUIRE_EQUAL(1, cache.Get(1));
+    BOOST_REQUIRE_EQUAL(1, cache.Get(1));
+    BOOST_REQUIRE_EQUAL(2, cache.Get(2));
 
-    //BOOST_REQUIRE_EQUAL(2, cache.Get(2));
+    tx = transactions.GetTx();
 
-    //tx = transactions.GetTx();
-
-    //BOOST_REQUIRE(!tx.IsValid());
+    BOOST_REQUIRE(!tx.IsValid());
 }
 
 //BOOST_AUTO_TEST_CASE(TransactionGetNe)

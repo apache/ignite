@@ -20,8 +20,9 @@
 
 #include <ignite/common/concurrent.h>
 #include <ignite/common/java.h>
+#include <ignite/transactions/transaction_state.h>
 
-#include "ignite/transactions/transaction_state.h"
+#include "ignite/impl/transactions/transactions_impl.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/utils.h"
 
@@ -37,6 +38,7 @@ namespace ignite
             class IGNITE_FRIEND_EXPORT TransactionImpl
             {
                 typedef ignite::common::concurrent::SharedPointer<TransactionImpl> TxImplSharedPtr;
+                typedef ignite::common::concurrent::SharedPointer<TransactionsImpl> TxsImplSharedPtr;
                 typedef ignite::common::concurrent::ThreadLocalInstance<TxImplSharedPtr> TxImplSharedPtrTli;
                 typedef ignite::common::concurrent::CriticalSection CriticalSection;
                 typedef ignite::transactions::TransactionState TransactionState;
@@ -49,6 +51,7 @@ namespace ignite
                 /**
                  * Factory method. Create new instance of the class.
                  *
+                 * @param txs Transactions implimentation.
                  * @param id Transaction id.
                  * @param concurrency Concurrency.
                  * @param isolation Isolation.
@@ -57,8 +60,8 @@ namespace ignite
                  *
                  * @return Shared pointer to new instance.
                  */
-                static TxImplSharedPtr Create(int64_t id, int concurrency,
-                    int isolation, int64_t timeout, int32_t txSize);
+                static TxImplSharedPtr Create(TxsImplSharedPtr txs, int concurrency,
+                    int isolation, int64_t timeout, int32_t txSize, IgniteError& err);
 
                 /**
                  * Get active transaction for the current thread.
@@ -87,14 +90,15 @@ namespace ignite
                 /**
                  * Constructor.
                  *
+                 * @param txs Transactions implimentation.
                  * @param id Transaction id.
                  * @param concurrency Concurrency.
                  * @param isolation Isolation.
                  * @param timeout Timeout in milliseconds.
                  * @param txSize Transaction size.
                  */
-                TransactionImpl(int64_t id, int concurrency, int isolation,
-                    int64_t timeout, int32_t txSize);
+                TransactionImpl(TxsImplSharedPtr txs, int64_t id, int concurrency,
+                    int isolation, int64_t timeout, int32_t txSize);
 
                 /**
                  * Get error for closed transaction.
@@ -108,6 +112,9 @@ namespace ignite
 
                 /** Access lock. */
                 CriticalSection accessLock;
+
+                /** Transactions. */
+                TxsImplSharedPtr txs;
 
                 /** Transaction ID. */
                 int64_t id;

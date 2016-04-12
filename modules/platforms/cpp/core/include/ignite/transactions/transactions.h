@@ -83,7 +83,7 @@ namespace ignite
             /**
              * Get active transaction for the current thread.
              *
-             * @return Active transaction implementation for current thread.
+             * @return Active transaction for current thread.
              * Returned instance is not valid if there is no active transaction
              * for the thread.
              */
@@ -91,7 +91,7 @@ namespace ignite
             {
                 using impl::transactions::TransactionImpl;
 
-                return Transaction(impl.Get()->GetTx());
+                return Transaction(TransactionImpl::GetCurrent());
             }
 
             /**
@@ -191,8 +191,13 @@ namespace ignite
                 TransactionIsolation isolation, int64_t timeout,
                 int32_t txSize, IgniteError& err)
             {
-                return Transaction(impl.Get()->TxStart(concurrency,
-                    isolation, timeout, txSize, err));
+                using impl::transactions::TransactionImpl;
+                using ignite::common::concurrent::SharedPointer;
+
+                SharedPointer<TransactionImpl> tx = TransactionImpl::Create(impl,
+                    concurrency, isolation, timeout, txSize, err);
+
+                return Transaction(tx);
             }
 
         private:

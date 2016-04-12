@@ -1975,12 +1975,12 @@ namespace ignite
                 return id;
             }
 
-            int JniContext::TransactionsCommit(jobject obj, long long id) {
+            int JniContext::TransactionsCommit(jobject obj, long long id, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 int res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txCommit, id);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return res;
             }

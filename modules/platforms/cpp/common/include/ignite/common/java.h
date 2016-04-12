@@ -602,7 +602,7 @@ namespace ignite
                 void QueryCursorClose(jobject obj, JniErrorInfo* errInfo = NULL);
 
                 long long TransactionsStart(jobject obj, int concurrency, int isolation, long long timeout, int txSize, JniErrorInfo* errInfo = NULL);
-                int TransactionsCommit(jobject obj, long long id);
+                int TransactionsCommit(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
                 void TransactionsCommitAsync(jobject obj, long long id, long long futId);
                 int TransactionsRollback(jobject obj, long long id);
                 void TransactionsRollbackAsync(jobject obj, long long id, long long futId);

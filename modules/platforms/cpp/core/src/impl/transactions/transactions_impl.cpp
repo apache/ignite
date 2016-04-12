@@ -37,27 +37,32 @@ namespace ignite
                 JniContext::Release(javaRef);
             }
 
-            TransactionsImpl::TxImplSharedPtr TransactionsImpl::TxStart(
-                TransactionConcurrency concurrency, TransactionIsolation isolation,
-                int64_t timeout, int32_t txSize, IgniteError & err)
+            int64_t TransactionsImpl::TxStart(int concurrency, int isolation,
+                int64_t timeout, int32_t txSize, IgniteError& err)
             {
                 using impl::transactions::TransactionsImpl;
-                using namespace ignite::common::java;
-                using namespace ignite::common::concurrent;
-
-                SharedPointer<TransactionImpl> txImpl;
 
                 JniErrorInfo jniErr;
 
                 int64_t id = env.Get()->Context()->TransactionsStart(javaRef,
                     concurrency, isolation, timeout, txSize, &jniErr);
 
-                if (jniErr.code == IGNITE_JNI_ERR_SUCCESS)
-                    txImpl = TransactionImpl::Create(id, concurrency, isolation, timeout, txSize);
-                else
+                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
-                return txImpl;
+                return id;
+            }
+
+            TransactionsImpl::TransactionState TransactionsImpl::TxCommit(int64_t id, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                int32_t state = env.Get()->Context()->TransactionsCommit(javaRef, id, &jniErr);
+
+                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+                return static_cast<TransactionState>(state);
             }
         }
     }

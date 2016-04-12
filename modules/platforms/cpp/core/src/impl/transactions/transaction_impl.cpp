@@ -29,8 +29,9 @@ namespace ignite
         {
             TransactionImpl::TxImplSharedPtrTli TransactionImpl::threadTx;
 
-            TransactionImpl::TransactionImpl(int64_t id, int concurrency,
-                int isolation, int64_t timeout, int32_t txSize) :
+            TransactionImpl::TransactionImpl(TxsImplSharedPtr txs, int64_t id,
+                int concurrency, int isolation, int64_t timeout, int32_t txSize) :
+                txs(txs),
                 id(id),
                 concurrency(concurrency),
                 isolation(isolation),
@@ -42,13 +43,20 @@ namespace ignite
                 // No-op.
             }
 
-            TransactionImpl::TxImplSharedPtr TransactionImpl::Create(int64_t id,
-                int concurrency, int isolation, int64_t timeout, int32_t txSize)
+            TransactionImpl::TxImplSharedPtr TransactionImpl::Create(TxsImplSharedPtr txs,
+                int concurrency, int isolation, int64_t timeout, int32_t txSize, IgniteError& err)
             {
-                TxImplSharedPtr tx = TxImplSharedPtr(new TransactionImpl(id,
-                    concurrency, isolation, timeout, txSize));
+                int64_t id = txs.Get()->TxStart(concurrency, isolation, timeout, txSize, err);
 
-                threadTx.Set(tx);
+                TxImplSharedPtr tx;
+
+                if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
+                {
+                    tx = TxImplSharedPtr(new TransactionImpl(txs, id, concurrency,
+                        isolation, timeout, txSize));
+
+                    threadTx.Set(tx);
+                }
 
                 return tx;
             }
@@ -61,12 +69,13 @@ namespace ignite
             TransactionImpl::TxImplSharedPtr TransactionImpl::GetCurrent()
             {
                 TxImplSharedPtr tx = threadTx.Get();
+                TransactionImpl* ptr = tx.Get();
 
-                if (tx.Get()->IsClosed())
+                if (ptr && ptr->IsClosed())
                 {
                     tx = TxImplSharedPtr();
 
-                    threadTx.Set(tx);
+                    threadTx.Remove();
                 }
 
                 return tx;
@@ -88,9 +97,14 @@ namespace ignite
                     return;
                 }
 
-                //state;
+                TransactionState  newState = txs.Get()->TxCommit(id, err);
 
-                closed = true;
+                if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
+                {
+                    state = newState;
+
+                    closed = true;
+                }
             }
 
             IgniteError TransactionImpl::GetClosedError() const
