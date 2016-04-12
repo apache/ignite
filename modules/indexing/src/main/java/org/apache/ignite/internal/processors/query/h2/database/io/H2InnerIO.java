@@ -37,12 +37,7 @@ public class H2InnerIO extends BPlusInnerIO<SearchRow> implements H2RowLinkIO {
      * @param ver Page format version.
      */
     private H2InnerIO(int ver) {
-        super(ver, true, 8);
-    }
-
-    /** {@inheritDoc} */
-    @Override public final int getType() {
-        return T_H2_REF_INNER;
+        super(T_H2_REF_INNER, ver, true, 8);
     }
 
     /** {@inheritDoc} */

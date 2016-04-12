@@ -33,12 +33,13 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     protected final int SHIFT_RIGHT = SHIFT_LINK + itemSize;
 
     /**
+     * @param type Page type.
      * @param ver Page format version.
      * @param canGetRow If we can get full row from this page.
      * @param itemSize Single item size on page.
      */
-    protected BPlusInnerIO(int ver, boolean canGetRow, int itemSize) {
-        super(ver, false, canGetRow, itemSize);
+    protected BPlusInnerIO(int type, int ver, boolean canGetRow, int itemSize) {
+        super(type, ver, false, canGetRow, itemSize);
     }
 
     /** {@inheritDoc} */

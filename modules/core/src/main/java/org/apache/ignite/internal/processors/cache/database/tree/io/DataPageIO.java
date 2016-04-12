@@ -52,12 +52,7 @@ public class DataPageIO extends PageIO {
      * @param ver Page format version.
      */
     protected DataPageIO(int ver) {
-        super(ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getType() {
-        return T_DATA;
+        super(T_DATA, ver);
     }
 
     /** {@inheritDoc} */

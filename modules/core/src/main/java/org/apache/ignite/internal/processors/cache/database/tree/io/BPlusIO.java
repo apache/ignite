@@ -46,13 +46,14 @@ public abstract class BPlusIO<L> extends PageIO {
     protected final int itemSize;
 
     /**
+     * @param type Page type.
      * @param ver Page format version.
      * @param leaf If this is a leaf IO.
      * @param canGetRow If we can get full row from this page.
      * @param itemSize Single item size on page.
      */
-    protected BPlusIO(int ver, boolean leaf, boolean canGetRow, int itemSize) {
-        super(ver);
+    protected BPlusIO(int type, int ver, boolean leaf, boolean canGetRow, int itemSize) {
+        super(type, ver);
 
         assert itemSize > 0 : itemSize;
         assert canGetRow || !leaf: "leaf page always must be able to get full row";

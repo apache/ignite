@@ -24,11 +24,12 @@ import java.nio.ByteBuffer;
  */
 public abstract class BPlusLeafIO<L> extends BPlusIO<L> {
     /**
+     * @param type Page type.
      * @param ver Page format version.
      * @param itemSize Single item size on page.
      */
-    protected BPlusLeafIO(int ver, int itemSize) {
-        super(ver, true, true, itemSize);
+    protected BPlusLeafIO(int type, int ver, int itemSize) {
+        super(type, ver, true, true, itemSize);
     }
 
     /** {@inheritDoc} */

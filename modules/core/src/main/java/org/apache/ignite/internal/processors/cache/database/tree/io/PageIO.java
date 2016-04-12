@@ -55,16 +55,20 @@ public abstract class PageIO {
     /** */
     private final int ver;
 
+    /** */
+    private final int type;
+
     /**
+     * @param type Page type.
      * @param ver Page format version.
      */
-    protected PageIO(int ver) {
+    protected PageIO(int type, int ver) {
         assert ver > 0 && ver < 65535: ver;
+        assert type > 0 && type < 65535: type;
 
+        this.type = type;
         this.ver = ver;
     }
-
-
 
     /**
      * @return Page type.
@@ -140,7 +144,9 @@ public abstract class PageIO {
     /**
      * @return Type.
      */
-    public abstract int getType();
+    public final int getType() {
+        return type;
+    }
 
     /**
      * @return Version.

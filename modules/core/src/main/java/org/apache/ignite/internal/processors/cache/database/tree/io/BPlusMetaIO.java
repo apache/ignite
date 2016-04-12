@@ -38,12 +38,7 @@ public class BPlusMetaIO extends PageIO {
      * @param ver Page format version.
      */
     protected BPlusMetaIO(int ver) {
-        super(ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getType() {
-        return T_BPLUS_META;
+        super(T_BPLUS_META, ver);
     }
 
     /** {@inheritDoc} */
