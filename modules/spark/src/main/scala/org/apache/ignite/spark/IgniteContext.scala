@@ -18,12 +18,12 @@
 package org.apache.ignite.spark
 
 
-import org.apache.ignite.internal.IgnitionEx
-import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite._
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.ignite.internal.IgnitionEx
+import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.{Logging, SparkContext}
 
 /**
  * Ignite context.
@@ -36,15 +36,13 @@ import org.apache.spark.sql.SQLContext
 class IgniteContext[K, V](
     @transient val sparkContext: SparkContext,
     cfgF: () ⇒ IgniteConfiguration,
-    client: Boolean = true
+    standalone: Boolean = true
 ) extends Serializable with Logging {
-    @transient private val driver = true
-
     private val cfgClo = new Once(cfgF)
 
     private val igniteHome = IgniteUtils.getIgniteHome
 
-    if (!client) {
+    if (!standalone) {
         // Get required number of executors with default equals to number of available executors.
         val workers = sparkContext.getConf.getInt("spark.executor.instances",
             sparkContext.getExecutorStorageStatus.length)
@@ -55,7 +53,9 @@ class IgniteContext[K, V](
         logInfo("Will start Ignite nodes on " + workers + " workers")
 
         // Start ignite server node on each worker in server mode.
-        sparkContext.parallelize(1 to workers, workers).foreach(it ⇒ ignite())
+        sparkContext.parallelize(1 to workers, workers).foreachPartition(it ⇒ {
+            ignite()
+        })
     }
 
     // Make sure to start Ignite on context creation.
@@ -123,12 +123,6 @@ class IgniteContext[K, V](
         new IgniteRDD[K, V](this, cacheCfg.getName, cacheCfg)
     }
 
-    /**
-     * Gets an Ignite instance supporting this context. Ignite instance will be started
-     * if it has not been started yet.
-     *
-     * @return Ignite instance.
-     */
     def ignite(): Ignite = {
         val home = IgniteUtils.getIgniteHome
 
@@ -141,25 +135,18 @@ class IgniteContext[K, V](
         }
 
         val igniteCfg = cfgClo()
+        // driver set to {@code false) then job transferred to worker
+        if (sparkContext != null) igniteCfg.setClientMode(true)
 
         try {
-            Ignition.ignite(igniteCfg.getGridName)
+            Ignition.getOrStart(igniteCfg)
         }
         catch {
-            case e: IgniteIllegalStateException ⇒
-                try {
-                    igniteCfg.setClientMode(client || driver)
+            case e: IgniteException ⇒ {
+                logError("Failed to start Ignite client.", e)
 
-                    Ignition.start(igniteCfg)
-                }
-                catch {
-                    case e: IgniteException ⇒ {
-                        logError("Failed to start Ignite client. Will try to use an existing instance with name: "
-                            + igniteCfg.getGridName, e)
-
-                        Ignition.ignite(igniteCfg.getGridName)
-                    }
-                }
+                throw e;
+            }
         }
     }
 
@@ -167,10 +154,31 @@ class IgniteContext[K, V](
      * Stops supporting ignite instance. If ignite instance has been already stopped, this operation will be
      * a no-op.
      */
-    def close() = {
+    def close(shutdownIgniteOnWorkers:Boolean = false) = {
+        if (shutdownIgniteOnWorkers) {
+            // Get required number of executors with default equals to number of available executors.
+            val workers = sparkContext.getConf.getInt("spark.executor.instances",
+                sparkContext.getExecutorStorageStatus.length)
+
+            if (workers <= 0)
+                throw new IllegalStateException("No Spark executors found to start Ignite nodes.")
+
+            logInfo("Will stop Ignite nodes on " + workers + " workers")
+
+            // Start ignite server node on each worker in server mode.
+            sparkContext.parallelize(1 to workers, workers).foreachPartition(it ⇒ {
+                doClose()
+            })
+        }
+
+        doClose()
+    }
+
+    private def doClose() = {
         val igniteCfg = cfgClo()
 
         Ignition.stop(igniteCfg.getGridName, false)
+
     }
 }
 

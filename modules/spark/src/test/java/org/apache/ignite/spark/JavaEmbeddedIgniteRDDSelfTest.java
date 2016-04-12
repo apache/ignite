@@ -17,7 +17,9 @@
 
 package org.apache.ignite.spark;
 
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.atomic.*;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -29,20 +31,27 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.*;
+import org.apache.spark.api.java.*;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.sql.Column;
-import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.Row;
+import org.apache.spark.sql.*;
 import scala.Tuple2;
 
 /**
- * Tests for {@link JavaIgniteRDD}.
+ * Tests for {@link JavaIgniteRDD} (embedded mode).
  */
-public class JavaIgniteRDDSelfTest extends GridCommonAbstractTest {
+public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
+    /** For grid names generation */
+    private static AtomicInteger cntr = new AtomicInteger(1);
+
+    private static ThreadLocal<Integer> gridNames = new ThreadLocal<Integer>() {
+        @Override protected Integer initialValue() {
+            return cntr.getAndIncrement();
+        }
+    };
+
     /** Grid count. */
     private static final int GRID_CNT = 3;
 
@@ -51,9 +60,6 @@ public class JavaIgniteRDDSelfTest extends GridCommonAbstractTest {
 
     /** Cache name. */
     private static final String PARTITIONED_CACHE_NAME = "partitioned";
-
-    /** Ip finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Sum function. */
     private static final Function2<Integer, Integer, Integer> SUM_F = new Function2<Integer, Integer, Integer>() {
@@ -85,41 +91,29 @@ public class JavaIgniteRDDSelfTest extends GridCommonAbstractTest {
             }
         };
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        Ignition.ignite("grid-0").cache(PARTITIONED_CACHE_NAME).removeAll();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        Ignition.stop("client", false);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        for (int i = 0; i < GRID_CNT; i++)
-            Ignition.start(getConfiguration("grid-" + i, false));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        for (int i = 0; i < GRID_CNT; i++)
-            Ignition.stop("grid-" + i, false);
+    /**
+     * Default constructor.
+     */
+    public JavaEmbeddedIgniteRDDSelfTest() {
+        super(false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testStoreDataToIgnite() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext("local[*]", "test");
+        SparkConf conf = new SparkConf();
+        conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
+        JavaSparkContext sc = new JavaSparkContext("local["+GRID_CNT+"]", "test", conf);
+        JavaIgniteContext<String, String> ic = null;
 
         try {
-            JavaIgniteContext<String, String> ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider());
+            ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider(), false);
 
             ic.fromCache(PARTITIONED_CACHE_NAME)
-                .savePairs(sc.parallelize(F.range(0, KEYS_CNT), 2).mapToPair(TO_PAIR_F));
+                .savePairs(sc.parallelize(F.range(0, KEYS_CNT), GRID_CNT).mapToPair(TO_PAIR_F));
 
-            Ignite ignite = Ignition.ignite("grid-0");
+            Ignite ignite = ic.ignite();
 
             IgniteCache<String, String> cache = ignite.cache(PARTITIONED_CACHE_NAME);
 
@@ -131,6 +125,7 @@ public class JavaIgniteRDDSelfTest extends GridCommonAbstractTest {
             }
         }
         finally {
+            ic.close(true);
             sc.stop();
         }
     }
@@ -139,12 +134,15 @@ public class JavaIgniteRDDSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReadDataFromIgnite() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext("local[*]", "test");
+        SparkConf conf = new SparkConf();
+        conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
+        JavaSparkContext sc = new JavaSparkContext("local["+GRID_CNT+"]", "test", conf);
+        JavaIgniteContext<String, Integer> ic = null;
 
         try {
-            JavaIgniteContext<String, Integer> ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider());
+            ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider(), false);
 
-            Ignite ignite = Ignition.ignite("grid-0");
+            Ignite ignite = ic.ignite();
 
             IgniteCache<String, Integer> cache = ignite.cache(PARTITIONED_CACHE_NAME);
 
@@ -160,6 +158,7 @@ public class JavaIgniteRDDSelfTest extends GridCommonAbstractTest {
             assertEquals(expSum, sum);
         }
         finally {
+            ic.close(true);
             sc.stop();
         }
     }
@@ -168,10 +167,13 @@ public class JavaIgniteRDDSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryObjectsFromIgnite() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext("local[*]", "test");
+        SparkConf conf = new SparkConf();
+        conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
+        JavaSparkContext sc = new JavaSparkContext("local["+GRID_CNT+"]", "test", conf);
+        JavaIgniteContext<String, Entity> ic = null;
 
         try {
-            JavaIgniteContext<String, Entity> ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider());
+            ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider(), false);
 
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
@@ -187,6 +189,7 @@ public class JavaIgniteRDDSelfTest extends GridCommonAbstractTest {
             assertEquals("Invalid count", 500, cache.objectSql("Entity", "id > 500").count());
         }
         finally {
+            ic.close(true);
             sc.stop();
         }
     }
@@ -195,10 +198,13 @@ public class JavaIgniteRDDSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryFieldsFromIgnite() throws Exception {
-        JavaSparkContext sc = new JavaSparkContext("local[*]", "test");
+        SparkConf conf = new SparkConf();
+        conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
+        JavaSparkContext sc = new JavaSparkContext("local["+GRID_CNT+"]", "test", conf);
+        JavaIgniteContext<String, Entity> ic = null;
 
         try {
-            JavaIgniteContext<String, Entity> ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider());
+            ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider(), false);
 
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
@@ -232,9 +238,9 @@ public class JavaIgniteRDDSelfTest extends GridCommonAbstractTest {
             assertEquals("Invalid count", 500, cache.sql("select id from Entity where id > 500").count());
         }
         finally {
+            ic.close(true);
             sc.stop();
         }
-
     }
 
     /**
@@ -246,7 +252,11 @@ public class JavaIgniteRDDSelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        discoSpi.setIpFinder(IP_FINDER);
+        TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder(true);
+
+        finder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
+
+        discoSpi.setIpFinder(finder);
 
         cfg.setDiscoverySpi(discoSpi);
 
@@ -281,7 +291,7 @@ public class JavaIgniteRDDSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public IgniteConfiguration apply() {
             try {
-                return getConfiguration("client", true);
+                return getConfiguration("worker-" + gridNames.get(), false);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

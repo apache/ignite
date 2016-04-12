@@ -35,9 +35,15 @@ import scala.reflect.ClassTag
  */
 class JavaIgniteContext[K, V](
     @scala.transient val sc: JavaSparkContext,
-    val cfgF: IgniteOutClosure[IgniteConfiguration]) extends Serializable {
+    val cfgF: IgniteOutClosure[IgniteConfiguration],
+    standalone: Boolean = true
+    ) extends Serializable {
 
-    @transient val ic: IgniteContext[K, V] = new IgniteContext[K, V](sc.sc, () => cfgF.apply())
+    @transient val ic: IgniteContext[K, V] = new IgniteContext[K, V](sc.sc, () => cfgF.apply(), standalone)
+
+    def this(sc: JavaSparkContext, cfgF: IgniteOutClosure[IgniteConfiguration]) {
+        this(sc, cfgF, true)
+    }
 
     def this(sc: JavaSparkContext, springUrl: String) {
         this(sc, new IgniteOutClosure[IgniteConfiguration] {
@@ -53,7 +59,7 @@ class JavaIgniteContext[K, V](
 
     def ignite(): Ignite = ic.ignite()
 
-    def close() = ic.close()
+    def close(shutdownIgniteOnWorkers:Boolean = false) = ic.close(shutdownIgniteOnWorkers)
 
     private[spark] def fakeClassTag[T]: ClassTag[T] = ClassTag.AnyRef.asInstanceOf[ClassTag[T]]
 
