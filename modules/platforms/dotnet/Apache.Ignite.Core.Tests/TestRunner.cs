@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Tests.Cache.Query;
-    using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
@@ -33,9 +32,9 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            //TestOne(typeof(MixedClusterQueryTest), "TestExcept");
+            TestOne(typeof(CacheLinqTest), "TestExcept");
 
-            TestAll(typeof (ContinuousQueryJavaFilterTest));
+            //TestAll(typeof (CacheQueriesCodeConfigurationTest));
             //TestAllInAssembly();
         }
 

@@ -575,7 +575,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(BinaryUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
             AddSystemType(BinaryUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
             AddSystemType(0, w => new AffinityKey(w), "affKey");
-            AddSystemType(99, w => new PlatformJavaObjectFactoryProxy());
+            AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, w => new PlatformJavaObjectFactoryProxy());
         }
     }
 }
