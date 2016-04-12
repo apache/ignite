@@ -51,13 +51,21 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration()) {SpringConfigUrl = SpringConfig};
 
+            var cfg2 = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = SpringConfig2,
+                GridName = "dotNet2"
+            };
+
+            // 3 nodes: check local, remote, Java remote filters.
             using (var ignite = Ignition.Start(cfg))
+            using (Ignition.Start(cfg2))
             {
                 var javaNodeName = ignite.GetCompute().ExecuteJavaTask<string>(StartTask, SpringConfig2);
 
                 try
                 {
-                    Assert.IsTrue(ignite.WaitTopology(2));
+                    Assert.IsTrue(ignite.WaitTopology(3));
 
                     TestJavaObjects(ignite);
                 }
