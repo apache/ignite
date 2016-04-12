@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database.io;
+package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.query.h2.database.DataStore;
+import org.apache.ignite.internal.processors.cache.database.tree.DataStore;
 
 /**
  * Abstract IO routines for B+Tree pages.

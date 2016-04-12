@@ -18,6 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.database.io;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIOInner;
+import org.apache.ignite.internal.processors.cache.database.tree.io.IORegistry;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.h2.result.SearchRow;
 

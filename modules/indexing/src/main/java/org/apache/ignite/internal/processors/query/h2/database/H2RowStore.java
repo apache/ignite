@@ -28,18 +28,19 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.database.tree.DataStore;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.h2.database.io.BPlusIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
-import org.apache.ignite.internal.processors.query.h2.database.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.dwordsOffset;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.linkFromDwordOffset;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
-import static org.apache.ignite.internal.processors.query.h2.database.util.PageHandler.writePage;
+import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
 /**
  * Data store for H2 rows.

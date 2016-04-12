@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database;
+package org.apache.ignite.internal.processors.cache.database.tree;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -29,19 +29,19 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.processors.query.h2.database.io.BPlusIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.BPlusIOInner;
-import org.apache.ignite.internal.processors.query.h2.database.io.BPlusIOLeaf;
-import org.apache.ignite.internal.processors.query.h2.database.io.BPlusIOMeta;
-import org.apache.ignite.internal.processors.query.h2.database.io.PageIO;
-import org.apache.ignite.internal.processors.query.h2.database.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIOInner;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIOLeaf;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIOMeta;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.query.h2.database.util.PageHandler.readPage;
-import static org.apache.ignite.internal.processors.query.h2.database.util.PageHandler.writePage;
+import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.readPage;
+import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
 /**
  * Abstract B+Tree.

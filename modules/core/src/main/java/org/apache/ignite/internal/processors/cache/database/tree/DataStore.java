@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database;
+package org.apache.ignite.internal.processors.cache.database.tree;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.query.h2.database.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 
 /**
  * Data store.

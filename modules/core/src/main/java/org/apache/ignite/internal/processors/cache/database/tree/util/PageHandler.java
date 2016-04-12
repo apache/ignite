@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database.util;
+package org.apache.ignite.internal.processors.cache.database.tree.util;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
