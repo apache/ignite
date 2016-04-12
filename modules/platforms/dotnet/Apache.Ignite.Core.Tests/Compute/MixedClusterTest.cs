@@ -120,8 +120,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 catch (CacheEntryProcessorException ex)
                 {
                     // At least some results should throw an error
-                    Assert.IsTrue(ex.ToString().Contains(".NET platform is not available on node:"),
-                        "Unexpected error: " + ex);
+                    Assert.IsTrue(ex.ToString().Contains("Platforms are not available"), "Unexpected error: " + ex);
 
                     return;
                 }
