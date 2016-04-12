@@ -53,6 +53,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.security.Timestamp;
 import java.util.ArrayList;
@@ -884,6 +885,8 @@ public class PlatformUtils {
     private static Collection<Object> unwrapKnownCollection(Collection<Object> col) {
         Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 
+        assert col0 != null;
+
         for (Object obj : col)
             col0.add(unwrapBinary(obj));
 
@@ -919,6 +922,75 @@ public class PlatformUtils {
 
         return map0;
     }
+
+    /**
+     * Create Java object.
+     *
+     * @param clsName Class name.
+     * @return Instance.
+     */
+    public static <T> T createJavaObject(String clsName) {
+        if (clsName == null)
+            throw new IgniteException("Java object/factory class name is not set.");
+
+        Class cls = U.classForName(clsName, null);
+
+        if (cls == null)
+            throw new IgniteException("Java object/factory class is not found (is it in the classpath?): " +
+                clsName);
+
+        try {
+            return (T)cls.newInstance();
+        }
+        catch (ReflectiveOperationException e) {
+            throw new IgniteException("Failed to instantiate Java object/factory class (does it have public " +
+                "default constructor?): " + clsName, e);
+        }
+    }
+
+    /**
+     * Initialize Java object or object factory.
+     *
+     * @param obj Object.
+     * @param clsName Class name.
+     * @param props Properties (optional).
+     * @param ctx Kernal context (optional).
+     */
+    public static void initializeJavaObject(Object obj, String clsName, @Nullable Map<String, Object> props,
+        @Nullable GridKernalContext ctx) {
+        if (props != null) {
+            for (Map.Entry<String, Object> prop : props.entrySet()) {
+                String fieldName = prop.getKey();
+
+                if (fieldName == null)
+                    throw new IgniteException("Java object/factory field name cannot be null: " + clsName);
+
+                Field field = U.findField(obj.getClass(), fieldName);
+
+                if (field == null)
+                    throw new IgniteException("Java object/factory class field is not found [" +
+                        "className=" + clsName + ", fieldName=" + fieldName + ']');
+
+                try {
+                    field.set(obj, prop.getValue());
+                }
+                catch (ReflectiveOperationException e) {
+                    throw new IgniteException("Failed to set Java object/factory field [className=" + clsName +
+                        ", fieldName=" + fieldName + ']', e);
+                }
+            }
+        }
+
+        if (ctx != null) {
+            try {
+                ctx.resource().injectGeneric(obj);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to inject resources to Java factory: " + clsName, e);
+            }
+        }
+    }
+
     /**
      * Private constructor.
      */

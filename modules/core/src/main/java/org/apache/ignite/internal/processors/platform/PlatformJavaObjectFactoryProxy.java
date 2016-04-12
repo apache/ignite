@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
@@ -26,33 +25,42 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.PlatformJavaObjectFactory;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Wrapper for Java object factory.
  */
-public class PlatformJavaObjectFactoryProxy implements PlatformJavaObjectFactory, Externalizable, Binarylizable {
-    /** Class name. */
-    private String clsName;
+public class PlatformJavaObjectFactoryProxy implements Externalizable, Binarylizable {
+    /** User-defined type. */
+    private static final int TYP_USER = 0;
+
+    /** Default factory. */
+    private static final int TYP_DEFAULT = 1;
+
+    /** Factory type. */
+    private int factoryType;
+
+    /** Factory class name. */
+    private String factoryClsName;
+
+    /** Optional payload for special factory types. */
+    @GridToStringExclude
+    private Object payload;
 
     /** Properties. */
     @GridToStringExclude
     private Map<String, Object> props;
-
-    /** Whether object is to be created directly. */
-    private boolean direct;
 
     /**
      * Default constructor.
@@ -61,12 +69,6 @@ public class PlatformJavaObjectFactoryProxy implements PlatformJavaObjectFactory
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public Object create() {
-        assert direct : "Should be called only in direct mode.";
-
-        return create0(null);
-    }
     /**
      * Get factory instance.
      *
@@ -74,80 +76,40 @@ public class PlatformJavaObjectFactoryProxy implements PlatformJavaObjectFactory
      * @return Factory instance.
      */
     public PlatformJavaObjectFactory factory(GridKernalContext ctx) {
-        if (direct)
-            return this;
+        // Create factory.
+        PlatformJavaObjectFactory res;
+
+        switch (factoryType) {
+            case TYP_DEFAULT:
+                res = new PlatformDefaultJavaObjectFactory();
+
+                break;
+
+            case TYP_USER:
+                res = PlatformUtils.createJavaObject(factoryClsName);
+
+                break;
+
+            default:
+                throw new IgniteException("Unsupported Java object factory type: " + factoryType);
+        }
+
+        // Initialize factory.
+        if (res instanceof PlatformJavaObjectFactoryEx)
+            ((PlatformJavaObjectFactoryEx)res).initialize(payload, props);
         else
-            return create0(ctx);
-    }
+            PlatformUtils.initializeJavaObject(res, factoryClsName, props, ctx);
 
-    /**
-     * Internal create routine.
-     *
-     * @param ctx Optional context for injections.
-     * @return Object.
-     */
-    @SuppressWarnings("unchecked")
-    private <T> T create0(@Nullable GridKernalContext ctx) {
-        if (clsName == null)
-            throw new IgniteException("Java object/factory class name is not set.");
-
-        Class cls = U.classForName(clsName, null);
-
-        if (cls == null)
-            throw new IgniteException("Java object/factory class is not found (is it in the classpath?): " +
-                clsName);
-
-        Object res;
-
-        try {
-            res =  cls.newInstance();
-        }
-        catch (ReflectiveOperationException e) {
-            throw new IgniteException("Failed to instantiate Java object/factory class (does it have public " +
-                "default constructor?): " + clsName, e);
-        }
-
-        if (props != null) {
-            for (Map.Entry<String, Object> prop : props.entrySet()) {
-                String fieldName = prop.getKey();
-
-                if (fieldName == null)
-                    throw new IgniteException("Java object/factory field name cannot be null: " + clsName);
-
-                Field field = U.findField(cls, fieldName);
-
-                if (field == null)
-                    throw new IgniteException("Java object/factory class field is not found [" +
-                        "className=" + clsName + ", fieldName=" + fieldName + ']');
-
-                try {
-                    field.set(res, prop.getValue());
-                }
-                catch (ReflectiveOperationException e) {
-                    throw new IgniteException("Failed to set Java object/factory field [className=" + clsName +
-                        ", fieldName=" + fieldName + ']', e);
-                }
-            }
-        }
-
-        if (ctx != null) {
-            try {
-                ctx.resource().injectGeneric(res);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to inject resources to Java factory: " + clsName, e);
-            }
-        }
-
-        return (T)res;
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriterEx rawWriter = (BinaryRawWriterEx)writer.rawWriter();
 
-        rawWriter.writeString(clsName);
-        rawWriter.writeBoolean(direct);
+        rawWriter.writeInt(factoryType);
+        rawWriter.writeString(factoryClsName);
+        rawWriter.writeObjectDetached(payload);
 
         if (props != null) {
             rawWriter.writeInt(props.size());
@@ -158,19 +120,20 @@ public class PlatformJavaObjectFactoryProxy implements PlatformJavaObjectFactory
             }
         }
         else
-            rawWriter.writeInt(-1);
+            rawWriter.writeInt(0);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReaderEx rawReader = (BinaryRawReaderEx)reader.rawReader();
 
-        clsName = rawReader.readString();
-        direct = rawReader.readBoolean();
+        factoryType = rawReader.readInt();
+        factoryClsName = rawReader.readString();
+        payload = rawReader.readObjectDetached();
 
         int propsSize = rawReader.readInt();
 
-        if (propsSize >= 0) {
+        if (propsSize > 0) {
             props = new HashMap<>(propsSize);
 
             for (int i = 0; i < propsSize; i++) {
@@ -184,16 +147,18 @@ public class PlatformJavaObjectFactoryProxy implements PlatformJavaObjectFactory
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, clsName);
+        out.writeInt(factoryType);
+        U.writeString(out, factoryClsName);
+        out.writeObject(payload);
         U.writeMap(out, props);
-        out.writeBoolean(direct);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        clsName = U.readString(in);
+        factoryType = in.readInt();
+        factoryClsName = U.readString(in);
+        payload = in.readObject();
         props = U.readMap(in);
-        direct = in.readBoolean();
     }
 
     /** {@inheritDoc} */
