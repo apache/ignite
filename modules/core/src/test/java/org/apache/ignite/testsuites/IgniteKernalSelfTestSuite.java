@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNo
 import org.apache.ignite.internal.processors.service.GridServiceProcessorProxySelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorSingleNodeSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorStopSelfTest;
+import org.apache.ignite.internal.processors.service.GridServiceProxyClientReconnectSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProxyNodeStopSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
@@ -129,6 +130,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridServicePackagePrivateSelfTest.class);
         suite.addTestSuite(GridServiceSerializationSelfTest.class);
         suite.addTestSuite(GridServiceProxyNodeStopSelfTest.class);
+        suite.addTestSuite(GridServiceProxyClientReconnectSelfTest.class);
 
         return suite;
     }

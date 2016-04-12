@@ -19,11 +19,10 @@ using System;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Binary;
+using Apache.Ignite.ExamplesDll.Binary;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
-    using Apache.Ignite.ExamplesDll.Binary;
-
     /// <summary>
     /// This example demonstrates several put-get operations on Ignite cache
     /// with binary values. Note that binary object can be retrieved in
@@ -52,13 +51,7 @@ namespace Apache.Ignite.Examples.Datagrid
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\examples-config.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx512m" }
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache put-get example started.");
