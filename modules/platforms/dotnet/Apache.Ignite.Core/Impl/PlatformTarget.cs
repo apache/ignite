@@ -490,7 +490,7 @@ namespace Apache.Ignite.Core.Impl
 
                 var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
 
-                if (res != True)
+                if (res == True)
                     return default(TR);
 
                 stream.SynchronizeInput();
