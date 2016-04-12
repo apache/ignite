@@ -81,6 +81,11 @@ namespace ignite
                 return ptr;
             }
 
+            const void* SharedPointerImpl::Pointer() const
+            {
+                return ptr;
+            }
+
             SharedPointerImpl::DeleterType SharedPointerImpl::Deleter()
             {
                 return deleter;
