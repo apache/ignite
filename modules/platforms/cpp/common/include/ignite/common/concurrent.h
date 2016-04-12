@@ -302,8 +302,8 @@ namespace ignite
                 }
 
             private:
-                template<typename T>
-                friend void ImplEnableShared(EnableSharedFromThis<T>*, SharedPointerImpl*);
+                template<typename T0>
+                friend void ImplEnableShared(EnableSharedFromThis<T0>*, SharedPointerImpl*);
 
                 /** Shared pointer base. */
                 SharedPointerImpl* self;
