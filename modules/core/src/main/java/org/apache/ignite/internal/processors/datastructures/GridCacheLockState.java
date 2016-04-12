@@ -40,7 +40,7 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
     /** Count. */
     private int cnt;
 
-    /** Owner thread local id. */
+    /** Owner thread local ID. */
     private long threadId;
 
     /** Owner node ID. */
@@ -64,8 +64,10 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
     @GridToStringInclude
     private LinkedList<UUID> nodes;
 
-    /** Flag indicating that global state changed. Used in fair mode to ensure that only successful acquires
-     *  and releases trigger update. */
+    /**
+     * Flag indicating that global state changed.
+     * Used in fair mode to ensure that only successful acquires and releases trigger update.
+     */
     private boolean changed;
 
     /**
@@ -117,73 +119,106 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
     }
 
     /**
-     * @return Current owner thread id.
+     * @return Current owner thread ID.
      */
     public long getThreadId() {
         return threadId;
     }
 
     /**
-     * @param threadId New thread owner id.
+     * @param threadId New thread owner ID.
      */
     public void setThreadId(long threadId) {
         this.threadId = threadId;
     }
 
     /**
-     * @return Current owner node id.
+     * @return Current owner node ID.
      */
     public UUID getId() {
         return id;
     }
 
     /**
-     * @return New owner node id.
+     * @return New owner node ID.
      */
     public void setId(UUID id) {
         this.id = id;
     }
 
+    /**
+     * @return Failover safe flag.
+     */
     public boolean isFailoverSafe() {
         return failoverSafe;
     }
 
+    /**
+     * @return Condition count.
+     */
     public int condtionCount(){
         return conditionMap.size();
     }
 
+    /**
+     * @return Condition map.
+     */
     public Map<String, LinkedList<UUID>> getConditionMap() {
         return conditionMap;
     }
 
+    /**
+     * @param conditionMap Condition map.
+     */
     public void setConditionMap(Map<String, LinkedList<UUID>> conditionMap) {
         this.conditionMap = conditionMap;
     }
 
+    /**
+     * @return Signals.
+     */
     public Map<UUID, LinkedList<String>> getSignals() {
         return signals;
     }
 
+    /**
+     * @param signals Signals.
+     */
     public void setSignals(Map<UUID, LinkedList<String>> signals) {
         this.signals = signals;
     }
 
+    /**
+     * @return Nodes.
+     */
     public LinkedList<UUID> getNodes() {
         return nodes;
     }
 
+    /**
+     * @param nodes Nodes.
+     */
     public void setNodes(LinkedList<UUID> nodes) {
         this.nodes = nodes;
     }
 
+    /**
+     * @return Fair flag.
+     */
     public boolean isFair() {
         return fair;
     }
 
+    /**
+     * @return Changed flag.
+     */
     public boolean isChanged() {
         return changed;
     }
 
+    /**
+     * @param changed Changed flag.
+     */
     public void setChanged(boolean changed) {
         this.changed = changed;
     }
@@ -215,9 +250,8 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
 
                 out.writeInt(e.getValue().size());
 
-                for(UUID uuid:e.getValue()){
+                for (UUID uuid:e.getValue())
                     U.writeUuid(out, uuid);
-                }
             }
         }
 
@@ -231,9 +265,8 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
 
                 out.writeInt(e.getValue().size());
 
-                for(String condition:e.getValue()){
+                for (String condition:e.getValue())
                     U.writeString(out, condition);
-                }
             }
         }
 
@@ -242,9 +275,8 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
         if (nodes != null) {
             out.writeInt(nodes.size());
 
-            for (UUID uuid: nodes) {
+            for (UUID uuid: nodes)
                 U.writeUuid(out, uuid);
-            }
         }
     }
 
@@ -272,15 +304,14 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
 
                 LinkedList<UUID> list = new LinkedList();
 
-                for (int j = 0; j < size1; j++) {
+                for (int j = 0; j < size1; j++)
                     list.add(U.readUuid(in));
-                }
 
                 conditionMap.put(key, list);
             }
         }
 
-        if(in.readBoolean()) {
+        if (in.readBoolean()) {
             assert (conditionMap != null);
 
             int size = in.readInt();
@@ -294,29 +325,25 @@ public final class GridCacheLockState implements GridCacheInternal, Externalizab
 
                 LinkedList<String> list = new LinkedList();
 
-                for (int j = 0; j < size1; j++) {
+                for (int j = 0; j < size1; j++)
                     list.add(U.readString(in));
-                }
 
                 signals.put(node, list);
             }
         }
-        else{
+        else
             signals = null;
-        }
 
         if (in.readBoolean()) {
             int size = in.readInt();
 
             nodes = new LinkedList();
 
-            for (int i = 0; i < size; i++) {
+            for (int i = 0; i < size; i++)
                 nodes.add(U.readUuid(in));
-            }
         }
-        else{
+        else
             nodes = null;
-        }
     }
 
     /** {@inheritDoc} */

@@ -49,5 +49,4 @@ public interface GridCacheLockEx extends IgniteLock, GridCacheRemovable {
      * Callback to notify local reentrant lock instance on node stop.
      */
     public void onStop();
-
 }

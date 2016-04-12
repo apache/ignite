@@ -91,7 +91,6 @@ import java.util.concurrent.locks.Lock;
  *
  */
 public interface IgniteLock extends Lock, Closeable {
-
     /**
      * Name of atomic reentrant lock.
      *

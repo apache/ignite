@@ -111,7 +111,6 @@ public class IgniteLockExample {
             }
             finally {
                 lock.unlock();
-
             }
         }
 
@@ -134,7 +133,6 @@ public class IgniteLockExample {
         ReentrantLockExampleClosure(String reentrantLockName) {
             this.reentrantLockName = reentrantLockName;
         }
-
     }
 
     /**
@@ -191,7 +189,6 @@ public class IgniteLockExample {
                 }
                 finally {
                     lock.unlock();
-
                 }
             }
 
@@ -208,7 +205,8 @@ public class IgniteLockExample {
 
                 // Signals the master thread.
                 done.signal();
-            }finally {
+            }
+            finally {
                 lock.unlock();
             }
         }
@@ -286,7 +284,8 @@ public class IgniteLockExample {
 
                 // Signals the master thread.
                 done.signal();
-            }finally {
+            }
+            finally {
                 lock.unlock();
             }
         }

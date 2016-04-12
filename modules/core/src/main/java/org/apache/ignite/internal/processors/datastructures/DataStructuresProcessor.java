@@ -269,13 +269,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         super.onKernalStop(cancel);
 
         for (GridCacheRemovable ds : dsMap.values()) {
-            if (ds instanceof GridCacheSemaphoreEx) {
+            if (ds instanceof GridCacheSemaphoreEx)
                 ((GridCacheSemaphoreEx)ds).stop();
-            }
 
-            if (ds instanceof GridCacheLockEx) {
+            if (ds instanceof GridCacheLockEx)
                 ((GridCacheLockEx)ds).onStop();
-            }
         }
 
         if (initLatch.getCount() > 0) {
@@ -1463,7 +1461,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         }, name, REENTRANT_LOCK, null);
     }
 
-
     /**
      * Remove internal entry by key from cache.
      *
@@ -1629,7 +1626,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
                                 ", actual=" + reentrantLock.getClass() + ", value=" + reentrantLock + ']');
                         }
                     }
-
                 }
                 else {
                     assert evt.getEventType() == EventType.REMOVED : evt;
