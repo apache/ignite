@@ -70,6 +70,7 @@ const appModulePaths = [
     igniteModulesDir + '/index.js',
     igniteModulesDir + '/**/main.js',
     igniteModulesDir + '/**/module.js',
+    igniteModulesDir + '/**/app/data/*.json',
     igniteModulesDir + '/**/app/modules/*.js',
     igniteModulesDir + '/**/app/modules/**/*.js',
     igniteModulesDir + '/**/app/modules/**/*.jade'
