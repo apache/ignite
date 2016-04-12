@@ -33,7 +33,6 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -70,7 +69,6 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
     public static final CacheEntryProcessor INC_ENTRY_PROC_USER_OBJ = new CacheEntryProcessor() {
         @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
             assertTrue(entry.getKey() instanceof BinaryObject);
-            assertFalse(entry.getKey() instanceof BinaryObjectOffheapImpl);
 
             Object val = entry.getValue();
 
@@ -96,7 +94,6 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
     public static final CacheEntryProcessor INC_ENTRY_PROC_BINARY_OBJ = new CacheEntryProcessor() {
         @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
             assertTrue(entry.getKey() instanceof BinaryObject);
-            assertFalse(entry.getKey() instanceof BinaryObjectOffheapImpl);
 
             Object val = entry.getValue();
 
@@ -104,8 +101,6 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
             if (val != null) {
                 assertTrue(val instanceof BinaryObject);
-
-                assertFalse(val instanceof BinaryObjectOffheapImpl);
 
                 valId = valueOf(((BinaryObject)val).deserialize()) + 1;
             }
@@ -1279,11 +1274,8 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
             if (validate) {
                 validate(e.getKey(), e.getValue(), true, true);
 
-                if (newVal != null) {
+                if (newVal != null)
                     assertEquals("NewVal: " + newVal, binaryObjExp, newVal instanceof BinaryObject);
-
-                    assertFalse(e.getKey() instanceof BinaryObjectOffheapImpl);
-                }
             }
 
             return newVal;
@@ -1314,9 +1306,6 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
          */
         private void validate(K key, V val, boolean validateKey, boolean validateVal) {
             assertNotNull(key);
-
-            assertFalse(key instanceof BinaryObjectOffheapImpl);
-            assertFalse(val instanceof BinaryObjectOffheapImpl);
 
             if (validate) {
                 if (validateKey)
