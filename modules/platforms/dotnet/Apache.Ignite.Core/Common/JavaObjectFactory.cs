@@ -22,7 +22,8 @@ namespace Apache.Ignite.Core.Common
     using Apache.Ignite.Core.Impl.Common.JavaObjects;
 
     /// <summary>
-    /// Java object factory.
+    /// Creates Java object wrappers.
+    /// Resulting predicates and filters delegate to specified Java classes, and can be used on non-.NET nodes.
     /// </summary>
     public static class JavaObjectFactory
     {
