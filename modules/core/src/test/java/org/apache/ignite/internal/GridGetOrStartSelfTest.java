@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * The GirdGetOrStartSelfTest tests get or start semantics. See IGNITE-2941
+ * The GridGetOrStartSelfTest tests get or start semantics.
  */
 
 @GridCommonTest(group = "Kernal Self")

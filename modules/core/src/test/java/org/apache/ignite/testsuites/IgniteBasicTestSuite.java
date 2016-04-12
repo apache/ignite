@@ -20,19 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
-import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
-import org.apache.ignite.internal.ClusterGroupSelfTest;
-import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
-import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
-import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
-import org.apache.ignite.internal.GridNodeMetricsLogSelfTest;
-import org.apache.ignite.internal.GridProjectionForCachesSelfTest;
-import org.apache.ignite.internal.GridReduceSelfTest;
-import org.apache.ignite.internal.GridReleaseTypeSelfTest;
-import org.apache.ignite.internal.GridSelfTest;
-import org.apache.ignite.internal.GridStartStopSelfTest;
-import org.apache.ignite.internal.GridStopWithCancelSelfTest;
-import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
@@ -128,6 +116,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(ParametersTest.class);
         suite.addTestSuite(VariationsIteratorTest.class);
         suite.addTestSuite(ConfigVariationsTestSuiteBuilderTest.class);
+
+        GridTestUtils.addTestIfNeeded(suite, GridGetOrStartSelfTest.class, ignoredTests);
 
         return suite;
     }

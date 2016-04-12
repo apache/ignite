@@ -517,7 +517,7 @@ public class Ignition {
     }
 
     /**
-     * Get or start grid instance, if it wasn't started yet.
+     * Gets or starts new grid instance if it hasn't been started yet.
      * @param cfg Grid configuration.
      * @return Grid instance.
      * @throws IgniteCheckedException Thrown if something went wrong on startup.

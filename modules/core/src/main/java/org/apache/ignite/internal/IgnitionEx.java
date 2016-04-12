@@ -525,7 +525,7 @@ public class IgnitionEx {
      * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
      *      also if named grid has already been started.
      */
-    public static Ignite start(IgniteConfiguration cfg, boolean failIfStarted ) throws IgniteCheckedException {
+    public static Ignite start(IgniteConfiguration cfg, boolean failIfStarted) throws IgniteCheckedException {
         return start(cfg, null, failIfStarted);
     }
 
@@ -1019,15 +1019,15 @@ public class IgnitionEx {
             }
         }
 
-        if (old != null) {
+        if (old != null)
             if (failIfStarted) {
-            if (name == null)
-                throw new IgniteCheckedException("Default Ignite instance has already been started.");
+                if (name == null)
+                    throw new IgniteCheckedException("Default Ignite instance has already been started.");
+                else
+                    throw new IgniteCheckedException("Ignite instance with this name has already been started: " + name);
+            }
             else
-                throw new IgniteCheckedException("Ignite instance with this name has already been started: " + name);
-            } else
                 return old;
-        }
 
         if (startCtx.config().getWarmupClosure() != null)
             startCtx.config().getWarmupClosure().apply(startCtx.config());
