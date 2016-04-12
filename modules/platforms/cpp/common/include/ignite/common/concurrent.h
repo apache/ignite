@@ -18,6 +18,8 @@
 #ifndef _IGNITE_COMMON_CONCURRENT
 #define _IGNITE_COMMON_CONCURRENT
 
+#include <cassert>
+
 #include "ignite/common/concurrent_os.h"
 
 namespace ignite
