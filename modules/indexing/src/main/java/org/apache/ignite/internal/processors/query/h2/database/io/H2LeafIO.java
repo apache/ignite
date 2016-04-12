@@ -62,11 +62,6 @@ public class H2LeafIO extends BPlusLeafIO<SearchRow> implements H2RowLinkIO {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean canGetRow() {
-        return true; // We can get row from link.
-    }
-
-    /** {@inheritDoc} */
     @Override public long getLink(ByteBuffer buf, int idx) {
         assert idx < getCount(buf): idx;
 

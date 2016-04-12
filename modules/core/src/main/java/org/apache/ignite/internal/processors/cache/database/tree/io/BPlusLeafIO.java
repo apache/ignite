@@ -43,19 +43,10 @@ public abstract class BPlusLeafIO<L> extends BPlusIO<L> {
         return (buf.capacity() - ITEMS_OFF) >>> 3; // divide by ITEM_SIZE
     }
 
-//        /** {@inheritDoc} */
-//        @Override public long getLink(ByteBuffer buf, int idx) {
-//            assert idx < getCount(buf): idx;
-//
-//            return buf.getLong(offset(idx));
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Override public void setLink(ByteBuffer buf, int idx, long link) {
-//            buf.putLong(offset(idx), link);
-//
-//            assert getLink(buf, idx) == link;
-//        }
+    /** {@inheritDoc} */
+    @Override public final boolean canGetRow() {
+        return true;
+    }
 
     /** {@inheritDoc} */
     @Override public void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt,
