@@ -25,8 +25,6 @@
 
 #include <iostream>
 
-#include <array>
-
 #define IGNITE_TRACE_ALLOC(addr) \
     std::cout << "ALLOC " << __FILE__ << "(" << __LINE__ << "): 0x" << (void*)addr << std::endl;
 
