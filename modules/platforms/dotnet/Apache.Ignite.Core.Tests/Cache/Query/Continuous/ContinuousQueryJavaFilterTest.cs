@@ -16,7 +16,7 @@
  */
 
 #pragma warning disable 618  // SpringConfigUrl
-namespace Apache.Ignite.Core.Tests.Compute
+namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Tests query in a cluster with Java-only and .NET nodes.
     /// </summary>
-    public class MixedClusterQueryTest
+    public class ContinuousQueryJavaFilterTest
     {
         /** */
         private const string SpringConfig = @"Config\Compute\compute-grid1.xml";

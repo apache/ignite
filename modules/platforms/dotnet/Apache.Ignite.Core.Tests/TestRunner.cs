@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests
 
             //TestOne(typeof(MixedClusterQueryTest), "TestExcept");
 
-            TestAll(typeof (MixedClusterQueryTest));
+            TestAll(typeof (ContinuousQueryJavaFilterTest));
             //TestAllInAssembly();
         }
 
