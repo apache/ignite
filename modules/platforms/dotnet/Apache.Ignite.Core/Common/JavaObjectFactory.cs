@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Common
     /// <summary>
     /// Java object factory.
     /// </summary>
-    public static class JavaObjects
+    public static class JavaObjectFactory
     {
         /// <summary>
         /// Creates the cache event filter that delegates to specified Java class.
@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Common
         /// <typeparam name="TV">Value type.</typeparam>
         /// <param name="className">Name of the class.</param>
         /// <returns>Cache event filter that delegates to specified Java class.</returns>
-        public static ICacheEntryEventFilter<TK, TV> CreateCacheEventFilter<TK, TV>(string className)
+        public static ICacheEntryEventFilter<TK, TV> CreateCacheEntryEventFilter<TK, TV>(string className)
         {
             return new JavaCacheEntryEventFilter<TK, TV>(className);
         }
