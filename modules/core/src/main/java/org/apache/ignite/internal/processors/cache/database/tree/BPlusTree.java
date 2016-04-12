@@ -72,9 +72,6 @@ public abstract class BPlusTree<L, T extends L> {
     private final AtomicLong globalRmvId = new AtomicLong(U.currentTimeMillis() * 1000_000); // TODO init from WAL?
 
     /** */
-    private final DataStore<T> dataStore;
-
-    /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
         /** */
         private boolean keys = true;
@@ -459,20 +456,11 @@ public abstract class BPlusTree<L, T extends L> {
     };
 
     /**
-     * @param dataStore Data store.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public BPlusTree(
-        DataStore<T> dataStore,
-        FullPageId metaPageId,
-        boolean initNew
-    ) throws IgniteCheckedException {
-        assert dataStore != null;
-
-        this.dataStore = dataStore;
-
+    public BPlusTree(FullPageId metaPageId, boolean initNew) throws IgniteCheckedException {
         // TODO make configurable: 0 <= minFill <= maxFill <= 1
         minFill = 0f; // Testing worst case when merge happens only on empty page.
         maxFill = 0f; // Avoiding random effects on testing.
@@ -1503,17 +1491,6 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
-     * @param io IO.
-     * @param buf Buffer.
-     * @param idx Index.
-     * @return Full data row.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected final T getRow(BPlusIO<L> io, ByteBuffer buf, int idx) throws IgniteCheckedException {
-        return dataStore.getRow(io, buf, idx);
-    }
-
-    /**
      * Get operation.
      */
     private abstract class Get {
@@ -2243,6 +2220,17 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     protected abstract int compare(BPlusIO<L> io, ByteBuffer buf, int idx, L row) throws IgniteCheckedException;
+
+    /**
+     * This method can be called only if {@link BPlusIO#canGetRow()} returns {@code true}.
+     *
+     * @param io IO.
+     * @param buf Buffer.
+     * @param idx Index.
+     * @return Full data row.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected abstract T getRow(BPlusIO<L> io, ByteBuffer buf, int idx) throws IgniteCheckedException;
 
     /**
      * @param pageId Page ID.

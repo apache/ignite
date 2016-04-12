@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.cache.database.tree.DataStore;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 
 /**
  * Abstract IO routines for B+Tree pages.
@@ -144,7 +144,8 @@ public abstract class BPlusIO<L> extends PageIO {
     public abstract void store(ByteBuffer dst, int dstIdx, BPlusIO<L> srcIo, ByteBuffer src, int srcIdx);
 
     /**
-     * @return {@code true} If we can get the whole row from this page using {@link DataStore}.
+     * @return {@code true} If we can get the whole row from this page using
+     * method {@link BPlusTree#getRow(BPlusIO, ByteBuffer, int)}.
      * Must always be {@code true} for leaf pages.
      */
     public abstract boolean canGetRow();

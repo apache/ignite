@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.database.tree.DataStore;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowStore;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -93,7 +92,7 @@ public class GridH2Table extends TableBase {
     private final boolean snapshotEnabled;
 
     /** */
-    private final H2RowStore dataStore;
+    private final H2RowStore rowStore;
 
     /**
      * Creates table.
@@ -112,7 +111,7 @@ public class GridH2Table extends TableBase {
         this.desc = desc;
         this.spaceName = spaceName;
 
-        dataStore = idxsFactory.createDataStore(this);
+        rowStore = idxsFactory.createRowStore(this);
         idxs = idxsFactory.createIndexes(this);
 
         assert idxs != null;
@@ -410,10 +409,10 @@ public class GridH2Table extends TableBase {
             desc.guard().begin();
 
         try {
-            if (dataStore != null) {
+            if (rowStore != null) {
                 assert row.link == 0;
 
-                dataStore.writeRowData(row);
+                rowStore.writeRowData(row);
 
                 assert row.link != 0;
             }
@@ -695,8 +694,8 @@ public class GridH2Table extends TableBase {
     /**
      * @return Data store.
      */
-    public DataStore<GridH2Row> dataStore() {
-        return dataStore;
+    public H2RowStore rowStore() {
+        return rowStore;
     }
 
     /**
@@ -775,7 +774,7 @@ public class GridH2Table extends TableBase {
          * @param tbl Table.
          * @return Data store.
          */
-        H2RowStore createDataStore(GridH2Table tbl);
+        H2RowStore createRowStore(GridH2Table tbl);
     }
 
     /**

@@ -26,13 +26,13 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.database.tree.DataStore;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIOInner;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIOLeaf;
+import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -101,7 +101,7 @@ public class BPlusTreeIndex extends PageMemoryIndex {
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        tree = new H2BPlusTree(tbl.dataStore(), metaPageId, initNew);
+        tree = new H2BPlusTree(tbl.rowStore(), metaPageId, initNew);
     }
 
     /** {@inheritDoc} */
@@ -218,15 +218,22 @@ public class BPlusTreeIndex extends PageMemoryIndex {
      * Specialization of {@link BPlusTree} for H2 index.
      */
     private class H2BPlusTree extends BPlusTree<SearchRow, GridH2Row> {
+        /** */
+        private final H2RowStore rowStore;
+
         /**
-         * @param dataStore Data store.
+         * @param rowStore Row data store.
          * @param metaPageId Meta page ID.
          * @param initNew    Initialize new index.
          * @throws IgniteCheckedException If failed.
          */
-        public H2BPlusTree(DataStore<GridH2Row> dataStore, FullPageId metaPageId, boolean initNew)
+        public H2BPlusTree(H2RowStore rowStore, FullPageId metaPageId, boolean initNew)
             throws IgniteCheckedException {
-            super(dataStore, metaPageId, initNew);
+            super(metaPageId, initNew);
+
+            assert rowStore != null;
+
+            this.rowStore = rowStore;
         }
 
         /** {@inheritDoc} */
@@ -265,6 +272,11 @@ public class BPlusTreeIndex extends PageMemoryIndex {
         @Override protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
             throws IgniteCheckedException {
             return compareRows(getRow(io, buf, idx), row);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected GridH2Row getRow(BPlusIO<SearchRow> io, ByteBuffer buf, int idx) throws IgniteCheckedException {
+            return rowStore.getRow((H2RowLinkIO)io, buf, idx);
         }
     }
 }

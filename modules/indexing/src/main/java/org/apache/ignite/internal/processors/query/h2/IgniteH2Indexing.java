@@ -1978,13 +1978,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public H2RowStore createDataStore(GridH2Table tbl) {
+        @Override public H2RowStore createRowStore(GridH2Table tbl) {
             int cacheId = CU.cacheId(schema.ccfg.getName());
 
             IgniteCacheH2DatabaseManager dbMgr = databaseManager(cacheId);
 
             if (dbMgr != null)
-                return dbMgr.createDataStore(tbl);
+                return dbMgr.createRowStore(tbl);
 
             return null;
         }

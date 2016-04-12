@@ -28,12 +28,10 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.database.tree.DataStore;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 
@@ -45,7 +43,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
 /**
  * Data store for H2 rows.
  */
-public class H2RowStore implements DataStore<GridH2Row> {
+public class H2RowStore {
     /** */
     private final PageMemory pageMem;
 
@@ -90,9 +88,15 @@ public class H2RowStore implements DataStore<GridH2Row> {
         this.coctx = cctx.cacheObjectContext();
     }
 
-    /** {@inheritDoc} */
-    @Override public GridH2Row getRow(BPlusIO<?> io, ByteBuffer buf, int idx) throws IgniteCheckedException {
-        long link = ((H2RowLinkIO)io).getLink(buf, idx);
+    /**
+     * @param io IO.
+     * @param buf Buffer.
+     * @param idx Index.
+     * @return Row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridH2Row getRow(H2RowLinkIO io, ByteBuffer buf, int idx) throws IgniteCheckedException {
+        long link = io.getLink(buf, idx);
 
         return getRow(link);
     }

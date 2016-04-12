@@ -88,7 +88,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         conn = DriverManager.getConnection(DB_URL);
 
         tbl = GridH2Table.Engine.createTable(conn, CREATE_TABLE_SQL, null, new GridH2Table.IndexesFactory() {
-            @Override public H2RowStore createDataStore(GridH2Table tbl) {
+            @Override public H2RowStore createRowStore(GridH2Table tbl) {
                 return null;
             }
 

@@ -89,9 +89,9 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
 
     /**
      * @param tbl Table.
-     * @return New data store for table.
+     * @return New row store for the given table.
      */
-    public H2RowStore createDataStore(GridH2Table tbl) {
+    public H2RowStore createRowStore(GridH2Table tbl) {
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
         return new H2RowStore(dbMgr.pageMemory(), tbl.rowDescriptor(), cctx);
