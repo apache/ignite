@@ -1724,7 +1724,8 @@ public abstract class BPlusTree<L, T extends L> {
             if (io.isLeaf())
                 return true;
 
-            if (foundInner == FALSE)
+            // If we can get full row from the inner page, we must do inner replace to update full row info here.
+            if (io.canGetRow() && foundInner == FALSE)
                 foundInner = TRUE;
 
             return false;

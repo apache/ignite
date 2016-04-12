@@ -462,7 +462,7 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         X.println("Start removing.");
 
         for (int i = 0; i < cnt; i++) {
-            if (i % 100 == 0) {
+            if (i % 1000 == 0) {
                 X.println("-> " + i);
 
 //                assertEquals((long)(cnt - i),
@@ -505,7 +505,7 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         X.println("Start removing in backward direction.");
 
         for (int i = cnt - 1; i >= 0; i--) {
-            if (i % 100 == 0) {
+            if (i % 1000 == 0) {
                 X.println("-> " + i);
 
 //                assertEquals((long)(cnt - i),
