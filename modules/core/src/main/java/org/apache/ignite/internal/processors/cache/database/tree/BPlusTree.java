@@ -30,9 +30,9 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIOInner;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIOLeaf;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIOMeta;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -421,7 +421,7 @@ public abstract class BPlusTree<L, T extends L> {
         @Override public int run(Page page, ByteBuffer buf, Long pageId, int lvl) throws IgniteCheckedException {
             assert pageId != null;
 
-            BPlusIOMeta io = BPlusIOMeta.VERSIONS.forPage(buf);
+            BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
 
             assert io.getLevelsCount(buf) > lvl;
 
@@ -440,7 +440,7 @@ public abstract class BPlusTree<L, T extends L> {
     /** */
     private final PageHandler<Long> updateRoot = new PageHandler<Long>() {
         @Override public int run(Page page, ByteBuffer buf, Long rootPageId, int lvl) throws IgniteCheckedException {
-            BPlusIOMeta io = BPlusIOMeta.VERSIONS.forPage(buf);
+            BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
 
             int cnt = io.getLevelsCount(buf);
 
@@ -471,7 +471,7 @@ public abstract class BPlusTree<L, T extends L> {
             try (Page meta = page(this.metaPageId)) {
                 ByteBuffer buf = meta.getForInitialWrite();
 
-                BPlusIOMeta io = BPlusIOMeta.VERSIONS.latest();
+                BPlusMetaIO io = BPlusMetaIO.VERSIONS.latest();
 
                 io.initNewPage(buf, metaPageId.pageId());
 
@@ -492,7 +492,7 @@ public abstract class BPlusTree<L, T extends L> {
         ByteBuffer buf = meta.getForRead();
 
         try {
-            return BPlusIOMeta.VERSIONS.forPage(buf).getRootLevel(buf);
+            return BPlusMetaIO.VERSIONS.forPage(buf).getRootLevel(buf);
         }
         finally {
             meta.releaseRead();
@@ -508,7 +508,7 @@ public abstract class BPlusTree<L, T extends L> {
         ByteBuffer buf = meta.getForRead();
 
         try {
-            BPlusIOMeta io = BPlusIOMeta.VERSIONS.forPage(buf);
+            BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
 
             if (lvl == Integer.MIN_VALUE)
                 lvl = io.getRootLevel(buf);
@@ -597,7 +597,7 @@ public abstract class BPlusTree<L, T extends L> {
         ByteBuffer buf = g.meta.getForRead();
 
         try {
-            BPlusIOMeta io = BPlusIOMeta.VERSIONS.forPage(buf);
+            BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
 
             rootLvl = io.getRootLevel(buf);
             rootId = io.getLeftmostPageId(buf, rootLvl);
@@ -2191,8 +2191,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @param io IO.
      * @return Inner page IO.
      */
-    private static BPlusIOInner inner(BPlusIO io) {
-        return (BPlusIOInner)io;
+    private static BPlusInnerIO inner(BPlusIO io) {
+        return (BPlusInnerIO)io;
     }
 
     /**
@@ -2205,12 +2205,12 @@ public abstract class BPlusTree<L, T extends L> {
     /**
      * @return Latest version of inner page IO.
      */
-    protected abstract BPlusIOInner<L> latestInnerIO();
+    protected abstract BPlusInnerIO<L> latestInnerIO();
 
     /**
      * @return Latest version of leaf page IO.
      */
-    protected abstract BPlusIOLeaf<L> latestLeafIO();
+    protected abstract BPlusLeafIO<L> latestLeafIO();
 
     /**
      * @param buf Buffer.

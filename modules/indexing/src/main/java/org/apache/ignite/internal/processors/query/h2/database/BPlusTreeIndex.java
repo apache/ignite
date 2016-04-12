@@ -27,8 +27,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIOInner;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIOLeaf;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
@@ -259,12 +259,12 @@ public class BPlusTreeIndex extends PageMemoryIndex {
         }
 
         /** {@inheritDoc} */
-        @Override protected BPlusIOInner<SearchRow> latestInnerIO() {
+        @Override protected BPlusInnerIO<SearchRow> latestInnerIO() {
             return H2InnerIO.VERSIONS.latest();
         }
 
         /** {@inheritDoc} */
-        @Override protected BPlusIOLeaf<SearchRow> latestLeafIO() {
+        @Override protected BPlusLeafIO<SearchRow> latestLeafIO() {
             return H2LeafIO.VERSIONS.latest();
         }
 

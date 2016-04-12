@@ -22,10 +22,10 @@ import java.nio.ByteBuffer;
 /**
  * IO routines for B+Tree meta pages.
  */
-public class BPlusIOMeta extends PageIO {
+public class BPlusMetaIO extends PageIO {
     /** */
-    public static final IOVersions<BPlusIOMeta> VERSIONS = new IOVersions<>(
-        new BPlusIOMeta(1)
+    public static final IOVersions<BPlusMetaIO> VERSIONS = new IOVersions<>(
+        new BPlusMetaIO(1)
     );
 
     /** */
@@ -37,7 +37,7 @@ public class BPlusIOMeta extends PageIO {
     /**
      * @param ver Page format version.
      */
-    protected BPlusIOMeta(int ver) {
+    protected BPlusMetaIO(int ver) {
         super(ver);
     }
 
