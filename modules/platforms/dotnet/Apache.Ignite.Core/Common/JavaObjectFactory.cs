@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Common
 {
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Common.JavaObjects;
 
     /// <summary>
@@ -54,7 +55,25 @@ namespace Apache.Ignite.Core.Common
         public static ICacheEntryEventFilter<TK, TV> CreateCacheEntryEventFilter<TK, TV>(string className, 
             IDictionary<string, object> properties)
         {
-            return new JavaCacheEntryEventFilter<TK, TV>(className, properties);
+            return new JavaCacheEntryEventFilter<TK, TV>(PlatformJavaObjectFactoryProxy.FactoryType.Default, null, 
+                className, properties);
+        }
+
+        /// <summary>
+        /// Creates the cache event filter that delegates to specified Java filter factory.
+        /// </summary>
+        /// <typeparam name="TK">Key type.</typeparam>
+        /// <typeparam name="TV">Value type.</typeparam>
+        /// <param name="className">Name of the factory class.</param>
+        /// <param name="properties">The properties to set on the Java factory object.</param>
+        /// <returns>
+        /// Cache event filter that delegates to specified Java factory class.
+        /// </returns>
+        public static ICacheEntryEventFilter<TK, TV> CreateCacheEntryEventFilterFactory<TK, TV>(string className, 
+            IDictionary<string, object> properties)
+        {
+            return new JavaCacheEntryEventFilter<TK, TV>(PlatformJavaObjectFactoryProxy.FactoryType.User, className,
+                null, properties);
         }
     }
 }
