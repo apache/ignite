@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 /**
  * Registry for IO versions.
  */
-public final class IORegistry<V extends PageIO> {
+public final class IOVersions<V extends PageIO> {
     /** */
     private final V[] vers;
 
@@ -30,7 +30,7 @@ public final class IORegistry<V extends PageIO> {
      * @param vers Versions.
      */
     @SafeVarargs
-    public IORegistry(V... vers) {
+    public IOVersions(V... vers) {
         assert vers != null;
         assert vers.length > 0;
 

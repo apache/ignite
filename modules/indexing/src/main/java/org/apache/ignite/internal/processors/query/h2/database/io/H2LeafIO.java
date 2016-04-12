@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.database.io;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIOLeaf;
-import org.apache.ignite.internal.processors.cache.database.tree.io.IORegistry;
+import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.h2.result.SearchRow;
 
@@ -29,7 +29,7 @@ import org.h2.result.SearchRow;
  */
 public class H2LeafIO extends BPlusIOLeaf<SearchRow> implements H2RowLinkIO {
     /** */
-    public static final IORegistry<H2LeafIO> VERSIONS = new IORegistry<>(
+    public static final IOVersions<H2LeafIO> VERSIONS = new IOVersions<>(
         new H2LeafIO(1)
     );
 

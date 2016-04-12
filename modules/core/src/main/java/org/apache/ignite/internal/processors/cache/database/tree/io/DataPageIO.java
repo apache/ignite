@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public class DataPageIO extends PageIO {
     /** */
-    public static final IORegistry<DataPageIO> VERSIONS = new IORegistry<>(
+    public static final IOVersions<DataPageIO> VERSIONS = new IOVersions<>(
         new DataPageIO(1)
     );
 

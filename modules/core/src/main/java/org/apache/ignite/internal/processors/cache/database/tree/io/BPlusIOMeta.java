@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
  */
 public class BPlusIOMeta extends PageIO {
     /** */
-    public static final IORegistry<BPlusIOMeta> VERSIONS = new IORegistry<>(
+    public static final IOVersions<BPlusIOMeta> VERSIONS = new IOVersions<>(
         new BPlusIOMeta(1)
     );
 
