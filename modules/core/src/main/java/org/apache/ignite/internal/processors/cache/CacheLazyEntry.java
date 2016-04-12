@@ -126,11 +126,8 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override public K getKey() {
-        if (key == null) {
-            Object keyObj0 = cctx.unwrapTemporary(keyObj);
-
-            key = (K)cctx.unwrapBinaryIfNeeded(keyObj0, keepBinary);
-        }
+        if (key == null)
+            key = (K)cctx.unwrapBinaryIfNeeded(keyObj, keepBinary);
 
         return key;
     }
@@ -148,11 +145,8 @@ public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
      */
     @SuppressWarnings("unchecked")
     public V getValue(boolean keepBinary) {
-        if (val == null) {
-            Object valObj0 = cctx.unwrapTemporary(valObj);
-
-            val = (V)cctx.unwrapBinaryIfNeeded(valObj0, keepBinary, true);
-        }
+        if (val == null)
+            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, true);
 
         return val;
     }

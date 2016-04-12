@@ -237,10 +237,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 return (V)(val);
                             }
 
-                            if (!ctx.keepBinary())
-                                return (V)map.get(key);
-                            else
-                                return (V)F.firstValue(map);
+                            return (V)F.firstValue(map);
                         }
                     });
                 }
@@ -490,6 +487,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             if (needVer) {
                                 T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                                     null,
+                                    null,
                                     /*swap*/true,
                                     /*unmarshal*/true,
                                     /**update-metrics*/false,
@@ -506,7 +504,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 }
                             }
                             else {
-                                v = entry.innerGet(null,
+                                v = entry.innerGet(
+                                    null,
+                                    null,
                                     /*swap*/true,
                                     /*read-through*/false,
                                     /*fail-fast*/true,

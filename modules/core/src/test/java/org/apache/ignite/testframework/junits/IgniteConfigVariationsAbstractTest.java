@@ -202,6 +202,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /**
      * Runs in all data modes.
+     *
+     * @throws Exception If failed.
      */
     protected void runInAllDataModes(TestRunnable call, DataMode... dataModes) throws Exception {
         if (F.isEmpty(dataModes))
