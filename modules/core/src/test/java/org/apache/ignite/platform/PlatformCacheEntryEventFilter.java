@@ -17,14 +17,15 @@
 
 package org.apache.ignite.platform;
 
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+
 import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
 
 /**
  * Test filter.
  */
-public class PlatformCacheEntryEventFilter implements CacheEntryEventFilter {
+public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializableFilter {
     /** {@inheritDoc} */
     @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
         return ((String)event.getValue()).startsWith("valid");
