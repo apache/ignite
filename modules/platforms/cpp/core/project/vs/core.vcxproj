@@ -240,6 +240,7 @@
     <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_impl.h" />
     <ClInclude Include="..\..\include\ignite\transactions\transaction.h" />
     <ClInclude Include="..\..\include\ignite\transactions\transactions.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_state.h" />
     <ClInclude Include="..\..\os\win\include\ignite\impl\utils.h" />
   </ItemGroup>
   <ItemGroup>

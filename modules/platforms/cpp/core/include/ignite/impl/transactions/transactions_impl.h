@@ -41,7 +41,7 @@ namespace ignite
                 typedef ignite::common::concurrent::SharedPointer<ignite::impl::IgniteEnvironment> IgniteEnvSharedPtr;
                 typedef ignite::transactions::TransactionConcurrency TransactionConcurrency;
                 typedef ignite::transactions::TransactionIsolation TransactionIsolation;
-                typedef TransactionImpl::TxImplSharedPtr TxImplSharedPtr;
+                typedef ignite::common::concurrent::SharedPointer<TransactionImpl> TxImplSharedPtr;
             public:
                 /**
                  * Constructor used to create new instance.

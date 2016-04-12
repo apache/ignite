@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
+#include "ignite/impl/transactions/transactions_impl.h"
 #include "ignite/impl/transactions/transaction_impl.h"
 
 using namespace ignite::common::java;
+using namespace ignite::transactions;
 
 namespace ignite 
 {
@@ -33,7 +35,9 @@ namespace ignite
                 concurrency(concurrency),
                 isolation(isolation),
                 timeout(timeout),
-                txSize(txSize)
+                txSize(txSize),
+                state(IGNITE_TX_STATE_UNKNOWN),
+                closed(false)
             {
                 // No-op.
             }
@@ -58,14 +62,44 @@ namespace ignite
             {
                 TxImplSharedPtr tx = threadTx.Get();
 
-                //if (tx->IsClosed())
-                //{
-                //    tx = 0;
+                if (tx.Get()->IsClosed())
+                {
+                    tx = TxImplSharedPtr();
 
-                //    threadTx.Set(tx);
-                //}
+                    threadTx.Set(tx);
+                }
 
                 return tx;
+            }
+
+            bool TransactionImpl::IsClosed() const
+            {
+                return closed;
+            }
+
+            void TransactionImpl::Commit(IgniteError& err)
+            {
+                common::concurrent::CsLockGuard guard(accessLock);
+
+                if (IsClosed())
+                {
+                    err = GetClosedError();
+
+                    return;
+                }
+
+                //state;
+
+                closed = true;
+            }
+
+            IgniteError TransactionImpl::GetClosedError() const
+            {
+                std::stringstream buf;
+
+                buf << "Transaction " << id << " is closed. State: " << state;
+
+                return IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_STATE, buf.str().c_str());
             }
         }
     }

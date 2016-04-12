@@ -107,6 +107,36 @@ namespace ignite
             }
 
             /**
+             * Commit the transaction.
+             */
+            void Commit()
+            {
+                IgniteError err;
+
+                Commit(err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
+             * Commit the transaction.
+             *
+             * @param err Error.
+             */
+            void Commit(IgniteError& err)
+            {
+                impl::transactions::TransactionImpl* txImpl = impl.Get();
+
+                if (txImpl)
+                    txImpl->Commit(err);
+                else
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Instance is not usable (did you check for error?).");
+                }
+            }
+
+            /**
              * Check if the instance is valid and can be used.
              *
              * @return True if the instance is valid and can be used.

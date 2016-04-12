@@ -21,7 +21,7 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/common/java.h>
 
-#include "ignite/impl/cache/cache_impl.h"
+#include "ignite/transactions/transaction_state.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/utils.h"
 
@@ -36,9 +36,11 @@ namespace ignite
              */
             class IGNITE_FRIEND_EXPORT TransactionImpl
             {
-            public:
                 typedef ignite::common::concurrent::SharedPointer<TransactionImpl> TxImplSharedPtr;
-
+                typedef ignite::common::concurrent::ThreadLocalInstance<TxImplSharedPtr> TxImplSharedPtrTli;
+                typedef ignite::common::concurrent::CriticalSection CriticalSection;
+                typedef ignite::transactions::TransactionState TransactionState;
+            public:
                 /**
                  * Destructor.
                  */
@@ -67,6 +69,20 @@ namespace ignite
                  */
                 static TxImplSharedPtr GetCurrent();
 
+                /**
+                 * Check if the transaction has been closed.
+                 *
+                 * @return True if the transaction has been closed.
+                 */
+                bool IsClosed() const;
+
+                /**
+                 * Commit the transaction.
+                 *
+                 * @param err Error.
+                 */
+                void Commit(IgniteError& err);
+
             private:
                 /**
                  * Constructor.
@@ -80,10 +96,18 @@ namespace ignite
                 TransactionImpl(int64_t id, int concurrency, int isolation,
                     int64_t timeout, int32_t txSize);
 
-                typedef ignite::common::concurrent::ThreadLocalInstance<TxImplSharedPtr> TxImplSharedPtrTli;
+                /**
+                 * Get error for closed transaction.
+                 *
+                 * @return Error instance.
+                 */
+                IgniteError GetClosedError() const;
 
                 /** Thread local instance of the transaction. */
                 static TxImplSharedPtrTli threadTx;
+
+                /** Access lock. */
+                CriticalSection accessLock;
 
                 /** Transaction ID. */
                 int64_t id;
@@ -99,6 +123,12 @@ namespace ignite
 
                 /** Transaction size. */
                 int32_t txSize;
+
+                /** Transaction state. */
+                TransactionState state;
+
+                /** Closed flag. */
+                bool closed;
 
                 IGNITE_NO_COPY_ASSIGNMENT(TransactionImpl)
             };
