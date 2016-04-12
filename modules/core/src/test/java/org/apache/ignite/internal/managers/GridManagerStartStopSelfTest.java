@@ -229,6 +229,7 @@ public class GridManagerStartStopSelfTest extends GridCommonAbstractTest {
         mgr.stop(true);
     }
 
+
     /**
      * Test-stub of {@code IgniteSpiAdapter}.
      */
@@ -279,7 +280,7 @@ public class GridManagerStartStopSelfTest extends GridCommonAbstractTest {
                 mgr2.start();
                 return null;
             }
-        }, AssertionError.class, null);
+        }, IgniteCheckedException.class, null);
 
     }
 }

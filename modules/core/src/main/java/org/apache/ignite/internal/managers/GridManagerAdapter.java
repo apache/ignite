@@ -210,7 +210,12 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
         for (T spi : spis) {
             if(spi instanceof IgniteSpiAdapter){
-                assert !((IgniteSpiAdapter)spi).initialized();
+                IgniteSpiAdapter adapter = (IgniteSpiAdapter)spi;
+                if(adapter.initialized()){
+                    throw new IgniteCheckedException("Spi has already been started! [spi="+spi+"]");
+                }else{
+                    adapter.setInitialized(true);
+                }
             }
             // Inject all spi resources.
             ctx.resource().inject(spi);
@@ -280,6 +285,11 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
             try {
                 spi.spiStop();
+
+                if(spi instanceof IgniteSpiAdapter){
+                    IgniteSpiAdapter adapter = (IgniteSpiAdapter)spi;
+                    adapter.setInitialized(false);
+                }
 
                 if (log.isDebugEnabled())
                     log.debug("SPI module stopped OK: " + spi.getClass().getName());
