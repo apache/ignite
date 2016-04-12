@@ -24,14 +24,18 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -51,6 +55,9 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
 
     /** Native filter in serialized form. If null, then filter is either not set, or this is local query. */
     protected final Object filter;
+
+    /** Java filter. */
+    protected final CacheEntryEventFilter javaFilter;
 
     /** Pointer to native counterpart; zero if closed. */
     private long ptr;
@@ -79,6 +86,29 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
         this.ptr = ptr;
         this.hasFilter = hasFilter;
         this.filter = filter;
+
+        javaFilter = getJavaFilter(filter, platformCtx.kernalContext());
+    }
+
+    /**
+     * Gets the Java filter if present.
+     *
+     * @param filter Filter object.
+     * @param ctx Context.
+     * @return Java filter or null.
+     */
+    private static CacheEntryEventFilter getJavaFilter(Object filter, GridKernalContext ctx) {
+        if (filter instanceof BinaryObjectImpl) {
+            BinaryObjectImpl bo = (BinaryObjectImpl)filter;
+
+            if (bo.typeId() == 99) { // todo: const
+                PlatformJavaObjectFactoryProxy f = bo.deserialize();
+
+                return  (CacheEntryEventFilter)f.factory(ctx).create();
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -171,6 +201,9 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
 
     /** {@inheritDoc} */
     @Override public boolean evaluate(CacheEntryEvent evt) throws CacheEntryListenerException {
+        if (javaFilter != null)
+            return javaFilter.evaluate(evt);
+
         lock.readLock().lock();
 
         try {
@@ -230,6 +263,9 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @throws ObjectStreamException If failed.
      */
     Object writeReplace() throws ObjectStreamException {
+        if (javaFilter != null)
+            return javaFilter;
+
         return filter == null ? null : platformCtx.createContinuousQueryFilter(filter);
     }
 }
