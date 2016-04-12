@@ -1452,14 +1452,14 @@ public abstract class BPlusTree<L, T extends L> {
                         assert p.fwdId != fwdId || fwdId == 0;
 
                         if (p.foundInner == TRUE) { // Need to replace ref in inner page.
-                            p.foundInner = FALSE;
+                            p.foundInner = FALSE; // Protect from retries.
 
                             res = writePage(page, replace, p, lvl, Put.RETRY);
 
                             if (res != Put.FOUND)
                                 return res; // Need to retry.
 
-                            p.foundInner = DONE; // We can have only single matching inner key, no more attempts.
+                            p.foundInner = DONE; // We can have only single matching inner key.
                         }
 
                         // Go down recursively.
@@ -1802,10 +1802,14 @@ public abstract class BPlusTree<L, T extends L> {
 
         /** {@inheritDoc} */
         @Override boolean found(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
-            if (!io.isLeaf() && needReplaceInner == FALSE)
+            if (io.isLeaf())
+                return true;
+
+            // If we can get full row from the inner page, we must do inner replace to update full row info here.
+            if (io.canGetRow() && needReplaceInner == FALSE)
                 needReplaceInner = TRUE;
 
-            return io.isLeaf();
+            return false;
         }
 
         /** {@inheritDoc} */

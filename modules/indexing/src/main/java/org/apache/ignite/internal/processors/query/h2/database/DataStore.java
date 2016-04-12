@@ -30,6 +30,7 @@ public interface DataStore<T> {
      * @param buf Buffer.
      * @param idx Index.
      * @return Data row.
+     * @throws IgniteCheckedException If failed.
      */
     public T getRow(BPlusIO<?> io, ByteBuffer buf, int idx) throws IgniteCheckedException;
 }
