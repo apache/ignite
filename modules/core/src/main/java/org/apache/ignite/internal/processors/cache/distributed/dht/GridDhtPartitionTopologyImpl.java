@@ -714,14 +714,19 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         assert parts != null;
         assert parts.length > 0;
 
+        GridDhtLocalPartition[] locPartsCopy = new GridDhtLocalPartition[parts.length];
+
         lock.readLock().lock();
         try {
             for (int i = 0; i < parts.length; i++)
-                locParts[parts[i]].release();
+                locPartsCopy[i] = locParts[parts[i]];
         }
         finally {
             lock.readLock().unlock();
         }
+
+        for (int i = 0; i < parts.length; i++)
+            locPartsCopy[i].release();
     }
 
     /** {@inheritDoc} */
