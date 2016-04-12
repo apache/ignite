@@ -18,10 +18,8 @@
 import gulp from 'gulp';
 import sass from 'gulp-sass';
 
-import { sassPaths } from '../paths';
-
 gulp.task('sass', () =>
-    gulp.src(sassPaths)
+    gulp.src('./public/stylesheets/style.scss')
         .pipe(sass({ outputStyle: 'nested' }).on('error', sass.logError))
         .pipe(gulp.dest('./public/stylesheets'))
 );

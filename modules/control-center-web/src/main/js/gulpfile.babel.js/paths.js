@@ -24,7 +24,7 @@ const igniteModulesDir = process.env.IGNITE_MODULES ? path.normalize(process.env
 const igniteModulesTemp = './ignite_modules_temp';
 
 const sassPaths = [
-    './public/stylesheets/style.scss'
+    './public/stylesheets/*.scss'
 ];
 
 const jadePaths = [
