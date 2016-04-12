@@ -34,6 +34,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -571,7 +572,9 @@ public class PlatformCache extends PlatformAbstractTarget {
     @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
 
-        writer.writeBoolean(true);  // success
+        BinaryOutputStream out = writer.out();
+
+        out.position(1);  // Reserve for success flag
 
         try {
             switch (type) {
@@ -774,10 +777,16 @@ public class PlatformCache extends PlatformAbstractTarget {
             }
         }
         catch (Exception e) {
-            writer.out().position(0);
+            out.position(0);
             writer.writeBoolean(false);  // error
             PlatformUtils.writeError(e, writer);
+            return;
         }
+
+        int pos = out.position();
+        out.position(0);
+        writer.writeBoolean(true);  // success
+        out.position(pos);
     }
 
     /** {@inheritDoc} */

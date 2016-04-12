@@ -129,14 +129,26 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
         try (PlatformMemory inMem = platformCtx.memory().get(inMemPtr)) {
             BinaryRawReaderEx reader = platformCtx.reader(inMem);
 
-            try (PlatformMemory outMem = platformCtx.memory().get(outMemPtr)) {
-                PlatformOutputStream out = outMem.output();
+            if (outMemPtr == 0) {
+                // Reuse single stream
+                PlatformOutputStream out = inMem.output();
 
                 BinaryRawWriterEx writer = platformCtx.writer(out);
 
                 processInStreamOutStream(type, reader, writer);
 
                 out.synchronize();
+            }
+            else {
+                try (PlatformMemory outMem = platformCtx.memory().get(outMemPtr)) {
+                    PlatformOutputStream out = outMem.output();
+
+                    BinaryRawWriterEx writer = platformCtx.writer(out);
+
+                    processInStreamOutStream(type, reader, writer);
+
+                    out.synchronize();
+                }
             }
         }
         catch (Exception e) {
