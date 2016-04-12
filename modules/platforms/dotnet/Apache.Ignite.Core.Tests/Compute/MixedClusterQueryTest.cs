@@ -18,16 +18,12 @@
 #pragma warning disable 618  // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Compute
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
     /// <summary>
