@@ -226,7 +226,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             // Replace link at idx with new one.
             // Need to read link here because `p.finish()` will clear row.
-            T newRow = p.row();
+            L newRow = p.row;
 
             if (io.isLeaf()) { // Get old row in leaf page to reduce contention at upper level.
                 assert p.oldRow == null;
@@ -262,7 +262,7 @@ public abstract class BPlusTree<L, T extends L> {
                 return Put.RETRY;
 
             // Do insert.
-            T moveUpRow = insert(p.meta, io, buf, p.row(), idx, p.rightId, lvl);
+            L moveUpRow = insert(p.meta, io, buf, p.row, idx, p.rightId, lvl);
 
             // Check if split happened.
             if (moveUpRow != null) {
@@ -1254,7 +1254,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @param rightId Right page ID.
      * @throws IgniteCheckedException If failed.
      */
-    private void insertSimple(BPlusIO<L> io, ByteBuffer buf, T row, int idx, long rightId)
+    private void insertSimple(BPlusIO<L> io, ByteBuffer buf, L row, int idx, long rightId)
         throws IgniteCheckedException {
         int cnt = io.getCount(buf);
 
@@ -1279,7 +1279,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Move up row.
      * @throws IgniteCheckedException If failed.
      */
-    private T insertWithSplit(Page meta, BPlusIO<L> io, final ByteBuffer buf, T row,
+    private L insertWithSplit(Page meta, BPlusIO<L> io, final ByteBuffer buf, L row,
         int idx, long rightId, int lvl) throws IgniteCheckedException {
         try (Page fwd = allocatePage()) {
             // Need to check this before the actual split, because after the split we will have new forward page here.
@@ -1354,7 +1354,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Move up row.
      * @throws IgniteCheckedException If failed.
      */
-    private T insert(Page meta, BPlusIO<L> io, ByteBuffer buf, T row, int idx, long rightId, int lvl)
+    private L insert(Page meta, BPlusIO<L> io, ByteBuffer buf, L row, int idx, long rightId, int lvl)
         throws IgniteCheckedException {
         int maxCnt = io.getMaxCount(buf);
         int cnt = io.getCount(buf);
@@ -1717,14 +1717,6 @@ public abstract class BPlusTree<L, T extends L> {
          */
         Put(T row) {
             super(row);
-        }
-
-        /**
-         * @return Row.
-         */
-        @SuppressWarnings("unchecked")
-        T row() {
-            return (T)row;
         }
 
         /** {@inheritDoc} */
