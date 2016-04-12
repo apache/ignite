@@ -21,15 +21,45 @@ angular
 .module('ignite-console.demo', [
     'ignite-console.socket'
 ])
-.provider('Demo', ['igniteSocketFactoryProvider', '$httpProvider', function(igniteSocketFactoryProvider, $httpProvider) {
+.config(['$stateProvider', ($stateProvider) => {
+    $stateProvider
+        .state('demo', {
+            abstract: true,
+            template: '<ui-view></ui-view>'
+        })
+        .state('demo.resume', {
+            url: '/demo',
+            controller: ['$state', ($state) => {
+                $state.go('base.configuration.clusters');
+            }],
+            metaTags: {
+            }
+        })
+        .state('demo.reset', {
+            url: '/demo/reset',
+            controller: ['$state', '$http', '$common', ($state, $http, $common) => {
+                $http.post('/api/v1/demo/reset')
+                    .then(() => $state.go('base.configuration.clusters'))
+                    .catch((errMsg) => {
+                        $state.go('base.configuration.clusters');
+
+                        $common.showError(errMsg);
+                    });
+            }],
+            metaTags: {
+            }
+        });
+}])
+.provider('Demo', ['$stateProvider', '$httpProvider', 'igniteSocketFactoryProvider', function($state, $http, socketFactory) {
+    if (/(\/demo.*)/ig.test(location.pathname))
+        sessionStorage.setItem('IgniteDemoMode', 'true');
+
     const enabled = sessionStorage.getItem('IgniteDemoMode') === 'true';
 
     if (enabled) {
-        sessionStorage.setItem('IgniteDemoMode', 'true');
+        socketFactory.set({query: 'IgniteDemoMode=true'});
 
-        igniteSocketFactoryProvider.set({query: 'IgniteDemoMode=true'});
-
-        $httpProvider.interceptors.push('demoInterceptor');
+        $http.interceptors.push('demoInterceptor');
     }
 
     this.$get = ['$rootScope', ($root) => {
@@ -50,33 +80,19 @@ angular
         }
     };
 }])
-.controller('demoController', ['$scope', '$state', '$window', '$http', '$confirm', '$common', ($scope, $state, $window, $http, $confirm, $common) => {
-    $scope.toggleDemo = () => {
-        const enabled = sessionStorage.getItem('IgniteDemoMode') === 'true';
-
-        sessionStorage.setItem('IgniteDemoMode', !enabled);
-
-        const url = $state.href($state.current.name, $state.params);
-
-        $window.open(url, '_self');
-    };
-
-    const _resetDemo = () => {
-        $http.post('/api/v1/demo/reset')
-            .then($scope.toggleDemo)
-            .catch((errMsg) => $common.showError(errMsg));
-    };
+.controller('demoController', ['$scope', '$state', '$window', '$confirm', ($scope, $state, $window, $confirm) => {
+    const _openTab = (stateName) => $window.open($state.href(stateName), '_blank');
 
     $scope.startDemo = () => {
         if (!$scope.user.demoCreated)
-            return _resetDemo();
+            return _openTab('demo.reset');
 
         $confirm.confirm('Would you like to continue with previous demo session?', true)
             .then((resume) => {
                 if (resume)
-                    return $scope.toggleDemo();
+                    return _openTab('demo.resume');
 
-                _resetDemo();
+                _openTab('demo.reset');
             });
     };
 }]);

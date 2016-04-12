@@ -424,7 +424,6 @@ consoleModule.controller('cachesController', [
                     var item = angular.copy($scope.backupItem);
 
                     delete item._id;
-                    delete item.demo;
 
                     item.name = newName;
 

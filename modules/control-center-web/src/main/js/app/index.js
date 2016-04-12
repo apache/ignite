@@ -39,6 +39,7 @@ import 'angular-ui-grid';
 import 'angular-drag-and-drop-lists';
 import 'angular-nvd3';
 import 'angular-tree-control';
+import 'angular-gridster';
 
 import 'bootstrap-carousel';
 import 'file-saver';
@@ -47,6 +48,7 @@ import 'query-command-supported';
 
 import 'public/stylesheets/style.css!';
 
+import 'angular-gridster/dist/angular-gridster.min.css!';
 import 'angular-tree-control/css/tree-control-attribute.css!';
 import 'angular-tree-control/css/tree-control.css!';
 import 'angular-ui-grid/ui-grid.css!';

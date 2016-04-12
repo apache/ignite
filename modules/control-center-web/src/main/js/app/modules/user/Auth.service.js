@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-export default ['Auth', ['$http', '$rootScope', '$state', '$common', 'gettingStarted', 'User',
-    ($http, $root, $state, $common, gettingStarted, User) => {
+export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 'gettingStarted', 'User',
+    ($http, $root, $state, $window, $common, gettingStarted, User) => {
         let _auth = false;
 
         try {
@@ -61,11 +61,7 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$common', 'gettingSta
             logout() {
                 $http.post('/api/v1/logout')
                     .then(() => {
-                        User.clean();
-
-                        _authorized(false);
-
-                        $state.go('signin');
+                        $window.open($state.href('signin'), '_self');
                     })
                     .catch((errMsg) => $common.showError(errMsg));
             }

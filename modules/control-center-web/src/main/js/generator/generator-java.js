@@ -2648,7 +2648,7 @@ var PREDEFINED_QUERIES = [
             'NAME     VARCHAR(50) NOT NULL,\n' +
             'CAPACITY INTEGER NOT NULL)',
         clearQuery: 'DELETE FROM CARS.PARKING',
-        insertCntConsts: [{name: 'EXAMPLE_MAX_PARKING_CNT', val: 5, comment: 'How many parkings to generate.'}],
+        insertCntConsts: [{name: 'DEMO_MAX_PARKING_CNT', val: 5, comment: 'How many parkings to generate.'}],
         insertPattern: ['INSERT INTO CARS.PARKING(ID, NAME, CAPACITY) VALUES(?, ?, ?)'],
         fillInsertParameters: function (res) {
             res.line('stmt.setInt(1, id);');
@@ -2669,13 +2669,13 @@ var PREDEFINED_QUERIES = [
         clearQuery: 'DELETE FROM CARS.CAR',
         rndRequired: true,
         insertCntConsts: [
-            {name: 'EXAMPLE_MAX_CAR_CNT', val: 10, comment: 'How many cars to generate.'},
-            {name: 'EXAMPLE_MAX_PARKING_CNT', val: 5, comment: 'How many parkings to generate.'}
+            {name: 'DEMO_MAX_CAR_CNT', val: 10, comment: 'How many cars to generate.'},
+            {name: 'DEMO_MAX_PARKING_CNT', val: 5, comment: 'How many parkings to generate.'}
         ],
         insertPattern: ['INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(?, ?, ?)'],
         fillInsertParameters: function (res) {
             res.line('stmt.setInt(1, id);');
-            res.line('stmt.setInt(2, rnd.nextInt(EXAMPLE_MAX_PARKING_CNT));');
+            res.line('stmt.setInt(2, rnd.nextInt(DEMO_MAX_PARKING_CNT));');
             res.line('stmt.setString(3, "Car #" + (id + 1));');
         },
         selectQuery: [
@@ -2689,7 +2689,7 @@ var PREDEFINED_QUERIES = [
             'NAME       VARCHAR(50),\n' +
             'POPULATION INTEGER NOT NULL);',
         clearQuery: 'DELETE FROM COUNTRY',
-        insertCntConsts: [{name: 'EXAMPLE_MAX_COUNTRY_CNT', val: 5, comment: 'How many countries to generate.'}],
+        insertCntConsts: [{name: 'DEMO_MAX_COUNTRY_CNT', val: 5, comment: 'How many countries to generate.'}],
         insertPattern: ['INSERT INTO COUNTRY(ID, NAME, POPULATION) VALUES(?, ?, ?)'],
         fillInsertParameters: function (res) {
             res.line('stmt.setInt(1, id);');
@@ -2709,13 +2709,13 @@ var PREDEFINED_QUERIES = [
         clearQuery: 'DELETE FROM DEPARTMENT',
         rndRequired: true,
         insertCntConsts: [
-            {name: 'EXAMPLE_MAX_DEPARTMENT_CNT', val: 5, comment: 'How many departments to generate.'},
-            {name: 'EXAMPLE_MAX_COUNTRY_CNT', val: 5, comment: 'How many countries to generate.'}
+            {name: 'DEMO_MAX_DEPARTMENT_CNT', val: 5, comment: 'How many departments to generate.'},
+            {name: 'DEMO_MAX_COUNTRY_CNT', val: 5, comment: 'How many countries to generate.'}
         ],
         insertPattern: ['INSERT INTO DEPARTMENT(ID, COUNTRY_ID, NAME) VALUES(?, ?, ?)'],
         fillInsertParameters: function (res) {
             res.line('stmt.setInt(1, id);');
-            res.line('stmt.setInt(2, rnd.nextInt(EXAMPLE_MAX_COUNTRY_CNT));');
+            res.line('stmt.setInt(2, rnd.nextInt(DEMO_MAX_COUNTRY_CNT));');
             res.line('stmt.setString(3, "Department #" + (id + 1));');
         },
         selectQuery: [
@@ -2738,14 +2738,14 @@ var PREDEFINED_QUERIES = [
         clearQuery: 'DELETE FROM EMPLOYEE',
         rndRequired: true,
         insertCntConsts: [
-            {name: 'EXAMPLE_MAX_EMPLOYEE_CNT', val: 10, comment: 'How many employees to generate.'},
-            {name: 'EXAMPLE_MAX_DEPARTMENT_CNT', val: 5, comment: 'How many departments to generate.'}
+            {name: 'DEMO_MAX_EMPLOYEE_CNT', val: 10, comment: 'How many employees to generate.'},
+            {name: 'DEMO_MAX_DEPARTMENT_CNT', val: 5, comment: 'How many departments to generate.'}
         ],
         specialGeneration: function (res, conVar) {
             //$generatorJava.declareVariableCustom(res, 'stmt', 'java.sql.PreparedStatement', conVar +
             //    '.prepareStatement("INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")');
             //
-            //res.startBlock('for (int id = 0; id < EXAMPLE_MAX_DEPARTMENT_CNT; id ++) {');
+            //res.startBlock('for (int id = 0; id < DEMO_MAX_DEPARTMENT_CNT; id ++) {');
             //res.line('stmt.setInt(1, id);');
             //res.line('stmt.setInt(2, id);');
             //res.line('stmt.setString(3, "First name manager #" + (id + 1));');
@@ -2767,13 +2767,13 @@ var PREDEFINED_QUERIES = [
             $generatorJava.declareVariableCustom(res, 'stmt', 'java.sql.PreparedStatement', conVar +
                 '.prepareStatement("INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")');
 
-            res.startBlock('for (int id = 0; id < EXAMPLE_MAX_EMPLOYEE_CNT; id ++) {');
+            res.startBlock('for (int id = 0; id < DEMO_MAX_EMPLOYEE_CNT; id ++) {');
 
             res.needEmptyLine = true;
 
-            res.line('int depId = rnd.nextInt(EXAMPLE_MAX_DEPARTMENT_CNT);');
+            res.line('int depId = rnd.nextInt(DEMO_MAX_DEPARTMENT_CNT);');
 
-            res.line('stmt.setInt(1, EXAMPLE_MAX_DEPARTMENT_CNT + id);');
+            res.line('stmt.setInt(1, DEMO_MAX_DEPARTMENT_CNT + id);');
             res.line('stmt.setInt(2, depId);');
             res.line('stmt.setInt(3, depId);');
             res.line('stmt.setString(4, "First name manager #" + (id + 1));');
@@ -2841,7 +2841,7 @@ function _multilineQuery(res, query, prefix, postfix) {
     }
 }
 
-$generatorJava.generateExample = function (cluster, res, factoryCls) {
+$generatorJava.generateDemo = function (cluster, res, factoryCls) {
     var cachesWithDataSource = _.filter(cluster.caches, function (cache) {
         if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
             var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
@@ -2916,8 +2916,8 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
         res.needEmptyLine = true;
 
         // Generation of fill database method
-        res.line('/** Fill data for Demo example. */');
-        res.startBlock('private static void prepareExampleData() throws ' + res.importClass('java.sql.SQLException') + ' {');
+        res.line('/** Fill data for Demo. */');
+        res.startBlock('private static void prepareDemoData() throws ' + res.importClass('java.sql.SQLException') + ' {');
 
         _.forEach(typeByDs, function (types, ds) {
             var conVar = ds + 'Con';
@@ -2985,8 +2985,8 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
         res.needEmptyLine = true;
 
         // Generation of execute queries method.
-        res.line('/** Run demo examples. */');
-        res.startBlock('private static void runExamples(Ignite ignite) throws SQLException {');
+        res.line('/** Run demo. */');
+        res.startBlock('private static void runDemo(Ignite ignite) throws SQLException {');
 
         var getType = function (fullType) {
             return fullType.substr(fullType.lastIndexOf('.') + 1);
@@ -3052,18 +3052,18 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
  * @param clientNearCfg Optional near cache configuration for client node.
  */
 $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clientNearCfg) {
-    var example = cls === 'ExampleStartup';
+    var demo = cls === 'DemoStartup';
 
     var res = $generatorCommon.builder();
 
     res.line('/**');
     res.line(' * ' + $generatorCommon.mainComment());
 
-    if (example) {
+    if (demo) {
         res.line(' *');
-        res.line(' * To start example configure data sources in secret.properties file.');
+        res.line(' * To start demo configure data sources in secret.properties file.');
         res.line(' * For H2 database it should be like following:');
-        res.line(' * dsH2.jdbc.url=jdbc:h2:tcp://localhost/mem:ExampleDb;DB_CLOSE_DELAY=-1');
+        res.line(' * dsH2.jdbc.url=jdbc:h2:tcp://localhost/mem:DemoDB;DB_CLOSE_DELAY=-1');
         res.line(' * dsH2.jdbc.username=sa');
         res.line(' * dsH2.jdbc.password=');
     }
@@ -3071,8 +3071,8 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
     res.line(' */');
     res.startBlock('public class ' + cls + ' {');
 
-    if (example)
-        var demoTypes = $generatorJava.generateExample(cluster, res, factoryCls);
+    if (demo)
+        var demoTypes = $generatorJava.generateDemo(cluster, res, factoryCls);
 
     res.line('/**');
     res.line(' * Start up node with specified configuration.');
@@ -3083,7 +3083,7 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
 
     res.startBlock('public static void main(String[] args) throws Exception {');
 
-    if (example) {
+    if (demo) {
         res.startBlock('try {');
         res.line('// Start H2 database server.');
         res.line(res.importClass('org.h2.tools.Server') + '.createTcpServer("-tcpDaemon").start();');
@@ -3108,7 +3108,7 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
         res.needEmptyLine = true;
 
         if ($generatorCommon.isDefinedAndNotEmpty(cluster.caches)) {
-            res.line('// Example of near cache creation on client node.');
+            res.line('// Demo of near cache creation on client node.');
 
             var names = [];
 
@@ -3124,14 +3124,14 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
         }
     }
 
-    if (example) {
+    if (demo) {
         res.needEmptyLine = true;
 
-        res.line('prepareExampleData();');
+        res.line('prepareDemoData();');
 
         res.needEmptyLine = true;
 
-        res.line('runExamples(ignite);');
+        res.line('runDemo(ignite);');
     }
 
     res.endBlock('}');

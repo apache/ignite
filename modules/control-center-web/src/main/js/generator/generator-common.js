@@ -517,16 +517,6 @@ $generatorCommon.domainQueryMetadata = function(domain) {
 };
 
 /**
- * Checks if cluster has demo types.
- *
- * @param cluster Cluster to check.
- * @returns {boolean} True if cluster has caches with demo types.
- */
-$generatorCommon.dataForExampleConfigured = function(cluster) {
-    return !_.isNil(_.find(cluster.caches, (cache) => _.find(cache.domains, {demo: true})));
-};
-
-/**
  * @param {Object} obj Object to check.
  * @param {Array<String>} props Array of properties names.
  * @returns {boolean} 'true' if

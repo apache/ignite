@@ -1359,7 +1359,6 @@ consoleModule.controller('domainsController', [
                     var item = angular.copy($scope.backupItem);
 
                     delete item._id;
-                    delete item.demo;
                     item.valueType = newName;
 
                     save(item);

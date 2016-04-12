@@ -36,7 +36,10 @@ export default ['User', ['$q', '$injector', '$rootScope', '$state', '$http', fun
 
                     Auth.authorized = false;
 
-                    $state.go('signin');
+                    this.clean();
+
+                    if ($state.current.name !== 'signin')
+                        $state.go('signin');
                 }
 
                 try {
@@ -53,6 +56,10 @@ export default ['User', ['$q', '$injector', '$rootScope', '$state', '$http', fun
             delete $root.user;
 
             delete localStorage.user;
+
+            delete $root.IgniteDemoMode;
+
+            sessionStorage.removeItem('IgniteDemoMode');
         }
     };
 }]];

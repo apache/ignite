@@ -82,11 +82,11 @@ export default [
             ]
         };
 
-        const exampleFolder = {
+        const demoFolder = {
             type: 'folder',
-            name: 'example',
+            name: 'demo',
             children: [
-                { type: 'file', name: 'ExampleStartup.java' }
+                { type: 'file', name: 'DemoStartup.java' }
             ]
         };
 
@@ -219,8 +219,8 @@ export default [
             if ($generatorCommon.secretPropertiesNeeded(cluster))
                 mainFolder.children.push(resourcesFolder);
 
-            if ($generatorCommon.dataForExampleConfigured(cluster))
-                javaFolder.children.push(exampleFolder);
+            if ($scope.$root.IgniteDemoMode)
+                javaFolder.children.push(demoFolder);
 
             _.forEach(cluster.caches, (cache) => {
                 if (cache.cacheStoreFactory) {
@@ -290,8 +290,8 @@ export default [
             zip.file(srcPath + 'config/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ServerConfigurationFactory', null));
             zip.file(srcPath + 'config/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ClientConfigurationFactory', clientNearCfg));
 
-            if ($generatorCommon.dataForExampleConfigured(cluster)) {
-                zip.file(srcPath + 'example/ExampleStartup.java', $generatorJava.nodeStartup(cluster, 'example', 'ExampleStartup',
+            if ($scope.$root.IgniteDemoMode) {
+                zip.file(srcPath + 'demo/DemoStartup.java', $generatorJava.nodeStartup(cluster, 'demo', 'DemoStartup',
                     'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
             }
 

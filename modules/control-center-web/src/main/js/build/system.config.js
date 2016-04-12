@@ -18,6 +18,7 @@ System.config({
     "angular": "github:angular/bower-angular@1.5.3",
     "angular-animate": "github:angular/bower-angular-animate@1.5.3",
     "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@1.4.0",
+    "angular-gridster": "github:ManifestWebDesign/angular-gridster@0.13.5",
     "angular-loading": "github:darthwade/angular-loading@0.1.4",
     "angular-motion": "github:mgcrea/angular-motion@0.4.3",
     "angular-nvd3": "github:krispo/angular-nvd3@1.0.5",
