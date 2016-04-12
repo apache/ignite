@@ -94,12 +94,13 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         igniteBiPredicate = new BenchmarkIgniteBiPredicate();
 
         for (String name : ignite().cacheNames()) {
+            if (name.equals("query-offheap")) continue;
             IgniteCache<Object, Object> cache = ignite().cache(name);
 
             CacheConfiguration configuration = cache.getConfiguration(CacheConfiguration.class);
 
             if (isClassDefinedinConfig(configuration)) {
-                if (true) continue;
+//                if (true) continue;
 
                 ArrayList<Class> keys = new ArrayList<>();
                 ArrayList<Class> values = new ArrayList<>();
@@ -206,7 +207,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private Class randomKeyClass(String cacheName) {
         Class[] keys;
         if (keysCacheClasses.containsKey(cacheName)) {
-            keys = valuesCacheClasses.get(cacheName);
+            keys = keysCacheClasses.get(cacheName);
         }
         else {
             keys = ModelUtil.keyClasses();
