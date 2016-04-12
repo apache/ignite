@@ -36,11 +36,30 @@ public abstract class BPlusIO<L> extends PageIO {
     /** */
     protected static final int ITEMS_OFF = REMOVE_ID_OFF + 8;
 
+    /** */
+    private final boolean canGetRow;
+
+    /** */
+    private final boolean leaf;
+
+    /** All the items must be of fixed size. */
+    protected final int itemSize;
+
     /**
      * @param ver Page format version.
+     * @param leaf If this is a leaf IO.
+     * @param canGetRow If we can get full row from this page.
+     * @param itemSize Single item size on page.
      */
-    protected BPlusIO(int ver) {
+    protected BPlusIO(int ver, boolean leaf, boolean canGetRow, int itemSize) {
         super(ver);
+
+        assert itemSize > 0 : itemSize;
+        assert canGetRow || !leaf: "leaf page always must be able to get full row";
+
+        this.leaf = leaf;
+        this.canGetRow = canGetRow;
+        this.itemSize = itemSize;
     }
 
     /** {@inheritDoc} */
@@ -56,7 +75,7 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param buf Buffer.
      * @return Forward page ID.
      */
-    public long getForward(ByteBuffer buf) {
+    public final long getForward(ByteBuffer buf) {
         return buf.getLong(FORWARD_OFF);
     }
 
@@ -64,7 +83,7 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param buf Buffer.
      * @param pageId Forward page ID.
      */
-    public void setForward(ByteBuffer buf, long pageId) {
+    public final void setForward(ByteBuffer buf, long pageId) {
         buf.putLong(FORWARD_OFF, pageId);
 
         assert getForward(buf) == pageId;
@@ -74,7 +93,7 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param buf Buffer.
      * @return Remove ID.
      */
-    public long getRemoveId(ByteBuffer buf) {
+    public final long getRemoveId(ByteBuffer buf) {
         return buf.getLong(REMOVE_ID_OFF);
     }
 
@@ -82,7 +101,7 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param buf Buffer.
      * @param rmvId Remove ID.
      */
-    public void setRemoveId(ByteBuffer buf, long rmvId) {
+    public final void setRemoveId(ByteBuffer buf, long rmvId) {
         buf.putLong(REMOVE_ID_OFF, rmvId);
 
         assert getRemoveId(buf) == rmvId;
@@ -92,7 +111,7 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param buf Buffer.
      * @return Items count in the page.
      */
-    public int getCount(ByteBuffer buf) {
+    public final int getCount(ByteBuffer buf) {
         int cnt = buf.getShort(CNT_OFF) & 0xFFFF;
 
         assert cnt >= 0: cnt;
@@ -104,7 +123,7 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param buf Buffer.
      * @param cnt Count.
      */
-    public void setCount(ByteBuffer buf, int cnt) {
+    public final void setCount(ByteBuffer buf, int cnt) {
         assert cnt >= 0: cnt;
 
         buf.putShort(CNT_OFF, (short)cnt);
@@ -113,9 +132,20 @@ public abstract class BPlusIO<L> extends PageIO {
     }
 
     /**
+     * @return {@code true} If we can get the whole row from this page using
+     * method {@link BPlusTree#getRow(BPlusIO, ByteBuffer, int)}.
+     * Must always be {@code true} for leaf pages.
+     */
+    public final boolean canGetRow() {
+        return canGetRow;
+    }
+
+    /**
      * @return {@code true} if it is a leaf page.
      */
-    public abstract boolean isLeaf();
+    public final boolean isLeaf() {
+        return leaf;
+    }
 
     /**
      * @param buf Buffer.
@@ -142,13 +172,6 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param srcIdx Source index.
      */
     public abstract void store(ByteBuffer dst, int dstIdx, BPlusIO<L> srcIo, ByteBuffer src, int srcIdx);
-
-    /**
-     * @return {@code true} If we can get the whole row from this page using
-     * method {@link BPlusTree#getRow(BPlusIO, ByteBuffer, int)}.
-     * Must always be {@code true} for leaf pages.
-     */
-    public abstract boolean canGetRow();
 
     /**
      * Copy items from source buffer to destination buffer. Both pages must be of the same type.

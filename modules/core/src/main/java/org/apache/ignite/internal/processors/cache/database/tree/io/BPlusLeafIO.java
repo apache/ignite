@@ -23,33 +23,21 @@ import java.nio.ByteBuffer;
  * Abstract IO routines for B+Tree leaf pages.
  */
 public abstract class BPlusLeafIO<L> extends BPlusIO<L> {
-    /** */
-    protected static final int ITEM_SIZE = 8;
-
     /**
      * @param ver Page format version.
+     * @param itemSize Single item size on page.
      */
-    protected BPlusLeafIO(int ver) {
-        super(ver);
+    protected BPlusLeafIO(int ver, int itemSize) {
+        super(ver, true, true, itemSize);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isLeaf() {
-        return true;
+    @Override public final int getMaxCount(ByteBuffer buf) {
+        return (buf.capacity() - ITEMS_OFF) / itemSize;
     }
 
     /** {@inheritDoc} */
-    @Override public int getMaxCount(ByteBuffer buf) {
-        return (buf.capacity() - ITEMS_OFF) >>> 3; // divide by ITEM_SIZE
-    }
-
-    /** {@inheritDoc} */
-    @Override public final boolean canGetRow() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt,
+    @Override public final void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt,
         boolean cpLeft) {
         assert srcIdx != dstIdx || src != dst;
 
@@ -67,9 +55,9 @@ public abstract class BPlusLeafIO<L> extends BPlusIO<L> {
      * @param idx Index of item.
      * @return Offset.
      */
-    protected static int offset(int idx) {
+    protected final int offset(int idx) {
         assert idx >= 0: idx;
 
-        return ITEMS_OFF + idx * ITEM_SIZE;
+        return ITEMS_OFF + idx * itemSize;
     }
 }

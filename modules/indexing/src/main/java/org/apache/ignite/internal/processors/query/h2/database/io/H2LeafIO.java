@@ -37,7 +37,7 @@ public class H2LeafIO extends BPlusLeafIO<SearchRow> implements H2RowLinkIO {
      * @param ver Page format version.
      */
     protected H2LeafIO(int ver) {
-        super(ver);
+        super(ver, 8);
     }
 
     /** {@inheritDoc} */

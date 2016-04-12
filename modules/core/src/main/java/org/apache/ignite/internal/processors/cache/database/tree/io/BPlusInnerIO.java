@@ -24,33 +24,29 @@ import java.nio.ByteBuffer;
  */
 public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     /** */
-    protected static final int ITEM_SIZE = 16;
-
-    /** */
     protected static final int SHIFT_LEFT = ITEMS_OFF;
 
     /** */
-    protected static final int SHIFT_LINK = ITEMS_OFF + 8;
+    protected static final int SHIFT_LINK = SHIFT_LEFT + 8;
 
     /** */
-    protected static final int SHIFT_RIGHT = ITEMS_OFF + 16;
+    protected final int SHIFT_RIGHT = SHIFT_LINK + itemSize;
 
     /**
      * @param ver Page format version.
+     * @param canGetRow If we can get full row from this page.
+     * @param itemSize Single item size on page.
      */
-    protected BPlusInnerIO(int ver) {
-        super(ver);
+    protected BPlusInnerIO(int ver, boolean canGetRow, int itemSize) {
+        super(ver, false, canGetRow, itemSize);
     }
 
     /** {@inheritDoc} */
-    @Override public int getMaxCount(ByteBuffer buf) {
-        //  (capacity - ITEMS_OFF - RIGHTMOST_PAGE_ID_SLOT_SIZE) / ITEM_SIZE
-        return (buf.capacity() - ITEMS_OFF - 8) >>> 4;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isLeaf() {
-        return false;
+    @Override public final int getMaxCount(ByteBuffer buf) {
+        // The structure of the page is the following:
+        // |ITEMS_OFF|w|A|x|B|y|C|z|
+        // where capital letters are data items, lowercase letters are 8 byte page references.
+        return (buf.capacity() - ITEMS_OFF - 8) / (itemSize + 8);
     }
 
     /**
@@ -58,7 +54,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param idx Index.
      * @return Page ID.
      */
-    public long getLeft(ByteBuffer buf, int idx) {
+    public final long getLeft(ByteBuffer buf, int idx) {
         return buf.getLong(offset(idx, SHIFT_LEFT));
     }
 
@@ -67,7 +63,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param idx Index.
      * @param pageId Page ID.
      */
-    public void setLeft(ByteBuffer buf, int idx, long pageId) {
+    public final void setLeft(ByteBuffer buf, int idx, long pageId) {
         buf.putLong(offset(idx, SHIFT_LEFT), pageId);
 
         assert pageId == getLeft(buf, idx);
@@ -78,7 +74,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param idx Index.
      * @return Page ID.
      */
-    public long getRight(ByteBuffer buf, int idx) {
+    public final long getRight(ByteBuffer buf, int idx) {
         return buf.getLong(offset(idx, SHIFT_RIGHT));
     }
 
@@ -87,14 +83,14 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param idx Index.
      * @param pageId Page ID.
      */
-    public void setRight(ByteBuffer buf, int idx, long pageId) {
+    public final void setRight(ByteBuffer buf, int idx, long pageId) {
         buf.putLong(offset(idx, SHIFT_RIGHT), pageId);
 
         assert pageId == getRight(buf, idx);
     }
 
     /** {@inheritDoc} */
-    @Override public void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt,
+    @Override public final void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt,
         boolean cpLeft) {
         assert srcIdx != dstIdx || src != dst;
 
@@ -123,9 +119,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param shift It can be either link itself or left or right page ID.
      * @return Offset from byte buffer begin in bytes.
      */
-    protected static int offset(int idx, int shift) {
-        assert idx >= 0: idx;
-
-        return shift + ITEM_SIZE * idx;
+    protected final int offset(int idx, int shift) {
+        return shift + (8 + itemSize) * idx;
     }
 }

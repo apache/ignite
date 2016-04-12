@@ -37,7 +37,7 @@ public class H2InnerIO extends BPlusInnerIO<SearchRow> implements H2RowLinkIO {
      * @param ver Page format version.
      */
     private H2InnerIO(int ver) {
-        super(ver);
+        super(ver, true, 8);
     }
 
     /** {@inheritDoc} */
@@ -59,11 +59,6 @@ public class H2InnerIO extends BPlusInnerIO<SearchRow> implements H2RowLinkIO {
         long link = ((H2RowLinkIO)srcIo).getLink(src, srcIdx);
 
         setLink(dst, dstIdx, link);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean canGetRow() {
-        return true; // We can get row from link.
     }
 
     /** {@inheritDoc} */
