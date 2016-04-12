@@ -43,46 +43,59 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /** */
         private const string StopTask = "org.apache.ignite.platform.PlatformStopIgniteTask";
 
-        /// <summary>
-        /// Test.
-        /// </summary>
-        [Test]
-        public void Test()
-        {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration()) {SpringConfigUrl = SpringConfig};
+        /** */
+        private IIgnite _ignite;
+        
+        /** */
+        private string _javaNodeName;
 
-            var cfg2 = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+        /** */
+        private static volatile ICacheEntryEvent<int, string> _lastEvent;
+
+        /// <summary>
+        /// Fixture set up.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
+        {
+            // Main .NET nodes
+            _ignite =
+                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    SpringConfigUrl = SpringConfig
+                });
+
+            // Second .NET node
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = SpringConfig2,
                 GridName = "dotNet2"
-            };
+            });
 
-            // 3 nodes: check local, remote, Java remote filters.
-            using (var ignite = Ignition.Start(cfg))
-            using (Ignition.Start(cfg2))
-            {
-                var javaNodeName = ignite.GetCompute().ExecuteJavaTask<string>(StartTask, SpringConfig2);
 
-                try
-                {
-                    Assert.IsTrue(ignite.WaitTopology(3));
+            // Java-only node
+            _javaNodeName = _ignite.GetCompute().ExecuteJavaTask<string>(StartTask, SpringConfig2);
 
-                    TestJavaObjects(ignite);
-                }
-                finally
-                {
-                    ignite.GetCompute().ExecuteJavaTask<object>(StopTask, javaNodeName);
-                }
-            }
+            Assert.IsTrue(_ignite.WaitTopology(3));
+        }
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            _ignite.GetCompute().ExecuteJavaTask<object>(StopTask, _javaNodeName);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
         /// Tests the java objects.
         /// </summary>
-        [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
-        private static void TestJavaObjects(IIgnite ignite)
+        [Test]
+        public void TestFilter()
         {
-            var cache = ignite.GetOrCreateCache<int, string>("qry");
+            var cache = _ignite.GetOrCreateCache<int, string>("qry");
 
             var pred = JavaObjectFactory.CreateCacheEntryEventFilter<int, string>(
                 "org.apache.ignite.platform.PlatformCacheEntryEventFilter",
@@ -95,13 +108,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 // Run on many keys to test all nodes
                 for (var i = 0; i < 200; i++)
                 {
-                    QueryListener.Event = null;
+                    _lastEvent = null;
                     cache[i] = "validValue";
-                    Assert.AreEqual(cache[i], QueryListener.Event.Value);
+                    // ReSharper disable once PossibleNullReferenceException
+                    Assert.AreEqual(cache[i], _lastEvent.Value);
 
-                    QueryListener.Event = null;
+                    _lastEvent = null;
                     cache[i] = "invalidValue";
-                    Assert.IsNull(QueryListener.Event);
+                    Assert.IsNull(_lastEvent);
                 }
             }
         }
@@ -111,13 +125,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// </summary>
         private class QueryListener : ICacheEntryEventListener<int, string>
         {
-            /** */
-            public static volatile ICacheEntryEvent<int, string> Event;
-
             /** <inheritdoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<int, string>> evts)
             {
-                Event = evts.FirstOrDefault();
+                _lastEvent = evts.FirstOrDefault();
             }
         }
     }
