@@ -36,6 +36,9 @@ public interface KeyCacheObject extends CacheObject {
      */
     public int partition();
 
-    /** TODO */
+    /**
+     * Sets partition ID for this key.
+     * @param part Partition ID.
+     */
     public void partition(int part);
 }

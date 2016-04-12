@@ -550,7 +550,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         // No-op.
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Entry factory.
+     */
     protected abstract GridCacheMapEntryFactory entryFactory();
 
     /**
