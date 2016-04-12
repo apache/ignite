@@ -32,6 +32,7 @@ import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -101,7 +102,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
         if (filter instanceof BinaryObjectImpl) {
             BinaryObjectImpl bo = (BinaryObjectImpl)filter;
 
-            if (bo.typeId() == 99) { // todo: const
+            if (bo.typeId() == GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY) {
                 PlatformJavaObjectFactoryProxy f = bo.deserialize();
 
                 return  (CacheEntryEventFilter)f.factory(ctx).create();
@@ -122,8 +123,8 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @param initialQry Initial query.
      */
     @SuppressWarnings("unchecked")
-    public void start(IgniteCacheProxy cache, boolean loc, int bufSize, long timeInterval, boolean autoUnsubscribe,
-        Query initialQry) throws IgniteCheckedException {
+    @Override public void start(IgniteCacheProxy cache, boolean loc, int bufSize, long timeInterval,
+        boolean autoUnsubscribe, Query initialQry) throws IgniteCheckedException {
         assert !loc || filter == null;
 
         lock.writeLock().lock();
@@ -200,6 +201,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public boolean evaluate(CacheEntryEvent evt) throws CacheEntryListenerException {
         if (javaFilter != null)
             return javaFilter.evaluate(evt);
@@ -262,7 +264,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @return Filter to be deployed on remote node.
      * @throws ObjectStreamException If failed.
      */
-    Object writeReplace() throws ObjectStreamException {
+    protected Object writeReplace() throws ObjectStreamException {
         if (javaFilter != null)
             return javaFilter;
 
