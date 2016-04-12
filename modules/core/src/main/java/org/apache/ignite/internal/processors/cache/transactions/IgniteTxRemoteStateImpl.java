@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -144,5 +147,33 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     /** {@inheritDoc} */
     public String toString() {
         return S.toString(IgniteTxRemoteStateImpl.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
+        Set<Integer> cacheIds = new HashSet<>(cctx.cacheContexts().size());
+
+        for (IgniteTxEntry e : readMap.values()) {
+            cacheIds.add(e.cacheId());
+        }
+
+        for (IgniteTxEntry e : writeMap.values()) {
+            cacheIds.add(e.cacheId());
+        }
+
+        if (!cacheIds.isEmpty()) {
+            Collection<CacheStoreManager> stores = new ArrayList<>(cacheIds.size());
+
+            for (Integer cacheId : cacheIds) {
+                CacheStoreManager store = cctx.cacheContext(cacheId).store();
+
+                if (store.configured() && store.isLocal())
+                    stores.add(store);
+            }
+
+            return stores;
+        }
+
+        return null;
     }
 }

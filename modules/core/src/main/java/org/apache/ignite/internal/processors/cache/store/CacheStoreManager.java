@@ -128,10 +128,12 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
      * @param key Key.
      * @param val Value.
      * @param ver Version.
+     * @param conflictResolve If {@code true} then performs conflicts resolution.
      * @return {@code true} If there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean put(@Nullable IgniteInternalTx tx, Object key, Object val, GridCacheVersion ver)
+    public boolean put(@Nullable IgniteInternalTx tx, Object key, Object val, GridCacheVersion ver,
+        boolean conflictResolve)
         throws IgniteCheckedException;
 
     /**
@@ -139,10 +141,12 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
      *
      * @param tx Cache transaction.
      * @param map Map.
+     * @param conflictResolve If {@code true} then performs conflicts resolution.
      * @return {@code True} if there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean putAll(@Nullable IgniteInternalTx tx, Map<Object, IgniteBiTuple<Object, GridCacheVersion>> map)
+    public boolean putAll(@Nullable IgniteInternalTx tx, Map<Object, IgniteBiTuple<Object, GridCacheVersion>> map,
+        boolean conflictResolve)
         throws IgniteCheckedException;
 
     /**

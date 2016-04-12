@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -113,5 +115,23 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
     /** {@inheritDoc} */
     public String toString() {
         return S.toString(IgniteTxRemoteSingleStateImpl.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
+        if (entry == null)
+            return null;
+
+        CacheStoreManager store = entry.context().store();
+
+        if (store.configured() && store.isLocal()) {
+            HashSet<CacheStoreManager> set = new HashSet<>(3, 0.75f);
+
+            set.add(store);
+
+            return set;
+        }
+
+        return null;
     }
 }

@@ -60,7 +60,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -526,7 +525,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean put(@Nullable IgniteInternalTx tx, Object key, Object val, GridCacheVersion ver)
+    @Override public boolean put(@Nullable IgniteInternalTx tx, Object key, Object val, GridCacheVersion ver,
+        boolean conflictResolve)
         throws IgniteCheckedException {
         if (store != null) {
             // Never persist internal keys.
@@ -544,7 +544,22 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             boolean threwEx = true;
 
             try {
-                store.write(new CacheEntryImpl<>(key, locStore ? F.t(val, ver) : val));
+                boolean update = true;
+
+                if (locStore && conflictResolve) {
+                    IgniteBiTuple t = (IgniteBiTuple)store.load(key);
+
+                    if (t != null) {
+                        GridCacheVersion ver0 = (GridCacheVersion)t.get2();
+
+                        assert ver0 != null;
+
+                        update = ver0.isLess(ver);
+                    }
+                }
+
+                if (update)
+                    store.write(new CacheEntryImpl<>(key, locStore ? F.t(val, ver) : val));
 
                 threwEx = false;
             }
@@ -571,7 +586,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putAll(@Nullable IgniteInternalTx tx, Map map) throws IgniteCheckedException {
+    @Override public boolean putAll(@Nullable IgniteInternalTx tx, Map map, boolean conflictResolve) throws IgniteCheckedException {
         if (F.isEmpty(map))
             return true;
 
@@ -579,7 +594,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             Map.Entry<Object, IgniteBiTuple<Object, GridCacheVersion>> e =
                 ((Map<Object, IgniteBiTuple<Object, GridCacheVersion>>)map).entrySet().iterator().next();
 
-            return put(tx, e.getKey(), e.getValue().get1(), e.getValue().get2());
+            return put(tx, e.getKey(), e.getValue().get1(), e.getValue().get2(), conflictResolve);
         }
         else {
             if (store != null) {

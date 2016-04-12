@@ -46,6 +46,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_STORE_FLAG_MASK;
+
 /**
  * Lite dht cache backup update request.
  */
@@ -163,6 +165,11 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     private boolean keepBinary;
 
     /**
+     * Additional flags.
+     */
+    private byte flags;
+
+    /**
      * Empty constructor required by {@link Externalizable}.
      */
     public GridDhtAtomicUpdateRequest() {
@@ -196,7 +203,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         int taskNameHash,
         Object[] invokeArgs,
         boolean addDepInfo,
-        boolean keepBinary
+        boolean keepBinary,
+        boolean skipStore
     ) {
         assert invokeArgs == null || forceTransformBackups;
 
@@ -212,6 +220,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         this.invokeArgs = invokeArgs;
         this.addDepInfo = addDepInfo;
         this.keepBinary = keepBinary;
+
+        this.flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
 
         keys = new ArrayList<>();
         partIds = new ArrayList<>();
@@ -474,6 +484,13 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
      */
     public int partitionId(int idx) {
         return partIds.get(idx);
+    }
+
+    /**
+     * @return Skip write-through to a persistent storage.
+     */
+    public boolean skipStore() {
+        return (flags & SKIP_STORE_FLAG_MASK) == SKIP_STORE_FLAG_MASK;
     }
 
     /**
