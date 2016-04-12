@@ -83,8 +83,6 @@ public class IgfsMetaDirectoryListingRemoveProcessor implements EntryProcessor<I
 
         Map<String, IgfsListingEntry> listing = new HashMap<>(fileInfo.listing());
 
-        listing.putAll(fileInfo.listing());
-
         IgfsListingEntry oldEntry = listing.get(fileName);
 
         if (oldEntry == null || !oldEntry.fileId().equals(fileId))

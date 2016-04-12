@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopJobTrackerSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceEmbeddedSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceErrorResilienceTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReduceTest;
+import org.apache.ignite.internal.processors.hadoop.HadoopNoHadoopMapReduceTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopSerializationWrapperSelfTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopSnappyFullMapReduceTest;
 import org.apache.ignite.internal.processors.hadoop.HadoopSnappyTest;
@@ -167,6 +168,7 @@ public class IgniteHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(HadoopTasksV2Test.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceTest.class.getName())));
+        suite.addTest(new TestSuite(ldr.loadClass(HadoopNoHadoopMapReduceTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceErrorResilienceTest.class.getName())));
 
         suite.addTest(new TestSuite(ldr.loadClass(HadoopMapReduceEmbeddedSelfTest.class.getName())));
