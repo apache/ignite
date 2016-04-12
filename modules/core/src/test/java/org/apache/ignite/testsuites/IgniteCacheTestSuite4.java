@@ -87,6 +87,7 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCacheTypesTest;
 import org.apache.ignite.internal.processors.cache.IgniteStartCacheInTransactionAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteStartCacheInTransactionSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteSystemCacheOnClientTest;
+import org.apache.ignite.internal.processors.cache.MarshallerCacheJobRunNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAffinityEarlyTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheGetFutureHangsSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNoValueClassOnServerNodeTest;
@@ -311,6 +312,8 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         suite.addTestSuite(IgniteCacheGetCustomCollectionsSelfTest.class);
         suite.addTestSuite(IgniteCacheLoadRebalanceEvictionSelfTest.class);
+
+        suite.addTestSuite(MarshallerCacheJobRunNodeRestartTest.class);
 
         return suite;
     }
