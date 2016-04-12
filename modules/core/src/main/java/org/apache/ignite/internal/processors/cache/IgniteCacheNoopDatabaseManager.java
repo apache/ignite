@@ -17,11 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseManager;
 
 /**
  *
  */
 public class IgniteCacheNoopDatabaseManager extends GridCacheManagerAdapter implements IgniteCacheDatabaseManager {
+    /** {@inheritDoc} */
+    @Override public void clear(boolean readers) {
+        // No-op.
+    }
 
+    /** {@inheritDoc} */
+    @Override public long entriesCount(boolean primary, boolean backup, AffinityTopologyVersion topVer) {
+        return 0;
+    }
 }

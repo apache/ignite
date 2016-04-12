@@ -17,11 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.database;
 
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheManager;
 
 /**
  *
  */
 public interface IgniteCacheDatabaseManager extends GridCacheManager {
-    // No-op.
+    /**
+     * Clears the database entries.
+     *
+     * @param readers {@code True} to clear readers.
+     */
+    public void clear(boolean readers);
+
+    /**
+     * @param primary Include primary node keys.
+     * @param backup Include backup node kets.
+     * @param topVer Topology version.
+     * @return Entries count.
+     */
+    public long entriesCount(boolean primary, boolean backup, AffinityTopologyVersion topVer);
 }
