@@ -1774,11 +1774,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (invokeRes == null)
                                 invokeRes = new GridCacheReturn(node.isLocal());
 
-                            Object key0 = ctx.keepBinary() && ctx.binaryMarshaller() ?
-                                ((CacheObjectBinaryProcessor)ctx.kernalContext().cacheObjects()).marshalToBinary(entry.key())
-                                : invokeEntry.key();
-
-                            invokeRes.addEntryProcessResult(ctx, entry.key(), key0, computed, null);
+                            invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null);
                         }
 
                         if (!invokeEntry.modified())

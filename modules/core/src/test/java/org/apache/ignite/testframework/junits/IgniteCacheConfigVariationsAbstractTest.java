@@ -136,7 +136,9 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     }
 
     /**
-     * Starts caches dinamically.
+     * Starts caches dynamically.
+     *
+     * @throws Exception If failed.
      */
     private void startCachesDinamically() throws Exception {
         for (int i = 0; i < gridCount(); i++) {

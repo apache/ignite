@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
@@ -432,13 +431,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             txEntry.entryProcessorCalculatedValue(new T2<>(op, op == NOOP ? null : val));
 
                             if (retVal) {
-                                if (err != null || procRes != null) {
-                                    Object key0 = keepBinary && cacheCtx.binaryMarshaller() ?
-                                        ((CacheObjectBinaryProcessor)cacheCtx.kernalContext().cacheObjects()).marshalToBinary(key)
-                                        : null;
-
-                                    ret.addEntryProcessResult(txEntry.context(), key, key0, procRes, err);
-                                }
+                                if (err != null || procRes != null)
+                                    ret.addEntryProcessResult(txEntry.context(), key, null, procRes, err);
                                 else
                                     ret.invokeResult(true);
                             }

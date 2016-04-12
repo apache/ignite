@@ -237,10 +237,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 return (V)(val);
                             }
 
-                            if (!ctx.keepBinary())
-                                return (V)map.get(key);
-                            else
-                                return (V)F.firstValue(map);
+                            return (V)F.firstValue(map);
                         }
                     });
                 }
