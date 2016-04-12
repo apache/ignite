@@ -20,26 +20,37 @@ package org.apache.ignite.yardstick.cache.load;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
@@ -54,17 +65,26 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     /** */
     public static final int operations = Operation.values().length;
 
+    /** Amount partitions. */
+    public static final int SCAN_QUERY_PARTITIN_AMOUNT = 10;
+
     /** List off all available cache. */
-    private List<IgniteCache> availableCaches;
+    protected List<IgniteCache> availableCaches;
 
     /** List of available transactional cache. */
-    private List<IgniteCache> transactionalCaches;
+    protected List<IgniteCache> transactionalCaches;
 
     /** Map cache name on key classes. */
     private Map<String, Class[]> keysCacheClasses;
 
     /** Map cache name on value classes. */
     private Map<String, Class[]> valuesCacheClasses;
+
+    /** Map cache name on partitions. */
+    private Map<String, ScanQueryBroadcastClosure> scanQueryClosures;
+
+    /** Map cache name on nodes. */
+    private Map<String, ClusterGroup> clusterGrours;
 
     /**
      * Replace value entry processor.
@@ -79,7 +99,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     /**
      * Scan query predicate.
      */
-    BenchmarkIgniteBiPredicate igniteBiPredicate;
+    static BenchmarkIgniteBiPredicate igniteBiPredicate = new BenchmarkIgniteBiPredicate();
 
     /**
      * @throws Exception If failed.
@@ -91,30 +111,21 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         valuesCacheClasses = new HashMap<>();
         replaceValueEntryProcessor = new BenchmarkReplaceValueEntryProcessor(null);
         removeEntryProcessor = new BenchmarkRemoveEntryProcessor();
-        igniteBiPredicate = new BenchmarkIgniteBiPredicate();
+        scanQueryClosures = new HashMap<>();
+        clusterGrours = new HashMap<>();
 
         for (String name : ignite().cacheNames()) {
-            if (name.equals("query-offheap")) continue;
             IgniteCache<Object, Object> cache = ignite().cache(name);
 
             CacheConfiguration configuration = cache.getConfiguration(CacheConfiguration.class);
 
             if (isClassDefinedinConfig(configuration)) {
-//                if (true) continue;
+                //Exclude indexed cache.
+                if (true)
+                    continue;
 
                 ArrayList<Class> keys = new ArrayList<>();
                 ArrayList<Class> values = new ArrayList<>();
-                int i = 0;
-                if (configuration.getIndexedTypes() != null) {
-                    for (Class clazz : configuration.getIndexedTypes()) {
-                        if (ModelUtil.canCreateInstance(clazz))
-                            if (i % 2 == 0)
-                                keys.add(clazz);
-                            else
-                                values.add(clazz);
-                        i++;
-                    }
-                }
 
                 if (configuration.getQueryEntities() != null) {
                     Collection<QueryEntity> entries = configuration.getQueryEntities();
@@ -124,6 +135,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                         if (ModelUtil.canCreateInstance(keyClass) && ModelUtil.canCreateInstance(valueClass)) {
                             keys.add(keyClass);
                             values.add(valueClass);
+                            //Only one indexed type works correctly.
+//                            break;
                         }
                     }
                 }
@@ -136,6 +149,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                         if (ModelUtil.canCreateInstance(keyClass) && ModelUtil.canCreateInstance(valueClass)) {
                             keys.add(keyClass);
                             values.add(valueClass);
+                            //Only one indexed type works correctly.
+//                            break;
                         }
                     }
                 }
@@ -145,6 +160,13 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
                 keysCacheClasses.put(name, keys.toArray(new Class[] {}));
                 valuesCacheClasses.put(name, values.toArray(new Class[] {}));
+            }
+
+            if (configuration.getCacheMode() != CacheMode.LOCAL) {
+                Map<UUID, List<Integer>> partitionsMap = personCachePartitions(cache.getName());
+                scanQueryClosures.put(cache.getName(),
+                    new ScanQueryBroadcastClosure(cache.getName(), partitionsMap));
+                clusterGrours.put(cache.getName(), ignite().cluster().forNodeIds(partitionsMap.keySet()));
             }
 
             if (configuration.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
@@ -168,6 +190,9 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @throws Exception If fail.
      */
     private void preLoading() throws Exception {
+        if (args.preloadAmount() > args.range())
+            throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") must by less then the" +
+                " range (\"-r\", \"--range\").");
         Thread[] threads = new Thread[availableCaches.size()];
         for (int i = 0; i < availableCaches.size(); i++) {
             final String cacheName = availableCaches.get(i).getName();
@@ -175,11 +200,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 @Override
                 public void run() {
                     try (IgniteDataStreamer dataLdr = ignite().dataStreamer(cacheName)) {
-                        for (int i = 0; i < args.preloadAmount() && !isInterrupted(); i++) {
-                            int id = nextRandom(args.range());
-
-                            dataLdr.addData(createRandomKey(id, cacheName), createRandomValue(id, cacheName));
-                        }
+                        for (int i = 0; i < args.preloadAmount() && !isInterrupted(); i++)
+                            dataLdr.addData(createRandomKey(i, cacheName), createRandomValue(i, cacheName));
                     }
                 }
             };
@@ -188,6 +210,51 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         for (Thread thread : threads) {
             thread.join();
         }
+    }
+
+    /**
+     * Building a map that contains mapping of node ID to a list of partitions stored on the node.
+     * @param cacheName Name of Ignite cache.
+     * @return Node to partitions map.
+     */
+    private Map<UUID, List<Integer>> personCachePartitions(String cacheName) {
+        // Getting affinity for person cache.
+        Affinity affinity = ignite().affinity(cacheName);
+
+        // Building a list of all partitions numbers.
+        List<Integer> randmPartitions = new ArrayList<>(10);
+
+        if (affinity.partitions() < SCAN_QUERY_PARTITIN_AMOUNT)
+            for (int i = 0; i < affinity.partitions(); i++)
+                randmPartitions.add(i);
+        else
+            for (int i=0; i < SCAN_QUERY_PARTITIN_AMOUNT; i++) {
+                int partitionNumber;
+                do
+                    partitionNumber = nextRandom(affinity.partitions());
+                while (randmPartitions.contains(partitionNumber));
+                randmPartitions.add(partitionNumber);
+            }
+        Collections.sort(randmPartitions);
+
+        // Getting partition to node mapping.
+        Map<Integer, ClusterNode> partPerNodes = affinity.mapPartitionsToNodes(randmPartitions);
+
+        // Building node to partitions mapping.
+        Map<UUID, List<Integer>> nodesToPart = new HashMap<>();
+
+        for (Map.Entry<Integer, ClusterNode> entry : partPerNodes.entrySet()) {
+            List<Integer> nodeParts = nodesToPart.get(entry.getValue().id());
+
+            if (nodeParts == null) {
+                nodeParts = new ArrayList<>();
+                nodesToPart.put(entry.getValue().id(), nodeParts);
+            }
+
+            nodeParts.add(entry.getKey());
+        }
+
+        return nodesToPart;
     }
 
     /**
@@ -206,12 +273,10 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private Class randomKeyClass(String cacheName) {
         Class[] keys;
-        if (keysCacheClasses.containsKey(cacheName)) {
+        if (keysCacheClasses.containsKey(cacheName))
             keys = keysCacheClasses.get(cacheName);
-        }
-        else {
+        else
             keys = ModelUtil.keyClasses();
-        }
         return keys[nextRandom(keys.length)];
     }
 
@@ -232,12 +297,10 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private Class randomValueClass(String cacheName) {
         Class[] values;
 
-        if (valuesCacheClasses.containsKey(cacheName)) {
+        if (valuesCacheClasses.containsKey(cacheName))
             values = valuesCacheClasses.get(cacheName);
-        }
-        else {
+        else
             values = ModelUtil.valueClasses();
-        }
         return values[nextRandom(values.length)];
     }
 
@@ -535,8 +598,66 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @throws Exception If failed.
      */
     private void doScanQuery(IgniteCache cache) throws Exception {
+        ScanQueryBroadcastClosure closure = scanQueryClosures.get(cache.getName());
+        if (closure == null)
+            return;
+        IgniteCompute compute = ignite().compute(clusterGrours.get(cache.getName()));
+        compute.broadcast(closure);
+    }
 
-        cache.query(new ScanQuery(igniteBiPredicate)).getAll();
+    /**
+     * Closure for scan query executing.
+     */
+    private static class ScanQueryBroadcastClosure implements IgniteRunnable {
+
+        /**
+         * Ignite node.
+         */
+        @IgniteInstanceResource
+        private Ignite node;
+
+        /**
+         * Information about partition.
+         */
+        private Map<UUID, List<Integer>> cachePartition;
+
+        /**
+         * Name of Ignite cache.
+         */
+        private String cacheName;
+
+        /**
+         * @param cacheName Name of Ignite cache.
+         * @param cachePartition Partition by node for Ignite cache.
+         */
+        public ScanQueryBroadcastClosure(String cacheName, Map<UUID, List<Integer>> cachePartition) {
+            this.cachePartition = cachePartition;
+            this.cacheName = cacheName;
+        }
+
+        @Override
+        public void run() {
+
+            IgniteCache cache = node.cache(cacheName);
+
+            // Getting a list of the partitions owned by this node.
+            List<Integer> myPartitions = cachePartition.get(node.cluster().localNode().id());
+
+            for (Integer part : myPartitions) {
+                if (ThreadLocalRandom.current().nextBoolean())
+                    continue;
+
+                ScanQuery scanQuery = new ScanQuery();
+
+                scanQuery.setPartition(part);
+                scanQuery.setFilter(igniteBiPredicate);
+
+                try (QueryCursor cursor = cache.query(scanQuery)) {
+                    for (Object obj: cursor);
+                }
+
+            }
+        }
     }
 
     /**

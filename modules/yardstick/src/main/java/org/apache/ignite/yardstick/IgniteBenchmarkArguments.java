@@ -70,10 +70,6 @@ public class IgniteBenchmarkArguments {
     private TransactionIsolation txIsolation = TransactionIsolation.REPEATABLE_READ;
 
     /** */
-    @Parameter(names = {"-txo", "--txOperations"}, description = "Amount operations in transaction")
-    private int txOperations = 100;
-
-    /** */
     @Parameter(names = {"-ot", "--offheapTiered"}, description = "Tiered offheap")
     private boolean offheapTiered;
 
@@ -91,11 +87,11 @@ public class IgniteBenchmarkArguments {
 
     /** */
     @Parameter(names = {"-r", "--range"}, description = "Key range")
-    private int range = 1_000_000;
+    public int range = 1_000_000;
 
     /** */
     @Parameter(names = {"-pa", "--preloadAmount"}, description = "Preload Key amount")
-    private int preloadAmount = 500_000;
+    public int preloadAmount = 500_000;
 
     /** */
     @Parameter(names = {"-j", "--jobs"}, description = "Number of jobs for compute benchmarks")
@@ -175,13 +171,6 @@ public class IgniteBenchmarkArguments {
      */
     public TransactionIsolation txIsolation() {
         return txIsolation;
-    }
-
-    /**
-     * @return Amount operations in transaction.
-     */
-    public int txOperations() {
-        return txOperations;
     }
 
     /**
