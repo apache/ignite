@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
 
@@ -37,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /** Type code. */
-        private readonly int _factoryType;
+        private readonly FactoryType _factoryType;
 
         /** Java class name */
         private readonly string _factoryClassName;
@@ -53,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="payload">The payload.</param>
         protected PlatformJavaObjectFactoryProxy(FactoryType type, string factoryClassName, object payload)
         {
-            _factoryType = (int) type;
+            _factoryType = type;
             _factoryClassName = factoryClassName;
             _payload = payload;
         }
@@ -71,11 +70,19 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             var w = writer.GetRawWriter();
 
-            w.WriteInt(_factoryType);
+            w.WriteInt((int) _factoryType);
             w.WriteString(_factoryClassName);
             w.WriteObject(_payload);
 
             w.WriteInt(0);  // TODO: Properties
+        }
+
+        /// <summary>
+        /// Gets the raw proxy (not the derived type) for serialization.
+        /// </summary>
+        public PlatformJavaObjectFactoryProxy GetRawProxy()
+        {
+            return new PlatformJavaObjectFactoryProxy(_factoryType, _factoryClassName, _payload);
         }
     }
 }

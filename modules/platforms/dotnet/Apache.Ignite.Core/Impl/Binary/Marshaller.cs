@@ -368,9 +368,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IBinaryTypeDescriptor desc;
 
-            if (type.BaseType == typeof (PlatformJavaObjectFactoryProxy))
-                type = type.BaseType;
-
             _typeToDesc.TryGetValue(type, out desc);
 
             return desc;
