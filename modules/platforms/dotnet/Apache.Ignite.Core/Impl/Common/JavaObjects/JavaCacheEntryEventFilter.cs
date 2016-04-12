@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common.JavaObjects
 {
     using System;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Cache.Event;
 
     /// <summary>
@@ -34,10 +35,12 @@ namespace Apache.Ignite.Core.Impl.Common.JavaObjects
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="JavaCacheEntryEventFilter{TK, TV}"/> class.
+        /// Initializes a new instance of the <see cref="JavaCacheEntryEventFilter{TK, TV}" /> class.
         /// </summary>
         /// <param name="className">Name of the class.</param>
-        public JavaCacheEntryEventFilter(string className) : base(FactoryType.Default, null, className)
+        /// <param name="properties">The properties.</param>
+        public JavaCacheEntryEventFilter(string className, IDictionary<string, object> properties) 
+            : base(FactoryType.Default, null, className, properties)
         {
             // No-op.
         }

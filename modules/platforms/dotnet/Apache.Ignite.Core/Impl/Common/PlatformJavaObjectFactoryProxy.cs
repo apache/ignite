@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private readonly object _payload;
 
         /** Properties to set */
-        private IDictionary<string, object> _properties;
+        private readonly IDictionary<string, object> _properties;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PlatformJavaObjectFactoryProxy" /> class.
@@ -81,7 +81,18 @@ namespace Apache.Ignite.Core.Impl.Common
             w.WriteString(_factoryClassName);
             w.WriteObject(_payload);
 
-            w.WriteInt(0);  // TODO: Properties
+            if (_properties != null)
+            {
+                w.WriteInt(_properties.Count);
+
+                foreach (var pair in _properties)
+                {
+                    w.WriteString(pair.Key);
+                    w.WriteObject(pair.Value);
+                }
+            }
+            else
+                w.WriteInt(0);
         }
 
         /// <summary>
@@ -89,7 +100,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         public PlatformJavaObjectFactoryProxy GetRawProxy()
         {
-            return new PlatformJavaObjectFactoryProxy(_factoryType, _factoryClassName, _payload);
+            return new PlatformJavaObjectFactoryProxy(_factoryType, _factoryClassName, _payload, _properties);
         }
     }
 }

@@ -26,8 +26,12 @@ import javax.cache.event.CacheEntryListenerException;
  * Test filter.
  */
 public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializableFilter {
+    /** Property to be set from platform. */
+    @SuppressWarnings("FieldCanBeLocal")
+    private String startsWith = "-";
+
     /** {@inheritDoc} */
     @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
-        return ((String)event.getValue()).startsWith("valid");
+        return ((String)event.getValue()).startsWith(startsWith);
     }
 }
