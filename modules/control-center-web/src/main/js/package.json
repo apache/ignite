@@ -88,7 +88,7 @@
       "angular-sanitize": "github:angular/bower-angular-sanitize@^1.5.0",
       "angular-smart-table": "github:lorenzofox3/Smart-Table@^2.1.4",
       "angular-socket-io": "github:btford/angular-socket-io@^0.7.0",
-      "angular-strap": "github:mgcrea/angular-strap@2.3.7",
+      "angular-strap": "github:mgcrea/angular-strap@2.3.8",
       "angular-tree-control": "github:wix/angular-tree-control@^0.2.23",
       "angular-ui-grid": "github:angular-ui/bower-ui-grid@^3.0.7",
       "angular-ui-router": "github:angular-ui/ui-router@^0.2.15",
@@ -240,7 +240,7 @@
           "pdfmake": "github:bpampuch/pdfmake@^0.1.20"
         }
       },
-      "github:mgcrea/angular-strap@2.3.7": {
+      "github:mgcrea/angular-strap@2.3.8": {
         "directories": {
           "lib": "dist"
         },
