@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedAutoPropertyAccessor.Local
 #pragma warning disable 618  // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
@@ -127,15 +128,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             var filter = javaObj.ToCacheEntryEventFilter<int, string>();
 
             TestFilter(filter);
-        }
-
-        /// <summary>
-        /// Tests the equality filter.
-        /// </summary>
-        [Test]
-        public void TestEqualsFilter()
-        {
-            // TODO: Binary objects
         }
 
         /// <summary>

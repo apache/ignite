@@ -76,6 +76,8 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
     /** Property to be set from platform. */
     private BinaryObject objField;
 
+    // TODO: Collections
+
     /** Injected instance. */
     @IgniteInstanceResource
     private Ignite ignite;
