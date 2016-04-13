@@ -28,12 +28,10 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
@@ -44,7 +42,6 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformQueryCursor;
-import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
@@ -289,124 +286,6 @@ public class PlatformCache extends PlatformAbstractTarget {
             return this;
 
         return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem) throws IgniteCheckedException {
-        try {
-
-            switch (type) {
-                case OP_PUT:
-                    cache.put(reader.readObjectDetached(), reader.readObjectDetached());
-
-                    return TRUE;
-
-                case OP_REMOVE_BOOL:
-                    return cache.remove(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
-
-                case OP_REMOVE_ALL:
-                    cache.removeAll(PlatformUtils.readSet(reader));
-
-                    return TRUE;
-
-                case OP_PUT_ALL:
-                    cache.putAll(PlatformUtils.readMap(reader));
-
-                    return TRUE;
-
-                case OP_LOC_EVICT:
-                    cache.localEvict(PlatformUtils.readCollection(reader));
-
-                    return TRUE;
-
-                case OP_CONTAINS_KEY:
-                    return cache.containsKey(reader.readObjectDetached()) ? TRUE : FALSE;
-
-                case OP_CONTAINS_KEYS:
-                    return cache.containsKeys(PlatformUtils.readSet(reader)) ? TRUE : FALSE;
-
-                case OP_LOC_PROMOTE: {
-                    cache.localPromote(PlatformUtils.readSet(reader));
-
-                    break;
-                }
-
-                case OP_REPLACE_3:
-                    return cache.replace(reader.readObjectDetached(), reader.readObjectDetached(),
-                        reader.readObjectDetached()) ? TRUE : FALSE;
-
-                case OP_LOC_LOAD_CACHE:
-                    loadCache0(reader, true);
-
-                    break;
-
-                case OP_LOAD_CACHE:
-                    loadCache0(reader, false);
-
-                    break;
-
-                case OP_CLEAR:
-                    cache.clear(reader.readObjectDetached());
-
-                    break;
-
-                case OP_CLEAR_ALL:
-                    cache.clearAll(PlatformUtils.readSet(reader));
-
-                    break;
-
-                case OP_LOCAL_CLEAR:
-                    cache.localClear(reader.readObjectDetached());
-
-                    break;
-
-                case OP_LOCAL_CLEAR_ALL:
-                    cache.localClearAll(PlatformUtils.readSet(reader));
-
-                    break;
-
-                case OP_PUT_IF_ABSENT: {
-                    return cache.putIfAbsent(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
-                }
-
-                case OP_REPLACE_2: {
-                    return cache.replace(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
-                }
-
-                case OP_REMOVE_OBJ: {
-                    return cache.remove(reader.readObjectDetached()) ? TRUE : FALSE;
-                }
-
-                case OP_IS_LOCAL_LOCKED:
-                    return cache.isLocalLocked(reader.readObjectDetached(), reader.readBoolean()) ? TRUE : FALSE;
-
-                case OP_LOAD_ALL: {
-                    long futId = reader.readLong();
-                    boolean replaceExisting = reader.readBoolean();
-
-                    CompletionListenable fut = new CompletionListenable();
-
-                    PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, null, this);
-
-                    cache.loadAll(PlatformUtils.readSet(reader), replaceExisting, fut);
-
-                    return TRUE;
-                }
-
-                default:
-                    return super.processInStreamOutLong(type, reader);
-            }
-        }
-        catch (Exception e) {
-            BinaryRawWriterEx writer = platformCtx.writer(mem);
-
-            writer.writeBoolean(false);  // error
-            PlatformUtils.writeError(e, writer);
-
-            return FALSE;
-        }
-
-        return TRUE;
     }
 
     /**

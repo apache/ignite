@@ -477,11 +477,11 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            DoOutInOpX((int) CacheOp.Put, w =>
+            DoOutInOp((int) CacheOp.Put, w =>
             {
                 w.Write(key);
                 w.Write(val);
-            }, ReadResult);
+            }, s => ReadResult(s));
         }
 
         /** <inheritDoc /> */

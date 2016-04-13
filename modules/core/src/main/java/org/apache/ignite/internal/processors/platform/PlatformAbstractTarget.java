@@ -69,7 +69,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
                 return TRUE;
             }
             else
-                return processInStreamOutLong(type, reader, mem);
+                return processInStreamOutLong(type, reader);
         }
         catch (Exception e) {
             throw convertException(e);
@@ -244,18 +244,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      */
     protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         return throwUnsupported(type);
-    }
-
-    /**
-     * Process IN operation.
-     *
-     * @param type Type.
-     * @param reader Binary reader.
-     * @return Result.
-     * @throws IgniteCheckedException In case of exception.
-     */
-    protected long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem) throws IgniteCheckedException {
-        return processInStreamOutLong(type, reader);
     }
 
     /**
