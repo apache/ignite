@@ -29,4 +29,11 @@ public interface FreeIO {
      * @return Dispersed free space.
      */
     public int dispersedFreeSpace(ByteBuffer buf, int idx);
+
+    /**
+     * @param buf Buffer.
+     * @param idx Index.
+     * @return Free space.
+     */
+    public short freeSpace(ByteBuffer buf, int idx);
 }

@@ -56,6 +56,13 @@ public class FreeLeafIO extends BPlusLeafIO<FreeItem> implements FreeIO {
     }
 
     /** {@inheritDoc} */
+    @Override public short freeSpace(ByteBuffer buf, int idx) {
+        int off = offset(idx);
+
+        return buf.getShort(off);
+    }
+
+    /** {@inheritDoc} */
     @Override public FreeItem getLookupRow(BPlusTree<FreeItem, ?> tree, ByteBuffer buf, int idx) {
         int off = offset(idx);
 
