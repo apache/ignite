@@ -479,6 +479,36 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
         /// <param name="inAction">In action.</param>
+        /// <returns>Result.</returns>
+        protected TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction)
+        {
+            using (PlatformMemoryStream stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                BinaryWriter writer = _marsh.StartMarshal(stream);
+
+                outAction(writer);
+
+                FinishMarshal(writer);
+
+                var res = UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+
+                if (res == True)
+                    return default(TR);
+
+                stream.SynchronizeInput();
+
+                stream.Seek(0, SeekOrigin.Begin);
+
+                return inAction(stream);
+            }
+        }
+
+        /// <summary>
+        /// Perform out-in operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="outAction">Out action.</param>
+        /// <param name="inAction">In action.</param>
         /// <param name="arg">Argument.</param>
         /// <returns>Result.</returns>
         protected unsafe TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction, void* arg)
