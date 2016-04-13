@@ -60,11 +60,11 @@ namespace Apache.Ignite.Core.Interop
         /// <param name="properties">The properties to set on the Java object.</param>
         public JavaObject(string className, IDictionary<string, object> properties) : this(className)
         {
-            _properties = properties;
+            _properties = properties ?? _properties;
         }
 
         /// <summary>
-        /// Gets or sets the Java class name.
+        /// Gets the Java class name.
         /// </summary>
         public string ClassName
         {
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Interop
         }
 
         /// <summary>
-        /// Gets or sets the properties to be set on the Java object.
+        /// Gets the properties to be set on the Java object.
         /// </summary>
         public IDictionary<string, object> Properties
         {
