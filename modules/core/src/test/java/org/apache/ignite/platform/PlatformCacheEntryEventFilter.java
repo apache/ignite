@@ -91,9 +91,9 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
         assert uintField == 6;
         assert longField == 7;
         assert ulongField == 8;
-        assert floatField == 9.99;
+        assert floatField == (float)9.99;
         assert doubleField == 10.123;
-        assert decimalField.compareTo(new BigDecimal(11.245)) == 0;
+        assert "11.245".equals(decimalField.toString());
         assert boolField;
 
         return ((String)event.getValue()).startsWith(startsWith);
