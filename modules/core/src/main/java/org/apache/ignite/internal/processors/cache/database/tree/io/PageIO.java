@@ -53,6 +53,12 @@ public abstract class PageIO {
     public static final short T_H2_REF_INNER = 4;
 
     /** */
+    public static final short T_FREE_LEAF = 5;
+
+    /** */
+    public static final short T_FREE_INNER = 6;
+
+    /** */
     private final int ver;
 
     /** */
