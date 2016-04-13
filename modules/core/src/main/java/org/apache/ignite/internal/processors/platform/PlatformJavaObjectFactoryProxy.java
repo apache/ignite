@@ -52,8 +52,8 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
     /** Factory type. */
     private int factoryTyp;
 
-    /** Factory class name. */
-    private String factoryClsName;
+    /** Class name. */
+    private String clsName;
 
     /** Optional payload for special factory types. */
     @GridToStringExclude
@@ -74,14 +74,14 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
      * Constructor.
      *
      * @param factoryTyp Factory type.
-     * @param factoryClsName Factory class name.
+     * @param clsName Class name.
      * @param payload Payload.
      * @param props Properties.
      */
-    public PlatformJavaObjectFactoryProxy(int factoryTyp, @Nullable String factoryClsName, @Nullable Object payload,
+    public PlatformJavaObjectFactoryProxy(int factoryTyp, @Nullable String clsName, @Nullable Object payload,
         @Nullable Map<String, Object> props) {
         this.factoryTyp = factoryTyp;
-        this.factoryClsName = factoryClsName;
+        this.clsName = clsName;
         this.payload = payload;
         this.props = props;
     }
@@ -94,7 +94,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
      */
     public PlatformJavaObjectFactory factory(GridKernalContext ctx) {
         // Create factory.
-        PlatformJavaObjectFactory res;
+        Object res;
 
         switch (factoryTyp) {
             case TYP_DEFAULT:
@@ -103,7 +103,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
                 break;
 
             case TYP_USER:
-                res = PlatformUtils.createJavaObject(factoryClsName);
+                res = PlatformUtils.createJavaObject(clsName);
 
                 break;
 
@@ -114,10 +114,14 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
         // Initialize factory.
         if (res instanceof PlatformJavaObjectFactoryEx)
             ((PlatformJavaObjectFactoryEx)res).initialize(payload, props);
-        else
-            PlatformUtils.initializeJavaObject(res, factoryClsName, props, ctx);
+        else {
+            PlatformUtils.initializeJavaObject(res, clsName, props, ctx);
 
-        return res;
+            if (!(res instanceof PlatformJavaObjectFactory))
+                res = new PlatformJavaObjectSingletonFactory<>(res);
+        }
+
+        return (PlatformJavaObjectFactory)res;
     }
 
     /** {@inheritDoc} */
@@ -125,7 +129,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
         BinaryRawWriterEx rawWriter = (BinaryRawWriterEx)writer.rawWriter();
 
         rawWriter.writeInt(factoryTyp);
-        rawWriter.writeString(factoryClsName);
+        rawWriter.writeString(clsName);
         rawWriter.writeObjectDetached(payload);
 
         if (props != null) {
@@ -145,7 +149,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
         BinaryRawReaderEx rawReader = (BinaryRawReaderEx)reader.rawReader();
 
         factoryTyp = rawReader.readInt();
-        factoryClsName = rawReader.readString();
+        clsName = rawReader.readString();
         payload = rawReader.readObjectDetached();
 
         int propsSize = rawReader.readInt();
@@ -165,7 +169,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeInt(factoryTyp);
-        U.writeString(out, factoryClsName);
+        U.writeString(out, clsName);
         out.writeObject(payload);
         U.writeMap(out, props);
     }
@@ -173,7 +177,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         factoryTyp = in.readInt();
-        factoryClsName = U.readString(in);
+        clsName = U.readString(in);
         payload = in.readObject();
         props = U.readMap(in);
     }
