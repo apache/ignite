@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -35,7 +36,10 @@ public class PlatformDefaultJavaObjectFactory<T> implements PlatformJavaObjectFa
 
     /** {@inheritDoc} */
     @Override public void initialize(@Nullable Object payload, @Nullable Map<String, Object> props) {
-        assert payload != null && payload instanceof String;
+        if (payload == null)
+            throw new IgniteException("Java object class name is not provided.");
+
+        assert payload instanceof String;
 
         clsName = (String)payload;
 

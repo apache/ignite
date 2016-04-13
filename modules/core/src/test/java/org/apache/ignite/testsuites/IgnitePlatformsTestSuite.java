@@ -15,22 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.testsuites;
+
+import junit.framework.TestSuite;
+import org.apache.ignite.platform.PlatformDefaultJavaObjectFactorySelfTest;
+import org.apache.ignite.platform.PlatformJavaObjectFactoryProxySelfTest;
 
 /**
- * Same test as HadoopMapReduceTest, but with enabled Snappy output compression.
+ * Suite for platform tests.
  */
-public class HadoopSnappyFullMapReduceTest extends HadoopMapReduceTest {
-    /** {@inheritDoc} */
-    @Override protected boolean compressOutputSnappy() {
-        return true;
-    }
+public class IgnitePlatformsTestSuite extends TestSuite {
+    /**
+     * @return Test suite.
+     * @throws Exception If failed.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Ignite Deployment SPI Test Suite");
 
-    /** {@inheritDoc} */
-    @Override protected boolean[][] getApiModes() {
-        return new boolean[][] {
-            { false, false, true },
-            { true, true, true },
-        };
+        // LocalDeploymentSpi tests
+        suite.addTest(new TestSuite(PlatformDefaultJavaObjectFactorySelfTest.class));
+        suite.addTest(new TestSuite(PlatformJavaObjectFactoryProxySelfTest.class));
+
+        return suite;
     }
 }
