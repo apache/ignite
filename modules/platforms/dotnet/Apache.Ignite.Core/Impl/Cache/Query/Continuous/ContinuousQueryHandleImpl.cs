@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
@@ -111,10 +112,20 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
             writer.WriteBoolean(qry.Local);
             writer.WriteBoolean(_filter != null);
 
-            var filterHolder = _filter == null || qry.Local ? null :
-                new ContinuousQueryFilterHolder(_filter, _keepBinary);
+            var javaFilter = _filter as PlatformJavaObjectFactoryProxy;
 
-            writer.WriteObject(filterHolder);
+            if (javaFilter != null)
+            {
+                writer.WriteObject(javaFilter.GetRawProxy());
+            }
+            else
+            {
+                var filterHolder = _filter == null || qry.Local
+                    ? null
+                    : new ContinuousQueryFilterHolder(_filter, _keepBinary);
+
+                writer.WriteObject(filterHolder);
+            }
 
             writer.WriteInt(qry.BufferSize);
             writer.WriteLong((long)qry.TimeInterval.TotalMilliseconds);
