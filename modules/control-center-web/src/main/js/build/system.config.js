@@ -20,13 +20,13 @@ System.config({
     "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@1.4.0",
     "angular-gridster": "github:ManifestWebDesign/angular-gridster@0.13.5",
     "angular-loading": "github:darthwade/angular-loading@0.1.4",
-    "angular-motion": "github:mgcrea/angular-motion@0.4.3",
-    "angular-nvd3": "github:krispo/angular-nvd3@1.0.5",
+    "angular-motion": "github:mgcrea/angular-motion@0.4.4",
+    "angular-nvd3": "github:krispo/angular-nvd3@1.0.6",
     "angular-retina": "github:jrief/angular-retina@0.3.8",
     "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.3",
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.8",
     "angular-socket-io": "github:btford/angular-socket-io@0.7.0",
-    "angular-strap": "github:mgcrea/angular-strap@2.3.7",
+    "angular-strap": "github:mgcrea/angular-strap@2.3.8",
     "angular-tree-control": "github:wix/angular-tree-control@0.2.23",
     "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.1.1",
     "angular-ui-router": "github:angular-ui/ui-router@0.2.18",
@@ -35,7 +35,7 @@ System.config({
     "babel-runtime": "npm:babel-runtime@5.8.38",
     "blob": "github:eligrey/Blob.js@master",
     "bootstrap-carousel": "github:twbs/bootstrap@3.3.6",
-    "clean-css": "npm:clean-css@3.4.10",
+    "clean-css": "npm:clean-css@3.4.12",
     "core-js": "npm:core-js@1.2.6",
     "css": "github:systemjs/plugin-css@0.1.20",
     "file-saver": "github:eligrey/FileSaver.js@master",
@@ -44,7 +44,7 @@ System.config({
     "jquery": "github:components/jquery@2.2.1",
     "json": "github:systemjs/plugin-json@0.1.0",
     "jszip": "github:Stuk/jszip@2.6.0",
-    "lodash": "github:lodash/lodash@4.6.1",
+    "lodash": "github:lodash/lodash@4.10.0",
     "pdfmake": "github:bpampuch/pdfmake@0.1.20",
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
     "socket.io-client": "github:socketio/socket.io-client@1.4.5",
@@ -121,18 +121,18 @@ System.config({
     "github:jspm/nodelibs-vm@0.1.0": {
       "vm-browserify": "npm:vm-browserify@0.0.4"
     },
-    "github:krispo/angular-nvd3@1.0.5": {
+    "github:krispo/angular-nvd3@1.0.6": {
       "d3": "npm:d3@3.5.14",
       "nvd3": "npm:nvd3@1.8.1"
     },
-    "github:mgcrea/angular-motion@0.4.3": {
+    "github:mgcrea/angular-motion@0.4.4": {
       "angular": "github:angular/bower-angular@1.5.3",
       "css": "github:systemjs/plugin-css@0.1.20"
     },
-    "github:mgcrea/angular-strap@2.3.7": {
+    "github:mgcrea/angular-strap@2.3.8": {
       "angular": "github:angular/bower-angular@1.5.3",
       "angular-animate": "github:angular/bower-angular-animate@1.5.3",
-      "angular-motion": "github:mgcrea/angular-motion@0.4.3",
+      "angular-motion": "github:mgcrea/angular-motion@0.4.4",
       "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.3"
     },
     "github:twbs/bootstrap@3.3.6": {
@@ -188,7 +188,7 @@ System.config({
       "align-text": "npm:align-text@0.1.4",
       "lazy-cache": "npm:lazy-cache@1.0.3"
     },
-    "npm:clean-css@3.4.10": {
+    "npm:clean-css@3.4.12": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "commander": "npm:commander@2.8.1",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
@@ -257,7 +257,7 @@ System.config({
     "npm:jade@1.11.0": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "character-parser": "npm:character-parser@1.2.1",
-      "clean-css": "npm:clean-css@3.4.10",
+      "clean-css": "npm:clean-css@3.4.12",
       "commander": "npm:commander@2.6.0",
       "constantinople": "npm:constantinople@3.0.2",
       "jstransformer": "npm:jstransformer@0.0.2",
