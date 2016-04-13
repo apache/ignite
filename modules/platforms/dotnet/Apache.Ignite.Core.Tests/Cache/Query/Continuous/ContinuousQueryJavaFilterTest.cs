@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             var javaObj = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilter")
             {
-                Properties = new Dictionary<string, object> {{"startsWith", "valid"}}
+                Properties = {{"startsWith", "valid"}}
             };
 
             var filter = javaObj.ToCacheEntryEventFilter<int, string>();

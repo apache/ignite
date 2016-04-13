@@ -37,7 +37,10 @@ namespace Apache.Ignite.Core.Interop
     public class JavaObject
     {
         /** Java class name. */
-        private string _className;
+        private readonly string _className;
+
+        /** Properties. */
+        private readonly IDictionary<string, object> _properties = new Dictionary<string, object>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JavaObject"/> class.
@@ -47,7 +50,7 @@ namespace Apache.Ignite.Core.Interop
         {
             IgniteArgumentCheck.NotNullOrEmpty(className, "className");
 
-            ClassName = className;
+            _className = className;
         }
 
         /// <summary>
@@ -57,7 +60,7 @@ namespace Apache.Ignite.Core.Interop
         /// <param name="properties">The properties to set on the Java object.</param>
         public JavaObject(string className, IDictionary<string, object> properties) : this(className)
         {
-            Properties = properties;
+            _properties = properties;
         }
 
         /// <summary>
@@ -66,18 +69,15 @@ namespace Apache.Ignite.Core.Interop
         public string ClassName
         {
             get { return _className; }
-            set
-            {
-                IgniteArgumentCheck.NotNullOrEmpty(value, "value");
-
-                _className = value;
-            }
         }
 
         /// <summary>
         /// Gets or sets the properties to be set on the Java object.
         /// </summary>
-        public IDictionary<string, object> Properties { get; set; }
+        public IDictionary<string, object> Properties
+        {
+            get { return _properties; }
+        }
 
         /// <summary>
         /// Creates the cache event filter that delegates to the corresponding Java object.
