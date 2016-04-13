@@ -551,7 +551,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllAsync(Map<? extends K, ? extends V> m) {
-        return updateAllAsync0(m,
+        final boolean statsEnabled = statisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
+        final IgniteInternalFuture fut = updateAllAsync0(m,
             null,
             null,
             null,
@@ -560,6 +564,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             true,
             UPDATE).chain(RET2NULL);
+
+        if (statsEnabled)
+            fut.listen(new UpdatePutTimeStatClosure<>(metrics0(), start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -570,9 +579,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllConflictAsync(Map<KeyCacheObject, GridCacheDrInfo> conflictMap) {
+        final boolean statsEnabled = statisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         ctx.dr().onReceiveCacheEntriesReceived(conflictMap.size());
 
-        return updateAllAsync0(null,
+        final IgniteInternalFuture fut = updateAllAsync0(null,
             null,
             null,
             conflictMap,
@@ -581,6 +594,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             false,
             true,
             UPDATE);
+
+        if (statsEnabled)
+            fut.listen(new UpdatePutTimeStatClosure<>(metrics0(), start));
+
+        return fut;
     }
 
     /** {@inheritDoc} */
