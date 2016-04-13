@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System.Linq;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
     using NUnit.Framework;
 
@@ -95,6 +94,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestFilter()
         {
+            // TODO: Test all kinds of properties
             var javaObj = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilter")
             {
                 Properties = {{"startsWith", "valid"}}
@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Tests the filter.
+        /// Tests the factory class.
         /// </summary>
         [Test]
         public void TestFactory()
@@ -115,6 +115,33 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 new Dictionary<string, object> {{"startsWith", "valid"}});
 
             var filter = javaObj.ToCacheEntryEventFilter<int, string>();
+
+            TestFilter(filter);
+        }
+
+        /// <summary>
+        /// Tests the invalid class name
+        /// </summary>
+        [Test]
+        public void TestInvalidClassName()
+        {
+            var filter = new JavaObject("blabla").ToCacheEntryEventFilter<int, string>();
+
+            TestFilter(filter);
+        }
+
+        /// <summary>
+        /// Tests the invalid class name
+        /// </summary>
+        [Test]
+        public void TestInvalidProperty()
+        {
+            var javaObject = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilter")
+            {
+                Properties = {{"invalidProp", "123"}}
+            };
+
+            var filter = javaObject.ToCacheEntryEventFilter<int, string>();
 
             TestFilter(filter);
         }
