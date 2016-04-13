@@ -51,7 +51,8 @@ gulp.task('bundle:ignite:vendors', () => {
         './generator/**/*.js',
         './public/**/*!css',
         `${igniteModulesTemp}/**/*`,
-        `${igniteModulesTemp}/**/*!jade`
+        `${igniteModulesTemp}/**/*!jade`,
+        `${igniteModulesTemp}/**/*!css`
     ].map((item) => `[${item}]`).join(' - ');
 
     return jspm.bundle(`${srcDir}/index - ${exclude}`, `${destDir}/vendors.js`, options);

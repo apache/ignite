@@ -62,6 +62,7 @@ const jsModulePaths = [
 ];
 
 const appPaths = [
+    './app/**/*.сss',
     './app/**/*.jade',
     './app/data/*.json'
 ].concat(jsPaths);
@@ -70,11 +71,11 @@ const appModulePaths = [
     igniteModulesDir + '/index.js',
     igniteModulesDir + '/**/main.js',
     igniteModulesDir + '/**/module.js',
+    igniteModulesDir + '/**/app/**/*.css',
     igniteModulesDir + '/**/app/data/*.json',
     igniteModulesDir + '/**/app/modules/*.js',
     igniteModulesDir + '/**/app/modules/**/*.js',
-    igniteModulesDir + '/**/app/modules/**/*.jade',
-    igniteModulesDir + '/**/app/modules/**/*.css'
+    igniteModulesDir + '/**/app/modules/**/*.jade'
 ];
 
 export {
