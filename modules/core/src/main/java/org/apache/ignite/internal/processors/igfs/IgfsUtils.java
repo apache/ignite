@@ -105,6 +105,9 @@ public class IgfsUtils {
     /** Maximum number of file unlock transaction retries when topology changes. */
     private static final int MAX_CACHE_TX_RETRIES = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
 
+    /** Separator between id and name parts in the trash name. */
+    private static final char TRASH_NAME_SEPARATOR = '|';
+
     /**
      * Static initializer.
      */
@@ -308,6 +311,7 @@ public class IgfsUtils {
         assert path != null;
 
         GridEventStorageManager evts = kernalCtx.event();
+
         ClusterNode locNode = kernalCtx.discovery().localNode();
 
         if (evts.isRecordable(type)) {
@@ -680,5 +684,35 @@ public class IgfsUtils {
         }
         else
             return null;
+    }
+
+    /**
+     * Parses the TRASH file name to extract the original path.
+     *
+     * @param name The TRASH short (entry) name.
+     * @return The original path, or null in case of failure.
+     */
+    public static IgfsPath extractOriginalPathFromTrash(String name) {
+        int idx = name.indexOf(TRASH_NAME_SEPARATOR);
+
+        assert idx >= 0;
+
+        String path = name.substring(idx + 1, name.length());
+
+        return new IgfsPath(path);
+    }
+
+    /**
+     * Creates short name of the file in TRASH directory.
+     * The name consists of the whole file path and its unique id.
+     * Upon file cleanup this name will be parsed to extract the path.
+     * Note that in contrast to common practice the composed name contains '/' character.
+     *
+     * @param path The full path of the deleted file.
+     * @param id The file id.
+     * @return The new short name for trash directory.
+     */
+    static String composeNameForTrash(IgfsPath path, IgniteUuid id) {
+        return id.toString() + TRASH_NAME_SEPARATOR + path.toString();
     }
 }

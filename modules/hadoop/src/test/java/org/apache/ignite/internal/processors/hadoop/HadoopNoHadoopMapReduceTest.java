@@ -17,20 +17,31 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
+
 /**
- * Same test as HadoopMapReduceTest, but with enabled Snappy output compression.
+ * Test attempt to execute a map-reduce task while no Hadoop processor available.
  */
-public class HadoopSnappyFullMapReduceTest extends HadoopMapReduceTest {
+public class HadoopNoHadoopMapReduceTest extends HadoopMapReduceTest {
     /** {@inheritDoc} */
-    @Override protected boolean compressOutputSnappy() {
-        return true;
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
+
+        c.setHadoopConfiguration(null);
+        c.setPeerClassLoadingEnabled(true);
+
+        return c;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean[][] getApiModes() {
-        return new boolean[][] {
-            { false, false, true },
-            { true, true, true },
-        };
+    @Override public void testWholeMapReduceExecution() throws Exception {
+        try {
+            super.testWholeMapReduceExecution();
+
+            fail("IllegalStateException expected.");
+        }
+        catch (IllegalStateException ignore) {
+            // No-op.
+        }
     }
 }
