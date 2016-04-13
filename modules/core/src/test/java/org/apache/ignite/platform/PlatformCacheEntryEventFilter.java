@@ -172,9 +172,14 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
         assert "2".equals(hashTable.get(1));
 
         // check binary object
-        assert objField != null && objField.field("Int") == 1 && "2".equals(objField.field("String"));
-        assert objArr != null && objArr.length == 1 &&
-            ((BinaryObject)objArr[0]).field("Int") == 1 && "2".equals(((BinaryObject)objArr[0]).field("String"));
+        assert objField != null;
+        assert Integer.valueOf(1).equals(objField.field("Int"));
+        assert "2".equals(objField.field("String"));
+
+        assert objArr != null;
+        assert objArr.length == 1;
+        assert Integer.valueOf(1).equals(((BinaryObject)objArr[0]).field("Int"));
+        assert "2".equals(((BinaryObject)objArr[0]).field("String"));
 
         return ((String)event.getValue()).startsWith(startsWith);
     }
