@@ -292,8 +292,17 @@ public abstract class BPlusTree<L, T extends L> {
             int cnt = io.getCount(buf);
             int idx = findInsertionPoint(io, buf, cnt, r.row);
 
-            if (idx < 0)
-                return Remove.RETRY;
+            if (idx < 0) {
+                if (!r.ceil) // We've found exact match on search but now it's gone.
+                    return Remove.RETRY;
+
+                idx = -idx - 1;
+
+                if (idx == cnt) // We can not remove ceiling row here.
+                    return Remove.NOT_FOUND;
+
+                assert idx < cnt;
+            }
 
             r.removed = getRow(io, buf, idx);
 
@@ -798,8 +807,27 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
+    public T removeCeil(L row) throws IgniteCheckedException {
+        return remove(row, true);
+    }
+
+    /**
+     * @param row Lookup row.
+     * @return Removed row.
+     * @throws IgniteCheckedException If failed.
+     */
     public T remove(L row) throws IgniteCheckedException {
-        Remove r = new Remove(row);
+        return remove(row, false);
+    }
+
+    /**
+     * @param row Lookup row.
+     * @param ceil If we can remove ceil row when we can not find exact.
+     * @return Removed row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public T remove(L row, boolean ceil) throws IgniteCheckedException {
+        Remove r = new Remove(row, ceil);
 
         try {
             for (;;) {
@@ -912,6 +940,18 @@ public abstract class BPlusTree<L, T extends L> {
 
                         return res;
 
+                    case Remove.NOT_FOUND:
+                        // We are at the bottom.
+                        assert lvl == 0: lvl;
+
+                        if (!r.ceil) {
+                            r.finish();
+
+                            return res;
+                        }
+
+                        // Intentional fallthrough for ceiling remove.
+
                     case Remove.FOUND:
                         // We must be at the bottom here, just need to remove row from the current page.
                         assert lvl == 0 : lvl;
@@ -919,17 +959,15 @@ public abstract class BPlusTree<L, T extends L> {
 
                         res = removeFromLeaf(r, page, backId, fwdId);
 
-                        // Finish if we don't need to do any merges.
-                        if (res == Remove.FOUND && r.needReplaceInner == FALSE && r.needMerge == FALSE)
+                        if (res == Remove.NOT_FOUND) {
+                            assert r.ceil: "must be a retry if not a ceiling remove";
+
+                            r.finish(); // TODO may be try to remove from forward
+                        }
+                        else if (res == Remove.FOUND && r.needReplaceInner == FALSE && r.needMerge == FALSE) {
+                            // Finish if we don't need to do any merges.
                             r.finish();
-
-                        return res;
-
-                    case Remove.NOT_FOUND:
-                        // We are at the bottom.
-                        assert lvl == 0: lvl;
-
-                        r.finish();
+                        }
 
                         return res;
 
@@ -1753,6 +1791,9 @@ public abstract class BPlusTree<L, T extends L> {
      * Remove operation.
      */
     private class Remove extends Get {
+        /** */
+        boolean ceil;
+
         /** We may need to lock part of the tree branch from the bottom to up for multiple levels. */
         Tail<L> tail;
 
@@ -1766,16 +1807,19 @@ public abstract class BPlusTree<L, T extends L> {
         T removed;
 
         /** Current page. */
-        public Page page;
+        Page page;
 
         /** */
-        public short innerIdx = Short.MIN_VALUE;
+        short innerIdx = Short.MIN_VALUE;
 
         /**
          * @param row Row.
+         * @param ceil If we can remove ceil row when we can not find exact.
          */
-        public Remove(L row) {
+        Remove(L row, boolean ceil) {
             super(row);
+
+            this.ceil = ceil;
         }
 
         /** {@inheritDoc} */
