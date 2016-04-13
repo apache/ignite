@@ -125,7 +125,6 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     @SuppressWarnings("unchecked")
     @Override public void start(IgniteCacheProxy cache, boolean loc, int bufSize, long timeInterval,
         boolean autoUnsubscribe, Query initialQry) throws IgniteCheckedException {
-        assert !loc || filter == null;
 
         lock.writeLock().lock();
 

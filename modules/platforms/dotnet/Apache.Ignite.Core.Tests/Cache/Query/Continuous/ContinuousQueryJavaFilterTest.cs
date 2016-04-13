@@ -207,14 +207,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// </summary>
         private void TestFilter(ICacheEntryEventFilter<int, string> pred)
         {
+            TestFilter(pred, false);
+            TestFilter(pred, true);
+        }
+
+        /// <summary>
+        /// Tests the specified filter.
+        /// </summary>
+        private void TestFilter(ICacheEntryEventFilter<int, string> pred, bool local)
+        {
             var cache = _ignite.GetOrCreateCache<int, string>("qry");
-            var qry = new ContinuousQuery<int, string>(new QueryListener(), pred);
+            var qry = new ContinuousQuery<int, string>(new QueryListener(), pred, local);
+            var aff = _ignite.GetAffinity("qry");
+            var localNode = _ignite.GetCluster().GetLocalNode();
 
             using (cache.QueryContinuous(qry))
             {
                 // Run on many keys to test all nodes
                 for (var i = 0; i < 200; i++)
                 {
+                    if (local && aff.MapKeyToNode(i).Id != localNode.Id)
+                        continue;
+
                     _lastEvent = null;
                     cache[i] = "validValue";
                     // ReSharper disable once PossibleNullReferenceException
