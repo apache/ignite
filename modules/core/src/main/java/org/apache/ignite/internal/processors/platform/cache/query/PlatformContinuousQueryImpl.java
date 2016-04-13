@@ -263,7 +263,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @return Filter to be deployed on remote node.
      * @throws ObjectStreamException If failed.
      */
-    protected Object writeReplace() throws ObjectStreamException {
+    Object writeReplace() throws ObjectStreamException {
         if (javaFilter != null)
             return javaFilter;
 
