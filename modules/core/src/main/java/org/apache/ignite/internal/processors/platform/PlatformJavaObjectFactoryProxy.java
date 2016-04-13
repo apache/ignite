@@ -43,6 +43,9 @@ import java.util.Map;
  * Wrapper for Java object factory.
  */
 public class PlatformJavaObjectFactoryProxy implements Externalizable, Binarylizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** User-defined type. */
     public static final int TYP_USER = 0;
 
