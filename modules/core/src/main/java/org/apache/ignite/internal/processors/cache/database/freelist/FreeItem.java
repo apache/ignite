@@ -68,9 +68,23 @@ public class FreeItem extends FullPageId {
     }
 
     /**
+     * @param freeSpace Free space.
+     */
+    public void freeSpace(short freeSpace) {
+        this.freeSpace = freeSpace;
+    }
+
+    /**
      * @return Dispersion.
      */
     public short dispersion() {
         return dispersion;
+    }
+
+    /**
+     * @param dispersion Dispersion.
+     */
+    public void dispersion(short dispersion) {
+        this.dispersion = dispersion;
     }
 }
