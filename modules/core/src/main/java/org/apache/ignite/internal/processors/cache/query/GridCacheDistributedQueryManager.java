@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -36,7 +35,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -45,10 +44,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -59,7 +56,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 
 /**
- * Distributed query manager.
+ * Distributed query manager (for cache in REPLICATED / PARTITIONED cache mode).
  */
 public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManager<K, V> {
     /** */
@@ -518,46 +515,33 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public CacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
         assert cctx.config().getCacheMode() != LOCAL;
-
-//        U.dumpStack(">>>>> create query local");
 
         if (log.isDebugEnabled())
             log.debug("Executing query on local node: " + qry);
 
-//        GridCacheLocalQueryFuture<K, V, ?> fut = new GridCacheLocalQueryFuture<>(cctx, qry);
+        CacheQueryFuture<?> fut = null;
+
 
         try {
             qry.query().validate();
 
-//            fut.execute();
+            if (qry.query().type() == GridCacheQueryType.SCAN)
+                fut = executeLocalScanQuery(qry);
+            else {
+                fut = new GridCacheLocalQueryFuture<>(cctx, qry);
 
-            //------------------------------
-            qry.query().validate();
-
-            // TODO
-//                if (fields())
-//                    cctx.queries().runFieldsQuery(localQueryInfo());
-//                else
-
-//            GridCacheQueryInfo qryInfo = localQueryInfo(qry);
-
-//            cctx.queries().runQuery2(qryInfo);
-
-            // TODO
-            GridCacheQueryAdapter q = qry.query();
-
-            GridCloseableIterator<IgniteBiTuple<K, V>> iterator = scanIterator(q);
-
-            return new FinishedCacheQueryFuture(iterator);
+                ((GridCacheLocalQueryFuture)fut).execute();
+            }
         }
         catch (IgniteCheckedException e) {
-//            fut.onDone(e);
+            if (fut != null && fut instanceof GridCacheLocalQueryFuture)
+                ((GridFutureAdapter)fut).onDone(e);
         }
 
-        return null;
-//        return fut;
+        return fut;
     }
 
     /** {@inheritDoc} */
@@ -657,6 +641,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @Override public CacheQueryFuture<?> queryFieldsLocal(GridCacheQueryBean qry) {
+        assert false: "Should never be called";
         assert cctx.config().getCacheMode() != LOCAL;
 
         if (log.isDebugEnabled())
@@ -856,107 +841,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CancelMessageId.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class FinishedCacheQueryFuture implements CacheQueryFuture {
-        /** Complete value. */
-        private final GridCloseableIterator iter;
-
-        /** Start time. */
-        @SuppressWarnings("FieldMayBeStatic")
-        private final long startTime = U.currentTimeMillis();
-
-        /**
-         * @param iter Iterator.
-         */
-        FinishedCacheQueryFuture(GridCloseableIterator iter) {
-            this.iter = iter;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Throwable error() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public GridCloseableIterator result() {
-            return iter;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long startTime() {
-            return startTime;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long duration() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> chain(IgniteClosure doneCb) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void listen(IgniteInClosure lsnr) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean cancel() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isCancelled() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int available() throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object next() throws IgniteCheckedException {
-            return iter.hasNext() ? iter.next() : null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isDone() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public GridCloseableIterator get() throws IgniteCheckedException {
-            return iter;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCloseableIterator get(long timeout) throws IgniteCheckedException {
-            return get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCloseableIterator get(long timeout, TimeUnit unit) throws IgniteCheckedException {
-            return get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCloseableIterator getUninterruptibly() throws IgniteCheckedException {
-            return get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(FinishedCacheQueryFuture.class, this);
         }
     }
 }

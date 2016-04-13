@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
 /**
- * Local query manager.
+ * Local query manager (for cache in LOCAL cache mode).
  */
 public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V> {
     /** {@inheritDoc} */

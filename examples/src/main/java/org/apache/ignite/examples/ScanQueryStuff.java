@@ -38,7 +38,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 public class ScanQueryStuff {
     public static final int CNT = 1_500_000;
 
-    public static void main(String[] args) {
+    public static void _main(String[] args) {
         Ignite ignite = Ignition.start(igniteCfg());
 
         CacheConfiguration cfg = cacheCfg();
@@ -53,7 +53,7 @@ public class ScanQueryStuff {
         long start = System.currentTimeMillis();
 
         while (true) {
-            Iterable iterable = cache.localEntries(CachePeekMode.PRIMARY, CachePeekMode.OFFHEAP, CachePeekMode.SWAP);
+            Iterable iterable = cache.localEntries(CachePeekMode.ALL);
 
             for (Object ob : iterable) {
                 if (ob == null)
@@ -66,7 +66,7 @@ public class ScanQueryStuff {
         }
     }
 
-    public static void _main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException {
         try (Ignite ignite = Ignition.start(igniteCfg())) {
             CacheConfiguration cfg = cacheCfg();
 
