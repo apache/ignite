@@ -1060,7 +1060,7 @@ public abstract class BPlusTree<L, T extends L> {
             if (prntIdx == prntCnt) // It was a right turn.
                 prntIdx--;
 
-            cur.io.store(cur.buf, cnt, prnt.io, prnt.buf, prntIdx);
+            inner(cur.io).store(cur.buf, cnt, prnt.io, prnt.buf, prntIdx);
 
             cnt++;
         }
@@ -1890,7 +1890,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             // If after leaf merge parent have lost inner key, we don't need to update it anymore.
             if (innerIdx < inner.io.getCount(inner.buf)) {
-                inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, cnt - 1);
+                inner(inner.io).store(inner.buf, innerIdx, leaf.io, leaf.buf, cnt - 1);
                 leaf.io.setRemoveId(leaf.buf, globalRmvId.get());
             }
             else {
@@ -2191,8 +2191,10 @@ public abstract class BPlusTree<L, T extends L> {
      * @param io IO.
      * @return Inner page IO.
      */
-    private static BPlusInnerIO inner(BPlusIO io) {
-        return (BPlusInnerIO)io;
+    private static <L> BPlusInnerIO<L> inner(BPlusIO<L> io) {
+        assert !io.isLeaf();
+
+        return (BPlusInnerIO<L>)io;
     }
 
     /**

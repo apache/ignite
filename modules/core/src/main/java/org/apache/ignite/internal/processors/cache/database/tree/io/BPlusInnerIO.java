@@ -116,6 +116,17 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     }
 
     /**
+     * Store row info from the given source.
+     *
+     * @param dst Destination buffer
+     * @param dstIdx Destination index.
+     * @param srcIo Source IO.
+     * @param src Source buffer.
+     * @param srcIdx Source index.
+     */
+    public abstract void store(ByteBuffer dst, int dstIdx, BPlusIO<L> srcIo, ByteBuffer src, int srcIdx);
+
+    /**
      * @param idx Index of element.
      * @param shift It can be either link itself or left or right page ID.
      * @return Offset from byte buffer begin in bytes.

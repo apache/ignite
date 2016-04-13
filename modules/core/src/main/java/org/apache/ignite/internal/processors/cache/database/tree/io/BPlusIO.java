@@ -164,17 +164,6 @@ public abstract class BPlusIO<L> extends PageIO {
     public abstract void store(ByteBuffer buf, int idx, L row);
 
     /**
-     * Store row info from the given source.
-     *
-     * @param dst Destination buffer
-     * @param dstIdx Destination index.
-     * @param srcIo Source IO.
-     * @param src Source buffer.
-     * @param srcIdx Source index.
-     */
-    public abstract void store(ByteBuffer dst, int dstIdx, BPlusIO<L> srcIo, ByteBuffer src, int srcIdx);
-
-    /**
      * Copy items from source buffer to destination buffer. Both pages must be of the same type.
      *
      * @param src Source buffer.
