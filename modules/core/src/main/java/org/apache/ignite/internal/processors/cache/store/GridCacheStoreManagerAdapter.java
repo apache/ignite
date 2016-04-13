@@ -546,7 +546,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             try {
                 boolean update = true;
 
-                if (locStore && conflictResolve) {
+                if (conflictResolve && locStore) {
                     IgniteBiTuple t = (IgniteBiTuple)store.load(key);
 
                     if (t != null) {

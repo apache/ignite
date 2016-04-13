@@ -339,6 +339,9 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
             tx.commit();
         }
 
+        assertEquals(102, LOCAL_STORE_1.map.size());
+        assertEquals(102, LOCAL_STORE_2.map.size());
+
         stopGrid(1);
 
         assertEquals(1, G.allGrids().size());
@@ -361,7 +364,10 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         assertEquals(102, LOCAL_STORE_1.map.size());
         assertEquals(102, LOCAL_STORE_2.map.size());
 
+        // Node restart. One node should have everything at local store.
         ignite2 = startGrid(2);
+
+        assertEquals(1, G.allGrids().size());
 
         assertEquals(key1, ignite2.cache(name).get(key1));
         assertEquals(key2, ignite2.cache(name).get(key2));
