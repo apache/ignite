@@ -76,7 +76,47 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
     /** Property to be set from platform. */
     private BinaryObject objField;
 
-    // TODO: Collections
+    /** Property to be set from platform. */
+    private char[] charArr;
+
+    /** Property to be set from platform. */
+    private byte[] byteArr;
+
+    /** Property to be set from platform. */
+    private byte[] sbyteArr;
+
+    /** Property to be set from platform. */
+    private short[] shortArr;
+
+    /** Property to be set from platform. */
+    private short[] ushortArr;
+
+    /** Property to be set from platform. */
+    private int[] intArr;
+
+    /** Property to be set from platform. */
+    private int[] uintArr;
+
+    /** Property to be set from platform. */
+    private long[] longArr;
+
+    /** Property to be set from platform. */
+    private long[] ulongArr;
+
+    /** Property to be set from platform. */
+    private float[] floatArr;
+
+    /** Property to be set from platform. */
+    private double[] doubleArr;
+
+    /** Property to be set from platform. */
+    private BigDecimal[] BigDecimalArr;
+
+    /** Property to be set from platform. */
+    private boolean[] booleanArr;
+
+    /** Property to be set from platform. */
+    private BinaryObject[] objArr;
 
     /** Injected instance. */
     @IgniteInstanceResource
