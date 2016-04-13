@@ -127,14 +127,16 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                     Collection<QueryEntity> entries = configuration.getQueryEntities();
 
                     for (QueryEntity queryEntity : entries) {
-                        Class keyClass = getClass().forName(queryEntity.getKeyType());
-                        Class valueClass = getClass().forName(queryEntity.getValueType());
+                        if (queryEntity.getKeyType() != null) {
+                            Class keyClass = getClass().forName(queryEntity.getKeyType());
+                            if (ModelUtil.canCreateInstance(keyClass))
+                                keys.add(keyClass);
+                        }
 
-                        if (ModelUtil.canCreateInstance(keyClass) && ModelUtil.canCreateInstance(valueClass)) {
-                            keys.add(keyClass);
-                            values.add(valueClass);
-                            //Only one indexed type works correctly.
-//                            break;
+                        if (queryEntity.getValueType() != null) {
+                            Class valueClass = getClass().forName(queryEntity.getValueType());
+                            if (ModelUtil.canCreateInstance(valueClass))
+                                values.add(valueClass);
                         }
                     }
                 }
@@ -143,14 +145,17 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                     Collection<CacheTypeMetadata> entries = configuration.getTypeMetadata();
 
                     for (CacheTypeMetadata cacheTypeMetadata : entries) {
-                        Class keyClass = getClass().forName(cacheTypeMetadata.getKeyType());
-                        Class valueClass = getClass().forName(cacheTypeMetadata.getValueType());
 
-                        if (ModelUtil.canCreateInstance(keyClass) && ModelUtil.canCreateInstance(valueClass)) {
-                            keys.add(keyClass);
-                            values.add(valueClass);
-                            //Only one indexed type works correctly.
-//                            break;
+                        if (cacheTypeMetadata.getKeyType() != null) {
+                            Class keyClass = getClass().forName(cacheTypeMetadata.getKeyType());
+                            if (ModelUtil.canCreateInstance(keyClass))
+                                keys.add(keyClass);
+                        }
+
+                        if (cacheTypeMetadata.getValueType() != null) {
+                            Class valueClass = getClass().forName(cacheTypeMetadata.getValueType());
+                            if (ModelUtil.canCreateInstance(valueClass))
+                                values.add(valueClass);
                         }
                     }
                 }
