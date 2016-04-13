@@ -596,6 +596,17 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             }
         }
 
+        function isElementInViewport(el) {
+            var rect = el.getBoundingClientRect();
+
+            return (
+                rect.top >= 0 &&
+                rect.left >= 0 &&
+                rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+                rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+            );
+        }
+
         function showPopoverMessage(ui, panelId, id, message, showTime) {
             if (popover)
                 popover.hide();
@@ -610,9 +621,11 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                 el = body.find('[name="' + id + '"]');
 
             if (el && el.length > 0) {
-                $location.hash(el[0].id);
+                if (!isElementInViewport(el[0])) {
+                    $location.hash(el[0].id);
 
-                $anchorScroll();
+                    $anchorScroll();
+                }
 
                 var newPopover = $popover(el, {content: message});
 
