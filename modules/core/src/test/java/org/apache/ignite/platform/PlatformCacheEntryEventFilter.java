@@ -17,7 +17,9 @@
 
 package org.apache.ignite.platform;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -30,8 +32,14 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
     @SuppressWarnings("FieldCanBeLocal")
     private String startsWith = "-";
 
+    /** Injected instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
+
     /** {@inheritDoc} */
     @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
+        assert ignite != null;
+
         return ((String)event.getValue()).startsWith(startsWith);
     }
 }
