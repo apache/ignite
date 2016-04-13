@@ -47,7 +47,7 @@ as described in the following subsection.
 - ignite-kafka-connect-x.x.x-SNAPSHOT.jar
 - ignite-core-x.x.x-SNAPSHOT.jar
 - ignite-spring-x.x.x-SNAPSHOT.jar
-- cache-api-1.0.0.jar
+- geronimo-jcache_1.0_spec-1.0-alpha-1.jar
 - spring-aop-4.1.0.RELEASE.jar
 - spring-beans-4.1.0.RELEASE.jar
 - spring-context-4.1.0.RELEASE.jar
@@ -140,7 +140,7 @@ as described in the following subsection.
 1. Put the following jar files on Kafka's classpath
 - ignite-kafka-connect-x.x.x-SNAPSHOT.jar
 - ignite-core-x.x.x-SNAPSHOT.jar
-- cache-api-1.0.0.jar
+- geronimo-jcache_1.0_spec-1.0-alpha-1.jar
 - ignite-spring-x.x.x-SNAPSHOT.jar
 - spring-aop-4.1.0.RELEASE.jar
 - spring-beans-4.1.0.RELEASE.jar
