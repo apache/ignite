@@ -18,6 +18,7 @@
 package org.apache.ignite.platform;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -72,6 +73,9 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
     /** Property to be set from platform. */
     private boolean boolField;
 
+    /** Property to be set from platform. */
+    private BinaryObject objField;
+
     /** Injected instance. */
     @IgniteInstanceResource
     private Ignite ignite;
@@ -95,6 +99,9 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
         assert doubleField == 10.123;
         assert "11.245".equals(decimalField.toString());
         assert boolField;
+
+        // check binary object
+        assert objField != null && objField.field("Int") == 1 && "2".equals(objField.field("String"));
 
         return ((String)event.getValue()).startsWith(startsWith);
     }

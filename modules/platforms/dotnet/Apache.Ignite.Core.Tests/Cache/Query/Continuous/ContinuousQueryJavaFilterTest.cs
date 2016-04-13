@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
@@ -59,11 +60,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public void FixtureSetUp()
         {
             // Main .NET nodes
-            _ignite =
-                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
-                {
-                    SpringConfigUrl = SpringConfig
-                });
+            _ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = SpringConfig,
+                BinaryConfiguration = new BinaryConfiguration(typeof (TestBinary))
+            });
 
             // Second .NET node
             Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
@@ -111,8 +112,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     {"ulongField", (ulong) 8},
                     {"floatField", (float) 9.99},
                     {"doubleField", 10.123},
-                    {"decimalField", (decimal)11.245},
+                    {"decimalField", (decimal) 11.245},
                     {"boolField", true},
+                    {
+                        "objField", new TestBinary
+                        {
+                            Int = 1,
+                            String = "2"
+                        }
+                    }
                 }
             };
 
@@ -210,6 +218,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 _lastEvent = evts.FirstOrDefault();
             }
+        }
+
+        /// <summary>
+        /// Test binary object.
+        /// </summary>
+        private class TestBinary
+        {
+            public int Int { get; set; }
+            public string String { get; set; }
         }
     }
 }
