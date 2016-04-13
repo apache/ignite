@@ -47,8 +47,6 @@ import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.security.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
