@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Interop;
     using NUnit.Framework;
 
     /// <summary>
@@ -94,9 +95,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestFilter()
         {
-            var filter = JavaObjectFactory.CreateCacheEntryEventFilter<int, string>(
-                "org.apache.ignite.platform.PlatformCacheEntryEventFilter",
-                new Dictionary<string, object> {{"startsWith", "valid"}});
+            var javaObj = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilter")
+            {
+                Properties = new Dictionary<string, object> {{"startsWith", "valid"}}
+            };
+
+            var filter = javaObj.ToCacheEntryEventFilter<int, string>();
 
             TestFilter(filter);
         }
@@ -107,9 +111,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestFactory()
         {
-            var filter = JavaObjectFactory.CreateCacheEntryEventFilterFactory<int, string>(
-                "org.apache.ignite.platform.PlatformCacheEntryEventFilterFactory",
+            var javaObj = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilterFactory",
                 new Dictionary<string, object> {{"startsWith", "valid"}});
+
+            var filter = javaObj.ToCacheEntryEventFilter<int, string>();
 
             TestFilter(filter);
         }

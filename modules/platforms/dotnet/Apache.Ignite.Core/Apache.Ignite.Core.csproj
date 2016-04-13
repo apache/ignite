@@ -92,7 +92,6 @@
     <Compile Include="Cache\CacheException.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
-    <Compile Include="Common\JavaObjectFactory.cs" />
     <Compile Include="DataStructures\Configuration\AtomicConfiguration.cs" />
     <Compile Include="Cache\Configuration\QueryAlias.cs" />
     <Compile Include="Cache\Configuration\QueryTextFieldAttribute.cs" />
@@ -397,6 +396,7 @@
     <Compile Include="Impl\Unmanaged\UnmanagedNonReleaseableTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
+    <Compile Include="Interop\JavaObject.cs" />
     <Compile Include="Lifecycle\Package-Info.cs" />
     <Compile Include="Messaging\Package-Info.cs" />
     <Compile Include="Package-Info.cs" />
