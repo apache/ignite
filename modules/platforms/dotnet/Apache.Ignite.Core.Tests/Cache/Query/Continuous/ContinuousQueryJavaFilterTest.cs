@@ -121,6 +121,26 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                             Int = 1,
                             String = "2"
                         }
+                    },
+                    {"charArr", new[] {'a'}},
+                    {"byteArr", new[] {(byte) 1}},
+                    {"sbyteArr", new[] {(sbyte) 2}},
+                    {"shortArr", new[] {(short) 3}},
+                    {"ushortArr", new[] {(ushort) 4}},
+                    {"intArr", new[] {5}},
+                    {"uintArr", new[] {(uint) 6}},
+                    {"longArr", new[] {(long) 7}},
+                    {"ulongArr", new[] {(ulong) 8}},
+                    {"floatArr", new[] {(float) 9.99}},
+                    {"doubleArr", new[] {10.123}},
+                    {"decimalArr", new[] {(decimal) 11.245}},
+                    {"boolArr", new[] {true}},
+                    {
+                        "objField", new TestBinary
+                        {
+                            Int = 1,
+                            String = "2"
+                        }
                     }
                 }
             };
