@@ -95,15 +95,38 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestFilter()
         {
-            // TODO: Test all kinds of properties
             var javaObj = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilter")
             {
-                Properties = {{"startsWith", "valid"}}
+                Properties =
+                {
+                    {"startsWith", "valid"},
+                    {"charField", 'a'},
+                    {"byteField", (byte) 1},
+                    {"sbyteField", (sbyte) 2},
+                    {"shortField", (short) 3},
+                    {"ushortField", (ushort) 4},
+                    {"intField", 5},
+                    {"uintField", (uint) 6},
+                    {"longField", (long) 7},
+                    {"ulongField", (ulong) 8},
+                    {"floatField", (float) 9.99},
+                    {"doubleField", 10.123},
+                    {"boolField", true},
+                }
             };
 
             var filter = javaObj.ToCacheEntryEventFilter<int, string>();
 
             TestFilter(filter);
+        }
+
+        /// <summary>
+        /// Tests the equality filter.
+        /// </summary>
+        [Test]
+        public void TestEqualsFilter()
+        {
+            // TODO: Binary objects
         }
 
         /// <summary>

@@ -27,14 +27,13 @@ import javax.cache.event.CacheEntryListenerException;
 /**
  * Test filter.
  */
+@SuppressWarnings("FieldCanBeLocal")
 public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializableFilter {
     /** Property to be set from platform. */
-    @SuppressWarnings("FieldCanBeLocal")
     private String startsWith = "-";
 
     /** Property to be set from platform. */
-    @SuppressWarnings("FieldCanBeLocal")
-    private int maxKey;
+    private int intField;
 
     /** Injected instance. */
     @IgniteInstanceResource
@@ -42,9 +41,12 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
 
     /** {@inheritDoc} */
     @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
+        // check injection
         assert ignite != null;
 
-        return ((String)event.getValue()).startsWith(startsWith) &&
-            ((int)event.getKey()) < maxKey;
+        // check fields
+        assert intField == 5;
+
+        return ((String)event.getValue()).startsWith(startsWith);
     }
 }
