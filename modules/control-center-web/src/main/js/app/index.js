@@ -149,6 +149,7 @@ angular
     'mgcrea.ngStrap',
     'ui.router',
     'ui.router.metatags',
+    'gridster',
     // Base modules.
     'ignite-console.user',
     'ignite-console.branding',
