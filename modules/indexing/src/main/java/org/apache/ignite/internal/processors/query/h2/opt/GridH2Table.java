@@ -211,7 +211,7 @@ public class GridH2Table extends TableBase {
     /**
      * @return Space name.
      */
-    @Nullable String spaceName() {
+    @Nullable public String spaceName() {
         return spaceName;
     }
 
