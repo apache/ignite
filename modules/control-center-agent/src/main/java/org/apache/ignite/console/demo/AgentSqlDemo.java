@@ -17,7 +17,6 @@
 
 package org.apache.ignite.console.demo;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,12 +46,12 @@ import org.apache.ignite.console.demo.model.Parking;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.logger.log4j.Log4JLogger;
-import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.log4j.Logger;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
@@ -69,6 +68,9 @@ public class AgentSqlDemo {
 
     /** */
     private static final AtomicBoolean initLatch = new AtomicBoolean();
+
+    /** */
+    private static final int NODE_CNT = 3;
 
     /** */
     private static final String COUNTRY_CACHE_NAME = "CountryCache";
@@ -133,6 +135,8 @@ public class AgentSqlDemo {
 
         ccfg.setQueryEntities(qryEntities);
 
+        ccfg.setStartSize(100);
+
         return ccfg;
     }
 
@@ -166,6 +170,8 @@ public class AgentSqlDemo {
         type.setIndexes(Collections.singletonList(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_4")));
 
         ccfg.setQueryEntities(qryEntities);
+
+        ccfg.setStartSize(100);
 
         return ccfg;
     }
@@ -226,6 +232,8 @@ public class AgentSqlDemo {
 
         ccfg.setQueryEntities(qryEntities);
 
+        ccfg.setStartSize(100);
+
         return ccfg;
     }
 
@@ -259,6 +267,8 @@ public class AgentSqlDemo {
         type.setIndexes(Collections.singletonList(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_F")));
 
         ccfg.setQueryEntities(qryEntities);
+
+        ccfg.setStartSize(100);
 
         return ccfg;
     }
@@ -295,6 +305,50 @@ public class AgentSqlDemo {
         ccfg.setQueryEntities(qryEntities);
 
         return ccfg;
+    }
+
+    /**
+     * Configure node.
+     * @param gridName Grid name.
+     * @return IgniteConfiguration
+     */
+    private static  IgniteConfiguration igniteConfiguration(String gridName) {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setGridName(gridName);
+
+        cfg.setLocalHost("127.0.0.1");
+
+        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
+
+        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:60900.." + (60900 + NODE_CNT - 1)));
+
+        // Configure discovery SPI.
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+
+        discoSpi.setLocalPort(60900);
+
+        discoSpi.setIpFinder(ipFinder);
+
+        cfg.setDiscoverySpi(discoSpi);
+
+        TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
+
+        commSpi.setSharedMemoryPort(-1);
+
+        commSpi.setLocalPort(60800);
+
+        cfg.setCommunicationSpi(commSpi);
+
+        cfg.setGridLogger(new Log4JLogger(log));
+
+        cfg.setMetricsLogFrequency(0);
+
+        cfg.setCacheConfiguration(cacheCountry(), cacheDepartment(), cacheEmployee(), cacheParking(), cacheCar());
+
+        cfg.getConnectorConfiguration().setPort(60700);
+
+        return cfg;
     }
 
     /**
@@ -481,62 +535,21 @@ public class AgentSqlDemo {
      */
     public static boolean testDrive(AgentConfiguration acfg) {
         if (initLatch.compareAndSet(false, true)) {
-            log.info("DEMO: Starting embedded node for sql test-drive...");
+            log.info("DEMO: Starting embedded nodes for sql test-drive...");
+
+            System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "1");
+
+            System.setProperty(IGNITE_JETTY_PORT, "60800");
+            System.setProperty(IGNITE_NO_ASCII, "true");
 
             try {
-                IgniteConfiguration cfg = new IgniteConfiguration();
+                IgniteEx ignite = null;
 
-                cfg.setLocalHost("127.0.0.1");
-
-                cfg.setGridLogger(new Log4JLogger(log));
-
-                cfg.setMetricsLogFrequency(0);
-
-                // Configure discovery SPI.
-                TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-
-                discoSpi.setLocalPort(60900);
-
-                discoSpi.setIpFinder(new TcpDiscoveryIpFinderAdapter() {
-                    {
-                        setShared(true);
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
-                        return Collections.emptyList();
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
-                        // No-op.
-                    }
-
-                    /** {@inheritDoc} */
-                    @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
-                        // No-op.
-                    }
-                });
-
-                cfg.setDiscoverySpi(discoSpi);
-
-                TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
-
-                commSpi.setSharedMemoryPort(-1);
-
-                cfg.setCommunicationSpi(commSpi);
-
-                cfg.setCacheConfiguration(cacheCountry(), cacheDepartment(), cacheEmployee(), cacheParking(), cacheCar());
-
-                cfg.getConnectorConfiguration().setPort(60700);
-
-                System.setProperty(IGNITE_JETTY_PORT, "60800");
-                System.setProperty(IGNITE_NO_ASCII, "true");
+                for (int i = 0; i < NODE_CNT; i++)
+                    ignite = (IgniteEx)Ignition.start(igniteConfiguration("demo-" + i));
 
                 if (log.isDebugEnabled())
-                    log.debug("DEMO: Start embedded node with indexed enabled caches...");
-
-                IgniteEx ignite = (IgniteEx)Ignition.start(cfg);
+                    log.debug("DEMO: Started embedded nodes with indexed enabled caches...");
 
                 Collection<String> jettyAddrs = ignite.localNode().attribute(ATTR_REST_JETTY_ADDRS);
 
@@ -552,7 +565,7 @@ public class AgentSqlDemo {
 
                 acfg.demoNodeUri(String.format("http://%s:%d", host, port));
 
-                log.info("DEMO: Embedded node for sql test-drive successfully started");
+                log.info("DEMO: Embedded nodes for sql test-drive successfully started");
 
                 startLoad(ignite, 20);
             }
