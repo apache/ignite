@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
@@ -98,7 +100,16 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
-            return new H2Cursor(tree.find(lower, upper));
+            IndexingQueryFilter f = filters.get();
+            IgniteBiPredicate<Object,Object> p = null;
+
+            if (f != null) {
+                String spaceName = ((GridH2Table)getTable()).spaceName();
+
+                p = f.forSpace(spaceName);
+            }
+
+            return new H2Cursor(tree.find(lower, upper), p);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
@@ -180,13 +191,18 @@ public class H2TreeIndex extends GridH2IndexBase {
         /** */
         final GridCursor<GridH2Row> cursor;
 
+        /** */
+        final IgniteBiPredicate<Object,Object> filter;
+
         /**
          * @param cursor Cursor.
+         * @param filter Filter.
          */
-        private H2Cursor(GridCursor<GridH2Row> cursor) {
+        private H2Cursor(GridCursor<GridH2Row> cursor, IgniteBiPredicate<Object,Object> filter) {
             assert cursor != null;
 
             this.cursor = cursor;
+            this.filter = filter;
         }
 
         /** {@inheritDoc} */
@@ -207,7 +223,23 @@ public class H2TreeIndex extends GridH2IndexBase {
         /** {@inheritDoc} */
         @Override public boolean next() {
             try {
-                return cursor.next();
+                while (cursor.next()) {
+                    if (filter == null)
+                        return true;
+
+                    GridH2Row row = cursor.get();
+
+                    Object key = row.getValue(0).getObject();
+                    Object val = row.getValue(1).getObject();
+
+                    assert key != null;
+                    assert val != null;
+
+                    if (filter.apply(key, val))
+                        return true;
+                }
+
+                return false;
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);
