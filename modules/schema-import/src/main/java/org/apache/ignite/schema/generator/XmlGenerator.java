@@ -22,10 +22,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -40,6 +43,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
 import org.apache.ignite.cache.store.jdbc.JdbcType;
 import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.schema.model.PojoDescriptor;
 import org.apache.ignite.schema.model.PojoField;
 import org.apache.ignite.schema.ui.ConfirmCallable;
@@ -199,7 +203,8 @@ public class XmlGenerator {
             Element map = addElement(doc, prop, "util:map", "map-class", "java.util.LinkedHashMap");
 
             for (PojoField field : fields)
-                addElement(doc, map, "entry", "key", field.javaName(), "value", field.javaTypeName());
+                addElement(doc, map, "entry", "key", field.javaName(), "value",
+                    GeneratorUtils.boxPrimitiveType(field.javaTypeName()));
         }
     }
 
@@ -210,28 +215,53 @@ public class XmlGenerator {
      * @param parent Parent XML node.
      * @param idxs Indexes.
      */
-    private static void addQueryIndexes(Document doc, Node parent, Collection<QueryIndex> idxs) {
+    private static void addQueryIndexes(Document doc, Node parent, Collection<PojoField> fields,
+        Collection<QueryIndex> idxs) {
         if (!idxs.isEmpty()) {
-            Element prop = addProperty(doc, parent, "indexes", null);
+            boolean firstIdx = true;
 
-            Element list = addElement(doc, prop, "list");
+            Element list = null;
 
             for (QueryIndex idx : idxs) {
-                Element idxBean = addBean(doc, list, QueryIndex.class);
+                Set<Map.Entry<String, Boolean>> dbIdxFlds = idx.getFields().entrySet();
 
-                addProperty(doc, idxBean, "name", idx.getName());
+                int sz = dbIdxFlds.size();
 
-                Element idxType = addProperty(doc, idxBean, "indexType", null);
-                addElement(doc, idxType, "util:constant", "static-field", "org.apache.ignite.cache.QueryIndexType." + idx.getIndexType());
+                List<T2<String, Boolean>> idxFlds = new ArrayList<>(sz);
 
-                Element flds = addProperty(doc, idxBean, "fields", null);
+                for (Map.Entry<String, Boolean> idxFld : dbIdxFlds) {
+                    PojoField field = GeneratorUtils.findFieldByName(fields, idxFld.getKey());
 
-                Element fldsMap = addElement(doc, flds, "map");
+                    if (field != null)
+                        idxFlds.add(new T2<>(field.javaName(), idxFld.getValue()));
+                    else
+                        break;
+                }
 
-                Map<String, Boolean> idxFlds = idx.getFields();
+                // Only if all fields present, add index description.
+                if (idxFlds.size() == sz) {
+                    if (firstIdx) {
+                        Element prop = addProperty(doc, parent, "indexes", null);
 
-                for (Map.Entry<String, Boolean> fld : idxFlds.entrySet())
-                    addElement(doc, fldsMap, "entry", "key", fld.getKey(), "value", fld.getValue().toString());
+                        list = addElement(doc, prop, "list");
+
+                        firstIdx = false;
+                    }
+
+                    Element idxBean = addBean(doc, list, QueryIndex.class);
+
+                    addProperty(doc, idxBean, "name", idx.getName());
+
+                    Element idxType = addProperty(doc, idxBean, "indexType", null);
+                    addElement(doc, idxType, "util:constant", "static-field", "org.apache.ignite.cache.QueryIndexType." + idx.getIndexType());
+
+                    Element flds = addProperty(doc, idxBean, "fields", null);
+
+                    Element fldsMap = addElement(doc, flds, "map");
+
+                    for (T2<String, Boolean> fld : idxFlds)
+                        addElement(doc, fldsMap, "entry", "key", fld.getKey(), "value", fld.getValue().toString());
+                }
             }
         }
     }
@@ -276,9 +306,11 @@ public class XmlGenerator {
 
         addProperty(doc, bean, "valueType", pkg + "." + pojo.valueClassName());
 
-        addQueryFields(doc, bean, pojo.fields());
+        Collection<PojoField> fields = pojo.valueFields(true);
 
-        addQueryIndexes(doc, bean, pojo.indexes());
+        addQueryFields(doc, bean, fields);
+
+        addQueryIndexes(doc, bean, fields, pojo.indexes());
     }
 
     /**
