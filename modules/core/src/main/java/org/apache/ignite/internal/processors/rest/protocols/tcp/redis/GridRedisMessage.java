@@ -21,7 +21,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Message to communicate with Redis client. Contains command, its attributes and response.
@@ -29,6 +31,9 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientMessa
 public class GridRedisMessage implements GridClientMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Random UUID used for RESP clients authentication. */
+    private static final UUID RESP_ID = UUID.randomUUID();
 
     /** Request byte. */
     public static final byte RESP_REQ_FLAG = GridRedisProtocolParser.ARRAY;
@@ -41,6 +46,8 @@ public class GridRedisMessage implements GridClientMessage {
     private final List<String> msgParts;
 
     private ByteBuffer response;
+
+    private String cacheName;
 
     public GridRedisMessage(int msgLen) {
         msgParts = new ArrayList<>(msgLen);
@@ -79,6 +86,22 @@ public class GridRedisMessage implements GridClientMessage {
         return "GridRedisMessage [msg: " + msgParts + "]";
     }
 
+    /**
+     * @return Cache name.
+     */
+    @Nullable public String cacheName() {
+        return cacheName;
+    }
+
+    /**
+     * @param cacheName Cache name.
+     */
+    public void cacheName(String cacheName) {
+        assert cacheName != null;
+
+        this.cacheName = cacheName;
+    }
+
     /** {@inheritDoc} */
     @Override public long requestId() {
         return 0;
@@ -91,12 +114,12 @@ public class GridRedisMessage implements GridClientMessage {
 
     /** {@inheritDoc} */
     @Override public UUID clientId() {
-        return null;
+        return RESP_ID;
     }
 
     /** {@inheritDoc} */
     @Override public void clientId(UUID id) {
-
+        throw new IgniteException("Setting client id is not expected!");
     }
 
     /** {@inheritDoc} */

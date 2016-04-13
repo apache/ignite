@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
+import java.nio.ByteBuffer;
 import java.util.EnumMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,7 +36,8 @@ import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.jetbrains.annotations.Nullable;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
 
 /**
  * Listener for Redis protocol requests.
@@ -115,14 +117,27 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
                     GridRestResponse restRes = f.get();
 
                     GridRedisMessage res = msg;
+                    ByteBuffer resp;
 
-                    // TODO: set response.
+                    if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS) {
+                        switch (res.command()) {
+                            case GET:
+                                resp = (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
+                                    : GridRedisProtocolParser.toBulkString(restRes.getResponse()));
 
-                    sendResponse(ses, msg);
+                                break;
+                            default:
+                                resp = GridRedisProtocolParser.toGenericError("Unsupported operation!");
+                        }
+                        res.setResponse(resp);
+                    }
+                    else
+                        res.setResponse(GridRedisProtocolParser.toGenericError("Operation error!"));
+
+                    sendResponse(ses, res);
                 }
             });
         }
-
     }
 
     /**
@@ -136,21 +151,34 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         return ses.send(res);
     }
 
+    /**
+     * @param msg {@link GridRedisMessage}
+     * @return {@link GridRestRequest}
+     */
     private GridRestRequest toRestRequest(GridRedisMessage msg) {
         assert msg != null;
 
         GridRestCacheRequest restReq = new GridRestCacheRequest();
 
         restReq.command(redisToRestCommand(msg.command()));
-//        restReq.clientId(req.clientId());
-//        restReq.ttl(req.expiration());
-//        restReq.cacheName(req.cacheName());
+        restReq.clientId(msg.clientId());
         restReq.key(msg.key());
 
         return restReq;
     }
 
     private GridRestCommand redisToRestCommand(GridRedisCommand cmd) {
-        throw new NotImplementedException();
+        GridRestCommand restCmd;
+
+        switch (cmd) {
+            case GET:
+                restCmd = CACHE_GET;
+
+                break;
+            default:
+                return null;
+        }
+
+        return restCmd;
     }
 }

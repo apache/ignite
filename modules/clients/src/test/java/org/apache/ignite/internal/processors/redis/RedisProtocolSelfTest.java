@@ -153,10 +153,10 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
     public void testGet() throws Exception {
         try (Jedis jedis = pool.getResource()) {
             jcache().put("getKey1", "getVal1");
-            jcache().put("getKey2", "getVal2");
+            jcache().put("getKey2", 0);
 
             Assert.assertEquals("getVal1", jedis.get("getKey1"));
-            Assert.assertEquals("getVal2", jedis.get("getKey2"));
+            Assert.assertEquals("0", jedis.get("getKey2"));
             Assert.assertNull(jedis.get("wrongKey"));
         }
     }

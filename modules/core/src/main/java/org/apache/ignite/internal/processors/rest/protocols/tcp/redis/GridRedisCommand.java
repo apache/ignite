@@ -29,7 +29,10 @@ public enum GridRedisCommand {
     /** Connection close. */
     QUIT("QUIT"),
     /** Echo. */
-    ECHO("ECHO");
+    ECHO("ECHO"),
+
+    /** GET. */
+    GET("GET");
 
     /** String for command. */
     private final String cmd;

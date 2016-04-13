@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
- * Parser to decode/encode Redis protocol requests.
+ * Parser to decode/encode Redis protocol (RESP) requests.
  */
 public class GridRedisProtocolParser {
     /** + prefix. */
@@ -47,6 +47,18 @@ public class GridRedisProtocolParser {
 
     /** CRLF. */
     private static final byte[] CRLF = new byte[] {13, 10};
+
+    /** Generic error prefix. */
+    private static final byte[] ERR_GENERIC = "ERR ".getBytes();
+
+    /** Prefix for errors on operations with the wrong type. */
+    private static final byte[] ERR_TYPE = "WRONGTYPE ".getBytes();
+
+    /** Prefix for errors on authentication. */
+    private static final byte[] ERR_AUTH = "NOAUTH ".getBytes();
+
+    /** Null bulk string for nil response. */
+    private static final byte[] NIL = "$-1\r\n".getBytes();
 
     /**
      * Reads array.
@@ -75,7 +87,7 @@ public class GridRedisProtocolParser {
      * Reads a bulk string.
      *
      * @param buf
-     * @return
+     * @return Bulk string.
      * @throws IgniteCheckedException
      */
     public static String readBulkStr(ByteBuffer buf) throws IgniteCheckedException {
@@ -120,14 +132,110 @@ public class GridRedisProtocolParser {
     /**
      * Converts a simple string data to a {@link ByteBuffer}.
      *
-     * @param str
-     * @return
+     * @param val String to be converted to a simple string.
+     * @return Redis simple string.
      */
-    public static ByteBuffer toSimpleString(String str) {
-        byte[] b = str.getBytes();
+    public static ByteBuffer toSimpleString(String val) {
+        byte[] b = val.getBytes();
 
         ByteBuffer buf = ByteBuffer.allocate(b.length + 3);
         buf.put(SIMPLE_STRING);
+        buf.put(b);
+        buf.put(CRLF);
+
+        buf.flip();
+
+        return buf;
+    }
+
+    /**
+     * Creates a generic error response.
+     *
+     * @param errMsg Error message.
+     * @return Error response.
+     */
+    public static ByteBuffer toGenericError(String errMsg) {
+        return toError(errMsg, ERR_GENERIC);
+    }
+
+    /**
+     * Creates an error response on operation against the wrong data type.
+     *
+     * @param errMsg Error message.
+     * @return Error response.
+     */
+    public static ByteBuffer toTypeError(String errMsg) {
+        return toError(errMsg, ERR_TYPE);
+    }
+
+    /**
+     * Creates an error response.
+     *
+     * @param errMsg Error message.
+     * @param errPrefix Error prefix.
+     * @return Error response.
+     */
+    private static ByteBuffer toError(String errMsg, byte[] errPrefix) {
+        byte[] b = errMsg.getBytes();
+
+        ByteBuffer buf = ByteBuffer.allocate(b.length + errPrefix.length + 3);
+        buf.put(ERROR);
+        buf.put(errPrefix);
+        buf.put(b);
+        buf.put(CRLF);
+
+        buf.flip();
+
+        return buf;
+    }
+
+    /**
+     * Converts an integer result to a RESP integer.
+     *
+     * @param integer Integer result.
+     * @return RESP integer.
+     */
+    public static ByteBuffer toInteger(int integer) {
+        byte[] b = String.valueOf(integer).getBytes();
+
+        ByteBuffer buf = ByteBuffer.allocate(b.length + 3);
+        buf.put(INTEGER);
+        buf.put(b);
+        buf.put(CRLF);
+
+        buf.flip();
+
+        return buf;
+    }
+
+    /**
+     * @return Nil response.
+     */
+    public static ByteBuffer nil() {
+        ByteBuffer buf = ByteBuffer.allocate(NIL.length);
+        buf.put(NIL);
+
+        buf.flip();
+
+        return buf;
+    }
+
+    /**
+     * Converts a resultant object to a bulk string.
+     *
+     * @param val Object.
+     * @return Bulk string.
+     */
+    public static ByteBuffer toBulkString(Object val) {
+        assert val != null;
+
+        byte[] b = String.valueOf(val).getBytes();
+        byte[] l = String.valueOf(b.length).getBytes();
+
+        ByteBuffer buf = ByteBuffer.allocate(b.length + l.length + 5);
+        buf.put(BULK_STRING);
+        buf.put(l);
+        buf.put(CRLF);
         buf.put(b);
         buf.put(CRLF);
 
