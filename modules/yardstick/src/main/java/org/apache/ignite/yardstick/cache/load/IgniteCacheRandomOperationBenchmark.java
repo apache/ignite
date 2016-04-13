@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
@@ -74,17 +75,14 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     /** List of available transactional cache. */
     protected List<IgniteCache> transactionalCaches;
 
+/** List of affinity cache. */
+    protected List<IgniteCache> affinityCaches;
+
     /** Map cache name on key classes. */
     private Map<String, Class[]> keysCacheClasses;
 
     /** Map cache name on value classes. */
     private Map<String, Class[]> valuesCacheClasses;
-
-    /** Map cache name on partitions. */
-    private Map<String, ScanQueryBroadcastClosure> scanQueryClosures;
-
-    /** Map cache name on nodes. */
-    private Map<String, ClusterGroup> clusterGrours;
 
     /**
      * Replace value entry processor.
@@ -107,12 +105,11 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private void searchCache() throws Exception {
         availableCaches = new ArrayList<>(ignite().cacheNames().size());
         transactionalCaches = new ArrayList<>();
+        affinityCaches = new ArrayList<>();
         keysCacheClasses = new HashMap<>();
         valuesCacheClasses = new HashMap<>();
         replaceValueEntryProcessor = new BenchmarkReplaceValueEntryProcessor(null);
         removeEntryProcessor = new BenchmarkRemoveEntryProcessor();
-        scanQueryClosures = new HashMap<>();
-        clusterGrours = new HashMap<>();
 
         for (String name : ignite().cacheNames()) {
             IgniteCache<Object, Object> cache = ignite().cache(name);
@@ -120,8 +117,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             CacheConfiguration configuration = cache.getConfiguration(CacheConfiguration.class);
 
             if (isClassDefinedinConfig(configuration)) {
-                //Exclude indexed cache.
-                if (true)
+                if (configuration.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED)
                     continue;
 
                 ArrayList<Class> keys = new ArrayList<>();
@@ -162,12 +158,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 valuesCacheClasses.put(name, values.toArray(new Class[] {}));
             }
 
-            if (configuration.getCacheMode() != CacheMode.LOCAL) {
-                Map<UUID, List<Integer>> partitionsMap = personCachePartitions(cache.getName());
-                scanQueryClosures.put(cache.getName(),
-                    new ScanQueryBroadcastClosure(cache.getName(), partitionsMap));
-                clusterGrours.put(cache.getName(), ignite().cluster().forNodeIds(partitionsMap.keySet()));
-            }
+            if (configuration.getCacheMode() != CacheMode.LOCAL)
+                affinityCaches.add(cache);
 
             if (configuration.getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
                 transactionalCaches.add(cache);
@@ -214,6 +206,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
     /**
      * Building a map that contains mapping of node ID to a list of partitions stored on the node.
+     *
      * @param cacheName Name of Ignite cache.
      * @return Node to partitions map.
      */
@@ -228,7 +221,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             for (int i = 0; i < affinity.partitions(); i++)
                 randmPartitions.add(i);
         else
-            for (int i=0; i < SCAN_QUERY_PARTITIN_AMOUNT; i++) {
+            for (int i = 0; i < SCAN_QUERY_PARTITIN_AMOUNT; i++) {
                 int partitionNumber;
                 do
                     partitionNumber = nextRandom(affinity.partitions());
@@ -598,10 +591,12 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @throws Exception If failed.
      */
     private void doScanQuery(IgniteCache cache) throws Exception {
-        ScanQueryBroadcastClosure closure = scanQueryClosures.get(cache.getName());
-        if (closure == null)
+        if (!affinityCaches.contains(cache))
             return;
-        IgniteCompute compute = ignite().compute(clusterGrours.get(cache.getName()));
+        Map<UUID, List<Integer>> partitionsMap = personCachePartitions(cache.getName());
+        ScanQueryBroadcastClosure closure = new ScanQueryBroadcastClosure(cache.getName(), partitionsMap);
+        ClusterGroup clusterGroup = ignite().cluster().forNodeIds(partitionsMap.keySet());
+        IgniteCompute compute = ignite().compute(clusterGroup);
         compute.broadcast(closure);
     }
 
@@ -653,7 +648,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 scanQuery.setFilter(igniteBiPredicate);
 
                 try (QueryCursor cursor = cache.query(scanQuery)) {
-                    for (Object obj: cursor);
+                    for (Object obj : cursor)
+                        ;
                 }
 
             }
