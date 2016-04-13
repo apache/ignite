@@ -19,7 +19,7 @@
     <DefineConstants>DEBUG;CODE_ANALYSIS</DefineConstants>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\x64\Debug\Apache.Ignite.Core.XML</DocumentationFile>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
@@ -92,6 +92,7 @@
     <Compile Include="Cache\CacheException.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
+    <Compile Include="DataStructures\Configuration\AtomicConfiguration.cs" />
     <Compile Include="Cache\Configuration\QueryAlias.cs" />
     <Compile Include="Cache\Configuration\QueryTextFieldAttribute.cs" />
     <Compile Include="Cache\Event\CacheEntryEventType.cs" />
@@ -251,6 +252,7 @@
     <Compile Include="Impl\Collections\MultiValueDictionary.cs" />
     <Compile Include="Impl\Collections\ReadOnlyCollection.cs" />
     <Compile Include="Impl\Collections\ReadOnlyDictionary.cs" />
+    <Compile Include="Impl\Common\ObjectStringConverter.cs" />
     <Compile Include="Impl\Common\BooleanLowerCaseConverter.cs" />
     <Compile Include="Impl\Common\CancelledTask.cs" />
     <Compile Include="Impl\Common\Classpath.cs" />
@@ -431,6 +433,7 @@
     <Compile Include="Transactions\ITransactions.cs" />
     <Compile Include="Transactions\Package-Info.cs" />
     <Compile Include="Transactions\TransactionConcurrency.cs" />
+    <Compile Include="Transactions\TransactionConfiguration.cs" />
     <Compile Include="Transactions\TransactionHeuristicException.cs" />
     <Compile Include="Transactions\TransactionIsolation.cs" />
     <Compile Include="Transactions\TransactionOptimisticException.cs" />
@@ -468,7 +471,7 @@
     <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\x64\$(Configuration)\ignite.common.dll">
       <Link>resources\$(Configuration)\x64\ignite.common.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll" Condition="Exists('$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll')">
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll" Condition="'$(Configuration)' == 'Release' Or Exists('$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll')">
       <Link>resources\$(Configuration)\x86\ignite.common.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
@@ -482,7 +485,7 @@
     <None Include="Apache.Ignite.Core.snk" />
     <None Include="IgniteConfigurationSection.xsd">
       <SubType>Designer</SubType>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <ItemGroup />
