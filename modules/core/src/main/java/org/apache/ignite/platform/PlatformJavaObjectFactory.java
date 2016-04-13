@@ -18,7 +18,13 @@
 package org.apache.ignite.platform;
 
 /**
- * Platform Java object factory.
+ * Object factory used for advanced interop between platform and Java.
+ * <p>
+ * Use it when you need Java component for some Ignite feature in platform code. E.g. Java-based continuous
+ * query filter.
+ * <p>
+ * You should implement the factory, compile it and then place it into node's classpath. Then you can reference
+ * the factory form platform code using it's fully-qualified Java class name.
  */
 public interface PlatformJavaObjectFactory<T> {
     /**
