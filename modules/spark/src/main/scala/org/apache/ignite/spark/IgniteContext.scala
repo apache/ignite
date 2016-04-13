@@ -122,6 +122,10 @@ class IgniteContext[K, V](
         new IgniteRDD[K, V](this, cacheCfg.getName, cacheCfg)
     }
 
+    /**
+     * Get or start Ignite instance it it's not started yet.
+     * @return
+     */
     def ignite(): Ignite = {
         val home = IgniteUtils.getIgniteHome
 
