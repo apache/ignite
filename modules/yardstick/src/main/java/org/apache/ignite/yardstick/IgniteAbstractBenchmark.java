@@ -58,6 +58,14 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
             node = new IgniteNode(args.isClientOnly() && !args.isNearCache(), Ignition.ignite());
 
         waitForNodes();
+        init();
+    }
+
+    /**
+     * @throws Exception If fail.
+     */
+    protected void init() throws Exception {
+
     }
 
     /** {@inheritDoc} */
