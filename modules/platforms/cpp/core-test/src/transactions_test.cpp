@@ -130,6 +130,35 @@ BOOST_AUTO_TEST_CASE(TransactionRollback)
     BOOST_CHECK(!tx.IsValid());
 }
 
+BOOST_AUTO_TEST_CASE(TransactionClose)
+{
+    Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
+
+    cache.Put(1, 1);
+    cache.Put(2, 2);
+
+    Transactions transactions = grid.GetTransactions();
+
+    Transaction tx = transactions.GetTx();
+    BOOST_REQUIRE(!tx.IsValid());
+
+    tx = transactions.TxStart();
+
+    BOOST_REQUIRE(transactions.GetTx().IsValid());
+
+    cache.Put(1, 10);
+    cache.Put(2, 20);
+
+    tx.Close();
+
+    BOOST_CHECK_EQUAL(1, cache.Get(1));
+    BOOST_CHECK_EQUAL(2, cache.Get(2));
+
+    tx = transactions.GetTx();
+
+    BOOST_CHECK(!tx.IsValid());
+}
+
 BOOST_AUTO_TEST_CASE(TransactionCommitNe)
 {
     Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
@@ -222,5 +251,54 @@ BOOST_AUTO_TEST_CASE(TransactionRollbackNe)
     BOOST_CHECK(!tx.IsValid());
 }
 
+BOOST_AUTO_TEST_CASE(TransactionCloseNe)
+{
+    Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
+
+    IgniteError err;
+
+    cache.Put(1, 1, err);
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    cache.Put(2, 2, err);
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    Transactions transactions = grid.GetTransactions();
+
+    Transaction tx = transactions.GetTx();
+    BOOST_REQUIRE(!tx.IsValid());
+
+    tx = transactions.TxStart(err);
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    BOOST_REQUIRE(transactions.GetTx().IsValid());
+
+    cache.Put(1, 10, err);
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    cache.Put(2, 20, err);
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    tx.Close(err);
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    BOOST_CHECK_EQUAL(1, cache.Get(1, err));
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    BOOST_CHECK_EQUAL(2, cache.Get(2, err));
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    tx = transactions.GetTx();
+
+    BOOST_CHECK(!tx.IsValid());
+}
 
 BOOST_AUTO_TEST_SUITE_END()

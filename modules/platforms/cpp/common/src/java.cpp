@@ -2011,12 +2011,12 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            int JniContext::TransactionsClose(jobject obj, long long id) {
+            int JniContext::TransactionsClose(jobject obj, long long id, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jint state = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txClose, id);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return state;
             }

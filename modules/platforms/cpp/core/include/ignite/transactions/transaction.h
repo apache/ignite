@@ -137,7 +137,7 @@ namespace ignite
             }
 
             /**
-             * Commit the transaction.
+             * Rollback the transaction.
              */
             void Rollback()
             {
@@ -164,6 +164,76 @@ namespace ignite
                     err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                         "Instance is not usable (did you check for error?).");
                 }
+            }
+
+            /**
+             * Close the transaction.
+             */
+            void Close()
+            {
+                IgniteError err;
+
+                Close(err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
+             * Close the transaction.
+             *
+             * @param err Error.
+             */
+            void Close(IgniteError& err)
+            {
+                impl::transactions::TransactionImpl* txImpl = impl.Get();
+
+                if (txImpl)
+                    txImpl->Close(err);
+                else
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Instance is not usable (did you check for error?).");
+                }
+            }
+
+            /**
+             * Get concurrency.
+             *
+             * @return Concurrency.
+             */
+            TransactionConcurrency GetConcurrency() const
+            {
+                return static_cast<TransactionConcurrency>(impl.Get()->GetConcurrency());
+            }
+
+            /**
+             * Get isolation.
+             *
+             * @return Isolation.
+             */
+            TransactionIsolation GetIsolation() const
+            {
+                return static_cast<TransactionIsolation>(impl.Get()->GetIsolation());
+            }
+
+            /**
+             * Get current state.
+             *
+             * @return Transaction state.
+             */
+            TransactionState GetState()
+            {
+                return impl.Get()->GetState();
+            }
+
+            /**
+             * Get timeout.
+             *
+             * @return Timeout in milliseconds. Zero if timeout is infinite.
+             */
+            int64_t GetTimeout() const
+            {
+                return impl.Get()->GetTimeout();
             }
 
             /**

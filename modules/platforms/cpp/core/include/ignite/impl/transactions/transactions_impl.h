@@ -58,7 +58,7 @@ namespace ignite
                  *
                  * @param concurrency Concurrency.
                  * @param isolation Isolation.
-                 * @param timeout Timeout in milliseconds.
+                 * @param timeout Timeout in milliseconds. Zero if for infinite timeout.
                  * @param txSize Number of entries participating in transaction (may be approximate).
                  * @param err Error.
                  * @return Transaction ID on success.
@@ -83,6 +83,23 @@ namespace ignite
                  * @return Resulting state.
                  */
                 TransactionState TxRollback(int64_t id, IgniteError& err);
+
+                /**
+                 * Close Transaction.
+                 *
+                 * @param id Transaction ID.
+                 * @param err Error.
+                 * @return Resulting state.
+                 */
+                TransactionState TxClose(int64_t id, IgniteError& err);
+
+                /**
+                 * Get Transaction state.
+                 *
+                 * @param id Transaction ID.
+                 * @return Resulting state.
+                 */
+                TransactionState TxState(int64_t id);
 
             private:
                 /**

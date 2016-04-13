@@ -160,7 +160,7 @@ namespace ignite
              *
              * @param concurrency Concurrency.
              * @param isolation Isolation.
-             * @param timeout Timeout.
+             * @param timeout Timeout. Zero if for infinite timeout.
              * @param txSize Number of entries participating in transaction (may be approximate).
              * @return New transaction instance.
              */
@@ -182,7 +182,7 @@ namespace ignite
              *
              * @param concurrency Concurrency.
              * @param isolation Isolation.
-             * @param timeout Timeout.
+             * @param timeout Timeout. Zero if for infinite timeout.
              * @param txSize Number of entries participating in transaction (may be approximate).
              * @param err Error.
              * @return New transaction instance.

@@ -77,6 +77,25 @@ namespace ignite
                 return ToTransactionState(state);
             }
 
+            TransactionsImpl::TransactionState TransactionsImpl::TxClose(int64_t id, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                int state = env.Get()->Context()->TransactionsClose(javaRef, id, &jniErr);
+
+                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+                return ToTransactionState(state);
+            }
+
+            TransactionsImpl::TransactionState TransactionsImpl::TxState(int64_t id)
+            {
+                int state = env.Get()->Context()->TransactionsState(javaRef, id);
+
+                return ToTransactionState(state);
+            }
+
             TransactionsImpl::TransactionState TransactionsImpl::ToTransactionState(int state)
             {
                 using namespace ignite::transactions;

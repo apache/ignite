@@ -1,4 +1,7 @@
 #include "..\..\..\include\ignite\impl\transactions\transaction_impl.h"
+#include "..\..\..\include\ignite\impl\transactions\transaction_impl.h"
+#include "..\..\..\include\ignite\impl\transactions\transaction_impl.h"
+#include "..\..\..\include\ignite\impl\transactions\transaction_impl.h"
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -98,7 +101,7 @@ namespace ignite
                     return;
                 }
 
-                TransactionState  newState = txs.Get()->TxCommit(id, err);
+                TransactionState newState = txs.Get()->TxCommit(id, err);
 
                 if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
                 {
@@ -119,7 +122,7 @@ namespace ignite
                     return;
                 }
 
-                TransactionState  newState = txs.Get()->TxRollback(id, err);
+                TransactionState newState = txs.Get()->TxRollback(id, err);
 
                 if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
                 {
@@ -127,6 +130,37 @@ namespace ignite
 
                     closed = true;
                 }
+            }
+
+            void TransactionImpl::Close(IgniteError & err)
+            {
+                common::concurrent::CsLockGuard guard(accessLock);
+
+                if (IsClosed())
+                {
+                    err = GetClosedError();
+
+                    return;
+                }
+
+                TransactionState newState = txs.Get()->TxClose(id, err);
+
+                if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
+                {
+                    state = newState;
+
+                    closed = true;
+                }
+            }
+
+            TransactionState TransactionImpl::GetState()
+            {
+                common::concurrent::CsLockGuard guard(accessLock);
+
+                if (closed)
+                    return state;
+
+                return txs.Get()->TxState(id);
             }
 
             IgniteError TransactionImpl::GetClosedError() const

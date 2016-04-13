@@ -93,6 +93,50 @@ namespace ignite
                  */
                 void Rollback(IgniteError& err);
 
+                /**
+                 * Close the transaction.
+                 *
+                 * @param err Error.
+                 */
+                void Close(IgniteError& err);
+
+                /**
+                 * Get concurrency.
+                 *
+                 * @return Concurrency.
+                 */
+                int GetConcurrency() const
+                {
+                    return concurrency;
+                }
+
+                /**
+                 * Get isolation.
+                 *
+                 * @return Isolation.
+                 */
+                int GetIsolation() const
+                {
+                    return isolation;
+                }
+
+                /**
+                 * Get state.
+                 *
+                 * @return Current state.
+                 */
+                TransactionState GetState();
+
+                /**
+                 * Get timeout.
+                 *
+                 * @return Timeout in milliseconds.
+                 */
+                int64_t GetTimeout() const
+                {
+                    return timeout;
+                }
+
             private:
                 /**
                  * Constructor.
