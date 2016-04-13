@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System.Linq;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
     using NUnit.Framework;
 
@@ -127,7 +128,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         {
             var filter = new JavaObject("blabla").ToCacheEntryEventFilter<int, string>();
 
-            TestFilter(filter);
+            var ex = Assert.Throws<IgniteException>(() => TestFilter(filter));
+
+            Assert.IsTrue(ex.Message.StartsWith("Java object/factory class is not found"));
         }
 
         /// <summary>
@@ -143,7 +146,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             var filter = javaObject.ToCacheEntryEventFilter<int, string>();
 
-            TestFilter(filter);
+            var ex = Assert.Throws<IgniteException>(() => TestFilter(filter));
+
+            Assert.IsTrue(ex.Message.StartsWith("Java object/factory class field is not found"));
         }
 
         /// <summary>
