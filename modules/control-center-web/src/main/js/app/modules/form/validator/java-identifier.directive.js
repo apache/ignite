@@ -20,7 +20,11 @@ export default ['javaIdentifier', ['JavaTypes', (JavaTypes) => {
         if (typeof attrs.javaIdentifier === 'undefined' || !attrs.javaIdentifier)
             return;
 
-        ngModel.$validators.javaIdentifier = JavaTypes.validIdentifier;
+        ngModel.$validators.javaIdentifier = (value) => {
+            const err = ngModel.$error.javaIdentifier;
+
+            return (ngModel.$invalid && (typeof err === 'undefined' || !err)) || JavaTypes.validIdentifier(value);
+        };
     };
 
     return {

@@ -21,7 +21,9 @@ export default ['javaPackageSpecified', [() => {
             return;
 
         ngModel.$validators.javaPackageSpecified = (value) => {
-            return !value || !(value.split('.').length < 2);
+            const err = ngModel.$error.javaPackageSpecified;
+
+            return (ngModel.$invalid && (typeof err === 'undefined' || !err)) || !value || !(value.split('.').length < 2);
         };
     };
 
