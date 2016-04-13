@@ -34,7 +34,7 @@ import scala.reflect.ClassTag
  * @tparam V Value type.
  */
 class JavaIgniteContext[K, V](
-    @scala.transient val sc: JavaSparkContext,
+    @transient val sc: JavaSparkContext,
     val cfgF: IgniteOutClosure[IgniteConfiguration],
     standalone: Boolean = true
     ) extends Serializable {

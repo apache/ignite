@@ -17,26 +17,27 @@
 
 package org.apache.ignite.spark;
 
-import java.util.*;
-import java.util.concurrent.atomic.*;
-
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.spark.*;
-import org.apache.spark.api.java.*;
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.sql.*;
+import org.apache.spark.sql.Column;
+import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Row;
 import scala.Tuple2;
 
 /**
@@ -99,13 +100,17 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         super(false);
     }
 
+    private JavaSparkContext createContext() {
+        SparkConf conf = new SparkConf();
+        conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
+        return new JavaSparkContext("local[" + GRID_CNT + "]", "test", conf);
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testStoreDataToIgnite() throws Exception {
-        SparkConf conf = new SparkConf();
-        conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
-        JavaSparkContext sc = new JavaSparkContext("local[" + GRID_CNT + "]", "test", conf);
+        JavaSparkContext sc = createContext();
         JavaIgniteContext<String, String> ic = null;
 
         try {
@@ -136,9 +141,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReadDataFromIgnite() throws Exception {
-        SparkConf conf = new SparkConf();
-        conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
-        JavaSparkContext sc = new JavaSparkContext("local[" + GRID_CNT + "]", "test", conf);
+        JavaSparkContext sc = createContext();
         JavaIgniteContext<String, Integer> ic = null;
 
         try {
@@ -170,9 +173,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryObjectsFromIgnite() throws Exception {
-        SparkConf conf = new SparkConf();
-        conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
-        JavaSparkContext sc = new JavaSparkContext("local[" + GRID_CNT + "]", "test", conf);
+        JavaSparkContext sc = createContext();
         JavaIgniteContext<String, Entity> ic = null;
 
         try {
@@ -180,7 +181,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
-            cache.savePairs(sc.parallelize(F.range(0, 1001), 2).mapToPair(INT_TO_ENTITY_F));
+            cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F));
 
             List<Entity> res = cache.objectSql("Entity", "name = ? and salary = ?", "name50", 5000)
                 .map(STR_ENTITY_PAIR_TO_ENTITY_F).collect();
@@ -202,9 +203,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryFieldsFromIgnite() throws Exception {
-        SparkConf conf = new SparkConf();
-        conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
-        JavaSparkContext sc = new JavaSparkContext("local[" + GRID_CNT + "]", "test", conf);
+        JavaSparkContext sc = createContext();
         JavaIgniteContext<String, Entity> ic = null;
 
         try {
@@ -212,7 +211,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
-            cache.savePairs(sc.parallelize(F.range(0, 1001), 2).mapToPair(INT_TO_ENTITY_F));
+            cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F));
 
             DataFrame df =
                 cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000);
