@@ -32,6 +32,10 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
     @SuppressWarnings("FieldCanBeLocal")
     private String startsWith = "-";
 
+    /** Property to be set from platform. */
+    @SuppressWarnings("FieldCanBeLocal")
+    private int maxKey;
+
     /** Injected instance. */
     @IgniteInstanceResource
     private Ignite ignite;
@@ -40,6 +44,7 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
     @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
         assert ignite != null;
 
-        return ((String)event.getValue()).startsWith(startsWith);
+        return ((String)event.getValue()).startsWith(startsWith) &&
+            ((int)event.getKey()) < maxKey;
     }
 }
