@@ -21,18 +21,11 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -49,15 +42,9 @@ import org.h2.table.TableFilter;
 /**
  * H2 Index over {@link BPlusTree}.
  */
-public class BPlusTreeIndex extends PageMemoryIndex {
+public class H2TreeIndex extends GridH2IndexBase {
     /** */
-    private GridCacheContext<?,?> cctx;
-
-    /** */
-    private PageMemory pageMem;
-
-    /** */
-    private H2BPlusTree tree;
+    private final H2Tree tree;
 
     /**
      * @param cctx Cache context.
@@ -72,7 +59,7 @@ public class BPlusTreeIndex extends PageMemoryIndex {
      * @param cols Index columns.
      * @throws IgniteCheckedException If failed.
      */
-    public BPlusTreeIndex(
+    public H2TreeIndex(
         GridCacheContext<?,?> cctx,
         PageMemory pageMem,
         FullPageId metaPageId,
@@ -86,6 +73,8 @@ public class BPlusTreeIndex extends PageMemoryIndex {
     ) throws IgniteCheckedException {
         super(keyCol, valCol);
 
+        assert pageMem != null;
+
         assert cctx.cacheId() == metaPageId.cacheId();
 
         if (!pk) {
@@ -95,13 +84,15 @@ public class BPlusTreeIndex extends PageMemoryIndex {
             cols[cols.length - 1] = tbl.indexColumn(keyCol, SortOrder.ASCENDING);
         }
 
-        this.pageMem = pageMem;
-        this.cctx = cctx;
-
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        tree = new H2BPlusTree(tbl.rowStore(), metaPageId, initNew);
+        tree = new H2Tree(cctx.cacheId(), pageMem, tbl.rowStore(), metaPageId, initNew) {
+            @Override protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
+                throws IgniteCheckedException {
+                return compareRows(getRow(io, buf, idx), row);
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -167,6 +158,21 @@ public class BPlusTreeIndex extends PageMemoryIndex {
         return 10_000; // TODO
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean canGetFirstOrLast() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Cursor findFirstOrLast(Session session, boolean b) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close(Session ses) {
+        // No-op.
+    }
+
     /**
      * Cursor.
      */
@@ -211,72 +217,6 @@ public class BPlusTreeIndex extends PageMemoryIndex {
         /** {@inheritDoc} */
         @Override public boolean previous() {
             throw DbException.getUnsupportedException("previous");
-        }
-    }
-
-    /**
-     * Specialization of {@link BPlusTree} for H2 index.
-     */
-    private class H2BPlusTree extends BPlusTree<SearchRow, GridH2Row> {
-        /** */
-        private final H2RowStore rowStore;
-
-        /**
-         * @param rowStore Row data store.
-         * @param metaPageId Meta page ID.
-         * @param initNew    Initialize new index.
-         * @throws IgniteCheckedException If failed.
-         */
-        public H2BPlusTree(H2RowStore rowStore, FullPageId metaPageId, boolean initNew)
-            throws IgniteCheckedException {
-            super(metaPageId, initNew);
-
-            assert rowStore != null;
-
-            this.rowStore = rowStore;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Page page(long pageId) throws IgniteCheckedException {
-            return pageMem.page(new FullPageId(pageId, cctx.cacheId()));
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Page allocatePage() throws IgniteCheckedException {
-            FullPageId pageId = pageMem.allocatePage(cctx.cacheId(), -1, PageIdAllocator.FLAG_IDX);
-
-            return pageMem.page(pageId);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected BPlusIO<SearchRow> io(int type, int ver) {
-            if (type == PageIO.T_H2_REF_INNER)
-                return H2InnerIO.VERSIONS.forVersion(ver);
-
-            assert type == PageIO.T_H2_REF_LEAF: type;
-
-            return H2LeafIO.VERSIONS.forVersion(ver);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected BPlusInnerIO<SearchRow> latestInnerIO() {
-            return H2InnerIO.VERSIONS.latest();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected BPlusLeafIO<SearchRow> latestLeafIO() {
-            return H2LeafIO.VERSIONS.latest();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
-            throws IgniteCheckedException {
-            return compareRows(getRow(io, buf, idx), row);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected GridH2Row getRow(BPlusIO<SearchRow> io, ByteBuffer buf, int idx) throws IgniteCheckedException {
-            return rowStore.getRow((H2RowLinkIO)io, buf, idx);
         }
     }
 }

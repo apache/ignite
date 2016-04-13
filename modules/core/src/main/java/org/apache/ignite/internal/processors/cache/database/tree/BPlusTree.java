@@ -457,30 +457,32 @@ public abstract class BPlusTree<L, T extends L> {
 
     /**
      * @param metaPageId Meta page ID.
-     * @param initNew Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public BPlusTree(FullPageId metaPageId, boolean initNew) throws IgniteCheckedException {
+    public BPlusTree(FullPageId metaPageId) throws IgniteCheckedException {
         // TODO make configurable: 0 <= minFill <= maxFill <= 1
         minFill = 0f; // Testing worst case when merge happens only on empty page.
         maxFill = 0f; // Avoiding random effects on testing.
 
         this.metaPageId = metaPageId.pageId();
+    }
 
-        if (initNew) { // Init new index.
-            try (Page meta = page(this.metaPageId)) {
-                ByteBuffer buf = meta.getForInitialWrite();
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void initNew() throws IgniteCheckedException {
+        try (Page meta = page(metaPageId)) {
+            ByteBuffer buf = meta.getForInitialWrite();
 
-                BPlusMetaIO io = BPlusMetaIO.VERSIONS.latest();
+            BPlusMetaIO io = BPlusMetaIO.VERSIONS.latest();
 
-                io.initNewPage(buf, metaPageId.pageId());
+            io.initNewPage(buf, metaPageId);
 
-                try (Page root = allocatePage()) {
-                    latestLeafIO().initNewPage(root.getForInitialWrite(), root.id());
+            try (Page root = allocatePage()) {
+                latestLeafIO().initNewPage(root.getForInitialWrite(), root.id());
 
-                    io.setLevelsCount(buf, 1);
-                    io.setLeftmostPageId(buf, 0, root.id());
-                }
+                io.setLevelsCount(buf, 1);
+                io.setLeftmostPageId(buf, 0, root.id());
             }
         }
     }
@@ -1294,8 +1296,7 @@ public abstract class BPlusTree<L, T extends L> {
             // Do move up.
             cnt = io.getCount(buf);
 
-            assert io.canGetRow(); // TODO refactor to use io.store for move up, this assert is wrong in general case
-            T moveUpRow = getRow(io, buf, cnt - 1); // Last item from backward row goes up.
+            L moveUpRow = io.getLookupRow(this, buf, cnt - 1); // Last item from backward row goes up.
 
             if (!io.isLeaf()) // Leaf pages must contain all the links, inner pages remove moveUpLink.
                 io.setCount(buf, cnt - 1);
@@ -1315,7 +1316,7 @@ public abstract class BPlusTree<L, T extends L> {
 
                     io.setCount(newRootBuf, 1);
                     inner(io).setLeft(newRootBuf, 0, PageIO.getPageId(buf));
-                    io.store(newRootBuf, 0, moveUpRow); // TODO refactor
+                    io.store(newRootBuf, 0, moveUpRow);
                     inner(io).setRight(newRootBuf, 0, fwd.id());
                 }
 

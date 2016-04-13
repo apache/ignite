@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 
 /**
@@ -133,7 +134,7 @@ public abstract class BPlusIO<L> extends PageIO {
     }
 
     /**
-     * @return {@code true} If we can get the whole row from this page using
+     * @return {@code true} If we can get the full row from this page using
      * method {@link BPlusTree#getRow(BPlusIO, ByteBuffer, int)}.
      * Must always be {@code true} for leaf pages.
      */
@@ -162,6 +163,17 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param row Lookup or full row.
      */
     public abstract void store(ByteBuffer buf, int idx, L row);
+
+    /**
+     * Get lookup row.
+     *
+     * @param tree Tree.
+     * @param buf Buffer.
+     * @param idx Index.
+     * @return Lookup row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public abstract L getLookupRow(BPlusTree<L, ?> tree, ByteBuffer buf, int idx) throws IgniteCheckedException;
 
     /**
      * Copy items from source buffer to destination buffer. Both pages must be of the same type.

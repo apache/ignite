@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.database;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
-import org.apache.ignite.internal.processors.query.h2.database.BPlusTreeIndex;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowStore;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -64,7 +64,7 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
             log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name +
                 ", rootPageId=" + page.get1() + ", allocated=" + page.get2() + ']');
 
-        Index idx = new BPlusTreeIndex(
+        Index idx = new H2TreeIndex(
             cctx,
             dbMgr.pageMemory(),
             page.get1(),

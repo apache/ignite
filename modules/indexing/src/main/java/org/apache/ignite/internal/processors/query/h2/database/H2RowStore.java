@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 
@@ -89,19 +88,6 @@ public class H2RowStore {
     }
 
     /**
-     * @param io IO.
-     * @param buf Buffer.
-     * @param idx Index.
-     * @return Row.
-     * @throws IgniteCheckedException If failed.
-     */
-    public GridH2Row getRow(H2RowLinkIO io, ByteBuffer buf, int idx) throws IgniteCheckedException {
-        long link = io.getLink(buf, idx);
-
-        return getRow(link);
-    }
-
-    /**
      * @param pageId Page ID.
      * @return Page.
      * @throws IgniteCheckedException If failed.
@@ -129,7 +115,7 @@ public class H2RowStore {
      * @param link Link.
      * @return Row.
      */
-    private GridH2Row getRow(long link) throws IgniteCheckedException {
+    public GridH2Row getRow(long link) throws IgniteCheckedException {
         try (Page page = page(pageId(link))) {
             ByteBuffer buf = page.getForRead();
 
