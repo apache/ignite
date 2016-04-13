@@ -86,6 +86,13 @@ namespace ignite
                  */
                 void Commit(IgniteError& err);
 
+                /**
+                 * Rollback the transaction.
+                 *
+                 * @param err Error.
+                 */
+                void Rollback(IgniteError& err);
+
             private:
                 /**
                  * Constructor.

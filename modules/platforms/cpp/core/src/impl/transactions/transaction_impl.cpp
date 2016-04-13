@@ -1,3 +1,4 @@
+#include "..\..\..\include\ignite\impl\transactions\transaction_impl.h"
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -98,6 +99,27 @@ namespace ignite
                 }
 
                 TransactionState  newState = txs.Get()->TxCommit(id, err);
+
+                if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
+                {
+                    state = newState;
+
+                    closed = true;
+                }
+            }
+
+            void TransactionImpl::Rollback(IgniteError & err)
+            {
+                common::concurrent::CsLockGuard guard(accessLock);
+
+                if (IsClosed())
+                {
+                    err = GetClosedError();
+
+                    return;
+                }
+
+                TransactionState  newState = txs.Get()->TxRollback(id, err);
 
                 if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
                 {

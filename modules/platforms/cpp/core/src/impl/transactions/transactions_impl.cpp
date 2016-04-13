@@ -57,7 +57,19 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int32_t state = env.Get()->Context()->TransactionsCommit(javaRef, id, &jniErr);
+                int state = env.Get()->Context()->TransactionsCommit(javaRef, id, &jniErr);
+
+                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+                return ToTransactionState(state);
+            }
+
+            TransactionsImpl::TransactionState TransactionsImpl::TxRollback(int64_t id, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                int state = env.Get()->Context()->TransactionsRollback(javaRef, id, &jniErr);
 
                 if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);

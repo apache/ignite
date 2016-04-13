@@ -137,6 +137,36 @@ namespace ignite
             }
 
             /**
+             * Commit the transaction.
+             */
+            void Rollback()
+            {
+                IgniteError err;
+
+                Rollback(err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
+             * Rollback the transaction.
+             *
+             * @param err Error.
+             */
+            void Rollback(IgniteError& err)
+            {
+                impl::transactions::TransactionImpl* txImpl = impl.Get();
+
+                if (txImpl)
+                    txImpl->Rollback(err);
+                else
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Instance is not usable (did you check for error?).");
+                }
+            }
+
+            /**
              * Check if the instance is valid and can be used.
              *
              * @return True if the instance is valid and can be used.

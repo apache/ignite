@@ -118,7 +118,7 @@ namespace ignite
              */
             Transaction TxStart(IgniteError& err)
             {
-                return TxStart(IGNITE_TX_CONCURRENCY_OPTIMISTIC,
+                return TxStart(IGNITE_TX_CONCURRENCY_PESSIMISTIC,
                     IGNITE_TX_ISOLATION_READ_COMMITTED, 0, 0, err);
             }
 

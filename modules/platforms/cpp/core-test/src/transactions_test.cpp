@@ -77,7 +77,7 @@ BOOST_FIXTURE_TEST_SUITE(TransactionsTestSuite, TransactionsTestSuiteFixture)
 
 BOOST_AUTO_TEST_CASE(TransactionCommit)
 {
-    Cache<int, int> cache = grid.CreateCache<int, int>("txCache");
+    Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
 
     Transactions transactions = grid.GetTransactions();
 
@@ -93,17 +93,17 @@ BOOST_AUTO_TEST_CASE(TransactionCommit)
 
     tx.Commit();
 
-    BOOST_REQUIRE_EQUAL(1, cache.Get(1));
-    BOOST_REQUIRE_EQUAL(2, cache.Get(2));
+    BOOST_CHECK_EQUAL(1, cache.Get(1));
+    BOOST_CHECK_EQUAL(2, cache.Get(2));
 
     tx = transactions.GetTx();
 
-    BOOST_REQUIRE(!tx.IsValid());
+    BOOST_CHECK(!tx.IsValid());
 }
 
 BOOST_AUTO_TEST_CASE(TransactionRollback)
 {
-    Cache<int, int> cache = grid.CreateCache<int, int>("txCache");
+    Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
 
     cache.Put(1, 1);
     cache.Put(2, 2);
@@ -122,17 +122,17 @@ BOOST_AUTO_TEST_CASE(TransactionRollback)
 
     tx.Rollback();
 
-    BOOST_REQUIRE_EQUAL(1, cache.Get(1));
-    BOOST_REQUIRE_EQUAL(2, cache.Get(2));
+    BOOST_CHECK_EQUAL(1, cache.Get(1));
+    BOOST_CHECK_EQUAL(2, cache.Get(2));
 
     tx = transactions.GetTx();
 
-    BOOST_REQUIRE(!tx.IsValid());
+    BOOST_CHECK(!tx.IsValid());
 }
 
 BOOST_AUTO_TEST_CASE(TransactionCommitNe)
 {
-    Cache<int, int> cache = grid.CreateCache<int, int>("txCache");
+    Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
 
     Transactions transactions = grid.GetTransactions();
 
@@ -159,17 +159,17 @@ BOOST_AUTO_TEST_CASE(TransactionCommitNe)
     if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
-    BOOST_REQUIRE_EQUAL(1, cache.Get(1, err));
+    BOOST_CHECK_EQUAL(1, cache.Get(1, err));
     if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
-    BOOST_REQUIRE_EQUAL(2, cache.Get(2, err));
+    BOOST_CHECK_EQUAL(2, cache.Get(2, err));
     if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
         BOOST_ERROR(err.GetText());
 
     tx = transactions.GetTx();
 
-    BOOST_REQUIRE(!tx.IsValid());
+    BOOST_CHECK(!tx.IsValid());
 }
 
 

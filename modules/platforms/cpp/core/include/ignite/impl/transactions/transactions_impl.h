@@ -75,6 +75,15 @@ namespace ignite
                  */
                 TransactionState TxCommit(int64_t id, IgniteError& err);
 
+                /**
+                 * Rollback Transaction.
+                 *
+                 * @param id Transaction ID.
+                 * @param err Error.
+                 * @return Resulting state.
+                 */
+                TransactionState TxRollback(int64_t id, IgniteError& err);
+
             private:
                 /**
                  * Convert integer state constant to that of the TransactionState.
