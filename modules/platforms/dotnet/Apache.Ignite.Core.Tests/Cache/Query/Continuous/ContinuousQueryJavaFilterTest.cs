@@ -19,6 +19,7 @@
 #pragma warning disable 618  // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -115,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     {"doubleField", 10.123},
                     {"decimalField", (decimal) 11.245},
                     {"boolField", true},
-                    {"guidField", _ignite.GetCluster().GetLocalNode().Id},
+                    {"guidField", Guid.Parse("1c579241-509d-47c6-a1a0-87462ae31e59")},
                     {
                         "objField", new TestBinary
                         {

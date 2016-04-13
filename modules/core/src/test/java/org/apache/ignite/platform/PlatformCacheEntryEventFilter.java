@@ -143,7 +143,7 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
         assert doubleField == 10.123;
         assert "11.245".equals(decimalField.toString());
         assert boolField;
-        assert guidField.equals(ignite.cluster().localNode().id());
+        assert guidField.equals(UUID.fromString("1c579241-509d-47c6-a1a0-87462ae31e59"));
 
         // check arrays
         assert charArr[0] == 'a';
