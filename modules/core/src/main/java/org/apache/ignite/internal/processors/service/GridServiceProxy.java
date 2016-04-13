@@ -38,6 +38,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -48,8 +49,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jsr166.ThreadLocalRandom8;
-
-import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 
 /**
  * Wrapper for making {@link org.apache.ignite.services.Service} class proxies.
@@ -164,7 +163,7 @@ public class GridServiceProxy<T> implements Serializable {
                     else {
                         // Execute service remotely.
                         return ctx.closure().callAsyncNoFailover(
-                            BALANCE,
+                            GridClosureCallMode.BROADCAST,
                             new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
                             Collections.singleton(node),
                             false
