@@ -111,6 +111,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     {"ulongField", (ulong) 8},
                     {"floatField", (float) 9.99},
                     {"doubleField", 10.123},
+                    {"decimalField", (decimal)11.245},
                     {"boolField", true},
                 }
             };
