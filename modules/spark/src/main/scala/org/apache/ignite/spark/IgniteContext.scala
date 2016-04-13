@@ -146,7 +146,7 @@ class IgniteContext[K, V](
         }
         catch {
             case e: IgniteException ⇒ {
-                logError("Failed to start Ignite client.", e)
+                logError("Failed to start Ignite.", e)
 
                 throw e
             }
