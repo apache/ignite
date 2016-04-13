@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spark
 
-
 import org.apache.ignite._
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.internal.IgnitionEx
@@ -37,7 +36,7 @@ class IgniteContext[K, V](
     @transient val sparkContext: SparkContext,
     cfgF: () ⇒ IgniteConfiguration,
     standalone: Boolean = true
-) extends Serializable with Logging {
+    ) extends Serializable with Logging {
     private val cfgClo = new Once(cfgF)
 
     private val igniteHome = IgniteUtils.getIgniteHome
@@ -71,7 +70,7 @@ class IgniteContext[K, V](
         sc: SparkContext,
         springUrl: String,
         client: Boolean
-    ) {
+        ) {
         this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1(), client)
     }
 
@@ -84,7 +83,7 @@ class IgniteContext[K, V](
     def this(
         sc: SparkContext,
         springUrl: String
-    ) {
+        ) {
         this(sc, () ⇒ IgnitionEx.loadConfiguration(springUrl).get1())
     }
 
@@ -135,7 +134,7 @@ class IgniteContext[K, V](
         }
 
         val igniteCfg = cfgClo()
-        // driver set to {@code false) then job transferred to worker
+        // check if called from driver
         if (sparkContext != null) igniteCfg.setClientMode(true)
 
         try {
@@ -154,21 +153,21 @@ class IgniteContext[K, V](
      * Stops supporting ignite instance. If ignite instance has been already stopped, this operation will be
      * a no-op.
      */
-    def close(shutdownIgniteOnWorkers:Boolean = false) = {
-        if (shutdownIgniteOnWorkers) {
+    def close(shutdownIgniteOnWorkers: Boolean = false) = {
+        // additional check if called from driver
+        if (sparkContext != null && shutdownIgniteOnWorkers) {
             // Get required number of executors with default equals to number of available executors.
             val workers = sparkContext.getConf.getInt("spark.executor.instances",
                 sparkContext.getExecutorStorageStatus.length)
 
-            if (workers <= 0)
-                throw new IllegalStateException("No Spark executors found to start Ignite nodes.")
+            if (workers > 0) {
+                logInfo("Will stop Ignite nodes on " + workers + " workers")
 
-            logInfo("Will stop Ignite nodes on " + workers + " workers")
-
-            // Start ignite server node on each worker in server mode.
-            sparkContext.parallelize(1 to workers, workers).foreachPartition(it ⇒ {
-                doClose()
-            })
+                // Start ignite server node on each worker in server mode.
+                sparkContext.parallelize(1 to workers, workers).foreachPartition(it ⇒ {
+                    doClose()
+                })
+            }
         }
 
         doClose()
@@ -178,7 +177,6 @@ class IgniteContext[K, V](
         val igniteCfg = cfgClo()
 
         Ignition.stop(igniteCfg.getGridName, false)
-
     }
 }
 

@@ -46,6 +46,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /** For grid names generation */
     private static AtomicInteger cntr = new AtomicInteger(1);
 
+    /** Grid names. */
     private static ThreadLocal<Integer> gridNames = new ThreadLocal<Integer>() {
         @Override protected Integer initialValue() {
             return cntr.getAndIncrement();
@@ -104,7 +105,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     public void testStoreDataToIgnite() throws Exception {
         SparkConf conf = new SparkConf();
         conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
-        JavaSparkContext sc = new JavaSparkContext("local["+GRID_CNT+"]", "test", conf);
+        JavaSparkContext sc = new JavaSparkContext("local[" + GRID_CNT + "]", "test", conf);
         JavaIgniteContext<String, String> ic = null;
 
         try {
@@ -125,7 +126,8 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             }
         }
         finally {
-            ic.close(true);
+            if (ic != null)
+                ic.close(true);
             sc.stop();
         }
     }
@@ -136,7 +138,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     public void testReadDataFromIgnite() throws Exception {
         SparkConf conf = new SparkConf();
         conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
-        JavaSparkContext sc = new JavaSparkContext("local["+GRID_CNT+"]", "test", conf);
+        JavaSparkContext sc = new JavaSparkContext("local[" + GRID_CNT + "]", "test", conf);
         JavaIgniteContext<String, Integer> ic = null;
 
         try {
@@ -158,7 +160,8 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             assertEquals(expSum, sum);
         }
         finally {
-            ic.close(true);
+            if (ic != null)
+                ic.close(true);
             sc.stop();
         }
     }
@@ -169,7 +172,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     public void testQueryObjectsFromIgnite() throws Exception {
         SparkConf conf = new SparkConf();
         conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
-        JavaSparkContext sc = new JavaSparkContext("local["+GRID_CNT+"]", "test", conf);
+        JavaSparkContext sc = new JavaSparkContext("local[" + GRID_CNT + "]", "test", conf);
         JavaIgniteContext<String, Entity> ic = null;
 
         try {
@@ -189,7 +192,8 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             assertEquals("Invalid count", 500, cache.objectSql("Entity", "id > 500").count());
         }
         finally {
-            ic.close(true);
+            if (ic != null)
+                ic.close(true);
             sc.stop();
         }
     }
@@ -200,7 +204,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     public void testQueryFieldsFromIgnite() throws Exception {
         SparkConf conf = new SparkConf();
         conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
-        JavaSparkContext sc = new JavaSparkContext("local["+GRID_CNT+"]", "test", conf);
+        JavaSparkContext sc = new JavaSparkContext("local[" + GRID_CNT + "]", "test", conf);
         JavaIgniteContext<String, Entity> ic = null;
 
         try {
@@ -238,7 +242,8 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             assertEquals("Invalid count", 500, cache.sql("select id from Entity where id > 500").count());
         }
         finally {
-            ic.close(true);
+            if (ic != null)
+                ic.close(true);
             sc.stop();
         }
     }
@@ -252,9 +257,9 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder(true);
+        TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder(false);
 
-        finder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
+        finder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
 
         discoSpi.setIpFinder(finder);
 
