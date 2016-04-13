@@ -25,6 +25,8 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.UUID;
 
 /**
@@ -120,6 +122,12 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
     /** Property to be set from platform. */
     private Object[] objArr;
 
+    /** Property to be set from platform. */
+    private ArrayList arrayList;
+
+    /** Property to be set from platform. */
+    private HashMap hashTable;
+
     /** Injected instance. */
     @IgniteInstanceResource
     private Ignite ignite;
@@ -160,7 +168,8 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
         assert boolArr[0];
 
         // check collections
-        // TODO
+        assert "x".equals(arrayList.get(0));
+        assert "2".equals(hashTable.get(1));
 
         // check binary object
         assert objField != null && objField.field("Int") == 1 && "2".equals(objField.field("String"));
