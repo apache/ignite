@@ -129,9 +129,11 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
                 if (configuration.getQueryEntities() != null) {
                     Collection<QueryEntity> entries = configuration.getQueryEntities();
+
                     for (QueryEntity queryEntity : entries) {
                         Class keyClass = getClass().forName(queryEntity.getKeyType());
                         Class valueClass = getClass().forName(queryEntity.getValueType());
+
                         if (ModelUtil.canCreateInstance(keyClass) && ModelUtil.canCreateInstance(valueClass)) {
                             keys.add(keyClass);
                             values.add(valueClass);
@@ -143,9 +145,11 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
                 if (configuration.getTypeMetadata() != null) {
                     Collection<CacheTypeMetadata> entries = configuration.getTypeMetadata();
+
                     for (CacheTypeMetadata cacheTypeMetadata : entries) {
                         Class keyClass = getClass().forName(cacheTypeMetadata.getKeyType());
                         Class valueClass = getClass().forName(cacheTypeMetadata.getValueType());
+
                         if (ModelUtil.canCreateInstance(keyClass) && ModelUtil.canCreateInstance(valueClass)) {
                             keys.add(keyClass);
                             values.add(valueClass);
@@ -193,20 +197,24 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         if (args.preloadAmount() > args.range())
             throw new IllegalArgumentException("Preloading amount (\"-pa\", \"--preloadAmount\") must by less then the" +
                 " range (\"-r\", \"--range\").");
+
         Thread[] threads = new Thread[availableCaches.size()];
+
         for (int i = 0; i < availableCaches.size(); i++) {
             final String cacheName = availableCaches.get(i).getName();
+
             threads[i] = new Thread() {
-                @Override
-                public void run() {
+                @Override public void run() {
                     try (IgniteDataStreamer dataLdr = ignite().dataStreamer(cacheName)) {
                         for (int i = 0; i < args.preloadAmount() && !isInterrupted(); i++)
                             dataLdr.addData(createRandomKey(i, cacheName), createRandomValue(i, cacheName));
                     }
                 }
             };
+
             threads[i].start();
         }
+
         for (Thread thread : threads) {
             thread.join();
         }
@@ -214,6 +222,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
     /**
      * Building a map that contains mapping of node ID to a list of partitions stored on the node.
+     *
      * @param cacheName Name of Ignite cache.
      * @return Node to partitions map.
      */
@@ -224,17 +233,21 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         // Building a list of all partitions numbers.
         List<Integer> randmPartitions = new ArrayList<>(10);
 
-        if (affinity.partitions() < SCAN_QUERY_PARTITIN_AMOUNT)
+        if (affinity.partitions() <= SCAN_QUERY_PARTITIN_AMOUNT)
             for (int i = 0; i < affinity.partitions(); i++)
                 randmPartitions.add(i);
-        else
-            for (int i=0; i < SCAN_QUERY_PARTITIN_AMOUNT; i++) {
+        else {
+            for (int i = 0; i < SCAN_QUERY_PARTITIN_AMOUNT; i++) {
                 int partitionNumber;
+
                 do
                     partitionNumber = nextRandom(affinity.partitions());
                 while (randmPartitions.contains(partitionNumber));
+
                 randmPartitions.add(partitionNumber);
             }
+        }
+
         Collections.sort(randmPartitions);
 
         // Getting partition to node mapping.
@@ -273,10 +286,12 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private Class randomKeyClass(String cacheName) {
         Class[] keys;
+
         if (keysCacheClasses.containsKey(cacheName))
             keys = keysCacheClasses.get(cacheName);
         else
             keys = ModelUtil.keyClasses();
+
         return keys[nextRandom(keys.length)];
     }
 
@@ -287,6 +302,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private Object createRandomValue(int id, String cacheName) {
         Class clazz = randomValueClass(cacheName);
+
         return ModelUtil.create(clazz, id);
     }
 
@@ -301,6 +317,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             values = valuesCacheClasses.get(cacheName);
         else
             values = ModelUtil.valueClasses();
+
         return values[nextRandom(values.length)];
     }
 
@@ -653,7 +670,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 scanQuery.setFilter(igniteBiPredicate);
 
                 try (QueryCursor cursor = cache.query(scanQuery)) {
-                    for (Object obj: cursor);
+                    for (Object obj : cursor)
+                        ;
                 }
 
             }
