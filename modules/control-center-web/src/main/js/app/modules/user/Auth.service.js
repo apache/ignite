@@ -61,6 +61,8 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 
             logout() {
                 $http.post('/api/v1/logout')
                     .then(() => {
+                        User.clean();
+
                         $window.open($state.href('signin'), '_self');
                     })
                     .catch((errMsg) => $common.showError(errMsg));
