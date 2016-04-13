@@ -110,13 +110,10 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
     private double[] doubleArr;
 
     /** Property to be set from platform. */
-    private BigDecimal[] BigDecimalArr;
+    private boolean[] boolArr;
 
     /** Property to be set from platform. */
-    private boolean[] booleanArr;
-
-    /** Property to be set from platform. */
-    private BinaryObject[] objArr;
+    private Object[] objArr;
 
     /** Injected instance. */
     @IgniteInstanceResource
@@ -147,7 +144,7 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
         // check binary object
         assert objField != null && objField.field("Int") == 1 && "2".equals(objField.field("String"));
         assert objArr != null && objArr.length == 1 &&
-            objArr[0].field("Int") == 1 && "2".equals(objArr[0].field("String"));
+            ((BinaryObject)objArr[0]).field("Int") == 1 && "2".equals(((BinaryObject)objArr[0]).field("String"));
 
         return ((String)event.getValue()).startsWith(startsWith);
     }

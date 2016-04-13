@@ -133,7 +133,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     {"ulongArr", new[] {(ulong) 8}},
                     {"floatArr", new[] {(float) 9.99}},
                     {"doubleArr", new[] {10.123}},
-                    {"decimalArr", new[] {(decimal) 11.245}},
                     {"boolArr", new[] {true}},
                     {
                         "objArr", new object[]
