@@ -20,6 +20,7 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -145,7 +146,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                                 String = "2"
                             }
                         }
-                    }
+                    },
+                    {"arrayList", new ArrayList {"x"}},
+                    {"hashTable", new Hashtable {{1, "2"}}}
                 }
             };
 
