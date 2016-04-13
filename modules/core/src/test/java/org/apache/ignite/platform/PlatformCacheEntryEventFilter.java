@@ -159,6 +159,9 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
         assert doubleArr[0] == 10.123;
         assert boolArr[0];
 
+        // check collections
+        // TODO
+
         // check binary object
         assert objField != null && objField.field("Int") == 1 && "2".equals(objField.field("String"));
         assert objArr != null && objArr.length == 1 &&
