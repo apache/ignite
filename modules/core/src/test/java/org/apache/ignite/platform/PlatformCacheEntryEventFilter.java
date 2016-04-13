@@ -142,8 +142,12 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
         assert "11.245".equals(decimalField.toString());
         assert boolField;
 
+        // check arrays
+
         // check binary object
         assert objField != null && objField.field("Int") == 1 && "2".equals(objField.field("String"));
+        assert objArr != null && objArr.length == 1 &&
+            objArr[0].field("Int") == 1 && "2".equals(objArr[0].field("String"));
 
         return ((String)event.getValue()).startsWith(startsWith);
     }

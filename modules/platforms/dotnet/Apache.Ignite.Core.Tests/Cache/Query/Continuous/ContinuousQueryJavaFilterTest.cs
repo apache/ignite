@@ -136,10 +136,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     {"decimalArr", new[] {(decimal) 11.245}},
                     {"boolArr", new[] {true}},
                     {
-                        "objField", new TestBinary
+                        "objArr", new object[]
                         {
-                            Int = 1,
-                            String = "2"
+                            new TestBinary
+                            {
+                                Int = 1,
+                                String = "2"
+                            }
                         }
                     }
                 }
