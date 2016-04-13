@@ -62,7 +62,28 @@ namespace ignite
                 if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
-                return static_cast<TransactionState>(state);
+                return ToTransactionState(state);
+            }
+
+            TransactionsImpl::TransactionState TransactionsImpl::ToTransactionState(int state)
+            {
+                using namespace ignite::transactions;
+                switch (state)
+                {
+                    case IGNITE_TX_STATE_ACTIVE:
+                    case IGNITE_TX_STATE_PREPARING:
+                    case IGNITE_TX_STATE_PREPARED:
+                    case IGNITE_TX_STATE_MARKED_ROLLBACK:
+                    case IGNITE_TX_STATE_COMMITTING:
+                    case IGNITE_TX_STATE_COMMITTED:
+                    case IGNITE_TX_STATE_ROLLING_BACK:
+                    case IGNITE_TX_STATE_ROLLED_BACK:
+                    case IGNITE_TX_STATE_UNKNOWN:
+                        return static_cast<TransactionState>(state);
+
+                    default:
+                        return IGNITE_TX_STATE_UNKNOWN;
+                }
             }
         }
     }

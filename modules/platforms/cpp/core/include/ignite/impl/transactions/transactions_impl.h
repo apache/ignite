@@ -76,6 +76,14 @@ namespace ignite
                 TransactionState TxCommit(int64_t id, IgniteError& err);
 
             private:
+                /**
+                 * Convert state integer constant to that of the TransactionState.
+                 *
+                 * @param state Integer constant state.
+                 * @return TransactionState constant.
+                 */
+                TransactionState ToTransactionState(int state);
+
                 /** Environment. */
                 IgniteEnvSharedPtr env;
 
