@@ -49,6 +49,6 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
     body.theme-line.body-overlap.greedy
         .ribbon-wrapper.right(ng-cloak)
             .ribbon(ng-style='IgniteDemoMode && {"background": "#1b6d88"}')
-                label {{::IgniteDemoMode ? "Demo" : "Beta" }}
+                label {{IgniteDemoMode ? "Demo" : "Beta" }}
 
         .wrapper(ui-view='')

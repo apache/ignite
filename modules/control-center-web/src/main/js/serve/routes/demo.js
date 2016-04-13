@@ -21,82 +21,21 @@
 
 module.exports = {
     implements: 'demo-routes',
-    inject: ['require(lodash)', 'require(express)', 'settings', 'mongo']
+    inject: [
+        'require(lodash)',
+        'require(express)',
+        'settings',
+        'mongo',
+        'require(./demo/domains.json)',
+        'require(./demo/caches.json)',
+        'require(./demo/igfss.json)',
+        'require(./demo/clusters.json)'
+    ]
 };
 
-module.exports.factory = (_, express, settings, mongo) => {
+module.exports.factory = (_, express, settings, mongo, domains, caches, igfss, clusters) => {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
-
-        const caches = [{
-            cacheMode: 'LOCAL',
-            atomicityMode: 'ATOMIC',
-            readFromBackup: true,
-            copyOnRead: true,
-            name: 'local',
-            sqlFunctionClasses: [],
-            cacheStoreFactory: {
-                CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}
-            },
-            domains: [],
-            clusters: []
-        }, {
-            cacheMode: 'PARTITIONED',
-            atomicityMode: 'ATOMIC',
-            readFromBackup: true,
-            copyOnRead: true,
-            name: 'partitioned',
-            sqlFunctionClasses: [],
-            cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}},
-            domains: [],
-            clusters: []
-        }, {
-            cacheMode: 'REPLICATED',
-            atomicityMode: 'ATOMIC',
-            readFromBackup: true,
-            copyOnRead: true,
-            name: 'replicated',
-            sqlFunctionClasses: [],
-            cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}},
-            domains: [],
-            clusters: []
-        }];
-
-        const igfss = [{
-            ipcEndpointEnabled: true,
-            fragmentizerEnabled: true,
-            name: 'igfs',
-            dataCacheName: 'igfs-data',
-            metaCacheName: 'igfs-meta',
-            pathModes: [],
-            clusters: []
-        }];
-
-        const clusters = [{
-            name: 'cluster-igfs',
-            connector: {noDelay: true},
-            communication: {tcpNoDelay: true},
-            igfss: [],
-            caches: [],
-            binaryConfiguration: {compactFooter: true, typeConfigurations: []},
-            discovery: {
-                kind: 'Multicast',
-                Multicast: {addresses: []},
-                Vm: {addresses: ['127.0.0.1:47500..47510']}
-            }
-        }, {
-            name: 'cluster-caches',
-            connector: {noDelay: true},
-            communication: {tcpNoDelay: true},
-            igfss: [],
-            caches: [],
-            binaryConfiguration: {compactFooter: true, typeConfigurations: []},
-            discovery: {
-                kind: 'Multicast',
-                Multicast: {addresses: []},
-                Vm: {addresses: ['127.0.0.1:47500..47510']}
-            }
-        }];
 
         /**
          * Reset demo configuration.
@@ -128,20 +67,45 @@ module.exports.factory = (_, express, settings, mongo) => {
                 })
                 .then((clusterDocs) => {
                     return _.map(clusterDocs, (cluster) => {
+                        const addCacheToCluster = (cacheDoc) => cluster.caches.push(cacheDoc._id);
+                        const addIgfsToCluster = (igfsDoc) => cluster.igfss.push(igfsDoc._id);
+
                         if (cluster.name.endsWith('-caches')) {
-                            return Promise.all(_.map(caches, (cache) => {
-                                const cacheDoc = new mongo.Cache(cache);
+                            const cachePromises = _.map(caches, (cacheData) => {
+                                const cache = new mongo.Cache(cacheData);
 
-                                cacheDoc.space = cluster.space;
-                                cacheDoc.clusters.push(cluster._id);
+                                cache.space = cluster.space;
+                                cache.clusters.push(cluster._id);
 
-                                return cacheDoc.save();
-                            }))
-                            .then((cacheDocs) => {
-                                _.forEach(cacheDocs, (cacheDoc) => cluster.caches.push(cacheDoc._id));
+                                return cache.save()
+                                    .then((cacheDoc) => {
+                                        const domainData = _.find(domains, (item) =>
+                                            item.databaseTable === cacheDoc.name.slice(0, -5).toUpperCase());
 
-                                return cluster.save();
+                                        if (domainData) {
+                                            const domain = new mongo.DomainModel(domainData);
+
+                                            domain.space = cacheDoc.space;
+                                            domain.caches.push(cacheDoc._id);
+
+                                            return domain.save()
+                                                .then((domainDoc) => {
+                                                    cacheDoc.domains.push(domainDoc._id);
+
+                                                    return cacheDoc.save();
+                                                });
+                                        }
+
+                                        return cacheDoc;
+                                    });
                             });
+
+                            return Promise.all(cachePromises)
+                                .then((cacheDocs) => {
+                                    _.forEach(cacheDocs, addCacheToCluster);
+
+                                    return cluster.save();
+                                });
                         }
 
                         if (cluster.name.endsWith('-igfs')) {
@@ -154,7 +118,7 @@ module.exports.factory = (_, express, settings, mongo) => {
                                 return igfsDoc.save();
                             }))
                             .then((igfsDocs) => {
-                                _.forEach(igfsDocs, (igfsDoc) => cluster.igfss.push(igfsDoc._id));
+                                _.forEach(igfsDocs, addIgfsToCluster);
 
                                 return cluster.save();
                             });

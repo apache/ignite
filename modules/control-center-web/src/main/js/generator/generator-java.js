@@ -2639,7 +2639,7 @@ $generatorJava.dataSourceClassName = function (res, storeFactory) {
 };
 
 // Descriptors for generation of demo data.
-var PREDEFINED_QUERIES = [
+const PREDEFINED_QUERIES = [
     {
         schema: 'CARS',
         type: 'PARKING',
@@ -2841,31 +2841,41 @@ function _multilineQuery(res, query, prefix, postfix) {
     }
 }
 
-$generatorJava.generateDemo = function (cluster, res, factoryCls) {
-    var cachesWithDataSource = _.filter(cluster.caches, function (cache) {
-        if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
-            var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+/**
+ * Checks if cluster has demo types.
+ *
+ * @param cluster Cluster to check.
+ * @param demo Is demo enabled.
+ * @returns {boolean} True if cluster has caches with demo types.
+ */
+$generatorJava.isDemoConfigured = function(cluster, demo) {
+    return demo &&
+        _.find(cluster.caches, (cache) => _.find(cache.domains, (domain) => _.find(PREDEFINED_QUERIES,
+            (desc) => domain.valueType.toUpperCase().endsWith(desc.type))));
+};
 
-            return storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect;
+$generatorJava.generateDemo = function (cluster, res, factoryCls) {
+    const cachesWithDataSource = _.filter(cluster.caches, (cache) => {
+        if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
+            const storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+
+            return storeFactory.connectVia === 'DataSource' && storeFactory.dialect ||
+                !storeFactory.connectVia && storeFactory.dialect;
         }
 
         return false;
     });
 
     // Prepare array of cache and his demo domain model list. Every domain is contained only in first cache.
-    var demoTypes = _.filter(_.map(cachesWithDataSource, function (curCache, curIx) {
+    var demoTypes = _.filter(_.map(cachesWithDataSource, (cache, idx) => {
         return {
-            cache: curCache,
-            domains: _.filter(curCache.domains, function (domain) {
-                return domain.demo && $generatorCommon.isDefinedAndNotEmpty(domain.valueFields) &&
-                    !_.find(cachesWithDataSource, function(checkCache, checkIx) {
-                        return checkIx < curIx && _.find(checkCache.domains, domain);
-                    });
-            })
+            cache: cache,
+            domains: _.filter(cache.domains, (domain) =>
+                $generatorCommon.isDefinedAndNotEmpty(domain.valueFields) &&
+                    !_.find(cachesWithDataSource, (checkCache, checkIx) => checkIx < idx && _.find(checkCache.domains, domain))
+            )
         }
-    }), function (cache) {
-        return $generatorCommon.isDefinedAndNotEmpty(cache.domains);
-    });
+    }), (cache) => $generatorCommon.isDefinedAndNotEmpty(cache.domains));
 
     if ($generatorCommon.isDefinedAndNotEmpty(demoTypes)) {
         var typeByDs = {};

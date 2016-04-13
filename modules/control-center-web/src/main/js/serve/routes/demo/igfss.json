@@ -1,0 +1,11 @@
+[
+  {
+    "ipcEndpointEnabled": true,
+    "fragmentizerEnabled": true,
+    "name": "igfs",
+    "dataCacheName": "igfs-data",
+    "metaCacheName": "igfs-meta",
+    "pathModes": [],
+    "clusters": []
+  }
+]

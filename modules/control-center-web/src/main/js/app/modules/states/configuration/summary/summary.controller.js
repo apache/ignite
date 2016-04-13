@@ -219,7 +219,7 @@ export default [
             if ($generatorCommon.secretPropertiesNeeded(cluster))
                 mainFolder.children.push(resourcesFolder);
 
-            if ($scope.$root.IgniteDemoMode)
+            if ($generatorJava.isDemoConfigured(cluster, $scope.$root.IgniteDemoMode))
                 javaFolder.children.push(demoFolder);
 
             _.forEach(cluster.caches, (cache) => {
@@ -290,7 +290,7 @@ export default [
             zip.file(srcPath + 'config/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ServerConfigurationFactory', null));
             zip.file(srcPath + 'config/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ClientConfigurationFactory', clientNearCfg));
 
-            if ($scope.$root.IgniteDemoMode) {
+            if ($generatorJava.isDemoConfigured(cluster, $scope.$root.IgniteDemoMode)) {
                 zip.file(srcPath + 'demo/DemoStartup.java', $generatorJava.nodeStartup(cluster, 'demo', 'DemoStartup',
                     'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
             }

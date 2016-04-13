@@ -543,7 +543,7 @@ $generatorCommon.toJavaName = function (prefix, name) {
  * @returns {boolean} 'true' if value defined and not empty string.
  */
 $generatorCommon.isDefinedAndNotEmpty = function (v) {
-    var defined = !_.isNil(v)
+    var defined = !_.isNil(v);
 
     if (defined && (_.isString(v) || _.isArray(v)))
         defined = v.length > 0;
