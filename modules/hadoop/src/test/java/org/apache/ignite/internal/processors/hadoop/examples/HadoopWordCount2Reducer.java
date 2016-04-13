@@ -23,6 +23,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.ignite.internal.processors.hadoop.HadoopErrorSimulator;
 
 /**
  * Combiner and Reducer phase of WordCount job.
@@ -50,6 +51,15 @@ public class HadoopWordCount2Reducer extends Reducer<Text, IntWritable, Text, In
         totalWordCnt.set(wordCnt);
 
         ctx.write(key, totalWordCnt);
+
+        reduceError();
+    }
+
+    /**
+     * Simulates reduce error if needed.
+     */
+    protected void reduceError() throws IOException, InterruptedException {
+        HadoopErrorSimulator.instance().onReduce();
     }
 
     /** {@inheritDoc} */
@@ -57,16 +67,47 @@ public class HadoopWordCount2Reducer extends Reducer<Text, IntWritable, Text, In
         super.setup(context);
 
         wasSetUp = true;
+
+        setupError();
+    }
+
+    /**
+     * Simulates setup error if needed.
+     */
+    protected void setupError() throws IOException, InterruptedException {
+        HadoopErrorSimulator.instance().onReduceSetup();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void cleanup(Context context) throws IOException, InterruptedException {
+        super.cleanup(context);
+
+        cleanupError();
+    }
+
+    /**
+     * Simulates cleanup error if needed.
+     */
+    protected void cleanupError() throws IOException, InterruptedException {
+        HadoopErrorSimulator.instance().onReduceCleanup();
     }
 
     /** {@inheritDoc} */
     @Override public void setConf(Configuration conf) {
         wasConfigured = true;
+
+        configError();
+    }
+
+    /**
+     * Simulates configuration error if needed.
+     */
+    protected void configError() {
+        HadoopErrorSimulator.instance().onReduceConfigure();
     }
 
     /** {@inheritDoc} */
     @Override public Configuration getConf() {
         return null;
     }
-
 }
