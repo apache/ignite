@@ -90,6 +90,11 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
     /** {@inheritDoc} */
     @Override protected int compare(BPlusIO<FreeItem> io, ByteBuffer buf, int idx, FreeItem row)
         throws IgniteCheckedException {
+        if (io.isLeaf()) // In a leaf we can do a fair compare.
+            return Short.compare(((FreeIO)io).freeSpace(buf, idx), row.freeSpace());
+
+        // In inner pages we do compare on dispersed free space to avoid contention on a single page
+        // when all the entries are equal and many pages have the same free space.
         return Integer.compare(((FreeIO)io).dispersedFreeSpace(buf, idx), row.dispersedFreeSpace());
     }
 
