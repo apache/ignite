@@ -77,7 +77,7 @@ namespace ignite
 
             private:
                 /**
-                 * Convert state integer constant to that of the TransactionState.
+                 * Convert integer state constant to that of the TransactionState.
                  *
                  * @param state Integer constant state.
                  * @return TransactionState constant.
