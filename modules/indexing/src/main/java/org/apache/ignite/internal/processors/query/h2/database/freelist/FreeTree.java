@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.database.freelist;
+package org.apache.ignite.internal.processors.query.h2.database.freelist;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
@@ -23,9 +23,9 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeIO;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInnerIO;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeLeafIO;
+import org.apache.ignite.internal.processors.query.h2.database.freelist.io.FreeIO;
+import org.apache.ignite.internal.processors.query.h2.database.freelist.io.FreeInnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.freelist.io.FreeLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;

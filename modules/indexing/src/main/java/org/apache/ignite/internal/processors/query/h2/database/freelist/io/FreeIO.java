@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.database.freelist.io;
+package org.apache.ignite.internal.processors.query.h2.database.freelist.io;
 
 import java.nio.ByteBuffer;
 
