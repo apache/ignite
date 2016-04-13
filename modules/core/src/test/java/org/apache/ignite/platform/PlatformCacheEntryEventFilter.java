@@ -30,7 +30,8 @@ import java.util.UUID;
 /**
  * Test filter.
  */
-@SuppressWarnings({"FieldCanBeLocal", "FloatingPointEquality"})
+@SuppressWarnings({"FieldCanBeLocal", "FloatingPointEquality", "MismatchedReadAndWriteOfArray", "unused",
+    "SpellCheckingInspection"})
 public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializableFilter {
     /** Property to be set from platform. */
     private String startsWith = "-";
@@ -117,9 +118,6 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
     private boolean[] boolArr;
 
     /** Property to be set from platform. */
-    private UUID[] guidArr;
-
-    /** Property to be set from platform. */
     private Object[] objArr;
 
     /** Injected instance. */
@@ -160,7 +158,6 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
         assert floatArr[0] == (float)9.99;
         assert doubleArr[0] == 10.123;
         assert boolArr[0];
-        assert guidArr[0].equals(ignite.cluster().localNode().id());
 
         // check binary object
         assert objField != null && objField.field("Int") == 1 && "2".equals(objField.field("String"));

@@ -135,7 +135,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     {"floatArr", new[] {(float) 9.99}},
                     {"doubleArr", new[] {10.123}},
                     {"boolArr", new[] {true}},
-                    {"guidArr", new[] {_ignite.GetCluster().GetLocalNode().Id}},
                     {
                         "objArr", new object[]
                         {
