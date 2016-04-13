@@ -34,6 +34,6 @@ namespace Apache.Ignite.Core.Cache.Eviction
     /// </summary>
     public class FifoEvictionPolicy : EvictionPolicyBase
     {
-        // TODO
+        // No-op.
     }
 }
