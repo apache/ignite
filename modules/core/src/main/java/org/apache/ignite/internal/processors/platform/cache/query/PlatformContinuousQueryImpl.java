@@ -27,11 +27,11 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
@@ -99,10 +99,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @return Java filter or null.
      */
     private static CacheEntryEventFilter getJavaFilter(Object filter, GridKernalContext ctx) {
-        if (filter instanceof BinaryObject) {
-            BinaryObject bo = (BinaryObject)filter;
+        if (filter instanceof BinaryObjectImpl) {
+            BinaryObjectImpl bo = (BinaryObjectImpl)filter;
 
-            if (bo.type() != null && bo.type().typeId() == GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY) {
+            if (bo.typeId() == GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY) {
                 PlatformJavaObjectFactoryProxy prx = bo.deserialize();
 
                 return (CacheEntryEventFilter)prx.factory(ctx).create();
