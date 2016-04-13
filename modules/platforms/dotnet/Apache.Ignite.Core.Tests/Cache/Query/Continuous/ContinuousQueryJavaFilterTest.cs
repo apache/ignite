@@ -15,14 +15,18 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedAutoPropertyAccessor.Local
 #pragma warning disable 618  // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Interop;
     using NUnit.Framework;
 
     /// <summary>
@@ -58,11 +62,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public void FixtureSetUp()
         {
             // Main .NET nodes
-            _ignite =
-                Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
-                {
-                    SpringConfigUrl = SpringConfig
-                });
+            _ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = SpringConfig,
+                BinaryConfiguration = new BinaryConfiguration(typeof (TestBinary))
+            });
 
             // Second .NET node
             Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
@@ -94,24 +98,105 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestFilter()
         {
-            var filter = JavaObjectFactory.CreateCacheEntryEventFilter<int, string>(
-                "org.apache.ignite.platform.PlatformCacheEntryEventFilter",
-                new Dictionary<string, object> {{"startsWith", "valid"}});
+            var javaObj = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilter")
+            {
+                Properties =
+                {
+                    {"startsWith", "valid"},
+                    {"charField", 'a'},
+                    {"byteField", (byte) 1},
+                    {"sbyteField", (sbyte) 2},
+                    {"shortField", (short) 3},
+                    {"ushortField", (ushort) 4},
+                    {"intField", 5},
+                    {"uintField", (uint) 6},
+                    {"longField", (long) 7},
+                    {"ulongField", (ulong) 8},
+                    {"floatField", (float) 9.99},
+                    {"doubleField", 10.123},
+                    {"decimalField", (decimal) 11.245},
+                    {"boolField", true},
+                    {"guidField", Guid.Parse("1c579241-509d-47c6-a1a0-87462ae31e59")},
+                    {
+                        "objField", new TestBinary
+                        {
+                            Int = 1,
+                            String = "2"
+                        }
+                    },
+                    {"charArr", new[] {'a'}},
+                    {"byteArr", new[] {(byte) 1}},
+                    {"sbyteArr", new[] {(sbyte) 2}},
+                    {"shortArr", new[] {(short) 3}},
+                    {"ushortArr", new[] {(ushort) 4}},
+                    {"intArr", new[] {5}},
+                    {"uintArr", new[] {(uint) 6}},
+                    {"longArr", new[] {(long) 7}},
+                    {"ulongArr", new[] {(ulong) 8}},
+                    {"floatArr", new[] {(float) 9.99}},
+                    {"doubleArr", new[] {10.123}},
+                    {"boolArr", new[] {true}},
+                    {
+                        "objArr", new object[]
+                        {
+                            new TestBinary
+                            {
+                                Int = 1,
+                                String = "2"
+                            }
+                        }
+                    }
+                }
+            };
+
+            var filter = javaObj.ToCacheEntryEventFilter<int, string>();
 
             TestFilter(filter);
         }
 
         /// <summary>
-        /// Tests the filter.
+        /// Tests the factory class.
         /// </summary>
         [Test]
         public void TestFactory()
         {
-            var filter = JavaObjectFactory.CreateCacheEntryEventFilterFactory<int, string>(
-                "org.apache.ignite.platform.PlatformCacheEntryEventFilterFactory",
+            var javaObj = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilterFactory",
                 new Dictionary<string, object> {{"startsWith", "valid"}});
 
+            var filter = javaObj.ToCacheEntryEventFilter<int, string>();
+
             TestFilter(filter);
+        }
+
+        /// <summary>
+        /// Tests the invalid class name
+        /// </summary>
+        [Test]
+        public void TestInvalidClassName()
+        {
+            var filter = new JavaObject("blabla").ToCacheEntryEventFilter<int, string>();
+
+            var ex = Assert.Throws<IgniteException>(() => TestFilter(filter));
+
+            Assert.IsTrue(ex.Message.StartsWith("Java object/factory class is not found"));
+        }
+
+        /// <summary>
+        /// Tests the invalid class name
+        /// </summary>
+        [Test]
+        public void TestInvalidProperty()
+        {
+            var javaObject = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilter")
+            {
+                Properties = {{"invalidProp", "123"}}
+            };
+
+            var filter = javaObject.ToCacheEntryEventFilter<int, string>();
+
+            var ex = Assert.Throws<IgniteException>(() => TestFilter(filter));
+
+            Assert.IsTrue(ex.Message.StartsWith("Java object/factory class field is not found"));
         }
 
         /// <summary>
@@ -149,6 +234,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             {
                 _lastEvent = evts.FirstOrDefault();
             }
+        }
+
+        /// <summary>
+        /// Test binary object.
+        /// </summary>
+        private class TestBinary
+        {
+            public int Int { get; set; }
+            public string String { get; set; }
         }
     }
 }

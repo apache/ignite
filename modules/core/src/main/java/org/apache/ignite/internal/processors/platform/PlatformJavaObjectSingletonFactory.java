@@ -17,46 +17,32 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Map;
+import org.apache.ignite.platform.PlatformJavaObjectFactory;
 
 /**
- * Default Java object factory implementation.
+ * Singleton factory.
  */
-public class PlatformDefaultJavaObjectFactory<T> implements PlatformJavaObjectFactoryEx<T> {
-    /** Class name. */
-    private String clsName;
+public class PlatformJavaObjectSingletonFactory<T> implements PlatformJavaObjectFactory<T> {
+    /** Instance. */
+    private final T instance;
 
-    /** Properties. */
-    private Map<String, Object> props;
-
-    /** {@inheritDoc} */
-    @Override public void initialize(@Nullable Object payload, @Nullable Map<String, Object> props) {
-        if (payload == null)
-            throw new IgniteException("Java object class name is not provided.");
-
-        assert payload instanceof String;
-
-        clsName = (String)payload;
-
-        this.props = props;
+    /**
+     * Constructor.
+     *
+     * @param instance Instance.
+     */
+    public PlatformJavaObjectSingletonFactory(T instance) {
+        this.instance = instance;
     }
 
     /** {@inheritDoc} */
     @Override public T create() {
-        T res = PlatformUtils.createJavaObject(clsName);
-
-        PlatformUtils.initializeJavaObject(res, clsName, props, null);
-
-        return res;
+        return instance;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PlatformDefaultJavaObjectFactory.class, this);
+        return S.toString(PlatformJavaObjectSingletonFactory.class, this);
     }
 }

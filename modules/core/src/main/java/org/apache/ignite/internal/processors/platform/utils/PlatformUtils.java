@@ -974,9 +974,9 @@ public class PlatformUtils {
                 try {
                     field.set(obj, prop.getValue());
                 }
-                catch (ReflectiveOperationException e) {
+                catch (Exception e) {
                     throw new IgniteException("Failed to set Java object/factory field [className=" + clsName +
-                        ", fieldName=" + fieldName + ']', e);
+                        ", fieldName=" + fieldName + ", fieldValue=" + prop.getValue() + ']', e);
                 }
             }
         }

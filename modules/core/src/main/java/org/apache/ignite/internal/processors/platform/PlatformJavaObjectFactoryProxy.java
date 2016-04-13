@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.PlatformJavaObjectFactory;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -43,16 +44,16 @@ import java.util.Map;
  */
 public class PlatformJavaObjectFactoryProxy implements Externalizable, Binarylizable {
     /** User-defined type. */
-    private static final int TYP_USER = 0;
+    public static final int TYP_USER = 0;
 
     /** Default factory. */
-    private static final int TYP_DEFAULT = 1;
+    public static final int TYP_DEFAULT = 1;
 
     /** Factory type. */
-    private int factoryType;
+    private int factoryTyp;
 
-    /** Factory class name. */
-    private String factoryClsName;
+    /** Class name. */
+    private String clsName;
 
     /** Optional payload for special factory types. */
     @GridToStringExclude
@@ -70,6 +71,22 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
     }
 
     /**
+     * Constructor.
+     *
+     * @param factoryTyp Factory type.
+     * @param clsName Class name.
+     * @param payload Payload.
+     * @param props Properties.
+     */
+    public PlatformJavaObjectFactoryProxy(int factoryTyp, @Nullable String clsName, @Nullable Object payload,
+        @Nullable Map<String, Object> props) {
+        this.factoryTyp = factoryTyp;
+        this.clsName = clsName;
+        this.payload = payload;
+        this.props = props;
+    }
+
+    /**
      * Get factory instance.
      *
      * @param ctx Kernal context for injections.
@@ -77,38 +94,42 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
      */
     public PlatformJavaObjectFactory factory(GridKernalContext ctx) {
         // Create factory.
-        PlatformJavaObjectFactory res;
+        Object res;
 
-        switch (factoryType) {
+        switch (factoryTyp) {
             case TYP_DEFAULT:
                 res = new PlatformDefaultJavaObjectFactory();
 
                 break;
 
             case TYP_USER:
-                res = PlatformUtils.createJavaObject(factoryClsName);
+                res = PlatformUtils.createJavaObject(clsName);
 
                 break;
 
             default:
-                throw new IgniteException("Unsupported Java object factory type: " + factoryType);
+                throw new IgniteException("Unsupported Java object factory type: " + factoryTyp);
         }
 
         // Initialize factory.
         if (res instanceof PlatformJavaObjectFactoryEx)
             ((PlatformJavaObjectFactoryEx)res).initialize(payload, props);
-        else
-            PlatformUtils.initializeJavaObject(res, factoryClsName, props, ctx);
+        else {
+            PlatformUtils.initializeJavaObject(res, clsName, props, ctx);
 
-        return res;
+            if (!(res instanceof PlatformJavaObjectFactory))
+                res = new PlatformJavaObjectSingletonFactory<>(res);
+        }
+
+        return (PlatformJavaObjectFactory)res;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriterEx rawWriter = (BinaryRawWriterEx)writer.rawWriter();
 
-        rawWriter.writeInt(factoryType);
-        rawWriter.writeString(factoryClsName);
+        rawWriter.writeInt(factoryTyp);
+        rawWriter.writeString(clsName);
         rawWriter.writeObjectDetached(payload);
 
         if (props != null) {
@@ -127,8 +148,8 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReaderEx rawReader = (BinaryRawReaderEx)reader.rawReader();
 
-        factoryType = rawReader.readInt();
-        factoryClsName = rawReader.readString();
+        factoryTyp = rawReader.readInt();
+        clsName = rawReader.readString();
         payload = rawReader.readObjectDetached();
 
         int propsSize = rawReader.readInt();
@@ -147,16 +168,16 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(factoryType);
-        U.writeString(out, factoryClsName);
+        out.writeInt(factoryTyp);
+        U.writeString(out, clsName);
         out.writeObject(payload);
         U.writeMap(out, props);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        factoryType = in.readInt();
-        factoryClsName = U.readString(in);
+        factoryTyp = in.readInt();
+        clsName = U.readString(in);
         payload = in.readObject();
         props = U.readMap(in);
     }

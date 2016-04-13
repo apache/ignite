@@ -15,37 +15,54 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.platform;
+package org.apache.ignite.platform.javaobject;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.platform.PlatformJavaObjectFactory;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryListenerException;
-import java.io.Serializable;
-
 /**
- * Test filter factory
+ * Test factory.
  */
-public class PlatformCacheEntryEventFilterFactory implements Serializable,
-    PlatformJavaObjectFactory<CacheEntryEventSerializableFilter> {
-    /** Property to be set from platform. */
-    @SuppressWarnings("FieldCanBeLocal")
-    private String startsWith = "-";
-
-    /** Injected instance. */
+@SuppressWarnings("unused")
+public class TestJavaObjectNoDefaultCtorFactory implements PlatformJavaObjectFactory {
+    /** Injected node. */
     @IgniteInstanceResource
-    private Ignite ignite;
+    public Ignite node;
+
+    /** */
+    private boolean fBoolean;
+
+    /** */
+    private byte fByte;
+
+    /** */
+    private short fShort;
+
+    /** */
+    private char fChar;
+
+    /** */
+    private int fInt;
+
+    /** */
+    private long fLong;
+
+    /** */
+    private float fFloat;
+
+    /** */
+    private double fDouble;
+
+    /** */
+    private Object fObj;
+
+    /** Integer field. */
+    private Integer fIntBoxed;
 
     /** {@inheritDoc} */
-    @Override public CacheEntryEventSerializableFilter create() {
-        assert ignite != null;
-
-        return new CacheEntryEventSerializableFilter() {
-            @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
-                return ((String)event.getValue()).startsWith(startsWith);
-            }
-        };
+    @Override public Object create() {
+        return new TestJavaObjectNoDefaultCtor(fBoolean, fByte, fShort, fChar, fInt, fLong, fFloat, fDouble, fObj,
+            fIntBoxed, node);
     }
 }

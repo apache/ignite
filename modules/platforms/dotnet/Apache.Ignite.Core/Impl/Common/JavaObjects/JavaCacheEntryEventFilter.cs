@@ -37,12 +37,10 @@ namespace Apache.Ignite.Core.Impl.Common.JavaObjects
         /// <summary>
         /// Initializes a new instance of the <see cref="JavaCacheEntryEventFilter{TK, TV}"/> class.
         /// </summary>
-        /// <param name="type">The type.</param>
         /// <param name="factoryClassName">Name of the factory class.</param>
-        /// <param name="payload">The payload.</param>
         /// <param name="properties">The properties.</param>
-        public JavaCacheEntryEventFilter(FactoryType type, string factoryClassName, object payload,
-            IDictionary<string, object> properties) : base(type, factoryClassName, payload, properties)
+        public JavaCacheEntryEventFilter(string factoryClassName, IDictionary<string, object> properties) 
+            : base(FactoryType.User, factoryClassName, null, properties)
         {
             // No-op.
         }
