@@ -115,6 +115,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     {"doubleField", 10.123},
                     {"decimalField", (decimal) 11.245},
                     {"boolField", true},
+                    {"guidField", _ignite.GetCluster().GetLocalNode().Id},
                     {
                         "objField", new TestBinary
                         {
@@ -134,6 +135,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     {"floatArr", new[] {(float) 9.99}},
                     {"doubleArr", new[] {10.123}},
                     {"boolArr", new[] {true}},
+                    {"guidArr", new[] {_ignite.GetCluster().GetLocalNode().Id}},
                     {
                         "objArr", new object[]
                         {

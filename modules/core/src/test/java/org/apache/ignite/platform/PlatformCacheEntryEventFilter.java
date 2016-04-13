@@ -25,6 +25,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 /**
  * Test filter.
@@ -74,6 +75,9 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
     private boolean boolField;
 
     /** Property to be set from platform. */
+    private UUID guidField;
+
+    /** Property to be set from platform. */
     private BinaryObject objField;
 
     /** Property to be set from platform. */
@@ -113,6 +117,9 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
     private boolean[] boolArr;
 
     /** Property to be set from platform. */
+    private UUID[] guidArr;
+
+    /** Property to be set from platform. */
     private Object[] objArr;
 
     /** Injected instance. */
@@ -138,6 +145,7 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
         assert doubleField == 10.123;
         assert "11.245".equals(decimalField.toString());
         assert boolField;
+        assert guidField.equals(ignite.cluster().localNode().id());
 
         // check arrays
         assert charArr[0] == 'a';
@@ -152,6 +160,7 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
         assert floatArr[0] == (float)9.99;
         assert doubleArr[0] == 10.123;
         assert boolArr[0];
+        assert guidArr[0].equals(ignite.cluster().localNode().id());
 
         // check binary object
         assert objField != null && objField.field("Int") == 1 && "2".equals(objField.field("String"));
