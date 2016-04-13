@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.platform.PlatformJavaObjectFactory;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -43,13 +44,13 @@ import java.util.Map;
  */
 public class PlatformJavaObjectFactoryProxy implements Externalizable, Binarylizable {
     /** User-defined type. */
-    private static final int TYP_USER = 0;
+    public static final int TYP_USER = 0;
 
     /** Default factory. */
-    private static final int TYP_DEFAULT = 1;
+    public static final int TYP_DEFAULT = 1;
 
     /** Factory type. */
-    private int factoryType;
+    private int factoryTyp;
 
     /** Factory class name. */
     private String factoryClsName;
@@ -70,6 +71,22 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
     }
 
     /**
+     * Constructor.
+     *
+     * @param factoryTyp Factory type.
+     * @param factoryClsName Factory class name.
+     * @param payload Payload.
+     * @param props Properties.
+     */
+    public PlatformJavaObjectFactoryProxy(int factoryTyp, @Nullable String factoryClsName, @Nullable Object payload,
+        @Nullable Map<String, Object> props) {
+        this.factoryTyp = factoryTyp;
+        this.factoryClsName = factoryClsName;
+        this.payload = payload;
+        this.props = props;
+    }
+
+    /**
      * Get factory instance.
      *
      * @param ctx Kernal context for injections.
@@ -79,7 +96,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
         // Create factory.
         PlatformJavaObjectFactory res;
 
-        switch (factoryType) {
+        switch (factoryTyp) {
             case TYP_DEFAULT:
                 res = new PlatformDefaultJavaObjectFactory();
 
@@ -91,7 +108,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
                 break;
 
             default:
-                throw new IgniteException("Unsupported Java object factory type: " + factoryType);
+                throw new IgniteException("Unsupported Java object factory type: " + factoryTyp);
         }
 
         // Initialize factory.
@@ -107,7 +124,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriterEx rawWriter = (BinaryRawWriterEx)writer.rawWriter();
 
-        rawWriter.writeInt(factoryType);
+        rawWriter.writeInt(factoryTyp);
         rawWriter.writeString(factoryClsName);
         rawWriter.writeObjectDetached(payload);
 
@@ -127,7 +144,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReaderEx rawReader = (BinaryRawReaderEx)reader.rawReader();
 
-        factoryType = rawReader.readInt();
+        factoryTyp = rawReader.readInt();
         factoryClsName = rawReader.readString();
         payload = rawReader.readObjectDetached();
 
@@ -147,7 +164,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(factoryType);
+        out.writeInt(factoryTyp);
         U.writeString(out, factoryClsName);
         out.writeObject(payload);
         U.writeMap(out, props);
@@ -155,7 +172,7 @@ public class PlatformJavaObjectFactoryProxy implements Externalizable, Binaryliz
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        factoryType = in.readInt();
+        factoryTyp = in.readInt();
         factoryClsName = U.readString(in);
         payload = in.readObject();
         props = U.readMap(in);
