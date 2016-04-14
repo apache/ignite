@@ -20,10 +20,10 @@ export default ['ipaddress', [() => {
         ngModel.$validators.ipaddress = (modelValue, viewValue) => {
             const err = ngModel.$error.ipaddress;
 
-            if (ngModel.$invalid && (typeof err === 'undefined' || !err))
+            if (ngModel.$invalid && (_.isUndefined(err) || !err))
                 return true;
 
-            if (ngModel.$isEmpty(modelValue) || typeof attrs.ipaddress === 'undefined' || !attrs.ipaddress)
+            if (ngModel.$isEmpty(modelValue) || _.isUndefined(attrs.ipaddress) || !attrs.ipaddress)
                 return true;
 
             const ip = '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])';

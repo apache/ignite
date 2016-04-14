@@ -17,13 +17,13 @@
 
 export default ['javaPackageSpecified', [() => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (typeof attrs.javaPackageSpecified === 'undefined' || !attrs.javaPackageSpecified)
+        if (_.isUndefined(attrs.javaPackageSpecified) || !attrs.javaPackageSpecified)
             return;
 
         ngModel.$validators.javaPackageSpecified = (value) => {
             const err = ngModel.$error.javaPackageSpecified;
 
-            return (ngModel.$invalid && (typeof err === 'undefined' || !err)) || !value || !(value.split('.').length < 2);
+            return (ngModel.$invalid && (_.isUndefined(err) || !err)) || !value || !(value.split('.').length < 2);
         };
     };
 

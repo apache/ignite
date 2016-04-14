@@ -17,13 +17,13 @@
 
 export default ['javaBuiltInClass', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (typeof attrs.javaBuiltInClass === 'undefined' || !attrs.javaBuiltInClass)
+        if (_.isUndefined(attrs.javaBuiltInClass) || !attrs.javaBuiltInClass)
             return;
 
         ngModel.$validators.javaBuiltInClass = (value) => {
             const err = ngModel.$error.javaBuiltInClass;
 
-            return (ngModel.$invalid && (typeof err === 'undefined' || !err)) || JavaTypes.nonBuiltInClass(value);
+            return (ngModel.$invalid && (_.isUndefined(err) || !err)) || JavaTypes.nonBuiltInClass(value);
         };
     };
 

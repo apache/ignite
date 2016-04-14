@@ -17,13 +17,13 @@
 
 export default ['javaIdentifier', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (typeof attrs.javaIdentifier === 'undefined' || !attrs.javaIdentifier)
+        if (_.isUndefined(attrs.javaIdentifier) || !attrs.javaIdentifier)
             return;
 
         ngModel.$validators.javaIdentifier = (value) => {
             const err = ngModel.$error.javaIdentifier;
 
-            return (ngModel.$invalid && (typeof err === 'undefined' || !err)) || JavaTypes.validIdentifier(value);
+            return (ngModel.$invalid && (_.isUndefined(err) || !err)) || JavaTypes.validIdentifier(value);
         };
     };
 

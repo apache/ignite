@@ -17,13 +17,13 @@
 
 export default ['ignitePropertyValueSpecified', [() => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (typeof attrs.ignitePropertyValueSpecified === 'undefined' || !attrs.ignitePropertyValueSpecified)
+        if (_.isUndefined(attrs.ignitePropertyValueSpecified) || !attrs.ignitePropertyValueSpecified)
             return;
 
         ngModel.$validators.ignitePropertyValueSpecified = (value) => {
             const err = ngModel.$error.ignitePropertyValueSpecified;
 
-            return (ngModel.$invalid && (typeof err === 'undefined' || !err)) || value ? value.indexOf('=') > 0 : true;
+            return (ngModel.$invalid && (_.isUndefined(err) || !err)) || value ? value.indexOf('=') > 0 : true;
         };
     };
 

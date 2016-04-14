@@ -16,16 +16,17 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'transactions'
 -var model = 'backupItem.transactionConfiguration'
 
-form.panel.panel-default(name='transactions' novalidate)
+form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Transactions
         ignite-form-field-tooltip.tipLabel
             | Settings for transactions
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='transactions')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
@@ -52,7 +53,7 @@ form.panel.panel-default(name='transactions' novalidate)
                     +number('Pessimistic log size:', model + '.pessimisticTxLogSize', 'pessimisticTxLogSize', 'true', '0', '0',
                         'Size of pessimistic transactions log stored on node in order to recover transaction commit if originating node has left grid before it has sent all messages to transaction nodes')
                 .settings-row
-                    +java-class('Manager factory:', model + '.txManagerFactory', 'txManagerFactory', 'true', 'false',
+                    +java-class('Manager factory:', form, model + '.txManagerFactory', 'txManagerFactory', 'true', 'false',
                         'Class name of transaction manager factory for integration with JEE app servers')
             .col-sm-6
                 +preview-xml-java(model, 'clusterTransactions')

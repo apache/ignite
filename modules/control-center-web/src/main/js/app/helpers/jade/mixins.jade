@@ -15,12 +15,13 @@
     limitations under the License.
 
 //- Mixin for feedback on specified error.
-mixin error-feedback(visible, error, errorMessage)
+mixin error-feedback(visible, error, errorMessage, name)
     i.fa.fa-exclamation-triangle.form-control-feedback(
         ng-if=visible
         bs-tooltip='"#{errorMessage}"'
         ignite-error=error
         ignite-error-message=errorMessage
+        name=name
     )
 
 //- Mixin for feedback on unique violation.
@@ -57,19 +58,33 @@ mixin checkbox-enabled(lbl, model, name, enabled, tip)
             | !{tip}
 
 //- Mixin for java name field with enabled condition.
-mixin java-class(lbl, model, name, enabled, required, tip)
+mixin java-class(lbl, form, model, name, enabled, required, tip)
+    -var err = form + '.' + name + '.$error'
+    -var errLbl = (lbl.slice(-1) === ':') ? lbl.substring(0, lbl.length - 1) : lbl;
+
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
         ignite-form-field-tooltip
             | !{tip}
-        ignite-form-field-java-class(
+        ignite-form-field-input-text(
             data-id=name
             data-name=name
             data-ng-model=model
             data-ng-disabled='!(#{enabled})'
             data-ng-required=required
+            data-placeholder='Enter fully qualified class name'
+
+            data-java-identifier='true'
+            data-java-package-specified='true'
+            data-java-keywords='true'
+            data-java-built-in-class='true'
         )
+            +error-feedback(err + '.javaIdentifier', 'javaIdentifier', errLbl + ' is invalid Java identifier!', name)
+            +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', errLbl + ' does not have package specified!', name)
+            +error-feedback(err + '.javaKeywords', 'javaKeywords', errLbl + ' could not contains reserved Java keyword!', name)
+            +error-feedback(err + '.javaBuiltInClass', 'javaBuiltInClass', errLbl + ' should not be the Java built-in class!', name)
+        block
 
 //- Mixin for text field.
 mixin text-ip-address(lbl, form, model, name, enabled, placeholder, tip)
@@ -230,7 +245,9 @@ mixin table-text-field(field, items, valid, save, placeholder, newItem)
         block
 
 //- Mixin for table java class field.
-mixin table-java-class-field(field, items, valid, save, newItem)
+mixin table-java-class-field(lbl, form, field, items, valid, save, newItem)
+    -var err = form + '.' + field + '.$error'
+
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
@@ -239,16 +256,29 @@ mixin table-java-class-field(field, items, valid, save, newItem)
     -var resetOnBlur = newItem ? '!stopblur && (group.add = [])' : 'field.edit = false'
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
-    ignite-form-field-java-class(
+    ignite-form-field-input-text(
         data-name=field
         data-ng-model=field
         data-ng-required='true'
         data-ignite-unique=items
         data-ignite-form-field-input-autofocus='true'
+
+        data-java-identifier='true'
+        data-java-package-specified='true'
+        data-java-keywords='true'
+        data-java-built-in-class='true'
+
+        data-placeholder='Enter fully qualified class name'
+
         on-enter=onEnter
         on-escape=onEscape
         ng-blur=onBlur
     )
+        +error-feedback(err + '.javaIdentifier', 'javaIdentifier', lbl + ' is invalid Java identifier!')
+        +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', lbl + ' does not have package specified!')
+        +error-feedback(err + '.javaKeywords', 'javaKeywords', lbl + ' could not contains reserved Java keyword!')
+        +error-feedback(err + '.javaBuiltInClass', 'javaBuiltInClass', lbl + ' should not be the Java built-in class!')
+
         block
 
 //- Mixin for table java package field.

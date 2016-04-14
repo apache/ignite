@@ -16,17 +16,17 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+- var form = 'general'
 - var model = 'backupItem'
-- var form = 'store'
 
-form.panel.panel-default(name='general' novalidate)
+form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle)
         ignite-form-panel-chevron
         label General
         ignite-form-field-tooltip.tipLabel
             | Domain model properties common for Query and Store
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='general')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body
             .col-sm-6
                 .settings-row
@@ -41,6 +41,6 @@ form.panel.panel-default(name='general' novalidate)
                 .settings-row
                     +text-options('Key type', model + '.keyType', 'keyType', 'javaBuiltInClasses', 'true', 'Full class name for Key', 'Key class used to store key in cache')
                 .settings-row
-                    +java-class('Value type:', model + '.valueType', 'valueType', 'true', 'true', 'Value class used to store value in cache')
+                    +java-class('Value type:', form, model + '.valueType', 'valueType', 'true', 'true', 'Value class used to store value in cache')
             .col-sm-6
                 +preview-xml-java(model, 'domainModelGeneral')

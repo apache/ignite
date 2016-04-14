@@ -27,7 +27,7 @@ System.config({
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.8",
     "angular-socket-io": "github:btford/angular-socket-io@0.7.0",
     "angular-strap": "github:mgcrea/angular-strap@2.3.8",
-    "angular-tree-control": "github:wix/angular-tree-control@0.2.23",
+    "angular-tree-control": "github:wix/angular-tree-control@0.2.25",
     "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.1.1",
     "angular-ui-router": "github:angular-ui/ui-router@0.2.18",
     "angular-ui-router-metatags": "github:tinusn/ui-router-metatags@1.0.3",
@@ -44,7 +44,7 @@ System.config({
     "jquery": "github:components/jquery@2.2.1",
     "json": "github:systemjs/plugin-json@0.1.0",
     "jszip": "github:Stuk/jszip@2.6.0",
-    "lodash": "github:lodash/lodash@4.10.0",
+    "lodash": "github:lodash/lodash@4.11.0",
     "pdfmake": "github:bpampuch/pdfmake@0.1.20",
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
     "socket.io-client": "github:socketio/socket.io-client@1.4.5",
@@ -316,7 +316,7 @@ System.config({
     "npm:punycode@1.3.2": {
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
-    "npm:readable-stream@1.1.13": {
+    "npm:readable-stream@1.1.14": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "core-util-is": "npm:core-util-is@1.0.2",
       "events": "github:jspm/nodelibs-events@0.1.1",
@@ -345,7 +345,7 @@ System.config({
     "npm:stream-browserify@1.0.0": {
       "events": "github:jspm/nodelibs-events@0.1.1",
       "inherits": "npm:inherits@2.0.1",
-      "readable-stream": "npm:readable-stream@1.1.13"
+      "readable-stream": "npm:readable-stream@1.1.14"
     },
     "npm:string_decoder@0.10.31": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0"

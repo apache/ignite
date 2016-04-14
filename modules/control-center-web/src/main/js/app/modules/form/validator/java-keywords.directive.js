@@ -17,7 +17,7 @@
 
 export default ['javaKeywords', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (typeof attrs.javaKeywords === 'undefined' || !attrs.javaKeywords)
+        if (_.isUndefined(attrs.javaKeywords) || !attrs.javaKeywords)
             return;
 
         ngModel.$validators.javaKeywords = (value) => {

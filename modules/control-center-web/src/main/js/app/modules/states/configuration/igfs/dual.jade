@@ -16,9 +16,10 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'dualMode'
 -var model = 'backupItem'
 
-form.panel.panel-default(name='dualMode' novalidate)
+form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Dual mode
@@ -26,7 +27,7 @@ form.panel.panel-default(name='dualMode' novalidate)
             | IGFS supports dual-mode that allows it to work as either a standalone file system in Hadoop cluster, or work in tandem with HDFS, providing a primary caching layer for the secondary HDFS#[br]
             | As a caching layer it provides highly configurable read-through and write-through behaviour
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='dualMode')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
@@ -34,7 +35,7 @@ form.panel.panel-default(name='dualMode' novalidate)
                         'Maximum amount of pending data read from the secondary file system and waiting to be written to data cache\
                         0 or negative value stands for unlimited size')
                 .settings-row
-                    +java-class('Put executor service:', model + '.dualModePutExecutorService', 'dualModePutExecutorService', 'true', 'false', 'DUAL mode put operation executor service')
+                    +java-class('Put executor service:', form, model + '.dualModePutExecutorService', 'dualModePutExecutorService', 'true', 'false', 'DUAL mode put operation executor service')
                 .settings-row
                     +checkbox('Put executor service shutdown', model + '.dualModePutExecutorServiceShutdown', 'dualModePutExecutorServiceShutdown', 'DUAL mode put operation executor service shutdown flag')
             .col-sm-6

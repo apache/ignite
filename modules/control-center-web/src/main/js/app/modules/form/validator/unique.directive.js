@@ -17,7 +17,7 @@
 
 export default ['igniteUnique', ['$parse', ($parse) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (typeof attrs.igniteUnique === 'undefined' || !attrs.igniteUnique)
+        if (_.isUndefined(attrs.igniteUnique) || !attrs.igniteUnique)
             return;
 
         const isNew = _.startsWith(attrs.name, 'new');
@@ -26,7 +26,7 @@ export default ['igniteUnique', ['$parse', ($parse) => {
         ngModel.$validators.igniteUnique = (value) => {
             const err = ngModel.$error.igniteUnique;
 
-            if (ngModel.$invalid && (typeof err === 'undefined' || !err))
+            if (ngModel.$invalid && (_.isUndefined(err) || !err))
                 return true;
 
             const arr = $parse(attrs.igniteUnique)(scope);

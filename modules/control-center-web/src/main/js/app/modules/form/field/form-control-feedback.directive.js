@@ -17,7 +17,11 @@
 
 export default ['formControlFeedback', [() => {
     const link = ($scope, $element, $attrs, [form]) => {
-        const name = $scope.name;
+        let name = $scope.name;
+
+        if (_.isNil(name))
+            name = $attrs.name;
+
         const err = $attrs.igniteError;
         const msg = $attrs.igniteErrorMessage;
 
