@@ -69,10 +69,12 @@ public class ModelUtil {
             if (c.equals(clazz))
                 return true;
         }
+
         for (Class c: valueClasses) {
             if (c.equals(clazz))
                 return true;
         }
+
         return false;
     }
 
@@ -82,8 +84,8 @@ public class ModelUtil {
      * @return object from model
      */
     public static Object create(Class c, int id) {
-
         Object result = null;
+
         switch (c.getSimpleName()) {
             case "Double":
                 result = Double.valueOf(id);
