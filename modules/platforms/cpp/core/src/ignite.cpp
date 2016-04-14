@@ -39,5 +39,26 @@ namespace ignite
     {
         return impl.Get()->GetName();
     }
+
+    transactions::Transactions Ignite::GetTransactions()
+    {
+        IgniteError err;
+
+        transactions::Transactions tx = GetTransactions(&err);
+
+        IgniteError::ThrowIfNeeded(err);
+
+        return tx;
+    }
+
+    transactions::Transactions Ignite::GetTransactions(IgniteError * err)
+    {
+        using ignite::common::concurrent::SharedPointer;
+        using ignite::impl::transactions::TransactionsImpl;
+
+        SharedPointer<TransactionsImpl> txImpl = impl.Get()->GetTransactions(*err);
+
+        return transactions::Transactions(txImpl);
+    }
 }
 

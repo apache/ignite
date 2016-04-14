@@ -42,22 +42,14 @@ namespace ignite
             /**
              * Constructor.
              */
-            Transactions(ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> impl) :
-                impl(impl)
-            {
-                // No-op.
-            }
+            Transactions(ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> impl);
 
             /**
              * Copy constructor.
              *
              * @param other Other instance.
              */
-            Transactions(const Transactions& other) :
-                impl(other.impl)
-            {
-                // No-op.
-            }
+            Transactions(const Transactions& other);
 
             /**
              * Assignment operator.
@@ -65,20 +57,12 @@ namespace ignite
              * @param other Other instance.
              * @return This.
              */
-            Transactions& operator=(const Transactions& other)
-            {
-                impl = other.impl;
-
-                return *this;
-            }
+            Transactions& operator=(const Transactions& other);
 
             /**
              * Destructor.
              */
-            ~Transactions()
-            {
-                // No-op.
-            }
+            ~Transactions();
 
             /**
              * Get active transaction for the current thread.
@@ -87,28 +71,14 @@ namespace ignite
              * Returned instance is not valid if there is no active transaction
              * for the thread.
              */
-            Transaction GetTx()
-            {
-                using impl::transactions::TransactionImpl;
-
-                return Transaction(TransactionImpl::GetCurrent());
-            }
+            Transaction GetTx();
 
             /**
              * Start new transaction.
              *
              * @return New transaction instance.
              */
-            Transaction TxStart()
-            {
-                IgniteError err;
-
-                Transaction tx = TxStart(err);
-
-                IgniteError::ThrowIfNeeded(err);
-
-                return tx;
-            }
+            Transaction TxStart();
 
             /**
              * Start new transaction.
@@ -116,11 +86,7 @@ namespace ignite
              * @param err Error.
              * @return New transaction instance.
              */
-            Transaction TxStart(IgniteError& err)
-            {
-                return TxStart(IGNITE_TX_CONCURRENCY_PESSIMISTIC,
-                    IGNITE_TX_ISOLATION_READ_COMMITTED, 0, 0, err);
-            }
+            Transaction TxStart(IgniteError& err);
 
             /**
              * Start new transaction.
@@ -130,16 +96,7 @@ namespace ignite
              * @return New transaction instance.
              */
             Transaction TxStart(TransactionConcurrency concurrency,
-                TransactionIsolation isolation)
-            {
-                IgniteError err;
-
-                Transaction tx = TxStart(concurrency, isolation, err);
-
-                IgniteError::ThrowIfNeeded(err);
-
-                return tx;
-            }
+                TransactionIsolation isolation);
 
             /**
              * Start new transaction.
@@ -150,10 +107,7 @@ namespace ignite
              * @return New transaction instance.
              */
             Transaction TxStart(TransactionConcurrency concurrency,
-                TransactionIsolation isolation, IgniteError& err)
-            {
-                return TxStart(concurrency, isolation, 0, 0, err);
-            }
+                TransactionIsolation isolation, IgniteError& err);
 
             /**
              * Start new transaction.
@@ -166,16 +120,7 @@ namespace ignite
              */
             Transaction TxStart(TransactionConcurrency concurrency,
                 TransactionIsolation isolation, int64_t timeout,
-                int32_t txSize)
-            {
-                IgniteError err;
-
-                Transaction tx = TxStart(concurrency, isolation, timeout, txSize, err);
-
-                IgniteError::ThrowIfNeeded(err);
-
-                return tx;
-            }
+                int32_t txSize);
 
             /**
              * Start new transaction.
@@ -189,16 +134,7 @@ namespace ignite
              */
             Transaction TxStart(TransactionConcurrency concurrency,
                 TransactionIsolation isolation, int64_t timeout,
-                int32_t txSize, IgniteError& err)
-            {
-                using impl::transactions::TransactionImpl;
-                using ignite::common::concurrent::SharedPointer;
-
-                SharedPointer<TransactionImpl> tx = TransactionImpl::Create(impl,
-                    concurrency, isolation, timeout, txSize, err);
-
-                return Transaction(tx);
-            }
+                int32_t txSize, IgniteError& err);
 
         private:
             /** Implementation delegate. */
