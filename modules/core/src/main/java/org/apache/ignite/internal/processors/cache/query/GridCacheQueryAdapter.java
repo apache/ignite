@@ -552,7 +552,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private static class CacheQueryFallbackFuture<R> extends GridFutureAdapter<Collection<R>>
         implements CacheQueryFuture<R> {
         /** Query future. */
-        private volatile GridCacheQueryFutureAdapter<?, ?, R> fut;
+        private volatile CacheQueryFuture<R> fut;
 
         /** Backups. */
         private volatile Queue<ClusterNode> nodes;
@@ -577,6 +577,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         /** Flag indicating that a first item has been returned to a user. */
         private boolean firstItemReturned;
+
+        /** */
+        private volatile boolean loc;
 
         /**
          * @param part Partition.
@@ -628,13 +631,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private void init() {
             final ClusterNode node = nodes.poll();
 
-            fut = (GridCacheQueryFutureAdapter<?, ?, R>)(node.isLocal() ?
-                qryMgr.queryLocal(bean) :
-                qryMgr.queryDistributed(bean, Collections.singleton(node)));
+            loc = node.isLocal();
+
+            fut = loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, Collections.singleton(node));
         }
 
         /** {@inheritDoc} */
-        @Override public int available() {
+        @Override public int available() throws IgniteCheckedException {
             return fut.available();
         }
 
@@ -651,13 +654,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public R next() {
+        @Override public R next() throws IgniteCheckedException {
             if (firstItemReturned)
                 return fut.next();
 
             while (true) {
                 try {
-                    fut.awaitFirstPage();
+                    if (!loc)
+                        ((GridCacheQueryFutureAdapter)fut).awaitFirstPage();
 
                     firstItemReturned = true;
 
