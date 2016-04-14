@@ -254,6 +254,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         keepBinary(keepBinary);
 
         key = entry.key();
+        partId = entry.key().partition();
 
         cacheId = entry.context().cacheId();
     }
@@ -306,6 +307,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
             addEntryProcessor(entryProcessor, invokeArgs);
 
         key = entry.key();
+        partId = entry.key().partition();
 
         cacheId = entry.context().cacheId();
     }
@@ -339,6 +341,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         IgniteTxEntry cp = new IgniteTxEntry();
 
         cp.key = key;
+        cp.partId = partId;
         cp.cacheId = cacheId;
         cp.ctx = ctx;
 
