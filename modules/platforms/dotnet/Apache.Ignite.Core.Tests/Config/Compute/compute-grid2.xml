@@ -63,7 +63,14 @@
                     </list>
                 </property>
                 <property name="idMapper">
-                    <bean class="org.apache.ignite.binary.BinaryBasicIdMapper" />
+                    <bean class="org.apache.ignite.binary.BinaryBasicIdMapper">
+                        <constructor-arg value="true"/>
+                    </bean>
+                </property>
+                <property name="nameMapper">
+                    <bean class="org.apache.ignite.binary.BinaryBasicNameMapper">
+                        <constructor-arg value="true"/>
+                    </bean>
                 </property>
             </bean>
         </property>
