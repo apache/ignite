@@ -636,7 +636,10 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             cctx.mvcc().contextReset();
 
             // Unwind eviction notifications.
-            CU.unwindEvicts(cctx);
+            GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
+
+            if (ctx != null)
+                CU.unwindEvicts(ctx);
         }
     }
 
