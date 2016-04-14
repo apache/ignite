@@ -250,6 +250,19 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>1.8</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>ant-contrib</groupId>
+                        <artifactId>ant-contrib</artifactId>
+                        <version>1.0b3</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>ant</groupId>
+                                <artifactId>ant</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>package-tests</id>
@@ -259,30 +272,36 @@
                         </goals>
                         <configuration>
                             <target>
-                                <copy todir="${project.build.directory}/tests-package/lib">
-                                    <fileset dir="${project.build.directory}">
-                                        <include name="*.jar"/>
-                                    </fileset>
-                                </copy>
+                                <taskdef resource="net/sf/antcontrib/antlib.xml"/>
+                                <if>
+                                    <available file="${project.build.directory}/test-classes" type="dir"/>
+                                    <then>
+                                        <copy todir="${project.build.directory}/tests-package/lib">
+                                            <fileset dir="${project.build.directory}">
+                                                <include name="*.jar"/>
+                                            </fileset>
+                                        </copy>
 
-                                <jar destfile="${project.build.directory}/tests-package/lib/${project.artifactId}-${project.version}-tests.jar">
-                                    <fileset dir="${project.build.directory}/test-classes">
-                                        <include name="**/*.class"/>
-                                    </fileset>
-                                </jar>
+                                        <jar destfile="${project.build.directory}/tests-package/lib/${project.artifactId}-${project.version}-tests.jar">
+                                            <fileset dir="${project.build.directory}/test-classes">
+                                                <include name="**/*.class"/>
+                                            </fileset>
+                                        </jar>
 
-                                <copy todir="${project.build.directory}/tests-package/settings">
-                                    <fileset dir="${project.build.directory}/test-classes">
-                                        <include name="**/*.properties"/>
-                                        <include name="**/*.xml"/>
-                                    </fileset>
-                                </copy>
+                                        <copy todir="${project.build.directory}/tests-package/settings">
+                                            <fileset dir="${project.build.directory}/test-classes">
+                                                <include name="**/*.properties"/>
+                                                <include name="**/*.xml"/>
+                                            </fileset>
+                                        </copy>
 
-                                <copy todir="${project.build.directory}/tests-package">
-                                    <fileset dir="${project.build.testSourceDirectory}/../scripts">
-                                        <include name="**/*"/>
-                                    </fileset>
-                                </copy>
+                                        <copy todir="${project.build.directory}/tests-package">
+                                            <fileset dir="${project.build.testSourceDirectory}/../scripts">
+                                                <include name="**/*"/>
+                                            </fileset>
+                                        </copy>
+                                    </then>
+                                </if>
                             </target>
                         </configuration>
                     </execution>
