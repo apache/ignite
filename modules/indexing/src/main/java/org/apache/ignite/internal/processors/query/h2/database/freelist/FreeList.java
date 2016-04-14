@@ -17,14 +17,22 @@
 
 package org.apache.ignite.internal.processors.query.h2.database.freelist;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jsr166.ConcurrentHashMap8;
+
+import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
 
 /**
  * Free data page list.
@@ -38,6 +46,20 @@ public class FreeList {
 
     /** */
     private final ConcurrentHashMap8<Integer,GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
+
+    /** */
+    private final PageHandler<GridH2Row> writeRow = new PageHandler<GridH2Row>() {
+        @Override public int run(Page page, ByteBuffer buf, GridH2Row row, int entrySize)
+            throws IgniteCheckedException {
+            DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
+
+            int idx = io.addRow(cctx.cacheObjectContext(), buf, row.key, row.val, row.ver, entrySize);
+
+            assert idx >= 0;
+
+            return io.getFreeSpace(buf);
+        }
+    };
 
     /**
      * @param cctx Cache context.
@@ -53,18 +75,13 @@ public class FreeList {
     }
 
     /**
-     * @param part Partition.
+     * @param tree Tree.
      * @param neededSpace Needed free space.
-     * @return Page ID or {@code null} if it was impossible to find one.
+     * @return Free item or {@code null} if it was impossible to find one.
      * @throws IgniteCheckedException If failed.
      */
-    public FullPageId take(int part, short neededSpace) throws IgniteCheckedException {
-        assert part >= 0: part;
+    private FreeItem take(FreeTree tree, short neededSpace) throws IgniteCheckedException {
         assert neededSpace > 0 && neededSpace < Short.MAX_VALUE: neededSpace;
-
-        FreeTree tree = tree(part);
-
-        assert tree != null;
 
         FreeItem res = tree.removeCeil(new FreeItem(neededSpace, dispersion(), 0, 0));
 
@@ -86,9 +103,11 @@ public class FreeList {
      * @throws IgniteCheckedException If failed.
      */
     private FreeTree tree(Integer part) throws IgniteCheckedException {
+        assert part >= 0 && part < Short.MAX_VALUE: part;
+
         GridFutureAdapter<FreeTree> fut = trees.get(part);
 
-        if (fut != null) {
+        if (fut == null) {
             fut = new GridFutureAdapter<>();
 
             if (trees.putIfAbsent(part, fut) != null)
@@ -105,5 +124,73 @@ public class FreeList {
         }
 
         return fut.get();
+    }
+
+    /**
+     * @param row Row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void writeRowData(GridH2Row row) throws IgniteCheckedException {
+        assert row.link == 0;
+
+        int entrySize = DataPageIO.entrySize(cctx.cacheObjectContext(), row.key, row.val);
+
+        assert entrySize > 0 && entrySize < Short.MAX_VALUE: entrySize;
+
+        FreeTree tree = tree(row.partId);
+        FreeItem item = take(tree, (short)entrySize);
+
+        Page page = null;
+        int freeSpace = -1;
+
+        try {
+            if (item == null) {
+                DataPageIO io = DataPageIO.VERSIONS.latest();
+
+                page = allocatePage(row.partId);
+
+                ByteBuffer buf = page.getForInitialWrite();
+
+                io.initNewPage(buf, page.id());
+
+                freeSpace = writeRow.run(page, buf, row, entrySize);
+            }
+            else {
+                page = pageMem.page(item);
+
+                freeSpace = writePage(page, writeRow, row, entrySize, -1);
+            }
+        }
+        finally {
+            if (page != null) {
+                page.close();
+
+                if (freeSpace != -1) { // Put back to the tree.
+                    assert freeSpace >= 0 && freeSpace < Short.MAX_VALUE: freeSpace;
+
+                    if (item == null)
+                        item = new FreeItem((short)freeSpace, dispersion(), page.id(), cctx.cacheId());
+                    else {
+                        item.freeSpace((short)freeSpace);
+                        item.dispersion(dispersion());
+                    }
+
+                    FreeItem old = tree.put(item);
+
+                    assert old == null;
+                }
+            }
+        }
+    }
+
+    /**
+     * @param part Partition.
+     * @return Page.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Page allocatePage(int part) throws IgniteCheckedException {
+        FullPageId pageId = pageMem.allocatePage(cctx.cacheId(), part, PageIdAllocator.FLAG_DATA);
+
+        return pageMem.page(pageId);
     }
 }

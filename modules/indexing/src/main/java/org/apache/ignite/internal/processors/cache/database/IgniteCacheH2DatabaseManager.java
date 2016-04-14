@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.database;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
-import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowStore;
+import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.index.Index;
@@ -92,8 +92,6 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
      * @return New row store for the given table.
      */
     public H2RowStore createRowStore(GridH2Table tbl) {
-        IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
-
-        return new H2RowStore(dbMgr.pageMemory(), tbl.rowDescriptor(), cctx);
+        return new H2RowStore(tbl.rowDescriptor(), cctx, null); // new FreeList(cctx));
     }
 }

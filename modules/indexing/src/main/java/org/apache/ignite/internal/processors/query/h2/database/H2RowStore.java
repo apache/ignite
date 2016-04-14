@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.query.h2.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -43,6 +44,9 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  * Data store for H2 rows.
  */
 public class H2RowStore {
+    /** */
+    private final FreeList freeList;
+
     /** */
     private final PageMemory pageMem;
 
@@ -63,7 +67,9 @@ public class H2RowStore {
         @Override public int run(Page page, ByteBuffer buf, GridH2Row row, int ignore) throws IgniteCheckedException {
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-            int idx = io.addRow(coctx, buf, row.key, row.val, row.ver);
+            int entrySize = DataPageIO.entrySize(coctx, row.key, row.val);
+
+            int idx = io.addRow(coctx, buf, row.key, row.val, row.ver, entrySize);
 
             if (idx != -1) {
                 row.link = linkFromDwordOffset(page.id(), idx);
@@ -76,15 +82,19 @@ public class H2RowStore {
     };
 
     /**
-     * @param pageMem Page memory.
      * @param rowDesc Row descriptor.
      * @param cctx Cache context.
      */
-    public H2RowStore(PageMemory pageMem, GridH2RowDescriptor rowDesc, GridCacheContext<?,?> cctx) {
-        this.pageMem = pageMem;
+    public H2RowStore(GridH2RowDescriptor rowDesc, GridCacheContext<?,?> cctx, FreeList freeList) {
+        assert rowDesc != null;
+        assert cctx != null;
+
         this.rowDesc = rowDesc;
         this.cctx = cctx;
-        this.coctx = cctx.cacheObjectContext();
+        this.freeList = freeList;
+
+        coctx = cctx.cacheObjectContext();
+        pageMem = cctx.shared().database().pageMemory();
     }
 
     /**
@@ -192,6 +202,17 @@ public class H2RowStore {
      * @param row Row.
      */
     public void writeRowData(GridH2Row row) throws IgniteCheckedException {
+        if (freeList == null)
+            writeRowData0(row);
+        else
+            freeList.writeRowData(row);
+    }
+
+    /**
+     * @param row Row.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void writeRowData0(GridH2Row row) throws IgniteCheckedException {
         assert row.link == 0;
 
         while (row.link == 0) {
