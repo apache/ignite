@@ -1797,10 +1797,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     public KeyCacheObject toCacheKeyObject(Object obj, boolean includePartition) {
         assert validObjectForCache(obj) : obj;
 
-        if (!includePartition || (obj instanceof KeyCacheObject && ((KeyCacheObject)obj).partition() != -1))
-            return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
-        else
+        if (includePartition)
             return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true, affinity().partition(obj));
+        else
+            return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
     }
 
     /**
