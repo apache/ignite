@@ -264,6 +264,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         return loadFromStore(tx, key, true);
     }
 
+    /** {@inheritDoc} */
+    @Override @Nullable public Object loadRaw(@Nullable IgniteInternalTx tx, KeyCacheObject key)
+        throws IgniteCheckedException {
+        return loadFromStore(tx, key, false);
+    }
+
     /**
      * Loads data from persistent store.
      *
@@ -525,8 +531,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean put(@Nullable IgniteInternalTx tx, Object key, Object val, GridCacheVersion ver,
-        boolean conflictResolve)
+    @Override public boolean put(@Nullable IgniteInternalTx tx, Object key, Object val, GridCacheVersion ver)
         throws IgniteCheckedException {
         if (store != null) {
             // Never persist internal keys.
@@ -544,22 +549,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             boolean threwEx = true;
 
             try {
-                boolean update = true;
-
-                if (conflictResolve && locStore) {
-                    IgniteBiTuple t = (IgniteBiTuple)store.load(key);
-
-                    if (t != null) {
-                        GridCacheVersion ver0 = (GridCacheVersion)t.get2();
-
-                        assert ver0 != null;
-
-                        update = ver0.isLess(ver);
-                    }
-                }
-
-                if (update)
-                    store.write(new CacheEntryImpl<>(key, locStore ? F.t(val, ver) : val));
+                store.write(new CacheEntryImpl<>(key, locStore ? F.t(val, ver) : val));
 
                 threwEx = false;
             }
@@ -594,7 +584,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             Map.Entry<Object, IgniteBiTuple<Object, GridCacheVersion>> e =
                 ((Map<Object, IgniteBiTuple<Object, GridCacheVersion>>)map).entrySet().iterator().next();
 
-            return put(tx, e.getKey(), e.getValue().get1(), e.getValue().get2(), conflictResolve);
+            return put(tx, e.getKey(), e.getValue().get1(), e.getValue().get2());
         }
         else {
             if (store != null) {

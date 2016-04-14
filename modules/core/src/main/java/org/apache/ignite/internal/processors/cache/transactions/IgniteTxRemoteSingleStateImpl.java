@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -124,12 +123,9 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
 
         CacheStoreManager store = entry.context().store();
 
-        if (store.configured() && store.isLocal()) {
-            HashSet<CacheStoreManager> set = new HashSet<>(3, 0.75f);
-
-            set.add(store);
-
-            return set;
+        if (store.configured()
+            && store.isLocal()) { // Only local stores take part at tx on backup node.
+            return Collections.singleton(store);
         }
 
         return null;
