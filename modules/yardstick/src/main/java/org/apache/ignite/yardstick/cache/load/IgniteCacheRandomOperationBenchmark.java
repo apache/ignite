@@ -33,7 +33,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
@@ -69,7 +68,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     public static final int operations = Operation.values().length;
 
     /** Scan query predicate. */
-    private static BenchmarkIgniteBiPredicate igniteBiPredicate = new BenchmarkIgniteBiPredicate();
+    private static BenchmarkIgniteBiPredicate igniteBiPred = new BenchmarkIgniteBiPredicate();
 
     /** Amount partitions. */
     private static final int SCAN_QUERY_PARTITIN_AMOUNT = 10;
@@ -97,7 +96,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     /**
      * Remove entry processor.
      */
-    private BenchmarkRemoveEntryProcessor removeEntryProc;
+    private BenchmarkRemoveEntryProcessor rmvEntryProc;
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
@@ -131,7 +130,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         keysCacheClasses = new HashMap<>();
         valuesCacheClasses = new HashMap<>();
         replaceEntryProc = new BenchmarkReplaceValueEntryProcessor(null);
-        removeEntryProc = new BenchmarkRemoveEntryProcessor();
+        rmvEntryProc = new BenchmarkRemoveEntryProcessor();
 
         for (String cacheName : ignite().cacheNames()) {
             IgniteCache<Object, Object> cache = ignite().cache(cacheName);
@@ -152,20 +151,20 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
                     for (QueryEntity queryEntity : entries) {
                         if (queryEntity.getKeyType() != null) {
-                            Class keyClass = getClass().forName(queryEntity.getKeyType());
+                            Class keyCls = getClass().forName(queryEntity.getKeyType());
 
-                            if (ModelUtil.canCreateInstance(keyClass))
-                                keys.add(keyClass);
+                            if (ModelUtil.canCreateInstance(keyCls))
+                                keys.add(keyCls);
                             else
                                 throw new IgniteException("Class is unknown for the load test. Make sure you " +
                                     "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
                         }
 
                         if (queryEntity.getValueType() != null) {
-                            Class valueClass = getClass().forName(queryEntity.getValueType());
+                            Class valCls = getClass().forName(queryEntity.getValueType());
 
-                            if (ModelUtil.canCreateInstance(valueClass))
-                                values.add(valueClass);
+                            if (ModelUtil.canCreateInstance(valCls))
+                                values.add(valCls);
                             else
                                 throw new IgniteException("Class is unknown for the load test. Make sure you " +
                                     "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
@@ -178,20 +177,20 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
                     for (CacheTypeMetadata cacheTypeMetadata : entries) {
                         if (cacheTypeMetadata.getKeyType() != null) {
-                            Class keyClass = getClass().forName(cacheTypeMetadata.getKeyType());
+                            Class keyCls = getClass().forName(cacheTypeMetadata.getKeyType());
 
-                            if (ModelUtil.canCreateInstance(keyClass))
-                                keys.add(keyClass);
+                            if (ModelUtil.canCreateInstance(keyCls))
+                                keys.add(keyCls);
                             else
                                 throw new IgniteException("Class is unknown for the load test. Make sure you " +
                                     "specified its full name [clsName=" + cacheTypeMetadata.getKeyType() + ']');
                         }
 
                         if (cacheTypeMetadata.getValueType() != null) {
-                            Class valueClass = getClass().forName(cacheTypeMetadata.getValueType());
+                            Class valCls = getClass().forName(cacheTypeMetadata.getValueType());
 
-                            if (ModelUtil.canCreateInstance(valueClass))
-                                values.add(valueClass);
+                            if (ModelUtil.canCreateInstance(valCls))
+                                values.add(valCls);
                             else
                                 throw new IgniteException("Class is unknown for the load test. Make sure you " +
                                     "specified its full name [clsName=" + cacheTypeMetadata.getKeyType() + ']');
@@ -251,9 +250,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             threads[i].start();
         }
 
-        for (Thread thread : threads) {
+        for (Thread thread : threads)
             thread.join();
-        }
     }
 
     /**
@@ -274,13 +272,13 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 randmPartitions.add(i);
         else {
             for (int i = 0; i < SCAN_QUERY_PARTITIN_AMOUNT; i++) {
-                int partitionNumber;
+                int partNum;
 
                 do
-                    partitionNumber = nextRandom(affinity.partitions());
-                while (randmPartitions.contains(partitionNumber));
+                    partNum = nextRandom(affinity.partitions());
+                while (randmPartitions.contains(partNum));
 
-                randmPartitions.add(partitionNumber);
+                randmPartitions.add(partNum);
             }
         }
 
@@ -488,12 +486,12 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private void doGetAll(IgniteCache cache) throws Exception {
         Set keys = new TreeSet();
 
-        Class keyClass = randomKeyClass(cache.getName());
+        Class keyCls = randomKeyClass(cache.getName());
 
         for (int cnt = 0; cnt < args.batch(); cnt++) {
             int i = nextRandom(args.range());
 
-            keys.add(ModelUtil.create(keyClass, i));
+            keys.add(ModelUtil.create(keyCls, i));
         }
 
         cache.getAll(keys);
@@ -510,7 +508,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             cache.invoke(createRandomKey(i, cache.getName()), replaceEntryProc,
                 createRandomValue(i + 1, cache.getName()));
         else
-            cache.invoke(createRandomKey(i, cache.getName()), removeEntryProc);
+            cache.invoke(createRandomKey(i, cache.getName()), rmvEntryProc);
 
     }
 
@@ -518,26 +516,25 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * Entry processor for local benchmark replace value task.
      */
     private static class BenchmarkReplaceValueEntryProcessor implements EntryProcessor, Serializable {
-
         /**
          * New value for update during process by default.
          */
-        private Object newValue;
+        private Object newVal;
 
         /**
-         * @param newValue default new value
+         * @param newVal default new value
          */
-        public BenchmarkReplaceValueEntryProcessor(Object newValue) {
-            this.newValue = newValue;
+        public BenchmarkReplaceValueEntryProcessor(Object newVal) {
+            this.newVal = newVal;
         }
 
-        @Override
-        public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
-            Object newValue = arguments == null || arguments[0] == null ? this.newValue : arguments[0];
-            Object oldValue = entry.getValue();
-            entry.setValue(newValue);
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
+            Object newVal = arguments == null || arguments[0] == null ? this.newVal : arguments[0];
+            Object oldVal = entry.getValue();
+            entry.setValue(newVal);
 
-            return oldValue;
+            return oldVal;
         }
     }
 
@@ -545,13 +542,13 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * Entry processor for local benchmark remove entry task.
      */
     private static class BenchmarkRemoveEntryProcessor implements EntryProcessor, Serializable {
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
+            Object oldVal = entry.getValue();
 
-        @Override
-        public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
-            Object oldValue = entry.getValue();
             entry.remove();
 
-            return oldValue;
+            return oldVal;
         }
     }
 
@@ -562,17 +559,17 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private void doInvokeAll(final IgniteCache cache) throws Exception {
         Map<Object, EntryProcessor> map = new TreeMap<>();
 
-        Class keyClass = randomKeyClass(cache.getName());
+        Class keyCls = randomKeyClass(cache.getName());
 
         for (int cnt = 0; cnt < args.batch(); cnt++) {
             int i = nextRandom(args.range());
-            Object key = ModelUtil.create(keyClass, i);
+            Object key = ModelUtil.create(keyCls, i);
 
             if (nextBoolean())
                 map.put(key,
                     new BenchmarkReplaceValueEntryProcessor(createRandomValue(i + 1, cache.getName())));
             else
-                map.put(key, removeEntryProc);
+                map.put(key, rmvEntryProc);
         }
 
         cache.invokeAll(map);
@@ -594,12 +591,12 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void doRemoveAll(IgniteCache cache) throws Exception {
         Set keys = new TreeSet();
-        Class keyClass = randomKeyClass(cache.getName());
+        Class keyCls = randomKeyClass(cache.getName());
 
         for (int cnt = 0; cnt < args.batch(); cnt++) {
             int i = nextRandom(args.range());
 
-            keys.add(ModelUtil.create(keyClass, i));
+            keys.add(ModelUtil.create(keyCls, i));
         }
 
         cache.removeAll(keys);
@@ -637,20 +634,19 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
         Map<UUID, List<Integer>> partitionsMap = personCachePartitions(cache.getName());
 
-        ScanQueryBroadcastClosure closure = new ScanQueryBroadcastClosure(cache.getName(), partitionsMap);
+        ScanQueryBroadcastClosure c = new ScanQueryBroadcastClosure(cache.getName(), partitionsMap);
 
-        ClusterGroup clusterGroup = ignite().cluster().forNodeIds(partitionsMap.keySet());
+        ClusterGroup clusterGrp = ignite().cluster().forNodeIds(partitionsMap.keySet());
 
-        IgniteCompute compute = ignite().compute(clusterGroup);
+        IgniteCompute compute = ignite().compute(clusterGrp);
 
-        compute.broadcast(closure);
+        compute.broadcast(c);
     }
 
     /**
      * Closure for scan query executing.
      */
     private static class ScanQueryBroadcastClosure implements IgniteRunnable {
-
         /**
          * Ignite node.
          */
@@ -660,7 +656,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         /**
          * Information about partition.
          */
-        private Map<UUID, List<Integer>> cachePartition;
+        private Map<UUID, List<Integer>> cachePart;
 
         /**
          * Name of Ignite cache.
@@ -669,31 +665,30 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
         /**
          * @param cacheName Name of Ignite cache.
-         * @param cachePartition Partition by node for Ignite cache.
+         * @param cachePart Partition by node for Ignite cache.
          */
-        public ScanQueryBroadcastClosure(String cacheName, Map<UUID, List<Integer>> cachePartition) {
-            this.cachePartition = cachePartition;
+        public ScanQueryBroadcastClosure(String cacheName, Map<UUID, List<Integer>> cachePart) {
+            this.cachePart = cachePart;
             this.cacheName = cacheName;
         }
 
-        @Override
-        public void run() {
-
+        /** {@inheritDoc} */
+        @Override public void run() {
             IgniteCache cache = node.cache(cacheName);
 
             // Getting a list of the partitions owned by this node.
-            List<Integer> myPartitions = cachePartition.get(node.cluster().localNode().id());
+            List<Integer> myPartitions = cachePart.get(node.cluster().localNode().id());
 
             for (Integer part : myPartitions) {
                 if (ThreadLocalRandom.current().nextBoolean())
                     continue;
 
-                ScanQuery scanQuery = new ScanQuery();
+                ScanQuery scanQry = new ScanQuery();
 
-                scanQuery.setPartition(part);
-                scanQuery.setFilter(igniteBiPredicate);
+                scanQry.setPartition(part);
+                scanQry.setFilter(igniteBiPred);
 
-                try (QueryCursor cursor = cache.query(scanQuery)) {
+                try (QueryCursor cursor = cache.query(scanQry)) {
                     for (Object obj : cursor)
                         ;
                 }
@@ -712,8 +707,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
          * @param val Cache value.
          * @return true If is hit.
          */
-        @Override
-        public boolean apply(Object key, Object val) {
+        @Override public boolean apply(Object key, Object val) {
             return val.hashCode() % 45 == 0;
         }
     }

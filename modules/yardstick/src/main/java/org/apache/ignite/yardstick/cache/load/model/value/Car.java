@@ -23,7 +23,6 @@ import java.io.Serializable;
  * Value cache class
  */
 public class Car implements Serializable {
-
     /**
      * Car identifier
      */

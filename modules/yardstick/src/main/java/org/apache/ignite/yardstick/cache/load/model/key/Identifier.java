@@ -23,7 +23,6 @@ import java.io.Serializable;
  * Key cache class
  */
 public class Identifier implements Comparable<Identifier>, Serializable {
-
     /**
      * Integer identifier
      */
@@ -78,10 +77,11 @@ public class Identifier implements Comparable<Identifier>, Serializable {
         this.code = code;
     }
 
-    @Override
-    public boolean equals(Object o) {
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
@@ -89,18 +89,19 @@ public class Identifier implements Comparable<Identifier>, Serializable {
 
         if (id != that.id)
             return false;
+
         return code != null ? code.equals(that.code) : that.code == null;
-
     }
 
-    @Override
-    public int hashCode() {
-        int result = id;
-        result = 31 * result + (code != null ? code.hashCode() : 0);
-        return result;
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = id;
+        res = 31 * res + (code != null ? code.hashCode() : 0);
+        return res;
     }
 
+    /** {@inheritDoc} */
     @Override public int compareTo(Identifier o) {
-        return id - o.id;
+        return Integer.compare(id, o.id);
     }
 }

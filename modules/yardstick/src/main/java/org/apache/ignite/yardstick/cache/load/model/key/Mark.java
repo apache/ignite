@@ -24,7 +24,6 @@ import java.util.UUID;
  * Cache value class
  */
 public class Mark implements Comparable<Mark>, Serializable {
-
     /**
      * Mark identifier
      */
@@ -78,6 +77,7 @@ public class Mark implements Comparable<Mark>, Serializable {
         this.token = token;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -88,16 +88,20 @@ public class Mark implements Comparable<Mark>, Serializable {
 
         if (id != mark.id)
             return false;
+
         return token != null ? token.equals(mark.token) : mark.token == null;
-
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = id;
-        result = 31 * result + (token != null ? token.hashCode() : 0);
-        return result;
+        int res = id;
+
+        res = 31 * res + (token != null ? token.hashCode() : 0);
+
+        return res;
     }
 
+    /** {@inheritDoc} */
     @Override public int compareTo(Mark o) {
         return id - o.id;
     }

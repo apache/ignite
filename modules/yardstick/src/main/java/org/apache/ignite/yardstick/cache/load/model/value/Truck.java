@@ -23,40 +23,41 @@ import java.io.Serializable;
  * Cache value class
  */
 public class Truck extends Car implements Serializable {
-
     /**
      * Truck capacity
      */
-    public double capacity;
+    public double cap;
 
     /**
      * Empty constructor
      */
     public Truck() {
+        // No-op.
     }
 
     /**
      * @param id identifier
      * @param make mark of truck
      * @param weight weight
+     * @param color Color.
      * @param capacity capacity
      */
     public Truck(int id, String make, double weight, Color color, double capacity) {
         super(id, make, weight, color);
-        this.capacity = capacity;
+        this.cap = capacity;
     }
 
     /**
      * @return truck capacity
      */
-    public double getCapacity() {
-        return capacity;
+    public double getCap() {
+        return cap;
     }
 
     /**
-     * @param capacity truck capacity
+     * @param cap truck capacity
      */
-    public void setCapacity(double capacity) {
-        this.capacity = capacity;
+    public void setCap(double cap) {
+        this.cap = cap;
     }
 }

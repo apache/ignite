@@ -17,6 +17,7 @@
 
 package org.apache.ignite.yardstick.cache.load.model;
 
+import java.util.UUID;
 import org.apache.ignite.yardstick.cache.load.model.key.Identifier;
 import org.apache.ignite.yardstick.cache.load.model.key.Mark;
 import org.apache.ignite.yardstick.cache.load.model.value.Car;
@@ -28,8 +29,6 @@ import org.apache.ignite.yardstick.cache.model.Person;
 import org.apache.ignite.yardstick.cache.model.Person1;
 import org.apache.ignite.yardstick.cache.model.Person2;
 import org.apache.ignite.yardstick.cache.model.Person8;
-
-import java.util.UUID;
 
 /**
  * Util class for model.
@@ -49,7 +48,7 @@ public class ModelUtil {
     /**
      * Classes of values.
      */
-    private static Class[] valueClasses = {
+    private static Class[] valClasses = {
         Car.class,
         Truck.class,
         Person.class,
@@ -70,7 +69,7 @@ public class ModelUtil {
                 return true;
         }
 
-        for (Class c: valueClasses) {
+        for (Class c: valClasses) {
             if (c.equals(clazz))
                 return true;
         }
@@ -84,52 +83,52 @@ public class ModelUtil {
      * @return object from model
      */
     public static Object create(Class c, int id) {
-        Object result = null;
+        Object res = null;
 
         switch (c.getSimpleName()) {
             case "Double":
-                result = Double.valueOf(id);
+                res = Double.valueOf(id);
                 break;
             case "Identifier":
-                result = new Identifier(id, "id " + id);
+                res = new Identifier(id, "id " + id);
                 break;
             case "Mark":
-                result = new Mark(id, UUID.nameUUIDFromBytes(Integer.toString(id).getBytes()));
+                res = new Mark(id, UUID.nameUUIDFromBytes(Integer.toString(id).getBytes()));
                 break;
             case "Integer":
-                result = id;
+                res = id;
                 break;
             case "UUID":
-                result = UUID.nameUUIDFromBytes(Integer.toString(id).getBytes());
+                res = UUID.nameUUIDFromBytes(Integer.toString(id).getBytes());
                 break;
             case "Car":
                 int colorCnt = Color.values().length;
-                result = new Car(id, "Mark " + id, id/2.123 * 100, Color.values()[id % colorCnt]);
+                res = new Car(id, "Mark " + id, id / 2.123 * 100, Color.values()[id % colorCnt]);
                 break;
             case "Truck":
                 int colors = Color.values().length;
-                result = new Truck(id, "Mark " + id, id/2.123 * 100, Color.values()[id % colors], id/4.123 * 100);
+                res = new Truck(id, "Mark " + id, id / 2.123 * 100, Color.values()[id % colors], id / 4.123 * 100);
                 break;
             case "Person":
-                result = new Person(id, "First Name " + id, "Last Name " + id, id/2.123 * 100);
+                res = new Person(id, "First Name " + id, "Last Name " + id, id / 2.123 * 100);
                 break;
             case "Organization":
-                result = new Organization(id, "Organization " + id);
+                res = new Organization(id, "Organization " + id);
                 break;
             case "Account":
-                result = new Account(id);
+                res = new Account(id);
                 break;
             case "Person1":
-                result = new Person1(id);
+                res = new Person1(id);
                 break;
             case "Person2":
-                result = new Person2(id);
+                res = new Person2(id);
                 break;
             case "Person8":
-                result = new Person8(id);
+                res = new Person8(id);
         }
 
-        return result;
+        return res;
     }
 
     /**
@@ -143,6 +142,6 @@ public class ModelUtil {
      * @return array of value chache classes
      */
     public static Class[] valueClasses() {
-        return valueClasses;
+        return valClasses;
     }
 }

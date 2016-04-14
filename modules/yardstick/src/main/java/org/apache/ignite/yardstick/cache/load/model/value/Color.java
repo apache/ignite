@@ -23,26 +23,28 @@ import java.io.Serializable;
  * Car color
  */
 public enum Color implements Serializable {
-
     /**
-     * grey color
+     * Grey color.
      */
     GREY,
 
     /**
-     * red color
+     * Red color.
      */
     RED,
+
     /**
-     * gren color
+     * Green color.
      */
     GREEN,
+
     /**
-     * purple color
+     * Purple color.
      */
     PURPLE,
+
     /**
-     * light blue color
+     * Light blue color.
      */
     LIGHTBLUE
 }
