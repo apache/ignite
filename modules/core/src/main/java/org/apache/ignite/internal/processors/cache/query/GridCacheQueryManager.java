@@ -1321,7 +1321,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @SuppressWarnings("unchecked")
     protected void runQuery(GridCacheQueryInfo qryInfo) {
         assert qryInfo != null;
-        assert !qryInfo.local(): "Wrong query processing: " + qryInfo;
+        assert qryInfo.query().type() != SCAN || !qryInfo.local(): "Wrong query processing: " + qryInfo;
 
         if (!enterBusy()) {
             if (cctx.localNodeId().equals(qryInfo.senderId()))

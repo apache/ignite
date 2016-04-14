@@ -524,7 +524,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         CacheQueryFuture<?> fut = null;
 
-
         try {
             qry.query().validate();
 

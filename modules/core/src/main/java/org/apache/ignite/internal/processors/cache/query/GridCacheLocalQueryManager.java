@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -86,15 +87,22 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
         if (log.isDebugEnabled())
             log.debug("Executing query on local node: " + qry);
 
-        GridCacheLocalQueryFuture<K, V, ?> fut = new GridCacheLocalQueryFuture<>(cctx, qry);
+        CacheQueryFuture<?> fut = null;
 
         try {
             qry.query().validate();
 
-            fut.execute();
+            if (qry.query().type() == GridCacheQueryType.SCAN)
+                fut = executeLocalScanQuery(qry);
+            else {
+                fut = new GridCacheLocalQueryFuture<>(cctx, qry);
+
+                ((GridCacheLocalQueryFuture)fut).execute();
+            }
         }
         catch (IgniteCheckedException e) {
-            fut.onDone(e);
+            if (fut != null && fut instanceof GridCacheLocalQueryFuture)
+                ((GridFutureAdapter)fut).onDone(e);
         }
 
         return fut;
