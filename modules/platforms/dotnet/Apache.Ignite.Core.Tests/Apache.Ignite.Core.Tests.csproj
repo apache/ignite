@@ -180,11 +180,9 @@
     </Content>
     <Content Include="Config\Compute\compute-grid1.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <SubType>Designer</SubType>
     </Content>
     <Content Include="Config\Compute\compute-grid2.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <SubType>Designer</SubType>
     </Content>
     <Content Include="Config\Compute\compute-grid3.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
