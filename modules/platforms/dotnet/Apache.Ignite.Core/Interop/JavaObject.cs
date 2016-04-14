@@ -18,8 +18,6 @@
 namespace Apache.Ignite.Core.Interop
 {
     using System.Collections.Generic;
-    using Apache.Ignite.Core.Cache.Event;
-    using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -77,16 +75,6 @@ namespace Apache.Ignite.Core.Interop
         public IDictionary<string, object> Properties
         {
             get { return _properties; }
-        }
-
-        /// <summary>
-        /// Creates the cache event filter that delegates to the corresponding Java object.
-        /// </summary>
-        /// <typeparam name="TK">Key type.</typeparam>
-        /// <typeparam name="TV">Value type.</typeparam>
-        public ICacheEntryEventFilter<TK, TV> ToCacheEntryEventFilter<TK, TV>()
-        {
-            return new JavaCacheEntryEventFilter<TK, TV>(ClassName, Properties);
         }
     }
 }

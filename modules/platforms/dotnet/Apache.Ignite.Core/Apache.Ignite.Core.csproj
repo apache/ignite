@@ -80,6 +80,7 @@
     <Compile Include="Cache\IMutableCacheEntry.cs" />
     <Compile Include="Cache\Package-Info.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQuery.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryExtensions.cs" />
     <Compile Include="Cache\Query\Continuous\IContinuousQueryHandle.cs" />
     <Compile Include="Cache\Query\Continuous\Package-Info.cs" />
     <Compile Include="Cache\Query\IQueryCursor.cs" />
