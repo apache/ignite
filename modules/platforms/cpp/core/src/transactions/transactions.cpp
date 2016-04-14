@@ -105,6 +105,8 @@ namespace ignite
             TransactionIsolation isolation, int64_t timeout, int32_t txSize,
             IgniteError& err)
         {
+            err = IgniteError();
+
             SharedPointer<TransactionImpl> tx = TransactionImpl::Create(impl,
                 concurrency, isolation, timeout, txSize, err);
 

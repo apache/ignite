@@ -59,6 +59,8 @@ namespace ignite
 
         void Transaction::Commit(IgniteError & err)
         {
+            err = IgniteError();
+
             TransactionImpl* txImpl = impl.Get();
 
             if (txImpl)
@@ -81,6 +83,8 @@ namespace ignite
 
         void Transaction::Rollback(IgniteError & err)
         {
+            err = IgniteError();
+
             TransactionImpl* txImpl = impl.Get();
 
             if (txImpl)
@@ -103,6 +107,8 @@ namespace ignite
 
         void Transaction::Close(IgniteError & err)
         {
+            err = IgniteError();
+
             TransactionImpl* txImpl = impl.Get();
 
             if (txImpl)
@@ -125,6 +131,8 @@ namespace ignite
 
         void Transaction::SetRollbackOnly(IgniteError & err)
         {
+            err = IgniteError();
+
             TransactionImpl* txImpl = impl.Get();
 
             if (txImpl)
