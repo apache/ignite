@@ -28,11 +28,13 @@ import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -320,6 +322,35 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         t1.checkError();
         t2.checkError();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLockSerialization() throws Exception {
+        final IgniteLock lock = ignite1.reentrantLock("lock", true, true, true);
+
+        info("Lock created: " + lock);
+
+        lock.isFailoverSafe();
+        lock.isFair();
+
+        ignite2.compute().broadcast(new IgniteCallable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                Thread.sleep(1000);
+
+                lock.lock();
+
+                try {
+                    System.out.println("Inside lock: " + lock.getHoldCount());
+                }
+                finally {
+                    lock.unlock();
+                }
+
+                return null;
+            }
+        });
     }
 
     /**

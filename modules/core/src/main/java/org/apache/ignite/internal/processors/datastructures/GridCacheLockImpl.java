@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import java.io.Externalizable;
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,7 +46,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -52,7 +54,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -69,12 +70,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
-        new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
-            @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
-                return new IgniteBiTuple<>();
-            }
-        };
+    private static final ThreadLocal<String> stash = new ThreadLocal<>();
 
     /** Logger. */
     private IgniteLogger log;
@@ -416,7 +412,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
                 int nextc = c + acquires;
 
                 if (nextc < 0) // overflow
-                    throw new Error("Maximum lock count exceeded");
+                    throw new Error("Maximum lock count exceeded.");
 
                 setState(nextc);
 
@@ -563,7 +559,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
                                 return false;
                             }
-                            catch (Error | Exception e) {
+                            catch (Exception e) {
                                 if (interruptAll) {
                                     log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
                                         " aborting transaction.");
@@ -651,7 +647,7 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
                                 return false;
                             }
-                            catch (Error | Exception e) {
+                            catch (Exception e) {
                                 if (interruptAll) {
                                     log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
                                         " aborting transaction.");
@@ -804,16 +800,15 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
                                 return true;
                             }
-                            catch (Error | Exception e) {
+                            catch (Exception e) {
                                 if (interruptAll) {
                                     log.info("Node is stopped (or lock is broken in non-failover safe mode)," +
                                         " aborting transaction.");
 
                                     return true;
                                 }
-                                else{
+                                else
                                     U.error(log, "Failed to release: " + this, e);
-                                }
 
                                 throw e;
                             }
@@ -1469,16 +1464,43 @@ public final class GridCacheLockImpl implements GridCacheLockEx, Externalizable 
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(ctx.kernalContext());
         out.writeUTF(name);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        IgniteBiTuple<GridKernalContext, String> t = stash.get();
+        stash.set(in.readUTF());
+    }
 
-        t.set1((GridKernalContext)in.readObject());
-        t.set2(in.readUTF());
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        String name = stash.get();
+
+        assert name != null;
+
+        try {
+            IgniteLock lock = IgnitionEx.localIgnite().context().dataStructures().reentrantLock(
+                name,
+                false,
+                false,
+                false);
+
+            if (lock == null)
+                throw new IllegalStateException("Lock was not found on deserialization: " + name);
+
+            return lock;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
+        }
     }
 
     /** {@inheritDoc} */
