@@ -143,11 +143,17 @@ public class CassandraSessionImpl implements CassandraSession {
                 attempt++;
             }
         }
+        catch (Throwable e) {
+            error = e;
+        }
         finally {
             decrementSessionRefs();
         }
 
-        throw new IgniteException("Failed to execute Cassandra CQL statement: " + assistant.getStatement(), error);
+        if (log != null)
+            log.error(errorMsg, error);
+
+        throw new IgniteException(errorMsg, error);
     }
 
     /** {@inheritDoc} */
@@ -160,11 +166,12 @@ public class CassandraSessionImpl implements CassandraSession {
         Throwable error = new IgniteException(errorMsg);
 
         int dataSize = -1;
+        int processedCount = 0;
 
         incrementSessionRefs();
 
         try {
-            while (dataSize != assistant.processedCount() && error != null && attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
+            while (dataSize != processedCount && error != null && attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
                 boolean tblAbsenceErrorFlag = false;
                 boolean hostsAvailabilityErrorFlag = false;
                 boolean prepStatementErrorFlag = false;
@@ -200,6 +207,8 @@ public class CassandraSessionImpl implements CassandraSession {
 
                         if (row != null)
                             assistant.process(row, futureResult.getKey());
+
+                        processedCount++;
                     }
                     catch (Throwable e) {
                         if (CassandraHelper.isTableAbsenceError(e))
@@ -237,21 +246,21 @@ public class CassandraSessionImpl implements CassandraSession {
                 attempt++;
             }
         }
+        catch (Throwable e) {
+            error = e;
+        }
         finally {
             decrementSessionRefs();
         }
 
-        errorMsg = "Failed to process " + (dataSize - assistant.processedCount()) +
+        errorMsg = "Failed to process " + (dataSize - processedCount) +
             " of " + dataSize + " elements during " + assistant.operationName() +
             " operation with Cassandra";
 
-        if (assistant.processedCount() == 0)
-            throw new IgniteException(errorMsg, error);
-
         if (log != null)
-            log.warning(errorMsg, error);
+            log.error(errorMsg, error);
 
-        return assistant.processedData();
+        throw new IgniteException(errorMsg, error);
     }
 
     /** {@inheritDoc} */
@@ -296,9 +305,15 @@ public class CassandraSessionImpl implements CassandraSession {
                 attempt++;
             }
         }
+        catch (Throwable e) {
+            error = e;
+        }
         finally {
             decrementSessionRefs();
         }
+
+        if (log != null)
+            log.error(errorMsg, error);
 
         throw new IgniteException(errorMsg, error);
     }

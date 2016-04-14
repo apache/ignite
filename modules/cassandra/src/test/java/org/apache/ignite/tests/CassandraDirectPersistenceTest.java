@@ -18,6 +18,8 @@
 package org.apache.ignite.tests;
 
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
@@ -97,6 +99,18 @@ public class CassandraDirectPersistenceTest {
         Collection<CacheEntryImpl<Integer, Integer>> intEntries = TestsHelper.generateIntegersEntries();
         Collection<CacheEntryImpl<String, String>> strEntries = TestsHelper.generateStringsEntries();
 
+        Collection<Integer> fakeIntKeys = TestsHelper.getKeys(intEntries);
+        fakeIntKeys.add(new Integer(-1));
+        fakeIntKeys.add(new Integer(-2));
+        fakeIntKeys.add(new Integer(-3));
+        fakeIntKeys.add(new Integer(-4));
+
+        Collection<String> fakeStringKeys = TestsHelper.getKeys(strEntries);
+        fakeStringKeys.add("-1");
+        fakeStringKeys.add("-2");
+        fakeStringKeys.add("-3");
+        fakeStringKeys.add("-4");
+
         LOGGER.info("Running PRIMITIVE strategy write tests");
 
         LOGGER.info("Running single operation write tests");
@@ -115,6 +129,8 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running single operation read tests");
 
+        LOGGER.info("Running real keys read tests");
+
         Integer intVal = (Integer)store1.load(intEntries.iterator().next().getKey());
         if (!intEntries.iterator().next().getValue().equals(intVal))
             throw new RuntimeException("Integer values was incorrectly deserialized from Cassandra");
@@ -123,9 +139,21 @@ public class CassandraDirectPersistenceTest {
         if (!strEntries.iterator().next().getValue().equals(strVal))
             throw new RuntimeException("String values was incorrectly deserialized from Cassandra");
 
+        LOGGER.info("Running fake keys read tests");
+
+        intVal = (Integer)store1.load(new Integer(-1));
+        if (intVal != null)
+            throw new RuntimeException("Integer value with fake key '-1' was found in Cassandra");
+
+        strVal = (String)store2.load("-1");
+        if (strVal != null)
+            throw new RuntimeException("String value with fake key '-1' was found in Cassandra");
+
         LOGGER.info("Single operation read tests passed");
 
         LOGGER.info("Running bulk operation read tests");
+
+        LOGGER.info("Running real keys read tests");
 
         Map intValues = store1.loadAll(TestsHelper.getKeys(intEntries));
         if (!TestsHelper.checkCollectionsEqual(intValues, intEntries))
@@ -135,17 +163,37 @@ public class CassandraDirectPersistenceTest {
         if (!TestsHelper.checkCollectionsEqual(strValues, strEntries))
             throw new RuntimeException("String values was incorrectly deserialized from Cassandra");
 
+        LOGGER.info("Running fake keys read tests");
+
+        intValues = store1.loadAll(fakeIntKeys);
+        if (!TestsHelper.checkCollectionsEqual(intValues, intEntries))
+            throw new RuntimeException("Integer values was incorrectly deserialized from Cassandra");
+
+        strValues = store2.loadAll(fakeStringKeys);
+        if (!TestsHelper.checkCollectionsEqual(strValues, strEntries))
+            throw new RuntimeException("String values was incorrectly deserialized from Cassandra");
+
         LOGGER.info("Bulk operation read tests passed");
 
         LOGGER.info("PRIMITIVE strategy read tests passed");
 
         LOGGER.info("Running PRIMITIVE strategy delete tests");
 
+        LOGGER.info("Deleting real keys");
+
         store1.delete(intEntries.iterator().next().getKey());
         store1.deleteAll(TestsHelper.getKeys(intEntries));
 
         store2.delete(strEntries.iterator().next().getKey());
         store2.deleteAll(TestsHelper.getKeys(strEntries));
+
+        LOGGER.info("Deleting fake keys");
+
+        store1.delete(new Integer(-1));
+        store2.delete("-1");
+
+        store1.deleteAll(fakeIntKeys);
+        store2.deleteAll(fakeStringKeys);
 
         LOGGER.info("PRIMITIVE strategy delete tests passed");
     }
