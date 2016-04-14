@@ -336,7 +336,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean skipStore = opCtx != null && opCtx.skipStore();
 
         try {
-            return getAsync0(ctx.toCacheKeyObject(key),
+            return getAsync0(ctx.toCacheKeyObject(key, true),
                 !ctx.config().isReadFromBackup(),
                 subjId,
                 taskName,
@@ -381,7 +381,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         return asyncOp(new CO<IgniteInternalFuture<V>>() {
             @Override public IgniteInternalFuture<V> apply() {
-                return getAsync0(ctx.toCacheKeyObject(key),
+                return getAsync0(ctx.toCacheKeyObject(key, true),
                     forcePrimary,
                     subjId0,
                     taskName,
@@ -427,7 +427,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         return asyncOp(new CO<IgniteInternalFuture<Map<K, V>>>() {
             @Override public IgniteInternalFuture<Map<K, V>> apply() {
-                return getAllAsync0(ctx.cacheKeysView(keys),
+                return getAllAsync0(ctx.cacheKeysView(keys, true),
                     forcePrimary,
                     subjId0,
                     taskName,

@@ -1797,10 +1797,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     public KeyCacheObject toCacheKeyObject(Object obj, boolean includePartition) {
         assert validObjectForCache(obj) : obj;
 
-        if (includePartition)
-            return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true, affinity().partition(obj));
-        else
+        if (!includePartition || (obj instanceof KeyCacheObject && ((KeyCacheObject)obj).partition() != -1))
             return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
+        else
+            return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true, affinity().partition(obj));
     }
 
     /**
@@ -1966,15 +1966,24 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * @param keys Keys.
-     * @return Co
+     * @return Read-only collection of KeyCacheObject instances.
      */
     public Collection<KeyCacheObject> cacheKeysView(Collection<?> keys) {
+        return cacheKeysView(keys, false);
+    }
+
+    /**
+     * @param keys Keys.
+     * @param includePartition Include partition.
+     * @return Read-only collection of KeyCacheObject instances.
+     */
+    public Collection<KeyCacheObject> cacheKeysView(Collection<?> keys, final boolean includePartition) {
         return F.viewReadOnly(keys, new C1<Object, KeyCacheObject>() {
             @Override public KeyCacheObject apply(Object key) {
                 if (key == null)
                     throw new NullPointerException("Null key.");
 
-                return toCacheKeyObject(key);
+                return toCacheKeyObject(key, includePartition);
             }
         });
     }

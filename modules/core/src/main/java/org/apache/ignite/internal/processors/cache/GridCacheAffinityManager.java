@@ -203,7 +203,12 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         if (aff0 == null)
             throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
-        return affFunction.partition(affinityKey(key));
+        int p = affFunction.partition(affinityKey(key));
+
+        if (key instanceof KeyCacheObject)
+            ((KeyCacheObject)key).partition(p);
+
+        return p;
     }
 
     /**
