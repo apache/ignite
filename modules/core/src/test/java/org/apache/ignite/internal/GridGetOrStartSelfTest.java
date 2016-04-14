@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
@@ -27,6 +30,9 @@ import org.apache.ignite.testframework.junits.common.*;
 
 @GridCommonTest(group = "Kernal Self")
 public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
+    /** Concurrency. */
+    public static final int CONCURRENCY = 10;
+
     /**
      * Default constructor.
      */
@@ -34,21 +40,32 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
         super(false);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * Tests default grid
      */
     public void testDefaultGridGetOrStart() throws Exception {
         IgniteConfiguration cfg = getConfiguration(null);
-        try(Ignite ignite = Ignition.getOrStart(cfg)) {
+
+        try (Ignite ignite = Ignition.getOrStart(cfg)) {
             try {
                 Ignition.start(cfg);
+
                 fail("Expected exception after grid started");
             }
             catch (IgniteException ignored) {
             }
+
             Ignite ignite2 = Ignition.getOrStart(cfg);
+
             assertEquals("Must return same instance", ignite, ignite2);
         }
+
+        assertTrue(G.allGrids().isEmpty());
     }
 
     /**
@@ -56,15 +73,58 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
      */
     public void testNamedGridGetOrStart() throws Exception {
         IgniteConfiguration cfg = getConfiguration("test");
-        try(Ignite ignite = Ignition.getOrStart(cfg)) {
+        try (Ignite ignite = Ignition.getOrStart(cfg)) {
             try {
                 Ignition.start(cfg);
+
                 fail("Expected exception after grid started");
             }
             catch (IgniteException ignored) {
+                // No-op.
             }
+
             Ignite ignite2 = Ignition.getOrStart(cfg);
+
             assertEquals("Must return same instance", ignite, ignite2);
         }
+
+        assertTrue(G.allGrids().isEmpty());
+    }
+
+    /**
+     * Tests concurrent grid initialization
+     */
+    public void testConcurrentGridGetOrStartCon() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(null);
+
+        AtomicReference<Ignite> ref = new AtomicReference<>();
+
+        try {
+            GridTestUtils.runMultiThreaded(new Runnable() {
+                @Override public void run() {
+                    // must return same instance in each thread
+                    Ignite ignite;
+
+                    try {
+                        ignite = Ignition.getOrStart(cfg);
+
+                        boolean set = ref.compareAndSet(null, ignite);
+
+                        if (!set)
+                            assertEquals(ref.get(), ignite);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new RuntimeException("Ignite error", e);
+                    }
+                }
+            }, CONCURRENCY, "GridCreatorThread");
+        }
+        catch (Exception e) {
+            fail("Exception is not expected");
+        }
+
+        G.stopAll(true);
+
+        assertTrue(G.allGrids().isEmpty());
     }
 }

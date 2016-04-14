@@ -52,9 +52,7 @@ class IgniteContext[K, V](
         logInfo("Will start Ignite nodes on " + workers + " workers")
 
         // Start ignite server node on each worker in server mode.
-        sparkContext.parallelize(1 to workers, workers).foreachPartition(it ⇒ {
-            ignite()
-        })
+        sparkContext.parallelize(1 to workers, workers).foreachPartition(it ⇒ ignite())
     }
 
     // Make sure to start Ignite on context creation.
@@ -138,6 +136,7 @@ class IgniteContext[K, V](
         }
 
         val igniteCfg = cfgClo()
+
         // check if called from driver
         if (sparkContext != null) igniteCfg.setClientMode(true)
 
@@ -145,11 +144,10 @@ class IgniteContext[K, V](
             Ignition.getOrStart(igniteCfg)
         }
         catch {
-            case e: IgniteException ⇒ {
+            case e: IgniteException ⇒
                 logError("Failed to start Ignite.", e)
 
                 throw e
-            }
         }
     }
 
@@ -168,9 +166,7 @@ class IgniteContext[K, V](
                 logInfo("Will stop Ignite nodes on " + workers + " workers")
 
                 // Start ignite server node on each worker in server mode.
-                sparkContext.parallelize(1 to workers, workers).foreachPartition(it ⇒ {
-                    doClose()
-                })
+                sparkContext.parallelize(1 to workers, workers).foreachPartition(it ⇒ doClose())
             }
         }
 
@@ -194,8 +190,11 @@ private class Once(clo: () ⇒ IgniteConfiguration) extends Serializable {
 
     def apply(): IgniteConfiguration = {
         if (res == null) {
+
             this.synchronized {
+
                 if (res == null)
+
                     res = clo()
             }
         }

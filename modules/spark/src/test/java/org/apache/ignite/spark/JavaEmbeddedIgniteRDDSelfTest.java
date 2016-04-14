@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spark;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -100,9 +99,19 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         super(false);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * Creates default spark context
+     */
     private JavaSparkContext createContext() {
         SparkConf conf = new SparkConf();
+
         conf.set("spark.executor.instances", String.valueOf(GRID_CNT));
+
         return new JavaSparkContext("local[" + GRID_CNT + "]", "test", conf);
     }
 
@@ -111,6 +120,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      */
     public void testStoreDataToIgnite() throws Exception {
         JavaSparkContext sc = createContext();
+
         JavaIgniteContext<String, String> ic = null;
 
         try {
@@ -133,6 +143,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         finally {
             if (ic != null)
                 ic.close(true);
+
             sc.stop();
         }
     }
@@ -142,6 +153,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      */
     public void testReadDataFromIgnite() throws Exception {
         JavaSparkContext sc = createContext();
+
         JavaIgniteContext<String, Integer> ic = null;
 
         try {
@@ -165,6 +177,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         finally {
             if (ic != null)
                 ic.close(true);
+
             sc.stop();
         }
     }
@@ -173,7 +186,10 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryObjectsFromIgnite() throws Exception {
+        fail("IGNITE-3009");
+
         JavaSparkContext sc = createContext();
+
         JavaIgniteContext<String, Entity> ic = null;
 
         try {
@@ -181,7 +197,11 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
-            cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F));
+            int cnt = 1001;
+
+            List<Integer> numbers = F.range(0, cnt);
+
+            cache.savePairs(sc.parallelize(numbers, GRID_CNT).mapToPair(INT_TO_ENTITY_F));
 
             List<Entity> res = cache.objectSql("Entity", "name = ? and salary = ?", "name50", 5000)
                 .map(STR_ENTITY_PAIR_TO_ENTITY_F).collect();
@@ -190,11 +210,17 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             assertEquals("Invalid result", 50, res.get(0).id());
             assertEquals("Invalid result", "name50", res.get(0).name());
             assertEquals("Invalid result", 5000, res.get(0).salary());
+
+            Ignite ignite = ic.ignite();
+            IgniteCache<Object, Object> underCache = ignite.cache(PARTITIONED_CACHE_NAME);
+            assertEquals("Invalid total count", cnt, underCache.size());
+
             assertEquals("Invalid count", 500, cache.objectSql("Entity", "id > 500").count());
         }
         finally {
             if (ic != null)
                 ic.close(true);
+
             sc.stop();
         }
     }
@@ -204,6 +230,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      */
     public void testQueryFieldsFromIgnite() throws Exception {
         JavaSparkContext sc = createContext();
+
         JavaIgniteContext<String, Entity> ic = null;
 
         try {
@@ -243,9 +270,13 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         finally {
             if (ic != null)
                 ic.close(true);
+
             sc.stop();
         }
     }
+
+    /** Finder. */
+    private static TcpDiscoveryVmIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * @param gridName Grid name.
@@ -256,11 +287,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
-        TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder(false);
-
-        finder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
-
-        discoSpi.setIpFinder(finder);
+        discoSpi.setIpFinder(FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
 
