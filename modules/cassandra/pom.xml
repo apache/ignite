@@ -300,6 +300,8 @@
                                                 <include name="**/*"/>
                                             </fileset>
                                         </copy>
+
+                                        <fixcrlf file="${project.build.directory}/tests-package" includes="*.sh" eol="lf" eof="remove"/>
                                     </then>
                                 </if>
                             </target>
