@@ -556,21 +556,6 @@ public class CodeGenerator {
     }
 
     /**
-     * Find field by name.
-     *
-     * @param pojo POJO descriptor.
-     * @param name Field name to find.
-     * @return Field descriptor or {@code null} if not found.
-     */
-    private static PojoField findFieldByName(PojoDescriptor pojo, String name) {
-        for (PojoField field: pojo.valueFields(true))
-            if (field.dbName().equals(name))
-                return field;
-
-        return null;
-    }
-
-    /**
      * Generate java snippet for cache configuration with JDBC store and types metadata.
      *
      * @param pojos POJO descriptors.
@@ -671,7 +656,8 @@ public class CodeGenerator {
             add0(src, "");
 
             for (PojoField field : pojo.fields())
-                add2(src, "fields.put(\"" + field.javaName() + "\", \"" + javaTypeName(field) + "\");");
+                add2(src, "fields.put(\"" + field.javaName() + "\", \"" +
+                    GeneratorUtils.boxPrimitiveType(field.javaTypeName()) + "\");");
 
             add0(src, "");
             add2(src, "qryEntity.setFields(fields);");
@@ -692,7 +678,7 @@ public class CodeGenerator {
                     List<T2<String, Boolean>> idxFlds = new ArrayList<>(sz);
 
                     for (Map.Entry<String, Boolean> idxFld : dbIdxFlds) {
-                        PojoField field = findFieldByName(pojo, idxFld.getKey());
+                        PojoField field = GeneratorUtils.findFieldByName(pojo.valueFields(true), idxFld.getKey());
 
                         if (field != null)
                             idxFlds.add(new T2<>(field.javaName(), idxFld.getValue()));
