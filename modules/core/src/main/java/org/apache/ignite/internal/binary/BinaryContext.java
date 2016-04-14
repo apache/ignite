@@ -273,7 +273,6 @@ public class BinaryContext {
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
         registerPredefinedType(T2.class, 62);
-
         registerPredefinedType(PlatformJavaObjectFactoryProxy.class,
             GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY);
 

@@ -125,6 +125,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
     @SuppressWarnings("unchecked")
     @Override public void start(IgniteCacheProxy cache, boolean loc, int bufSize, long timeInterval,
         boolean autoUnsubscribe, Query initialQry) throws IgniteCheckedException {
+
         lock.writeLock().lock();
 
         try {
@@ -262,7 +263,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @return Filter to be deployed on remote node.
      * @throws ObjectStreamException If failed.
      */
-    Object writeReplace() throws ObjectStreamException {
+    protected Object writeReplace() throws ObjectStreamException {
         if (javaFilter != null)
             return javaFilter;
 
