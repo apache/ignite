@@ -112,6 +112,20 @@ namespace ignite
                 void SetRollbackOnly(IgniteError& err);
 
                 /**
+                 * Check if the transaction is rollback-only.
+                 *
+                 * After transaction have been marked as rollback-only it may
+                 * only be rolled back. Error occurs if such transaction is
+                 * being commited.
+                 *
+                 * @return True if the transaction is rollback-only.
+                 */
+                bool IsRollbackOnly()
+                {
+                    return rollbackOnly;
+                }
+
+                /**
                  * Get concurrency.
                  *
                  * @return Concurrency.

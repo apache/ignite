@@ -235,6 +235,20 @@ namespace ignite
             }
 
             /**
+             * Check if the transaction is rollback-only.
+             *
+             * After transaction have been marked as rollback-only it may
+             * only be rolled back. Error occurs if such transaction is
+             * being commited.
+             *
+             * @return True if the transaction is rollback-only.
+             */
+            bool IsRollbackOnly()
+            {
+                return impl.Get()->IsRollbackOnly();
+            }
+
+            /**
              * Get concurrency.
              *
              * @return Concurrency.
