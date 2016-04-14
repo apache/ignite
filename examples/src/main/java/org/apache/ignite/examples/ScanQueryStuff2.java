@@ -25,30 +25,37 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-
-import static org.apache.ignite.cache.CachePeekMode.OFFHEAP;
-import static org.apache.ignite.cache.CachePeekMode.ONHEAP;
-import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
-import static org.apache.ignite.cache.CachePeekMode.SWAP;
 
 /**
  *
  */
-@SuppressWarnings({"CommentAbsent", "unchecked"})
-public class ScanQueryStuff {
+@SuppressWarnings({"CommentAbsent", "unchecked", "PointlessBooleanExpression"})
+public class ScanQueryStuff2 {
 //    private static final boolean CHECK1 = true;
-    private static final boolean CHECK1 = false;
+        private static final boolean CHECK1 = false;
+//    private static final boolean once = true;
     private static final boolean once = false;
-    private static final int CNT = 1000_000;
-    private static final int TIMES = 3;
+//    private static final int CNT = 1;
+    private static final int CNT = 100_000;
 
-    private static CacheMemoryMode memMode = CacheMemoryMode.OFFHEAP_TIERED;
+    static {
+        U.debugEnabled = once && CNT < 5;
+    }
+
+    /** */
+    private static final int MAX_COUNT = 6_000_000;
+
+    private static CacheMemoryMode memMode = CacheMemoryMode.ONHEAP_TIERED;
 
     public static void main(String[] args) {
         try (Ignite ignite = Ignition.start(igniteCfg())) {
@@ -66,21 +73,31 @@ public class ScanQueryStuff {
 
             boolean go = true;
 
+            IgniteEx igniteEx = (IgniteEx)ignite;
+
+            IgniteInternalCache<Object, Object> internalCache = igniteEx.context().cache().cache(null);
+
+            GridDhtCacheAdapter<Object, Object> dht = internalCache.context().dht();
+
+            GridCacheQueryManager<Object, Object> queries = internalCache.context().queries();
+
+            int times = MAX_COUNT / CNT;
+
             while (go) {
                 if (once)
                     go = false;
 
                 if (CHECK1)
-                    check1(cache);
+                    check1(dht);
                 else
-                    check2(cache);
+                    check2(queries);
 
                 cnt++;
 
-                if (cnt == TIMES) {
+                if (cnt == times) {
                     cnt = 0;
 
-                    System.out.println(">>>>> Takes " + (System.currentTimeMillis() - start) + " ms to process " + CNT + " items " + TIMES + " times." );
+                    System.out.println(">>>>> Takes " + (System.currentTimeMillis() - start) + " ms to process " + CNT + " items " + times + " times." );
 
                     start = System.currentTimeMillis();
                 }
@@ -88,43 +105,34 @@ public class ScanQueryStuff {
         }
     }
 
-    private static void check1(IgniteCache cache) {
-        Iterable<Cache.Entry> iterable = cache.localEntries(ONHEAP, OFFHEAP, PRIMARY, SWAP);
+    private static void check1(Object dht) {
+        final Iterator<Cache.Entry> iterator = ((GridDhtCacheAdapter)dht).localEntriesIterator(true, false);
 
         int cnt = 0;
 
-        for (Cache.Entry ob : iterable) {
-            ob.getKey();
-            ob.getValue();
+        while (iterator.hasNext()) {
+            Cache.Entry next = iterator.next();
+
+            next.getKey();
+            next.getValue();
 
             cnt++;
-
-            if (ob == null)
-                throw new RuntimeException("unexpected");
         }
 
         if (cnt < CNT)
             throw new IllegalStateException("cnt:" + cnt);
     }
 
-    private static void check2(IgniteCache cache) {
-        ScanQuery qry = new ScanQuery();
-
-        qry.setLocal(true);
-
-        QueryCursor cursor = cache.query(qry);
-
-        Iterator iter = cursor.iterator();
-
-        Cache.Entry entry = null;
+    private static void check2(GridCacheQueryManager<Object, Object> queryManager) {
+        Iterator<IgniteBiTuple<Object, Object>> iter = queryManager.scanHeapIterator();
 
         int cnt = 0;
 
         while (iter.hasNext()) {
-            entry = (Cache.Entry)iter.next();
+            IgniteBiTuple<Object, Object> next = iter.next();
 
-            entry.getKey();
-            entry.getValue();
+            next.getKey();
+            next.getValue();
 
             cnt++;
         }
@@ -137,7 +145,7 @@ public class ScanQueryStuff {
     }
 
     private static CacheConfiguration cacheCfg() {
-        CacheConfiguration cfg = new CacheConfiguration("testCache");
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(CacheMode.PARTITIONED);
         cfg.setMemoryMode(memMode);

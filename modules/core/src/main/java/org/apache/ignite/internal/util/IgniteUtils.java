@@ -720,6 +720,8 @@ public abstract class IgniteUtils {
         }
     }
 
+    public static volatile boolean debugEnabled;
+
     /**
      * Gets IgniteClosure for an IgniteCheckedException class.
      *
@@ -1066,7 +1068,8 @@ public abstract class IgniteUtils {
      */
     @Deprecated
     public static void dumpStack(String msg) {
-        new Exception(debugPrefix() + msg).printStackTrace(System.out);
+        if (debugEnabled)
+            new Exception(debugPrefix() + msg).printStackTrace(System.out);
     }
 
     /**
