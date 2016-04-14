@@ -440,7 +440,7 @@ public interface IgniteLock extends Lock, Closeable {
      *
      * @param condition the condition
      * @return the estimated number of waiting threads on this node
-     * @throws IgniteIllegalStateException if this lock is not held
+     * @throws IllegalMonitorStateException if this lock is not held
      * @throws IllegalArgumentException if the given condition is
      *         not associated with this lock
      * @throws NullPointerException if the condition is null
@@ -453,6 +453,7 @@ public interface IgniteLock extends Lock, Closeable {
      * If not, IgniteInterruptedException is thrown on every other node after node failure.
      *
      * @return {@code true} if this reentrant lock has failoverSafe set true
+     * @throws IgniteException if the lock is not initialized or already removed
      */
     public boolean isFailoverSafe();
 
@@ -460,13 +461,14 @@ public interface IgniteLock extends Lock, Closeable {
      * Returns {@code true} if this lock is fair. Fairness flag can only be set on lock creation.
      *
      * @return {@code true} if this reentrant lock has fairness flag set true.
+     * @throws IgniteException if the lock is not initialized or already removed
      */
     public boolean isFair();
 
     /**
      * Returns true if any node that owned the locked failed before releasing the lock.
      *
-     * @return true if any node failed while owning the lock.
+     * @return true if any node failed while owning the lock since the lock on this node was initialized.
      * @throws IgniteException if the lock is not initialized or already removed
      */
     public boolean isBroken() throws IgniteException;
