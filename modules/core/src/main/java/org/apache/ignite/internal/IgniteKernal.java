@@ -1107,18 +1107,21 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * @throws IgniteCheckedException if the component is mandatory and cannot be initialized.
      */
     private GridComponent createHadoopComponent() throws IgniteCheckedException {
-        boolean peer = cfg.isPeerClassLoadingEnabled();
+        GridComponent cmp;
 
-        GridComponent cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx,
-            cfg.getHadoopConfiguration() != null && !peer);
+        if (cfg.isPeerClassLoadingEnabled()) {
+            cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, false);
 
-        // Hadoop component cannot be used if peer class loading is enabled:
-        if (peer) {
-            log.warning("Hadoop module will be disabled since peer class loading is switched on.");
+            if (!(cmp instanceof HadoopNoopProcessor)) {
+                U.warn(log, "Hadoop module is found in classpath, but it will not be started because peer class " +
+                    "loading is enabled (set IgniteConfiguration.peerClassLoadingEnabled to \"false\" to start " +
+                    "Hadoop module).");
 
-            if (!(cmp instanceof HadoopNoopProcessor))
                 cmp = IgniteComponentType.HADOOP.create(ctx, true/*no-op*/);
+            }
         }
+        else
+            cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null);
 
         return cmp;
     }
