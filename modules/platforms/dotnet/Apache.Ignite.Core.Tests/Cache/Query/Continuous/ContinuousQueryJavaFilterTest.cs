@@ -233,21 +233,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             var aff = _ignite.GetAffinity("qry");
             var localNode = _ignite.GetCluster().GetLocalNode();
 
+            // Get one key per node
+            var keyMap = aff.MapKeysToNodes(Enumerable.Range(1, 100));
+            Assert.AreEqual(3, keyMap.Count);
+            var keys = local
+                ? keyMap[localNode].Take(1)
+                : keyMap.Select(x => x.Value.First());
+
             using (cache.QueryContinuous(qry))
             {
                 // Run on many keys to test all nodes
-                for (var i = 0; i < 200; i++)
+                foreach (var key in keys)
                 {
-                    if (local && aff.MapKeyToNode(i).Id != localNode.Id)
-                        continue;
-
                     _lastEvent = null;
-                    cache[i] = "validValue";
+                    cache[key] = "validValue";
                     // ReSharper disable once PossibleNullReferenceException
-                    Assert.AreEqual(cache[i], _lastEvent.Value);
+                    Assert.AreEqual(cache[key], _lastEvent.Value);
 
                     _lastEvent = null;
-                    cache[i] = "invalidValue";
+                    cache[key] = "invalidValue";
                     Assert.IsNull(_lastEvent);
                 }
             }
