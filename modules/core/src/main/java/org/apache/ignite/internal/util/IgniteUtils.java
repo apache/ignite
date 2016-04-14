@@ -9215,6 +9215,31 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param cls The class to search.
+     * @param name Name of a field to get.
+     * @return Field or {@code null}.
+     */
+    @Nullable public static Field findField(Class<?> cls, String name) {
+        while (cls != null) {
+            try {
+                Field fld = cls.getDeclaredField(name);
+
+                if (!fld.isAccessible())
+                    fld.setAccessible(true);
+
+                return fld;
+            }
+            catch (NoSuchFieldException e) {
+                // No-op.
+            }
+
+            cls = cls.getSuperclass();
+        }
+
+        return null;
+    }
+
+    /**
      * @param c Collection.
      * @param p Optional filters.
      * @return Resulting array list.
