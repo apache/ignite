@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
@@ -247,11 +248,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 {
                     _lastEvent = null;
                     cache[key] = "validValue";
-                    // ReSharper disable once PossibleNullReferenceException
+
+                    TestUtils.WaitForCondition(() => _lastEvent != null, 3000);
+                    Assert.IsNotNull(_lastEvent);
                     Assert.AreEqual(cache[key], _lastEvent.Value);
 
                     _lastEvent = null;
                     cache[key] = "invalidValue";
+
+                    Thread.Sleep(3);
                     Assert.IsNull(_lastEvent);
                 }
             }
