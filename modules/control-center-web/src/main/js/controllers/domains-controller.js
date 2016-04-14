@@ -400,8 +400,8 @@ consoleModule.controller('domainsController', [
         $scope.showImportDomainModal = function () {
             $table.tableReset();
 
-            $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
-                if ($scope.ui.isDirty())
+            $common.confirmUnsavedChanges($scope.ui.inputForm.$dirty, function () {
+                if ($scope.ui.inputForm.$dirty)
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
 
                 const demo = $scope.$root.IgniteDemoMode;
