@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.redis;
 
+import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -158,6 +159,47 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals("getVal1", jedis.get("getKey1"));
             Assert.assertEquals("0", jedis.get("getKey2"));
             Assert.assertNull(jedis.get("wrongKey"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMGet() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            jcache().put("getKey1", "getVal1");
+            jcache().put("getKey2", 0);
+
+            List<String> result = jedis.mget("getKey1", "getKey2", "wrongKey");
+            Assert.assertTrue(result.contains("getVal1"));
+            Assert.assertTrue(result.contains("0"));
+//            fail("Incompatible! getAll() does not return null values!");
+//            Assert.assertTrue(result.contains("nil"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSet() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.set("setKey1", "1");
+            jedis.set("setKey2".getBytes(), "b0".getBytes());
+
+            Assert.assertEquals("1", jcache().get("setKey1"));
+            Assert.assertEquals("b0", jcache().get("setKey2"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMSet() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.mset("setKey1", "1", "setKey2", "2");
+
+            Assert.assertEquals("1", jcache().get("setKey1"));
+            Assert.assertEquals("2", jcache().get("setKey2"));
         }
     }
 }

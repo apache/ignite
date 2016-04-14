@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -63,6 +64,10 @@ public class GridRedisMessage implements GridClientMessage {
 
     public ByteBuffer getResponse() {
         return response;
+    }
+
+    public List<String> getMsgParts() {
+        return msgParts;
     }
 
     /**
@@ -140,5 +145,12 @@ public class GridRedisMessage implements GridClientMessage {
     /** {@inheritDoc} */
     @Override public void sessionToken(byte[] sesTok) {
 
+    }
+
+    /**
+     * @return {@link RestQueryRequest}.
+     */
+    private RestQueryRequest asRestRequest() {
+        return null;
     }
 }

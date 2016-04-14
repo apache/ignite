@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 
 /**
@@ -59,6 +61,9 @@ public class GridRedisProtocolParser {
 
     /** Null bulk string for nil response. */
     private static final byte[] NIL = "$-1\r\n".getBytes();
+
+    /** OK response. */
+    private static final byte[] OK = "OK".getBytes();
 
     /**
      * Reads array.
@@ -138,6 +143,16 @@ public class GridRedisProtocolParser {
     public static ByteBuffer toSimpleString(String val) {
         byte[] b = val.getBytes();
 
+        return toSimpleString(b);
+    }
+
+    /**
+     * Creates a simple string data as a {@link ByteBuffer}.
+     *
+     * @param b Bytes for a simple string.
+     * @return Redis simple string.
+     */
+    public static ByteBuffer toSimpleString(byte[] b) {
         ByteBuffer buf = ByteBuffer.allocate(b.length + 3);
         buf.put(SIMPLE_STRING);
         buf.put(b);
@@ -146,6 +161,13 @@ public class GridRedisProtocolParser {
         buf.flip();
 
         return buf;
+    }
+
+    /**
+     * @return Standard OK string.
+     */
+    public static ByteBuffer OkString() {
+        return toSimpleString(OK);
     }
 
     /**
@@ -238,6 +260,33 @@ public class GridRedisProtocolParser {
         buf.put(CRLF);
         buf.put(b);
         buf.put(CRLF);
+
+        buf.flip();
+
+        return buf;
+    }
+
+    public static ByteBuffer toArray(Map<Object, Object> vals) {
+        return toArray(vals.values());
+    }
+
+    /**
+     * @param vals Array elements.
+     * @return Array response.
+     */
+    public static ByteBuffer toArray(Collection<Object> vals) {
+        assert vals != null;
+
+        byte[] arrSize = String.valueOf(vals.size()).getBytes();
+
+        ByteBuffer buf = ByteBuffer.allocateDirect(1024 * 1024);
+        buf.put(ARRAY);
+        buf.put(arrSize);
+        buf.put(CRLF);
+
+        for (Object val : vals) {
+            buf.put(toBulkString(val));
+        }
 
         buf.flip();
 

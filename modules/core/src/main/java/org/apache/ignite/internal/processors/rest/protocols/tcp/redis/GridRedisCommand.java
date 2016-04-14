@@ -32,7 +32,13 @@ public enum GridRedisCommand {
     ECHO("ECHO"),
 
     /** GET. */
-    GET("GET");
+    GET("GET"),
+    /** MGET. */
+    MGET("MGET"),
+    /** SET. */
+    SET("SET"),
+    /** MSET. */
+    MSET("MSET");
 
     /** String for command. */
     private final String cmd;
@@ -44,4 +50,4 @@ public enum GridRedisCommand {
     public String cmd() {
         return cmd;
     }
-    }
+}

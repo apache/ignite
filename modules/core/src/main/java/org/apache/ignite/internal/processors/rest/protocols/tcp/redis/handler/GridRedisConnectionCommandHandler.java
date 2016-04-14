@@ -43,9 +43,6 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
     /** PONG response to PING. */
     private static final String PONG = "PONG";
 
-    /** Response to QUIT. */
-    private static final String OK = "OK";
-
     /** {@inheritDoc} */
     @Override public Collection<GridRedisCommand> supportedCommands() {
         return SUPPORTED_COMMANDS;
@@ -61,7 +58,7 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
                 return new GridFinishedFuture<>(msg);
 
             case QUIT:
-                msg.setResponse(GridRedisProtocolParser.toSimpleString(OK));
+                msg.setResponse(GridRedisProtocolParser.OkString());
                 return new GridFinishedFuture<>(msg);
 
             case ECHO:
