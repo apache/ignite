@@ -36,11 +36,10 @@ mixin feedback(isCheckPristine, error, errorMessage)
         data-ng-change='ngChange()'
         data-ng-required='required || false'
         data-ng-disabled='disabled || false'
-        data-ng-model-options='{debounce: 150}'
 
-        data-java-keywords='true'
         data-java-identifier='true'
         data-java-package-specified='true'
+        data-java-keywords='true'
         data-java-built-in-class='true'
 
         data-ignite-form-field-input-autofocus='autofocus || false'
@@ -51,10 +50,10 @@ mixin feedback(isCheckPristine, error, errorMessage)
         data-ng-focus='tableReset()'
     )
 
-    +feedback(true, 'javaPackageSpecified', 'does not have package specified!')
-    +feedback(false, 'javaBuiltInClass', 'should not be the Java built-in class!')
-    +feedback(false, 'javaKeywords', 'could not contains reserved Java keyword!')
     +feedback(false, 'javaIdentifier', 'is invalid Java identifier!')
+    +feedback(false, 'javaPackageSpecified', 'does not have package specified!')
+    +feedback(false, 'javaKeywords', 'could not contains reserved Java keyword!')
+    +feedback(false, 'javaBuiltInClass', 'should not be the Java built-in class!')
 
     +feedback(true, 'required', 'could not be empty!')
 
