@@ -256,7 +256,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     _lastEvent = null;
                     cache[key] = "invalidValue";
 
-                    Thread.Sleep(3);
+                    Thread.Sleep(3000);
                     Assert.IsNull(_lastEvent);
                 }
             }
