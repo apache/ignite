@@ -51,7 +51,12 @@ COMMON_SRC = os/linux/src/impl/utils.cpp \
              src/impl/cache/cache_impl.cpp \
              src/impl/ignite_impl.cpp \
              src/ignite.cpp \
-             src/ignition.cpp
+             src/ignition.cpp \
+             src/impl/transactions/transaction_impl.cpp \
+             src/impl/transactions/transactions_impl.cpp \
+             src/transactions/transaction.cpp \
+             src/transactions/transactions.cpp
+
 
 lib_LTLIBRARIES = libignite.la
 libignite_la_SOURCES = $(COMMON_SRC)
