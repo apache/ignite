@@ -36,6 +36,7 @@ ignite_tests_SOURCES = src/cache_test.cpp \
                          src/binary_reader_writer_raw_test.cpp \
                          src/binary_reader_writer_test.cpp \
                          src/binary_session_test.cpp \
+                         src/transactions_test.cpp \
                          src/teamcity_messages.cpp \
                          src/teamcity_boost.cpp
 
