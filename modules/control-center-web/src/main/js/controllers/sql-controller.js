@@ -348,7 +348,7 @@ consoleModule.controller('sqlController', [
         $scope.removeNotebook = function () {
             $confirm.confirm('Are you sure you want to remove: "' + $scope.notebook.name + '"?')
                 .then(function () {
-                    return QueryNotebooks.remove($scope.notebook._id);
+                    return QueryNotebooks.remove($scope.notebook);
                 })
                 .then(function (notebook) {
                     if (notebook)
@@ -1554,7 +1554,7 @@ consoleModule.controller('sqlController', [
             if ($common.isDefined(paragraph)) {
                 const scope = $scope.$new();
 
-                if (paragraph.queryArgs.query === null) {
+                if (_.isNil(paragraph.queryArgs.query)) {
                     scope.title = 'SCAN query';
                     scope.content = ['SCAN query for cache <b>' + paragraph.queryArgs.cacheName + '</b>'];
                 }

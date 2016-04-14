@@ -87,11 +87,11 @@ angular
                         return data;
                     });
                 },
-                remove(nodeId) {
+                remove(notebook) {
                     if ($root.IgniteDemoMode)
-                        return $q.reject('Removing "SQL demo" notebook is not supported.');
+                        return $q.reject(`Removing "${notebook.name}" notebook is not supported.`);
 
-                    return $http.post('/api/v1/notebooks/remove', {_id: nodeId})
+                    return $http.post('/api/v1/notebooks/remove', {_id: notebook._id})
                         .then(() => {
                             const idx = _.findIndex($root.notebooks, (item) => {
                                 return item._id === nodeId;
