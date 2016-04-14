@@ -68,22 +68,14 @@ namespace ignite
             /**
              * Constructor.
              */
-            Transaction(common::concurrent::SharedPointer<impl::transactions::TransactionImpl> impl) :
-                impl(impl)
-            {
-                // No-op.
-            }
+            Transaction(common::concurrent::SharedPointer<impl::transactions::TransactionImpl> impl);
 
             /**
              * Copy constructor.
              *
              * @param other Other instance.
              */
-            Transaction(const Transaction& other) :
-                impl(other.impl)
-            {
-                // No-op.
-            }
+            Transaction(const Transaction& other);
 
             /**
              * Assignment operator.
@@ -91,110 +83,48 @@ namespace ignite
              * @param other Other instance.
              * @return This.
              */
-            Transaction& operator=(const Transaction& other)
-            {
-                impl = other.impl;
-
-                return *this;
-            }
+            Transaction& operator=(const Transaction& other);
 
             /**
              * Destructor.
              */
-            ~Transaction()
-            {
-                // No-op.
-            }
+            ~Transaction();
 
             /**
              * Commit the transaction.
              */
-            void Commit()
-            {
-                IgniteError err;
-
-                Commit(err);
-
-                IgniteError::ThrowIfNeeded(err);
-            }
+            void Commit();
 
             /**
              * Commit the transaction.
              *
              * @param err Error.
              */
-            void Commit(IgniteError& err)
-            {
-                impl::transactions::TransactionImpl* txImpl = impl.Get();
-
-                if (txImpl)
-                    txImpl->Commit(err);
-                else
-                {
-                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Instance is not usable (did you check for error?).");
-                }
-            }
+            void Commit(IgniteError& err);
 
             /**
              * Rollback the transaction.
              */
-            void Rollback()
-            {
-                IgniteError err;
-
-                Rollback(err);
-
-                IgniteError::ThrowIfNeeded(err);
-            }
+            void Rollback();
 
             /**
              * Rollback the transaction.
              *
              * @param err Error.
              */
-            void Rollback(IgniteError& err)
-            {
-                impl::transactions::TransactionImpl* txImpl = impl.Get();
-
-                if (txImpl)
-                    txImpl->Rollback(err);
-                else
-                {
-                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Instance is not usable (did you check for error?).");
-                }
-            }
+            void Rollback(IgniteError& err);
 
             /**
              * Close the transaction.
              */
-            void Close()
-            {
-                IgniteError err;
-
-                Close(err);
-
-                IgniteError::ThrowIfNeeded(err);
-            }
+            void Close();
 
             /**
              * Close the transaction.
              *
              * @param err Error.
              */
-            void Close(IgniteError& err)
-            {
-                impl::transactions::TransactionImpl* txImpl = impl.Get();
-
-                if (txImpl)
-                    txImpl->Close(err);
-                else
-                {
-                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Instance is not usable (did you check for error?).");
-                }
-            }
+            void Close(IgniteError& err);
 
             /**
              * Make transaction into rollback-only.
@@ -203,14 +133,7 @@ namespace ignite
              * only be rolled back. Error occurs if such transaction is
              * being commited.
              */
-            void SetRollbackOnly()
-            {
-                IgniteError err;
-
-                SetRollbackOnly(err);
-
-                IgniteError::ThrowIfNeeded(err);
-            }
+            void SetRollbackOnly();
 
             /**
              * Make transaction into rollback-only.
@@ -221,18 +144,7 @@ namespace ignite
              *
              * @param err Error.
              */
-            void SetRollbackOnly(IgniteError& err)
-            {
-                impl::transactions::TransactionImpl* txImpl = impl.Get();
-
-                if (txImpl)
-                    txImpl->SetRollbackOnly(err);
-                else
-                {
-                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Instance is not usable (did you check for error?).");
-                }
-            }
+            void SetRollbackOnly(IgniteError& err);
 
             /**
              * Check if the transaction is rollback-only.

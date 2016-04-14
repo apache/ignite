@@ -17,11 +17,14 @@
 
 #include "ignite/transactions/transactions.h"
 
+using namespace ignite::common::concurrent;
+using namespace ignite::impl::transactions;
+
 namespace ignite
 {
     namespace transactions
     {
-        Transactions::Transactions(ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> impl) :
+        Transactions::Transactions(SharedPointer<TransactionsImpl> impl) :
             impl(impl)
         {
             // No-op.
@@ -47,8 +50,6 @@ namespace ignite
 
         Transaction Transactions::GetTx()
         {
-            using impl::transactions::TransactionImpl;
-
             return Transaction(TransactionImpl::GetCurrent());
         }
 
@@ -104,9 +105,6 @@ namespace ignite
             TransactionIsolation isolation, int64_t timeout, int32_t txSize,
             IgniteError& err)
         {
-            using impl::transactions::TransactionImpl;
-            using ignite::common::concurrent::SharedPointer;
-
             SharedPointer<TransactionImpl> tx = TransactionImpl::Create(impl,
                 concurrency, isolation, timeout, txSize, err);
 
