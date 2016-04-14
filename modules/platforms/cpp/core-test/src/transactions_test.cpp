@@ -159,6 +159,51 @@ BOOST_AUTO_TEST_CASE(TransactionClose)
     BOOST_CHECK(!tx.IsValid());
 }
 
+BOOST_AUTO_TEST_CASE(TransactionRollbackOnly)
+{
+    Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
+
+    cache.Put(1, 1);
+    cache.Put(2, 2);
+
+    Transactions transactions = grid.GetTransactions();
+
+    Transaction tx = transactions.TxStart();
+
+    cache.Put(1, 10);
+    cache.Put(2, 20);
+
+    BOOST_CHECK(!tx.IsRollbackOnly());
+
+    tx.SetRollbackOnly();
+
+    BOOST_CHECK(tx.IsRollbackOnly());
+
+    try
+    {
+        tx.Commit();
+
+        BOOST_FAIL("Commit must fail for rollback-only transaction.");
+    }
+    catch (IgniteError& error)
+    {
+        // Expected exception.
+        BOOST_CHECK(error.GetCode() != IgniteError::IGNITE_SUCCESS);
+    }
+
+    tx.Close();
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ROLLED_BACK, tx.GetState());
+    BOOST_CHECK(tx.IsRollbackOnly());
+
+    BOOST_CHECK_EQUAL(1, cache.Get(1));
+    BOOST_CHECK_EQUAL(2, cache.Get(2));
+
+    tx = transactions.GetTx();
+
+    BOOST_CHECK(!tx.IsValid());
+}
+
 BOOST_AUTO_TEST_CASE(TransactionAttributes)
 {
     Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
