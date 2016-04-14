@@ -101,6 +101,17 @@ namespace ignite
                 void Close(IgniteError& err);
 
                 /**
+                 * Make transaction into rollback-only.
+                 *
+                 * After transaction have been marked as rollback-only it may
+                 * only be rolled back. Error occurs if such transaction is
+                 * being commited.
+                 *
+                 * @param err Error.
+                 */
+                void SetRollbackOnly(IgniteError& err);
+
+                /**
                  * Get concurrency.
                  *
                  * @return Concurrency.
@@ -187,6 +198,9 @@ namespace ignite
 
                 /** Closed flag. */
                 bool closed;
+
+                /** Rollback-only flag. */
+                bool rollbackOnly;
 
                 IGNITE_NO_COPY_ASSIGNMENT(TransactionImpl)
             };

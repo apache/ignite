@@ -2,6 +2,8 @@
 #include "..\..\..\include\ignite\impl\transactions\transaction_impl.h"
 #include "..\..\..\include\ignite\impl\transactions\transaction_impl.h"
 #include "..\..\..\include\ignite\impl\transactions\transaction_impl.h"
+#include "..\..\..\include\ignite\impl\transactions\transaction_impl.h"
+#include "..\..\..\include\ignite\impl\transactions\transaction_impl.h"
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -42,7 +44,8 @@ namespace ignite
                 timeout(timeout),
                 txSize(txSize),
                 state(IGNITE_TX_STATE_UNKNOWN),
-                closed(false)
+                closed(false),
+                rollbackOnly(false)
             {
                 // No-op.
             }
@@ -151,6 +154,20 @@ namespace ignite
 
                     closed = true;
                 }
+            }
+
+            void TransactionImpl::SetRollbackOnly(IgniteError & err)
+            {
+                common::concurrent::CsLockGuard guard(accessLock);
+
+                if (IsClosed())
+                {
+                    err = GetClosedError();
+
+                    return;
+                }
+
+                rollbackOnly = txs.Get()->TxSetRollbackOnly(id, err);
             }
 
             TransactionState TransactionImpl::GetState()

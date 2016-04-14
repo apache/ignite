@@ -40,8 +40,6 @@ namespace ignite
             int64_t TransactionsImpl::TxStart(int concurrency, int isolation,
                 int64_t timeout, int32_t txSize, IgniteError& err)
             {
-                using impl::transactions::TransactionsImpl;
-
                 JniErrorInfo jniErr;
 
                 int64_t id = env.Get()->Context()->TransactionsStart(javaRef,
@@ -87,6 +85,18 @@ namespace ignite
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                 return ToTransactionState(state);
+            }
+
+            bool TransactionsImpl::TxSetRollbackOnly(int64_t id, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                bool rollbackOnly = env.Get()->Context()->TransactionsSetRollbackOnly(javaRef, id, &jniErr);
+
+                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+                return rollbackOnly;
             }
 
             TransactionsImpl::TransactionState TransactionsImpl::TxState(int64_t id)

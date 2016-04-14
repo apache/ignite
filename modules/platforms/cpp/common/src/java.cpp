@@ -2031,12 +2031,12 @@ namespace ignite
                 return state;
             }
 
-            bool JniContext::TransactionsSetRollbackOnly(jobject obj, long long id) {
+            bool JniContext::TransactionsSetRollbackOnly(jobject obj, long long id, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformTransactions_txSetRollbackOnly, id);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return res != 0;
             }

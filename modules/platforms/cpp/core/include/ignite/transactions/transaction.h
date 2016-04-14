@@ -197,6 +197,44 @@ namespace ignite
             }
 
             /**
+             * Make transaction into rollback-only.
+             *
+             * After transaction have been marked as rollback-only it may
+             * only be rolled back. Error occurs if such transaction is
+             * being commited.
+             */
+            void SetRollbackOnly()
+            {
+                IgniteError err;
+
+                SetRollbackOnly(err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
+             * Make transaction into rollback-only.
+             *
+             * After transaction have been marked as rollback-only it may
+             * only be rolled back. Error occurs if such transaction is
+             * being commited.
+             *
+             * @param err Error.
+             */
+            void SetRollbackOnly(IgniteError& err)
+            {
+                impl::transactions::TransactionImpl* txImpl = impl.Get();
+
+                if (txImpl)
+                    txImpl->SetRollbackOnly(err);
+                else
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Instance is not usable (did you check for error?).");
+                }
+            }
+
+            /**
              * Get concurrency.
              *
              * @return Concurrency.

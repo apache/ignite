@@ -608,7 +608,7 @@ namespace ignite
                 void TransactionsRollbackAsync(jobject obj, long long id, long long futId);
                 int TransactionsClose(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
                 int TransactionsState(jobject obj, long long id);
-                bool TransactionsSetRollbackOnly(jobject obj, long long id);
+                bool TransactionsSetRollbackOnly(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
                 void TransactionsResetMetrics(jobject obj);
 
                 jobject EventsWithAsync(jobject obj);

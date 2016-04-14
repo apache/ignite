@@ -94,6 +94,18 @@ namespace ignite
                 TransactionState TxClose(int64_t id, IgniteError& err);
 
                 /**
+                 * Make transaction into rollback-only.
+                 *
+                 * After transaction have been marked as rollback-only it may
+                 * only be rolled back. Error occurs if such transaction is
+                 * being commited.
+                 *
+                 * @param err Error.
+                 * @return True if rollback-only has been set.
+                 */
+                bool TxSetRollbackOnly(int64_t id, IgniteError& err);
+
+                /**
                  * Get Transaction state.
                  *
                  * @param id Transaction ID.
