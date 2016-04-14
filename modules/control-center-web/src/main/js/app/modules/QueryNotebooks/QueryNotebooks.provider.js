@@ -94,7 +94,7 @@ angular
                     return $http.post('/api/v1/notebooks/remove', {_id: notebook._id})
                         .then(() => {
                             const idx = _.findIndex($root.notebooks, (item) => {
-                                return item._id === nodeId;
+                                return item._id === notebook._id;
                             });
 
                             if (idx >= 0) {
