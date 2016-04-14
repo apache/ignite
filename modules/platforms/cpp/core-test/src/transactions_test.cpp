@@ -410,4 +410,121 @@ BOOST_AUTO_TEST_CASE(TransactionCloseNe)
     BOOST_CHECK(!tx.IsValid());
 }
 
+BOOST_AUTO_TEST_CASE(TransactionRollbackOnlyNe)
+{
+    Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
+
+    IgniteError err;
+
+    cache.Put(1, 1);
+    cache.Put(2, 2);
+
+    Transactions transactions = grid.GetTransactions();
+
+    Transaction tx = transactions.TxStart();
+
+    cache.Put(1, 10);
+    cache.Put(2, 20);
+
+    BOOST_CHECK(!tx.IsRollbackOnly());
+
+    tx.SetRollbackOnly(err);
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    BOOST_CHECK(tx.IsRollbackOnly());
+
+    tx.Commit(err);
+    BOOST_REQUIRE_NE(IgniteError::IGNITE_SUCCESS, err.GetCode());
+
+    tx.Close(err);
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ROLLED_BACK, tx.GetState());
+    BOOST_CHECK(tx.IsRollbackOnly());
+
+    BOOST_CHECK_EQUAL(1, cache.Get(1));
+    BOOST_CHECK_EQUAL(2, cache.Get(2));
+
+    tx = transactions.GetTx();
+
+    BOOST_CHECK(!tx.IsValid());
+}
+
+BOOST_AUTO_TEST_CASE(TransactionAttributesNe)
+{
+    Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
+
+    IgniteError err;
+
+    Transactions transactions = grid.GetTransactions();
+
+    Transaction tx = transactions.GetTx();
+    BOOST_REQUIRE(!tx.IsValid());
+
+    tx = transactions.TxStart(IGNITE_TX_CONCURRENCY_OPTIMISTIC,
+        IGNITE_TX_ISOLATION_SERIALIZABLE, 1000, 100, err);
+
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    BOOST_REQUIRE(transactions.GetTx().IsValid());
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_CONCURRENCY_OPTIMISTIC, tx.GetConcurrency());
+    BOOST_CHECK_EQUAL(IGNITE_TX_ISOLATION_SERIALIZABLE, tx.GetIsolation());
+    BOOST_CHECK_EQUAL(1000, tx.GetTimeout());
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ACTIVE, tx.GetState());
+
+    tx.Commit();
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_COMMITTED, tx.GetState());
+
+    tx = transactions.GetTx();
+
+    BOOST_CHECK(!tx.IsValid());
+
+    tx = transactions.TxStart(IGNITE_TX_CONCURRENCY_PESSIMISTIC,
+        IGNITE_TX_ISOLATION_READ_COMMITTED, 2000, 10, err);
+
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    BOOST_REQUIRE(transactions.GetTx().IsValid());
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_CONCURRENCY_PESSIMISTIC, tx.GetConcurrency());
+    BOOST_CHECK_EQUAL(IGNITE_TX_ISOLATION_READ_COMMITTED, tx.GetIsolation());
+    BOOST_CHECK_EQUAL(2000, tx.GetTimeout());
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ACTIVE, tx.GetState());
+
+    tx.Rollback();
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ROLLED_BACK, tx.GetState());
+
+    tx = transactions.GetTx();
+
+    BOOST_CHECK(!tx.IsValid());
+
+    tx = transactions.TxStart(IGNITE_TX_CONCURRENCY_OPTIMISTIC,
+        IGNITE_TX_ISOLATION_REPEATABLE_READ, 3000, 0, err);
+
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    BOOST_REQUIRE(transactions.GetTx().IsValid());
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_CONCURRENCY_OPTIMISTIC, tx.GetConcurrency());
+    BOOST_CHECK_EQUAL(IGNITE_TX_ISOLATION_REPEATABLE_READ, tx.GetIsolation());
+    BOOST_CHECK_EQUAL(3000, tx.GetTimeout());
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ACTIVE, tx.GetState());
+
+    tx.Close();
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ROLLED_BACK, tx.GetState());
+
+    tx = transactions.GetTx();
+
+    BOOST_CHECK(!tx.IsValid());
+}
+
 BOOST_AUTO_TEST_SUITE_END()
