@@ -51,7 +51,7 @@ form.panel.panel-default(name='swap' novalidate)
                             +number('Read stripe size:', fileSwapModel + '.readStripesNumber', 'readStripesNumber', 'true', 'availableProcessors', '0',
                                 'Read stripe size defines number of file channels to be used concurrently')
                         .details-row
-                            +number-min-max-step('Maximum sparsity:', fileSwapModel + '.maximumSparsity', maximumSparsity, 'true', '0.5', '0', '0.999', '0.05',
+                            +number-min-max-step('Maximum sparsity:', fileSwapModel + '.maximumSparsity', 'maximumSparsity', 'true', '0.5', '0', '0.999', '0.05',
                                 'This property defines maximum acceptable wasted file space to whole file size ratio<br/>\
                                 When this ratio becomes higher than specified number compacting thread starts working')
                         .details-row
