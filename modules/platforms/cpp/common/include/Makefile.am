@@ -20,7 +20,7 @@ ACLOCAL_AMFLAGS =-I m4
 nobase_include_HEADERS = \
     ignite/common/concurrent.h \
     ignite/common/utils.h \
-    ignite/common/ignite_error.h \
+    ignite/ignite_error.h \
     ignite/date.h \
     ignite/guid.h \
     ignite/timestamp.h
