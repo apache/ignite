@@ -25,10 +25,12 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
     /// <summary>
@@ -108,6 +110,22 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
                 Assert.IsTrue(File.Exists(resCfg.JvmDllPath));
                 Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
+                Assert.AreEqual(cfg.IsDaemon, resCfg.IsDaemon);
+                Assert.AreEqual(cfg.UserAttributes, resCfg.UserAttributes);
+
+                var atm = cfg.AtomicConfiguration;
+                var resAtm = resCfg.AtomicConfiguration;
+                Assert.AreEqual(atm.AtomicSequenceReserveSize, resAtm.AtomicSequenceReserveSize);
+                Assert.AreEqual(atm.Backups, resAtm.Backups);
+                Assert.AreEqual(atm.CacheMode, resAtm.CacheMode);
+
+                var tx = cfg.TransactionConfiguration;
+                var resTx = resCfg.TransactionConfiguration;
+                Assert.AreEqual(tx.DefaultTimeout, resTx.DefaultTimeout);
+                Assert.AreEqual(tx.DefaultTransactionConcurrency, resTx.DefaultTransactionConcurrency);
+                Assert.AreEqual(tx.DefaultTransactionIsolation, resTx.DefaultTransactionIsolation);
+                Assert.AreEqual(tx.PessimisticTransactionLogLinger, resTx.PessimisticTransactionLogLinger);
+                Assert.AreEqual(tx.PessimisticTransactionLogSize, resTx.PessimisticTransactionLogSize);
             }
         }
 
@@ -349,7 +367,23 @@ namespace Apache.Ignite.Core.Tests
                 WorkDirectory = Path.GetTempPath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                Localhost = "127.0.0.1"
+                Localhost = "127.0.0.1",
+                IsDaemon = true,
+                UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x),
+                AtomicConfiguration = new AtomicConfiguration
+                {
+                    CacheMode = CacheMode.Replicated,
+                    Backups = 2,
+                    AtomicSequenceReserveSize = 200
+                },
+                TransactionConfiguration = new TransactionConfiguration
+                {
+                    DefaultTransactionConcurrency = TransactionConcurrency.Optimistic,
+                    DefaultTimeout = TimeSpan.FromSeconds(25),
+                    DefaultTransactionIsolation = TransactionIsolation.Serializable,
+                    PessimisticTransactionLogLinger = TimeSpan.FromHours(1),
+                    PessimisticTransactionLogSize = 240
+                }
             };
         }
     }

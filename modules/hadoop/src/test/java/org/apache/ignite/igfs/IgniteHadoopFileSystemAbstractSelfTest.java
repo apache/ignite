@@ -1608,6 +1608,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
             IgfsFile fileInfo = igfs.info(filePath);
 
+            awaitPartitionMapExchange();
+
             Collection<IgfsBlockLocation> locations = igfs.affinity(filePath, 0, fileInfo.length());
 
             assertEquals(1, locations.size());

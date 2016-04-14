@@ -105,15 +105,13 @@ namespace Apache.Ignite.Linq.Impl
         public Func<object[], IQueryCursor<T>> CompileQuery<T>(QueryModel queryModel, Delegate queryCaller)
         {
             Debug.Assert(queryModel != null);
+            Debug.Assert(queryCaller != null);
 
             var qryData = GetQueryData(queryModel);
 
             var qryText = qryData.QueryText;
 
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
-
-            if (queryCaller == null)
-                return args => _cache.QueryFields(new SqlFieldsQuery(qryText, _local, args), selector);
 
             // Compiled query is a delegate with query parameters
             // Delegate parameters order and query parameters order may differ
@@ -128,7 +126,7 @@ namespace Apache.Ignite.Linq.Impl
             if ((qryOrderParams.Count != qryData.Parameters.Count) ||
                 (qryOrderParams.Count != userOrderParams.Count))
                 throw new InvalidOperationException("Error compiling query: all compiled query arguments " +
-                                                    "should come from enclosing lambda expression");
+                    "should come from enclosing delegate parameters.");
 
             var indices = qryOrderParams.Select(x => userOrderParams.IndexOf(x)).ToArray();
 

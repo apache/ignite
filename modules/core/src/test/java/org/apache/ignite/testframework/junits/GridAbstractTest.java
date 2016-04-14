@@ -774,7 +774,8 @@ public abstract class GridAbstractTest extends TestCase {
 
                 log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
                     + ", marshaller=" + nodeCfg.getMarshaller()
-                    + ", binaryCfg=" + nodeCfg.getBinaryConfiguration() + "]");
+                    + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
+                    + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
 
                 return node;
             }

@@ -36,6 +36,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Test for customer scenario.
@@ -74,6 +75,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
                 ccfg.setAtomicityMode(TRANSACTIONAL);
                 ccfg.setBackups(1);
                 ccfg.setName("cache-" + i);
+                ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
                 ccfgs[i] = ccfg;
             }

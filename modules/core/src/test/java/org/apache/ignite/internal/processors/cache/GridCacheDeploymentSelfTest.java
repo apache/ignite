@@ -92,6 +92,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(null);
 
+        cfg.setLateAffinityAssignment(false);
+
         return cfg;
     }
 
