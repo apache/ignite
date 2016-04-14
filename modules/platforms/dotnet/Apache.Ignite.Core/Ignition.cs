@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core
         private static void CheckServerGc(IgniteConfiguration cfg)
         {
             if (!cfg.SuppressWarnings && !GCSettings.IsServerGC && Interlocked.CompareExchange(ref _gcWarn, 1, 0) == 0)
-                Console.WriteLine("GC server mode is not enabled, this could lead to less " +
+                Logger.LogWarning("GC server mode is not enabled, this could lead to less " +
                     "than optimal performance on multi-core machines (to enable see " +
                     "http://msdn.microsoft.com/en-us/library/ms229357(v=vs.110).aspx).");
         }

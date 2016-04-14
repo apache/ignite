@@ -77,7 +77,7 @@ offset.flush.interval.ms=10000
 ```
 # connector
 name=string-ignite-connector
-connector.class=IgniteSinkConnector
+connector.class=org.apache.ignite.stream.kafka.connect.IgniteSinkConnector
 tasks.max=2
 topics=testTopic1,testTopic2
 
@@ -114,7 +114,7 @@ bin/kafka-server-start.sh config/server.properties
 
 3. Provide some data input to the Kafka server
 ```
-bin/kafka-console-producer.sh --broker-list localhost:9092 --topic test --property parse.key=true --operty key.separator=,
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic test --property parse.key=true --property key.separator=,
 k1,v1
 ```
 
@@ -141,7 +141,7 @@ as described in the following subsection.
 - ignite-kafka-connect-x.x.x-SNAPSHOT.jar
 - ignite-core-x.x.x-SNAPSHOT.jar
 - cache-api-1.0.0.jar
-- ignite-spring-1.5.0-SNAPSHOT.jar
+- ignite-spring-x.x.x-SNAPSHOT.jar
 - spring-aop-4.1.0.RELEASE.jar
 - spring-beans-4.1.0.RELEASE.jar
 - spring-context-4.1.0.RELEASE.jar
@@ -174,12 +174,12 @@ using org.apache.ignite.stream.kafka.connect.serialization.CacheEventConverter.
 ```
 # connector
 name=ignite-src-connector
-connector.class=IgniteSourceConnector
+connector.class=org.apache.ignite.stream.kafka.connect.IgniteSourceConnector
 tasks.max=2
 
 # cache
 topicNames=testTopic1,testTopic2
-cacheEvts=put,remove
+cacheEvts=put,removed
 ## if you decide to filter remotely (recommended)
 cacheFilterCls=MyFilter
 cacheName=cache1

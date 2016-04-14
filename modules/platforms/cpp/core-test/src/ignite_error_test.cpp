@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_SUITE(IgniteErrorTestSuite)
 
 BOOST_AUTO_TEST_CASE(TestIgniteErrorDerivesStdException)
 {
-    const std::string testMsg = "Lorem ipsum dolor sit amet";
+    const std::string testMsg = "Exception was not caught as it was supposed to.";
 
     try
     {

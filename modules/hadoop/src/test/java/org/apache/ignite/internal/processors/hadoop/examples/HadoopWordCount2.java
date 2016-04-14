@@ -91,7 +91,7 @@ public class HadoopWordCount2 {
         }
 
         if (setCombiner)
-            job.setCombinerClass(HadoopWordCount2Reducer.class);
+            job.setCombinerClass(HadoopWordCount2Combiner.class);
 
         if (setReducer) {
             job.setReducerClass(HadoopWordCount2Reducer.class);

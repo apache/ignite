@@ -81,6 +81,7 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
+import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridSpiCloseableIteratorWrapper;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -831,7 +832,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (part == null || cctx.isLocal())
                 keyIter = backups ? prj.keySetx().iterator() : prj.primaryKeySet().iterator();
             else if (part < 0 || part >= cctx.affinity().partitions())
-                keyIter = F.emptyIterator();
+                keyIter = new GridEmptyIterator<>();
             else {
                 final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
@@ -1917,7 +1918,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             // Get metadata from remote nodes.
             if (!nodes.isEmpty())
-                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, F.asSet(job), nodes, true);
+                rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, Collections.singleton(job), nodes, true);
 
             // Get local metadata.
             IgniteInternalFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
@@ -2484,11 +2485,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @return Expire time.
          */
         abstract long expireTime();
-
-        /**
-         * @return Version.
-         */
-        abstract GridCacheVersion version();
     }
 
     /**
@@ -2526,11 +2522,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override long expireTime() {
             return GridCacheSwapEntryImpl.expireTime(e.getValue());
-        }
-
-        /** {@inheritDoc} */
-        @Override GridCacheVersion version() {
-            return GridCacheSwapEntryImpl.version(e.getValue());
         }
     }
 
@@ -2576,11 +2567,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override long expireTime() {
             return GridCacheOffheapSwapEntry.expireTime(valPtr.get1());
-        }
-
-        /** {@inheritDoc} */
-        @Override GridCacheVersion version() {
-            return GridCacheOffheapSwapEntry.version(valPtr.get1());
         }
     }
 

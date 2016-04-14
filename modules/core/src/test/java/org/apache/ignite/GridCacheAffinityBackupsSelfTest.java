@@ -89,7 +89,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
         this.backups = backups;
         this.funcType = funcType;
 
-        startGrids(nodesCnt);
+        startGridsMultiThreaded(nodesCnt, true);
 
         try {
             IgniteCache<Object, Object> cache = jcache(0);
