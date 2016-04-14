@@ -29,8 +29,8 @@ mixin unique-feedback(visible, errorMessage)
     +error-feedback(visible, 'igniteUnique', errorMessage)
 
 //- Mixin for feedback on IP address violation.
-mixin ipaddress-feedback(visible)
-    +error-feedback(visible, 'ipaddress', 'Invalid address!')
+mixin ipaddress-feedback(visible, name)
+    +error-feedback(visible, 'ipaddress', 'Invalid address!', name)
 
 //- Mixin for checkbox.
 mixin checkbox(lbl, model, name, tip)
@@ -101,7 +101,7 @@ mixin text-ip-address(lbl, form, model, name, enabled, placeholder, tip)
             data-ng-disabled='!(#{enabled})'
             data-placeholder=placeholder
         )
-            +ipaddress-feedback(form + '.' + name + '.$error.ipaddress')
+            +ipaddress-feedback(form + '.' + name + '.$error.ipaddress', name)
 
 //- Mixin for text field.
 mixin text-enabled(lbl, model, name, enabled, required, placeholder, tip)
