@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core.Interop
 {
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Common.JavaObjects;
 
     /// <summary>
     /// Represents a Java object wrapper.
