@@ -159,6 +159,70 @@ BOOST_AUTO_TEST_CASE(TransactionClose)
     BOOST_CHECK(!tx.IsValid());
 }
 
+BOOST_AUTO_TEST_CASE(TransactionAttributes)
+{
+    Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
+
+    Transactions transactions = grid.GetTransactions();
+
+    Transaction tx = transactions.GetTx();
+    BOOST_REQUIRE(!tx.IsValid());
+
+    tx = transactions.TxStart(IGNITE_TX_CONCURRENCY_OPTIMISTIC,
+        IGNITE_TX_ISOLATION_SERIALIZABLE, 1000, 100);
+
+    BOOST_REQUIRE(transactions.GetTx().IsValid());
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_CONCURRENCY_OPTIMISTIC, tx.GetConcurrency());
+    BOOST_CHECK_EQUAL(IGNITE_TX_ISOLATION_SERIALIZABLE, tx.GetIsolation());
+    BOOST_CHECK_EQUAL(1000, tx.GetTimeout());
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ACTIVE, tx.GetState());
+
+    tx.Commit();
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_COMMITTED, tx.GetState());
+
+    tx = transactions.GetTx();
+
+    BOOST_CHECK(!tx.IsValid());
+
+    tx = transactions.TxStart(IGNITE_TX_CONCURRENCY_PESSIMISTIC,
+        IGNITE_TX_ISOLATION_READ_COMMITTED, 2000, 10);
+
+    BOOST_REQUIRE(transactions.GetTx().IsValid());
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_CONCURRENCY_PESSIMISTIC, tx.GetConcurrency());
+    BOOST_CHECK_EQUAL(IGNITE_TX_ISOLATION_READ_COMMITTED, tx.GetIsolation());
+    BOOST_CHECK_EQUAL(2000, tx.GetTimeout());
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ACTIVE, tx.GetState());
+
+    tx.Rollback();
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ROLLED_BACK, tx.GetState());
+
+    tx = transactions.GetTx();
+
+    BOOST_CHECK(!tx.IsValid());
+
+    tx = transactions.TxStart(IGNITE_TX_CONCURRENCY_OPTIMISTIC,
+        IGNITE_TX_ISOLATION_REPEATABLE_READ, 3000, 0);
+
+    BOOST_REQUIRE(transactions.GetTx().IsValid());
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_CONCURRENCY_OPTIMISTIC, tx.GetConcurrency());
+    BOOST_CHECK_EQUAL(IGNITE_TX_ISOLATION_REPEATABLE_READ, tx.GetIsolation());
+    BOOST_CHECK_EQUAL(3000, tx.GetTimeout());
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ACTIVE, tx.GetState());
+
+    tx.Close();
+
+    BOOST_CHECK_EQUAL(IGNITE_TX_STATE_ROLLED_BACK, tx.GetState());
+
+    tx = transactions.GetTx();
+
+    BOOST_CHECK(!tx.IsValid());
+}
+
 BOOST_AUTO_TEST_CASE(TransactionCommitNe)
 {
     Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
