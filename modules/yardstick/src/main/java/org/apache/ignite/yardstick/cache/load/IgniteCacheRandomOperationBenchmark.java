@@ -33,6 +33,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
@@ -44,8 +45,11 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -57,6 +61,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.IgniteBenchmarkUtils;
 import org.apache.ignite.yardstick.cache.load.model.ModelUtil;
+import org.apache.ignite.yardstick.cache.model.Person;
 import org.springframework.util.CollectionUtils;
 import org.yardstickframework.BenchmarkConfiguration;
 
@@ -72,6 +77,21 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
     /** Amount partitions. */
     private static final int SCAN_QUERY_PARTITIN_AMOUNT = 10;
+
+    /** Type SQL query. */
+    private static String TYPE_SQL_QUERY = "id<? and salary like ?";
+
+    /** SQL fields query. */
+    private static String FIELD_SQL_QUERY = "select concat(firstName, ' ', lastName), Organization.name, "
+        + "concat(Person.salary, '$') "
+        + "from Person, Organization where "
+        + "Person.orgId = Organization.id and "
+        + "Person.salary > ?";
+
+    /** Type SQL query with join. */
+    private static String JOIN_SQL_QUERY = "from Person, Organization "
+        + "where Person.orgId = Organization.id "
+        + "and lower(Organization.name) = lower(?)";
 
     /** List off all available cache. */
     private List<IgniteCache> availableCaches;
@@ -417,6 +437,10 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
             case SCAN_QUERY:
                 doScanQuery(cache);
+                break;
+
+            case SQL_QUERY:
+                doSqlQuery(cache);
         }
     }
 
@@ -644,6 +668,32 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     }
 
     /**
+     * @param cache Ignite cache.
+     * @throws Exception If failed.
+     */
+    private void doSqlQuery(IgniteCache cache) throws Exception {
+        if ("query".equals(cache.getName())) {
+            int id = nextRandom(args.range());
+            Query sq = null;
+            switch (id % 3) {
+                case 0:
+                    sq = new SqlQuery(Person.class, TYPE_SQL_QUERY).setArgs(id, "%" + id % 10 + "%");
+                    break;
+                case 1:
+                    sq = new SqlFieldsQuery(FIELD_SQL_QUERY).setArgs(id / 2.123 * 100);
+                    break;
+                case 2:
+                    sq = new SqlQuery(Person.class, JOIN_SQL_QUERY).setArgs("ORGANIZATION " + id);
+            }
+
+            try (QueryCursor cursor = cache.query(sq)) {
+                for (Object obj : cursor)
+                    ;
+            }
+        }
+    }
+
+    /**
      * Closure for scan query executing.
      */
     private static class ScanQueryBroadcastClosure implements IgniteRunnable {
@@ -754,7 +804,10 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         REPLACE,
 
         /** Scan query operation. */
-        SCAN_QUERY;
+        SCAN_QUERY,
+
+        /** SQL query operation. */
+        SQL_QUERY;
 
         /**
          * @param num Number of operation.
