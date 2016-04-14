@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Interop;
     using NUnit.Framework;
 
@@ -63,24 +64,35 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public void FixtureSetUp()
         {
             // Main .NET nodes
-            _ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            IList<String> jvmOpts = TestUtils.TestJavaOptions();
+
+            _ignite = Ignition.Start(new IgniteConfiguration
             {
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = jvmOpts,
                 SpringConfigUrl = SpringConfig,
-                BinaryConfiguration = new BinaryConfiguration(typeof (TestBinary))
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
+                    {
+                        new BinaryTypeConfiguration(typeof(TestBinary)) 
+                    }
+                }
             });
 
             // Second .NET node
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            Ignition.Start(new IgniteConfigurationEx
             {
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = jvmOpts,
                 SpringConfigUrl = SpringConfig2,
                 GridName = "dotNet2"
             });
 
-
             // Java-only node
             _javaNodeName = _ignite.GetCompute().ExecuteJavaTask<string>(StartTask, SpringConfig2);
 
-            Assert.IsTrue(_ignite.WaitTopology(3));
+            Assert.IsTrue(_ignite.WaitTopology(3, 5000));
         }
 
         /// <summary>
