@@ -97,7 +97,7 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
     public void testConcurrentGridGetOrStartCon() throws Exception {
         final IgniteConfiguration cfg = getConfiguration(null);
 
-        AtomicReference<Ignite> ref = new AtomicReference<>();
+        final AtomicReference<Ignite> ref = new AtomicReference<>();
 
         try {
             GridTestUtils.runMultiThreaded(new Runnable() {
