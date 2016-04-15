@@ -637,11 +637,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public int available() throws IgniteCheckedException {
-            return fut.available();
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean cancel() throws IgniteCheckedException {
             return fut.cancel();
         }

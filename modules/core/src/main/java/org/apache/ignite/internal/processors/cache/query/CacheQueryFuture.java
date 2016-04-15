@@ -28,15 +28,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface CacheQueryFuture<T> extends IgniteInternalFuture<Collection<T>> {
     /**
-     * Returns number of elements that are already fetched and can
-     * be returned from {@link #next()} method without blocking.
-     *
-     * @return Number of fetched elements which are available immediately.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public int available() throws IgniteCheckedException;
-
-    /**
      * Returns next element from result set.
      * <p>
      * This is a blocking call which will wait if there are no
