@@ -35,6 +35,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.console.agent.AgentConfiguration;
@@ -137,6 +138,8 @@ public class AgentSqlDemo {
 
         ccfg.setStartSize(100);
 
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+
         return ccfg;
     }
 
@@ -172,6 +175,8 @@ public class AgentSqlDemo {
         ccfg.setQueryEntities(qryEntities);
 
         ccfg.setStartSize(100);
+
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         return ccfg;
     }
@@ -234,6 +239,8 @@ public class AgentSqlDemo {
 
         ccfg.setStartSize(100);
 
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+
         return ccfg;
     }
 
@@ -270,6 +277,8 @@ public class AgentSqlDemo {
 
         ccfg.setStartSize(100);
 
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+
         return ccfg;
     }
 
@@ -303,6 +312,8 @@ public class AgentSqlDemo {
         type.setIndexes(Collections.singletonList(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_1")));
 
         ccfg.setQueryEntities(qryEntities);
+
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         return ccfg;
     }

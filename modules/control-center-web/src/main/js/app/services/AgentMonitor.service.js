@@ -121,6 +121,10 @@ class IgniteAgentMonitor {
     init() {
         this._socket = this._socketFactory();
 
+        this._socket.on('connect_error', () => {
+            this._scope.hasAgents = false;
+        });
+
         this._socket.on('agent:count', ({count}) => {
             this._scope.hasAgents = count > 0;
 
