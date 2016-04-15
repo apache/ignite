@@ -883,10 +883,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
     CheckEmpty(cursor);
 }
 
-/**
- * Test fields query with several pages.
- */
-BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveralPages)
+void CheckFieldsQueryPages(int32_t pageSize, int32_t pagesNum, int32_t additionalNum)
 {
     // Test simple query.
     Cache<int, QueryPerson> cache = GetCache();
@@ -897,9 +894,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveralPages)
     QueryFieldsCursor cursor = cache.Query(qry);
     CheckEmpty(cursor);
 
-    const int32_t pageSize = 32; // Page size.
-    const int32_t pagesNum = 8; // Number of whole pages.
-    const int32_t entryCnt = pageSize * pagesNum + 1; // Number of entries.
+    const int32_t entryCnt = pageSize * pagesNum + additionalNum; // Number of entries.
 
     qry.SetPageSize(pageSize);
 
@@ -948,6 +943,39 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveralPages)
     }
 
     CheckEmpty(cursor);
+}
+
+/**
+ * Test fields query with several pages.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryPagesSeveral)
+{
+    CheckFieldsQueryPages(32, 8, 1);
+}
+
+/**
+ * Test fields query with page size 1.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryPageSingle)
+{
+    CheckFieldsQueryPages(1, 100, 0);
+}
+
+/**
+ * Test fields query with page size 0.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryPageZero)
+{
+    try
+    {
+        CheckFieldsQueryPages(0, 100, 0);
+
+        BOOST_FAIL("Exception expected.");
+    }
+    catch (IgniteError&)
+    {
+        // Expected.
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
