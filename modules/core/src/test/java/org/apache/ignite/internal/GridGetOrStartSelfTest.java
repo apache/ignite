@@ -118,7 +118,7 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
                 }
             }, CONCURRENCY, "GridCreatorThread");
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             fail("Exception is not expected");
         }
 
