@@ -28,3 +28,4 @@ git-patch-prop-local.sh
 **/cpp/**/vs/Win32/
 **/dotnet/**/obj/
 /modules/platforms/cpp/doc/
+*.VC.opendb

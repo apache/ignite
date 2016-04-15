@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -32,11 +37,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Binary enum object.
@@ -83,6 +84,40 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /**
+     * @param ctx Context.
+     * @param arr Array.
+     */
+    public BinaryEnumObjectImpl(BinaryContext ctx, byte[] arr) {
+        assert ctx != null;
+        assert arr != null;
+        assert arr[0] == GridBinaryMarshaller.ENUM;
+
+        this.ctx = ctx;
+
+        int off = 1;
+
+        this.typeId = BinaryPrimitives.readInt(arr, off);
+
+        off += 4;
+
+        if (this.typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
+            assert arr[off] == GridBinaryMarshaller.STRING;
+
+            int len = BinaryPrimitives.readInt(arr, ++off);
+
+            off += 4;
+
+            byte[] bytes = BinaryPrimitives.readByteArray(arr, off, len);
+
+            off += len;
+
+            this.clsName = new String(bytes, UTF_8);
+        }
+
+        this.ord = BinaryPrimitives.readInt(arr, off);
+    }
+
+    /**
      * @return Class name.
      */
     @Nullable public String className() {
@@ -112,7 +147,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T deserialize() throws BinaryObjectException {
-        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, null, true);
+        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, ctx.configuration().getClassLoader(), true);
 
         return BinaryEnumCache.get(cls, ord);
     }
@@ -170,9 +205,8 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
             type = null;
         }
 
-        if (type != null) {
+        if (type != null)
             return type.typeName() + "[ordinal=" + ord  + ']';
-        }
         else {
             if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
                 return "BinaryEnum[clsName=" + clsName + ", ordinal=" + ord + ']';
@@ -209,7 +243,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public byte cacheObjectType() {
-        return TYPE_BINARY;
+        return TYPE_BINARY_ENUM;
     }
 
     /** {@inheritDoc} */
@@ -229,6 +263,11 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectContext ctx) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
         // No-op.
     }
 

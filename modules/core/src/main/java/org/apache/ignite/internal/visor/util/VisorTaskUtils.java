@@ -434,11 +434,11 @@ public class VisorTaskUtils {
                     lastFound.set(true);
 
                 // Retains events by lastOrder, period and type.
-                return e.localOrder() > lastOrder && e.timestamp() > notOlderThan && F.contains(evtTypes, e.type());
+                return e.localOrder() > lastOrder && e.timestamp() > notOlderThan;
             }
         };
 
-        Collection<Event> evts = ignite.events().localQuery(p);
+        Collection<Event> evts = ignite.events().localQuery(p, evtTypes);
 
         // Update latest order in node local, if not empty.
         if (!evts.isEmpty()) {

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.platform;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -160,10 +162,10 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                     return new int[] { 1 };
 
                 case TYPE_COLLECTION:
-                    return Collections.singletonList(1);
+                    return new ArrayList<>(Collections.singletonList(1));
 
                 case TYPE_MAP:
-                    return Collections.singletonMap(1, 1);
+                    return new HashMap<>(Collections.singletonMap(1, 1));
 
                 case TYPE_BINARY:
                     return new PlatformComputeBinarizable(1);
