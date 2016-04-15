@@ -834,7 +834,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws IgniteCheckedException If failed to get iterator.
      */
     @SuppressWarnings({"unchecked"})
-    public GridCloseableIterator<IgniteBiTuple<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
+    private GridCloseableIterator<IgniteBiTuple<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
         throws IgniteCheckedException {
         IgniteInternalCache<K, V> prj0 = cctx.cache();
 
@@ -953,6 +953,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
     }
 
+    // For performance testing.
     public Iterator<IgniteBiTuple<K, V>> scanHeapIterator() {
         IgniteInternalCache<K, V> prj0 = cctx.cache();
 

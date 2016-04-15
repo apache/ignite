@@ -438,8 +438,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /** {@inheritDoc} */
     @Override protected boolean onPageReady(boolean loc, GridCacheQueryInfo qryInfo,
         Collection<?> data, boolean finished, Throwable e) {
-//        U.dumpStack(">>>>> DistrQMgr.onPageReady: " + loc);
-
         GridCacheLocalQueryFuture<?, ?, ?> fut = qryInfo.localQueryFuture();
 
         if (loc)
