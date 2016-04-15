@@ -60,7 +60,7 @@ mixin checkbox-enabled(lbl, model, name, enabled, tip)
 //- Mixin for java name field with enabled condition.
 mixin java-class(lbl, form, model, name, enabled, required, tip)
     -var err = form + '.' + name + '.$error'
-    -var errLbl = (lbl.slice(-1) === ':') ? lbl.substring(0, lbl.length - 1) : lbl;
+    -var errLbl = lbl.substring(0, lbl.length - 1)
 
     ignite-form-field
         ignite-form-field-label
@@ -84,7 +84,6 @@ mixin java-class(lbl, form, model, name, enabled, required, tip)
             +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', errLbl + ' does not have package specified!', name)
             +error-feedback(err + '.javaKeywords', 'javaKeywords', errLbl + ' could not contains reserved Java keyword!', name)
             +error-feedback(err + '.javaBuiltInClass', 'javaBuiltInClass', errLbl + ' should not be the Java built-in class!', name)
-        block
 
 //- Mixin for text field.
 mixin text-ip-address(lbl, form, model, name, enabled, placeholder, tip)

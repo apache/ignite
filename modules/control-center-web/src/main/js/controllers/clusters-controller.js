@@ -262,7 +262,7 @@ consoleModule.controller('clustersController', [
                 var errNameFull = actualError.$name;
                 var errNameShort = errNameFull;
 
-                if (errNameShort.endsWith('TextInput') || errNameShort.endsWith('JavaClass'))
+                if (errNameShort.endsWith('TextInput'))
                     errNameShort = errNameShort.substring(0, errNameShort.length - 9);
 
                 var extractErrorMessage = function (errName) {
@@ -312,10 +312,10 @@ consoleModule.controller('clustersController', [
                         var type = b.typeConfigurations[typeIx];
 
                         if ($common.isEmptyString(type.typeName))
-                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx + 'JavaClass', 'Type name should be specified!');
+                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type name should be specified!');
 
                         if (_.find(b.typeConfigurations, sameName))
-                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx + 'JavaClass', 'Type with such name is already specified!');
+                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type with such name is already specified!');
                     }
                 }
             }

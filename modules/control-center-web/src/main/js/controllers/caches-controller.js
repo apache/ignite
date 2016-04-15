@@ -269,7 +269,7 @@ consoleModule.controller('cachesController', [
                 var errNameFull = actualError.$name;
                 var errNameShort = errNameFull;
 
-                if (errNameShort.endsWith('TextInput') || errNameShort.endsWith('JavaClass'))
+                if (errNameShort.endsWith('TextInput'))
                     errNameShort = errNameShort.substring(0, errNameShort.length - 9);
 
                 var extractErrorMessage = function (errName) {

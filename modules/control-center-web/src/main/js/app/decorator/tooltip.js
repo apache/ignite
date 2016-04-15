@@ -18,7 +18,8 @@
 import angular from 'angular';
 
 /**
- * Special decorator that fix problem in AngularStrap selectAll / deselectAll methods.
+ * Special decorator that fix problem in AngularStrap $tooltip in special case.
+ * Case: when tooltip is shown on table row remove button and user click this button.
  * If this problem will be fixed in AngularStrap we can remove this delegate.
  */
 angular.module('mgcrea.ngStrap.tooltip')
