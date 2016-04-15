@@ -95,18 +95,17 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
      * Tests concurrent grid initialization
      */
     public void testConcurrentGridGetOrStartCon() throws Exception {
-        IgniteConfiguration cfg = getConfiguration(null);
+        final IgniteConfiguration cfg = getConfiguration(null);
 
-        AtomicReference<Ignite> ref = new AtomicReference<>();
+        final AtomicReference<Ignite> ref = new AtomicReference<>();
 
         try {
             GridTestUtils.runMultiThreaded(new Runnable() {
                 @Override public void run() {
                     // must return same instance in each thread
-                    Ignite ignite;
 
                     try {
-                        ignite = Ignition.getOrStart(cfg);
+                        Ignite ignite = Ignition.getOrStart(cfg);
 
                         boolean set = ref.compareAndSet(null, ignite);
 
@@ -119,7 +118,7 @@ public class GridGetOrStartSelfTest extends GridCommonAbstractTest {
                 }
             }, CONCURRENCY, "GridCreatorThread");
         }
-        catch (Exception e) {
+        catch (Exception ignored) {
             fail("Exception is not expected");
         }
 
