@@ -590,7 +590,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             ClusterNode node = iter.next();
 
             if (node.isLocal()) {
-                locIter0 = (GridCloseableIterator) scanQueryLocal(qry);
+                locIter0 = (GridCloseableIterator)scanQueryLocal(qry);
 
                 iter.remove();
 

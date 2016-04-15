@@ -23,6 +23,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -44,10 +45,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -516,12 +517,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         GridCloseableIterator<Map.Entry<K, V>> iter0 = null;
 
-        if (part != null && !cctx.isLocal()) {
-  //        TODO
-            ScanQueryFallbackClosableIterator<Object> fut = new ScanQueryFallbackClosableIterator<>(part, bean, qryMgr, cctx);
-
-            return null;
-        }
+        if (part != null && !cctx.isLocal())
+            iter0 = new ScanQueryFallbackClosableIterator<>(part, bean, qryMgr, cctx);
         else
             iter0 = loc ? qryMgr.scanQueryLocal(bean) : qryMgr.scanQueryDistributed(bean, nodes);
 
@@ -614,10 +611,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * Wrapper for queries with fallback.
      */
-    private static class ScanQueryFallbackClosableIterator<R> extends GridFutureAdapter<Collection<R>>
-        implements CacheQueryFuture<R> {
+    private static class ScanQueryFallbackClosableIterator<K, V> extends GridCloseableIteratorAdapter<Map.Entry<K, V>> {
         /** Query future. */
-        private volatile CacheQueryFuture<R> fut;
+        private volatile T2<GridCloseableIterator<Map.Entry<K, V>>, CacheQueryFuture<Map.Entry<K, V>>> tuple;
 
         /** Backups. */
         private volatile Queue<ClusterNode> nodes;
@@ -644,7 +640,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private boolean firstItemReturned;
 
         /** */
-        private volatile boolean loc;
+        private Map.Entry<K, V> cur;
 
         /**
          * @param part Partition.
@@ -653,7 +649,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
          * @param cctx Cache context.
          */
         private ScanQueryFallbackClosableIterator(int part, GridCacheQueryBean bean,
-            GridCacheQueryManager qryMgr, GridCacheContext cctx) {
+            GridCacheQueryManager qryMgr, GridCacheContext cctx) throws IgniteCheckedException {
             this.bean = bean;
             this.qryMgr = qryMgr;
             this.cctx = cctx;
@@ -693,45 +689,72 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
          *
          */
         @SuppressWarnings("unchecked")
-        private void init() {
+        private void init() throws IgniteCheckedException {
             final ClusterNode node = nodes.poll();
 
-            loc = node.isLocal();
+            T2<GridCloseableIterator<Map.Entry<K, V>>, CacheQueryFuture<Map.Entry<K, V>>> t0 = new T2<>();
 
-            fut = loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, Collections.singleton(node));
+            if (node.isLocal())
+                t0.set1(qryMgr.scanQueryLocal(bean));
+            else
+                t0.set2(qryMgr.queryDistributed(bean, Collections.singleton(node)));
+
+            tuple = t0;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean cancel() throws IgniteCheckedException {
-            return fut.cancel();
+        @Override protected Map.Entry<K, V> onNext() throws IgniteCheckedException {
+            if (!onHasNext())
+                throw new NoSuchElementException();
+
+            assert cur != null;
+
+            Map.Entry<K, V> e = cur;
+
+            cur = null;
+
+            return e;
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<R> get() throws IgniteCheckedException {
-            assert false;
+        @Override protected boolean onHasNext() throws IgniteCheckedException {
+            if (cur != null)
+                return true;
 
-            return super.get();
-        }
+            T2<GridCloseableIterator<Map.Entry<K, V>>, CacheQueryFuture<Map.Entry<K, V>>> t = tuple;
 
-        /** {@inheritDoc} */
-        @Override public R next() throws IgniteCheckedException {
-            if (firstItemReturned)
-                return fut.next();
+            if (t.get1() != null) {
+                GridCloseableIterator<Map.Entry<K, V>> iter = t.get1();
 
-            while (true) {
-                try {
-                    if (!loc)
+                boolean hasNext = iter.hasNext();
+
+                if (hasNext)
+                    cur = iter.next();
+
+                return hasNext;
+            }
+            else{
+                CacheQueryFuture<Map.Entry<K, V>> fut = t.get2();
+
+                assert fut != null;
+
+                if (firstItemReturned)
+                    return (cur = fut.next()) != null;
+
+                while (true) {
+                    try {
                         ((GridCacheQueryFutureAdapter)fut).awaitFirstPage();
 
-                    firstItemReturned = true;
+                        firstItemReturned = true;
 
-                    return fut.next();
-                }
-                catch (IgniteClientDisconnectedCheckedException e) {
-                    throw CU.convertToCacheException(e);
-                }
-                catch (IgniteCheckedException e) {
-                    retryIfPossible(e);
+                        return (cur = fut.next()) != null;
+                    }
+                    catch (IgniteClientDisconnectedCheckedException e) {
+                        throw CU.convertToCacheException(e);
+                    }
+                    catch (IgniteCheckedException e) {
+                        retryIfPossible(e);
+                    }
                 }
             }
         }
