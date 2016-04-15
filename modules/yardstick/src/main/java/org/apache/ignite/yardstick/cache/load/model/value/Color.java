@@ -15,22 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.hadoop;
+package org.apache.ignite.yardstick.cache.load.model.value;
+
+import java.io.Serializable;
 
 /**
- * Same test as HadoopMapReduceTest, but with enabled Snappy output compression.
+ * Car color
  */
-public class HadoopSnappyFullMapReduceTest extends HadoopMapReduceTest {
-    /** {@inheritDoc} */
-    @Override protected boolean compressOutputSnappy() {
-        return true;
-    }
+public enum Color implements Serializable {
+    /**
+     * Grey color.
+     */
+    GREY,
 
-    /** {@inheritDoc} */
-    @Override protected boolean[][] getApiModes() {
-        return new boolean[][] {
-            { false, false, true },
-            { true, true, true },
-        };
-    }
+    /**
+     * Red color.
+     */
+    RED,
+
+    /**
+     * Green color.
+     */
+    GREEN,
+
+    /**
+     * Purple color.
+     */
+    PURPLE,
+
+    /**
+     * Light blue color.
+     */
+    LIGHTBLUE
 }
