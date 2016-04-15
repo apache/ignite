@@ -43,12 +43,15 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 public class ScanQueryStuff2 {
 //    private static final boolean CHECK1 = true;
         private static final boolean CHECK1 = false;
+
 //    private static final boolean once = true;
     private static final boolean once = false;
-//    private static final int CNT = 1;
-    private static final int CNT = 100_000;
+
+    private static final int CNT;
 
     static {
+        CNT = once ? 1 : 100_000;
+
         U.debugEnabled = once && CNT < 5;
     }
 
