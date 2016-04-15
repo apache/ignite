@@ -38,16 +38,15 @@ public enum GridRedisCommand {
     /** SET. */
     SET("SET"),
     /** MSET. */
-    MSET("MSET");
+    MSET("MSET"),
+    /** INCR. */
+    INCR("INCR");
 
     /** String for command. */
     private final String cmd;
 
+    /** Constructor. */
     GridRedisCommand(String cmd) {
         this.cmd = cmd;
-    }
-
-    public String cmd() {
-        return cmd;
     }
 }

@@ -18,46 +18,22 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.CX1;
-import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.GET;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.MGET;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.MSET;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.SET;
 
 /**
  * Redis strings command handler.
  */
-public class GridRedisStringCommandHandler implements GridRedisCommandHandler {
-    /** Supported commands. */
-    private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        GET,
-        MGET,
-        SET,
-        MSET
-    );
-
+public abstract class GridRedisStringCommandHandler implements GridRedisCommandHandler {
     /** REST protocol handler. */
-    private GridRestProtocolHandler hnd;
+    protected GridRestProtocolHandler hnd;
 
     /**
      * Constructor.
@@ -69,16 +45,11 @@ public class GridRedisStringCommandHandler implements GridRedisCommandHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridRedisCommand> supportedCommands() {
-        return SUPPORTED_COMMANDS;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(GridRedisMessage msg) {
         assert msg != null;
 
         try {
-            return hnd.handleAsync(toRestRequest(msg))
+            return hnd.handleAsync(asRestRequest(msg))
                 .chain(new CX1<IgniteInternalFuture<GridRestResponse>, GridRedisMessage>() {
                     @Override
                     public GridRedisMessage applyx(IgniteInternalFuture<GridRestResponse> f)
@@ -86,34 +57,9 @@ public class GridRedisStringCommandHandler implements GridRedisCommandHandler {
                         GridRestResponse restRes = f.get();
 
                         GridRedisMessage res = msg;
-                        ByteBuffer resp;
 
                         if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS) {
-                            switch (res.command()) {
-                                case GET:
-                                    resp = (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
-                                        : GridRedisProtocolParser.toBulkString(restRes.getResponse()));
-
-                                    break;
-                                case MGET:
-                                    resp = (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
-                                        : GridRedisProtocolParser.toArray((Map<Object, Object>)restRes.getResponse()));
-
-                                    break;
-                                case SET:
-                                    resp = (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
-                                        : GridRedisProtocolParser.OkString());
-
-                                    break;
-                                case MSET:
-                                    resp = GridRedisProtocolParser.OkString();
-
-                                    break;
-
-                                default:
-                                    resp = GridRedisProtocolParser.toGenericError("Unsupported operation!");
-                            }
-                            res.setResponse(resp);
+                            res.setResponse(makeResponse(restRes));
                         }
                         else
                             res.setResponse(GridRedisProtocolParser.toGenericError("Operation error!"));
@@ -130,69 +76,19 @@ public class GridRedisStringCommandHandler implements GridRedisCommandHandler {
     }
 
     /**
+     * Converts {@link GridRedisMessage} to {@link GridRestRequest}.
+     *
      * @param msg {@link GridRedisMessage}
      * @return {@link GridRestRequest}
+     * @throws IgniteCheckedException If fails.
      */
-    private GridRestRequest toRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
-        assert msg != null;
+    public abstract GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException;
 
-        GridRestCacheRequest restReq = new GridRestCacheRequest();
-
-        restReq.clientId(msg.clientId());
-        restReq.key(msg.key());
-
-        switch (msg.command()) {
-            case SET:
-                restReq.command(CACHE_PUT);
-
-                if (msg.getMsgParts().size() < 3)
-                    throw new IgniteCheckedException("Invalid request!");
-
-                restReq.value(msg.getMsgParts().get(2));
-
-                if (msg.getMsgParts().size() >= 4) {
-                    // handle options.
-                }
-
-                break;
-
-            case MSET:
-                restReq.command(CACHE_PUT_ALL);
-
-                List<String> els = msg.getMsgParts().subList(1, msg.getMsgParts().size());
-                Map<Object, Object> mset = U.newHashMap(els.size() / 2);
-                Iterator<String> msetIt = els.iterator();
-
-                while (msetIt.hasNext())
-                    mset.put(msetIt.next(), msetIt.hasNext() ? msetIt.next() : null);
-
-                restReq.values(mset);
-
-                break;
-
-            case MGET:
-                restReq.command(CACHE_GET_ALL);
-
-                List<String> keys = msg.getMsgParts().subList(1, msg.getMsgParts().size());
-                Map<Object, Object> mget = U.newHashMap(keys.size());
-                Iterator<String> mgetIt = keys.iterator();
-
-                while (mgetIt.hasNext())
-                    mget.put(mgetIt.next(), null);
-
-                restReq.values(mget);
-
-                break;
-
-            case GET:
-                restReq.command(CACHE_GET);
-
-                break;
-
-            default:
-                restReq.command(null);
-        }
-
-        return restReq;
-    }
+    /**
+     * Prepares a response according to the request.
+     *
+     * @param resp REST response.
+     * @return
+     */
+    public abstract ByteBuffer makeResponse(GridRestResponse resp);
 }

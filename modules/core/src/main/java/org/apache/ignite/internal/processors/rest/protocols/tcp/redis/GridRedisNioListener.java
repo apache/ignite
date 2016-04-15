@@ -26,7 +26,11 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisConnectionCommandHandler;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisStringCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisGetCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisIncrCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisMGetCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisMSetCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisSetCommandHandler;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -51,8 +55,15 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
     public GridRedisNioListener(IgniteLogger log, GridRestProtocolHandler hnd, GridKernalContext ctx) {
         this.log = log;
 
+        // connection commands.
         addCommandHandler(new GridRedisConnectionCommandHandler());
-        addCommandHandler(new GridRedisStringCommandHandler(hnd));
+
+        // string commands.
+        addCommandHandler(new GridRedisGetCommandHandler(hnd));
+        addCommandHandler(new GridRedisSetCommandHandler(hnd));
+        addCommandHandler(new GridRedisMSetCommandHandler(hnd));
+        addCommandHandler(new GridRedisMGetCommandHandler(hnd));
+        addCommandHandler(new GridRedisIncrCommandHandler(hnd));
     }
 
     /**

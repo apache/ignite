@@ -30,6 +30,7 @@ import org.junit.Assert;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.exceptions.JedisDataException;
 
 /**
  * Tests for Redis protocol.
@@ -200,6 +201,27 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
 
             Assert.assertEquals("1", jcache().get("setKey1"));
             Assert.assertEquals("2", jcache().get("setKey2"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIncr() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            Assert.assertEquals(1, (long)jedis.incr("newKey"));
+
+            jcache().put("incrKey1", 1L);
+            Assert.assertEquals(2L, (long)jedis.incr("incrKey1"));
+
+            jcache().put("nonInt", "abc");
+            try {
+                jedis.incr("nonInt");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+            }
         }
     }
 }
