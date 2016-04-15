@@ -112,7 +112,7 @@ mixin chart-settings(mdl)
                                                     tr(ng-repeat='cache in displayedCaches track by cache.name')
                                                         td(style='width: 100%')
                                                             input.labelField(type='radio' value='{{cache.name}}')
-                                                            label {{cache.name || "&lt;default&gt;"}}
+                                                            label(ng-bind-html='maskCacheName(cache.name)')
                                         .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
                                             label Wrong caches filter
                                         .empty-caches(ng-show='caches.length == 0')

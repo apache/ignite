@@ -162,8 +162,10 @@ public class RestHandler extends AbstractHandler {
         }
 
         if (params != null) {
-            for (Map.Entry<String, Object> entry : params.entrySet())
-                builder.addParameter(entry.getKey(), entry.getValue() == null ? null : entry.getValue().toString());
+            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                if (entry.getValue() != null)
+                    builder.addParameter(entry.getKey(), entry.getValue().toString());
+            }
         }
 
         HttpRequestBase httpReq = null;

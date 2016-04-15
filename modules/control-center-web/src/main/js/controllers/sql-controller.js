@@ -70,9 +70,7 @@ consoleModule.controller('sqlController', [
             }
         };
 
-        var _mask = function (cacheName) {
-            return _.isEmpty(cacheName) ? '<default>' : cacheName;
-        };
+        $scope.maskCacheName = (cacheName) => _.isEmpty(cacheName) ? "&lt;default&gt;" : cacheName;
 
         var _handleException = function(errMsg) {
             $common.showError(errMsg);
@@ -164,13 +162,9 @@ consoleModule.controller('sqlController', [
             $anchorScroll();
         };
 
-        var _hideColumn = function (col) {
-            return !(col.fieldName === '_KEY') && !(col.fieldName == '_VAL');
-        };
+        const _hideColumn = (col) => col.fieldName !== '_KEY' && col.fieldName !== '_VAL';
 
-        var _allColumn = function () {
-            return true;
-        };
+        const _allColumn = () => true;
 
         var paragraphId = 0;
 
@@ -782,7 +776,7 @@ consoleModule.controller('sqlController', [
             _showLoading(paragraph, true);
 
             _closeOldQuery(paragraph)
-                .then(function () {
+                .then(() => {
                     const args = paragraph.queryArgs = {
                         cacheName: paragraph.cacheName,
                         pageSize: paragraph.pageSize
@@ -1531,7 +1525,7 @@ consoleModule.controller('sqlController', [
                             if (cache) {
                                 meta.name = (cache.sqlSchema ? cache.sqlSchema : '"' + meta.cacheName + '"') + '.' + meta.typeName;
 
-                                meta.displayMame = _mask(meta.cacheName) + '.' + meta.typeName;
+                                meta.displayMame = $scope.maskCacheName(meta.cacheName) + '.' + meta.typeName;
 
                                 if (cache.sqlSchema)
                                     meta.children.unshift({type: 'plain', name: 'sqlSchema: ' + cache.sqlSchema});
@@ -1556,7 +1550,7 @@ consoleModule.controller('sqlController', [
 
                 if (_.isNil(paragraph.queryArgs.query)) {
                     scope.title = 'SCAN query';
-                    scope.content = ['SCAN query for cache <b>' + paragraph.queryArgs.cacheName + '</b>'];
+                    scope.content = [`SCAN query for cache: <b>${$scope.maskCacheName(paragraph.queryArgs.cacheName)}</b>`];
                 }
                 else if (paragraph.queryArgs.query .startsWith('EXPLAIN ')) {
                     scope.title = 'Explain query';

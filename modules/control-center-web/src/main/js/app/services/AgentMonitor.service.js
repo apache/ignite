@@ -258,7 +258,7 @@ class IgniteAgentMonitor {
      * @returns {Promise}
      */
     query(cacheName, pageSize, query) {
-        return this._rest('node:query', cacheName, pageSize, query);
+        return this._rest('node:query', _.isEmpty(cacheName) ? null : cacheName, pageSize, query);
     }
 
     /**
@@ -267,7 +267,7 @@ class IgniteAgentMonitor {
      * @returns {Promise}
      */
     queryGetAll(cacheName, query) {
-        return this._rest('node:query:getAll', cacheName, query);
+        return this._rest('node:query:getAll', _.isEmpty(cacheName) ? null : cacheName, query);
     }
 
     /**
@@ -275,7 +275,7 @@ class IgniteAgentMonitor {
      * @returns {Promise}
      */
     metadata(cacheName) {
-        return this._rest('node:cache:metadata', cacheName);
+        return this._rest('node:cache:metadata', _.isEmpty(cacheName) ? null : cacheName);
     }
 
     /**
