@@ -422,7 +422,7 @@ consoleModule.controller('domainsController', [
 
                 IgniteAgentMonitor.startWatch({
                         text: 'Back to Domain models',
-                        goal: 'import domain model from database schema'
+                        goal: 'import domain model from database'
                     })
                     .then(function() {
                         importDomainModal.$promise.then(importDomainModal.show);

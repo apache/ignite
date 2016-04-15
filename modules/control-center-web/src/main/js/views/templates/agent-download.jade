@@ -24,15 +24,14 @@
                 p Please download and run&nbsp;
                     a(href='javascript:void(0)' ng-click='downloadAgent()') ignite-web-agent
                     | &nbsp;in order to {{::agentGoal}}
-                p For installation:
+                p For run:
                 ul
                     li Download and unzip&nbsp;
                         b ignite-web-agent
-                    li For list of options, run&nbsp;
-                        b ignite-web-agent.{sh|bat} --help
-                    li Refer to&nbsp;
-                        b README.txt
-                        | &nbsp;for more information
+                        | &nbsp;archive
+                    li Run shell file&nbsp;
+                        b ignite-web-agent.{sh|bat}
+                p Refer to agent README.txt for more information.
                 .modal-advanced-options
                     i.fa.fa-chevron-circle-down(ng-show='agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
                     i.fa.fa-chevron-circle-right(ng-show='!agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
