@@ -135,112 +135,112 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
 
     /** {@inheritDoc} */
     @Override public IgniteLogger log() {
-        assert cfg != null;
+        checkIgnite();
 
         return cfg.getGridLogger();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteProductVersion version() {
-        assert g != null;
+        checkIgnite();
 
         return g.version();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute() {
-        assert g != null;
+        checkIgnite();
 
         return g.compute();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteServices services() {
-        assert g != null;
+        checkIgnite();
 
         return g.services();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteMessaging message() {
-        assert g != null;
+        checkIgnite();
 
         return g.message();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteEvents events() {
-        assert g != null;
+        checkIgnite();
 
         return g.events();
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService executorService() {
-        assert g != null;
+        checkIgnite();
 
         return g.executorService();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCluster cluster() {
-        assert g != null;
+        checkIgnite();
 
         return g.cluster();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCompute compute(ClusterGroup grp) {
-        assert g != null;
+        checkIgnite();
 
         return g.compute(grp);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteMessaging message(ClusterGroup prj) {
-        assert g != null;
+        checkIgnite();
 
         return g.message(prj);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteEvents events(ClusterGroup grp) {
-        assert g != null;
+        checkIgnite();
 
         return g.events(grp);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteServices services(ClusterGroup grp) {
-        assert g != null;
+        checkIgnite();
 
         return g.services(grp);
     }
 
     /** {@inheritDoc} */
     @Override public ExecutorService executorService(ClusterGroup grp) {
-        assert g != null;
+        checkIgnite();
 
         return g.executorService(grp);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteScheduler scheduler() {
-        assert g != null;
+        checkIgnite();
 
         return g.scheduler();
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        assert g != null;
+        checkIgnite();
 
         return g.name();
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> cache(@Nullable String name) {
-        assert g != null;
+        checkIgnite();
 
         return g.cache(name);
     }
@@ -248,21 +248,21 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
 
     /** {@inheritDoc} */
     @Override public Collection<String> cacheNames() {
-        assert g != null;
+        checkIgnite();
 
         return g.cacheNames();
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
-        assert g != null;
+        checkIgnite();
 
         return g.createCache(cacheCfg);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg) {
-        assert g != null;
+        checkIgnite();
 
         return g.getOrCreateCache(cacheCfg);
     }
@@ -270,98 +270,98 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg,
         NearCacheConfiguration<K, V> nearCfg) {
-        assert g != null;
+        checkIgnite();
 
         return g.createCache(cacheCfg, nearCfg);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg) {
-        assert g != null;
+        checkIgnite();
 
         return g.getOrCreateCache(cacheCfg, nearCfg);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createNearCache(String cacheName, NearCacheConfiguration<K, V> nearCfg) {
-        assert g != null;
+        checkIgnite();
 
         return g.createNearCache(cacheName, nearCfg);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
-        assert g != null;
+        checkIgnite();
 
         return g.getOrCreateNearCache(cacheName, nearCfg);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(String cacheName) {
-        assert g != null;
+        checkIgnite();
 
         return g.getOrCreateCache(cacheName);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
-        assert g != null;
+        checkIgnite();
 
         return g.createCache(cacheName);
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> void addCacheConfiguration(CacheConfiguration<K, V> cacheCfg) {
-        assert g != null;
+        checkIgnite();
 
         g.addCacheConfiguration(cacheCfg);
     }
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
-        assert g != null;
+        checkIgnite();
 
         g.destroyCache(cacheName);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTransactions transactions() {
-        assert g != null;
+        checkIgnite();
 
         return g.transactions();
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteDataStreamer<K, V> dataStreamer(@Nullable String cacheName) {
-        assert g != null;
+        checkIgnite();
 
         return g.dataStreamer(cacheName);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFileSystem fileSystem(String name) {
-        assert g != null;
+        checkIgnite();
 
         return g.fileSystem(name);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFileSystem> fileSystems() {
-        assert g != null;
+        checkIgnite();
 
         return g.fileSystems();
     }
 
     /** {@inheritDoc} */
     @Override public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException {
-        assert g != null;
+        checkIgnite();
 
         return g.plugin(name);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteBinary binary() {
-        assert g != null;
+        checkIgnite();
 
         return g.binary();
     }
@@ -373,14 +373,14 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
-        assert g != null;
+        checkIgnite();
 
         return g.atomicSequence(name, initVal, create);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
-        assert g != null;
+        checkIgnite();
 
         return g.atomicLong(name, initVal, create);
     }
@@ -390,7 +390,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         @Nullable T initVal,
         boolean create)
     {
-        assert g != null;
+        checkIgnite();
 
         return g.atomicReference(name, initVal, create);
     }
@@ -401,7 +401,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         @Nullable S initStamp,
         boolean create)
     {
-        assert g != null;
+        checkIgnite();
 
         return g.atomicStamped(name, initVal, initStamp, create);
     }
@@ -412,7 +412,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         boolean autoDel,
         boolean create)
     {
-        assert g != null;
+        checkIgnite();
 
         return g.countDownLatch(name, cnt, autoDel, create);
     }
@@ -423,7 +423,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         boolean failoverSafe,
         boolean create)
     {
-        assert g != null;
+        checkIgnite();
 
         return g.semaphore(name, cnt,
             failoverSafe, create);
@@ -434,7 +434,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         int cap,
         CollectionConfiguration cfg)
     {
-        assert g != null;
+        checkIgnite();
 
         return g.queue(name, cap, cfg);
     }
@@ -443,7 +443,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     @Nullable @Override public <T> IgniteSet<T> set(String name,
         CollectionConfiguration cfg)
     {
-        assert g != null;
+        checkIgnite();
 
         return g.set(name, cfg);
     }
@@ -468,5 +468,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         g = (Ignite)in.readObject();
 
         cfg = g.configuration();
+    }
+
+    /** {@inheritDoc} */
+    public void checkIgnite() {
+        if (g == null) {
+            throw new IllegalStateException("Ignite is in invalid state to perform this operation. " +
+                    "It either not started yet or has already being or have stopped [Ignite=" + g + ']');
+        }
     }
 }
