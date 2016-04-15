@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -104,6 +105,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disc);
 
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+
         if (include)
             cfg.setUserAttributes(F.asMap("include", true));
 
@@ -116,7 +119,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         include = true;
 
-        startGridsMultiThreaded(GRID_CNT - 1);
+        startGrids(GRID_CNT - 1);
 
         include = false;
 
@@ -163,7 +166,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         return F.view(U.<Map<UUID, LocalRoutineInfo>>field(proc, "locInfos").values(),
             new IgnitePredicate<LocalRoutineInfo>() {
                 @Override public boolean apply(LocalRoutineInfo info) {
-                    return info.handler().isForEvents();
+                    return info.handler().isEvents();
                 }
             });
     }
@@ -878,33 +881,37 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMasterNodeLeave() throws Exception {
-        Ignite g = startGrid("anotherGrid");
-
-        final UUID nodeId = g.cluster().localNode().id();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
-        for (int i = 0; i < GRID_CNT; i++) {
-            grid(i).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    if (nodeId.equals(((DiscoveryEvent) evt).eventNode().id()))
-                        latch.countDown();
+        Ignite g = startGrid("anotherGrid");
 
-                    return true;
-                }
-            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+        try {
+            final UUID nodeId = g.cluster().localNode().id();
+            for (int i = 0; i < GRID_CNT; i++) {
+                grid(i).events().localListen(new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        if (nodeId.equals(((DiscoveryEvent)evt).eventNode().id()))
+                            latch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_LEFT, EVT_NODE_FAILED);
+            }
+
+            g.events().remoteListen(
+                null,
+                new P1<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        return true;
+                    }
+                },
+                EVTS_ALL
+            );
+
         }
-
-        g.events().remoteListen(
-            null,
-            new P1<Event>() {
-                @Override public boolean apply(Event evt) {
-                    return true;
-                }
-            },
-            EVTS_ALL
-        );
-
-        stopGrid("anotherGrid");
+        finally {
+            stopGrid("anotherGrid");
+        }
 
         assert latch.await(3000, MILLISECONDS);
     }
@@ -915,42 +922,47 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     public void testMasterNodeLeaveNoAutoUnsubscribe() throws Exception {
         Ignite g = startGrid("anotherGrid");
 
-        final UUID nodeId = g.cluster().localNode().id();
-        final CountDownLatch discoLatch = new CountDownLatch(GRID_CNT);
+        final CountDownLatch discoLatch;
 
-        for (int i = 0; i < GRID_CNT; i++) {
-            grid(0).events().localListen(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event evt) {
-                    if (nodeId.equals(((DiscoveryEvent) evt).eventNode().id()))
-                        discoLatch.countDown();
+        try {
+            final UUID nodeId = g.cluster().localNode().id();
+            discoLatch = new CountDownLatch(GRID_CNT);
 
-                    return true;
-                }
-            }, EVT_NODE_LEFT);
+            for (int i = 0; i < GRID_CNT; i++) {
+                grid(0).events().localListen(new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        if (nodeId.equals(((DiscoveryEvent) evt).eventNode().id()))
+                            discoLatch.countDown();
+
+                        return true;
+                    }
+                }, EVT_NODE_LEFT);
+            }
+
+            consumeLatch = new CountDownLatch(GRID_CNT * 2 + 1);
+            consumeCnt = new AtomicInteger();
+
+            noAutoUnsubscribe = true;
+
+            g.events().remoteListen(
+                1, 0, false,
+                null,
+                new P1<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        consumeLatch.countDown();
+                        consumeCnt.incrementAndGet();
+
+                        return true;
+                    }
+                },
+                EVT_JOB_STARTED
+            );
+
+            grid(0).compute().broadcast(F.noop());
         }
-
-        consumeLatch = new CountDownLatch(GRID_CNT * 2 + 1);
-        consumeCnt = new AtomicInteger();
-
-        noAutoUnsubscribe = true;
-
-        g.events().remoteListen(
-            1, 0, false,
-            null,
-            new P1<Event>() {
-                @Override public boolean apply(Event evt) {
-                    consumeLatch.countDown();
-                    consumeCnt.incrementAndGet();
-
-                    return true;
-                }
-            },
-            EVT_JOB_STARTED
-        );
-
-        grid(0).compute().broadcast(F.noop());
-
-        stopGrid("anotherGrid");
+        finally {
+            stopGrid("anotherGrid");
+        }
 
         discoLatch.await(3000, MILLISECONDS);
 

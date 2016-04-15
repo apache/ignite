@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-ssh</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.6.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -44,7 +44,7 @@
         <dependency>
             <groupId>com.jcraft</groupId>
             <artifactId>jsch</artifactId>
-            <version>0.1.53</version>
+            <version>${jsch.version}</version>
         </dependency>
 
         <dependency>
@@ -69,4 +69,21 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
+            <!-- This is a fragment because it's an internal processor module. -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Fragment-Host>org.apache.ignite.ignite-core</Fragment-Host>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

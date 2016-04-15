@@ -110,7 +110,7 @@ public class IgniteAtomicInvokeRetryBenchmark extends IgniteFailoverAbstractBenc
 
                                 }
 
-                                throw new IllegalStateException("Cache and local map are in inconsistent state " +
+                                throw new IgniteConsistencyException("Cache and local map are in inconsistent state " +
                                     "[badKeys=" + badCacheEntries.keySet() + ']');
                             }
 

@@ -17,10 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+
 /**
  * Distributed future aware of MVCC locking.
  */
 public interface GridCacheMvccFuture<T> extends GridCacheFuture<T> {
+    /**
+     * @return Future version.
+     */
+    public GridCacheVersion version();
+
     /**
      * @param entry Entry which received new owner.
      * @param owner Owner.

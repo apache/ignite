@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.PN;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -87,6 +88,23 @@ public class TcpDiscoveryNodesRing {
     /** Lock. */
     @GridToStringExclude
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+
+    /** */
+    private IgniteProductVersion minNodeVer;
+
+    /**
+     * @return Minimum node version.
+     */
+    public IgniteProductVersion minimumNodeVersion() {
+        rwLock.readLock().lock();
+
+        try {
+            return minNodeVer;
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
+    }
 
     /**
      * Sets local node.
@@ -225,6 +243,8 @@ public class TcpDiscoveryNodesRing {
             nodeOrder = node.internalOrder();
 
             maxInternalOrder = node.internalOrder();
+
+            initializeMinimumVersion();
         }
         finally {
             rwLock.writeLock().unlock();
@@ -295,6 +315,8 @@ public class TcpDiscoveryNodesRing {
             }
 
             nodeOrder = topVer;
+
+            initializeMinimumVersion();
         }
         finally {
             rwLock.writeLock().unlock();
@@ -341,6 +363,8 @@ public class TcpDiscoveryNodesRing {
                 nodes.remove(rmv);
             }
 
+            initializeMinimumVersion();
+
             return rmv;
         }
         finally {
@@ -372,6 +396,8 @@ public class TcpDiscoveryNodesRing {
             maxInternalOrder = 0;
 
             topVer = 0;
+
+            minNodeVer = locNode.version();
         }
         finally {
             rwLock.writeLock().unlock();
@@ -451,61 +477,8 @@ public class TcpDiscoveryNodesRing {
      * topology contains less than two nodes.
      */
     @Nullable public TcpDiscoveryNode nextNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
-        assert excluded == null || excluded.isEmpty() || !excluded.contains(locNode);
-
-        rwLock.readLock().lock();
-
-        try {
-            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
-
-            if (filtered.size() < 2)
-                return null;
-
-            Iterator<TcpDiscoveryNode> iter = filtered.iterator();
-
-            while (iter.hasNext()) {
-                TcpDiscoveryNode node = iter.next();
-
-                if (locNode.equals(node))
-                    break;
-            }
-
-            return iter.hasNext() ? iter.next() : F.first(filtered);
-        }
-        finally {
-            rwLock.readLock().unlock();
-        }
-    }
-
-    /**
-     * Finds previous node in the topology.
-     *
-     * @return Previous node.
-     */
-    @Nullable public TcpDiscoveryNode previousNode() {
-        rwLock.readLock().lock();
-
-        try {
-            if (nodes.size() < 2)
-                return null;
-
-            return previousNode(null);
-        }
-        finally {
-            rwLock.readLock().unlock();
-        }
-    }
-
-    /**
-     * Finds previous node in the topology filtering excluded nodes from search.
-     *
-     * @param excluded Nodes to exclude from the search (optional). If provided,
-     * cannot contain local node.
-     * @return Previous node or {@code null} if all nodes were filtered out or
-     * topology contains less than two nodes.
-     */
-    @Nullable public TcpDiscoveryNode previousNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
-        assert excluded == null || excluded.isEmpty() || !excluded.contains(locNode);
+        assert locNode.internalOrder() > 0 : locNode;
+        assert excluded == null || excluded.isEmpty() || !excluded.contains(locNode) : excluded;
 
         rwLock.readLock().lock();
 
@@ -636,6 +609,18 @@ public class TcpDiscoveryNodesRing {
                 return !node.isClient() && (excludedEmpty || !excluded.contains(node));
             }
         });
+    }
+
+    /**
+     *
+     */
+    private void initializeMinimumVersion() {
+        minNodeVer = null;
+
+        for (TcpDiscoveryNode node : nodes) {
+            if (minNodeVer == null || node.version().compareTo(minNodeVer) < 0)
+                minNodeVer = node.version();
+        }
     }
 
     /** {@inheritDoc} */

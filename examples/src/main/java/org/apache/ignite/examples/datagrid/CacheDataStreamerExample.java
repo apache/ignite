@@ -60,6 +60,7 @@ public class CacheDataStreamerExample {
             System.out.println();
             System.out.println(">>> Cache data streamer example started.");
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 long start = System.currentTimeMillis();
 
@@ -80,6 +81,10 @@ public class CacheDataStreamerExample {
                 long end = System.currentTimeMillis();
 
                 System.out.println(">>> Loaded " + ENTRY_COUNT + " keys in " + (end - start) + "ms.");
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

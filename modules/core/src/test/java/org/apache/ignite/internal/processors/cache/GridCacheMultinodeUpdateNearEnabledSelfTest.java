@@ -37,4 +37,9 @@ public class GridCacheMultinodeUpdateNearEnabledSelfTest extends GridCacheMultin
     @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testInvoke() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-809");
+    }
 }

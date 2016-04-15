@@ -37,4 +37,9 @@ public class GridCachePartitionedAtomicSetFailoverSelfTest extends GridCacheSetF
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return ATOMIC;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testNodeRestart() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-170");
+    }
 }

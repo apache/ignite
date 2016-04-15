@@ -26,8 +26,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -148,7 +154,7 @@ public class IgniteTestResources {
      * @param prestart Prestart flag.
      */
     public void startThreads(boolean prestart) {
-        execSvc = new IgniteThreadPoolExecutor(nodeId.toString(), 40, 40, Long.MAX_VALUE,
+        execSvc = new IgniteThreadPoolExecutor(nodeId.toString(), null, 40, 40, Long.MAX_VALUE,
             new LinkedBlockingQueue<Runnable>());
 
         // Improve concurrency for testing.
@@ -257,6 +263,13 @@ public class IgniteTestResources {
             ((OptimizedMarshaller)marsh).setRequireSerializable(false);
 
         marsh.setContext(new MarshallerContextTestImpl());
+
+        if (marsh instanceof BinaryMarshaller) {
+            BinaryContext ctx =
+                new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), new NullLogger());
+
+            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, new IgniteConfiguration());
+        }
 
         return marsh;
     }

@@ -55,8 +55,8 @@ public class SchemaDescriptor {
         return selected;
     }
 
-    @Override
-    public String toString() {
+    /** {@inheritDoc} */
+    @Override public String toString() {
         return schema;
     }
 }

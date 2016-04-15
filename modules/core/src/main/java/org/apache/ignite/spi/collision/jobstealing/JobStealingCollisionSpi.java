@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -416,11 +417,14 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
-        return F.<String, Object>asMap(
-            createSpiAttributeName(WAIT_JOBS_THRESHOLD_NODE_ATTR), waitJobsThreshold,
-            createSpiAttributeName(ACTIVE_JOBS_THRESHOLD_NODE_ATTR), activeJobsThreshold,
-            createSpiAttributeName(MAX_STEALING_ATTEMPT_ATTR), maxStealingAttempts,
-            createSpiAttributeName(MSG_EXPIRE_TIME_ATTR), msgExpireTime);
+        HashMap<String, Object> res = new HashMap<>(4);
+
+        res.put(createSpiAttributeName(WAIT_JOBS_THRESHOLD_NODE_ATTR), waitJobsThreshold);
+        res.put(createSpiAttributeName(ACTIVE_JOBS_THRESHOLD_NODE_ATTR), activeJobsThreshold);
+        res.put(createSpiAttributeName(MAX_STEALING_ATTEMPT_ATTR), maxStealingAttempts);
+        res.put(createSpiAttributeName(MSG_EXPIRE_TIME_ATTR), msgExpireTime);
+
+        return res;
     }
 
     /** {@inheritDoc} */

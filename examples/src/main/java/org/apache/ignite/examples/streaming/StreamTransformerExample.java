@@ -97,6 +97,10 @@ public class StreamTransformerExample {
                 // Print top 10 words.
                 ExamplesUtils.printQueryResults(top10);
             }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(cfg.getName());
+            }
         }
     }
 }

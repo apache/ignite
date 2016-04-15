@@ -103,6 +103,33 @@ public class GridSqlSelect extends GridSqlQuery {
     }
 
     /**
+     * @return {@code True} if this simple SQL query like 'SELECT A, B, C from SOME_TABLE' without any conditions
+     *      and expressions.
+     */
+    public boolean simpleQuery() {
+        boolean simple = !distinct &&
+            from instanceof GridSqlTable &&
+            where == null &&
+            grpCols == null &&
+            havingCol < 0 &&
+            sort.isEmpty() &&
+            limit == null &&
+            offset == null;
+
+        if (simple) {
+            for (GridSqlElement expression : columns(true)) {
+                if (expression instanceof GridSqlAlias)
+                    expression = expression.child();
+
+                if (!(expression instanceof GridSqlColumn))
+                    return false;
+            }
+        }
+
+        return simple;
+    }
+
+    /**
      * @param buff Statement builder.
      * @param expression Alias expression.
      */
@@ -117,7 +144,7 @@ public class GridSqlSelect extends GridSqlQuery {
      * @param visibleOnly If only visible expressions needed.
      * @return Select clause expressions.
      */
-    public Iterable<GridSqlElement> columns(boolean visibleOnly) {
+    public List<GridSqlElement> columns(boolean visibleOnly) {
         assert visibleCols <= cols.size();
 
         return visibleOnly && visibleCols != cols.size() ?

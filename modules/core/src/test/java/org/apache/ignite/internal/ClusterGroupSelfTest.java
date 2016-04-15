@@ -109,6 +109,10 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
         }
 
         assertEquals(oldest.node(), ignite.cluster().forNode(node).node());
+
+        ClusterGroup emptyGrp = ignite.cluster().forAttribute("nonExistent", "val");
+
+        assertEquals(0, emptyGrp.forOldest().nodes().size());
     }
 
     /**
@@ -130,6 +134,10 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
         }
 
         assertEquals(youngest.node(), ignite.cluster().forNode(node).node());
+
+        ClusterGroup emptyGrp = ignite.cluster().forAttribute("nonExistent", "val");
+
+        assertEquals(0, emptyGrp.forYoungest().nodes().size());
     }
 
     /**
@@ -187,8 +195,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
         assertEquals(grid(gridMaxOrder(clusterSize, false)).localNode().id(), oddYoungest.node().id());
         assertEquals(grid(2).localNode().id(), oddOldest.node().id());
 
-        try (Ignite g4 = startGrid(NODES_CNT);
-            Ignite g5 = startGrid(NODES_CNT + 1))
+        try (Ignite g4 = startGrid(NODES_CNT); Ignite g5 = startGrid(NODES_CNT + 1))
         {
             clusterSize = g4.cluster().nodes().size();
 
@@ -238,6 +245,27 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
         assertEquals(2, srv.nodes().size());
         assertTrue(cli.nodes().contains(ignite(2).cluster().localNode()));
         assertTrue(cli.nodes().contains(ignite(3).cluster().localNode()));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEmptyGroup() throws Exception {
+        ClusterGroup emptyGrp = ignite.cluster().forAttribute("nonExistent", "val");
+
+        assertEquals(0, emptyGrp.forOldest().nodes().size());
+        assertEquals(0, emptyGrp.forYoungest().nodes().size());
+        assertEquals(0, emptyGrp.forAttribute("nonExistent2", "val").nodes().size());
+        assertEquals(0, emptyGrp.forCacheNodes("cacheName").nodes().size());
+        assertEquals(0, emptyGrp.forClientNodes("cacheName").nodes().size());
+        assertEquals(0, emptyGrp.forClients().nodes().size());
+        assertEquals(0, emptyGrp.forDaemons().nodes().size());
+        assertEquals(0, emptyGrp.forDataNodes("cacheName").nodes().size());
+        assertEquals(0, emptyGrp.forRandom().nodes().size());
+        assertEquals(0, emptyGrp.forRemotes().nodes().size());
+        assertEquals(0, emptyGrp.forServers().nodes().size());
+        assertEquals(0, emptyGrp.forHost(ignite.cluster().localNode()).nodes().size());
+        assertEquals(0, emptyGrp.forHost("127.0.0.1").nodes().size());
     }
 
     /**

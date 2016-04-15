@@ -273,7 +273,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         }
 
         try {
-            assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
+            assertTrue(latch.await(failureThreshold + 3000, TimeUnit.MILLISECONDS));
 
             assertFalse("Unexpected event, see log for details.", err.get());
             assertEquals(nodeId, client.cluster().localNode().id());
@@ -296,7 +296,6 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         /** {@inheritDoc} */
         @Override protected <T> T readMessage(Socket sock, @Nullable InputStream in, long timeout)
             throws IOException, IgniteCheckedException {
-
             if (readDelay < failureDetectionTimeout()) {
                 try {
                     return super.readMessage(sock, in, timeout);
@@ -313,9 +312,11 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
                 if (msg instanceof TcpDiscoveryPingRequest) {
                     try {
                         Thread.sleep(2000);
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InterruptedException e) {
                         // Ignore
                     }
+
                     throw new SocketTimeoutException("Forced timeout");
                 }
 

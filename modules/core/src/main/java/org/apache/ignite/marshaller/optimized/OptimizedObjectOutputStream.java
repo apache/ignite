@@ -227,7 +227,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
 
                 int handle = -1;
 
-                if (!desc.isPrimitive() && !desc.isEnum() && !desc.isClass())
+                if (!desc.isPrimitive() && !desc.isEnum() && !desc.isClass() && !desc.isProxy())
                     handle = handles.lookup(obj);
 
                 if (obj0 != obj) {

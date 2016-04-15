@@ -61,9 +61,17 @@ public interface TcpDiscoveryIpFinder {
     /**
      * Checks whether IP finder is shared or not.
      * <p>
-     * If it is shared then only coordinator can unregister addresses.
+     * If this property is set to {@code true} then IP finder allows to add and remove
+     * addresses in runtime and this is how, for example, IP finder should work in
+     * Amazon EC2 environment or any other environment where IPs may not be known beforehand.
      * <p>
-     * All nodes should register their address themselves, as early as possible on node start.
+     * If this property is set to {@code false} then IP finder is immutable and all the addresses
+     * should be listed in configuration before Ignite start. This is the most use case for IP finders
+     * local to current VM. Since, usually such IP finders are created per each Ignite instance and
+     * all the known IPs are listed right away, but there is also an option to make such IP finders shared
+     * by setting this property to {@code true} and literally share it between local VM Ignite instances.
+     * This way user does not have to list any IPs before start, instead all starting nodes add their addresses
+     * to the finder, then get the registered addresses and continue with discovery procedure.
      *
      * @return {@code true} if IP finder is shared.
      */

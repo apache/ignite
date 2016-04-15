@@ -111,7 +111,7 @@ public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEnt
 
     /** {@inheritDoc} */
     @Override public long globalTime() {
-        return ver.globalTime();
+        return isStartVer ? 0L : ver.globalTime();
     }
 
     /** {@inheritDoc} */

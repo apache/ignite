@@ -126,8 +126,6 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCrossCacheTxOperationsFairAffinity() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-647");
-
         txOperations(PARTITIONED, FULL_SYNC, true, true);
     }
 

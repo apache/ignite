@@ -24,8 +24,11 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -69,6 +72,7 @@ import org.apache.ignite.p2p.GridP2PTestJob;
 import org.apache.ignite.p2p.GridP2PTestTask;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -83,6 +87,9 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
     /** */
     private static Marshaller marsh;
+
+    /** */
+    private static String gridName;
 
     /** Closure job. */
     protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
@@ -144,6 +151,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         marsh = grid().configuration().getMarshaller();
+        gridName = grid().configuration().getGridName();
     }
 
     /**
@@ -831,8 +839,28 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws IgniteCheckedException Thrown if any exception occurs while unmarshalling.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    protected static <T> T unmarshal(byte[] buf) throws IgniteCheckedException {
-        return marsh.<T>unmarshal(buf, Thread.currentThread().getContextClassLoader());
+    protected static <T> T unmarshal(final byte[] buf) throws IgniteCheckedException {
+        RunnableFuture<T> f = new FutureTask<>(new Callable<T>() {
+            @Override public T call() throws IgniteCheckedException {
+                return marsh.<T>unmarshal(buf, Thread.currentThread().getContextClassLoader());
+            }
+        });
+
+        // Any deserialization has to be executed under a thread, that contains the grid name.
+        new IgniteThread(gridName, "unmarshal-thread", f).start();
+
+        try {
+            return f.get();
+        }
+        catch (Exception e) {
+            if (e.getCause() instanceof IgniteCheckedException) {
+                throw (IgniteCheckedException)e.getCause();
+            }
+
+            fail(e.getCause().getMessage());
+        }
+
+        return null;
     }
 
     /**

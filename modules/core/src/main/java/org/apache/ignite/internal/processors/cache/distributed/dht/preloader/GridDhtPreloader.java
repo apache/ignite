@@ -35,6 +35,8 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
+import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -43,12 +45,10 @@ import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAssignmentFetchFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -63,7 +63,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
@@ -92,9 +91,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** */
     private GridDhtPartitionTopology top;
 
-    /** Topology version. */
-    private final GridAtomicLong topVer = new GridAtomicLong();
-
     /** Force key futures. */
     private final ConcurrentMap<IgniteUuid, GridDhtForceKeysFuture<?, ?>> forceKeyFuts = newMap();
 
@@ -107,15 +103,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** Start future. */
     private GridFutureAdapter<Object> startFut;
 
+    /** Future completed when rebalance on start topology finished. */
+    private final GridFutureAdapter<Object> initRebalanceFut;
+
     /** Busy lock to prevent activities from accessing exchanger while it's stopping. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
     /** Demand lock. */
     private final ReadWriteLock demandLock = new ReentrantReadWriteLock();
-
-    /** Pending affinity assignment futures. */
-    private ConcurrentMap<AffinityTopologyVersion, GridDhtAssignmentFetchFuture> pendingAssignmentFetchFuts =
-        new ConcurrentHashMap8<>();
 
     /** */
     private final ConcurrentLinkedDeque8<GridDhtLocalPartition> partsToEvict = new ConcurrentLinkedDeque8<>();
@@ -146,14 +141,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 assert e.type() != EVT_NODE_JOINED || n.order() > loc.order() : "Node joined with smaller-than-local " +
                     "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
 
-                boolean set = topVer.setIfGreater(e.topologyVersion());
-
-                assert set : "Have you configured TcpDiscoverySpi for your in-memory data grid? [newVer=" +
-                    e.topologyVersion() + ", curVer=" + topVer.get() + ", evt=" + e + ']';
-
-                if (e.type() == EVT_NODE_LEFT || e.type() == EVT_NODE_FAILED) {
-                    for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
-                        fut.onNodeLeft(e.eventNode().id());
+                if (!initRebalanceFut.isDone()) {
+                    startFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                        @Override public void apply(IgniteInternalFuture<?> fut) {
+                            cctx.closures().runLocalSafe(new Runnable() {
+                                @Override public void run() {
+                                    initRebalanceFut.onDone();
+                                }
+                            });
+                        }
+                    });
                 }
             }
             finally {
@@ -171,6 +168,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         top = cctx.dht().topology();
 
         startFut = new GridFutureAdapter<>();
+        initRebalanceFut = new GridFutureAdapter<>();
     }
 
     /** {@inheritDoc} */
@@ -192,41 +190,30 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 }
             });
 
-        cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentRequest.class,
-            new MessageHandler<GridDhtAffinityAssignmentRequest>() {
-                @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentRequest msg) {
-                    processAffinityAssignmentRequest(node, msg);
-                }
-            });
+        if (!cctx.kernalContext().clientNode()) {
+            cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentRequest.class,
+                new MessageHandler<GridDhtAffinityAssignmentRequest>() {
+                    @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentRequest msg) {
+                        processAffinityAssignmentRequest(node, msg);
+                    }
+                });
+        }
 
-        cctx.io().addHandler(cctx.cacheId(), GridDhtAffinityAssignmentResponse.class,
-            new MessageHandler<GridDhtAffinityAssignmentResponse>() {
-                @Override protected void onMessage(ClusterNode node, GridDhtAffinityAssignmentResponse msg) {
-                    processAffinityAssignmentResponse(node, msg);
-                }
-            });
+        cctx.shared().affinity().onCacheCreated(cctx);
 
         supplier = new GridDhtPartitionSupplier(cctx);
         demander = new GridDhtPartitionDemander(cctx, demandLock);
+
+        demander.rebalanceFuture().listen(new CI1<IgniteInternalFuture<Boolean>>() {
+            @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                initRebalanceFut.onDone();
+            }
+        });
 
         supplier.start();
         demander.start();
 
         cctx.events().addListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("DHT rebalancer onKernalStart callback.");
-
-        ClusterNode loc = cctx.localNode();
-
-        assert loc.metrics().getStartTime() > 0;
-
-        final long startTopVer = loc.order();
-
-        topVer.setIfGreater(startTopVer);
     }
 
     /** {@inheritDoc} */
@@ -268,13 +255,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut) {
-        demander.updateLastExchangeFuture(lastFut);
-    }
+    @Override public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
+        supplier.onTopologyChanged(lastFut.topologyVersion());
 
-    /** {@inheritDoc} */
-    @Override public void onTopologyChanged(AffinityTopologyVersion topVer) {
-        supplier.onTopologyChanged(topVer);
+        demander.updateLastExchangeFuture(lastFut);
     }
 
     /** {@inheritDoc} */
@@ -290,7 +274,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         assert exchFut.forcePreload() || exchFut.dummyReassign() ||
             exchFut.exchangeId().topologyVersion().equals(top.topologyVersion()) :
             "Topology version mismatch [exchId=" + exchFut.exchangeId() +
-                ", topVer=" + top.topologyVersion() + ']';
+            ", cache=" + cctx.name() +
+            ", topVer=" + top.topologyVersion() + ']';
 
         GridDhtPreloaderAssignments assigns = new GridDhtPreloaderAssignments(exchFut, top.topologyVersion());
 
@@ -302,7 +287,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
                         exchFut.exchangeId());
 
-                break;
+                assigns.cancelled(true);
+
+                return assigns;
             }
 
             // If partition belongs to local node.
@@ -358,12 +345,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public void onReconnected() {
         startFut = new GridFutureAdapter<>();
-
-        long topVer0 = cctx.kernalContext().discovery().topologyVersion();
-
-        assert topVer0 > 0 : topVer0;
-
-        topVer.set(topVer0);
     }
 
     /**
@@ -408,6 +389,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         try {
             demandLock.readLock().lock();
+
             try {
                 demander.handleSupplyMessage(idx, id, s);
             }
@@ -456,24 +438,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         return cctx.kernalContext().clientNode() ? new GridFinishedFuture<>(true) : demander.rebalanceFuture();
     }
 
-    /**
-     * @param topVer Requested topology version.
-     * @param fut Future to add.
-     */
-    public void addDhtAssignmentFetchFuture(AffinityTopologyVersion topVer, GridDhtAssignmentFetchFuture fut) {
-        GridDhtAssignmentFetchFuture old = pendingAssignmentFetchFuts.putIfAbsent(topVer, fut);
-
-        assert old == null : "More than one thread is trying to fetch partition assignments: " + topVer;
-    }
-
-    /**
-     * @param topVer Requested topology version.
-     * @param fut Future to remove.
-     */
-    public void removeDhtAssignmentFetchFuture(AffinityTopologyVersion topVer, GridDhtAssignmentFetchFuture fut) {
-        boolean rmv = pendingAssignmentFetchFuts.remove(topVer, fut);
-
-        assert rmv : "Failed to remove assignment fetch future: " + topVer;
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> initialRebalanceFuture() {
+        return cctx.kernalContext().clientNode() ? startFut : initRebalanceFut;
     }
 
     /**
@@ -643,29 +610,29 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
                         ", node=" + node + ']');
 
-                List<List<ClusterNode>> assignment = cctx.affinity().assignments(topVer);
+                GridAffinityAssignment assignment = cctx.affinity().assignment(topVer);
+
+                boolean newAffMode = node.version().compareTo(CacheAffinitySharedManager.LATE_AFF_ASSIGN_SINCE) >= 0;
+
+                GridDhtAffinityAssignmentResponse res = new GridDhtAffinityAssignmentResponse(cctx.cacheId(),
+                    topVer,
+                    assignment.assignment(),
+                    newAffMode);
+
+                if (newAffMode && cctx.affinity().affinityCache().centralizedAffinityFunction()) {
+                    assert assignment.idealAssignment() != null;
+
+                    res.idealAffinityAssignment(assignment.idealAssignment());
+                }
 
                 try {
-                    cctx.io().send(node,
-                        new GridDhtAffinityAssignmentResponse(cctx.cacheId(), topVer, assignment), AFFINITY_POOL);
+                    cctx.io().send(node, res, AFFINITY_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send affinity assignment response to remote node [node=" + node + ']', e);
                 }
             }
         });
-    }
-
-    /**
-     * @param node Node.
-     * @param res Response.
-     */
-    private void processAffinityAssignmentResponse(ClusterNode node, GridDhtAffinityAssignmentResponse res) {
-        if (log.isDebugEnabled())
-            log.debug("Processing affinity assignment response [node=" + node + ", res=" + res + ']');
-
-        for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
-            fut.onResponse(node, res);
     }
 
     /**
@@ -692,12 +659,27 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean needForceKeys() {
+        if (cctx.rebalanceEnabled()) {
+            IgniteInternalFuture<Boolean> rebalanceFut = rebalanceFuture();
+
+            if (rebalanceFut.isDone() && Boolean.TRUE.equals(rebalanceFut.result()))
+                return false;
+        }
+
+        return true;
+    }
+
     /**
      * @param keys Keys to request.
      * @return Future for request.
      */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
     @Override public GridDhtFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
+        if (!needForceKeys())
+            return null;
+
         final GridDhtForceKeysFuture<?, ?> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
 
         IgniteInternalFuture<?> topReadyFut = cctx.affinity().affinityReadyFuturex(topVer);
@@ -814,13 +796,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             U.warn(log, "Pending force key futures [cache=" + cctx.name() +"]:");
 
             for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
-                U.warn(log, ">>> " + fut);
-        }
-
-        if (!pendingAssignmentFetchFuts.isEmpty()) {
-            U.warn(log, "Pending assignment fetch futures [cache=" + cctx.name() +"]:");
-
-            for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
                 U.warn(log, ">>> " + fut);
         }
 

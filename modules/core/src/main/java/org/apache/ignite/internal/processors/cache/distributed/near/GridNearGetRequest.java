@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -122,7 +123,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         IgniteUuid futId,
         IgniteUuid miniId,
         GridCacheVersion ver,
-        LinkedHashMap<KeyCacheObject, Boolean> keys,
+        Map<KeyCacheObject, Boolean> keys,
         boolean readThrough,
         @NotNull AffinityTopologyVersion topVer,
         UUID subjId,
@@ -133,7 +134,6 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     ) {
         assert futId != null;
         assert miniId != null;
-        assert ver != null;
         assert keys != null;
 
         this.cacheId = cacheId;

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.thread.IgniteThread;
-
 /**
  * Utility class that allows to ignore back-pressure control for threads that are processing messages.
  */
@@ -34,11 +32,6 @@ public class GridNioBackPressureControl {
      * @return Flag indicating whether current thread is processing message.
      */
     public static boolean threadProcessingMessage() {
-        Thread th = Thread.currentThread();
-
-        if (th instanceof IgniteThread)
-            return ((IgniteThread)th).processingMessage();
-
         return threadProcMsg.get();
     }
 
@@ -46,11 +39,6 @@ public class GridNioBackPressureControl {
      * @param processing Flag indicating whether current thread is processing message.
      */
     public static void threadProcessingMessage(boolean processing) {
-        Thread th = Thread.currentThread();
-
-        if (th instanceof IgniteThread)
-            ((IgniteThread)th).processingMessage(processing);
-        else
-            threadProcMsg.set(processing);
+        threadProcMsg.set(processing);
     }
 }

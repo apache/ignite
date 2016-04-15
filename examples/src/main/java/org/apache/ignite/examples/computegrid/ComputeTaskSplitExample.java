@@ -56,7 +56,7 @@ public class ComputeTaskSplitExample {
             System.out.println("Compute task split example started.");
 
             // Execute task on the cluster and wait for its completion.
-            int cnt = ignite.compute().execute(CharacterCountTask.class, "Hello Ignite Enabled World!");
+            int cnt = ignite.compute().execute(SplitExampleCharacterCountTask.class, "Hello Ignite Enabled World!");
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + cnt + "'.");
@@ -67,7 +67,7 @@ public class ComputeTaskSplitExample {
     /**
      * Task to count non-white-space characters in a phrase.
      */
-    private static class CharacterCountTask extends ComputeTaskSplitAdapter<String, Integer> {
+    private static class SplitExampleCharacterCountTask extends ComputeTaskSplitAdapter<String, Integer> {
         /**
          * Splits the received string to words, creates a child job for each word, and sends
          * these jobs to other nodes for processing. Each such job simply prints out the received word.

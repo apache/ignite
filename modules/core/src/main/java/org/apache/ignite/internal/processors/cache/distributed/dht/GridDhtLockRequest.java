@@ -120,6 +120,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param keepBinary Keep binary flag.
      * @param addDepInfo Deployment info flag.
      */
     public GridDhtLockRequest(
@@ -143,6 +144,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         int taskNameHash,
         long accessTtl,
         boolean skipStore,
+        boolean keepBinary,
         boolean addDepInfo
     ) {
         super(cacheId,
@@ -159,6 +161,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             dhtCnt == 0 ? nearCnt : dhtCnt,
             txSize,
             skipStore,
+            keepBinary,
             addDepInfo);
 
         this.topVer = topVer;
@@ -236,7 +239,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     ) throws IgniteCheckedException {
         invalidateEntries.set(idx, invalidateEntry);
 
-        addKeyBytes(key, false, null, ctx);
+        addKeyBytes(key, false, ctx);
     }
 
     /**
@@ -308,7 +311,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
 
-        if (owned != null) {
+        if (owned != null && ownedKeys == null) {
             ownedKeys = new KeyCacheObject[owned.size()];
             ownedValues = new GridCacheVersion[ownedKeys.length];
 

@@ -40,7 +40,6 @@ import static junit.framework.Assert.fail;
  * IO test utilities.
  */
 public final class GridTestIoUtils {
-
     /**
      * Serializes a given object into byte array.
      *
@@ -187,6 +186,122 @@ public final class GridTestIoUtils {
             assertEquals(expSize.longValue(), pos);
     }
 
+    /**
+     * Gets short value from byte array assuming that value stored in little-endian byte order.
+     *
+     * @param arr Byte array.
+     */
+    public static short getShortByByteLE(byte[] arr) {
+        return getShortByByteLE(arr, 0);
+    }
+
+    /**
+     * Gets short value from byte array assuming that value stored in little-endian byte order.
+     *
+     * @param arr Byte array.
+     * @param off Offset.
+     */
+    public static short getShortByByteLE(byte[] arr, int off) {
+        return (short)((arr[off] & 0xff) | arr[off + 1] << 8);
+    }
+
+    /**
+     * Gets char value from byte array assuming that value stored in little-endian byte order.
+     *
+     * @param arr Byte array.
+     */
+    public static char getCharByByteLE(byte[] arr) {
+        return getCharByByteLE(arr, 0);
+    }
+
+    /**
+     * Gets char value from byte array assuming that value stored in little-endian byte order.
+     *
+     * @param arr Byte array.
+     * @param off Offset.
+     */
+    public static char getCharByByteLE(byte[] arr, int off) {
+        return (char)((arr[off] & 0xff) | arr[off + 1] << 8);
+    }
+
+    /**
+     * Gets integer value from byte array assuming that value stored in little-endian byte order.
+     *
+     * @param arr Byte array.
+     */
+    public static int getIntByByteLE(byte[] arr) {
+        return getIntByByteLE(arr, 0);
+    }
+
+    /**
+     * Gets integer value from byte array assuming that value stored in little-endian byte order.
+     *
+     * @param arr Byte array.
+     * @param off Offset.
+     */
+    public static int getIntByByteLE(byte[] arr, int off) {
+        return ((int)arr[off] & 0xff) | ((int)arr[off + 1] & 0xff) << 8 |
+            ((int)arr[off + 2] & 0xff) << 16 | ((int)arr[off + 3] & 0xff) << 24;
+    }
+
+    /**
+     * Gets long value from byte array assuming that value stored in little-endian byte order.
+     *
+     * @param arr Byte array.
+     */
+    public static long getLongByByteLE(byte[] arr) {
+        return getLongByByteLE(arr, 0);
+    }
+
+    /**
+     * Gets long value from byte array assuming that value stored in little-endian byte order.
+     *
+     * @param arr Byte array.
+     * @param off Offset.
+     */
+    public static long getLongByByteLE(byte[] arr, int off) {
+        return ((long)arr[off] & 0xff) | ((long)arr[off + 1] & 0xff) << 8 | ((long)arr[off + 2] & 0xff) << 16 |
+            ((long)arr[off + 3] & 0xff) << 24 | ((long)arr[off + 4] & 0xff) << 32 | ((long)arr[off + 5] & 0xff) << 40 |
+            ((long)arr[off + 6] & 0xff) << 48 | ((long)arr[off + 7] & 0xff) << 56;
+    }
+
+    /**
+     * Gets float value from byte array assuming that value stored in little-endian byte order.
+     *
+     * @param arr Byte array.
+     */
+    public static float getFloatByByteLE(byte[] arr) {
+        return getFloatByByteLE(arr, 0);
+    }
+
+    /**
+     * Gets float value from byte array assuming that value stored in little-endian byte order.
+     *
+     * @param arr Byte array.
+     * @param off Offset.
+     */
+    public static float getFloatByByteLE(byte[] arr, int off) {
+        return Float.intBitsToFloat(getIntByByteLE(arr, off));
+    }
+
+    /**
+     * Gets double value from byte array assuming that value stored in little-endian byte order.
+     *
+     * @param arr Byte array.
+     */
+    public static double getDoubleByByteLE(byte[] arr) {
+        return getDoubleByByteLE(arr, 0);
+    }
+
+    /**
+     * Gets double value from byte array assuming that value stored in little-endian byte order.
+     *
+     * @param arr Byte array.
+     * @param off Offset.
+     */
+    public static double getDoubleByByteLE(byte[] arr, int off) {
+        return Double.longBitsToDouble(getLongByByteLE(arr, off));
+    }
 
     /**
      * Closes resource.

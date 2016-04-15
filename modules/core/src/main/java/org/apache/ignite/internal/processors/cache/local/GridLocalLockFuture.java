@@ -19,13 +19,12 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -55,6 +54,10 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Error updater. */
+    private static final AtomicReferenceFieldUpdater<GridLocalLockFuture, Throwable> ERR_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridLocalLockFuture.class, Throwable.class, "err");
+
     /** Logger. */
     private static IgniteLogger log;
 
@@ -81,7 +84,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private GridCacheVersion lockVer;
 
     /** Error. */
-    private AtomicReference<Throwable> err = new AtomicReference<>(null);
+    @SuppressWarnings("UnusedDeclaration")
+    private volatile Throwable err;
 
     /** Timeout object. */
     @GridToStringExclude
@@ -154,11 +158,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return Collections.emptyList();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
         return false;
     }
@@ -171,20 +170,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         trackable = false;
-    }
-
-    /**
-     * @return Lock version.
-     */
-    GridCacheVersion lockVersion() {
-        return lockVer;
-    }
-
-    /**
-     * @return Entries.
-     */
-    List<GridLocalCacheEntry> entries() {
-        return entries;
     }
 
     /**
@@ -230,7 +215,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
             timeout,
             !inTx(),
             inTx(),
-            implicitSingle()
+            implicitSingle(),
+            true
         );
 
         entries.add(entry);
@@ -280,7 +266,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * @param t Error.
      */
     void onError(Throwable t) {
-        if (err.compareAndSet(null, t))
+        if (ERR_UPD.compareAndSet(this, null, t))
             onFailed();
     }
 
@@ -398,7 +384,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         if (!success)
             undoLocks();
 
-        if (onDone(success, err.get())) {
+        if (onDone(success, err)) {
             if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
 
@@ -415,8 +401,10 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * @throws IgniteCheckedException If execution failed.
      */
     private void checkError() throws IgniteCheckedException {
-        if (err.get() != null)
-            throw U.cast(err.get());
+        Throwable err0 = err;
+
+        if (err0 != null)
+            throw U.cast(err0);
     }
 
     /** {@inheritDoc} */

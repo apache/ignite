@@ -47,6 +47,11 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isPlatformType() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
         cpy = cpy && needCopy(ctx);
@@ -102,6 +107,11 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
         if (val == null && ctx.storeValue())
             val = ctx.processor().unmarshal(ctx, valBytes, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

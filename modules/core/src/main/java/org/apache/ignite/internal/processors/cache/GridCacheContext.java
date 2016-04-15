@@ -36,6 +36,7 @@ import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheInterceptor;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -89,6 +91,7 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
@@ -109,6 +112,7 @@ import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
  * Cache context.
@@ -121,7 +125,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String, String>>() {
         @Override protected IgniteBiTuple<String, String> initialValue() {
-            return F.t2();
+            return new IgniteBiTuple<>();
         }
     };
 
@@ -239,6 +243,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Deployment enabled flag for this specific cache */
     private boolean depEnabled;
 
+    /** */
+    private boolean deferredDel;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -315,7 +322,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.cacheType = cacheType;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
-        this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isPortableEnabled(cacheCfg);
+        this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
 
         /*
          * Managers in starting order!
@@ -506,6 +513,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void cache(GridCacheAdapter<K, V> cache) {
         this.cache = cache;
+
+        deferredDel = cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
+            (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC);
     }
 
     /**
@@ -568,21 +578,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if entries should not be deleted from cache immediately.
      */
     public boolean deferredDelete() {
-        GridCacheAdapter<K, V> cache = this.cache;
-
-        if (cache == null)
-            throw new IllegalStateException("Cache stopped: " + cacheName);
-
-        return deferredDelete(cache);
-    }
-
-    /**
-     * @param cache Cache.
-     * @return {@code True} if entries should not be deleted from cache immediately.
-     */
-    public boolean deferredDelete(GridCacheAdapter<?, ?> cache) {
-        return cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
-            (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC);
+        return deferredDel;
     }
 
     /**
@@ -1111,30 +1107,22 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return No value filter.
      */
-    public CacheEntryPredicate[] noValArray() {
-        return new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue())};
+    public CacheEntryPredicate noVal() {
+        return new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
     }
 
     /**
      * @return Has value filter.
      */
-    public CacheEntryPredicate[] hasValArray() {
-        return new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue())};
-    }
-
-    /**
-     * @param val Value to check.
-     * @return Predicate array that checks for value.
-     */
-    public CacheEntryPredicate[] equalsValArray(V val) {
-        return new CacheEntryPredicate[]{new CacheEntryPredicateContainsValue(toCacheObject(val))};
+    public CacheEntryPredicate hasVal() {
+        return new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
     }
 
     /**
      * @param val Value to check.
      * @return Predicate that checks for value.
      */
-    public CacheEntryPredicate equalsValue(V val) {
+    public CacheEntryPredicate equalsVal(V val) {
         return new CacheEntryPredicateContainsValue(toCacheObject(val));
     }
 
@@ -1272,7 +1260,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * Sets thread local cache operation context.
      *
-     * @param opCtx Flags to set.
+     * @param opCtx Operation context.
      */
     public void operationContextPerCall(@Nullable CacheOperationContext opCtx) {
         if (nearContext())
@@ -1437,6 +1425,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean readThrough() {
         return cacheCfg.isReadThrough() && !skipStore();
+    }
+
+    /**
+     * @return {@code True} if store and read-through mode are enabled in configuration.
+     */
+    public boolean readThroughConfigured() {
+        return store().configured() && cacheCfg.isReadThrough();
     }
 
     /**
@@ -1683,19 +1678,26 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Portable processor.
+     * @return Binary processor.
      */
     public IgniteCacheObjectProcessor cacheObjects() {
         return kernalContext().cacheObjects();
     }
 
     /**
-     * @return Keep portable flag.
+     * @return {@code True} if {@link BinaryMarshaller is configured}.
      */
-    public boolean keepPortable() {
+    public boolean binaryMarshaller() {
+        return marshaller() instanceof BinaryMarshaller;
+    }
+
+    /**
+     * @return Keep binary flag.
+     */
+    public boolean keepBinary() {
         CacheOperationContext opCtx = operationContextPerCall();
 
-        return opCtx != null && opCtx.isKeepPortable();
+        return opCtx != null && opCtx.isKeepBinary();
     }
 
     /**
@@ -1719,33 +1721,65 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Heap-based object.
      */
     @Nullable public <T> T unwrapTemporary(@Nullable Object obj) {
-        if (!offheapTiered())
+        if (!useOffheapEntry())
             return (T)obj;
 
-        return (T) cacheObjects().unwrapTemporary(this, obj);
+        return (T)cacheObjects().unwrapTemporary(this, obj);
     }
 
     /**
      * Unwraps collection.
      *
      * @param col Collection to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
-        return cacheObjCtx.unwrapPortablesIfNeeded(col, keepPortable);
+    public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary) {
+        return cacheObjCtx.unwrapBinariesIfNeeded(col, keepBinary);
     }
 
     /**
-     * Unwraps object for portables.
+     * Unwraps object for binary.
      *
      * @param o Object to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Unwrapped object.
      */
-    @SuppressWarnings("IfMayBeConditional")
-    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
-        return cacheObjCtx.unwrapPortableIfNeeded(o, keepPortable);
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary) {
+        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary);
+    }
+
+    /**
+     * Unwraps object for binary.
+     *
+     * @param o Object to unwrap.
+     * @param keepBinary Keep binary flag.
+     * @param cpy Copy value flag.
+     * @return Unwrapped object.
+     */
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy) {
+        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary, cpy);
+    }
+
+    /**
+     * @param resMap Invoke results map.
+     * @param keepBinary Keep binary flag.
+     * @return Unwrapped results.
+     */
+    public Map unwrapInvokeResult(@Nullable Map<Object, EntryProcessorResult> resMap, final boolean keepBinary) {
+        return F.viewReadOnly(resMap, new C1<EntryProcessorResult, EntryProcessorResult>() {
+            @Override public EntryProcessorResult apply(EntryProcessorResult res) {
+                if (res instanceof CacheInvokeResult) {
+                    CacheInvokeResult invokeRes = (CacheInvokeResult)res;
+
+                    if (invokeRes.result() != null)
+                        res = CacheInvokeResult.fromResult(unwrapBinaryIfNeeded(invokeRes.result(),
+                            keepBinary, false));
+                }
+
+                return res;
+            }
+        });
     }
 
     /**
@@ -1760,6 +1794,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache object.
      */
     @Nullable public CacheObject toCacheObject(@Nullable Object obj) {
+        assert validObjectForCache(obj) : obj;
+
         return cacheObjects().toCacheObject(cacheObjCtx, obj, true);
     }
 
@@ -1768,7 +1804,19 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
+        assert validObjectForCache(obj) : obj;
+
         return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
+    }
+
+    /**
+     * @param obj Object.
+     * @return {@code False} if objects is not expected for cache.
+     */
+    private boolean validObjectForCache(Object obj) {
+        return obj == null ||
+            !CU.isUtilityCache(cacheName) ||
+            ctx.marshallerContext().isSystemType(obj.getClass().getName());
     }
 
     /**
@@ -1825,8 +1873,9 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param val Value.
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects flag.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param cpy Copy flag.
+     * @param ver GridCacheVersion.
      */
     @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
@@ -1834,29 +1883,46 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheObject val,
         boolean skipVals,
         boolean keepCacheObjects,
-        boolean deserializePortable,
-        boolean cpy) {
+        boolean deserializeBinary,
+        boolean cpy,
+        final GridCacheVersion ver) {
         assert key != null;
         assert val != null || skipVals;
 
         if (!keepCacheObjects) {
-            Object key0 = key.value(cacheObjCtx, false);
-            Object val0 = skipVals ? true : val.value(cacheObjCtx, cpy);
+            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary);
 
-            if (deserializePortable) {
-                key0 = unwrapPortableIfNeeded(key0, false);
-
-                if (!skipVals)
-                    val0 = unwrapPortableIfNeeded(val0, false);
-            }
+            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary);
 
             assert key0 != null : key;
             assert val0 != null : val;
 
-            map.put((K1)key0, (V1)val0);
+            map.put((K1)key0, ver != null ? (V1)new T2<>(val0, ver) : (V1)val0);
         }
         else
-            map.put((K1)key, (V1)(skipVals ? true : val));
+            map.put((K1)key,
+                (V1)(ver != null ?
+                    (V1)new T2<>(skipVals ? true : val, ver) :
+                    skipVals ? true : val));
+    }
+
+    /**
+     * @param map Map.
+     * @param key Key.
+     * @param val Value.
+     * @param skipVals Skip values flag.
+     * @param keepCacheObjects Keep cache objects flag.
+     * @param deserializeBinary Deserialize binary flag.
+     * @param cpy Copy flag.
+     */
+    public <K1, V1> void addResult(Map<K1, V1> map,
+        KeyCacheObject key,
+        CacheObject val,
+        boolean skipVals,
+        boolean keepCacheObjects,
+        boolean deserializeBinary,
+        boolean cpy) {
+        addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, null);
     }
 
     /**
@@ -1918,6 +1984,31 @@ public class GridCacheContext<K, V> implements Externalizable {
                 return toCacheKeyObject(key);
             }
         });
+    }
+
+    /**
+     * @param part Partition.
+     * @param affNodes Affinity nodes.
+     * @param topVer Topology version.
+     * @return {@code True} if cache 'get' operation is allowed to get entry locally.
+     */
+    public boolean allowFastLocalRead(int part, List<ClusterNode> affNodes, AffinityTopologyVersion topVer) {
+        return affinityNode() && rebalanceEnabled() && hasPartition(part, affNodes, topVer);
+    }
+
+    /**
+     * @param part Partition.
+     * @param affNodes Affinity nodes.
+     * @param topVer Topology version.
+     * @return {@code True} if partition is available locally.
+     */
+    private boolean hasPartition(int part, List<ClusterNode> affNodes, AffinityTopologyVersion topVer) {
+        assert affinityNode();
+
+        GridDhtPartitionTopology top = topology();
+
+        return (top.rebalanceFinished(topVer) && (isReplicated() || affNodes.contains(locNode)))
+            || (top.partitionState(localNodeId(), part) == OWNING);
     }
 
     /** {@inheritDoc} */

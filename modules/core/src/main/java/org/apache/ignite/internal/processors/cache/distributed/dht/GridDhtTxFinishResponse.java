@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -109,7 +110,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (checkCommittedErr != null)
+        if (checkCommittedErr != null && checkCommittedErrBytes == null)
             checkCommittedErrBytes = ctx.marshaller().marshal(checkCommittedErr);
     }
 
@@ -118,8 +119,8 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
         throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (checkCommittedErrBytes != null)
-            checkCommittedErr = ctx.marshaller().unmarshal(checkCommittedErrBytes, ldr);
+        if (checkCommittedErrBytes != null && checkCommittedErr == null)
+            checkCommittedErr = ctx.marshaller().unmarshal(checkCommittedErrBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */

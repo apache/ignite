@@ -33,9 +33,8 @@ public class GridCacheRebalancingAsyncSelfTest extends GridCacheRebalancingSyncS
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration iCfg = super.getConfiguration(gridName);
 
-        for (CacheConfiguration cacheCfg : iCfg.getCacheConfiguration()) {
+        for (CacheConfiguration cacheCfg : iCfg.getCacheConfiguration())
             cacheCfg.setRebalanceMode(CacheRebalanceMode.ASYNC);
-        }
 
         return iCfg;
     }

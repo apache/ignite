@@ -21,10 +21,12 @@ import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -55,6 +57,16 @@ public class GridCacheSqlQuery implements Message {
     /** */
     @GridToStringInclude
     @GridDirectTransient
+    private int[] paramIdxs;
+
+    /** */
+    @GridToStringInclude
+    @GridDirectTransient
+    private int paramsSize;
+
+    /** */
+    @GridToStringInclude
+    @GridDirectTransient
     private LinkedHashMap<String, ?> cols;
 
     /** Field kept for backward compatibility. */
@@ -77,6 +89,14 @@ public class GridCacheSqlQuery implements Message {
         this.qry = qry;
 
         this.params = F.isEmpty(params) ? EMPTY_PARAMS : params;
+        paramsSize = this.params.length;
+    }
+
+    /**
+     * @param paramIdxs Parameter indexes.
+     */
+    public void parameterIndexes(int[] paramIdxs) {
+        this.paramIdxs = paramIdxs;
     }
 
     /**
@@ -127,13 +147,18 @@ public class GridCacheSqlQuery implements Message {
      * @param m Marshaller.
      * @throws IgniteCheckedException If failed.
      */
-    public void unmarshallParams(Marshaller m) throws IgniteCheckedException {
+    public void unmarshallParams(Marshaller m, GridKernalContext ctx) throws IgniteCheckedException {
         if (params != null)
             return;
 
         assert paramsBytes != null;
 
-        params = m.unmarshal(paramsBytes, null);
+        params = m.unmarshal(paramsBytes, U.resolveClassLoader(ctx.config()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -221,5 +246,29 @@ public class GridCacheSqlQuery implements Message {
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
         return 3;
+    }
+
+    /**
+     * @param args Arguments.
+     * @return Copy.
+     */
+    public GridCacheSqlQuery copy(Object[] args) {
+        GridCacheSqlQuery cp = new GridCacheSqlQuery();
+
+        cp.qry = qry;
+        cp.cols = cols;
+        cp.paramIdxs = paramIdxs;
+        cp.paramsSize = paramsSize;
+
+        if (F.isEmpty(args))
+            cp.params = EMPTY_PARAMS;
+        else {
+            cp.params = new Object[paramsSize];
+
+            for (int paramIdx : paramIdxs)
+                cp.params[paramIdx] = args[paramIdx];
+        }
+
+        return cp;
     }
 }

@@ -80,7 +80,7 @@ public class IgniteTransactionalWriteReadBenchmark extends IgniteFailoverAbstrac
                         }
                     }
 
-                    throw new IllegalStateException("Found different values for keys (see above information).");
+                    throw new IgniteConsistencyException("Found different values for keys (see above information).");
                 }
 
                 final Long oldVal = map.get(keys[0]);

@@ -28,12 +28,12 @@ public interface PlatformService extends Service {
      * Invokes native service method.
      *
      * @param mthdName Method name.
-     * @param srvKeepPortable Server keep portable flag.
+     * @param srvKeepBinary Server keep binary flag.
      * @param args Arguments.
      * @return Resulting data.
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
-    public Object invokeMethod(String mthdName, boolean srvKeepPortable, Object[] args) throws IgniteCheckedException;
+    public Object invokeMethod(String mthdName, boolean srvKeepBinary, Object[] args) throws IgniteCheckedException;
 
     /**
      * Gets native pointer.

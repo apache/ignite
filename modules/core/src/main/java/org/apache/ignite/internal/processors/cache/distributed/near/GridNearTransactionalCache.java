@@ -120,9 +120,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean skipTx,
         @Nullable UUID subjId,
         String taskName,
-        final boolean deserializePortable,
+        final boolean deserializeBinary,
         final boolean skipVals,
-        boolean canRemap
+        boolean canRemap,
+        final boolean needVer
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
@@ -140,15 +141,17 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-                @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
+                @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx, AffinityTopologyVersion readyTopVer) {
                     return tx.getAllAsync(ctx,
+                        readyTopVer,
                         ctx.cacheKeysView(keys),
-                        deserializePortable,
+                        deserializeBinary,
                         skipVals,
                         false,
-                        skipStore);
+                        skipStore,
+                        needVer);
                 }
-            });
+            }, opCtx);
         }
 
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
@@ -158,27 +161,29 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             forcePrimary,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             skipStore,
-            canRemap);
+            canRemap,
+            needVer);
     }
 
     /**
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param readThrough Read through flag.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @return Future.
      */
     IgniteInternalFuture<Map<K, V>> txLoadAsync(GridNearTxLocal tx,
+        AffinityTopologyVersion topVer,
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer) {
@@ -191,7 +196,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             tx,
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
-            deserializePortable,
+            deserializeBinary,
             expiryPlc,
             skipVals,
             /*can remap*/true,
@@ -199,7 +204,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             /*keepCacheObjects*/true);
 
         // init() will register future for responses if it has remote mappings.
-        fut.init();
+        fut.init(topVer);
 
         return fut;
     }
@@ -273,7 +278,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @throws IgniteCheckedException If failed.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
-    @SuppressWarnings({"RedundantTypeArguments"})
+    @SuppressWarnings({"RedundantTypeArguments", "ForLoopReplaceableByForEach"})
     @Nullable public GridNearTxRemote startRemoteTx(UUID nodeId, GridDhtLockRequest req)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
         List<KeyCacheObject> nearKeys = req.nearKeys();
@@ -285,6 +290,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (ldr != null) {
             Collection<IgniteTxKey> evicted = null;
 
+            // Avoid iterator creation.
             for (int i = 0; i < nearKeys.size(); i++) {
                 KeyCacheObject key = nearKeys.get(i);
 
@@ -292,8 +298,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                     continue;
 
                 IgniteTxKey txKey = ctx.txKey(key);
-
-                Collection<GridCacheMvccCandidate> cands = req.candidatesByIndex(i);
 
                 if (log.isDebugEnabled())
                     log.debug("Unmarshalled key: " + key);
@@ -312,10 +316,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 if (tx == null) {
                                     tx = new GridNearTxRemote(
                                         ctx.shared(),
+                                        req.topologyVersion(),
                                         nodeId,
                                         req.nearNodeId(),
                                         req.nearXidVersion(),
-                                        req.threadId(),
                                         req.version(),
                                         null,
                                         ctx.systemTx(),
@@ -341,7 +345,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     GridCacheOperation.NOOP,
                                     null /*Value.*/,
                                     null /*dr version*/,
-                                    req.skipStore());
+                                    req.skipStore(),
+                                    req.keepBinary());
                             }
 
                             // Add remote candidate before reordering.
@@ -356,8 +361,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 tx != null && tx.implicitSingle(),
                                 req.owned(entry.key())
                             );
-
-                            assert cands.isEmpty() : "Received non-empty candidates in dht lock request: " + cands;
 
                             if (!req.inTx())
                                 ctx.evicts().touch(entry, req.topologyVersion());
@@ -427,7 +430,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         assert nodeId != null;
         assert res != null;
 
-        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>future(res.version(),
+        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>mvccFuture(res.version(),
             res.futureId());
 
         if (fut != null)
@@ -455,7 +458,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             timeout,
             accessTtl,
             CU.empty0(),
-            opCtx != null && opCtx.skipStore());
+            opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.isKeepBinary());
 
         if (!ctx.mvcc().addFuture(fut))
             throw new IllegalStateException("Duplicate future ID: " + fut);

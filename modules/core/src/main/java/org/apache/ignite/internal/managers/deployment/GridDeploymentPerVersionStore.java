@@ -145,11 +145,15 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                                                 "nodes: " + dep);
                                     }
                                 }
-                                else if (log.isDebugEnabled())
-                                    log.debug("Preserving deployment without node participants: " + dep);
+                                else {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Preserving deployment without node participants: " + dep);
+                                }
                             }
-                            else if (log.isDebugEnabled())
-                                log.debug("Keeping deployment as it still has participants: " + dep);
+                            else {
+                                if (log.isDebugEnabled())
+                                    log.debug("Keeping deployment as it still has participants: " + dep);
+                            }
                         }
 
                         if (deps.isEmpty())

@@ -101,7 +101,28 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
+    public void testExplicitTransactionRetriesSingleValue() throws Exception {
+        checkRetry(Test.TX_PUT, TestMemoryMode.HEAP, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExplicitTransactionRetriesSingleValueStoreEnabled() throws Exception {
+        checkRetry(Test.TX_PUT, TestMemoryMode.HEAP, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testExplicitTransactionRetries() throws Exception {
+        explicitTransactionRetries(TestMemoryMode.HEAP, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExplicitTransactionRetriesSingleOperation() throws Exception {
         explicitTransactionRetries(TestMemoryMode.HEAP, false);
     }
 
