@@ -1449,7 +1449,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         @Override public IgniteBiTuple<Object, GridCacheVersion> apply(Object v) {
                             return F.t(v, ver);
                         }
-                    }));
+                    }), false);
                 }
                 catch (CacheStorePartialUpdateException e) {
                     storeErr = e;

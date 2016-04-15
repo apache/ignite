@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -144,5 +146,33 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     /** {@inheritDoc} */
     public String toString() {
         return S.toString(IgniteTxRemoteStateImpl.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
+        int storeCnt = 0;
+
+        for (Object cacheCtx : cctx.cacheContexts()) {
+            CacheStoreManager store = ((GridCacheContext)cacheCtx).store();
+
+            if (store.configured() &&
+                store.isLocal()) // Only local stores take part at tx on backup node.
+                storeCnt++;
+        }
+
+        if (storeCnt > 0 && !writeMap.isEmpty()) {
+            Collection<CacheStoreManager> stores = new ArrayList<>(storeCnt);
+
+            for (IgniteTxEntry e : writeMap.values()) {
+                CacheStoreManager store = cctx.cacheContext(e.cacheId()).store();
+
+                if (store.configured() && store.isLocal())
+                    stores.add(store);
+            }
+
+            return stores;
+        }
+
+        return null;
     }
 }

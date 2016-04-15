@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jetbrains.annotations.Nullable;
 
@@ -95,20 +92,6 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     /** {@inheritDoc} */
     @Override public boolean hasInterceptor(GridCacheSharedContext cctx) {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
-        Collection<CacheStoreManager> stores = new ArrayList<>(cctx.cacheContexts().size());
-
-        for (Object cacheCtx : cctx.cacheContexts()) {
-            CacheStoreManager store = ((GridCacheContext)cacheCtx).store();
-
-            if (store.configured() && store.isLocal())
-                stores.add(store);
-        }
-
-        return stores;
     }
 
     /** {@inheritDoc} */

@@ -2280,7 +2280,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         @Override public IgniteBiTuple<CacheObject, GridCacheVersion> apply(CacheObject v) {
                             return F.t(v, ver);
                         }
-                    }));
+                    }), false);
                 }
                 catch (CacheStorePartialUpdateException e) {
                     storeErr = e;
@@ -2865,7 +2865,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             op,
                             op == TRANSFORM ? entryProcessor : val,
                             op == TRANSFORM ? req.invokeArguments() : null,
-                            /*write-through*/ctx.store().isLocal(),
+                            /*write-through*/ctx.store().isLocal() && writeThrough() && !req.skipStore(),
                             /*read-through*/false,
                             /*retval*/lsnrs != null,
                             req.keepBinary(),

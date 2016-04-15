@@ -15,25 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.platform.PlatformJavaObjectFactory;
 
 /**
- *
+ * Singleton factory.
  */
-public class GridCacheReplicatedLocalStoreSelfTest extends GridCacheAbstractLocalStoreSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode getAtomicMode() {
-        return ATOMIC;
+public class PlatformJavaObjectSingletonFactory<T> implements PlatformJavaObjectFactory<T> {
+    /** Instance. */
+    private final T instance;
+
+    /**
+     * Constructor.
+     *
+     * @param instance Instance.
+     */
+    public PlatformJavaObjectSingletonFactory(T instance) {
+        this.instance = instance;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMode getCacheMode() {
-        return REPLICATED;
+    @Override public T create() {
+        return instance;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PlatformJavaObjectSingletonFactory.class, this);
     }
 }

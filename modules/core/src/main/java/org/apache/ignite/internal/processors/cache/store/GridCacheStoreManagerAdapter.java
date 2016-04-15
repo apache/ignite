@@ -60,7 +60,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -263,6 +262,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     @Override @Nullable public Object load(@Nullable IgniteInternalTx tx, KeyCacheObject key)
         throws IgniteCheckedException {
         return loadFromStore(tx, key, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public Object loadRaw(@Nullable IgniteInternalTx tx, KeyCacheObject key)
+        throws IgniteCheckedException {
+        return loadFromStore(tx, key, false);
     }
 
     /**
@@ -571,7 +576,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putAll(@Nullable IgniteInternalTx tx, Map map) throws IgniteCheckedException {
+    @Override public boolean putAll(@Nullable IgniteInternalTx tx, Map map, boolean conflictResolve) throws IgniteCheckedException {
         if (F.isEmpty(map))
             return true;
 

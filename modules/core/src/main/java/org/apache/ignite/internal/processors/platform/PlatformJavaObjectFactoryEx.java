@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.platform.PlatformJavaObjectFactory;
+import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import java.util.Map;
 
 /**
- *
+ * Extended Java object factory interface to handle special cases.
  */
-public class GridCacheReplicatedLocalStoreSelfTest extends GridCacheAbstractLocalStoreSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode getAtomicMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode getCacheMode() {
-        return REPLICATED;
-    }
+public interface PlatformJavaObjectFactoryEx<T> extends PlatformJavaObjectFactory<T> {
+    /**
+     * Initialize factory.
+     *
+     * @param payload Optional payload.
+     * @param props Optional properties.
+     */
+    public void initialize(@Nullable Object payload, @Nullable Map<String, Object> props);
 }

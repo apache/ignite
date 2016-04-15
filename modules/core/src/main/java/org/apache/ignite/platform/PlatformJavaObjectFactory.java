@@ -15,25 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+package org.apache.ignite.platform;
 
 /**
- *
+ * Object factory used for advanced interop between platform and Java.
+ * <p>
+ * Use it when you need Java component for some Ignite feature in platform code. E.g. Java-based continuous
+ * query filter.
+ * <p>
+ * You should implement the factory, compile it and then place it into node's classpath. Then you can reference
+ * the factory form platform code using it's fully-qualified Java class name.
  */
-public class GridCacheReplicatedLocalStoreSelfTest extends GridCacheAbstractLocalStoreSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode getAtomicMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode getCacheMode() {
-        return REPLICATED;
-    }
+public interface PlatformJavaObjectFactory<T> {
+    /**
+     * Constructs and returns a fully configured instance of T.
+     *
+     * @return An instance of T.
+     */
+    public T create();
 }

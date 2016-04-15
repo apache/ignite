@@ -15,25 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import junit.framework.TestSuite;
+import org.apache.ignite.platform.PlatformDefaultJavaObjectFactorySelfTest;
+import org.apache.ignite.platform.PlatformJavaObjectFactoryProxySelfTest;
 
 /**
- *
+ * Suite for platform tests.
  */
-public class GridCacheReplicatedLocalStoreSelfTest extends GridCacheAbstractLocalStoreSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode getAtomicMode() {
-        return ATOMIC;
-    }
+public class IgnitePlatformsTestSuite extends TestSuite {
+    /**
+     * @return Test suite.
+     * @throws Exception If failed.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Ignite Deployment SPI Test Suite");
 
-    /** {@inheritDoc} */
-    @Override protected CacheMode getCacheMode() {
-        return REPLICATED;
+        // LocalDeploymentSpi tests
+        suite.addTest(new TestSuite(PlatformDefaultJavaObjectFactorySelfTest.class));
+        suite.addTest(new TestSuite(PlatformJavaObjectFactoryProxySelfTest.class));
+
+        return suite;
     }
 }
