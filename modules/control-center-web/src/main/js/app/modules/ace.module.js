@@ -218,6 +218,8 @@ angular
                     });
 
                     ngModel.$render = () => session.setValue(ngModel.$viewValue);
+
+                    acee.on('change', () => ngModel.$setViewValue(acee.getValue()));
                 }
 
                 // Listen for option updates.
