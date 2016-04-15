@@ -175,60 +175,56 @@ void textQuery()
 /**
  * Example for SQL queries based on all employees working for a specific organization.
  *
- * Note that SQL Fields Query can only be performed using fields that have been
+ * Note that SQL Query can only be performed using fields that have been
  * listed in "QueryEntity" been of the config.
  */
 void sqlQueryWithJoin()
 {
     Cache<int64_t, Person> cache = Ignition::Get().GetCache<int64_t, Person>(PERSON_CACHE);
 
+    typedef std::vector< CacheEntry<int64_t, Person> > ResVector;
+
     // SQL clause query which joins on 2 types to select people for a specific organization.
     std::string sql(
-        "select Person._key, Person._val "
         "from Person, \"Organization\".Organization as org "
         "where Person.orgId = org._key "
         "and lower(org.name) = lower(?)");
 
-    SqlFieldsQuery qry(sql);
+    SqlQuery qry(PERSON_TYPE, sql);
 
     // Execute queries for find employees for different organizations.
     std::cout << "Following people are 'ApacheIgnite' employees: " << std::endl;
 
     qry.AddArgument<std::string>("ApacheIgnite");
 
-    QueryFieldsCursor cursor = cache.Query(qry);
+    ResVector res;
+    cache.Query(qry).GetAll(res);
 
-    while (cursor.HasNext())
-    {
-        QueryFieldsRow row = cursor.GetNext();
-
-        std::cout << row.GetNext<int64_t>() << " : ";
-        std::cout << row.GetNext<Person>().ToString() << std::endl;
-    }
+    for (ResVector::const_iterator i = res.begin(); i != res.end(); ++i)
+        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
 
     std::cout << std::endl;
 
     std::cout << "Following people are 'Other' employees: " << std::endl;
 
-    qry = SqlFieldsQuery(sql);
+    qry = SqlQuery(PERSON_TYPE, sql);
 
     qry.AddArgument<std::string>("Other");
 
-    cursor = cache.Query(qry);
+    res.clear();
+    cache.Query(qry).GetAll(res);
 
-    while (cursor.HasNext())
-    {
-        QueryFieldsRow row = cursor.GetNext();
-
-        std::cout << row.GetNext<int64_t>() << " : ";
-        std::cout << row.GetNext<Person>().ToString() << std::endl;
-    }
+    for (ResVector::const_iterator i = res.begin(); i != res.end(); ++i)
+        std::cout << i->GetKey() << " : " << i->GetValue().ToString() << std::endl;
 
     std::cout << std::endl;
 }
 
 /**
  * Example for SQL queries based on salary ranges.
+ *
+ * Note that SQL Query can only be performed using fields that have been
+ * listed in "QueryEntity" been of the config.
  */
 void sqlQuery()
 {
