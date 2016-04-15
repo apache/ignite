@@ -33,7 +33,7 @@ namespace ignite
          * Cache entry.
          */
         template<typename K, typename V>
-        class IGNITE_IMPORT_EXPORT CacheEntry
+        class CacheEntry
         {
         public:
             /**
