@@ -22,9 +22,9 @@ import junit.framework.TestSuite;
 /**
  * Test suit for Ignite RDD
  */
-public class IgniteRDDTestSuit extends TestSuite {
+public class IgniteRDDTestSuite extends TestSuite {
     /**
-     * @return Topology validator tests suite.
+     * @return Java Ignite RDD test suit.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
