@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -465,7 +466,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     private QueryCursor<Cache.Entry<K,V>> query(final Query filter, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
         final CacheQuery<Map.Entry<K,V>> qry;
-        final CacheQueryFuture<Map.Entry<K,V>> fut;
 
         boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
 
@@ -477,14 +477,19 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(ctx,
-                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
-                        return qry.execute();
+            final GridCloseableIterator<Entry<K,V>> iter = ctx.kernalContext().query().executeQuery(ctx,
+                new IgniteOutClosureX<GridCloseableIterator<Entry<K,V>>>() {
+                    @Override public GridCloseableIterator<Entry<K,V>> applyx() throws IgniteCheckedException {
+                        return qry.executeScanQuery();
                     }
                 }, false);
+
+            return new QueryCursorImpl<>(iter);
         }
-        else if (filter instanceof TextQuery) {
+
+        final CacheQueryFuture<Map.Entry<K,V>> fut;
+
+        if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
 
             qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), isKeepBinary);

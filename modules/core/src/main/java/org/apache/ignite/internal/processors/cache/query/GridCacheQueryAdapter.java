@@ -22,9 +22,11 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
@@ -37,10 +39,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
@@ -429,6 +434,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     @SuppressWarnings({"IfMayBeConditional", "unchecked"})
     private <R> CacheQueryFuture<R> execute(@Nullable IgniteReducer<T, R> rmtReducer,
         @Nullable IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
+        assert type != SCAN: "Wrong processing of qyery: " + this;
+
         Collection<ClusterNode> nodes;
 
         try {
@@ -440,7 +447,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        if (nodes.isEmpty() && (type != SCAN || part == null))
+        if (nodes.isEmpty())
             return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), new ClusterGroupEmptyCheckedException());
 
         if (log.isDebugEnabled())
@@ -471,10 +478,68 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         if (type == SQL_FIELDS || type == SPI)
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
-        else if (type == SCAN && part != null && !cctx.isLocal())
-            return new CacheQueryFallbackFuture<>(part, bean, qryMgr, cctx);
         else
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
+    }
+
+    /**
+     * @return Iterator.
+     */
+    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
+    @Override public <K, V> GridCloseableIterator<Cache.Entry<K, V>> executeScanQuery() throws IgniteCheckedException {
+        assert type == SCAN: "Wrong processing of qyery: " + type;
+
+        Collection<ClusterNode> nodes = nodes();
+
+        cctx.checkSecurity(SecurityPermission.CACHE_READ);
+
+        if (nodes.isEmpty() && part == null)
+            throw new ClusterGroupEmptyCheckedException();
+
+        if (log.isDebugEnabled())
+            log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
+
+        if (cctx.deploymentEnabled())
+            cctx.deploy().registerClasses(filter);
+
+        if (subjId == null)
+            subjId = cctx.localNodeId();
+
+        taskHash = cctx.kernalContext().job().currentTaskNameHash();
+
+        // TODO delete bean?
+        final GridCacheQueryBean bean = new GridCacheQueryBean(this, null, null, null);
+
+        final GridCacheQueryManager qryMgr = cctx.queries();
+
+        boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
+
+        GridCloseableIterator<Map.Entry<K, V>> iter0 = null;
+
+        if (part != null && !cctx.isLocal()) {
+  //        TODO
+            ScanQueryFallbackClosableIterator<Object> fut = new ScanQueryFallbackClosableIterator<>(part, bean, qryMgr, cctx);
+
+            return null;
+        }
+        else
+            iter0 = loc ? qryMgr.scanQueryLocal(bean) : qryMgr.scanQueryDistributed(bean, nodes);
+
+        assert iter0 != null;
+
+        final GridCloseableIterator<Map.Entry<K, V>> iter = iter0;
+
+        return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
+            @Override protected Cache.Entry<K, V> onNext() throws IgniteCheckedException {
+                Map.Entry<K, V> next = iter.next();
+
+                return new CacheEntryImpl<>(next.getKey(), next.getValue());
+            }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                return iter.hasNext();
+            }
+        };
     }
 
     /**
@@ -549,7 +614,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * Wrapper for queries with fallback.
      */
-    private static class CacheQueryFallbackFuture<R> extends GridFutureAdapter<Collection<R>>
+    private static class ScanQueryFallbackClosableIterator<R> extends GridFutureAdapter<Collection<R>>
         implements CacheQueryFuture<R> {
         /** Query future. */
         private volatile CacheQueryFuture<R> fut;
@@ -587,7 +652,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
          * @param qryMgr Query manager.
          * @param cctx Cache context.
          */
-        private CacheQueryFallbackFuture(int part, GridCacheQueryBean bean,
+        private ScanQueryFallbackClosableIterator(int part, GridCacheQueryBean bean,
             GridCacheQueryManager qryMgr, GridCacheContext cctx) {
             this.bean = bean;
             this.qryMgr = qryMgr;

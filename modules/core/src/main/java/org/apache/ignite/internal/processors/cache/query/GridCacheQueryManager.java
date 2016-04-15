@@ -474,25 +474,21 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     public CacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
+        assert qry.query().type() != GridCacheQueryType.SCAN: "Wrong query processing: " + qry;
+
         if (log.isDebugEnabled())
             log.debug("Executing query on local node: " + qry);
 
-        CacheQueryFuture<?> fut = null;
+        GridCacheLocalQueryFuture fut = new GridCacheLocalQueryFuture<>(cctx, qry);
 
         try {
             qry.query().validate();
 
-            if (qry.query().type() == GridCacheQueryType.SCAN)
-                fut = executeLocalScanQuery(qry);
-            else {
-                fut = new GridCacheLocalQueryFuture<>(cctx, qry);
-
-                ((GridCacheLocalQueryFuture)fut).execute();
-            }
+            fut.execute();
         }
         catch (IgniteCheckedException e) {
-            if (fut != null && fut instanceof GridCacheLocalQueryFuture)
-                ((GridFutureAdapter)fut).onDone(e);
+            if (fut != null)
+                fut.onDone(e);
         }
 
         return fut;
@@ -506,6 +502,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Query future.
      */
     public abstract CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes);
+
+    @SuppressWarnings("unchecked")
+    public abstract GridCloseableIterator<Map.Entry<K, V>> scanQueryDistributed(GridCacheQueryBean qry,
+        Collection<ClusterNode> nodes) throws IgniteCheckedException;
 
     /**
      * Loads page.
@@ -1648,7 +1648,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Process scan query.
      */
     @SuppressWarnings("unchecked")
-    protected CacheQueryFuture<?> executeLocalScanQuery(GridCacheQueryBean qryBean) throws IgniteCheckedException {
+    protected GridCloseableIterator<IgniteBiTuple<K, V>> scanQueryLocal(GridCacheQueryBean qryBean) throws IgniteCheckedException {
         // TODO
         if (!enterBusy()) {
             // TODO
@@ -1688,9 +1688,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     taskName));
             }
 
-            GridCloseableIterator<IgniteBiTuple<K, V>> iter = scanIterator(qry);
-
-            return new CacheQueryFinishedFuture(iter, cctx, qry, taskName);
+            return scanIterator(qry);
         }
         finally {
             leaveBusy();

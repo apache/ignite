@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
@@ -36,6 +37,8 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -522,22 +525,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         long reqId = cctx.io().nextIoId();
 
-        CacheQueryFuture<?> locFut = null;
-
-        if (qry.query().type() == GridCacheQueryType.SCAN) {
-            for (Iterator<ClusterNode> iter = nodes.iterator(); iter.hasNext(); ) {
-                ClusterNode node = iter.next();
-
-                if (node.isLocal()) {
-                    locFut = queryLocal(qry);
-
-                    iter.remove();
-
-                    break;
-                }
-            }
-        }
-
         final GridCacheDistributedQueryFuture<K, V, ?> fut =
             new GridCacheDistributedQueryFuture<>(cctx, reqId, qry, nodes);
 
@@ -587,10 +574,67 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             fut.onDone(e);
         }
 
-        if (locFut != null)
-            return new CacheQueryCompoundFuture<>(locFut, (CacheQueryFuture)fut);
-
         return fut;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings({"unchecked", "serial"})
+    @Override public GridCloseableIterator<Map.Entry<K, V>> scanQueryDistributed(GridCacheQueryBean qry,
+        final Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        assert cctx.config().getCacheMode() != LOCAL;
+        assert qry.query().type() == GridCacheQueryType.SCAN: "Wrong query processing: " + qry;
+
+        GridCloseableIterator<Map.Entry<K, V>> locIter0 = null;
+
+        for (Iterator<ClusterNode> iter = nodes.iterator(); iter.hasNext(); ) {
+            ClusterNode node = iter.next();
+
+            if (node.isLocal()) {
+                locIter0 = (GridCloseableIterator) scanQueryLocal(qry);
+
+                iter.remove();
+
+                break;
+            }
+        }
+
+        final GridCloseableIterator<Map.Entry<K, V>> locIter = locIter0;
+
+        final CacheQueryFuture<Map.Entry<K, V>> fut = (CacheQueryFuture<Map.Entry<K, V>>)queryDistributed(qry, nodes);
+
+        return new GridCloseableIteratorAdapter<Map.Entry<K, V>>() {
+            /** */
+            private Map.Entry<K, V> cur;
+
+            @Override protected Map.Entry<K, V> onNext() throws IgniteCheckedException {
+                if (!onHasNext())
+                    throw new NoSuchElementException();
+
+                Map.Entry<K, V> e = cur;
+
+                cur = null;
+
+                return e;
+            }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                if (cur != null)
+                    return true;
+
+                if (locIter != null && locIter.hasNext())
+                    cur = locIter.next();
+
+                return cur != null || (cur = fut.next()) != null;
+            }
+
+            @Override protected void onClose() throws IgniteCheckedException {
+                super.onClose();
+
+                locIter.close();
+
+                fut.cancel();
+            }
+        };
     }
 
     /** {@inheritDoc} */
