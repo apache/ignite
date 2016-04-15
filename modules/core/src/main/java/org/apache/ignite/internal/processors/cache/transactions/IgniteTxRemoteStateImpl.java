@@ -161,13 +161,23 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
         }
 
         if (storeCnt > 0 && !writeMap.isEmpty()) {
-            Collection<CacheStoreManager> stores = new ArrayList<>(storeCnt);
+            Collection<CacheStoreManager> stores = null;
 
             for (IgniteTxEntry e : writeMap.values()) {
-                CacheStoreManager store = cctx.cacheContext(e.cacheId()).store();
+                if (e.skipStore())
+                    continue;
 
-                if (store.configured() && store.isLocal())
+                CacheStoreManager store = e.context().store();
+
+                if (store.configured() && store.isLocal()) {
+                    if (stores == null)
+                        stores = new ArrayList<>(storeCnt);
+
                     stores.add(store);
+
+                    if (stores.size() == storeCnt)
+                        break;
+                }
             }
 
             return stores;

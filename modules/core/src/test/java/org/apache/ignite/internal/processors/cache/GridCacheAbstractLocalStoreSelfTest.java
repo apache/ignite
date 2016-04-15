@@ -420,17 +420,15 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     private void testLocalStoreCorrespondsAffinity(String name) throws Exception {
-        for (int i = 1; i <= 6; i++) {
+        for (int i = 1; i <= 6; i++)
             startGrid(i);
-        }
 
         awaitPartitionMapExchange();
 
         Random rn = new Random();
 
-        for (int i = 1; i <= 6; i++) {
+        for (int i = 1; i <= 6; i++)
             assertEquals(0, grid(i).cache(name).localSize(CachePeekMode.NEAR));
-        }
 
         for (int i = 0; i < KEYS; i++) {
             Ignite ignite = grid(rn.nextInt(6) + 1);
@@ -438,9 +436,8 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
             try (Transaction tx = ignite.transactions().txStart()) {
                 ignite.cache(name).put(i, i);
 
-                for (int j = 0; j < 5; j++) {
+                for (int j = 0; j < 5; j++)
                     ignite.cache(name).get(rn.nextInt(KEYS));
-                }
 
                 Map<Integer, Integer> m = new HashMap<>(5);
 

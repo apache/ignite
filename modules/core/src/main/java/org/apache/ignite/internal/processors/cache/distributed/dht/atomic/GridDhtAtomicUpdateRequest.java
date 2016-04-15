@@ -222,7 +222,8 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         this.addDepInfo = addDepInfo;
         this.keepBinary = keepBinary;
 
-        this.flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
+        if (skipStore)
+            flags = (byte)(flags | SKIP_STORE_FLAG_MASK);
 
         keys = new ArrayList<>();
         partIds = new ArrayList<>();

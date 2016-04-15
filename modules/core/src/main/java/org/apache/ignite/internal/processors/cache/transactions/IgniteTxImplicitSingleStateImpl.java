@@ -163,9 +163,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
         CacheStoreManager store = cacheCtx.store();
 
-        if (store.configured()) {
+        if (store.configured())
             return Collections.singleton(store);
-        }
 
         return null;
     }

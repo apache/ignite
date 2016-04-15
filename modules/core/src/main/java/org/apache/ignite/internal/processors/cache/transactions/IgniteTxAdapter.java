@@ -1275,9 +1275,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
         boolean isWriteToStoreFromDht = first.isWriteToStoreFromDht();
 
-        boolean local = first.isLocal();
+        boolean loc = first.isLocal();
 
-        if ((!localOnly || local) && (near() || isWriteToStoreFromDht)) {
+        if ((!localOnly || loc) && (near() || isWriteToStoreFromDht)) {
             try {
                 if (writeEntries != null) {
                     Map<Object, IgniteBiTuple<Object, GridCacheVersion>> putMap = null;
