@@ -48,7 +48,7 @@ class IgniteAgentMonitor {
          * Close dialog and go by specified link.
          */
         this._scope.back = () => {
-            this._downloadAgentModal.hide();
+            this.stopWatch();
 
             if (this._scope.backState)
                 this._scope.$$postDigest(() => $state.go(this._scope.backState));
