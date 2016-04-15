@@ -32,6 +32,7 @@ nobase_include_HEADERS = ignite/cache/cache.h \
                          ignite/impl/cache/cache_impl.h \
                          ignite/impl/cache/query/query_impl.h \
                          ignite/impl/cache/query/query_fields_row_impl.h \
+						 ignite/impl/cache/query/query_batch.h \
                          ignite/impl/interop/interop.h \
                          ignite/impl/interop/interop_input_stream.h \
                          ignite/impl/interop/interop_memory.h \

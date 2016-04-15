@@ -48,6 +48,7 @@ COMMON_SRC = os/linux/src/impl/utils.cpp \
              src/impl/binary/binary_type_updater_impl.cpp \
              src/impl/ignite_environment.cpp \
              src/impl/cache/query/query_impl.cpp \
+			 src/impl/cache/query/query_batch.cpp \
              src/impl/cache/cache_impl.cpp \
              src/impl/ignite_impl.cpp \
              src/ignite.cpp \
