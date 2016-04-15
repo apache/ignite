@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -39,6 +40,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
+import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_PURGED;
 
 /**
  * IGFS worker for removal from the trash directory.
@@ -167,7 +169,7 @@ public class IgfsDeleteWorker extends IgfsThread {
         try {
             info = meta.info(trashId);
         }
-        catch(ClusterTopologyServerNotFoundException e) {
+        catch (ClusterTopologyServerNotFoundException e) {
             LT.warn(log, e, "Server nodes not found.");
         }
         catch (IgniteCheckedException e) {
@@ -245,7 +247,17 @@ public class IgfsDeleteWorker extends IgfsThread {
                     // In case this node crashes, other node will re-delete the file.
                     data.delete(lockedInfo).get();
 
-                    return meta.delete(trashId, name, id);
+                    boolean ret = meta.delete(trashId, name, id);
+
+                    if (ret) {
+                        IgfsPath path = IgfsUtils.extractOriginalPathFromTrash(name);
+
+                        assert path != null;
+
+                        IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_PURGED);
+                    }
+
+                    return ret;
                 }
             }
             else
