@@ -19,23 +19,29 @@
 #define _IGNITE_COMMON_OS
 
 #ifndef __has_attribute
-  #define __has_attribute(x) 0
+#   define __has_attribute(x) 0
 #endif
 
 #if (defined(__GNUC__) && ((__GNUC__ > 4) || (__GNUC__ == 4) && (__GNUC_MINOR__ > 2))) || __has_attribute(visibility)
-  #define IGNITE_EXPORT __attribute__((visibility("default")))
-  #define IGNITE_IMPORT __attribute__((visibility("default")))
+#   define IGNITE_EXPORT __attribute__((visibility("default")))
+#   define IGNITE_IMPORT __attribute__((visibility("default")))
 #else
-  #define IGNITE_EXPORT
-  #define IGNITE_IMPORT
+#   define IGNITE_EXPORT
+#   define IGNITE_IMPORT
 #endif
 
 #define IGNITE_CALL
 
 #ifdef IGNITE_IMPL
-    #define IGNITE_IMPORT_EXPORT IGNITE_EXPORT
+#   define IGNITE_IMPORT_EXPORT IGNITE_EXPORT
 #else
-    #define IGNITE_IMPORT_EXPORT IGNITE_IMPORT
+#   define IGNITE_IMPORT_EXPORT IGNITE_IMPORT
+#endif
+
+#if (__cplusplus >= 201103L)
+#   define IGNITE_NO_THROW noexcept
+#else
+#   define IGNITE_NO_THROW throw()
 #endif
 
 /**
