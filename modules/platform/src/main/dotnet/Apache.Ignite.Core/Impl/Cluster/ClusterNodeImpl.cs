@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /** <inheritDoc /> */
         public override string ToString()
         {
-            return "GridNode [id=" + Id + ']';
+            return "ClusterNode [id=" + Id + ']';
         }
 
         /** <inheritDoc /> */

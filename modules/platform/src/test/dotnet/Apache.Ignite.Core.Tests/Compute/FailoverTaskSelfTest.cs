@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         protected FailoverTaskSelfTest(bool fork) : base(fork) { }
 
         /// <summary>
-        /// Test for GridComputeJobFailoverException.
+        /// Test for ComputeJobFailoverException.
         /// </summary>
         [Test]
         public void TestClosureFailoverException()
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test for GridComputeJobFailoverException with serializable job.
+        /// Test for ComputeJobFailoverException with serializable job.
         /// </summary>
         [Test]
         public void TestTaskAdapterFailoverExceptionSerializable()
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test for GridComputeJobFailoverException with portable job.
+        /// Test for ComputeJobFailoverException with portable job.
         /// </summary>
         [Test]
         public void TestTaskAdapterFailoverExceptionPortable()
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Test for GridComputeJobFailoverException.
+        /// Test for ComputeJobFailoverException.
         /// </summary>
         private void TestTaskAdapterFailoverException(bool serializable)
         {
@@ -224,7 +224,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Throws GridComputeJobFailoverException on first call.
+        /// Throws ComputeJobFailoverException on first call.
         /// </summary>
         private static int FailoverJob(IIgnite grid)
         {
