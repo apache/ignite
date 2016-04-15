@@ -46,7 +46,6 @@ import java.util.TreeSet;
  * The test are checking batch operation onto atomic offheap cache with per certain key and value types.
  */
 public class AtomicBinaryOffheapBatchTest extends IgniteCacheAbstractTest {
-
     /**
      * Size of batch in operation
      */
@@ -175,7 +174,7 @@ public class AtomicBinaryOffheapBatchTest extends IgniteCacheAbstractTest {
     /**
      * Ignite cache value class.
      */
-    private static class Person implements Binarylizable {
+    protected static class Person implements Binarylizable {
 
         /** Person ID. */
         @QuerySqlField(index = true)
@@ -313,7 +312,7 @@ public class AtomicBinaryOffheapBatchTest extends IgniteCacheAbstractTest {
     /**
      * Ignite cache value class with indexed field.
      */
-    private static class Organization implements Binarylizable {
+    protected static class Organization implements Binarylizable {
 
         /** Organization ID. */
         @QuerySqlField(index = true)
