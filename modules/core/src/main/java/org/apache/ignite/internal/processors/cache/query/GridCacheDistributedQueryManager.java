@@ -207,7 +207,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         cctx.cacheId(),
                         req.id(),
                         new IgniteCheckedException("Received request for incorrect cache [expected=" + cctx.name() +
-                            ", actual=" + req.cacheName()));
+                            ", actual=" + req.cacheName()),
+                        cctx.deploymentEnabled());
 
                     sendQueryResponse(sndId, res, 0);
                 }
@@ -228,7 +229,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     catch (Throwable e) {
                         U.error(log(), "Failed to run query.", e);
 
-                        sendQueryResponse(sndId, new GridCacheQueryResponse(cctx.cacheId(), req.id(), e.getCause()), 0);
+                        sendQueryResponse(sndId, new GridCacheQueryResponse(cctx.cacheId(), req.id(), e.getCause(),
+                            cctx.deploymentEnabled()), 0);
 
                         if (e instanceof Error)
                             throw (Error)e;
@@ -271,7 +273,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.className(),
                 req.clause(),
                 req.includeMetaData(),
-                req.keepPortable(),
+                req.keepBinary(),
                 req.subjectId(),
                 req.taskHash()
             );
@@ -445,7 +447,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 fut.onPage(null, null, e, true);
             else
                 sendQueryResponse(qryInfo.senderId(),
-                    new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(), e),
+                    new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(), e, cctx.deploymentEnabled()),
                     qryInfo.query().timeout());
 
             return true;
@@ -455,7 +457,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             fut.onPage(null, data, null, finished);
         else {
             GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),
-                /*finished*/false, /*fields*/false);
+                /*finished*/false, /*fields*/false, cctx.deploymentEnabled());
 
             res.data(data);
             res.finished(finished);
@@ -484,7 +486,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             }
             else
                 sendQueryResponse(qryInfo.senderId(),
-                    new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(), e),
+                    new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(), e, cctx.deploymentEnabled()),
                     qryInfo.query().timeout());
 
             return true;
@@ -497,7 +499,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
         else {
             GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),
-                finished, qryInfo.reducer() == null);
+                finished, qryInfo.reducer() == null, cctx.deploymentEnabled());
 
             res.metadata(metadata);
             res.data(entities != null ? entities : data);
@@ -564,10 +566,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().includeBackups(),
                 qry.arguments(),
                 false,
-                qry.query().keepPortable(),
+                qry.query().keepBinary(),
                 qry.query().subjectId(),
                 qry.query().taskHash(),
-                queryTopologyVersion());
+                queryTopologyVersion(),
+                // Force deployment anyway if scan query is used.
+                cctx.deploymentEnabled() || (qry.query().scanFilter() != null && cctx.gridDeploy().enabled()));
 
             addQueryFuture(req.id(), fut);
 
@@ -609,10 +613,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.includeBackups(),
                 fut.fields(),
                 all,
-                qry.keepPortable(),
+                qry.keepBinary(),
                 qry.subjectId(),
                 qry.taskHash(),
-                queryTopologyVersion());
+                queryTopologyVersion(),
+                // Force deployment anyway if scan query is used.
+                cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()));
 
             sendRequest(fut, req, nodes);
         }
@@ -675,10 +681,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().includeBackups(),
                 qry.arguments(),
                 qry.query().includeMetadata(),
-                qry.query().keepPortable(),
+                qry.query().keepBinary(),
                 qry.query().subjectId(),
                 qry.query().taskHash(),
-                queryTopologyVersion());
+                queryTopologyVersion(),
+                cctx.deploymentEnabled());
 
             addQueryFuture(req.id(), fut);
 

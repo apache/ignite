@@ -36,6 +36,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -168,6 +169,8 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
      * @throws Exception If failed.
      */
     public void testTx() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1804");
+
         if (cacheConfiguration().getAtomicityMode() != TRANSACTIONAL)
             return;
 

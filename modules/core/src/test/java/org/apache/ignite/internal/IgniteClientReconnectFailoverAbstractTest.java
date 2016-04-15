@@ -117,7 +117,8 @@ public abstract class IgniteClientReconnectFailoverAbstractTest extends IgniteCl
                     }
 
                     return null;
-                } catch (Throwable e) {
+                }
+                catch (Throwable e) {
                     log.error("Unexpected error in operation thread: " + e, e);
 
                     stop.set(true);

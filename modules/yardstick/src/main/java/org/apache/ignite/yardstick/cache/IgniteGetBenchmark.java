@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteCache;
 /**
  * Ignite benchmark that performs get operations.
  */
-public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark {
+public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());

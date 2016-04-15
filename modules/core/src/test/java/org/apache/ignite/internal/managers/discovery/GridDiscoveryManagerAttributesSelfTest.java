@@ -17,20 +17,17 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -118,6 +115,50 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         System.setProperty(PREFER_IPV4, "false");
 
         startGrid(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUseDefaultSuid() throws Exception {
+        try {
+            doTestUseDefaultSuid(Boolean.TRUE.toString(), Boolean.FALSE.toString(), true);
+            doTestUseDefaultSuid(Boolean.FALSE.toString(), Boolean.TRUE.toString(), true);
+
+            doTestUseDefaultSuid(Boolean.TRUE.toString(), Boolean.TRUE.toString(), false);
+            doTestUseDefaultSuid(Boolean.FALSE.toString(), Boolean.FALSE.toString(), false);
+        }
+        finally {
+            System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID,
+                String.valueOf(OptimizedMarshaller.USE_DFLT_SUID));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestUseDefaultSuid(String first, String second, boolean fail) throws Exception {
+        try {
+            System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, first);
+
+            startGrid(0);
+
+            System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, second);
+
+            try {
+                startGrid(1);
+
+                if (fail)
+                    fail("Node should not join");
+            }
+            catch (Exception e) {
+                if (!fail)
+                    fail("Node should join");
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**

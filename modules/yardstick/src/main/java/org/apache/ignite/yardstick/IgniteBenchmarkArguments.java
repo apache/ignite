@@ -37,6 +37,7 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-b", "--backups"}, description = "Backups")
     private int backups;
 
+    /** */
     @Parameter(names = {"-cfg", "--Config"}, description = "Configuration file")
     private String cfg = "config/ignite-localhost-config.xml";
 
@@ -62,7 +63,7 @@ public class IgniteBenchmarkArguments {
 
     /** */
     @Parameter(names = {"-txc", "--txConcurrency"}, description = "Transaction concurrency")
-    private TransactionConcurrency txConcurrency = TransactionConcurrency.OPTIMISTIC;
+    private TransactionConcurrency txConcurrency = TransactionConcurrency.PESSIMISTIC;
 
     /** */
     @Parameter(names = {"-txi", "--txIsolation"}, description = "Transaction isolation")
@@ -86,7 +87,11 @@ public class IgniteBenchmarkArguments {
 
     /** */
     @Parameter(names = {"-r", "--range"}, description = "Key range")
-    private int range = 1_000_000;
+    public int range = 1_000_000;
+
+    /** */
+    @Parameter(names = {"-pa", "--preloadAmount"}, description = "Data pre-loading amount for load tests")
+    public int preloadAmount = 500_000;
 
     /** */
     @Parameter(names = {"-j", "--jobs"}, description = "Number of jobs for compute benchmarks")
@@ -111,6 +116,41 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-jdbc", "--jdbcUrl"}, description = "JDBC url")
     private String jdbcUrl;
+
+    /** */
+    @Parameter(names = {"-rd", "--restartdelay"}, description = "Restart delay in seconds")
+    private int restartDelay = 20;
+
+    /** */
+    @Parameter(names = {"-rs", "--restartsleep"}, description = "Restart sleep in seconds")
+    private int restartSleep = 2;
+
+    /** */
+    @Parameter(names = {"-checkingPeriod", "--checkingPeriod"}, description = "Period to check cache consistency in seconds")
+    private int cacheConsistencyCheckingPeriod = 2 * 60;
+
+    /** */
+    @Parameter(names = {"-kc", "--keysCount"}, description = "Count of keys")
+    private int keysCnt = 5;
+
+    /** */
+    @Parameter(names = {"-cot", "--cacheOperationTimeout"}, description = "Max timeout for cache operations in seconds")
+    private int cacheOpTimeout = 30;
+
+    /** */
+    @Parameter(names = {"-kpt", "--keysPerThread"}, description = "Use not intersecting keys in putAll benchmark")
+    private boolean keysPerThread;
+
+    /** */
+    @Parameter(names = {"-pp", "--printPartitionStats"}, description = "Print partition statistics")
+    private boolean printPartStats;
+
+    /**
+     * @return If {@code true} when need to print partition statistics.
+     */
+    public boolean printPartitionStatistics() {
+        return printPartStats;
+    }
 
     /**
      * @return JDBC url.
@@ -225,6 +265,13 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Preload key range, from {@code 0} to this number.
+     */
+    public int preloadAmount() {
+        return preloadAmount;
+    }
+
+    /**
      * @return Configuration file.
      */
     public String configuration() {
@@ -267,11 +314,54 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Delay in second which used in nodes restart algorithm.
+     */
+    public int restartDelay() {
+        return restartDelay;
+    }
+
+    /**
+     * @return Sleep in second which used in nodes restart algorithm.
+     */
+    public int restartSleep() {
+        return restartSleep;
+    }
+
+    /**
+     * @return Keys count.
+     */
+    public int keysCount() {
+        return keysCnt;
+    }
+
+    /**
+     * @return Period in seconds to check cache consistency.
+     */
+    public int cacheConsistencyCheckingPeriod() {
+        return cacheConsistencyCheckingPeriod;
+    }
+
+    /**
+     * @return Cache operation timeout in milliseconds.
+     */
+    public int cacheOperationTimeoutMillis() {
+        return cacheOpTimeout * 1000;
+    }
+
+    /**
+     * @return {@code True} if use not intersecting keys in putAll benchmark.
+     */
+    public boolean keysPerThread() {
+        return keysPerThread;
+    }
+
+    /**
      * @return Description.
      */
     public String description() {
         return "-nn=" + nodes + "-b=" + backups + "-sm=" + syncMode + "-cl=" + clientOnly + "-nc=" + nearCacheFlag +
-            (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency;
+            (orderMode == null ? "" : "-wom=" + orderMode) + "-txc=" + txConcurrency + "-rd=" + restartDelay +
+            "-rs=" + restartSleep;
     }
 
     /** {@inheritDoc} */

@@ -78,14 +78,16 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
      * @param workerId Worker ID.
      * @param updateSeq Update sequence for this node.
      * @param cacheId Cache ID.
+     * @param addDepInfo Deployment info flag.
      */
-    GridDhtPartitionSupplyMessage(int workerId, long updateSeq, int cacheId) {
+    GridDhtPartitionSupplyMessage(int workerId, long updateSeq, int cacheId, boolean addDepInfo) {
         assert workerId >= 0;
         assert updateSeq > 0;
 
         this.cacheId = cacheId;
         this.updateSeq = updateSeq;
         this.workerId = workerId;
+        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -256,6 +258,11 @@ public class GridDhtPartitionSupplyMessage extends GridCacheMessage implements G
             for (int i = 0; i < entries.size(); i++)
                 entries.get(i).unmarshal(cacheCtx, ldr);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /**

@@ -44,6 +44,9 @@ public class GridNioRecoveryDescriptor {
     /** Number of received messages. */
     private long rcvCnt;
 
+    /** Number of sent messages. */
+    private long sentCnt;
+
     /** Reserved flag. */
     private boolean reserved;
 
@@ -120,6 +123,13 @@ public class GridNioRecoveryDescriptor {
     }
 
     /**
+     * @return Number of sent messages.
+     */
+    public long sent() {
+        return sentCnt;
+    }
+
+    /**
      * @param lastAck Last acknowledged message.
      */
     public void lastAcknowledged(long lastAck) {
@@ -131,13 +141,6 @@ public class GridNioRecoveryDescriptor {
      */
     public long lastAcknowledged() {
         return lastAck;
-    }
-
-    /**
-     * @return Received messages count.
-     */
-    public long receivedCount() {
-        return rcvCnt;
     }
 
     /**
@@ -157,6 +160,8 @@ public class GridNioRecoveryDescriptor {
         if (!fut.skipRecovery()) {
             if (resendCnt == 0) {
                 msgFuts.addLast(fut);
+
+                sentCnt++;
 
                 return msgFuts.size() < queueLimit;
             }
@@ -187,20 +192,34 @@ public class GridNioRecoveryDescriptor {
             if (fut.ackClosure() != null)
                 fut.ackClosure().apply(null);
 
+            fut.onAckReceived();
+
             acked++;
         }
     }
 
     /**
-     * Node left callback.
+     * @return Last acked message by remote node.
      */
-    public void onNodeLeft() {
+    public long acked() {
+        return acked;
+    }
+
+    /**
+     * Node left callback.
+     *
+     * @return {@code False} if descriptor is reserved.
+     */
+    public boolean onNodeLeft() {
         GridNioFuture<?>[] futs = null;
 
         synchronized (this) {
             nodeLeft = true;
 
-            if (!reserved && !msgFuts.isEmpty()) {
+            if (reserved)
+                return false;
+
+            if (!msgFuts.isEmpty()) {
                 futs = msgFuts.toArray(new GridNioFuture<?>[msgFuts.size()]);
 
                 msgFuts.clear();
@@ -209,6 +228,8 @@ public class GridNioRecoveryDescriptor {
 
         if (futs != null)
             completeOnNodeLeft(futs);
+
+        return true;
     }
 
     /**

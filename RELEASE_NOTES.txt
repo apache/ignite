@@ -1,6 +1,29 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 1.5
+---------------------------------------
+* Ignite.NET: Initial Release.
+* Ignite C++: Initial Release.
+* Massive performance improvements for cache operations and SQL.
+* Added new binary cache object marshalling implementation.
+* Added IgniteSemaphore data structure.
+* Added MQTT Streamer.
+* Added Twitter Streamer.
+* Added Ignite Sink (integration with Apache Flume).
+* Added Apache Camel Streamer.
+* Added OSGi support.
+* Fixed optimistic serializable transactions: implemented "deadlock-free" locking algorithm.
+* Fixed failover for continuous queries.
+* Fixed compilation and runtime errors under OpenJDK and IBM JDK.
+* Fixed Integer.size limitation for cache.
+* Fixed and improved cache types configuration.
+* Fixed cache rebalancing.
+* Many stability and fault-tolerance fixes.
+* Added example to demonstrate the usage of EntryProcessor.
+
+Complete list of closed issues: https://issues.apache.org/jira/issues/?jql=project%20%3D%20IGNITE%20AND%20fixVersion%20%3D%201.5%20AND%20status%20%3D%20closed
+
 Apache Ignite In-Memory Data Fabric 1.4
 ---------------------------------------
 * Added SSL support to communication and discovery.

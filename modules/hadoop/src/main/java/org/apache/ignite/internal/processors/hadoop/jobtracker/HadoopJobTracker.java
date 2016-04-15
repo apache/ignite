@@ -255,7 +255,8 @@ public class HadoopJobTracker extends HadoopComponent {
             },
             null,
             true,
-            true
+            true,
+            false
         );
 
         ctx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
@@ -1580,7 +1581,10 @@ public class HadoopJobTracker extends HadoopComponent {
 
         /** {@inheritDoc} */
         @Override protected void update(HadoopJobMetadata meta, HadoopJobMetadata cp) {
-            assert meta.phase() == PHASE_CANCELLING || err != null: "Invalid phase for cancel: " + meta;
+            final HadoopJobPhase currPhase = meta.phase();
+
+            assert currPhase == PHASE_CANCELLING || currPhase == PHASE_COMPLETE
+                    || err != null: "Invalid phase for cancel: " + currPhase;
 
             Collection<Integer> rdcCp = new HashSet<>(cp.pendingReducers());
 
@@ -1598,7 +1602,8 @@ public class HadoopJobTracker extends HadoopComponent {
 
             cp.pendingSplits(splitsCp);
 
-            cp.phase(PHASE_CANCELLING);
+            if (currPhase != PHASE_COMPLETE && currPhase != PHASE_CANCELLING)
+                cp.phase(PHASE_CANCELLING);
 
             if (err != null)
                 cp.failCause(err);

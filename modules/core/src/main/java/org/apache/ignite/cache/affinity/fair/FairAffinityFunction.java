@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.RandomAccess;
 import java.util.UUID;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityCentralizedFunction;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
@@ -38,15 +39,38 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Fair affinity function which tries to ensure that all nodes get equal number of partitions with
  * minimum amount of reassignments between existing nodes.
+ * This function supports the following configuration:
+ * <ul>
+ * <li>
+ *      {@code partitions} - Number of partitions to spread across nodes.
+ * </li>
+ * <li>
+ *      {@code excludeNeighbors} - If set to {@code true}, will exclude same-host-neighbors
+ *      from being backups of each other. This flag can be ignored in cases when topology has no enough nodes
+ *      for assign backups.
+ *      Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+ * </li>
+ * <li>
+ *      {@code backupFilter} - Optional filter for back up nodes. If provided, then only
+ *      nodes that pass this filter will be selected as backup nodes. If not provided, then
+ *      primary and backup nodes will be selected out of all nodes available for this cache.
+ * </li>
+ * </ul>
  * <p>
- * Cache affinity can be configured for individual caches via
- * {@link CacheConfiguration#setAffinity(AffinityFunction)} method.
+ * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
  */
 @AffinityCentralizedFunction
 public class FairAffinityFunction implements AffinityFunction {
@@ -62,21 +86,165 @@ public class FairAffinityFunction implements AffinityFunction {
     /** Descending comparator. */
     private static final Comparator<PartitionSet> DESC_CMP = Collections.reverseOrder(ASC_CMP);
 
-    /** */
-    private final int parts;
+    /** Number of partitions. */
+    private int parts;
+
+    /** Exclude neighbors flag. */
+    private boolean exclNeighbors;
+
+    /** Exclude neighbors warning. */
+    private transient boolean exclNeighborsWarn;
+
+    /** Logger instance. */
+    @LoggerResource
+    private transient IgniteLogger log;
+
+    /** Optional backup filter. First node is primary, second node is a node being tested. */
+    private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
     /**
-     * Creates fair affinity with default partition count.
+     * Empty constructor with all defaults.
      */
     public FairAffinityFunction() {
-        this(DFLT_PART_CNT);
+        this(false);
+    }
+
+    /**
+     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other
+     * and specified number of backups.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
+     *      of each other.
+     */
+    public FairAffinityFunction(boolean exclNeighbors) {
+        this(exclNeighbors, DFLT_PART_CNT);
     }
 
     /**
      * @param parts Number of partitions.
      */
     public FairAffinityFunction(int parts) {
+        this(false, parts);
+    }
+
+    /**
+     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other,
+     * and specified number of backups and partitions.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
+     *      of each other.
+     * @param parts Total number of partitions.
+     */
+    public FairAffinityFunction(boolean exclNeighbors, int parts) {
+        this(exclNeighbors, parts, null);
+    }
+
+    /**
+     * Initializes optional counts for replicas and backups.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param parts Total number of partitions.
+     * @param backupFilter Optional back up filter for nodes. If provided, backups will be selected
+     *      from all nodes that pass this filter. First argument for this filter is primary node, and second
+     *      argument is node being tested.
+     */
+    public FairAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+        this(false, parts, backupFilter);
+    }
+
+    /**
+     * Private constructor.
+     *
+     * @param exclNeighbors Exclude neighbors flag.
+     * @param parts Partitions count.
+     * @param backupFilter Backup filter.
+     */
+    private FairAffinityFunction(boolean exclNeighbors, int parts,
+        IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+        A.ensure(parts > 0, "parts > 0");
+
+        this.exclNeighbors = exclNeighbors;
         this.parts = parts;
+        this.backupFilter = backupFilter;
+    }
+
+    /**
+     * Gets total number of key partitions. To ensure that all partitions are
+     * equally distributed across all nodes, please make sure that this
+     * number is significantly larger than a number of nodes. Also, partition
+     * size should be relatively small. Try to avoid having partitions with more
+     * than quarter million keys.
+     * <p>
+     * Note that for fully replicated caches this method should always
+     * return {@code 1}.
+     *
+     * @return Total partition count.
+     */
+    public int getPartitions() {
+        return parts;
+    }
+
+    /**
+     * Sets total number of partitions.
+     *
+     * @param parts Total number of partitions.
+     */
+    public void setPartitions(int parts) {
+        this.parts = parts;
+    }
+
+
+    /**
+     * Gets optional backup filter. If not {@code null}, backups will be selected
+     * from all nodes that pass this filter. First node passed to this filter is primary node,
+     * and second node is a node being tested.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @return Optional backup filter.
+     */
+    @Nullable public IgniteBiPredicate<ClusterNode, ClusterNode> getBackupFilter() {
+        return backupFilter;
+    }
+
+    /**
+     * Sets optional backup filter. If provided, then backups will be selected from all
+     * nodes that pass this filter. First node being passed to this filter is primary node,
+     * and second node is a node being tested.
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param backupFilter Optional backup filter.
+     */
+    public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
+        this.backupFilter = backupFilter;
+    }
+
+    /**
+     * Checks flag to exclude same-host-neighbors from being backups of each other (default is {@code false}).
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @return {@code True} if nodes residing on the same host may not act as backups of each other.
+     */
+    public boolean isExcludeNeighbors() {
+        return exclNeighbors;
+    }
+
+    /**
+     * Sets flag to exclude same-host-neighbors from being backups of each other (default is {@code false}).
+     * <p>
+     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
+     */
+    public void setExcludeNeighbors(boolean exclNeighbors) {
+        this.exclNeighbors = exclNeighbors;
     }
 
     /** {@inheritDoc} */
@@ -89,14 +257,20 @@ public class FairAffinityFunction implements AffinityFunction {
             return Collections.nCopies(parts, Collections.singletonList(primary));
         }
 
-        List<List<ClusterNode>> assignment = createCopy(ctx);
+        Map<UUID, Collection<ClusterNode>> neighborhoodMap = exclNeighbors
+            ? GridCacheUtils.neighbors(ctx.currentTopologySnapshot())
+            : null;
 
-        int tiers = Math.min(ctx.backups() + 1, topSnapshot.size());
+        List<List<ClusterNode>> assignment = createCopy(ctx, neighborhoodMap);
+
+        int backups = ctx.backups();
+
+        int tiers = backups == Integer.MAX_VALUE ? topSnapshot.size() : Math.min(backups + 1, topSnapshot.size());
 
         // Per tier pending partitions.
         Map<Integer, Queue<Integer>> pendingParts = new HashMap<>();
 
-        FullAssignmentMap fullMap = new FullAssignmentMap(tiers, assignment, topSnapshot);
+        FullAssignmentMap fullMap = new FullAssignmentMap(tiers, assignment, topSnapshot, neighborhoodMap);
 
         for (int tier = 0; tier < tiers; tier++) {
             // Check if this is a new tier and add pending partitions.
@@ -104,23 +278,32 @@ public class FairAffinityFunction implements AffinityFunction {
 
             for (int part = 0; part < parts; part++) {
                 if (fullMap.assignments.get(part).size() < tier + 1) {
-                    if (pending == null) {
-                        pending = new LinkedList<>();
-
-                        pendingParts.put(tier, pending);
-                    }
+                    if (pending == null)
+                        pendingParts.put(tier, pending = new LinkedList<>());
 
                     if (!pending.contains(part))
                         pending.add(part);
-
                 }
             }
 
             // Assign pending partitions, if any.
-            assignPending(tier, pendingParts, fullMap, topSnapshot);
+            assignPending(tier, pendingParts, fullMap, topSnapshot, false);
 
             // Balance assignments.
-            balance(tier, pendingParts, fullMap, topSnapshot);
+            boolean balanced = balance(tier, pendingParts, fullMap, topSnapshot, false);
+
+            if (!balanced && exclNeighbors) {
+                assignPending(tier, pendingParts, fullMap, topSnapshot, true);
+
+                balance(tier, pendingParts, fullMap, topSnapshot, true);
+
+                if (!exclNeighborsWarn) {
+                    LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
+                        "because topology has no enough nodes to assign backups.");
+
+                    exclNeighborsWarn = true;
+                }
+            }
         }
 
         return fullMap.assignments;
@@ -153,9 +336,14 @@ public class FairAffinityFunction implements AffinityFunction {
      * @param pendingMap Pending partitions per tier.
      * @param fullMap Full assignment map to modify.
      * @param topSnapshot Topology snapshot.
+     * @param allowNeighbors Allow neighbors nodes for partition.
      */
-    private void assignPending(int tier, Map<Integer, Queue<Integer>> pendingMap, FullAssignmentMap fullMap,
-        List<ClusterNode> topSnapshot) {
+    private void assignPending(int tier,
+        Map<Integer, Queue<Integer>> pendingMap,
+        FullAssignmentMap fullMap,
+        List<ClusterNode> topSnapshot,
+        boolean allowNeighbors)
+    {
         Queue<Integer> pending = pendingMap.get(tier);
 
         if (F.isEmpty(pending))
@@ -168,19 +356,18 @@ public class FairAffinityFunction implements AffinityFunction {
         PrioritizedPartitionMap underloadedNodes = filterNodes(tierMapping, idealPartCnt, false);
 
         // First iterate over underloaded nodes.
-        assignPendingToUnderloaded(tier, pendingMap, fullMap, underloadedNodes, topSnapshot, false);
+        assignPendingToUnderloaded(tier, pendingMap, fullMap, underloadedNodes, topSnapshot, false, allowNeighbors);
 
         if (!pending.isEmpty() && !underloadedNodes.isEmpty()) {
             // Same, forcing updates.
-            assignPendingToUnderloaded(tier, pendingMap, fullMap, underloadedNodes, topSnapshot, true);
+            assignPendingToUnderloaded(tier, pendingMap, fullMap, underloadedNodes, topSnapshot, true, allowNeighbors);
         }
 
         if (!pending.isEmpty())
-            assignPendingToNodes(tier, pendingMap, fullMap, topSnapshot);
+            assignPendingToNodes(tier, pendingMap, fullMap, topSnapshot, allowNeighbors);
 
-        assert pending.isEmpty();
-
-        pendingMap.remove(tier);
+        if (pending.isEmpty())
+            pendingMap.remove(tier);
     }
 
     /**
@@ -192,6 +379,7 @@ public class FairAffinityFunction implements AffinityFunction {
      * @param underloadedNodes Underloaded nodes.
      * @param topSnapshot Topology snapshot.
      * @param force {@code True} if partitions should be moved.
+     * @param allowNeighbors Allow neighbors nodes for partition.
      */
     private void assignPendingToUnderloaded(
         int tier,
@@ -199,7 +387,8 @@ public class FairAffinityFunction implements AffinityFunction {
         FullAssignmentMap fullMap,
         PrioritizedPartitionMap underloadedNodes,
         Collection<ClusterNode> topSnapshot,
-        boolean force) {
+        boolean force,
+        boolean allowNeighbors) {
         Iterator<Integer> it = pendingMap.get(tier).iterator();
 
         int ideal = parts / topSnapshot.size();
@@ -212,7 +401,7 @@ public class FairAffinityFunction implements AffinityFunction {
 
                 assert node != null;
 
-                if (fullMap.assign(part, tier, node, force, pendingMap)) {
+                if (fullMap.assign(part, tier, node, pendingMap, force, allowNeighbors)) {
                     // We could add partition to partition map without forcing, remove partition from pending.
                     it.remove();
 
@@ -237,9 +426,10 @@ public class FairAffinityFunction implements AffinityFunction {
      * @param pendingMap Pending partitions per tier.
      * @param fullMap Full assignment map to modify.
      * @param topSnapshot Topology snapshot.
+     * @param allowNeighbors Allow neighbors nodes for partition.
      */
     private void assignPendingToNodes(int tier, Map<Integer, Queue<Integer>> pendingMap,
-        FullAssignmentMap fullMap, List<ClusterNode> topSnapshot) {
+        FullAssignmentMap fullMap, List<ClusterNode> topSnapshot, boolean allowNeighbors) {
         Iterator<Integer> it = pendingMap.get(tier).iterator();
 
         int idx = 0;
@@ -254,7 +444,7 @@ public class FairAffinityFunction implements AffinityFunction {
             do {
                 ClusterNode node = topSnapshot.get(i);
 
-                if (fullMap.assign(part, tier, node, false, pendingMap)) {
+                if (fullMap.assign(part, tier, node, pendingMap, false, allowNeighbors)) {
                     it.remove();
 
                     assigned = true;
@@ -270,7 +460,7 @@ public class FairAffinityFunction implements AffinityFunction {
                 do {
                     ClusterNode node = topSnapshot.get(i);
 
-                    if (fullMap.assign(part, tier, node, true, pendingMap)) {
+                    if (fullMap.assign(part, tier, node, pendingMap, true, allowNeighbors)) {
                         it.remove();
 
                         assigned = true;
@@ -283,7 +473,7 @@ public class FairAffinityFunction implements AffinityFunction {
                 } while (i != idx);
             }
 
-            if (!assigned)
+            if (!assigned && (!exclNeighbors || exclNeighbors && allowNeighbors))
                 throw new IllegalStateException("Failed to find assignable node for partition.");
         }
     }
@@ -295,9 +485,10 @@ public class FairAffinityFunction implements AffinityFunction {
      * @param pendingParts Pending partitions per tier.
      * @param fullMap Full assignment map to modify.
      * @param topSnapshot Topology snapshot.
+     * @param allowNeighbors Allow neighbors nodes for partition.
      */
-    private void balance(int tier, Map<Integer, Queue<Integer>> pendingParts, FullAssignmentMap fullMap,
-        Collection<ClusterNode> topSnapshot) {
+    private boolean balance(int tier, Map<Integer, Queue<Integer>> pendingParts, FullAssignmentMap fullMap,
+        Collection<ClusterNode> topSnapshot, boolean allowNeighbors) {
         int idealPartCnt = parts / topSnapshot.size();
 
         Map<UUID, PartitionSet> mapping = fullMap.tierMapping(tier);
@@ -313,7 +504,7 @@ public class FairAffinityFunction implements AffinityFunction {
                     boolean assigned = false;
 
                     for (PartitionSet underloaded : underloadedNodes.assignments()) {
-                        if (fullMap.assign(part, tier, underloaded.node(), false, pendingParts)) {
+                        if (fullMap.assign(part, tier, underloaded.node(), pendingParts, false, allowNeighbors)) {
                             // Size of partition sets has changed.
                             if (overloaded.size() <= idealPartCnt)
                                 overloadedNodes.remove(overloaded.nodeId());
@@ -335,7 +526,7 @@ public class FairAffinityFunction implements AffinityFunction {
 
                     if (!assigned) {
                         for (PartitionSet underloaded : underloadedNodes.assignments()) {
-                            if (fullMap.assign(part, tier, underloaded.node(), true, pendingParts)) {
+                            if (fullMap.assign(part, tier, underloaded.node(), pendingParts, true, allowNeighbors)) {
                                 // Size of partition sets has changed.
                                 if (overloaded.size() <= idealPartCnt)
                                     overloadedNodes.remove(overloaded.nodeId());
@@ -366,6 +557,8 @@ public class FairAffinityFunction implements AffinityFunction {
                 break;
         }
         while (true);
+
+        return underloadedNodes.isEmpty();
     }
 
     /**
@@ -393,9 +586,12 @@ public class FairAffinityFunction implements AffinityFunction {
      * Creates copy of previous partition assignment.
      *
      * @param ctx Affinity function context.
+     * @param neighborhoodMap Neighbors nodes grouped by target node.
      * @return Assignment copy and per node partition map.
      */
-    private List<List<ClusterNode>> createCopy(AffinityFunctionContext ctx) {
+    private List<List<ClusterNode>> createCopy(AffinityFunctionContext ctx,
+        Map<UUID, Collection<ClusterNode>> neighborhoodMap)
+    {
         DiscoveryEvent discoEvt = ctx.discoveryEvent();
 
         UUID leftNodeId = (discoEvt == null || discoEvt.type() == EventType.EVT_NODE_JOINED)
@@ -411,26 +607,42 @@ public class FairAffinityFunction implements AffinityFunction {
 
             if (partNodes == null)
                 partNodesCp = new ArrayList<>();
-            else {
-                if (leftNodeId == null) {
-                    partNodesCp = new ArrayList<>(partNodes.size() + 1); // Node joined.
-
-                    partNodesCp.addAll(partNodes);
-                }
-                else {
-                    partNodesCp = new ArrayList<>(partNodes.size());
-
-                    for (ClusterNode affNode : partNodes) {
-                        if (!affNode.id().equals(leftNodeId))
-                            partNodesCp.add(affNode);
-                    }
-                }
-            }
+            else
+                partNodesCp = copyAssigments(neighborhoodMap, partNodes, leftNodeId);
 
             cp.add(partNodesCp);
         }
 
         return cp;
+    }
+
+    /**
+     * @param neighborhoodMap Neighbors nodes grouped by target node.
+     * @param partNodes Partition nodes.
+     * @param leftNodeId Left node id.
+     */
+    private List<ClusterNode> copyAssigments(Map<UUID, Collection<ClusterNode>> neighborhoodMap,
+        List<ClusterNode> partNodes, UUID leftNodeId) {
+        final List<ClusterNode> partNodesCp = new ArrayList<>(partNodes.size());
+
+        for (ClusterNode node : partNodes) {
+            if (node.id().equals(leftNodeId))
+                continue;
+
+            boolean containsNeighbor = false;
+
+            if (neighborhoodMap != null)
+                containsNeighbor = F.exist(neighborhoodMap.get(node.id()), new IgnitePredicate<ClusterNode>() {
+                    @Override public boolean apply(ClusterNode node) {
+                        return partNodesCp.contains(node);
+                    }
+                });
+
+            if (!containsNeighbor)
+                partNodesCp.add(node);
+        }
+
+        return partNodesCp;
     }
 
     /**
@@ -512,59 +724,11 @@ public class FairAffinityFunction implements AffinityFunction {
     }
 
     /**
-     * Constructs assignment map for specified tier.
-     *
-     * @param tier Tier number, -1 for all tiers altogether.
-     * @param assignment Assignment to construct map from.
-     * @param topSnapshot Topology snapshot.
-     * @return Assignment map.
-     */
-    private static Map<UUID, PartitionSet> assignments(int tier, List<List<ClusterNode>> assignment,
-        Collection<ClusterNode> topSnapshot) {
-        Map<UUID, PartitionSet> tmp = new LinkedHashMap<>();
-
-        for (int part = 0; part < assignment.size(); part++) {
-            List<ClusterNode> nodes = assignment.get(part);
-
-            assert nodes instanceof RandomAccess;
-
-            if (nodes.size() <= tier)
-                continue;
-
-            int start = tier < 0 ? 0 : tier;
-            int end = tier < 0 ? nodes.size() : tier + 1;
-
-            for (int i = start; i < end; i++) {
-                ClusterNode n = nodes.get(i);
-
-                PartitionSet set = tmp.get(n.id());
-
-                if (set == null) {
-                    set = new PartitionSet(n);
-
-                    tmp.put(n.id(), set);
-                }
-
-                set.add(part);
-            }
-        }
-
-        if (tmp.size() < topSnapshot.size()) {
-            for (ClusterNode node : topSnapshot) {
-                if (!tmp.containsKey(node.id()))
-                    tmp.put(node.id(), new PartitionSet(node));
-            }
-        }
-
-        return tmp;
-    }
-
-    /**
      * Full assignment map. Auxiliary data structure which maintains resulting assignment and temporary
      * maps consistent.
      */
     @SuppressWarnings("unchecked")
-    private static class FullAssignmentMap {
+    private class FullAssignmentMap {
         /** Per-tier assignment maps. */
         private Map<UUID, PartitionSet>[] tierMaps;
 
@@ -574,20 +738,28 @@ public class FairAffinityFunction implements AffinityFunction {
         /** Resulting assignment. */
         private List<List<ClusterNode>> assignments;
 
+        /** Neighborhood map. */
+        private final Map<UUID, Collection<ClusterNode>> neighborhoodMap;
+
         /**
          * @param tiers Number of tiers.
          * @param assignments Assignments to modify.
          * @param topSnapshot Topology snapshot.
+         * @param neighborhoodMap Neighbors nodes grouped by target node.
          */
-        private FullAssignmentMap(int tiers, List<List<ClusterNode>> assignments, Collection<ClusterNode> topSnapshot) {
+        private FullAssignmentMap(int tiers,
+            List<List<ClusterNode>> assignments,
+            Collection<ClusterNode> topSnapshot,
+            Map<UUID, Collection<ClusterNode>> neighborhoodMap)
+        {
             this.assignments = assignments;
-
-            tierMaps = new Map[tiers];
+            this.neighborhoodMap = neighborhoodMap;
+            this.tierMaps = new Map[tiers];
 
             for (int tier = 0; tier < tiers; tier++)
-                tierMaps[tier] = assignments(tier, assignments, topSnapshot);
+                tierMaps[tier] = assignments(tier, topSnapshot);
 
-            fullMap = assignments(-1, assignments, topSnapshot);
+            fullMap = assignments(-1, topSnapshot);
         }
 
         /**
@@ -599,14 +771,20 @@ public class FairAffinityFunction implements AffinityFunction {
          * @param part Partition to assign.
          * @param tier Tier number to assign.
          * @param node Node to move partition to.
-         * @param force Force flag.
          * @param pendingParts per tier pending partitions map.
+         * @param force Force flag.
+         * @param allowNeighbors Allow neighbors nodes for partition.
          * @return {@code True} if assignment succeeded.
          */
-        boolean assign(int part, int tier, ClusterNode node, boolean force, Map<Integer, Queue<Integer>> pendingParts) {
+        boolean assign(int part,
+            int tier,
+            ClusterNode node,
+            Map<Integer, Queue<Integer>> pendingParts, boolean force,
+            boolean allowNeighbors)
+        {
             UUID nodeId = node.id();
 
-            if (!fullMap.get(nodeId).contains(part)) {
+            if (isAssignable(part, tier, node, allowNeighbors)) {
                 tierMaps[tier].get(nodeId).add(part);
 
                 fullMap.get(nodeId).add(part);
@@ -656,11 +834,8 @@ public class FairAffinityFunction implements AffinityFunction {
 
                         Queue<Integer> pending = pendingParts.get(t);
 
-                        if (pending == null) {
-                            pending = new LinkedList<>();
-
-                            pendingParts.put(t, pending);
-                        }
+                        if (pending == null)
+                            pendingParts.put(t, pending = new LinkedList<>());
 
                         pending.add(part);
 
@@ -668,7 +843,7 @@ public class FairAffinityFunction implements AffinityFunction {
                     }
                 }
 
-                throw new IllegalStateException("Unable to assign partition to node while force is true.");
+                return false;
             }
 
             // !force.
@@ -683,6 +858,102 @@ public class FairAffinityFunction implements AffinityFunction {
          */
         public Map<UUID, PartitionSet> tierMapping(int tier) {
             return tierMaps[tier];
+        }
+
+        /**
+         * @param part Partition.
+         * @param tier Tier.
+         * @param node Node.
+         * @param allowNeighbors Allow neighbors.
+         */
+        private boolean isAssignable(int part, int tier, final ClusterNode node, boolean allowNeighbors) {
+            if (containsPartition(part, node))
+                return false;
+
+            if (exclNeighbors)
+                return allowNeighbors || !neighborsContainPartition(node, part);
+            else if (backupFilter == null)
+                return true;
+            else {
+                if (tier == 0) {
+                    List<ClusterNode> assigment = assignments.get(part);
+
+                    assert assigment.size() > 0;
+
+                    List<ClusterNode> backups = assigment.subList(1, assigment.size());
+
+                    return !F.exist(backups, new IgnitePredicate<ClusterNode>() {
+                        @Override public boolean apply(ClusterNode n) {
+                            return !backupFilter.apply(node, n);
+                        }
+                    });
+                }
+                else
+                    return (backupFilter.apply(assignments.get(part).get(0), node));
+            }
+        }
+
+        /**
+         * @param part Partition.
+         * @param node Node.
+         */
+        private boolean containsPartition(int part, ClusterNode node) {
+            return fullMap.get(node.id()).contains(part);
+        }
+
+        /**
+         * @param node Node.
+         * @param part Partition.
+         */
+        private boolean neighborsContainPartition(ClusterNode node, final int part) {
+            return F.exist(neighborhoodMap.get(node.id()), new IgnitePredicate<ClusterNode>() {
+                @Override public boolean apply(ClusterNode n) {
+                    return fullMap.get(n.id()).contains(part);
+                }
+            });
+        }
+
+        /**
+         * Constructs assignments map for specified tier.
+         *
+         * @param tier Tier number, -1 for all tiers altogether.
+         * @param topSnapshot Topology snapshot.
+         * @return Assignment map.
+         */
+        private Map<UUID, PartitionSet> assignments(int tier, Collection<ClusterNode> topSnapshot) {
+            Map<UUID, PartitionSet> tmp = new LinkedHashMap<>();
+
+            for (int part = 0; part < assignments.size(); part++) {
+                List<ClusterNode> nodes = assignments.get(part);
+
+                assert nodes instanceof RandomAccess;
+
+                if (nodes.size() <= tier)
+                    continue;
+
+                int start = tier < 0 ? 0 : tier;
+                int end = tier < 0 ? nodes.size() : tier + 1;
+
+                for (int i = start; i < end; i++) {
+                    ClusterNode n = nodes.get(i);
+
+                    PartitionSet set = tmp.get(n.id());
+
+                    if (set == null)
+                        tmp.put(n.id(), set = new PartitionSet(n));
+
+                    set.add(part);
+                }
+            }
+
+            if (tmp.size() < topSnapshot.size()) {
+                for (ClusterNode node : topSnapshot) {
+                    if (!tmp.containsKey(node.id()))
+                        tmp.put(node.id(), new PartitionSet(node));
+                }
+            }
+
+            return tmp;
         }
     }
 

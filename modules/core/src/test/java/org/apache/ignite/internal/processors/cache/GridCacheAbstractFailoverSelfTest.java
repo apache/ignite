@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -330,14 +331,21 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @throws IgniteCheckedException If failed.
      */
     private void remove(Ignite ignite, IgniteCache<String, Integer> cache, final int cnt,
-        TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
+        TransactionConcurrency concurrency, final TransactionIsolation isolation) throws Exception {
         try {
             info("Removing values form cache [0," + cnt + ')');
 
             CU.inTx(ignite, cache, concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
                 @Override public void applyx(IgniteCache<String, Integer> cache) {
-                    for (int i = 0; i < cnt; i++)
-                        cache.remove("key" + i);
+                    for (int i = 0; i < cnt; i++) {
+                        String key = "key" + i;
+
+                        // Use removeAll for serializable tx to avoid version check.
+                        if (isolation == TransactionIsolation.SERIALIZABLE)
+                            cache.removeAll(Collections.singleton(key));
+                        else
+                            cache.remove(key);
+                    }
                 }
             });
         }

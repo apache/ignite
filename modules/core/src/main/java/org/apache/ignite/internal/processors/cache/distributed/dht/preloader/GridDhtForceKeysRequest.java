@@ -59,18 +59,27 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
     private AffinityTopologyVersion topVer;
 
     /**
+     * Required by {@link Externalizable}.
+     */
+    public GridDhtForceKeysRequest() {
+        // No-op.
+    }
+
+    /**
      * @param cacheId Cache ID.
      * @param futId Future ID.
      * @param miniId Mini-future ID.
      * @param keys Keys.
      * @param topVer Topology version.
+     * @param addDepInfo Deployment info.
      */
     GridDhtForceKeysRequest(
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
         Collection<KeyCacheObject> keys,
-        AffinityTopologyVersion topVer
+        AffinityTopologyVersion topVer,
+        boolean addDepInfo
     ) {
         assert futId != null;
         assert miniId != null;
@@ -81,22 +90,7 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
         this.miniId = miniId;
         this.keys = keys;
         this.topVer = topVer;
-    }
-
-    /**
-     * Required by {@link Externalizable}.
-     */
-    public GridDhtForceKeysRequest() {
-        // No-op.
-    }
-
-    /**
-     * @param keys Collection of keys.
-     */
-    public GridDhtForceKeysRequest(Collection<KeyCacheObject> keys) {
-        assert !F.isEmpty(keys);
-
-        this.keys = keys;
+        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -144,6 +138,11 @@ public class GridDhtForceKeysRequest extends GridCacheMessage implements GridCac
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /**

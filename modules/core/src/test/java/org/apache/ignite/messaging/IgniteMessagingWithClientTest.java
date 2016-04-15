@@ -78,8 +78,6 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
      * @throws Exception If failed.
      */
     public void testMessageSendWithClientJoin() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-996");
-
         startGrid(0);
 
         Ignite ignite1 = startGrid(1);

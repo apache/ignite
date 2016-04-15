@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -139,6 +140,31 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             tx = startTx(txMode);
 
+            TestValue testVal = cache.invoke(key, new UserClassValueProcessor());
+
+            if (tx != null)
+                tx.commit();
+
+            assertEquals("63", testVal.value());
+
+            checkValue(key, 63);
+
+            tx = startTx(txMode);
+
+            Collection<TestValue> testValCol = cache.invoke(key, new CollectionReturnProcessor());
+
+            if (tx != null)
+                tx.commit();
+
+            assertEquals(10, testValCol.size());
+
+            for (TestValue val : testValCol)
+                assertEquals("64", val.value());
+
+            checkValue(key, 63);
+
+            tx = startTx(txMode);
+
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     cache.invoke(key, new ExceptionProcessor(63));
@@ -237,12 +263,236 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
         IncrementProcessor incProcessor = new IncrementProcessor();
 
-        Transaction tx = startTx(txMode);
+        {
+            Transaction tx = startTx(txMode);
 
-        Map<Integer, EntryProcessorResult<Integer>> resMap = cache.invokeAll(keys, incProcessor);
+            Map<Integer, EntryProcessorResult<Integer>> resMap = cache.invokeAll(keys, incProcessor);
 
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+
+            Map<Object, Object> exp = new HashMap<>();
+
+            for (Integer key : keys)
+                exp.put(key, -1);
+
+            checkResult(resMap, exp);
+
+            for (Integer key : keys)
+                checkValue(key, 1);
+        }
+
+        {
+            Transaction tx = startTx(txMode);
+
+            Map<Integer, EntryProcessorResult<TestValue>> resMap = cache.invokeAll(keys, new UserClassValueProcessor());
+
+            if (tx != null)
+                tx.commit();
+
+            Map<Object, Object> exp = new HashMap<>();
+
+            for (Integer key : keys)
+                exp.put(key, new TestValue("1"));
+
+            checkResult(resMap, exp);
+
+            for (Integer key : keys)
+                checkValue(key, 1);
+        }
+
+        {
+            Transaction tx = startTx(txMode);
+
+            Map<Integer, EntryProcessorResult<Collection<TestValue>>> resMap =
+                cache.invokeAll(keys, new CollectionReturnProcessor());
+
+            if (tx != null)
+                tx.commit();
+
+            Map<Object, Object> exp = new HashMap<>();
+
+            for (Integer key : keys) {
+                List<TestValue> expCol = new ArrayList<>();
+
+                for (int i = 0; i < 10; i++)
+                    expCol.add(new TestValue("2"));
+
+                exp.put(key, expCol);
+            }
+
+            checkResult(resMap, exp);
+
+            for (Integer key : keys)
+                checkValue(key, 1);
+        }
+
+        {
+            Transaction tx = startTx(txMode);
+
+            Map<Integer, EntryProcessorResult<Integer>> resMap = cache.invokeAll(keys, incProcessor);
+
+            if (tx != null)
+                tx.commit();
+
+            Map<Object, Object> exp = new HashMap<>();
+
+            for (Integer key : keys)
+                exp.put(key, 1);
+
+            checkResult(resMap, exp);
+
+            for (Integer key : keys)
+                checkValue(key, 2);
+        }
+
+        {
+            Transaction tx = startTx(txMode);
+
+            Map<Integer, EntryProcessorResult<Integer>> resMap =
+                cache.invokeAll(keys, new ArgumentsSumProcessor(), 10, 20, 30);
+
+            if (tx != null)
+                tx.commit();
+
+            Map<Object, Object> exp = new HashMap<>();
+
+            for (Integer key : keys)
+                exp.put(key, 3);
+
+            checkResult(resMap, exp);
+
+            for (Integer key : keys)
+                checkValue(key, 62);
+        }
+
+        {
+            Transaction tx = startTx(txMode);
+
+            Map<Integer, EntryProcessorResult<Integer>> resMap = cache.invokeAll(keys, new ExceptionProcessor(null));
+
+            if (tx != null)
+                tx.commit();
+
+            for (Integer key : keys) {
+                final EntryProcessorResult<Integer> res = resMap.get(key);
+
+                assertNotNull("No result for " + key);
+
+                GridTestUtils.assertThrows(log, new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        res.get();
+
+                        return null;
+                    }
+                }, EntryProcessorException.class, "Test processor exception.");
+            }
+
+            for (Integer key : keys)
+                checkValue(key, 62);
+        }
+
+        {
+            Transaction tx = startTx(txMode);
+
+            Map<Integer, EntryProcessor<Integer, Integer, Integer>> invokeMap = new HashMap<>();
+
+            for (Integer key : keys) {
+                switch (key % 4) {
+                    case 0: invokeMap.put(key, new IncrementProcessor()); break;
+
+                    case 1: invokeMap.put(key, new RemoveProcessor(62)); break;
+
+                    case 2: invokeMap.put(key, new ArgumentsSumProcessor()); break;
+
+                    case 3: invokeMap.put(key, new ExceptionProcessor(62)); break;
+
+                    default:
+                        fail();
+                }
+            }
+
+            Map<Integer, EntryProcessorResult<Integer>> resMap = cache.invokeAll(invokeMap, 10, 20, 30);
+
+            if (tx != null)
+                tx.commit();
+
+            for (Integer key : keys) {
+                final EntryProcessorResult<Integer> res = resMap.get(key);
+
+                switch (key % 4) {
+                    case 0: {
+                        assertNotNull("No result for " + key, res);
+
+                        assertEquals(62, (int)res.get());
+
+                        checkValue(key, 63);
+
+                        break;
+                    }
+
+                    case 1: {
+                        assertNull(res);
+
+                        checkValue(key, null);
+
+                        break;
+                    }
+
+                    case 2: {
+                        assertNotNull("No result for " + key, res);
+
+                        assertEquals(3, (int)res.get());
+
+                        checkValue(key, 122);
+
+                        break;
+                    }
+
+                    case 3: {
+                        assertNotNull("No result for " + key, res);
+
+                        GridTestUtils.assertThrows(log, new Callable<Void>() {
+                            @Override public Void call() throws Exception {
+                                res.get();
+
+                                return null;
+                            }
+                        }, EntryProcessorException.class, "Test processor exception.");
+
+                        checkValue(key, 62);
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        cache.invokeAll(keys, new IncrementProcessor());
+
+        {
+            Transaction tx = startTx(txMode);
+
+            Map<Integer, EntryProcessorResult<Integer>> resMap = cache.invokeAll(keys, new RemoveProcessor(null));
+
+            if (tx != null)
+                tx.commit();
+
+            assertEquals("Unexpected results: " + resMap, 0, resMap.size());
+
+            for (Integer key : keys)
+                checkValue(key, null);
+        }
+
+        IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
+
+        assertTrue(asyncCache.isAsync());
+
+        assertNull(asyncCache.invokeAll(keys, new IncrementProcessor()));
+
+        IgniteFuture<Map<Integer, EntryProcessorResult<Integer>>> fut = asyncCache.future();
+
+        Map<Integer, EntryProcessorResult<Integer>> resMap = fut.get();
 
         Map<Object, Object> exp = new HashMap<>();
 
@@ -254,171 +504,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         for (Integer key : keys)
             checkValue(key, 1);
 
-        tx = startTx(txMode);
-
-        resMap = cache.invokeAll(keys, incProcessor);
-
-        if (tx != null)
-            tx.commit();
-
-        exp = new HashMap<>();
-
-        for (Integer key : keys)
-            exp.put(key, 1);
-
-        checkResult(resMap, exp);
-
-        for (Integer key : keys)
-            checkValue(key, 2);
-
-        tx = startTx(txMode);
-
-        resMap = cache.invokeAll(keys, new ArgumentsSumProcessor(), 10, 20, 30);
-
-        if (tx != null)
-            tx.commit();
-
-        for (Integer key : keys)
-            exp.put(key, 3);
-
-        checkResult(resMap, exp);
-
-        for (Integer key : keys)
-            checkValue(key, 62);
-
-        tx = startTx(txMode);
-
-        resMap = cache.invokeAll(keys, new ExceptionProcessor(null));
-
-        if (tx != null)
-            tx.commit();
-
-        for (Integer key : keys) {
-            final EntryProcessorResult<Integer> res = resMap.get(key);
-
-            assertNotNull("No result for " + key);
-
-            GridTestUtils.assertThrows(log, new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    res.get();
-
-                    return null;
-                }
-            }, EntryProcessorException.class, "Test processor exception.");
-        }
-
-        for (Integer key : keys)
-            checkValue(key, 62);
-
-        tx = startTx(txMode);
-
         Map<Integer, EntryProcessor<Integer, Integer, Integer>> invokeMap = new HashMap<>();
-
-        for (Integer key : keys) {
-            switch (key % 4) {
-                case 0: invokeMap.put(key, new IncrementProcessor()); break;
-
-                case 1: invokeMap.put(key, new RemoveProcessor(62)); break;
-
-                case 2: invokeMap.put(key, new ArgumentsSumProcessor()); break;
-
-                case 3: invokeMap.put(key, new ExceptionProcessor(62)); break;
-
-                default:
-                    fail();
-            }
-        }
-
-        resMap = cache.invokeAll(invokeMap, 10, 20, 30);
-
-        if (tx != null)
-            tx.commit();
-
-        for (Integer key : keys) {
-            final EntryProcessorResult<Integer> res = resMap.get(key);
-
-            switch (key % 4) {
-                case 0: {
-                    assertNotNull("No result for " + key, res);
-
-                    assertEquals(62, (int)res.get());
-
-                    checkValue(key, 63);
-
-                    break;
-                }
-
-                case 1: {
-                    assertNull(res);
-
-                    checkValue(key, null);
-
-                    break;
-                }
-
-                case 2: {
-                    assertNotNull("No result for " + key, res);
-
-                    assertEquals(3, (int)res.get());
-
-                    checkValue(key, 122);
-
-                    break;
-                }
-
-                case 3: {
-                    assertNotNull("No result for " + key, res);
-
-                    GridTestUtils.assertThrows(log, new Callable<Void>() {
-                        @Override public Void call() throws Exception {
-                            res.get();
-
-                            return null;
-                        }
-                    }, EntryProcessorException.class, "Test processor exception.");
-
-                    checkValue(key, 62);
-
-                    break;
-                }
-            }
-        }
-
-        cache.invokeAll(keys, new IncrementProcessor());
-
-        tx = startTx(txMode);
-
-        resMap = cache.invokeAll(keys, new RemoveProcessor(null));
-
-        if (tx != null)
-            tx.commit();
-
-        assertEquals("Unexpected results: " + resMap, 0, resMap.size());
-
-        for (Integer key : keys)
-            checkValue(key, null);
-
-        IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
-
-        assertTrue(asyncCache.isAsync());
-
-        assertNull(asyncCache.invokeAll(keys, new IncrementProcessor()));
-
-        IgniteFuture<Map<Integer, EntryProcessorResult<Integer>>> fut = asyncCache.future();
-
-        resMap = fut.get();
-
-        exp = new HashMap<>();
-
-        for (Integer key : keys)
-            exp.put(key, -1);
-
-        checkResult(resMap, exp);
-
-        for (Integer key : keys)
-            checkValue(key, 1);
-
-        invokeMap = new HashMap<>();
 
         for (Integer key : keys)
             invokeMap.put(key, incProcessor);
@@ -442,15 +528,16 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @param resMap Result map.
      * @param exp Expected results.
      */
-    private void checkResult(Map<Integer, EntryProcessorResult<Integer>> resMap, Map<Object, Object> exp) {
+    @SuppressWarnings("unchecked")
+    private void checkResult(Map resMap, Map<Object, Object> exp) {
         assertNotNull(resMap);
 
         assertEquals(exp.size(), resMap.size());
 
         for (Map.Entry<Object, Object> expVal : exp.entrySet()) {
-            EntryProcessorResult<Integer> res = resMap.get(expVal.getKey());
+            EntryProcessorResult<?> res = (EntryProcessorResult)resMap.get(expVal.getKey());
 
-            assertNotNull("No result for " + expVal.getKey());
+            assertNotNull("No result for " + expVal.getKey(), res);
 
             assertEquals("Unexpected result for " + expVal.getKey(), res.get(), expVal.getValue());
         }
@@ -557,6 +644,44 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     /**
      *
      */
+    protected static class UserClassValueProcessor implements EntryProcessor<Integer, Integer, TestValue> {
+        /** {@inheritDoc} */
+        @Override public TestValue process(MutableEntry<Integer, Integer> e, Object... arguments)
+            throws EntryProcessorException {
+            return new TestValue(String.valueOf(e.getValue()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(UserClassValueProcessor.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class CollectionReturnProcessor implements
+        EntryProcessor<Integer, Integer, Collection<TestValue>> {
+        /** {@inheritDoc} */
+        @Override public Collection<TestValue> process(MutableEntry<Integer, Integer> e, Object... arguments)
+            throws EntryProcessorException {
+            List<TestValue> vals = new ArrayList<>();
+
+            for (int i = 0; i < 10; i++)
+                vals.add(new TestValue(String.valueOf(e.getValue() + 1)));
+
+            return vals;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CollectionReturnProcessor.class, this);
+        }
+    }
+
+    /**
+     *
+     */
     protected static class IncrementProcessor implements EntryProcessor<Integer, Integer, Integer> {
         /** {@inheritDoc} */
         @Override public Integer process(MutableEntry<Integer, Integer> e,
@@ -654,6 +779,52 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ExceptionProcessor.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    static class TestValue {
+        /** */
+        private String val;
+
+        /**
+         * @param val Value.
+         */
+        public TestValue(String val) {
+            this.val = val;
+        }
+
+        /**
+         * @return Value.
+         */
+        public String value() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestValue testVal = (TestValue) o;
+
+            return val.equals(testVal.val);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val.hashCode();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TestValue.class, this);
         }
     }
 }

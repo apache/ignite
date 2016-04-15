@@ -683,7 +683,11 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
     public void testSingleFileOverwrite() throws Exception {
         final List<Event> evtList = new ArrayList<>();
 
-        final int evtsCnt = 1 + 4 + 1;
+        // NB: In case of create-overwrite FILE_PURGED event will be sent in PRIMARY IGFS mode only.
+        final boolean awaitForPurgeEvt
+            = grid(1).configuration().getFileSystemConfiguration()[0].getDefaultMode() == IgfsMode.PRIMARY;
+
+        final int evtsCnt = 1 + 4 + (awaitForPurgeEvt ? 1 : 0);
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
@@ -703,7 +707,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         igfs.create(file, false).close(); // Will generate create, open and close events.
 
-        igfs.create(file, true).close(); // Will generate only OPEN_WRITE & close events.
+        igfs.create(file, true).close(); // Will generate PURGE (async), OPEN_WRITE & close events.
 
         try {
             igfs.create(file, false).close(); // Won't generate any event.
@@ -737,21 +741,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
                 @Override public boolean apply(Event e) {
                     IgfsEvent e0 = (IgfsEvent)e;
 
-                    return e0.type() == EVT_IGFS_FILE_DELETED && e0.path().equals(file1);
-                }
-            },
-            new P1<Event>() {
-                @Override public boolean apply(Event e) {
-                    IgfsEvent e0 = (IgfsEvent)e;
-
                     return e0.type() == EVT_IGFS_FILE_PURGED && e0.path().equals(file1);
-                }
-            },
-            new P1<Event>() {
-                @Override public boolean apply(Event e) {
-                    IgfsEvent e0 = (IgfsEvent)e;
-
-                    return e0.type() == EVT_IGFS_FILE_CREATED && e0.path().equals(file1);
                 }
             },
             new P1<Event>() {
@@ -835,7 +825,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
         evt = (IgfsEvent)evtList.get(4);
         assertEquals(EVT_IGFS_FILE_CLOSED_READ, evt.type());
         assertEquals(new IgfsPath("/file1"), evt.path());
-        assertEquals((long)dataSize, evt.dataSize());
+        assertEquals((long) dataSize, evt.dataSize());
     }
 
     /**

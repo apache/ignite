@@ -30,7 +30,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,7 +50,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
         new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
             @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
-                return F.t2();
+                return new IgniteBiTuple<>();
             }
         };
 
@@ -332,7 +331,23 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
         checkRemoved();
 
         try {
-            return CU.outTx(internalCompareAndSet(expVal, newVal), ctx);
+            return CU.outTx(internalCompareAndSetAndGet(expVal, newVal) , ctx) == expVal;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * @param expVal Expected value.
+     * @param newVal New value.
+     * @return Old value.
+     */
+    public long compareAndSetAndGet(long expVal, long newVal) {
+        checkRemoved();
+
+        try {
+            return CU.outTx(internalCompareAndSetAndGet(expVal, newVal), ctx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -509,25 +524,25 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     }
 
     /**
-     * Method returns callable for execution {@link #compareAndSet(long, long)}
+     * Method returns callable for execution {@link #compareAndSetAndGet(long, long)}
      * operation in async and sync mode.
      *
      * @param expVal Expected atomic long value.
      * @param newVal New atomic long value.
      * @return Callable for execution in async and sync mode.
      */
-    private Callable<Boolean> internalCompareAndSet(final long expVal, final long newVal) {
-        return new Callable<Boolean>() {
-            @Override public Boolean call() throws Exception {
+    private Callable<Long> internalCompareAndSetAndGet(final long expVal, final long newVal) {
+        return new Callable<Long>() {
+            @Override public Long call() throws Exception {
                 try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicLongValue val = atomicView.get(key);
 
                     if (val == null)
                         throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
 
-                    boolean retVal = val.get() == expVal;
+                    long retVal = val.get();
 
-                    if (retVal) {
+                    if (retVal == expVal) {
                         val.set(newVal);
 
                         atomicView.getAndPut(key, val);

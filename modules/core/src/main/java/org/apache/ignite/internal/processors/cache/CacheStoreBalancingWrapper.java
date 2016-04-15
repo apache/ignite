@@ -28,6 +28,7 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -39,7 +40,7 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
     /** */
-    public static final int DFLT_LOAD_ALL_THRESHOLD = 5;
+    public static final int DFLT_LOAD_ALL_THRESHOLD = CacheConfiguration.DFLT_CONCURRENT_LOAD_ALL_THRESHOLD;
 
     /** Delegate store. */
     private CacheStore<K, V> delegate;

@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
@@ -112,7 +113,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         store = cacheStoreWrapper(ctx, cfgStore, cfg);
 
-        singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store);
+        singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store,
+            cfg.getStoreConcurrentLoadAllThreshold());
 
         ThreadLocal<SessionData> sesHolder0 = null;
 
@@ -188,12 +190,24 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         CacheConfiguration cfg = cctx.config();
 
-        if (cfgStore != null && !cfg.isWriteThrough() && !cfg.isReadThrough()) {
-            U.quietAndWarn(log,
-                "Persistence store is configured, but both read-through and write-through are disabled. This " +
-                "configuration makes sense if the store implements loadCache method only. If this is the " +
-                "case, ignore this warning. Otherwise, fix the configuration for cache: " + cfg.getName(),
-                "Persistence store is configured, but both read-through and write-through are disabled.");
+        if (cfgStore != null) {
+            if (!cfg.isWriteThrough() && !cfg.isReadThrough()) {
+                U.quietAndWarn(log,
+                    "Persistence store is configured, but both read-through and write-through are disabled. This " +
+                    "configuration makes sense if the store implements loadCache method only. If this is the " +
+                    "case, ignore this warning. Otherwise, fix the configuration for the cache: " + cfg.getName(),
+                    "Persistence store is configured, but both read-through and write-through are disabled " +
+                    "for cache: " + cfg.getName());
+            }
+
+            if (!cfg.isWriteThrough() && cfg.isWriteBehindEnabled()) {
+                U.quietAndWarn(log,
+                    "To enable write-behind mode for the cache store it's also required to set " +
+                    "CacheConfiguration.setWriteThrough(true) property, otherwise the persistence " +
+                    "store will be never updated. Consider fixing configuration for the cache: " + cfg.getName(),
+                    "Write-behind mode for the cache store also requires CacheConfiguration.setWriteThrough(true) " +
+                    "property. Fix configuration for the cache: " + cfg.getName());
+            }
         }
 
         sesLsnrs = CU.startStoreSessionListeners(cctx.kernalContext(), cfg.getCacheStoreSessionListenerFactories());
@@ -269,10 +283,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 // Never load internal keys from store as they are never persisted.
                 return null;
 
-            Object storeKey = key.value(cctx.cacheObjectContext(), false);
-
-            if (convertPortable())
-                storeKey = cctx.unwrapPortableIfNeeded(storeKey, false);
+            Object storeKey = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
 
             if (log.isDebugEnabled())
                 log.debug("Loading value from store for key: " + storeKey);
@@ -396,22 +407,12 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 return;
             }
 
-            Collection<Object> keys0;
-
-            if (convertPortable()) {
-                keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
+            Collection<Object> keys0 = F.viewReadOnly(keys,
+                new C1<KeyCacheObject, Object>() {
                     @Override public Object apply(KeyCacheObject key) {
-                        return cctx.unwrapPortableIfNeeded(key.value(cctx.cacheObjectContext(), false), false);
+                        return cctx.unwrapBinaryIfNeeded(key, !convertBinary());
                     }
                 });
-            }
-            else {
-                keys0 = F.viewReadOnly(keys, new C1<KeyCacheObject, Object>() {
-                    @Override public Object apply(KeyCacheObject key) {
-                        return key.value(cctx.cacheObjectContext(), false);
-                    }
-                });
-            }
 
             if (log.isDebugEnabled())
                 log.debug("Loading values from store for keys: " + keys0);
@@ -532,10 +533,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return true;
 
-            if (convertPortable()) {
-                key = cctx.unwrapPortableIfNeeded(key, false);
-                val = cctx.unwrapPortableIfNeeded(val, false);
-            }
+            key = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
+            val = cctx.unwrapBinaryIfNeeded(val, !convertBinary());
 
             if (log.isDebugEnabled())
                 log.debug("Storing value in cache store [key=" + key + ", val=" + val + ']');
@@ -637,8 +636,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return false;
 
-            if (convertPortable())
-                key = cctx.unwrapPortableIfNeeded(key, false);
+            key = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
 
             if (log.isDebugEnabled())
                 log.debug("Removing value from cache store [key=" + key + ']');
@@ -686,7 +684,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         if (store != null) {
-            Collection<Object> keys0 = convertPortable() ? cctx.unwrapPortablesIfNeeded(keys, false) : keys;
+            Collection<Object> keys0 = cctx.unwrapBinariesIfNeeded(keys, !convertBinary());
 
             if (log.isDebugEnabled())
                 log.debug("Removing values from cache store [keys=" + keys0 + ']');
@@ -773,7 +771,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         assert e != null;
 
         if (e.getMessage() != null) {
-            throw new IgniteCheckedException("Cache store must work with portable objects if portables are " +
+            throw new IgniteCheckedException("Cache store must work with binary objects if binary are " +
                 "enabled for cache [cacheName=" + cctx.namex() + ']', e);
         }
         else
@@ -1066,7 +1064,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<Cache.Entry<?, ?>> iterator() {
             if (cleared)
-                return F.emptyIterator();
+                return new GridEmptyIterator<>();
 
             final Iterator<Map.Entry<?, IgniteBiTuple<?, GridCacheVersion>>> it0 = (Iterator)map.entrySet().iterator();
 
@@ -1093,15 +1091,13 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                         Object k = e.getKey();
 
-                        if (rmvd != null && rmvd.contains(k))
-                            continue;
-
                         Object v = locStore ? e.getValue() : e.getValue().get1();
 
-                        if (convertPortable()) {
-                            k = cctx.unwrapPortableIfNeeded(k, false);
-                            v = cctx.unwrapPortableIfNeeded(v, false);
-                        }
+                        k = cctx.unwrapBinaryIfNeeded(k, !convertBinary());
+                        v = cctx.unwrapBinaryIfNeeded(v, !convertBinary());
+
+                        if (rmvd != null && rmvd.contains(k))
+                            continue;
 
                         next = new CacheEntryImpl<>(k, v);
 

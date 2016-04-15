@@ -21,6 +21,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -104,7 +106,7 @@ public class GridH2ValueCacheObject extends Value {
 
     /** {@inheritDoc} */
     @Override public byte[] getBytesNoCopy() {
-        if (obj.type() == CacheObject.TYPE_REGULAR) {
+        if (obj.cacheObjectType() == CacheObject.TYPE_REGULAR) {
             // Result must be the same as `marshaller.marshall(obj.value(coctx, false));`
             try {
                 return obj.valueBytes(objectContext());
@@ -114,13 +116,13 @@ public class GridH2ValueCacheObject extends Value {
             }
         }
 
-        // For portables and byte array cache object types.
-        return Utils.serialize(obj.value(objectContext(), false), null);
+        // For user-provided and array types.
+        return Utils.serialize(obj, null);
     }
 
     /** {@inheritDoc} */
     @Override public Object getObject() {
-        return obj.value(objectContext(), false);
+        return obj.isPlatformType() ? obj.value(objectContext(), false) : obj;
     }
 
     /** {@inheritDoc} */
@@ -142,6 +144,13 @@ public class GridH2ValueCacheObject extends Value {
             Comparable<Object> c1 = (Comparable<Object>)o1;
 
             return c1.compareTo(o2);
+        }
+
+        if (o1 instanceof BinaryEnumObjectImpl && o2 instanceof Enum) {
+            final BinaryEnumObjectImpl bo1 = (BinaryEnumObjectImpl)o1;
+
+            if (bo1.isTypeEquals(o2.getClass()))
+                return Integer.compare(bo1.enumOrdinal(), ((Enum)o2).ordinal());
         }
 
         // Group by types.

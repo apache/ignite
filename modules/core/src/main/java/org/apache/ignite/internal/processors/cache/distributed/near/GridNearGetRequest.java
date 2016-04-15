@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -109,31 +110,30 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
      * @param ver Version.
      * @param keys Keys.
      * @param readThrough Read through flag.
-     * @param reload Reload flag.
      * @param skipVals Skip values flag. When false, only boolean values will be returned indicating whether
      *      cache entry has a value.
      * @param topVer Topology version.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
      * @param accessTtl New TTL to set after entry is accessed, -1 to leave unchanged.
+     * @param addDepInfo Deployment info.
      */
     public GridNearGetRequest(
         int cacheId,
         IgniteUuid futId,
         IgniteUuid miniId,
         GridCacheVersion ver,
-        LinkedHashMap<KeyCacheObject, Boolean> keys,
+        Map<KeyCacheObject, Boolean> keys,
         boolean readThrough,
-        boolean reload,
         @NotNull AffinityTopologyVersion topVer,
         UUID subjId,
         int taskNameHash,
         long accessTtl,
-        boolean skipVals
+        boolean skipVals,
+        boolean addDepInfo
     ) {
         assert futId != null;
         assert miniId != null;
-        assert ver != null;
         assert keys != null;
 
         this.cacheId = cacheId;
@@ -143,12 +143,12 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         this.keys = keys.keySet();
         this.flags = keys.values();
         this.readThrough = readThrough;
-        this.reload = reload;
         this.topVer = topVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
         this.skipVals = skipVals;
+        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -269,6 +269,11 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
             while (keysIt.hasNext())
                 keyMap.put(keysIt.next(), flagsIt.next());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */

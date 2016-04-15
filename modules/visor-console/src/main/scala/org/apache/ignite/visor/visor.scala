@@ -17,6 +17,7 @@
 
 package org.apache.ignite.visor
 
+import org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER
 import org.apache.ignite._
 import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
 import org.apache.ignite.events.EventType._
@@ -303,6 +304,9 @@ object visor extends VisorTag {
         }
     })
 
+    // Make sure visor starts without version checker print.
+    System.setProperty(IGNITE_UPDATE_NOTIFIER, "false")
+
     addHelp(
         name = "mlist",
         shortInfo = "Prints Visor console memory variables.",
@@ -507,8 +511,7 @@ object visor extends VisorTag {
                 "If logging is already stopped - it's no-op."
             ),
             "-dl" -> Seq(
-                "Disables collecting of job and task fail events, licence violation events, cache rebalance events" +
-                    " from remote nodes."
+                "Disables collecting of job and task fail events, cache rebalance events from remote nodes."
             )
         ),
         examples = Seq(
@@ -1801,7 +1804,7 @@ object visor extends VisorTag {
 
         val t = VisorTextTable()
 
-        t #= ("#", "Node ID8(@), IP", "Up Time", "CPUs", "CPU Load", "Free Heap")
+        t #= ("#", "Node ID8(@), IP","Node Type", "Up Time", "CPUs", "CPU Load", "Free Heap")
 
         val nodes = ignite.cluster.nodes().toList
 
@@ -1827,6 +1830,7 @@ object visor extends VisorTag {
                 t += (
                     i,
                     nodeId8Addr(n.id),
+                    if (n.isClient) "Client" else "Server",
                     X.timeSpan2HMS(m.getUpTime),
                     n.metrics.getTotalCpus,
                     safePercent(cpuLoadPct),

@@ -115,6 +115,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
      * @param retVal Return value.
      * @param err Error.
      * @param clientRemapVer Not {@code null} if client node should remap transaction.
+     * @param addDepInfo Deployment info flag.
      */
     public GridNearTxPrepareResponse(
         GridCacheVersion xid,
@@ -124,9 +125,10 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         GridCacheVersion writeVer,
         GridCacheReturn retVal,
         Throwable err,
-        AffinityTopologyVersion clientRemapVer
+        AffinityTopologyVersion clientRemapVer,
+        boolean addDepInfo
     ) {
-        super(xid, err);
+        super(xid, err, addDepInfo);
 
         assert futId != null;
         assert miniId != null;
@@ -262,7 +264,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (ownedVals != null) {
+        if (ownedVals != null && ownedValKeys == null) {
             ownedValKeys = ownedVals.keySet();
 
             ownedValVals = ownedVals.values();
@@ -285,7 +287,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         }
 
         if (filterFailedKeys != null) {
-            for (IgniteTxKey key :filterFailedKeys) {
+            for (IgniteTxKey key : filterFailedKeys) {
                 GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 
                 key.prepareMarshal(cctx);

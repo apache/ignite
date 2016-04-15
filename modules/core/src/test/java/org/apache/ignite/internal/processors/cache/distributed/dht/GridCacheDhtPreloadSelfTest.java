@@ -38,7 +38,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -361,7 +361,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
             GridDhtPartitionFullMap allParts = dht.topology().partitionMap(false);
 
-            for (GridDhtPartitionMap parts : allParts.values()) {
+            for (GridDhtPartitionMap2 parts : allParts.values()) {
                 if (!parts.nodeId().equals(g.cluster().localNode().id())) {
                     for (Map.Entry<Integer, GridDhtPartitionState> e : parts.entrySet()) {
                         int p = e.getKey();

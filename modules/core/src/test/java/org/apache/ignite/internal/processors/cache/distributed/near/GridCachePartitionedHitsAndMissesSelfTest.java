@@ -114,15 +114,15 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
             long misses = 0;
 
             for (int i = 0; i < GRID_CNT; i++) {
-                CacheMetrics m = grid(i).cache(null).metrics();
+                CacheMetrics m = grid(i).cache(null).localMetrics();
 
                 hits += m.getCacheHits();
                 misses += m.getCacheMisses();
             }
 
             // Check that invoke and loader updated metrics
-            assertEquals(CNT, hits);
-            assertEquals(CNT, misses);
+            assertEquals(CNT / 2, hits);
+            assertEquals(CNT / 2, misses);
         }
         finally {
             stopAllGrids();

@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains <b>default</b> Optimized marshaller.
+ * Contains Optimized marshaller.
  */
 package org.apache.ignite.marshaller.optimized;

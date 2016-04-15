@@ -30,9 +30,8 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CachePartialUpdateException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -43,11 +42,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Session listener for web sessions caching.
  */
 class WebSessionListener {
-    /** */
-    private static final long RETRY_DELAY = 1;
-
-    /** Cache. */
-    private final IgniteCache<String, WebSession> cache;
+    /** Filter. */
+    private final WebSessionFilter filter;
 
     /** Maximum retries. */
     private final int retries;
@@ -57,14 +53,14 @@ class WebSessionListener {
 
     /**
      * @param ignite Grid.
-     * @param cache Cache.
+     * @param filter Filter.
      * @param retries Maximum retries.
      */
-    WebSessionListener(Ignite ignite, IgniteCache<String, WebSession> cache, int retries) {
+    WebSessionListener(Ignite ignite, WebSessionFilter filter, int retries) {
         assert ignite != null;
-        assert cache != null;
+        assert filter != null;
 
-        this.cache = cache;
+        this.filter = filter;
         this.retries = retries > 0 ? retries : 1;
 
         log = ignite.log();
@@ -75,13 +71,22 @@ class WebSessionListener {
      */
     public void destroySession(String sesId) {
         assert sesId != null;
+        for (int i = 0; i < retries; i++) {
+            try {
+                if (filter.getCache().remove(sesId) && log.isDebugEnabled())
+                    log.debug("Session destroyed: " + sesId);
+            }
+            catch (CacheException | IgniteException | IllegalStateException e) {
+                if (i == retries - 1) {
+                    U.warn(log, "Failed to remove session [sesId=" +
+                        sesId + ", retries=" + retries + ']');
+                }
+                else {
+                    U.warn(log, "Failed to remove session (will retry): " + sesId);
 
-        try {
-            if (cache.remove(sesId) && log.isDebugEnabled())
-                log.debug("Session destroyed: " + sesId);
-        }
-        catch (CacheException e) {
-            U.error(log, "Failed to remove session: " + sesId, e);
+                    filter.handleCacheOperationException(e);
+                }
+            }
         }
     }
 
@@ -108,16 +113,16 @@ class WebSessionListener {
 
                         ExpiryPolicy plc = new ModifiedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-                        cache0 = cache.withExpiryPolicy(plc);
+                        cache0 = filter.getCache().withExpiryPolicy(plc);
                     }
                     else
-                        cache0 = cache;
+                        cache0 = filter.getCache();
 
                     cache0.invoke(sesId, new AttributesProcessor(updates));
 
                     break;
                 }
-                catch (CachePartialUpdateException ignored) {
+                catch (CacheException | IgniteException | IllegalStateException e) {
                     if (i == retries - 1) {
                         U.warn(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
                             sesId + ", retries=" + retries + ']');
@@ -125,12 +130,12 @@ class WebSessionListener {
                     else {
                         U.warn(log, "Failed to apply updates for session (will retry): " + sesId);
 
-                        U.sleep(RETRY_DELAY);
+                        filter.handleCacheOperationException(e);
                     }
                 }
             }
         }
-        catch (CacheException | IgniteInterruptedCheckedException e) {
+        catch (Exception e) {
             U.error(log, "Failed to update session attributes [id=" + sesId + ']', e);
         }
     }
@@ -171,7 +176,9 @@ class WebSessionListener {
             if (!entry.exists())
                 return null;
 
-            WebSession ses = new WebSession(entry.getValue());
+            WebSession ses0 = entry.getValue();
+
+            WebSession ses = new WebSession(ses0.getId(), ses0);
 
             for (T2<String, Object> update : updates) {
                 String name = update.get1();

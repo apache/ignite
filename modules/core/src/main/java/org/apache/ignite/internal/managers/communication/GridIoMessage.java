@@ -143,7 +143,7 @@ public class GridIoMessage implements Message {
     /**
      * @return Message.
      */
-    public Object message() {
+    public Message message() {
         return msg;
     }
 
@@ -166,6 +166,11 @@ public class GridIoMessage implements Message {
      */
     boolean isOrdered() {
         return ordered;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        msg.onAckReceived();
     }
 
     /** {@inheritDoc} */

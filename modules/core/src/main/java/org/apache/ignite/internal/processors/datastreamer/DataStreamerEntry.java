@@ -82,10 +82,10 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
      * @param ctx Cache context.
      * @return Map entry unwrapping internal key and value.
      */
-    public <K, V> Map.Entry<K, V> toEntry(final GridCacheContext ctx) {
+    public <K, V> Map.Entry<K, V> toEntry(final GridCacheContext ctx, final boolean keepBinary) {
         return new Map.Entry<K, V>() {
             @Override public K getKey() {
-                return key.value(ctx.cacheObjectContext(), false);
+                return (K)ctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
             }
 
             @Override public V setValue(V val) {
@@ -93,9 +93,14 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
             }
 
             @Override public V getValue() {
-                return val != null ? val.<V>value(ctx.cacheObjectContext(), false) : null;
+                return (V)ctx.cacheObjectContext().unwrapBinaryIfNeeded(val, keepBinary, false);
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

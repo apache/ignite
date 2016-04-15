@@ -155,7 +155,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
             });
 
         assert ver1.version().compareTo(ver2.version()) < 0;
-        assert ver1.updateTime() < ver2.updateTime();
+        assert ver1.updateTime() <= ver2.updateTime();
     }
 
     /**

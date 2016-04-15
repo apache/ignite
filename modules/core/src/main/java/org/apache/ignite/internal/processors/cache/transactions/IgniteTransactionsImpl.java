@@ -23,13 +23,12 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Grid transactions implementation.
@@ -47,7 +46,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
     /** {@inheritDoc} */
     @Override public Transaction txStart() throws IllegalStateException {
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
+        TransactionConfiguration cfg = CU.transactionConfiguration(null, cctx.kernalContext().config());
 
         return txStart0(
             cfg.getDefaultTxConcurrency(),
@@ -63,7 +62,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
+        TransactionConfiguration cfg = CU.transactionConfiguration(null, cctx.kernalContext().config());
 
         return txStart0(
             concurrency,
@@ -124,7 +123,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
         checkTransactional(ctx);
 
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
+        TransactionConfiguration cfg = CU.transactionConfiguration(ctx, cctx.kernalContext().config());
 
         return txStart0(concurrency,
             isolation,
@@ -142,23 +141,21 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @return Transaction.
      */
     @SuppressWarnings("unchecked")
-    private IgniteInternalTx txStart0(TransactionConcurrency concurrency, TransactionIsolation isolation,
-        long timeout, int txSize, @Nullable GridCacheContext sysCacheCtx) {
+    private IgniteInternalTx txStart0(
+        TransactionConcurrency concurrency,
+        TransactionIsolation isolation,
+        long timeout,
+        int txSize,
+        @Nullable GridCacheContext sysCacheCtx
+    ) {
         cctx.kernalContext().gateway().readLock();
 
         try {
-            TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
-
-            if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
-                throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
-                    "'txSerializableEnabled' configuration property)");
-
             IgniteInternalTx tx = cctx.tm().userTx(sysCacheCtx);
 
             if (tx != null)
                 throw new IllegalStateException("Failed to start new transaction " +
                     "(current thread already has a transaction): " + tx);
-
             tx = cctx.tm().newTx(
                 false,
                 false,

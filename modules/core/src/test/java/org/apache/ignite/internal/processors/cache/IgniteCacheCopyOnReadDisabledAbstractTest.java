@@ -57,6 +57,8 @@ public abstract class IgniteCacheCopyOnReadDisabledAbstractTest extends GridCach
 
             TestValue val0 = cache.get(key);
 
+            assertSame(val0, cache.get(key));
+
             assertNotSame(val, val0); // Original user value is always copied.
 
             assertSame(val0, cache.localPeek(key));

@@ -44,6 +44,9 @@ import org.apache.ignite.internal.client.GridClientDisconnectedException;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.client.GridClientFutureTimeoutException;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
@@ -107,6 +110,15 @@ public class JdbcConnection implements Connection {
             GridClientConfiguration cfg = new GridClientConfiguration(props);
 
             cfg.setServers(Collections.singleton(props.getProperty(PROP_HOST) + ":" + props.getProperty(PROP_PORT)));
+
+            String user = props.getProperty("user");
+            String passwd = props.getProperty("password");
+
+            if (!F.isEmpty(user)) {
+                SecurityCredentials creds = new SecurityCredentials(user, passwd);
+
+                cfg.setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(creds));
+            }
 
             // Disable all fetching and caching for metadata.
             cfg.setEnableMetricsCache(false);

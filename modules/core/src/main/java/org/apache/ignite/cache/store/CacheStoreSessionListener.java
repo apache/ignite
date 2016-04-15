@@ -35,11 +35,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  * rollback when session is finished.
  * <p>
  * Cache store session listener allows to implement this and other
- * scenarios providing to callback methods:
+ * scenarios providing two callback methods:
  * <ul>
  *     <li>
  *         {@link #onSessionStart(CacheStoreSession)} - called
- *         before any store operation within a session is invoked.
+ *         when a session is created prior to all operations
+ *         within his session.
  *     </li>
  *     <li>
  *         {@link #onSessionEnd(CacheStoreSession, boolean)} - called
@@ -47,7 +48,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  *     </li>
  * </ul>
  * <h2>Implementations</h2>
- * Ignites provides several out-of-the-box implementations
+ * Ignite provides several out-of-the-box implementations
  * of session listener (refer to individual JavaDocs for more
  * details):
  * <ul>

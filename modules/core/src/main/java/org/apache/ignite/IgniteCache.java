@@ -18,9 +18,12 @@
 package org.apache.ignite;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
@@ -28,10 +31,12 @@ import javax.cache.CacheException;
 import javax.cache.configuration.Configuration;
 import javax.cache.event.CacheEntryRemovedListener;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
@@ -104,6 +109,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @return Random entry, or {@code null} if cache is empty.
      */
+    @Deprecated
     public Entry<K, V> randomEntry();
 
     /**
@@ -126,6 +132,45 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache with no-retries behavior enabled.
      */
     public IgniteCache<K, V> withNoRetries();
+
+    /**
+     * Returns cache that will operate with binary objects.
+     * <p>
+     * Cache returned by this method will not be forced to deserialize binary objects,
+     * so keys and values will be returned from cache API methods without changes. Therefore,
+     * signature of the cache can contain only following types:
+     * <ul>
+     *     <li><code>org.apache.ignite.binary.BinaryObject</code> for binary classes</li>
+     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+     *     <li>Arrays of primitives (byte[], int[], ...)</li>
+     *     <li>{@link String} and array of {@link String}s</li>
+     *     <li>{@link UUID} and array of {@link UUID}s</li>
+     *     <li>{@link Date} and array of {@link Date}s</li>
+     *     <li>{@link Timestamp} and array of {@link Timestamp}s</li>
+     *     <li>Enums and array of enums</li>
+     *     <li>
+     *         Maps, collections and array of objects (but objects inside
+     *         them will still be converted if they are binary)
+     *     </li>
+     * </ul>
+     * <p>
+     * For example, if you use {@link Integer} as a key and {@code Value} class as a value
+     * (which will be stored in binary format), you should acquire following projection
+     * to avoid deserialization:
+     * <pre>
+     * IgniteCache<Integer, BinaryObject> prj = cache.withKeepBinary();
+     *
+     * // Value is not deserialized and returned in binary format.
+     * BinaryObject po = prj.get(1);
+     * </pre>
+     * <p>
+     * Note that this method makes sense only if cache is working in binary mode
+     * if default marshaller is used.
+     * If not, this method is no-op and will return current cache.
+     *
+     * @return New cache instance for binary objects.
+     */
+    public <K1, V1> IgniteCache<K1, V1> withKeepBinary();
 
     /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
@@ -306,6 +351,19 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
+     * Gets the number of all entries cached across all nodes as a long value. By default, if {@code peekModes} value
+     * isn't defined, only size of primary copies across all nodes will be returned. This behavior is identical to
+     * calling this method with {@link CachePeekMode#PRIMARY} peek mode.
+     * <p>
+     * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.
+     *
+     * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return Cache size across all nodes.
+     */
+    @IgniteAsyncSupported
+    public long sizeLong(CachePeekMode... peekModes) throws CacheException;
+
+    /**
      * Gets the number of all entries cached on this node. By default, if {@code peekModes} value isn't defined,
      * only size of primary copies will be returned. This behavior is identical to calling this method with
      * {@link CachePeekMode#PRIMARY} peek mode.
@@ -316,6 +374,16 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public int localSize(CachePeekMode... peekModes);
 
     /**
+     * Gets the number of all entries cached on this node as a long value. By default, if {@code peekModes} value isn't
+     * defined, only size of primary copies will be returned. This behavior is identical to calling this method with
+     * {@link CachePeekMode#PRIMARY} peek mode.
+     *
+     * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
+     * @return Cache size on this node.
+     */
+    public long localSizeLong(CachePeekMode... peekModes);
+
+    /**
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
      * @return The map of {@link EntryProcessorResult}s of the processing per key,
@@ -324,15 +392,57 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <code>null</code> value for a key.
      */
     @IgniteAsyncSupported
-    <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args);
+    public <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+        Object... args);
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public V get(K key);
 
+    /**
+     * Gets an entry from the cache.
+     * <p>
+     * If the cache is configured to use read-through, and get would return null
+     * because the entry is missing from the cache, the Cache's {@link CacheLoader}
+     * is called in an attempt to load the entry.
+     *
+     * @param key the key whose associated value is to be returned
+     * @return the element, or null, if it does not exist.
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws NullPointerException  if the key is null
+     * @throws CacheException        if there is a problem fetching the value
+     * @throws ClassCastException    if the implementation is configured to perform
+     * runtime-type-checking, and the key or value types are incompatible with those that have been
+     * configured for the {@link Cache}
+     */
+    @IgniteAsyncSupported
+    public CacheEntry<K, V> getEntry(K key);
+
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public Map<K, V> getAll(Set<? extends K> keys);
+
+    /**
+     * Gets a collection of entries from the {@link Cache}.
+     * <p>
+     * If the cache is configured read-through, and a get for a key would
+     * return null because an entry is missing from the cache, the Cache's
+     * {@link CacheLoader} is called in an attempt to load the entry. If an
+     * entry cannot be loaded for a given key, the key will not be present in
+     * the returned Collection.
+     *
+     * @param keys The keys whose associated values are to be returned.
+     * @return A collection of entries that were found for the given keys. Entries not found
+     *         in the cache are not in the returned collection.
+     * @throws NullPointerException  if keys is null or if keys contains a null
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws CacheException        if there is a problem fetching the values
+     * @throws ClassCastException    if the implementation is configured to perform
+     * runtime-type-checking, and the key or value types are incompatible with those that have been
+     * configured for the {@link Cache}
+     */
+    @IgniteAsyncSupported
+    public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys);
 
     /**
      * Gets values from cache. Will bypass started transaction, if any, i.e. will not enlist entries
@@ -490,8 +600,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the provided key. If an {@link javax.cache.Cache.Entry} does not exist for the specified key,
      * an attempt is made to load it (if a loader is configured) or a surrogate
      * {@link javax.cache.Cache.Entry}, consisting of the key with a null value is used instead.
-     * This method different
      * <p>
+     * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
+     * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
+     * the same.
      *
      * @param key            the key to the entry
      * @param entryProcessor the {@link CacheEntryProcessor} to invoke
@@ -538,6 +650,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@link CacheEntryProcessor} or Caching implementation throw an exception, the
      * exception is wrapped and re-thrown when a call to
      * {@link javax.cache.processor.EntryProcessorResult#get()} is made.
+     * <p>
+     * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
+     * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
+     * the same.
      *
      * @param keys           the set of keys for entries to process
      * @param entryProcessor the {@link CacheEntryProcessor} to invoke
@@ -599,14 +715,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteFuture<?> rebalance();
 
     /**
-     * Gets snapshot metrics (statistics) for this cache.
+     * Gets whole cluster snapshot metrics (statistics) for this cache.
      *
      * @return Cache metrics.
      */
     public CacheMetrics metrics();
 
     /**
-     * Gets snapshot metrics for caches in cluster group.
+     * Gets cluster group snapshot metrics for caches in cluster group.
      *
      * @param grp Cluster group.
      * @return Cache metrics.
@@ -614,9 +730,23 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public CacheMetrics metrics(ClusterGroup grp);
 
     /**
-     * Gets MxBean for this cache.
+     * Gets local snapshot metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public CacheMetrics localMetrics();
+
+    /**
+     * Gets whole cluster MxBean for this cache.
      *
      * @return MxBean.
      */
     public CacheMetricsMXBean mxBean();
+
+    /**
+     * Gets local MxBean for this cache.
+     *
+     * @return MxBean.
+     */
+    public CacheMetricsMXBean localMxBean();
 }

@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -53,6 +54,8 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         boolean client = clientMode && gridName.equals(getTestGridName(0));
 
@@ -113,11 +116,13 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
 
         final AtomicInteger gridIdx = new AtomicInteger(1);
 
+        final long stopTime = System.currentTimeMillis() + 60_000;
+
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 int grid = gridIdx.getAndIncrement();
 
-                while (!stop.get()) {
+                while (!stop.get() && System.currentTimeMillis() < stopTime) {
                     stopGrid(grid);
 
                     startGrid(grid);
@@ -128,8 +133,6 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
         }, 2, "restart-thread");
 
         try {
-            long stopTime = System.currentTimeMillis() + 60_000;
-
             while (System.currentTimeMillis() < stopTime) {
                 Collection<IgniteFuture<?>> futs = new ArrayList<>(1000);
 

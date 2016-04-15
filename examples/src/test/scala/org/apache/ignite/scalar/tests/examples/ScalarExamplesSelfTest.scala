@@ -35,6 +35,11 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
     }
 
     /** */
+    def testScalarCacheEntryProcessorExample() {
+        ScalarCacheEntryProcessorExample.main(EMPTY_ARGS)
+    }
+
+    /** */
     def testScalarCacheExample() {
         ScalarCacheExample.main(EMPTY_ARGS)
     }

@@ -20,13 +20,11 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
@@ -121,6 +119,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
      * @param firstClientReq {@code True} if first lock request for lock operation sent from client node.
+     * @param addDepInfo Deployment info flag.
      */
     public GridNearLockRequest(
         int cacheId,
@@ -144,7 +143,10 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         int taskNameHash,
         long accessTtl,
         boolean skipStore,
-        boolean firstClientReq
+        boolean keepBinary,
+        boolean firstClientReq,
+        boolean addDepInfo
+
     ) {
         super(
             cacheId,
@@ -160,7 +162,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             timeout,
             keyCnt,
             txSize,
-            skipStore);
+            skipStore,
+            keepBinary,
+            addDepInfo);
 
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 
@@ -296,7 +300,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         dhtVers[idx] = dhtVer;
 
         // Delegate to super.
-        addKeyBytes(key, retVal, (Collection<GridCacheMvccCandidate>)null, ctx);
+        addKeyBytes(key, retVal, ctx);
     }
 
     /**

@@ -240,6 +240,14 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         return g.cache(name);
     }
 
+
+    /** {@inheritDoc} */
+    @Override public Collection<String> cacheNames() {
+        assert g != null;
+
+        return g.cacheNames();
+    }
+
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(CacheConfiguration<K, V> cacheCfg) {
         assert g != null;
@@ -347,6 +355,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteBinary binary() {
+        assert g != null;
+
+        return g.binary();
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         g.close();
     }
@@ -395,6 +410,18 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         assert g != null;
 
         return g.countDownLatch(name, cnt, autoDel, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteSemaphore semaphore(String name,
+        int cnt,
+        boolean failoverSafe,
+        boolean create)
+    {
+        assert g != null;
+
+        return g.semaphore(name, cnt,
+            failoverSafe, create);
     }
 
     /** {@inheritDoc} */

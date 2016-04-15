@@ -80,6 +80,40 @@ import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.MutableEntry;
+import java.io.DataInput;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -322,7 +356,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Requested data block or {@code null} if nothing found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteInternalFuture<byte[]> dataBlock(final IgfsFileInfo fileInfo, final IgfsPath path,
+    @Nullable public IgniteInternalFuture<byte[]> dataBlock(final IgfsEntryInfo fileInfo, final IgfsPath path,
         final long blockIdx, @Nullable final IgfsSecondaryFileSystemPositionedReadable secReader)
         throws IgniteCheckedException {
         //assert validTxState(any); // Allow this method call for any transaction state.
@@ -430,7 +464,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param fileInfo File info of file opened to write.
      * @return Future that will be completed when all ack messages are received or when write failed.
      */
-    public IgniteInternalFuture<Boolean> writeStart(IgfsFileInfo fileInfo) {
+    public IgniteInternalFuture<Boolean> writeStart(IgfsEntryInfo fileInfo) {
         WriteCompletionFuture fut = new WriteCompletionFuture(fileInfo.id());
 
         WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileInfo.id(), fut);
@@ -449,7 +483,7 @@ public class IgfsDataManager extends IgfsManager {
      *
      * @param fileInfo File info being written.
      */
-    public void writeClose(IgfsFileInfo fileInfo) {
+    public void writeClose(IgfsEntryInfo fileInfo) {
         WriteCompletionFuture fut = pendingWrites.get(fileInfo.id());
 
         if (fut != null)
@@ -478,7 +512,7 @@ public class IgfsDataManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public byte[] storeDataBlocks(
-        IgfsFileInfo fileInfo,
+        IgfsEntryInfo fileInfo,
         long reservedLen,
         @Nullable byte[] remainder,
         int remainderLen,
@@ -511,7 +545,7 @@ public class IgfsDataManager extends IgfsManager {
      * @throws IOException If store failed.
      */
     @Nullable public byte[] storeDataBlocks(
-        IgfsFileInfo fileInfo,
+        IgfsEntryInfo fileInfo,
         long reservedLen,
         @Nullable byte[] remainder,
         int remainderLen,
@@ -533,7 +567,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param fileInfo File details to remove data for.
      * @return Delete future that will be completed when file is actually erased.
      */
-    public IgniteInternalFuture<Object> delete(IgfsFileInfo fileInfo) {
+    public IgniteInternalFuture<Object> delete(IgfsEntryInfo fileInfo) {
         if (!fileInfo.isFile()) {
             if (log.isDebugEnabled())
                 log.debug("Cannot delete content of not-data file: " + fileInfo);
@@ -549,7 +583,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param fileInfo File info.
      * @return Block key.
      */
-    public IgfsBlockKey blockKey(long blockIdx, IgfsFileInfo fileInfo) {
+    public IgfsBlockKey blockKey(long blockIdx, IgfsEntryInfo fileInfo) {
         if (fileInfo.affinityKey() != null)
             return new IgfsBlockKey(fileInfo.id(), fileInfo.affinityKey(), fileInfo.evictExclude(), blockIdx);
 
@@ -570,7 +604,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param range Range to clean up.
      * @param cleanNonColocated {@code True} if all blocks should be cleaned.
      */
-    public void cleanBlocks(IgfsFileInfo fileInfo, IgfsFileAffinityRange range, boolean cleanNonColocated) {
+    public void cleanBlocks(IgfsEntryInfo fileInfo, IgfsFileAffinityRange range, boolean cleanNonColocated) {
         long startIdx = range.startOffset() / fileInfo.blockSize();
 
         long endIdx = range.endOffset() / fileInfo.blockSize();
@@ -600,7 +634,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param fileInfo File info to move data for.
      * @param range Range to move.
      */
-    public void spreadBlocks(IgfsFileInfo fileInfo, IgfsFileAffinityRange range) {
+    public void spreadBlocks(IgfsEntryInfo fileInfo, IgfsFileAffinityRange range) {
         long startIdx = range.startOffset() / fileInfo.blockSize();
 
         long endIdx = range.endOffset() / fileInfo.blockSize();
@@ -675,7 +709,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Affinity blocks locations.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgfsBlockLocation> affinity(IgfsFileInfo info, long start, long len)
+    public Collection<IgfsBlockLocation> affinity(IgfsEntryInfo info, long start, long len)
         throws IgniteCheckedException {
         return affinity(info, start, len, 0);
     }
@@ -690,7 +724,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Affinity blocks locations.
      * @throws IgniteCheckedException If failed.
      */
-    public Collection<IgfsBlockLocation> affinity(IgfsFileInfo info, long start, long len, long maxLen)
+    public Collection<IgfsBlockLocation> affinity(IgfsEntryInfo info, long start, long len, long maxLen)
         throws IgniteCheckedException {
         assert validTxState(false);
         assert info.isFile() : "Failed to get affinity (not a file): " + info;
@@ -799,7 +833,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param maxLen Maximum allowed split length.
      * @param res Result collection to add regions to.
      */
-    private void affinity0(IgfsFileInfo info, long start, long len, long maxLen, Deque<IgfsBlockLocation> res) {
+    private void affinity0(IgfsEntryInfo info, long start, long len, long maxLen, Deque<IgfsBlockLocation> res) {
         long firstGrpIdx = start / grpBlockSize;
         long limitGrpIdx = (start + len + grpBlockSize - 1) / grpBlockSize;
 
@@ -1107,6 +1141,65 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
+     * @param nodeId Node ID.
+     * @param blocksMsg Write request message.
+     */
+    private void processBlocksMessage(final UUID nodeId, final IgfsBlocksMessage blocksMsg) {
+        storeBlocksAsync(blocksMsg.blocks()).listen(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> fut) {
+                IgniteCheckedException err = null;
+
+                try {
+                    fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    err = e;
+                }
+
+                try {
+                    // Send reply back to node.
+                    igfsCtx.send(nodeId, topic, new IgfsAckMessage(blocksMsg.fileId(), blocksMsg.id(), err), IGFS_POOL);
+                }
+                catch (IgniteCheckedException e) {
+                    U.warn(log, "Failed to send batch acknowledgement (did node leave the grid?) [nodeId=" + nodeId +
+                        ", fileId=" + blocksMsg.fileId() + ", batchId=" + blocksMsg.id() + ']', e);
+                }
+            }
+        });
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param ackMsg Write acknowledgement message.
+     */
+    private void processAckMessage(UUID nodeId, IgfsAckMessage ackMsg) {
+        try {
+            ackMsg.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to unmarshal message (will ignore): " + ackMsg, e);
+
+            return;
+        }
+
+        IgniteUuid fileId = ackMsg.fileId();
+
+        WriteCompletionFuture fut = pendingWrites.get(fileId);
+
+        if (fut != null) {
+            if (ackMsg.error() != null)
+                fut.onError(nodeId, ackMsg.error());
+            else
+                fut.onWriteAck(nodeId, ackMsg.id());
+        }
+        else {
+            if (log.isDebugEnabled())
+                log.debug("Received write acknowledgement for non-existent write future (most likely future was " +
+                    "failed) [nodeId=" + nodeId + ", fileId=" + fileId + ']');
+        }
+    }
+
+    /**
      * Creates block key based on block ID, file info and local affinity range.
      *
      * @param block Block ID.
@@ -1116,7 +1209,7 @@ public class IgfsDataManager extends IgfsManager {
      */
     private IgfsBlockKey createBlockKey(
         long block,
-        IgfsFileInfo fileInfo,
+        IgfsEntryInfo fileInfo,
         IgfsFileAffinityRange locRange
     ) {
         // If affinityKey is present, return block key as is.
@@ -1161,7 +1254,7 @@ public class IgfsDataManager extends IgfsManager {
          * @throws IgniteCheckedException If failed.
          * @return Data remainder if {@code flush} flag is {@code false}.
          */
-        @Nullable public final byte[] storeDataBlocks(
+        @Nullable public byte[] storeDataBlocks(
             IgfsFileInfo fileInfo,
             long reservedLen,
             @Nullable byte[] remainder,
@@ -1409,10 +1502,10 @@ public class IgfsDataManager extends IgfsManager {
      */
     private class AsyncDeleteWorker extends GridWorker {
         /** File info for stop request. */
-        private final IgfsFileInfo stopInfo = new IgfsFileInfo();
+        private final IgfsEntryInfo stopInfo;
 
         /** Delete requests queue. */
-        private BlockingQueue<IgniteBiTuple<GridFutureAdapter<Object>, IgfsFileInfo>> delReqs =
+        private BlockingQueue<IgniteBiTuple<GridFutureAdapter<Object>, IgfsEntryInfo>> delReqs =
             new LinkedBlockingQueue<>();
 
         /**
@@ -1422,6 +1515,10 @@ public class IgfsDataManager extends IgfsManager {
          */
         protected AsyncDeleteWorker(@Nullable String gridName, String name, IgniteLogger log) {
             super(gridName, name, log);
+
+            long time = System.currentTimeMillis();
+
+            stopInfo = IgfsUtils.createDirectory(IgniteUuid.randomUuid());
         }
 
         /**
@@ -1435,7 +1532,7 @@ public class IgfsDataManager extends IgfsManager {
          * @param info File info to delete.
          * @return Future which completes when entry is actually removed.
          */
-        private IgniteInternalFuture<Object> deleteAsync(IgfsFileInfo info) {
+        private IgniteInternalFuture<Object> deleteAsync(IgfsEntryInfo info) {
             GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
 
             delReqs.offer(F.t(fut, info));
@@ -1447,10 +1544,10 @@ public class IgfsDataManager extends IgfsManager {
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 while (!isCancelled()) {
-                    IgniteBiTuple<GridFutureAdapter<Object>, IgfsFileInfo> req = delReqs.take();
+                    IgniteBiTuple<GridFutureAdapter<Object>, IgfsEntryInfo> req = delReqs.take();
 
                     GridFutureAdapter<Object> fut = req.get1();
-                    IgfsFileInfo fileInfo = req.get2();
+                    IgfsEntryInfo fileInfo = req.get2();
 
                     // Identity check.
                     if (fileInfo == stopInfo) {
@@ -1511,7 +1608,7 @@ public class IgfsDataManager extends IgfsManager {
                 if (log.isDebugEnabled())
                     log.debug("Stopping asynchronous igfs file delete thread: " + name());
 
-                IgniteBiTuple<GridFutureAdapter<Object>, IgfsFileInfo> req = delReqs.poll();
+                IgniteBiTuple<GridFutureAdapter<Object>, IgfsEntryInfo> req = delReqs.poll();
 
                 while (req != null) {
                     req.get1().onCancelled();

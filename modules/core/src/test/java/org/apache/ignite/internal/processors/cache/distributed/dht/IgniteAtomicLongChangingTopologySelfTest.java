@@ -31,7 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -56,7 +58,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /** Grid count. */
     private static final int GRID_CNT = 5;
 
-    /** Restart cound. */
+    /** Restart count. */
     private static final int RESTART_CNT = 15;
 
     /** Atomic long name. */
@@ -90,6 +92,8 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setClientMode(client);
+
+        cfg.setPeerClassLoadingEnabled(false);
 
         return cfg;
     }
@@ -133,8 +137,6 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testClientAtomicLongCreateCloseFailover() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1732");
-
         testFailoverWithClient(new IgniteInClosure<Ignite>() {
             @Override public void apply(Ignite ignite) {
                 for (int i = 0; i < 100; i++) {
@@ -168,6 +170,27 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClientSetCreateCloseFailover() throws Exception {
+        testFailoverWithClient(new IgniteInClosure<Ignite>() {
+            @Override public void apply(Ignite ignite) {
+                for (int i = 0; i < 100; i++) {
+                    CollectionConfiguration colCfg = new CollectionConfiguration();
+
+                    colCfg.setBackups(1);
+                    colCfg.setCacheMode(PARTITIONED);
+                    colCfg.setAtomicityMode(i % 2 == 0 ? TRANSACTIONAL : ATOMIC);
+
+                    IgniteSet set = ignite.set("set-" + i, colCfg);
+
+                    set.close();
+                }
+            }
+        });
+    }
+
+    /**
      * @param c Test iteration closure.
      * @throws Exception If failed.
      */
@@ -186,7 +209,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
 
         IgniteInternalFuture<?> fut = restartThread(finished);
 
-        long stop = System.currentTimeMillis() + 30_000;
+        long stop = System.currentTimeMillis() + 60_000;
 
         try {
             int iter = 0;
@@ -194,7 +217,12 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
             while (System.currentTimeMillis() < stop) {
                 log.info("Iteration: " + iter++);
 
-                c.apply(ignite);
+                try {
+                    c.apply(ignite);
+                }
+                catch (IgniteClientDisconnectedException e) {
+                    e.reconnectFuture().get();
+                }
             }
 
             finished.set(true);
@@ -371,8 +399,14 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
 
     /**
      * @param i Node index.
+     * @param startLatch Thread start latch.
+     * @param run Run flag.
+     * @throws Exception If failed.
+     * @return Threads future.
      */
-    private IgniteInternalFuture<?> startNodeAndCreaterThread(final int i, final CountDownLatch startLatch, final AtomicBoolean run)
+    private IgniteInternalFuture<?> startNodeAndCreaterThread(final int i,
+        final CountDownLatch startLatch,
+        final AtomicBoolean run)
         throws Exception {
         return multithreadedAsync(new Runnable() {
             @Override public void run() {

@@ -35,19 +35,19 @@ import java.util.regex.Pattern;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -918,14 +918,16 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
-     * @param meta Metadata for Ignite cache.
+     * @param metas Metadata for Ignite caches.
      * @throws Exception If failed.
      */
-    private void testMetadata(GridCacheSqlMetadata meta) throws Exception {
+    private void testMetadata(Collection<GridCacheSqlMetadata> metas) throws Exception {
         Map<String, String> params = F.asMap("cmd", GridRestCommand.CACHE_METADATA.key());
 
-        if (meta.cacheName() != null)
-            params.put("cacheName", meta.cacheName());
+        String cacheNameArg = F.first(metas).cacheName();
+
+        if (cacheNameArg != null)
+            params.put("cacheName", cacheNameArg);
 
         String ret = content(params);
 
@@ -934,53 +936,68 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Cache metadata result: " + ret);
 
-        jsonEquals(ret, pattern("\\{.+\\}", true));
+        jsonEquals(ret, pattern("\\[.+\\]", true));
 
-        Map res = (Map)JSONObject.fromObject(ret).get("response");
+        Collection<Map> results = (Collection)JSONObject.fromObject(ret).get("response");
 
-        Collection types = (Collection)res.get("types");
+        assertEquals(metas.size(), results.size());
+        assertEquals(cacheNameArg, F.first(results).get("cacheName"));
 
-        assertNotNull(types);
-        assertEqualsCollections(meta.types(), types);
+        for (Map res : results) {
+            final Object cacheName = res.get("cacheName");
 
-        Map keyClasses = (Map)res.get("keyClasses");
+            GridCacheSqlMetadata meta = F.find(metas, null, new P1<GridCacheSqlMetadata>() {
+                @Override public boolean apply(GridCacheSqlMetadata meta) {
+                    return F.eq(meta.cacheName(), cacheName);
+                }
+            });
 
-        assertNotNull(keyClasses);
-        assertTrue(meta.keyClasses().equals(keyClasses));
+            assertNotNull("REST return metadata for unexpected cache: " + cacheName, meta);
 
-        Map valClasses = (Map)res.get("valClasses");
+            Collection types = (Collection)res.get("types");
 
-        assertNotNull(valClasses);
-        assertTrue(meta.valClasses().equals(valClasses));
+            assertNotNull(types);
+            assertEqualsCollections(meta.types(), types);
 
-        Map fields = (Map)res.get("fields");
+            Map keyClasses = (Map)res.get("keyClasses");
 
-        assertNotNull(fields);
-        assertTrue(meta.fields().equals(fields));
+            assertNotNull(keyClasses);
+            assertTrue(meta.keyClasses().equals(keyClasses));
 
-        Map indexesByType = (Map)res.get("indexes");
+            Map valClasses = (Map)res.get("valClasses");
 
-        assertNotNull(indexesByType);
-        assertEquals(meta.indexes().size(), indexesByType.size());
+            assertNotNull(valClasses);
+            assertTrue(meta.valClasses().equals(valClasses));
 
-        for (Map.Entry<String, Collection<GridCacheSqlIndexMetadata>> metaIndexes : meta.indexes().entrySet()) {
-            Collection<Map> indexes = (Collection<Map>)indexesByType.get(metaIndexes.getKey());
+            Map fields = (Map)res.get("fields");
 
-            assertNotNull(indexes);
-            assertEquals(metaIndexes.getValue().size(), indexes.size());
+            assertNotNull(fields);
+            assertTrue(meta.fields().equals(fields));
 
-            for (final GridCacheSqlIndexMetadata metaIdx : metaIndexes.getValue()) {
-                Map idx = F.find(indexes, null, new IgnitePredicate<Map>() {
-                    @Override public boolean apply(Map map) {
-                        return metaIdx.name().equals(map.get("name"));
-                    }
-                });
+            Map indexesByType = (Map)res.get("indexes");
 
-                assertNotNull(idx);
+            assertNotNull(indexesByType);
+            assertEquals(meta.indexes().size(), indexesByType.size());
 
-                assertEqualsCollections(metaIdx.fields(), (Collection)idx.get("fields"));
-                assertEqualsCollections(metaIdx.descendings(), (Collection)idx.get("descendings"));
-                assertEquals(metaIdx.unique(), idx.get("unique"));
+            for (Map.Entry<String, Collection<GridCacheSqlIndexMetadata>> metaIndexes : meta.indexes().entrySet()) {
+                Collection<Map> indexes = (Collection<Map>)indexesByType.get(metaIndexes.getKey());
+
+                assertNotNull(indexes);
+                assertEquals(metaIndexes.getValue().size(), indexes.size());
+
+                for (final GridCacheSqlIndexMetadata metaIdx : metaIndexes.getValue()) {
+                    Map idx = F.find(indexes, null, new P1<Map>() {
+                        @Override public boolean apply(Map map) {
+                            return metaIdx.name().equals(map.get("name"));
+                        }
+                    });
+
+                    assertNotNull(idx);
+
+                    assertEqualsCollections(metaIdx.fields(), (Collection)idx.get("fields"));
+                    assertEqualsCollections(metaIdx.descendings(), (Collection)idx.get("descendings"));
+                    assertEquals(metaIdx.unique(), idx.get("unique"));
+                }
             }
         }
     }
@@ -989,16 +1006,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testMetadataLocal() throws Exception {
-        GridCacheProcessor cacheProc = grid(0).context().cache();
+        IgniteCacheProxy<?, ?> cache = F.first(grid(0).context().cache().publicCaches());
 
-        for (IgniteInternalCache<?, ?> cache : cacheProc.caches()) {
-            if (CU.isSystemCache(cache.name()))
-                continue;
+        assertNotNull("Should have configured public cache!", cache);
 
-            GridCacheSqlMetadata meta = F.first(cache.context().queries().sqlMetadata());
+        Collection<GridCacheSqlMetadata> meta = cache.context().queries().sqlMetadata();
 
-            testMetadata(meta);
-        }
+        testMetadata(meta);
     }
 
     /**
@@ -1012,9 +1026,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         IgniteCacheProxy<Integer, String> c = (IgniteCacheProxy<Integer, String>)grid(1).createCache(partialCacheCfg);
 
-        GridCacheSqlMetadata meta = F.first(c.context().queries().sqlMetadata());
+        Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
 
-        testMetadata(meta);
+        testMetadata(metas);
     }
 
     /**
@@ -1040,11 +1054,28 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             assertEquals(JSONNull.getInstance(), node.get("attributes"));
             assertEquals(JSONNull.getInstance(), node.get("metrics"));
 
-            assertEquals("PARTITIONED", node.get("defaultCacheMode"));
+            Collection<Map> caches = (Collection)node.get("caches");
 
-            Map caches = (Map)node.get("caches");
+            Collection<IgniteCacheProxy<?, ?>> publicCaches = grid(0).context().cache().publicCaches();
 
-            assertEquals(F.asMap("person", "PARTITIONED"), caches);
+            assertNotNull(caches);
+            assertEquals(publicCaches.size(), caches.size());
+
+            for (Map cache : caches) {
+                final String cacheName = cache.get("name").equals("") ? null : (String)cache.get("name");
+
+                IgniteCacheProxy<?, ?> publicCache = F.find(publicCaches, null, new P1<IgniteCacheProxy<?, ?>>() {
+                    @Override public boolean apply(IgniteCacheProxy<?, ?> c) {
+                        return F.eq(c.getName(), cacheName);
+                    }
+                });
+
+                assertNotNull(publicCache);
+
+                CacheMode cacheMode = CacheMode.valueOf((String)cache.get("mode"));
+
+                assertEquals(publicCache.getConfiguration(CacheConfiguration.class).getCacheMode(),cacheMode);
+            }
         }
     }
 
@@ -1402,6 +1433,42 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryDelay() throws Exception {
+        String qry = "salary > ? and salary <= ?";
+
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());
+        params.put("type", "Person");
+        params.put("pageSize", "1");
+        params.put("cacheName", "person");
+        params.put("qry", URLEncoder.encode(qry));
+        params.put("arg1", "1000");
+        params.put("arg2", "2000");
+
+        String ret = null;
+
+        for (int i = 0; i < 10; ++i)
+            ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        List items = (List)((Map)json.get("response")).get("items");
+
+        assertEquals(1, items.size());
+
+        assertTrue(queryCursorFound());
+
+        U.sleep(10000);
 
         assertFalse(queryCursorFound());
     }

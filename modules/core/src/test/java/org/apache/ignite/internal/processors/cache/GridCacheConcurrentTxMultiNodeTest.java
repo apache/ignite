@@ -162,9 +162,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
         c.setPeerClassLoadingEnabled(false);
 
-        // Enable tracing.
-//        Logger.getLogger("org.apache.ignite.kernal.processors.cache.GridCacheDgcManager.trace").setLevel(Level.DEBUG);
-
         return c;
     }
 
@@ -231,7 +228,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                     String terminalId = String.valueOf(++tid);
 
                     // Server partition cache
-                    UUID mappedId = srvr1.cluster().mapKeyToNode(null, terminalId).id();
+                    UUID mappedId = srvr1.affinity(null).mapKeyToNode(terminalId).id();
 
                     if (!srvrId.equals(mappedId))
                         continue;
@@ -616,21 +613,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                                 X.println("Near entry [grid="+ g.name() + ", key=" + k + ", entry=" + nearEntry);
                                 X.println("DHT entry [grid=" + g.name() + ", key=" + k + ", entry=" + dhtEntry);
-
-                                GridCacheMvccCandidate nearCand =
-                                    nearEntry == null ? null : F.first(nearEntry.localCandidates());
-
-                                if (nearCand != null)
-                                    X.println("Near futures: " +
-                                        nearEntry.context().mvcc().futures(nearCand.version()));
-
-                                GridCacheMvccCandidate dhtCand =
-                                    dhtEntry == null ? null : F.first(dhtEntry.localCandidates());
-
-                                if (dhtCand != null)
-                                    X.println("Dht futures: " +
-                                        dhtEntry.context().mvcc().futures(dhtCand.version()));
-
                             }
                         }
                     }

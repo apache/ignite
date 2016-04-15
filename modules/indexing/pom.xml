@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-indexing</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.6.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
@@ -44,19 +44,19 @@
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>1.6</version>
+            <version>${commons.codec.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-core</artifactId>
-            <version>3.5.0</version>
+            <version>${lucene.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>1.3.175</version>
+            <version>${h2.version}</version>
         </dependency>
 
         <dependency>
@@ -108,6 +108,22 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <!-- Generate the OSGi MANIFEST.MF for this bundle.
+                 This bundle is a fragment attached to the ignite-core bundle, as it contains and exports classes in
+                 the org.apache.ignite.internal.processors.query.h2.opt in the same manner as ignite-geospatial, thus
+                 leading to a split package situation in OSGi. It also contains an internal processor.
+            -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Fragment-Host>org.apache.ignite.ignite-core</Fragment-Host>
+                    </instructions>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
 </project>

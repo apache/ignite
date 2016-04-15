@@ -28,6 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.schema.parser.DbColumn;
 import org.apache.ignite.schema.parser.DbTable;
 
@@ -115,7 +118,7 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
 
         Collection<DbTable> tbls = new ArrayList<>();
 
-        if (schemas.size() == 0)
+        if (schemas.isEmpty())
             schemas.add(null);
 
         for (String toSchema: schemas) {
@@ -154,7 +157,7 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                         }
                     }
 
-                    Map<String, Map<String, Boolean>> idxs = new LinkedHashMap<>();
+                    Map<String, QueryIndex> idxs = new LinkedHashMap<>();
 
                     try (ResultSet idxRs = dbMeta.getIndexInfo(tblCatalog, tblSchema, tblName, false, true)) {
                         while (idxRs.next()) {
@@ -165,23 +168,26 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                             if (idxName == null || colName == null)
                                 continue;
 
-                            Map<String, Boolean> idx = idxs.get(idxName);
+                            QueryIndex idx = idxs.get(idxName);
 
                             if (idx == null) {
-                                idx = new LinkedHashMap<>();
+                                idx = new QueryIndex();
+                                idx.setName(idxName);
+                                idx.setIndexType(QueryIndexType.SORTED);
+                                idx.setFields(new LinkedHashMap<String, Boolean>());
 
                                 idxs.put(idxName, idx);
                             }
 
                             String askOrDesc = idxRs.getString(IDX_ASC_OR_DESC_IDX);
 
-                            Boolean desc = askOrDesc != null ? "D".equals(askOrDesc) : null;
+                            Boolean asc = askOrDesc == null || "A".equals(askOrDesc);
 
-                            idx.put(colName, desc);
+                            idx.getFields().put(colName, asc);
                         }
                     }
 
-                    tbls.add(table(schema, tblName, cols, idxs));
+                    tbls.add(table(schema, tblName, cols, idxs.values()));
                 }
             }
         }

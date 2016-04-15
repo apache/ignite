@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -80,14 +81,16 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
      * @param cacheId Cache ID.
      * @param futId Request id.
      * @param miniId Mini-future ID.
+     * @param addDepInfo Deployment info flag.
      */
-    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId) {
+    public GridDhtForceKeysResponse(int cacheId, IgniteUuid futId, IgniteUuid miniId, boolean addDepInfo) {
         assert futId != null;
         assert miniId != null;
 
         this.cacheId = cacheId;
         this.futId = futId;
         this.miniId = miniId;
+        this.addDepInfo = addDepInfo;
     }
 
     /**
@@ -168,7 +171,8 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 info.marshal(cctx);
         }
 
-        errBytes = ctx.marshaller().marshal(err);
+        if (err != null && errBytes == null)
+            errBytes = ctx.marshaller().marshal(err);
     }
 
     /** {@inheritDoc} */
@@ -185,7 +189,13 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 info.unmarshal(cctx, ldr);
         }
 
-        err = ctx.marshaller().unmarshal(errBytes, ldr);
+        if (errBytes != null && err == null)
+            err = ctx.marshaller().unmarshal(errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
     }
 
     /** {@inheritDoc} */

@@ -88,13 +88,15 @@ public class HibernateTransactionalDataRegion extends HibernateRegion implements
                     throw new CacheException("Hibernate TRANSACTIONAL access strategy must have Ignite cache with " +
                         "'TRANSACTIONAL' atomicity mode: " + cache.name());
 
-                if (cache.configuration().getTransactionManagerLookupClassName() == null) {
-                    TransactionConfiguration txCfg = ignite.configuration().getTransactionConfiguration();
-                    
-                    if (txCfg == null || txCfg.getTxManagerLookupClassName() == null)
-                        throw new CacheException("Hibernate TRANSACTIONAL access strategy must have Ignite with " +
-                            "TransactionManagerLookup configured (see IgniteConfiguration." +
-                            "getTransactionConfiguration().getTxManagerLookupClassName()): " + cache.name());
+                TransactionConfiguration txCfg = ignite.configuration().getTransactionConfiguration();
+
+                if (txCfg == null ||
+                    (txCfg.getTxManagerFactory() == null
+                    && txCfg.getTxManagerLookupClassName() == null
+                    && cache.configuration().getTransactionManagerLookupClassName() == null)) {
+                    throw new CacheException("Hibernate TRANSACTIONAL access strategy must have Ignite with " +
+                                "Factory<TransactionManager> configured (see IgniteConfiguration." +
+                                "getTransactionConfiguration().setTxManagerFactory()): " + cache.name());
                 }
 
                 return new HibernateTransactionalAccessStrategy(ignite, cache);

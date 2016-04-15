@@ -38,6 +38,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.internal.util.typedef.X;
@@ -67,6 +68,15 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /** Store map. */
     protected static final Map<Object, Object> map = new ConcurrentHashMap8<>();
+
+    /** Reads counter. */
+    protected static final AtomicInteger reads = new AtomicInteger();
+
+    /** Writes counter. */
+    protected static final AtomicInteger writes = new AtomicInteger();
+
+    /** Removes counter. */
+    protected static final AtomicInteger removes = new AtomicInteger();
 
     /** VM ip finder for TCP discovery. */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -186,6 +196,10 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected void resetStore() {
         map.clear();
+
+        reads.set(0);
+        writes.set(0);
+        removes.set(0);
     }
 
     /**
@@ -241,7 +255,11 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());
         cfg.setNearConfiguration(nearConfiguration());
-        cfg.setIndexedTypes(indexedTypes());
+
+        Class<?>[] idxTypes = indexedTypes();
+
+        if (!F.isEmpty(idxTypes))
+            cfg.setIndexedTypes(idxTypes);
 
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
@@ -296,14 +314,20 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             }
 
             @Override public Object load(Object key) {
+                reads.incrementAndGet();
+
                 return map.get(key);
             }
 
             @Override public void write(javax.cache.Cache.Entry<? extends Object, ? extends Object> e) {
+                writes.incrementAndGet();
+
                 map.put(e.getKey(), e.getValue());
             }
 
             @Override public void delete(Object key) {
+                removes.incrementAndGet();
+
                 map.remove(key);
             }
         };
@@ -411,9 +435,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @param cache Cache projection.
      * @param key Key.
      * @return Value.
-     * @throws Exception If failed.
      */
-    @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) throws Exception {
+    @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) {
         return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP, CachePeekMode.OFFHEAP) :
             cache.localPeek(key, CachePeekMode.ONHEAP);
     }

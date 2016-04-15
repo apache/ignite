@@ -413,7 +413,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
                         return true;
                 }
                 catch (GridCacheEntryRemovedException e) {
-                    throw new RuntimeException(e);
+                    // If e0.valueBytes() thrown this exception then entry has been removed.
+                    return true;
                 }
             }
         }, Math.min(ttl * 10, getTestTimeout())));

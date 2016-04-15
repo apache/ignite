@@ -29,6 +29,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -41,7 +43,24 @@ import static org.apache.ignite.events.EventType.EVT_TASK_DEPLOYED;
 @SuppressWarnings( {"OverlyStrongTypeCast", "JUnitAbstractTestClassNamingConvention", "ProhibitedExceptionDeclared", "IfMayBeConditional"})
 public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
     private DeploymentMode depMode = DeploymentMode.PRIVATE;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setDeploymentSpi(new LocalDeploymentSpi());
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+
+        cfg.setDeploymentMode(depMode);
+
+        return cfg;
+    }
 
     /**
      * @throws Exception If test failed.
@@ -674,19 +693,6 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
         }
 
         info("Executed @Gridify method gridifyNonDefaultNameResource(4) [result=" + res + ']');
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setDeploymentSpi(new LocalDeploymentSpi());
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
-
-        cfg.setDeploymentMode(depMode);
-
-        return cfg;
     }
 
     /**

@@ -287,7 +287,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                     "cannot be cast to integer: " + srvPortStr);
             }
 
-            httpSrv = new Server(new QueuedThreadPool(20, 200));
+            httpSrv = new Server(new QueuedThreadPool(200, 20));
 
             ServerConnector srvConn = new ServerConnector(httpSrv, new HttpConnectionFactory(httpCfg));
 
