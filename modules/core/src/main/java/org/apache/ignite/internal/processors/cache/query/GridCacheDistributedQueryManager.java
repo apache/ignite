@@ -628,7 +628,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @Override public CacheQueryFuture<?> queryFieldsLocal(GridCacheQueryBean qry) {
-        assert false: "Should never be called";
         assert cctx.config().getCacheMode() != LOCAL;
 
         if (log.isDebugEnabled())
