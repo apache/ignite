@@ -29,6 +29,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
@@ -45,16 +46,27 @@ public class ScanQueryStuff {
 //    private static final boolean CHECK1 = true;
     private static final boolean CHECK1 = false;
     private static final boolean once = false;
-    private static final int CNT = 1000_000;
-    private static final int TIMES = 3;
+    private static final int CNT = 100_000;
+
+    static {
+        U.debugEnabled = once && CNT < 5;
+    }
+
+    /** */
+    private static final int MAX_COUNT = 6_000_000;
 
     private static CacheMemoryMode memMode = CacheMemoryMode.OFFHEAP_TIERED;
 
-    public static void main(String[] args) {
-        try (Ignite ignite = Ignition.start(igniteCfg())) {
+    public static void main(String[] args) throws InterruptedException {
+        try (Ignite ignite = Ignition.start(igniteCfg("node1"));
+//            Ignite ignite2 = Ignition.start(igniteCfg("node2"))
+        ) {
             CacheConfiguration cfg = cacheCfg();
 
             IgniteCache cache = ignite.getOrCreateCache(cfg);
+//            ignite2.getOrCreateCache(cfg);
+
+            Thread.sleep(1_000);
 
             for (int i = 0; i < CNT; i++)
                 cache.put(i, i);
@@ -65,6 +77,8 @@ public class ScanQueryStuff {
             long start = System.currentTimeMillis();
 
             boolean go = true;
+
+            int times = MAX_COUNT / CNT;
 
             while (go) {
                 if (once)
@@ -77,10 +91,10 @@ public class ScanQueryStuff {
 
                 cnt++;
 
-                if (cnt == TIMES) {
+                if (cnt == times) {
                     cnt = 0;
 
-                    System.out.println(">>>>> Takes " + (System.currentTimeMillis() - start) + " ms to process " + CNT + " items " + TIMES + " times." );
+                    System.out.println(">>>>> Takes " + (System.currentTimeMillis() - start) + " ms to process " + CNT + " items " + times + " times." );
 
                     start = System.currentTimeMillis();
                 }
@@ -99,8 +113,8 @@ public class ScanQueryStuff {
 
             cnt++;
 
-            if (ob == null)
-                throw new RuntimeException("unexpected");
+//            if (ob == null)
+//                throw new RuntimeException("unexpected");
         }
 
         if (cnt < CNT)
@@ -110,6 +124,7 @@ public class ScanQueryStuff {
     private static void check2(IgniteCache cache) {
         ScanQuery qry = new ScanQuery();
 
+        // TODO uncomment
         qry.setLocal(true);
 
         QueryCursor cursor = cache.query(qry);
@@ -145,8 +160,10 @@ public class ScanQueryStuff {
         return cfg;
     }
 
-    private static IgniteConfiguration igniteCfg() {
+    private static IgniteConfiguration igniteCfg(String name) {
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setGridName(name);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

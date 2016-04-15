@@ -26,6 +26,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -87,6 +88,7 @@ import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridSpiCloseableIteratorWrapper;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridIterator;
@@ -469,7 +471,32 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @return Query future.
      */
-    public abstract CacheQueryFuture<?> queryLocal(GridCacheQueryBean qry);
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    public CacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
+        if (log.isDebugEnabled())
+            log.debug("Executing query on local node: " + qry);
+
+        CacheQueryFuture<?> fut = null;
+
+        try {
+            qry.query().validate();
+
+            if (qry.query().type() == GridCacheQueryType.SCAN)
+                fut = executeLocalScanQuery(qry);
+            else {
+                fut = new GridCacheLocalQueryFuture<>(cctx, qry);
+
+                ((GridCacheLocalQueryFuture)fut).execute();
+            }
+        }
+        catch (IgniteCheckedException e) {
+            if (fut != null && fut instanceof GridCacheLocalQueryFuture)
+                ((GridFutureAdapter)fut).onDone(e);
+        }
+
+        return fut;
+    }
 
     /**
      * Executes distributed query.
@@ -3410,7 +3437,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override public void listen(IgniteInClosure lsnr) {
-            throw new UnsupportedOperationException();
+            assert lsnr != null;
+
+            lsnr.apply(this);
         }
 
         /** {@inheritDoc} */
@@ -3421,11 +3450,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override public boolean isCancelled() {
             return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int available() throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
@@ -3539,6 +3563,46 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CacheQueryFinishedFuture.class, this);
+        }
+    }
+
+    /**
+     *  Compound future.
+     */
+    protected static class CacheQueryCompoundFuture<R> extends GridCompoundFuture<R, Collection<R>> implements CacheQueryFuture<R> {
+        private final Deque<CacheQueryFuture<R>> futures;
+
+        /**
+         * @param futs Futures to compound.
+         */
+        protected CacheQueryCompoundFuture(CacheQueryFuture<R>... futs) {
+            for (CacheQueryFuture<R> future : futs)
+                super.add((IgniteInternalFuture<R>)future);
+
+            Deque futures0 = new ArrayDeque<>(futures());
+
+            futures = futures0;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public R next() throws IgniteCheckedException {
+            while (!futures.isEmpty()) {
+                CacheQueryFuture fut = futures.getFirst();
+
+                R next = (R)fut.next();
+
+                if (next != null)
+                    return next;
+
+                futures.removeFirst();
+            }
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void add(IgniteInternalFuture<R> fut) {
+            throw new UnsupportedOperationException("Do not use method directly.");
         }
     }
 }

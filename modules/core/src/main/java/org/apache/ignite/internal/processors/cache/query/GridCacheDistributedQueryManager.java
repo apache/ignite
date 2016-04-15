@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,7 +36,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
@@ -516,42 +516,29 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public CacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
-        assert cctx.config().getCacheMode() != LOCAL;
-
-        if (log.isDebugEnabled())
-            log.debug("Executing query on local node: " + qry);
-
-        CacheQueryFuture<?> fut = null;
-
-        try {
-            qry.query().validate();
-
-            if (qry.query().type() == GridCacheQueryType.SCAN)
-                fut = executeLocalScanQuery(qry);
-            else {
-                fut = new GridCacheLocalQueryFuture<>(cctx, qry);
-
-                ((GridCacheLocalQueryFuture)fut).execute();
-            }
-        }
-        catch (IgniteCheckedException e) {
-            if (fut != null && fut instanceof GridCacheLocalQueryFuture)
-                ((GridFutureAdapter)fut).onDone(e);
-        }
-
-        return fut;
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes) {
+    @Override public CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, final Collection<ClusterNode> nodes) {
         assert cctx.config().getCacheMode() != LOCAL;
 
         if (log.isDebugEnabled())
             log.debug("Executing distributed query: " + qry);
 
         long reqId = cctx.io().nextIoId();
+
+        CacheQueryFuture<?> locFut = null;
+
+        if (qry.query().type() == GridCacheQueryType.SCAN) {
+            for (Iterator<ClusterNode> iter = nodes.iterator(); iter.hasNext(); ) {
+                ClusterNode node = iter.next();
+
+                if (node.isLocal()) {
+                    locFut = queryLocal(qry);
+
+                    iter.remove();
+
+                    break;
+                }
+            }
+        }
 
         final GridCacheDistributedQueryFuture<K, V, ?> fut =
             new GridCacheDistributedQueryFuture<>(cctx, reqId, qry, nodes);
@@ -561,7 +548,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             String clsName = qry.query().queryClassName();
 
-            GridCacheQueryRequest req = new GridCacheQueryRequest(
+            final GridCacheQueryRequest req = new GridCacheQueryRequest(
                 cctx.cacheId(),
                 reqId,
                 cctx.name(),
@@ -601,6 +588,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         catch (IgniteCheckedException e) {
             fut.onDone(e);
         }
+
+        if (locFut != null)
+            return new CacheQueryCompoundFuture<>(locFut, (CacheQueryFuture)fut);
 
         return fut;
     }
