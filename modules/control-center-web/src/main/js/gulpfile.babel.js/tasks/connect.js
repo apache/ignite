@@ -17,7 +17,7 @@
 
 import gulp from 'gulp';
 import connect from 'gulp-connect';
-import modrewrite from 'connect-modrewrite';
+import proxy from 'http-proxy-middleware';
 
 import { destDir } from '../paths';
 
@@ -25,11 +25,22 @@ import { destDir } from '../paths';
 gulp.task('connect', () => {
     connect.server({
         port: 8090,
-        root: [ destDir ],
+        root: [destDir],
         middleware() {
-            return [modrewrite([
-                '^/api/v1/(.*)$ http://localhost:3000/$1 [P]'
-            ])];
+            return [
+                proxy('/socket.io', {
+                    target: 'http://localhost:3000',
+                    changeOrigin: true,
+                    ws: true
+                }),
+                proxy('/api/v1/', {
+                    target: 'http://localhost:3000',
+                    changeOrigin: true,
+                    pathRewrite: {
+                        '^/api/v1/': '/' // remove path
+                    }
+                })
+            ];
         },
         fallback: `${destDir}/index.html`
     });
