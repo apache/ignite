@@ -883,4 +883,71 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
     CheckEmpty(cursor);
 }
 
+/**
+ * Test fields query with several pages.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveralPages)
+{
+    // Test simple query.
+    Cache<int, QueryPerson> cache = GetCache();
+
+    // Test query with two fields of different type.
+    SqlFieldsQuery qry("select name, age from QueryPerson");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+
+    const int32_t pageSize = 32; // Page size.
+    const int32_t pagesNum = 8; // Number of whole pages.
+    const int32_t entryCnt = pageSize * pagesNum + 1; // Number of entries.
+
+    qry.SetPageSize(pageSize);
+
+    for (int i = 0; i < entryCnt; i++)
+    {
+        std::stringstream stream;
+
+        stream << "A" << i;
+
+        cache.Put(i, QueryPerson(stream.str(), i * 10));
+    }
+
+    cursor = cache.Query(qry);
+
+    IgniteError error;
+
+    for (int i = 0; i < entryCnt; i++)
+    {
+        std::stringstream stream;
+
+        stream << "A" << i;
+
+        std::string expected_name = stream.str();
+        int expected_age = i * 10;
+
+        BOOST_REQUIRE(cursor.HasNext(error));
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        QueryFieldsRow row = cursor.GetNext(error);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        BOOST_REQUIRE(row.HasNext(error));
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        std::string name = row.GetNext<std::string>(error);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        BOOST_REQUIRE(name == expected_name);
+
+        int age = row.GetNext<int>(error);
+        BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+        BOOST_REQUIRE(age == expected_age);
+
+        BOOST_REQUIRE(!row.HasNext());
+    }
+
+    CheckEmpty(cursor);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
