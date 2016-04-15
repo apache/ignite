@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark;
+package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.spark.JavaEmbeddedIgniteRDDSelfTest;
+import org.apache.ignite.spark.JavaStandaloneIgniteRDDSelfTest;
 
 /**
  * Test suit for Ignite RDD
