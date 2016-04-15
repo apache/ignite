@@ -32,6 +32,10 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
     /** */
     private IgniteTxEntry entry;
 
+    @Override public Collection<Integer> cacheIds() {
+        return entry != null ? Collections.singletonList(entry.cacheId()) : Collections.<Integer>emptyList();
+    }
+
     /** {@inheritDoc} */
     @Override public void addWriteEntry(IgniteTxKey key, IgniteTxEntry e) {
         this.entry = e;

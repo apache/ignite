@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -27,11 +29,15 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  *
  */
 public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
+
+    private final Set<Integer> cacheIds = Collections.newSetFromMap(new ConcurrentHashMap8<Integer, Boolean>());
+
     /** Read set. */
     @GridToStringInclude
     protected Map<IgniteTxKey, IgniteTxEntry> readMap;
@@ -48,6 +54,10 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
         Map<IgniteTxKey, IgniteTxEntry> writeMap) {
         this.readMap = readMap;
         this.writeMap = writeMap;
+    }
+
+    @Override public Collection<Integer> cacheIds() {
+        return Collections.unmodifiableSet(cacheIds);
     }
 
     /** {@inheritDoc} */
@@ -103,6 +113,7 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     /** {@inheritDoc} */
     public void addWriteEntry(IgniteTxKey key, IgniteTxEntry e) {
         writeMap.put(key, e);
+        cacheIds.add(key.cacheId());
     }
 
     /** {@inheritDoc} */

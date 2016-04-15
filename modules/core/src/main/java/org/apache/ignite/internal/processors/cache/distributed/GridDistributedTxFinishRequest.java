@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
@@ -68,6 +71,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
     /** IO policy. */
     private byte plc;
+
+    @GridDirectTransient
+    private IgniteTxState txState;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -219,6 +225,14 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
      */
     public boolean replyRequired() {
         return commit ? syncCommit : syncRollback;
+    }
+
+    public IgniteTxState txState() {
+        return txState;
+    }
+
+    public void txState(IgniteTxState txState) {
+        this.txState = txState;
     }
 
     /** {@inheritDoc} */

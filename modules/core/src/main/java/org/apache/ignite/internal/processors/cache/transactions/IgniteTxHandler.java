@@ -594,6 +594,9 @@ public class IgniteTxHandler {
         assert nodeId != null;
         assert req != null;
 
+        if (locTx != null)
+            req.txState(locTx.txState());
+
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
             return new GridFinishedFuture<IgniteInternalTx>(locTx);
@@ -986,6 +989,8 @@ public class IgniteTxHandler {
         else if (log.isDebugEnabled())
             log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
                 ", tx=" + tx + ']');
+
+        req.txState(tx.txState());
 
         try {
             if (req.commit() || req.isSystemInvalidate()) {

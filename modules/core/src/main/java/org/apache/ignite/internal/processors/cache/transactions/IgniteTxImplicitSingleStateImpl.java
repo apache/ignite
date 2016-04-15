@@ -72,6 +72,10 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         return cacheCtx != null ? cacheCtx.cacheId() : null;
     }
 
+    @Override public Collection<Integer> cacheIds() {
+        return cacheCtx != null ? Collections.singletonList(cacheCtx.cacheId()) : Collections.<Integer>emptyList();
+    }
+
     /** {@inheritDoc} */
     @Override public void awaitLastFut(GridCacheSharedContext ctx) {
         if (cacheCtx == null)

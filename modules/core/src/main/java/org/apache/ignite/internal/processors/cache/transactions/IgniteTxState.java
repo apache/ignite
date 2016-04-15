@@ -44,6 +44,8 @@ public interface IgniteTxState {
      */
     @Nullable public Integer firstCacheId();
 
+    public Collection<Integer> cacheIds();
+
     /**
      * @param cctx Context.
      * @return cctx Non-null cache context if tx has only one active cache.
