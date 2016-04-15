@@ -56,6 +56,7 @@ import 'angular-loading/angular-loading.css!';
 import 'angular-motion/dist/angular-motion.css!';
 
 import './decorator/select';
+import './decorator/tooltip';
 
 import './modules/Demo/Demo.module';
 import './modules/form/form.module';
