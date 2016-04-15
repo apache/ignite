@@ -57,7 +57,7 @@ public class CassandraDirectPersistenceLoadTest extends LoadTestDriver {
 
             driver.runTest("BULK_WRITE", BulkWriteWorker.class, BulkWriteWorker.LOGGER_NAME);
 
-            CassandraHelper.dropTestKeyspaces();
+            //CassandraHelper.dropTestKeyspaces();
 
             LOGGER.info("Cassandra load tests execution completed");
         }
