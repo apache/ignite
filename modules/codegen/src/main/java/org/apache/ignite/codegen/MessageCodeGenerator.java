@@ -192,10 +192,6 @@ public class MessageCodeGenerator {
 //        gen.generateAndWrite(GridNearTxFinishResponse.class);
 //        gen.generateAndWrite(GridDhtTxFinishRequest.class);
 //        gen.generateAndWrite(GridDhtTxFinishResponse.class);
-//        gen.generateAndWrite(TxLocksRequest.class);
-//        gen.generateAndWrite(TxLocksResponse.class);
-//        gen.generateAndWrite(TxLock.class);
-//        gen.generateAndWrite(TxLockList.class);
 //
 //        gen.generateAndWrite(GridCacheTxRecoveryRequest.class);
 //        gen.generateAndWrite(GridCacheTxRecoveryResponse.class);

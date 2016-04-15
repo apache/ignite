@@ -470,12 +470,13 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 MiniFuture mini = (MiniFuture)miniFut;
 
                 requestedKeys.addAll(mini.keys);
+
+                return requestedKeys;
             }
         }
 
         return requestedKeys;
     }
-
 
     /**
      * Finds pending mini future by the given mini ID.
@@ -1364,11 +1365,11 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
         /** Node ID. */
         @GridToStringExclude
-        private ClusterNode node;
+        private final ClusterNode node;
 
         /** Keys. */
         @GridToStringInclude
-        private Collection<KeyCacheObject> keys;
+        private final Collection<KeyCacheObject> keys;
 
         /** Mappings to proceed. */
         @GridToStringExclude

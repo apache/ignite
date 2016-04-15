@@ -183,7 +183,7 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
             client = false;
 
-            startGrids(nodesCnt);
+            startGridsMultiThreaded(nodesCnt);
 
             if (clientTx) {
                 client = true;

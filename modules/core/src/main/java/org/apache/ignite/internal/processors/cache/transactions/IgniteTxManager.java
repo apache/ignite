@@ -75,7 +75,6 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -190,9 +189,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** TxDeadlock detection. */
     private TxDeadlockDetection txDeadlockDetection;
 
-    /** Dead lock detection listener. */
-    private DeadlockDetectionListener deadlockDetectionLsnr = new DeadlockDetectionListener();
-
     /** {@inheritDoc} */
     @Override protected void onKernalStart0(boolean reconnect) {
         if (reconnect)
@@ -232,7 +228,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         this.txDeadlockDetection = new TxDeadlockDetection(cctx);
 
-        cctx.gridIO().addMessageListener(TOPIC_TX, deadlockDetectionLsnr);
+        cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
 
         for (IgniteInternalTx tx : idMap.values()) {
             if ((!tx.local() || tx.dht()) && !cctx.discovery().aliveAll(tx.masterNodeIds())) {
@@ -1931,7 +1927,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param keys Keys.
      */
     private Set<IgniteTxKey> toIgniteTxKeys(GridCacheContext<?, ?> ctx, Collection<KeyCacheObject> keys) {
-        Set<IgniteTxKey> candidateKeys = new HashSet<>();
+        Set<IgniteTxKey> candidateKeys = U.newHashSet(keys.size());
 
         for (KeyCacheObject key : keys)
             candidateKeys.add(new IgniteTxKey(key, ctx.cacheId()));
@@ -1945,9 +1941,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return {@code True} if key is involved into tx.
      */
     private boolean hasKeys(IgniteInternalTx tx, Collection<IgniteTxKey> txKeys) {
-        for (IgniteTxKey key : txKeys)
+        for (IgniteTxKey key : txKeys) {
             if (tx.txState().entry(key) != null)
                 return true;
+        }
 
         return false;
     }
@@ -1986,7 +1983,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (res.txLocks(txKey) == null) {
                     GridCacheMapEntry e = (GridCacheMapEntry)txEntry.cached();
 
-                    List<GridCacheMvccCandidate> locs = e.mvccAllLocs();
+                    List<GridCacheMvccCandidate> locs = e.mvccAllLocal();
 
                     if (locs != null) {
                         boolean owner = false;
@@ -2037,7 +2034,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Colocated future.
      */
     private GridDhtColocatedLockFuture colocatedLockFuture(IgniteInternalTx tx) {
-        assert tx instanceof GridNearTxLocal;
+        assert tx instanceof GridNearTxLocal : tx;
 
         Collection<GridCacheMvccFuture<?>> futs = cctx.mvcc().mvccFutures(tx.nearXidVersion());
 

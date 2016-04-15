@@ -40,7 +40,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Transacions deadlock detection.
+ * Transactions deadlock detection.
  */
 public class TxDeadlockDetection {
     /** Cctx. */
@@ -50,7 +50,7 @@ public class TxDeadlockDetection {
     private final IgniteLogger log;
 
     /**
-     * @param cctx Cctx.
+     * @param cctx Context.
      */
     public TxDeadlockDetection(GridCacheSharedContext<?, ?> cctx) {
         this.cctx = cctx;
@@ -65,9 +65,10 @@ public class TxDeadlockDetection {
      * @return {@link TxDeadlock} if found, otherwise - {@code null}.
      */
     IgniteInternalFuture<TxDeadlock> detectDeadlock(GridCacheVersion txId, Set<IgniteTxKey> keys) {
-        if (log.isDebugEnabled())
-            log.debug("Deadlock detection started: " +
-                "[nodeId=" + cctx.localNodeId() + ", xidVersion=" + txId + ", keys=" + keys + "]");
+        if (log.isDebugEnabled()) {
+            log.debug("Deadlock detection started " +
+                "[nodeId=" + cctx.localNodeId() + ", xidVersion=" + txId + ", keys=" + keys + ']');
+        }
 
         TxDeadLockFuture fut = new TxDeadLockFuture(txId, keys);
 
@@ -164,7 +165,7 @@ public class TxDeadlockDetection {
         /** Topology version. */
         private final AffinityTopologyVersion topVer;
 
-        /** Trsansactions. */
+        /** Transactions. */
         private final Map<GridCacheVersion, T2<UUID, Long>> txs;
 
         /**
@@ -265,9 +266,9 @@ public class TxDeadlockDetection {
          * @param txKeys Tx keys.
          * @param txLocks Tx locks.
          */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
         private void mapTxKeys(@Nullable Set<IgniteTxKey> txKeys, Map<IgniteTxKey, TxLockList> txLocks) {
             for (Map.Entry<IgniteTxKey, TxLockList> e : txLocks.entrySet()) {
-
                 List<TxLock> locks = e.getValue().txLocks();
 
                 for (int i = 0; i < locks.size(); i++) {
@@ -343,6 +344,8 @@ public class TxDeadlockDetection {
             GridCacheContext ctx = cctx.cacheContext(txKey.cacheId());
 
             ClusterNode node = ctx.affinity().primary(txKey.key(), topVer);
+
+            assert node != null : topVer;
 
             return node.id();
         }

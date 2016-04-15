@@ -4295,7 +4295,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @return All MVCC local candidates.
      */
-    @Nullable public synchronized List<GridCacheMvccCandidate> mvccAllLocs() {
+    @Nullable public synchronized List<GridCacheMvccCandidate> mvccAllLocal() {
         GridCacheMvcc mvcc = extras != null ? extras.mvcc() : null;
 
         if (mvcc == null)

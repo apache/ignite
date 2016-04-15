@@ -4071,9 +4071,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         /** {@inheritDoc} */
         @Override public final IgniteInternalFuture<T> apply(Boolean locked, @Nullable final Exception e) {
-            boolean deadlock = X.hasCause(e, TxDeadlockException.class);
+            TxDeadlockException deadlockErr = X.cause(e, TxDeadlockException.class);
 
-            if (e != null && !deadlock) {
+            if (e != null && deadlockErr == null) {
                 setRollbackOnly();
 
                 if (commit && commitAfterLock())
@@ -4086,12 +4086,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 throw new GridClosureException(e);
             }
 
-            if (deadlock || !locked) {
+            if (deadlockErr != null || !locked) {
                 setRollbackOnly();
 
                 final GridClosureException ex = new GridClosureException(new IgniteTxTimeoutCheckedException("Failed to " +
                     "acquire lock within provided timeout for transaction [timeout=" + timeout() +
-                    ", tx=" + this + ']', deadlock ? e.getCause() : null));
+                    ", tx=" + this + ']', deadlockErr));
 
                 if (commit && commitAfterLock())
                     return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {

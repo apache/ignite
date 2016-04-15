@@ -666,7 +666,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * Gets futures for given lock ID.
      *
      * @param ver Lock ID.
-     * @return Futureы.
+     * @return Futures.
      */
     @SuppressWarnings({"unchecked"})
     @Nullable public Collection<GridCacheMvccFuture<?>> mvccFutures(GridCacheVersion ver) {

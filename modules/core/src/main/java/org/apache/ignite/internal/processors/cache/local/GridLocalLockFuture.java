@@ -74,10 +74,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     @GridToStringInclude
     private long threadId;
 
-    /** Keys for locking. */
-    @GridToStringExclude
-    private Collection<KeyCacheObject> keys;
-
     /** Keys locked so far. */
     @GridToStringExclude
     private List<GridLocalCacheEntry> entries;
@@ -138,8 +134,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
         futId = IgniteUuid.randomUuid();
-
-        this.keys = keys;
 
         entries = new ArrayList<>(keys.size());
 
@@ -460,7 +454,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
                 for (int i = 0; i < entries.size(); i++) {
                     GridLocalCacheEntry e = entries.get(i);
 
-                    List<GridCacheMvccCandidate> mvcc = e.mvccAllLocs();
+                    List<GridCacheMvccCandidate> mvcc = e.mvccAllLocal();
 
                     if (mvcc == null)
                         continue;
