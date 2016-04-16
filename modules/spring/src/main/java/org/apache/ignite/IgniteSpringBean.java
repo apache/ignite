@@ -106,6 +106,15 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         this.cfg = cfg;
     }
 
+    /**
+     * Gets the spring application context.
+     *
+     * @return ApplicationContext.
+     */
+    public ApplicationContext getApplicationContext() throws BeansException {
+        return appCtx;
+    }
+
     /** {@inheritDoc} */
     @Override public void setApplicationContext(ApplicationContext ctx) throws BeansException {
         appCtx = ctx;
