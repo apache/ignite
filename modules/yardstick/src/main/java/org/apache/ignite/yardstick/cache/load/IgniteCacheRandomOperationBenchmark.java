@@ -44,6 +44,7 @@ import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -61,8 +62,8 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.IgniteBenchmarkUtils;
 import org.apache.ignite.yardstick.cache.load.model.ModelUtil;
-import org.apache.ignite.yardstick.cache.model.Person;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.yardstickframework.BenchmarkConfiguration;
 
 /**
@@ -78,21 +79,6 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     /** Amount partitions. */
     private static final int SCAN_QUERY_PARTITIN_AMOUNT = 10;
 
-    /** Type SQL query. */
-    private static String TYPE_SQL_QUERY = "id<? and salary like ?";
-
-    /** SQL fields query. */
-    private static String FIELD_SQL_QUERY = "select concat(firstName, ' ', lastName), Organization.name, "
-        + "concat(Person.salary, '$') "
-        + "from Person, Organization where "
-        + "Person.orgId = Organization.id and "
-        + "Person.salary > ?";
-
-    /** Type SQL query with join. */
-    private static String JOIN_SQL_QUERY = "from Person, Organization "
-        + "where Person.orgId = Organization.id "
-        + "and lower(Organization.name) = lower(?)";
-
     /** List off all available cache. */
     private List<IgniteCache> availableCaches;
 
@@ -107,6 +93,9 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
     /** Map cache name on value classes. */
     private Map<String, Class[]> valuesCacheClasses;
+
+    /** List of query descriptors by cache names */
+    private Map<String, List<SqlCacheDescriptor>> cacheSqlDescriptors;
 
     /**
      * Replace value entry processor.
@@ -151,6 +140,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         valuesCacheClasses = new HashMap<>();
         replaceEntryProc = new BenchmarkReplaceValueEntryProcessor(null);
         rmvEntryProc = new BenchmarkRemoveEntryProcessor();
+        cacheSqlDescriptors = new HashMap<>();
 
         for (String cacheName : ignite().cacheNames()) {
             IgniteCache<Object, Object> cache = ignite().cache(cacheName);
@@ -188,6 +178,9 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                             else
                                 throw new IgniteException("Class is unknown for the load test. Make sure you " +
                                     "specified its full name [clsName=" + queryEntity.getKeyType() + ']');
+
+                            cofigureCacheSqlDescriptor(cacheName, queryEntity, valCls);
+
                         }
                     }
                 }
@@ -224,6 +217,9 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 keysCacheClasses.put(cacheName, keys.toArray(new Class[] {}));
                 valuesCacheClasses.put(cacheName, values.toArray(new Class[] {}));
             }
+            else
+                keysCacheClasses.put(cacheName,
+                    new Class[] {randomKeyClass(cacheName)});
 
             if (configuration.getCacheMode() != CacheMode.LOCAL)
                 affCaches.add(cache);
@@ -233,6 +229,30 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
             availableCaches.add(cache);
         }
+    }
+
+    /**
+     * @param cacheName Ignite cache name.
+     * @param queryEntity Query entry.
+     * @param valCls Class of value.
+     * @throws ClassNotFoundException
+     */
+    private void cofigureCacheSqlDescriptor(String cacheName, QueryEntity queryEntity,
+        Class valCls) throws ClassNotFoundException {
+        List<SqlCacheDescriptor> descs = cacheSqlDescriptors.get(cacheName);
+        if (descs == null) {
+            descs = new ArrayList<>();
+            cacheSqlDescriptors.put(cacheName, descs);
+        }
+        Map<String, Class> indexedFields = new HashMap<>();
+        for (QueryIndex index: queryEntity.getIndexes()) {
+            for (String iField: index.getFieldNames()) {
+                indexedFields.put(iField,
+                    getClass().forName(queryEntity.getFields().get(iField)));
+            }
+        }
+        descs.add(new SqlCacheDescriptor(valCls, queryEntity.getFields().keySet(),
+            indexedFields));
     }
 
     /**
@@ -672,19 +692,14 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @throws Exception If failed.
      */
     private void doSqlQuery(IgniteCache cache) throws Exception {
-        if ("query".equals(cache.getName())) {
+        List<SqlCacheDescriptor> descriptors = cacheSqlDescriptors.get(cache.getName());
+        if (descriptors != null && !descriptors.isEmpty()) {
+            SqlCacheDescriptor randomDescriptor = descriptors.get(nextRandom(descriptors.size()));
+
             int id = nextRandom(args.range());
-            Query sq = null;
-            switch (id % 3) {
-                case 0:
-                    sq = new SqlQuery(Person.class, TYPE_SQL_QUERY).setArgs(id, "%" + id % 10 + "%");
-                    break;
-                case 1:
-                    sq = new SqlFieldsQuery(FIELD_SQL_QUERY).setArgs(id / 2.123 * 100);
-                    break;
-                case 2:
-                    sq = new SqlQuery(Person.class, JOIN_SQL_QUERY).setArgs("ORGANIZATION " + id);
-            }
+            Query sq = nextBoolean() ? randomDescriptor.getSqlQuery(id)
+                : randomDescriptor.getSqlFieldsQuery(id);
+
 
             try (QueryCursor cursor = cache.query(sq)) {
                 for (Object obj : cursor)
@@ -760,6 +775,105 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         @Override public boolean apply(Object key, Object val) {
             return val.hashCode() % 45 == 0;
         }
+    }
+
+    /**
+     * Query descriptor.
+     */
+    private static class SqlCacheDescriptor {
+
+        /**
+         * Class of value.
+         */
+        private Class valueClass;
+
+        /**
+         * Select fields.
+         */
+        private Set<String> fields;
+
+        /**
+         * Indexed fields.
+         */
+        private Map<String, Class> indexedFieldsByCls;
+
+        /**
+         * @param valueClass Class of value.
+         * @param fields All select fields.
+         * @param indexedFieldsByClass Indexed fields.
+         */
+        public SqlCacheDescriptor(Class valueClass, Set<String> fields,
+            Map<String, Class> indexedFieldsByClass) {
+            this.valueClass = valueClass;
+            this.fields = fields;
+            this.indexedFieldsByCls = indexedFieldsByClass;
+        }
+
+        /**
+         * @param id Query id.
+         * @return Condition string.
+         */
+        private String makeQuerySelect(int id) {
+            return StringUtils.collectionToDelimitedString(fields, ", ");
+        }
+
+        /**
+         * @param id Query id.
+         * @return Condition string.
+         */
+        private String makeQueryCondition(int id) {
+            StringBuffer sb = new StringBuffer();
+
+            for (String iField : indexedFieldsByCls.keySet()) {
+                Class cl = indexedFieldsByCls.get(iField);
+                if (!Number.class.isAssignableFrom(cl) && !String.class.equals(cl))
+                    continue;
+                if (sb.length() != 0) {
+                    switch (id % 3 % 2) {
+                        case 0:
+                            sb.append(" OR ");
+                            break;
+                        case 1:
+                            sb.append(" AND ");
+                            break;
+                    }
+                }
+                if (Number.class.isAssignableFrom(cl)) {
+                    sb.append(iField);
+                    switch (id % 2) {
+                        case 0:
+                            sb.append(" > ");
+                            break;
+                        case 1:
+                            sb.append(" < ");
+                            break;
+                    }
+                    sb.append(id);
+                }
+                else if (String.class.equals(cl))
+                    sb.append("lower(").append(iField).append(") LIKE lower('%").append(id).append("%')");
+
+            }
+            return sb.toString();
+        }
+
+        /**
+         * @param id Query id.
+         * @return
+         */
+        public SqlQuery getSqlQuery(int id) {
+            return new SqlQuery(valueClass, makeQueryCondition(id));
+        }
+
+        /**
+         * @param id Query id.
+         * @return
+         */
+        public SqlFieldsQuery getSqlFieldsQuery(int id) {
+            return new SqlFieldsQuery(String.format("SELECT %s FROM %s WHERE %s",
+                makeQuerySelect(id), valueClass.getSimpleName(), makeQueryCondition(id)));
+        }
+
     }
 
     /**
