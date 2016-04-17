@@ -85,7 +85,7 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
     /**
      * @throws Exception If failed.
      */
-    public void testScanPartirionQuery() throws Exception {
+    public void _testScanPartirionQuery() throws Exception {
         IgniteCache<Object, Object> cache = jcache();
 
         GridCacheContext cctx = ((IgniteCacheProxy)cache).context();

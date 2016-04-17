@@ -58,6 +58,7 @@ public class ScanQueryStuff2 {
     /** */
     private static final int MAX_COUNT = 6_000_000;
 
+    // DO NOT CHANGE IT!
     private static CacheMemoryMode memMode = CacheMemoryMode.ONHEAP_TIERED;
 
     public static void main(String[] args) {

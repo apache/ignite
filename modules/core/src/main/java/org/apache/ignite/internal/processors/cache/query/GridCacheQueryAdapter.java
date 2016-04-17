@@ -504,9 +504,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         taskHash = cctx.kernalContext().job().currentTaskNameHash();
 
-        // TODO delete bean?
-        final GridCacheQueryBean bean = new GridCacheQueryBean(this, null, null, null);
-
         final GridCacheQueryManager qryMgr = cctx.queries();
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
@@ -514,9 +511,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         GridCloseableIterator iter0;
 
         if (part != null && !cctx.isLocal())
-            iter0 = new ScanQueryFallbackClosableIterator(part, bean, qryMgr, cctx);
+            iter0 = new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
         else
-            iter0 = loc ? qryMgr.scanQueryLocal(bean) : qryMgr.scanQueryDistributed(bean, nodes);
+            iter0 = loc ? qryMgr.scanQueryLocal(this) : qryMgr.scanQueryDistributed(this, nodes);
 
         return iter0;
     }
@@ -610,7 +607,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private volatile int unreservedNodesRetryCnt = 5;
 
         /** Bean. */
-        private final GridCacheQueryBean bean;
+        private final GridCacheQueryAdapter qry;
 
         /** Query manager. */
         private final GridCacheQueryManager qryMgr;
@@ -629,13 +626,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         /**
          * @param part Partition.
-         * @param bean Bean.
+         * @param qry Query.
          * @param qryMgr Query manager.
          * @param cctx Cache context.
          */
-        private ScanQueryFallbackClosableIterator(int part, GridCacheQueryBean bean,
+        private ScanQueryFallbackClosableIterator(int part, GridCacheQueryAdapter qry,
             GridCacheQueryManager qryMgr, GridCacheContext cctx) throws IgniteCheckedException {
-            this.bean = bean;
+            this.qry = qry;
             this.qryMgr = qryMgr;
             this.cctx = cctx;
             this.part = part;
@@ -680,9 +677,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             T2<GridCloseableIterator<Map.Entry>, CacheQueryFuture<Map.Entry>> t0 = new T2<>();
 
             if (node.isLocal())
-                t0.set1(qryMgr.scanQueryLocal(bean));
-            else
+                t0.set1(qryMgr.scanQueryLocal(qry));
+            else {
+                final GridCacheQueryBean bean = new GridCacheQueryBean(this.qry, null, null, null);
+
                 t0.set2(qryMgr.queryDistributed(bean, Collections.singleton(node)));
+            }
 
             tuple = t0;
         }

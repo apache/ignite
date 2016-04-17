@@ -41,14 +41,29 @@ import static org.apache.ignite.cache.CachePeekMode.SWAP;
 /**
  *
  */
+// 100k * 60 times
+//
+// OFFHEAP_TIERED
+// Check1: ~3450-3480 ms
+// Check2: ~3450-3480 ms
+//
+// ONHEAP_TIERED
+// Check1: ~2300-2330 ms
+// Check2: ~4800 ms
+
 @SuppressWarnings({"CommentAbsent", "unchecked"})
 public class ScanQueryStuff {
 //    private static final boolean CHECK1 = true;
     private static final boolean CHECK1 = false;
+
     private static final boolean once = false;
-    private static final int CNT = 100_000;
+//    private static final boolean once = true;
+
+    private static final int CNT ;
 
     static {
+        CNT = once ? 1 : 100_000;
+
         U.debugEnabled = once && CNT < 5;
     }
 

@@ -492,6 +492,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                             @Override protected boolean onHasNext() throws IgniteCheckedException {
                                 return iter0.hasNext();
                             }
+
+                            @Override protected void onClose() throws IgniteCheckedException {
+                                iter0.close();
+                            }
                         };
                     }
                 }, false);
