@@ -841,8 +841,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         throws IgniteCheckedException {
         IgniteInternalCache<K, V> prj0 = cctx.cache();
 
-//        if (!locNode)
-            prj0 = prj0.keepBinary();
+        prj0 = prj0.keepBinary();
 
         final IgniteInternalCache prj = prj0;
 
@@ -1657,7 +1656,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * Process local scan query.
-     *  
+     *
      * @param qry Query.
      */
     @SuppressWarnings("unchecked")
@@ -3194,7 +3193,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** */
         private boolean locNode;
-        
+
         /** Heap only flag. */
         private boolean heapOnly;
 
