@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -79,5 +80,47 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
                 assertEquals(map.size(), cnt);
 //            }
 //        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testScanPartirionQuery() throws Exception {
+        IgniteCache<Object, Object> cache = jcache();
+
+        GridCacheContext cctx = ((IgniteCacheProxy)cache).context();
+
+        Map<Integer, Map<Object, Object>> entries = new HashMap<>();
+
+        for (int i = 0; i < CNT; i++) {
+            Object key = key(i);
+            Object val = value(i);
+
+            cache.put(key, val);
+
+            int part = cctx.affinity().partition(key);
+
+            Map<Object, Object> partEntries = entries.get(part);
+
+            if (partEntries == null)
+                entries.put(part, partEntries = new HashMap<>());
+
+            partEntries.put(key, val);
+        }
+
+        for (int i = 0; i < cctx.affinity().partitions(); i++) {
+            ScanQuery<Object, Object> scan = new ScanQuery<>(i);
+
+            Collection<Cache.Entry<Object, Object>> actual = cache.query(scan).getAll();
+
+            Map<Object, Object> exp = entries.get(i);
+
+            assertEquals("Failed for partition: " + i, exp == null ? 0 : exp.size(), actual.size());
+
+            if (exp != null) {
+                for (Cache.Entry<Object, Object> entry : actual)
+                    assertTrue(entry.getValue().equals(exp.get(entry.getKey())));
+            }
+        }
     }
 }
