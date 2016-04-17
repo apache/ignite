@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import javax.cache.Cache;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.Query;
@@ -296,5 +296,5 @@ public interface CacheQuery<T> {
     /**
      * @return Scan query iterator.
      */
-    public <K, V> GridCloseableIterator<Cache.Entry<K, V>> executeScanQuery() throws IgniteCheckedException;
+    public <R extends Map.Entry> GridCloseableIterator<R> executeScanQuery() throws IgniteCheckedException;
 }

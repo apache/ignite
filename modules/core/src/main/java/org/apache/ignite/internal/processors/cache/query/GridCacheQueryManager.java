@@ -1644,15 +1644,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     @SuppressWarnings("unchecked")
     protected GridCloseableIterator<IgniteBiTuple<K, V>> scanQueryLocal(GridCacheQueryBean qryBean) throws IgniteCheckedException {
-        // TODO
-        if (!enterBusy()) {
-            // TODO
-//            if (cctx.localNodeId().equals(qryInfo.senderId()))
-//                throw new IllegalStateException("Failed to process query request (grid is stopping).");
-
-//            return ; // Ignore remote requests when when node is stopping.
-            throw new IllegalStateException();
-        }
+        if (!enterBusy())
+            throw new IllegalStateException("Failed to process query request (grid is stopping).");
 
         try {
             final GridCacheQueryAdapter<?> qry = qryBean.query();
@@ -1678,12 +1671,23 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     qry.scanFilter(),
                     null,
                     null,
-                    // TODO check
-                    qry.subjectId() /*subjId*/,
+                    qry.subjectId(),
                     taskName));
             }
 
-            return scanIterator(qry);
+            final GridCloseableIterator<IgniteBiTuple<K, V>> iter = scanIterator(qry);
+
+            final boolean keepBinary = cctx.keepBinary();
+
+            return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
+                @Override protected IgniteBiTuple<K, V> onNext() throws IgniteCheckedException {
+                    return (IgniteBiTuple<K, V>)cctx.unwrapBinaryIfNeeded(iter.next(), keepBinary, false);
+                }
+
+                @Override protected boolean onHasNext() throws IgniteCheckedException {
+                    return iter.hasNext(); 
+                }
+            };
         }
         finally {
             leaveBusy();

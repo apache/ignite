@@ -480,7 +480,19 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             final GridCloseableIterator<Entry<K,V>> iter = ctx.kernalContext().query().executeQuery(ctx,
                 new IgniteOutClosureX<GridCloseableIterator<Entry<K,V>>>() {
                     @Override public GridCloseableIterator<Entry<K,V>> applyx() throws IgniteCheckedException {
-                        return qry.executeScanQuery();
+                        final GridCloseableIterator<Map.Entry> iter0 = qry.executeScanQuery();
+
+                        return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
+                            @Override protected Cache.Entry<K, V> onNext() throws IgniteCheckedException {
+                                Map.Entry<K, V> next = iter0.next();
+
+                                return new CacheEntryImpl<>(next.getKey(), next.getValue());
+                            }
+
+                            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                                return iter0.hasNext();
+                            }
+                        };
                     }
                 }, false);
 

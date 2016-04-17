@@ -630,9 +630,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             @Override protected void onClose() throws IgniteCheckedException {
                 super.onClose();
 
-                locIter.close();
+                if (locIter != null)
+                    locIter.close();
 
-                fut.cancel();
+                if (fut != null)
+                    fut.cancel();
             }
         };
     }

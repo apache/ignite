@@ -79,11 +79,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -295,16 +295,12 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
 
-                try {
-                    CacheQueryFuture<Map.Entry<BinaryMetadataKey, BinaryMetadata>> fut = qry.execute();
+                try (GridCloseableIterator<Map.Entry<BinaryMetadataKey, BinaryMetadata>> entries = qry.executeScanQuery()) {
+                    for (Map.Entry<BinaryMetadataKey, BinaryMetadata> e : entries) {
+                        assert e.getKey() != null : e;
+                        assert e.getValue() != null : e;
 
-                    Map.Entry<BinaryMetadataKey, BinaryMetadata> next;
-
-                    while ((next = fut.next()) != null) {
-                        assert next.getKey() != null : next;
-                        assert next.getValue() != null : next;
-
-                        addClientCacheMetaData(next.getKey(), next.getValue());
+                        addClientCacheMetaData(e.getKey(), e.getValue());
                     }
                 }
                 catch (IgniteCheckedException e) {
