@@ -65,9 +65,9 @@ public class H2RowStore {
     /** */
     private final PageHandler<GridH2Row> writeRow = new PageHandler<GridH2Row>() {
         @Override public int run(Page page, ByteBuffer buf, GridH2Row row, int ignore) throws IgniteCheckedException {
-            DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
+            int entrySize = DataPageIO.getEntrySize(coctx, row.key, row.val);
 
-            int entrySize = DataPageIO.entrySize(coctx, row.key, row.val);
+            DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
             int idx = io.addRow(coctx, buf, row.key, row.val, row.ver, entrySize);
 
@@ -78,6 +78,19 @@ public class H2RowStore {
             }
 
             return idx;
+        }
+    };
+
+    /** */
+    private final PageHandler<Void> removeRow = new PageHandler<Void>() {
+        @Override public int run(Page page, ByteBuffer buf, Void ignore, int itemId) throws IgniteCheckedException {
+            DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
+
+            assert DataPageIO.check(itemId): itemId;
+
+            io.removeRow(buf, (byte)itemId);
+
+            return 0;
         }
     };
 
@@ -118,12 +131,25 @@ public class H2RowStore {
     }
 
     /**
+     * @param link Row link.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void removeRow(long link) throws IgniteCheckedException {
+        assert link != 0;
+
+        try (Page page = page(pageId(link))) {
+            writePage(page, removeRow, null, dwordsOffset(link), 0);
+        }
+    }
+
+    /**
      * !!! This method must be invoked in read or write lock of referring index page. It is needed to
      * !!! make sure that row at this link will be invisible, when the link will be removed from
      * !!! from all the index pages, so that row can be safely erased from the data page.
      *
      * @param link Link.
      * @return Row.
+     * @throws IgniteCheckedException If failed.
      */
     public GridH2Row getRow(long link) throws IgniteCheckedException {
         try (Page page = page(pageId(link))) {
@@ -154,22 +180,22 @@ public class H2RowStore {
 
                 GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
 
-                GridH2Row res;
+                GridH2Row row;
 
                 try {
-                    res = rowDesc.createRow(key, PageIdUtils.partId(link), val, ver, 0);
+                    row = rowDesc.createRow(key, PageIdUtils.partId(link), val, ver, 0);
 
-                    res.link = link;
+                    row.link = link;
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
                 }
 
-                assert res.ver != null;
+                assert row.ver != null;
 
-                rowDesc.cache(res);
+                rowDesc.cache(row);
 
-                return res;
+                return row;
             }
             finally {
                 page.releaseRead();

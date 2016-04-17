@@ -34,19 +34,25 @@ public class DataPageIO extends PageIO {
     );
 
     /** */
-    private static final int OCCUPIED_SIZE_OFF = COMMON_HEADER_END;
+    private static final int FREE_SPACE_OFF = COMMON_HEADER_END;
 
     /** */
-    private static final int ALL_CNT_OFF = OCCUPIED_SIZE_OFF + 2;
+    private static final int DIRECT_CNT_OFF = FREE_SPACE_OFF + 2;
 
     /** */
-    private static final int LIVE_CNT_OFF = ALL_CNT_OFF + 2;
+    private static final int INDIRECT_CNT_OFF = DIRECT_CNT_OFF + 1;
 
     /** */
-    private static final int ITEMS_OFF = LIVE_CNT_OFF + 2;
+    private static final int ITEMS_OFF = INDIRECT_CNT_OFF + 1;
 
     /** */
     private static final int ITEM_SIZE = 2;
+
+    /** */
+    private static final int KV_LEN_SIZE = 2; // TODO entry will span multiple pages??
+
+    /** */
+    private static final int VER_SIZE = 24;
 
     /**
      * @param ver Page format version.
@@ -59,50 +65,31 @@ public class DataPageIO extends PageIO {
     @Override public void initNewPage(ByteBuffer buf, long pageId) {
         super.initNewPage(buf, pageId);
 
-        setAllCount(buf, 0);
-        setLiveCount(buf, 0);
-        setOccupiedSize(buf, 0);
+        setEmptyPage(buf);
     }
 
-    public int getOccupiedSize(ByteBuffer buf) {
-        return buf.getShort(OCCUPIED_SIZE_OFF) & 0xFFFF;
+    /**
+     * @param buf Buffer.
+     */
+    private void setEmptyPage(ByteBuffer buf) {
+        setDirectCount(buf, 0);
+        setIndirectCount(buf, 0);
+        setFreeSpace(buf, buf.capacity() - ITEMS_OFF);
     }
 
-    public void setOccupiedSize(ByteBuffer buf, int size) {
-        buf.putShort(OCCUPIED_SIZE_OFF, (short)size);
+    /**
+     * @param coctx Cache object context.
+     * @param key Key.
+     * @param val Value.
+     * @return Entry size on page.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static int getEntrySize(CacheObjectContext coctx, CacheObject key, CacheObject val)
+        throws IgniteCheckedException {
+        int keyLen = key.valueBytesLength(coctx);
+        int valLen = val.valueBytesLength(coctx);
 
-        assert getOccupiedSize(buf) == size;
-    }
-
-    public int getAllCount(ByteBuffer buf) {
-        return buf.getShort(ALL_CNT_OFF) & 0xFFFF;
-    }
-
-    public void setAllCount(ByteBuffer buf, int cnt) {
-        buf.putShort(ALL_CNT_OFF, (short)cnt);
-
-        assert cnt == getAllCount(buf);
-    }
-
-    public int getLiveCount(ByteBuffer buf) {
-        return buf.getShort(LIVE_CNT_OFF) & 0xFFFF;
-    }
-
-    public void setLiveCount(ByteBuffer buf, int cnt) {
-        buf.putShort(LIVE_CNT_OFF, (short)cnt);
-
-        assert cnt == getLiveCount(buf);
-    }
-
-    public boolean canAddEntry(ByteBuffer buf, int entrySize) {
-        int free = buf.capacity() - ITEMS_OFF - getOccupiedSize(buf);
-
-        if (free < entrySize)
-            return false;
-
-        free -= (getAllCount(buf) - getLiveCount(buf)) * ITEM_SIZE;
-
-        return free >= entrySize;
+        return getEntrySize(keyLen, valLen);
     }
 
     /**
@@ -110,112 +97,373 @@ public class DataPageIO extends PageIO {
      * @param valSize Value size.
      * @return Entry size including item.
      */
-    private static int entrySize(int keySize, int valSize) {
-        return ITEM_SIZE + 2/*key+val len*/ + keySize + valSize + 24/*ver*/;
+    private static int getEntrySize(int keySize, int valSize) {
+        return ITEM_SIZE + KV_LEN_SIZE + keySize + valSize + VER_SIZE;
+    }
+
+
+    private static int getEntrySize(ByteBuffer buf, int dataOff) {
+        return 0;
     }
 
     /**
-     * @param idx Index of item.
-     * @return Offset in bytes.
+     * @param buf Buffer.
+     * @param freeSpace Free space.
      */
-    private static int offset(int idx) {
+    private void setFreeSpace(ByteBuffer buf, int freeSpace) {
+        assert freeSpace >= 0 && freeSpace <= Short.MAX_VALUE;
+
+        buf.putShort(FREE_SPACE_OFF, (short)freeSpace);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @return Free space.
+     */
+    public int getFreeSpace(ByteBuffer buf) {
+        return buf.getShort(FREE_SPACE_OFF);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param cnt Direct count.
+     */
+    private void setDirectCount(ByteBuffer buf, int cnt) {
+        assert check(cnt): cnt;
+
+        buf.put(DIRECT_CNT_OFF, (byte)cnt);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @return Direct count.
+     */
+    private int getDirectCount(ByteBuffer buf) {
+        return buf.get(DIRECT_CNT_OFF) & 0xFF;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param cnt Indirect count.
+     */
+    private void setIndirectCount(ByteBuffer buf, int cnt) {
+        assert check(cnt): cnt;
+
+        buf.put(INDIRECT_CNT_OFF, (byte)cnt);
+    }
+
+    /**
+     * @param idx Index.
+     * @return {@code true} If the index is valid.
+     */
+    public static boolean check(int idx) {
+        return idx >= 0 && idx < 256;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @return Indirect count.
+     */
+    private int getIndirectCount(ByteBuffer buf) {
+        return buf.get(INDIRECT_CNT_OFF) & 0xFF;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param itemId Fixed item ID (the index used for referencing an entry from the outside).
+     * @param directCnt Direct items count.
+     * @param indirectCnt Indirect items count.
+     * @return Found index of indirect item.
+     */
+    private static int findIndirectItemIndex(ByteBuffer buf, int itemId, int directCnt, int indirectCnt) {
+        int low = directCnt;
+        int high = directCnt + indirectCnt - 1;
+
+        while (low <= high) {
+            int mid = (low + high) >>> 1;
+
+            int cmp = Integer.compare(itemId(getItem(buf, mid)), itemId);
+
+            if (cmp < 0)
+                low = mid + 1;
+            else if (cmp > 0)
+                high = mid - 1;
+            else
+                return mid; // found
+        }
+
+        throw new IllegalStateException("Item not found: " + itemId);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param itemId Fixed item ID (the index used for referencing an entry from the outside).
+     * @return Data entry offset in bytes.
+     */
+    public int getDataOffset(ByteBuffer buf, int itemId) {
+        assert check(itemId): itemId;
+
+        int directCnt = getDirectCount(buf);
+
+        assert directCnt > 0: directCnt;
+
+        if (itemId >= directCnt) { // Need to do indirect lookup.
+            int indirectCnt = getIndirectCount(buf);
+
+            assert indirectCnt > 0: indirectCnt; // Must have indirect items here.
+
+            int indirectItemIdx = findIndirectItemIndex(buf, itemId, directCnt, indirectCnt);
+
+            assert indirectItemIdx >= directCnt && indirectItemIdx < directCnt + indirectCnt: indirectCnt;
+
+            itemId = directItemIndex(getItem(buf, indirectItemIdx));
+        }
+
+        assert itemId >= 0 && itemId < directCnt: itemId; // Direct item must be here.
+
+        return toOffset(getItem(buf, itemId));
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param idx Item index.
+     * @return Item.
+     */
+    private static short getItem(ByteBuffer buf, int idx) {
+        return buf.getShort(itemOffset(idx));
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param idx Item index.
+     * @param item Item.
+     */
+    private static void setItem(ByteBuffer buf, int idx, short item) {
+        buf.putShort(itemOffset(idx), item);
+    }
+
+    /**
+     * @param idx Index of the item.
+     * @return Offset in buffer.
+     */
+    private static int itemOffset(int idx) {
+        assert check(idx): idx;
+
         return ITEMS_OFF + idx * ITEM_SIZE;
     }
 
     /**
-     * @param buf Buffer.
-     * @param idx Index of item.
-     * @return Data offset in bytes.
+     * @param directItem Direct item.
+     * @return Offset of an entry payload inside of the page.
      */
-    public int getDataOffset(ByteBuffer buf, int idx) {
-        return buf.getShort(offset(idx)) & 0xFFFF;
+    private static int toOffset(short directItem) {
+        return directItem & 0xFFFF;
     }
 
     /**
-     * @param buf Buffer.
-     * @param idx Index of item.
-     * @param dataOff Data offset in bytes.
+     * @param indirectItem Indirect item.
+     * @return Index of corresponding direct item.
      */
-    private void setDataOffset(ByteBuffer buf, int idx, int dataOff) {
-        buf.putShort(offset(idx), (short)dataOff);
-
-        assert dataOff == getDataOffset(buf, idx);
+    private static int directItemIndex(short indirectItem) {
+        return indirectItem & 0xFF;
     }
 
     /**
-     * Make a window for data entry.
+     * @param indirectItem Indirect item.
+     * @return Fixed item ID (the index used for referencing an entry from the outside).
+     */
+    private static int itemId(short indirectItem) {
+        return indirectItem >>> 8;
+    }
+
+    /**
+     * @param itemId Fixed item ID (the index used for referencing an entry from the outside).
+     * @param directItemIdx Index of corresponding direct item.
+     * @return Indirect item.
+     */
+    private static short indirectItem(int itemId, int directItemIdx) {
+        assert check(itemId): itemId;
+        assert check(directItemIdx): directItemIdx;
+
+        return (short)((itemId << 8) | directItemIdx);
+    }
+
+    /**
+     * Move the last direct item to the free slot and reference it with indirect item on the same place.
      *
      * @param buf Buffer.
-     * @param idx Index of the new item.
-     * @param allCnt All count.
-     * @param entrySize Entry size.
-     * @return Data offset for the new entry.
+     * @param itemId Free slot.
+     * @param directCnt Direct items count.
      */
-    public int makeWindow(ByteBuffer buf, int idx, int allCnt, int entrySize) {
-        if (idx == allCnt) { // Adding to the end of items.
-            int off = offset(idx);
-            int lastDataOff = allCnt == 0 ? buf.capacity() : getDataOffset(buf, allCnt - 1);
+    private static void moveLastItem(ByteBuffer buf, int itemId, int directCnt) {
+        int lastItemId = directCnt - 1;
 
-            if (lastDataOff - off < entrySize) // TODO try to defragment
-                return -1;
+        setItem(buf, itemId, getItem(buf, lastItemId));
+        setItem(buf, lastItemId, indirectItem(lastItemId, itemId));
+    }
 
-            return lastDataOff - entrySize + ITEM_SIZE;
+    /**
+     * If we've moved the last item second time (it was already referenced by a indirect item),
+     * we need to fix the existing indirect item and the last one must be overwritten.
+     *
+     * @param buf Buffer.
+     * @param directCnt Direct items count.
+     * @param indirectCnt Indirect items count.
+     * @return {@code true} If it was indirect item and it was fixed.
+     */
+    private static boolean fixIndirectItem(ByteBuffer buf, int directCnt, int indirectCnt) {
+        short item = getItem(buf, directCnt - 1); // Now it is a first indirect item after move.
+
+        int itemId = itemId(item);
+
+        if (itemId == directCnt - 1)
+            return false; // It was a direct item initially, nothing to fix.
+
+        // Find initial indirect item for moved last direct item.
+        int indirectItemIdx = findIndirectItemIndex(buf, itemId, directCnt, indirectCnt);
+
+        // Now it points to a new place.
+        setItem(buf, indirectItemIdx, item);
+
+        return true;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param itemId Fixed item ID (the index used for referencing an entry from the outside).
+     */
+    public void removeRow(ByteBuffer buf, int itemId) {
+        assert check(itemId) : itemId;
+
+        int directCnt = getDirectCount(buf);
+        int indirectCnt = getIndirectCount(buf);
+
+        assert directCnt > 0 : directCnt; // Direct count always represents overall number of live items.
+
+        // Remove the last item on the page.
+        if (directCnt == 1) {
+            assert (indirectCnt == 0 && itemId == 0) ||
+                (indirectCnt == 1 && itemId == itemId(getItem(buf, 1))) : itemId;
+
+            setEmptyPage(buf);
+
+            return; // TODO May be have a separate list of free pages?
+        }
+
+        if (itemId < directCnt)
+            removeDirectItem(buf, itemId, directCnt, indirectCnt);
+        else
+            removeIndirectItem(buf, itemId, directCnt, indirectCnt);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param itemId Item ID.
+     * @param directCnt Direct items count.
+     * @param indirectCnt Indirect items count.
+     */
+    private void removeDirectItem(ByteBuffer buf, int itemId, int directCnt, int indirectCnt) {
+        if (itemId + 1 == directCnt) {
+            // It is the last direct item.
+            setDirectCount(buf, directCnt - 1);
+
+            if (indirectCnt > 0)
+                moveItems(buf, directCnt, indirectCnt, -1);
         }
         else {
-            //TODO defragment page with respect to idx and entrySize (if idx is not last, the window must be not first)
-            throw new UnsupportedOperationException();
+            // Remove from the middle of direct items.
+            moveLastItem(buf, itemId, directCnt);
+
+            setDirectCount(buf, directCnt - 1);
+            setIndirectCount(buf, indirectCnt + 1);
         }
     }
 
-    public int addRow(
+    /**
+     * @param buf Buffer.
+     * @param itemId Item ID.
+     * @param directCnt Direct items count.
+     * @param indirectCnt Indirect items count.
+     */
+    private void removeIndirectItem(ByteBuffer buf, int itemId, int directCnt, int indirectCnt) {
+        // Need to remove indirect item.
+        assert indirectCnt > 0: indirectCnt; // Must have indirect items here.
+
+        // Need to found indirect and direct indexes for the given item ID.
+        int indirectItemIdx = findIndirectItemIndex(buf, itemId, directCnt, indirectCnt);
+
+        int allItemsCnt = directCnt + indirectCnt;
+
+        assert indirectItemIdx >= directCnt && indirectItemIdx < allItemsCnt: indirectCnt;
+
+        itemId = directItemIndex(getItem(buf, indirectItemIdx));
+
+        assert itemId < directCnt: itemId; // Direct item index.
+
+        boolean indirectFixed = true; // By default is true because for the last item it represents the same invariant.
+
+        if (itemId + 1 != directCnt) { // Additional handling for a middle item.
+            moveLastItem(buf, itemId, directCnt);
+
+            indirectFixed = fixIndirectItem(buf, directCnt, indirectCnt);
+        }
+
+        // Move everything before indirect item 1 step back.
+        // If the last item was a direct, then we have to keep it because it became indirect.
+        if (indirectFixed)
+            moveItems(buf, directCnt, indirectItemIdx - directCnt, -1);
+
+        // Move everything after the found indirect index 2 step back (or 1 in case when the last was a direct item).
+        moveItems(buf, indirectItemIdx + 1, allItemsCnt - indirectItemIdx - 1, indirectFixed ? -2 : -1);
+
+        if (indirectFixed) // Otherwise we've added one and removed one indirect item.
+            setIndirectCount(buf, indirectCnt - 1);
+
+        // We always remove one direct item here.
+        setDirectCount(buf, directCnt - 1);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param idx Index.
+     * @param cnt Count.
+     * @param step Step.
+     */
+    private static void moveItems(ByteBuffer buf, int idx, int cnt, int step) {
+        assert cnt >= 0: cnt;
+
+        if (cnt == 0)
+            return;
+
+        int off = itemOffset(idx);
+
+        // TODO
+    }
+
+    /**
+     * @param coctx Cache object context.
+     * @param buf Buffer.
+     * @param key Key.
+     * @param val Value.
+     * @param ver Version.
+     * @param entrySize Entry size as returned by {@link #getEntrySize(int, int)}.
+     * @return Item ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    public byte addRow(
         CacheObjectContext coctx,
         ByteBuffer buf,
         CacheObject key,
         CacheObject val,
-        GridCacheVersion ver) throws IgniteCheckedException
-    {
-        int keyLen = key.valueBytesLength(coctx);
-        int valLen = val.valueBytesLength(coctx);
-        int entrySize = entrySize(keyLen, valLen);
-
+        GridCacheVersion ver,
+        int entrySize
+    ) throws IgniteCheckedException {
         if (entrySize >= buf.capacity() - ITEMS_OFF)
-            throw new IgniteException("Too big entry: " + keyLen + " " + valLen);
+            throw new IgniteException("Too big entry: " + key + " " + val);
 
-        if (!canAddEntry(buf, entrySize))
-            return -1;
 
-        int liveCnt = getLiveCount(buf);
-        int allCnt = getAllCount(buf);
-        int idx = 0;
 
-        if (allCnt == liveCnt)
-            idx = allCnt; // Allocate new idx at allCnt if all are alive.
-        else {
-            // Lookup for a free parking lot.
-            while (idx < allCnt) {
-                if (getDataOffset(buf, idx) == 0)
-                    break;
-
-                idx++;
-            }
-        }
-
-        int dataOff = makeWindow(buf, idx, allCnt, entrySize);
-
-        if (dataOff == -1)
-            return -1;
-
-        // Write data.
-        writeRowDataInPlace(coctx, buf, dataOff, keyLen + valLen, key, val, ver);
-        // Write item.
-        setDataOffset(buf, idx, dataOff);
-
-        // Update header.
-        setOccupiedSize(buf, getOccupiedSize(buf) + entrySize);
-        setAllCount(buf, allCnt + 1);
-        setLiveCount(buf, liveCnt + 1);
-
-        return idx;
+        return 0;// TODO
     }
 
     /**
@@ -257,7 +505,12 @@ public class DataPageIO extends PageIO {
         }
     }
 
-    public int getKeyValueSize(ByteBuffer buf, int idx) {
-        return buf.getShort(getDataOffset(buf, idx)) & 0xFFFF;
+    /**
+     * @param buf Buffer.
+     * @param dataOff Data offset.
+     * @return Key and value size.
+     */
+    private static int getKeyValueSize(ByteBuffer buf, int dataOff) {
+        return buf.getShort(dataOff) & 0xFFFF;
     }
 }

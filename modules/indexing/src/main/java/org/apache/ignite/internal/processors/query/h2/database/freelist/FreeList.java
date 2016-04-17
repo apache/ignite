@@ -133,7 +133,7 @@ public class FreeList {
     public void writeRowData(GridH2Row row) throws IgniteCheckedException {
         assert row.link == 0;
 
-        int entrySize = DataPageIO.entrySize(cctx.cacheObjectContext(), row.key, row.val);
+        int entrySize = DataPageIO.getEntrySize(cctx.cacheObjectContext(), row.key, row.val);
 
         assert entrySize > 0 && entrySize < Short.MAX_VALUE: entrySize;
 
