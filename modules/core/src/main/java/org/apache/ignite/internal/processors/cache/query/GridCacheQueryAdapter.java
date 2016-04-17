@@ -612,6 +612,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * Wrapper for queries with fallback.
      */
     private static class ScanQueryFallbackClosableIterator<K, V> extends GridCloseableIteratorAdapter<Map.Entry<K, V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Query future. */
         private volatile T2<GridCloseableIterator<Map.Entry<K, V>>, CacheQueryFuture<Map.Entry<K, V>>> tuple;
 
