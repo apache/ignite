@@ -481,9 +481,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
     }
 
-    /**
-     * @return Iterator.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "unchecked"})
     @Override public <R extends Map.Entry> GridCloseableIterator<R> executeScanQuery() throws IgniteCheckedException {
         assert type == SCAN: "Wrong processing of qyery: " + type;

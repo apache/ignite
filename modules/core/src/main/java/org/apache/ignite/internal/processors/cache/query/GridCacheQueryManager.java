@@ -498,7 +498,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     public abstract CacheQueryFuture<?> queryDistributed(GridCacheQueryBean qry, Collection<ClusterNode> nodes);
 
-    @SuppressWarnings("unchecked")
+    /**
+     * Executes distributed SCAN query.
+     *
+     * @param qry Query.
+     * @param nodes Nodes.
+     * @return Iterator.
+     * @throws IgniteCheckedException If failed.
+     */
     public abstract GridCloseableIterator<Map.Entry<K, V>> scanQueryDistributed(GridCacheQueryBean qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException;
 
@@ -1679,13 +1686,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final boolean keepBinary = cctx.keepBinary();
 
+            // TODO do unwrap binary at scanIter.
             return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
                 @Override protected IgniteBiTuple<K, V> onNext() throws IgniteCheckedException {
-                    return (IgniteBiTuple<K, V>)cctx.unwrapBinaryIfNeeded(iter.next(), keepBinary, false);
+                    return (IgniteBiTuple<K, V>)cctx.unwrapBinaryIfNeeded(iter.next(), keepBinary);
                 }
 
                 @Override protected boolean onHasNext() throws IgniteCheckedException {
-                    return iter.hasNext(); 
+                    return iter.hasNext();
                 }
             };
         }
