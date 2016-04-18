@@ -21,33 +21,44 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisStringCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.request.DataStructuresRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_DECREMENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_INCREMENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DECR;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DECRBY;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.INCR;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.INCRBY;
 
 /**
- * Redis INCR command handler.
+ * Redis INCR/DECR command handler.
  */
-public class GridRedisIncrCommandHandler extends GridRedisStringCommandHandler {
+public class GridRedisIncrDecrCommandHandler extends GridRedisStringCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        INCR
+        INCR,
+        DECR,
+        INCRBY,
+        DECRBY
     );
 
+    private static final int DELTA_POS = 2;
+
     /** {@inheritDoc} */
-    public GridRedisIncrCommandHandler(GridRestProtocolHandler hnd) {
-        super(hnd);
+    public GridRedisIncrDecrCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
+        super(ctx, hnd);
     }
 
     /** {@inheritDoc} */
@@ -62,10 +73,9 @@ public class GridRedisIncrCommandHandler extends GridRedisStringCommandHandler {
         DataStructuresRequest restReq = new DataStructuresRequest();
 
         GridRestCacheRequest getReq = new GridRestCacheRequest();
-        GridRedisMessage getMsg = msg.copy(msg);
 
-        getReq.clientId(getMsg.clientId());
-        getReq.key(getMsg.key());
+        getReq.clientId(msg.clientId());
+        getReq.key(msg.key());
         getReq.command(CACHE_GET);
 
         GridRestResponse getResp = hnd.handle(getReq);
@@ -74,16 +84,36 @@ public class GridRedisIncrCommandHandler extends GridRedisStringCommandHandler {
             restReq.initial(0L);
         }
         else {
-            if (getResp.getResponse() instanceof Long)
+            if (getResp.getResponse() instanceof Long && (Long)getResp.getResponse() <= Long.MAX_VALUE)
                 restReq.initial((Long)getResp.getResponse());
             else
-                throw new IgniteCheckedException("Failed to obtain an initial value!");
+                throw new GridRedisGenericException("An initial value must be numeric and in range!");
         }
 
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
         restReq.delta(1L);
-        restReq.command(ATOMIC_INCREMENT);
+
+        if (msg.getMsgParts().size() > DELTA_POS) {
+            try {
+                restReq.delta(Long.valueOf(msg.getMsgParts().get(DELTA_POS)));
+            }
+            catch (NumberFormatException e) {
+                throw new GridRedisGenericException("An increment value must be numeric and in range!");
+            }
+        }
+
+        switch (msg.command()) {
+            case INCR:
+            case INCRBY:
+                restReq.command(ATOMIC_INCREMENT);
+                break;
+
+            case DECR:
+            case DECRBY:
+                restReq.command(ATOMIC_DECREMENT);
+                break;
+        }
 
         return restReq;
     }
@@ -93,12 +123,9 @@ public class GridRedisIncrCommandHandler extends GridRedisStringCommandHandler {
         if (restRes.getResponse() == null)
             return GridRedisProtocolParser.toGenericError("Failed to increment!");
 
-        Long val;
-        if (restRes.getResponse() instanceof Long)
-            val = (Long)restRes.getResponse();
+        if (restRes.getResponse() instanceof Long && (Long)restRes.getResponse() <= Long.MAX_VALUE)
+            return GridRedisProtocolParser.toInteger(new BigDecimal((Long)restRes.getResponse()).toString());
         else
-            return GridRedisProtocolParser.toTypeError("Non-numeric value!");
-
-        return GridRedisProtocolParser.toInteger(new BigDecimal(val).intValueExact());
+            return GridRedisProtocolParser.toTypeError("Value is non-numeric or out of range!");
     }
 }

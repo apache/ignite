@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.s
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
@@ -43,8 +44,8 @@ public class GridRedisGetCommandHandler extends GridRedisStringCommandHandler {
     );
 
     /** {@inheritDoc} */
-    public GridRedisGetCommandHandler(GridRestProtocolHandler hnd) {
-        super(hnd);
+    public GridRedisGetCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
+        super(ctx, hnd);
     }
 
     /** {@inheritDoc} */

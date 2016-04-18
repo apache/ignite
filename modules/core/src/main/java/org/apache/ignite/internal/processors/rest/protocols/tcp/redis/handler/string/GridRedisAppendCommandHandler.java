@@ -27,24 +27,29 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisC
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisStringCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_APPEND;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.SET;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.APPEND;
 
 /**
- * Redis SET command handler.
+ * Redis APPEND command handler.
  */
-public class GridRedisSetCommandHandler extends GridRedisStringCommandHandler {
+public class GridRedisAppendCommandHandler extends GridRedisStringCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        SET
+        APPEND
     );
 
+    private static final int VAL_POS = 2;
+
     /** {@inheritDoc} */
-    public GridRedisSetCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
+    public GridRedisAppendCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
         super(ctx, hnd);
     }
 
@@ -57,28 +62,45 @@ public class GridRedisSetCommandHandler extends GridRedisStringCommandHandler {
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
 
-        GridRestCacheRequest restReq = new GridRestCacheRequest();
+        if (msg.getMsgParts().size() <= VAL_POS)
+            throw new GridRedisGenericException("Wrong number of arguments!");
 
-        restReq.clientId(msg.clientId());
-        restReq.key(msg.key());
+        GridRestCacheRequest appendReq = new GridRestCacheRequest();
+        GridRestCacheRequest getReq = new GridRestCacheRequest();
 
-        restReq.command(CACHE_PUT);
+        String val = msg.getMsgParts().get(VAL_POS);
 
-        if (msg.getMsgParts().size() < 3)
-            throw new IgniteCheckedException("Invalid request!");
+        appendReq.clientId(msg.clientId());
+        appendReq.key(msg.key());
+        appendReq.value(val);
+        appendReq.command(CACHE_APPEND);
 
-        restReq.value(msg.getMsgParts().get(2));
+        if ((boolean)hnd.handle(appendReq).getResponse() == false) {
+            // append on on-existing key in REST returns false.
+            GridRestCacheRequest setReq = new GridRestCacheRequest();
 
-        if (msg.getMsgParts().size() >= 4) {
-            // handle options.
+            setReq.clientId(msg.clientId());
+            setReq.key(msg.key());
+            setReq.value(val);
+            setReq.command(CACHE_PUT);
+
+            hnd.handle(setReq);
         }
 
-        return restReq;
+        getReq.clientId(msg.clientId());
+        getReq.key(msg.key());
+        getReq.command(CACHE_GET);
+
+        return getReq;
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes) {
-        return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
-            : GridRedisProtocolParser.OkString());
+        if (restRes.getResponse() == null)
+            return GridRedisProtocolParser.nil();
+        else {
+            int resLen = ((String)restRes.getResponse()).length();
+            return GridRedisProtocolParser.toInteger(String.valueOf(resLen));
+        }
     }
 }

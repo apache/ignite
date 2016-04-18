@@ -217,8 +217,8 @@ public class GridRedisProtocolParser {
      * @param integer Integer result.
      * @return RESP integer.
      */
-    public static ByteBuffer toInteger(int integer) {
-        byte[] b = String.valueOf(integer).getBytes();
+    public static ByteBuffer toInteger(String integer) {
+        byte[] b = integer.getBytes();
 
         ByteBuffer buf = ByteBuffer.allocate(b.length + 3);
         buf.put(INTEGER);

@@ -19,11 +19,13 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.exception.GridRedisTypeException;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.CX1;
@@ -40,7 +42,7 @@ public abstract class GridRedisStringCommandHandler implements GridRedisCommandH
      *
      * @param hnd REST protocol handler.
      */
-    public GridRedisStringCommandHandler(GridRestProtocolHandler hnd) {
+    public GridRedisStringCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
         this.hnd = hnd;
     }
 
@@ -58,9 +60,8 @@ public abstract class GridRedisStringCommandHandler implements GridRedisCommandH
 
                         GridRedisMessage res = msg;
 
-                        if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS) {
+                        if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS)
                             res.setResponse(makeResponse(restRes));
-                        }
                         else
                             res.setResponse(GridRedisProtocolParser.toGenericError("Operation error!"));
 
@@ -69,7 +70,10 @@ public abstract class GridRedisStringCommandHandler implements GridRedisCommandH
                 });
         }
         catch (IgniteCheckedException e) {
-            msg.setResponse(GridRedisProtocolParser.toGenericError("Operation error!"));
+            if (e instanceof GridRedisTypeException)
+                msg.setResponse(GridRedisProtocolParser.toTypeError(e.getMessage()));
+            else
+                msg.setResponse(GridRedisProtocolParser.toGenericError(e.getMessage()));
 
             return new GridFinishedFuture<>(msg);
         }

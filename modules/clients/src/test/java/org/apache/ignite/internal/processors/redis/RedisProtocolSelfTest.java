@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.redis;
 
+import java.math.BigInteger;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -174,6 +175,8 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             List<String> result = jedis.mget("getKey1", "getKey2", "wrongKey");
             Assert.assertTrue(result.contains("getVal1"));
             Assert.assertTrue(result.contains("0"));
+
+            // not supported.
 //            fail("Incompatible! getAll() does not return null values!");
 //            Assert.assertTrue(result.contains("nil"));
         }
@@ -207,12 +210,15 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testIncr() throws Exception {
+    public void testIncrDecr() throws Exception {
         try (Jedis jedis = pool.getResource()) {
-            Assert.assertEquals(1, (long)jedis.incr("newKey"));
+            Assert.assertEquals(1, (long)jedis.incr("newKeyIncr"));
+            Assert.assertEquals(-1, (long)jedis.decr("newKeyDecr"));
 
             jcache().put("incrKey1", 1L);
             Assert.assertEquals(2L, (long)jedis.incr("incrKey1"));
+            jcache().put("decrKey1", 1L);
+            Assert.assertEquals(0L, (long)jedis.decr("decrKey1"));
 
             jcache().put("nonInt", "abc");
             try {
@@ -221,7 +227,62 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
                 assert false : "Exception has to be thrown!";
             }
             catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("ERR"));
             }
+            try {
+                jedis.decr("nonInt");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("ERR"));
+            }
+
+            jcache().put("outOfRange", new BigInteger("234293482390480948029348230948"));
+            try {
+                jedis.incr("outOfRange");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("ERR"));
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIncrDecrBy() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            Assert.assertEquals(2, (long)jedis.incrBy("newKeyIncr1", 2));
+            Assert.assertEquals(-2, (long)jedis.decrBy("newKeyDecr1", 2));
+
+            jcache().put("incrKey2", 1L);
+            Assert.assertEquals(3L, (long)jedis.incrBy("incrKey2", 2));
+            jcache().put("decrKey2", 2L);
+            Assert.assertEquals(0L, (long)jedis.decrBy("decrKey2", 2));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIncrByFloat() throws Exception {
+        // not supported.
+//        try (Jedis jedis = pool.getResource()) {
+//            jcache().put("incrKeyFloat", 10.50);
+//            Assert.assertEquals(10.6, jedis.incrByFloat("incrKeyFloat", 0.1), 1e-15);
+//        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAppend() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            Assert.assertEquals(5, (long)jedis.append("appendKey1", "Hello"));
+            Assert.assertEquals(12, (long)jedis.append("appendKey1", " World!"));
         }
     }
 }
