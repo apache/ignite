@@ -126,7 +126,7 @@ public class DataPageIO extends PageIO {
      * @param dataOff Entry data offset.
      */
     private void setFirstEntryOffset(ByteBuffer buf, int dataOff) {
-        assert dataOff >= ITEMS_OFF + ITEM_SIZE && dataOff < buf.capacity() - KV_LEN_SIZE - VER_SIZE;
+        assert dataOff >= ITEMS_OFF + ITEM_SIZE && dataOff <= buf.capacity(): dataOff;
 
         buf.putShort(FIRST_ENTRY_OFF, (short)dataOff);
     }
@@ -522,7 +522,9 @@ public class DataPageIO extends PageIO {
         if (!enoughSpaceForEntry(entrySize, dataOff, directCnt, indirectCnt)) {
             dataOff = compactDataEntries(buf, directCnt);
 
-            assert enoughSpaceForEntry(entrySize, dataOff, directCnt, indirectCnt);
+//            assert enoughSpaceForEntry(entrySize, dataOff, directCnt, indirectCnt);
+            if (!enoughSpaceForEntry(entrySize, dataOff, directCnt, indirectCnt))
+                return -1; // TODO replace with assert
         }
 
         // Attempt to write data right before the first entry.
