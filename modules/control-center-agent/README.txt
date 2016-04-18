@@ -54,7 +54,7 @@ Configuration file:
 
   Example configuration file:
     token=1a2b3c4d5f
-    serverURI=wss://console.example.com:3001
+    serverURI=http://console.example.com:3001
 
 Security token:
   1) By default token will be included into downloaded agent zip.
@@ -76,7 +76,7 @@ Options:
      http://localhost:8080
   -s, --server-uri
      URI for connect to Ignite Web Console via web-socket protocol, default
-     value: wss://localhost:3001
+     value: http://localhost:3001
   -t, --token
      User's security token
 

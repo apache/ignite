@@ -90,7 +90,7 @@ consoleModule.controller('cachesController', [
 
                 $scope.spaces = data.spaces;
 
-                data.caches.forEach(function (cache) {
+                _.forEach(data.caches, function (cache) {
                     cache.label = _cacheLbl(cache);
                 });
 
