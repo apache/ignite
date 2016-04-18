@@ -14,13 +14,16 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../includes/controls
-include ../includes/infos
+include ../../app/helpers/jade/mixins.jade
 
 .docs-header
     h1 Configure Ignite In-memory File Systems
 .docs-body(ng-controller='igfsController')
-    +ignite-igfs-information
+    ignite-information(data-title='Configure IGFS only if you are going to use In-memory File System')
+        ul
+            li Ignite File System (#[a(href='https://apacheignite-fs.readme.io/docs/in-memory-file-system' target='_blank') IGFS]) is an in-memory file system allowing work with files and directories over existing cache infrastructure
+            li IGFS can either work as purely in-memory file system, or delegate to another file system (e.g. various Hadoop file system implementations) acting as a caching layer (see #[a(href='https://apacheignite-fs.readme.io/docs/secondary-file-system' target='_blank') secondary file system]  for more detail)
+            li In addition IGFS provides API to execute map-reduce tasks over file system data
     div(dw-loading='loadingIgfsScreen' dw-loading-options='{text: "Loading IGFS screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr
@@ -28,7 +31,7 @@ include ../includes/infos
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new IGFS')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add IGFS
-                +save-remove-buttons-new('IGFS')
+                +save-remove-clone-undo-buttons('IGFS')
                 hr
             .bs-affix-fix
             div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
@@ -36,7 +39,7 @@ include ../includes/infos
                     .panel-group
                         ignite-configuration-igfs-general
 
-                        ignite-advanced-options-toggle
+                        +advanced-options-toggle-default
 
                         div(ng-show='ui.expanded')
                             ignite-configuration-igfs-secondary
@@ -45,4 +48,4 @@ include ../includes/infos
                             ignite-configuration-igfs-dual
                             ignite-configuration-igfs-misc
 
-                            ignite-advanced-options-toggle
+                            +advanced-options-toggle-default

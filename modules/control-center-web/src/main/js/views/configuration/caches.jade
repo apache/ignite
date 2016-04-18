@@ -14,13 +14,15 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../includes/controls
-include ../includes/infos
+include ../../app/helpers/jade/mixins.jade
 
 .docs-header
     h1 Configure Ignite Caches
 .docs-body(ng-controller='cachesController')
-    +ignite-caches-information
+    ignite-information
+        ul
+            li Configure #[a(href='https://apacheignite.readme.io/docs/data-grid' target='_blank') memory] settings
+            li Configure persistence
     div(dw-loading='loadingCachesScreen' dw-loading-options='{text: "Loading caches screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr
@@ -28,7 +30,7 @@ include ../includes/infos
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new cache')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cache
-                +save-remove-buttons-new('cache')
+                +save-remove-clone-undo-buttons('cache')
                 hr
             .bs-affix-fix
             div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
@@ -39,7 +41,7 @@ include ../includes/infos
                         ignite-configuration-caches-query
                         ignite-configuration-caches-store
 
-                        ignite-advanced-options-toggle
+                        +advanced-options-toggle-default
 
                         div(ng-show='ui.expanded')
                             ignite-configuration-caches-concurrency
@@ -47,4 +49,4 @@ include ../includes/infos
                             ignite-configuration-caches-server-near-cache
                             ignite-configuration-caches-statistics
 
-                            ignite-advanced-options-toggle
+                            +advanced-options-toggle-default

@@ -111,7 +111,7 @@ consoleModule.controller('clustersController', [
             .success(function (data) {
                 $scope.spaces = data.spaces;
 
-                data.clusters.forEach(function (cluster) {
+                _.forEach(data.clusters, function (cluster) {
                     cluster.label = _clusterLbl(cluster);
                 });
 

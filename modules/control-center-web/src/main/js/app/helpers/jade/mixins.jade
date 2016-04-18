@@ -14,6 +14,57 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+//- Mixin for advanced options toggle.
+mixin advanced-options-toggle(click, cond, showMessage, hideMessage)
+    .advanced-options
+        i.fa(ng-click=click ng-class='#{cond} ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+        a(ng-click=click) {{#{cond} ? '#{hideMessage}' : '#{showMessage}'}}
+
+//- Mixin for advanced options toggle with default settings.
+mixin advanced-options-toggle-default
+    +advanced-options-toggle('toggleExpanded()', 'ui.expanded', 'Show advanced settings...', 'Hide advanced settings...')
+
+//- Mixin for main table on screen with list of items.
+mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
+    .padding-bottom-dflt(ng-show='#{rows} && #{rows}.length > 0')
+        table.links(st-table='displayedRows' st-safe-src='#{rows}')
+            thead
+                tr
+                    th
+                        lable.labelHeader.labelFormField #{title}:
+                        .col-sm-3.pull-right(style='padding: 0')
+                            input.form-control(type='text' st-search='#{searchField}' placeholder='Filter #{title}...')
+            tbody
+                tr
+                    td
+                        .scrollable-y(ng-show='displayedRows.length > 0' style='max-height: 200px')
+                            table
+                                tbody
+                                    tr(ng-repeat='row in displayedRows track by row._id' ignite-bs-affix-update)
+                                        td
+                                            a(ng-class='{active: row._id == selectedItem._id}' on-click-focus=focusId ng-click=click) #{rowTemplate}
+                        label.placeholder(ng-show='displayedRows.length == 0') No #{rows} found
+
+//- Mixin with save, remove, clone and undo buttons.
+mixin save-remove-clone-undo-buttons(objectName)
+    -var removeTip = '"Remove current ' + objectName + '"'
+    -var cloneTip = '"Clone current ' + objectName + '"'
+    -var undoTip = '"Undo all changes for current ' + objectName + '"'
+
+    div(ng-show='contentVisible()' style='display: inline-block;')
+        .panel-tip-container(ng-hide='!backupItem || backupItem._id')
+            a.btn.btn-primary(ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && saveItem()' bs-tooltip='' data-title='{{saveBtnTipText(ui.inputForm.$dirty, "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
+        .panel-tip-container(ng-show='backupItem._id')
+            a.btn.btn-primary(id='save-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && saveItem()' bs-tooltip='' data-title='{{saveBtnTipText(ui.inputForm.$dirty, "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
+        .panel-tip-container(ng-show='backupItem._id')
+            a.btn.btn-primary(id='clone-item' ng-click='cloneItem()' bs-tooltip=cloneTip data-placement='bottom' data-trigger='hover') Clone
+        .btn-group.panel-tip-container(ng-show='backupItem._id')
+            button.btn.btn-primary(id='remove-item' ng-click='removeItem()' bs-tooltip=removeTip data-placement='bottom' data-trigger='hover') Remove
+            button.btn.dropdown-toggle.btn-primary(id='remove-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='[{ text: "Remove All", click: "removeAllItems()" }]' data-placement='bottom-right')
+                span.caret
+        .panel-tip-container(ng-show='backupItem')
+            i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && resetAll()' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')
+
 //- Mixin for feedback on specified error.
 mixin error-feedback(visible, error, errorMessage, name)
     i.fa.fa-exclamation-triangle.form-control-feedback(
@@ -187,6 +238,23 @@ mixin number(lbl, model, name, enabled, placeholder, min, tip)
     +number-requited(lbl, model, name, 'false', enabled, placeholder, min, tip)
 
 //- Mixin for required dropdown field.
+mixin dropdown-required-empty(lbl, model, name, required, enabled, placeholder, placeholderEmpty, options, tip)
+    ignite-form-field
+        ignite-form-field-label
+            | #{lbl}
+        ignite-form-field-tooltip
+            | !{tip}
+        ignite-form-field-dropdown(
+            data-id=name
+            data-name=name
+            data-options=options
+            data-ng-model=model
+            data-ng-required=required
+            data-ng-disabled='!(#{enabled})'
+            data-placeholder='{{#{options}.length > 0 ? "#{placeholder}" : "#{placeholderEmpty}"}}'
+        )
+
+//- Mixin for required dropdown field.
 mixin dropdown-required(lbl, model, name, required, enabled, placeholder, options, tip)
     ignite-form-field
         ignite-form-field-label
@@ -206,7 +274,6 @@ mixin dropdown-required(lbl, model, name, required, enabled, placeholder, option
 //- Mixin for dropdown field.
 mixin dropdown(lbl, model, name, enabled, placeholder, options, tip)
     +dropdown-required(lbl, model, name, 'false', enabled, placeholder, options, tip)
-
 
 //- Mixin for dropdown-multiple field.
 mixin dropdown-multiple(lbl, model, name, placeholder, placeholderEmpty, options, tip)

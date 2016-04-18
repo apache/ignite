@@ -14,8 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../includes/controls
-include ../includes/infos
+include ../../app/helpers/jade/mixins.jade
 
 mixin hard-link(ref, txt)
     a(style='color:#ec1c24' href=ref target='_blank') #{txt}
@@ -23,7 +22,13 @@ mixin hard-link(ref, txt)
 .docs-header
     h1 Configurations Summary
 .docs-body
-    +ignite-summary-information
+    ignite-information
+        ul
+            li Preview XML configurations for #[a(href='https://apacheignite.readme.io/docs/clients-vs-servers' target='_blank') server and client] nodes
+            li Preview code configuration
+            li Preview #[a(href='https://apacheignite.readme.io/docs/docker-deployment' target='_blank') Docker file]
+            li Preview POM dependencies
+            li Download ready-to-use Maven project
     ignite-loading
         hr
         .padding-dflt(ng-if='!clusters || clusters.length == 0')

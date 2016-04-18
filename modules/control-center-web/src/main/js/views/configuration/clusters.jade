@@ -14,13 +14,15 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include ../includes/controls
-include ../includes/infos
+include ../../app/helpers/jade/mixins.jade
 
 .docs-header
     h1 Configure Ignite Clusters
 .docs-body(ng-controller='clustersController')
-    +ignite-clusters-information
+    ignite-information
+        ul
+            li Configure #[a(href='https://apacheignite.readme.io/docs/clustering' target='_blank') clusters] properties
+            li Associate clusters with caches and in-memory file systems
     div(dw-loading='loadingClustersScreen' dw-loading-options='{text: "Loading clusters screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr
@@ -28,7 +30,7 @@ include ../includes/infos
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new cluster')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cluster
-                +save-remove-buttons-new('cluster')
+                +save-remove-clone-undo-buttons('cluster')
                 hr
             .bs-affix-fix
             div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
@@ -36,7 +38,7 @@ include ../includes/infos
                     .panel-group
                         ignite-configuration-clusters-general
 
-                        ignite-advanced-options-toggle
+                        +advanced-options-toggle-default
 
                         div(ng-show='ui.expanded')
                             ignite-configuration-clusters-atomic
@@ -55,4 +57,4 @@ include ../includes/infos
                             ignite-configuration-clusters-time
                             ignite-configuration-clusters-transactions
 
-                            ignite-advanced-options-toggle
+                            +advanced-options-toggle-default
