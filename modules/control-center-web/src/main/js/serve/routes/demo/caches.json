@@ -8,9 +8,6 @@
     "sqlFunctionClasses": [],
     "cacheStoreFactory": {
       "kind": "CacheJdbcPojoStoreFactory",
-      "CacheHibernateBlobStoreFactory": {
-        "hibernateProperties": []
-      },
       "CacheJdbcPojoStoreFactory": {
         "dataSourceBean": "dsH2",
         "dialect": "H2"
@@ -28,9 +25,6 @@
     "sqlFunctionClasses": [],
     "cacheStoreFactory": {
       "kind": "CacheJdbcPojoStoreFactory",
-      "CacheHibernateBlobStoreFactory": {
-        "hibernateProperties": []
-      },
       "CacheJdbcPojoStoreFactory": {
         "dataSourceBean": "dsH2",
         "dialect": "H2"
@@ -48,9 +42,6 @@
     "sqlFunctionClasses": [],
     "cacheStoreFactory": {
       "kind": "CacheJdbcPojoStoreFactory",
-      "CacheHibernateBlobStoreFactory": {
-        "hibernateProperties": []
-      },
       "CacheJdbcPojoStoreFactory": {
         "dataSourceBean": "dsH2",
         "dialect": "H2"
@@ -68,9 +59,6 @@
     "sqlFunctionClasses": [],
     "cacheStoreFactory": {
       "kind": "CacheJdbcPojoStoreFactory",
-      "CacheHibernateBlobStoreFactory": {
-        "hibernateProperties": []
-      },
       "CacheJdbcPojoStoreFactory": {
         "dataSourceBean": "dsH2",
         "dialect": "H2"
@@ -88,9 +76,6 @@
     "sqlFunctionClasses": [],
     "cacheStoreFactory": {
       "kind": "CacheJdbcPojoStoreFactory",
-      "CacheHibernateBlobStoreFactory": {
-        "hibernateProperties": []
-      },
       "CacheJdbcPojoStoreFactory": {
         "dataSourceBean": "dsH2",
         "dialect": "H2"
