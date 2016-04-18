@@ -29,8 +29,12 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
+
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Config Variations query tests.
@@ -59,30 +63,9 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
                     cache.put(e.getKey(), e.getValue());
 
                 // Scan query.
-                QueryCursor<Cache.Entry<Object, Object>> qry = cache.query(new ScanQuery<Object, Object>());
+                QueryCursor<Cache.Entry<Object, Object>> qry = cache.query(new ScanQuery());
 
-                Iterator<Cache.Entry<Object, Object>> iter = qry.iterator();
-
-                assert iter != null;
-
-                int cnt = 0;
-
-                while (iter.hasNext()) {
-                    Cache.Entry<Object, Object> e = iter.next();
-
-                    assertNotNull(e.getKey());
-                    assertNotNull(e.getValue());
-
-                    Object expVal = map.get(e.getKey());
-
-                    assertNotNull("Failed to resolve expected value for key: " + e.getKey(), expVal);
-
-                    assertEquals(expVal, e.getValue());
-
-                    cnt++;
-                }
-
-                assertEquals(map.size(), cnt);
+                checkQueryResults(map, qry);
 //            }
 //        });
     }
@@ -136,8 +119,21 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
     public void testScanFilters() throws Exception {
         IgniteCache<Object, Object> cache = jcache();
 
-        for (int i = 0; i < CNT; i++)
-            cache.put(key(i), value(i));
+        GridCacheContext cctx = ((IgniteCacheProxy)cache).context();
+
+        Map<Object, Object> map = new HashMap<>();
+
+        for (int i = 0; i < CNT; i++) {
+            Object key = key(i);
+            Object val = value(i);
+
+            cache.put(key, val);
+
+            AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+
+            if (cctx.affinity().localNode(key, topVer))
+                map.put(key, val);
+        }
 
         QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(new IgniteBiPredicate<Object, Object>() {
             @Override public boolean apply(Object k, Object v) {
@@ -162,5 +158,61 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
             assertEquals(i, valueOf(e.getKey()));
             assertEquals(i, valueOf(e.getValue()));
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("SubtractionInCompareTo")
+    public void testLocalScanQuery() throws Exception {
+        IgniteCache<Object, Object> cache = jcache();
+
+        ClusterNode locNode = testedGrid().cluster().localNode();
+
+        Map<Object, Object> map = new HashMap<>();
+
+        for (int i = 0; i < CNT; i++) {
+            Object key = key(i);
+            Object val = value(i);
+
+            cache.put(key, val);
+
+            if (!isClientMode() && (cacheMode() == REPLICATED
+                || testedGrid().affinity(cacheName()).isPrimary(locNode, key)))
+                map.put(key, val);
+        }
+
+        QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>().setLocal(true));
+
+        checkQueryResults(map, q);
+    }
+
+    /**
+     * @param expMap Expected map.
+     * @param qry Query.
+     */
+    private void checkQueryResults(Map<Object, Object> expMap, QueryCursor<Cache.Entry<Object, Object>> qry) {
+        Iterator<Cache.Entry<Object, Object>> iter = qry.iterator();
+
+        assertNotNull(iter);
+
+        int cnt = 0;
+
+        while (iter.hasNext()) {
+            Cache.Entry<Object, Object> e = iter.next();
+
+            assertNotNull(e.getKey());
+            assertNotNull(e.getValue());
+
+            Object expVal = expMap.get(e.getKey());
+
+            assertNotNull("Failed to resolve expected value for key: " + e.getKey(), expVal);
+
+            assertEquals(expVal, e.getValue());
+
+            cnt++;
+        }
+
+        assertEquals(expMap.size(), cnt);
     }
 }

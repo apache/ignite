@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -491,7 +492,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (nodes.isEmpty() && part == null)
-            throw new ClusterGroupEmptyCheckedException();
+            return new GridEmptyCloseableIterator();
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');

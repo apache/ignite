@@ -132,9 +132,16 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
             info(">>> Starting set of tests [testedNodeIdx=" + testedNodeIdx
                 + ", id=" + grid(testedNodeIdx).localNode().id()
-                + ", isClient=" + grid(testedNodeIdx).configuration().isClientMode()
+                + ", isClient=" + isClientMode()
                 + ", nearEnabled=" + testedNodeNearEnabled + "]");
         }
+    }
+
+    /**
+     * @return Tested grid in client mode or not.
+     */
+    protected boolean isClientMode() {
+        return grid(testedNodeIdx).configuration().isClientMode();
     }
 
     /**
