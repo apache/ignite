@@ -205,7 +205,11 @@ consoleModule.controller('clustersController', [
 
         function prepareNewItem(id) {
             var newItem = {
-                discovery: {kind: 'Multicast', Vm: {addresses: ['127.0.0.1:47500..47510']}, Multicast: {}},
+                discovery: {
+                    kind: 'Multicast',
+                    Vm: {addresses: ['127.0.0.1:47500..47510']},
+                    Multicast: {addresses: ['127.0.0.1:47500..47510']}
+                },
                 binaryConfiguration: {
                     typeConfigurations: [],
                     compactFooter: true
