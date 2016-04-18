@@ -431,9 +431,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean offheapSwapEvict(byte[] entry, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
+    @Override public boolean onOffheapEvict(byte[] entry, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        assert cctx.swap().swapEnabled() && cctx.swap().offHeapEnabled() : this;
+        assert cctx.swap().offHeapEnabled() && (cctx.swap().swapEnabled() || cctx.queries().enabled()) : this;
 
         boolean obsolete;
 
@@ -448,12 +448,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (mvcc != null && !mvcc.isEmpty(obsoleteVer))
                 return false;
 
-            if (cctx.swap().offheapSwapEvict(key, entry, partition(), evictVer)) {
+            if (cctx.swap().onOffheapEvict(key, entry, partition(), evictVer)) {
                 assert !hasValueUnlocked() : this;
 
                 obsolete = markObsolete0(obsoleteVer, false, null);
 
                 assert obsolete : this;
+
+                if (!cctx.swap().swapEnabled()) {
+                    CacheObject val = cctx.swap().unmarshalSwapEntryValue(entry);
+
+                    clearIndex(val);
+                }
             }
             else
                 obsolete = false;
