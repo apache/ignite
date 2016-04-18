@@ -96,7 +96,6 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
 
         throw new IgniteException("Distributed scan query are not available for local cache " +
             "(use 'CacheQuery.executeScanQuery(grid.forLocal())' instead) [cacheName=" + cctx.name() + ']');
-
     }
 
     /** {@inheritDoc} */
