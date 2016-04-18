@@ -27,6 +27,8 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -89,6 +91,10 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
         this.filter = filter;
 
         javaFilter = getJavaFilter(filter, platformCtx.kernalContext());
+
+        if (javaFilter != null && !(javaFilter instanceof CacheEntryEventSerializableFilter))
+            throw new IgniteException("Java event filter must implement " +
+                CacheEntryEventSerializableFilter.class.getName() + " interface: " + javaFilter.getClass().getName());
     }
 
     /**
