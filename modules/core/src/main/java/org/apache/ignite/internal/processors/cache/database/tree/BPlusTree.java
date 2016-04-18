@@ -29,6 +29,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
@@ -58,6 +60,12 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private static final byte DONE = 3;
+
+    /** */
+    protected final int cacheId;
+
+    /** */
+    private final PageMemory pageMem;
 
     /** */
     private final float minFill;
@@ -465,14 +473,20 @@ public abstract class BPlusTree<L, T extends L> {
     };
 
     /**
+     * @param cacheId Cache ID.
+     * @param pageMem Page memory.
      * @param metaPageId Meta page ID.
      * @throws IgniteCheckedException If failed.
      */
-    public BPlusTree(FullPageId metaPageId) throws IgniteCheckedException {
+    public BPlusTree(int cacheId, PageMemory pageMem, FullPageId metaPageId) throws IgniteCheckedException {
         // TODO make configurable: 0 <= minFill <= maxFill <= 1
         minFill = 0f; // Testing worst case when merge happens only on empty page.
         maxFill = 0f; // Avoiding random effects on testing.
 
+        assert pageMem != null;
+
+        this.pageMem = pageMem;
+        this.cacheId = cacheId;
         this.metaPageId = metaPageId.pageId();
     }
 
@@ -2243,6 +2257,24 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
+     * @param pageId Page ID.
+     * @return Page.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Page page(long pageId) throws IgniteCheckedException {
+        return pageMem.page(new FullPageId(pageId, cacheId));
+    }
+
+    /**
+     * @return Allocated page.
+     */
+    private Page allocatePage() throws IgniteCheckedException {
+        FullPageId pageId = pageMem.allocatePage(cacheId, -1, PageIdAllocator.FLAG_IDX);
+
+        return pageMem.page(pageId);
+    }
+
+    /**
      * @param type Page type.
      * @param ver Page version.
      * @return IO.
@@ -2278,18 +2310,6 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     protected abstract T getRow(BPlusIO<L> io, ByteBuffer buf, int idx) throws IgniteCheckedException;
-
-    /**
-     * @param pageId Page ID.
-     * @return Page.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected abstract Page page(long pageId) throws IgniteCheckedException;
-
-    /**
-     * @return Allocated page.
-     */
-    protected abstract Page allocatePage() throws IgniteCheckedException;
 
     /**
      * Forward cursor.

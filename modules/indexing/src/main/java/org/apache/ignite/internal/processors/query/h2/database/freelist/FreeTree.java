@@ -20,48 +20,32 @@ package org.apache.ignite.internal.processors.query.h2.database.freelist;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.query.h2.database.freelist.io.FreeIO;
-import org.apache.ignite.internal.processors.query.h2.database.freelist.io.FreeInnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.freelist.io.FreeLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.query.h2.database.freelist.io.FreeIO;
+import org.apache.ignite.internal.processors.query.h2.database.freelist.io.FreeInnerIO;
+import org.apache.ignite.internal.processors.query.h2.database.freelist.io.FreeLeafIO;
 
 /**
  * Data structure for data pages and their free spaces.
  */
 public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
-    /** */
-    private PageMemory pageMem;
-
-    /** */
-    private int cacheId;
-
-    /** */
-    private int part;
-
     /**
-     * @param pageMem Page memory.
      * @param cacheId Cache ID.
-     * @param part Partition.
+     * @param pageMem Page memory.
      * @param metaPageId Meta page ID.
      * @param initNew    Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public FreeTree(PageMemory pageMem, int cacheId, int part, FullPageId metaPageId, boolean initNew)
+    public FreeTree(int cacheId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
         throws IgniteCheckedException {
-        super(metaPageId);
+        super(cacheId, pageMem, metaPageId);
 
         assert pageMem != null;
-
-        this.pageMem = pageMem;
-        this.cacheId = cacheId;
-        this.part = part;
 
         if (initNew)
             initNew();
@@ -108,18 +92,6 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
         assert row.cacheId() == cacheId;
 
         return row;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Page page(long pageId) throws IgniteCheckedException {
-        return pageMem.page(new FullPageId(pageId, cacheId));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected Page allocatePage() throws IgniteCheckedException {
-        FullPageId pageId = pageMem.allocatePage(cacheId, part, PageIdAllocator.FLAG_IDX);
-
-        return pageMem.page(pageId);
     }
 
     /**

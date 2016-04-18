@@ -119,7 +119,7 @@ public class FreeList {
                 IgniteBiTuple<FullPageId,Boolean> t = cctx.shared().database().meta()
                     .getOrAllocateForIndex(cctx.cacheId(), idxName);
 
-                fut.onDone(new FreeTree(pageMem, cctx.cacheId(), part, t.get1(), t.get2()));
+                fut.onDone(new FreeTree(cctx.cacheId(), pageMem, t.get1(), t.get2()));
             }
         }
 
