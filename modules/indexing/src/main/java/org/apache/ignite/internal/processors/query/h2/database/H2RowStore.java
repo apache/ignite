@@ -227,7 +227,7 @@ public class H2RowStore {
     /**
      * @param row Row.
      */
-    public void writeRowData(GridH2Row row) throws IgniteCheckedException {
+    public void addRow(GridH2Row row) throws IgniteCheckedException {
         if (freeList == null)
             writeRowData0(row);
         else

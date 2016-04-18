@@ -409,17 +409,17 @@ public class GridH2Table extends TableBase {
             desc.guard().begin();
 
         try {
-            if (rowStore != null) {
-                assert row.link == 0;
-
-                rowStore.writeRowData(row);
-
-                assert row.link != 0;
-            }
-
             GridH2IndexBase pk = pk();
 
             if (!del) {
+                if (rowStore != null) {
+                    assert row.link == 0;
+
+                    rowStore.addRow(row);
+
+                    assert row.link != 0;
+                }
+
                 GridH2Row old = pk.put(row); // Put to PK.
 
                 if (old instanceof GridH2AbstractKeyValueRow) { // Unswap value on replace.
@@ -464,6 +464,12 @@ public class GridH2Table extends TableBase {
                 }
 
                 if (old != null) {
+                    if (rowStore != null) {
+                        assert old.link != 0;
+
+                        rowStore.removeRow(old.link);
+                    }
+
                     size.decrement();
 
                     // Remove row from all indexes.
