@@ -487,10 +487,14 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
 
         Map<Integer, DbValue> map = new HashMap<>(cnt);
 
-        Random rnd = new GridRandom();
+        long seed = 1460943282308L; // System.currentTimeMillis();
 
-        for (int i = 0 ; i < 500_000; i++) {
-            if (i % 5000 == 0)
+        X.println(" seed---> " + seed);
+
+        Random rnd = new GridRandom(seed);
+
+        for (int i = 0 ; i < 1000_000; i++) {
+//            if (i % 5000 == 0)
                 X.println(" --> " + i);
 
             int key = rnd.nextInt(cnt);
@@ -499,14 +503,20 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
 
             switch (rnd.nextInt(3)) {
                 case 0:
+                    X.println("Put: " + key + " = " + v0);
+
                     assertEquals(map.put(key, v0), cache.getAndPut(key, v0));
 
                 case 1:
+                    X.println("Get: " + key);
+
                     assertEquals(map.get(key), cache.get(key));
 
                     break;
 
                 case 2:
+                    X.println("Rmv: " + key);
+
                     assertEquals(map.remove(key), cache.getAndRemove(key));
 
                     assertNull(cache.get(key));
