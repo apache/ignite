@@ -584,7 +584,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-        for (GridDhtLocalPartition p : topology().currentLocalPartitions()) {
+        for (GridDhtLocalPartition p : topology().localPartitions()) {
             if (p == null)
                 continue;
 
@@ -1224,7 +1224,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         else {
             final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-            final Iterator<GridDhtLocalPartition> partIt = topology().currentLocalPartitions().iterator();
+            final Iterator<GridDhtLocalPartition> partIt = topology().localPartitions().iterator();
 
             Iterator<GridCacheMapEntry> it = new Iterator<GridCacheMapEntry>() {
                 private GridCacheMapEntry next;
