@@ -167,7 +167,7 @@ public class H2RowStore {
 
                 buf.position(dataOff);
 
-                // Skip key-value size.
+                // Skip entry size.
                 buf.getShort();
 
                 CacheObject key = coctx.processor().toCacheObject(coctx, buf);
