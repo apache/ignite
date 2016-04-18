@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -75,6 +74,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         return activeCacheIds.isEmpty() ? null : (int)activeCacheIds.get(0);
     }
 
+    /** {@inheritDoc} */
     @Override public Collection<Integer> cacheIds() {
         Set<Integer> set = new HashSet<>();
         for (int i = 0; i < activeCacheIds.size(); i++)

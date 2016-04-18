@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.Collections;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -72,6 +71,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     /** IO policy. */
     private byte plc;
 
+    /** Transient TX state. */
     @GridDirectTransient
     private IgniteTxState txState;
 
@@ -227,10 +227,16 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
         return commit ? syncCommit : syncRollback;
     }
 
+    /**
+     * @return Transient TX state.
+     */
     public IgniteTxState txState() {
         return txState;
     }
 
+    /**
+     * @param txState Transient TX state.
+     */
     public void txState(IgniteTxState txState) {
         this.txState = txState;
     }

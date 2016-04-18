@@ -44,6 +44,9 @@ public interface IgniteTxState {
      */
     @Nullable public Integer firstCacheId();
 
+    /**
+     * @return Cache IDs involved in this tx.
+     */
     public Collection<Integer> cacheIds();
 
     /**

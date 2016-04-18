@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +35,7 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
 
+    /** Cache IDs */
     private final Set<Integer> cacheIds = Collections.newSetFromMap(new ConcurrentHashMap8<Integer, Boolean>());
 
     /** Read set. */
@@ -56,6 +56,7 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
         this.writeMap = writeMap;
     }
 
+    /** {@inheritDoc} */
     @Override public Collection<Integer> cacheIds() {
         return Collections.unmodifiableSet(cacheIds);
     }
