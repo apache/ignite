@@ -2896,7 +2896,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicUpdateFuture fut = (GridNearAtomicUpdateFuture)ctx.mvcc().atomicFuture(res.futureVersion());
 
         if (fut != null)
-            fut.onResult(nodeId, res);
+            fut.onResult(nodeId, res, false);
         else
             U.warn(log, "Failed to find near update future for update response (will ignore) " +
                 "[nodeId=" + nodeId + ", res=" + res + ']');
