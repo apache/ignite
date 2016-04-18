@@ -478,7 +478,7 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    public void testRandomPutGetRemove() {
+    public void _testRandomPutGetRemove() {
         IgniteEx ig = grid(0);
 
         final IgniteCache<Integer, DbValue> cache = ig.cache(null);

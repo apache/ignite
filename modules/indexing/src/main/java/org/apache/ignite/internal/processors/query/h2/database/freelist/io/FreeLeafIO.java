@@ -18,11 +18,10 @@
 package org.apache.ignite.internal.processors.query.h2.database.freelist.io;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.query.h2.database.freelist.FreeItem;
-import org.apache.ignite.internal.processors.query.h2.database.freelist.FreeTree;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.query.h2.database.freelist.FreeItem;
 
 /**
  * Routines for free list leaf pages.
@@ -66,7 +65,6 @@ public class FreeLeafIO extends BPlusLeafIO<FreeItem> implements FreeIO {
     @Override public FreeItem getLookupRow(BPlusTree<FreeItem, ?> tree, ByteBuffer buf, int idx) {
         int off = offset(idx);
 
-        return new FreeItem(buf.getShort(off), buf.getShort(off + 2), buf.getLong(off + 4),
-            ((FreeTree)tree).cacheId());
+        return new FreeItem(buf.getShort(off), buf.getShort(off + 2), buf.getLong(off + 4), tree.getCacheId());
     }
 }

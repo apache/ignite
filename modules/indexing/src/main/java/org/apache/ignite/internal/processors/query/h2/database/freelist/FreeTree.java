@@ -93,11 +93,4 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
 
         return row;
     }
-
-    /**
-     * @return Cache ID.
-     */
-    public int cacheId() {
-        return cacheId;
-    }
 }

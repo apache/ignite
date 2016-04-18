@@ -491,6 +491,13 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
+     * @return Cache ID.
+     */
+    public int getCacheId() {
+        return cacheId;
+    }
+
+    /**
      * @throws IgniteCheckedException If failed.
      */
     protected void initNew() throws IgniteCheckedException {
@@ -822,6 +829,8 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     public T removeCeil(L row) throws IgniteCheckedException {
+        assert row != null;
+
         return remove(row, true);
     }
 
@@ -831,7 +840,17 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     public T remove(L row) throws IgniteCheckedException {
+        assert row != null;
+
         return remove(row, false);
+    }
+
+    /**
+     * @return Removed row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public T removeFirst() throws IgniteCheckedException {
+        return remove(null, false); // TODO
     }
 
     /**

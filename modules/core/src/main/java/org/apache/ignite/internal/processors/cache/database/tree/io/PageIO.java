@@ -59,6 +59,12 @@ public abstract class PageIO {
     public static final short T_FREE_INNER = 6;
 
     /** */
+    public static final short T_REUSE_LEAF = 7;
+
+    /** */
+    public static final short T_REUSE_INNER = 8;
+
+    /** */
     private final int ver;
 
     /** */
