@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
-import org.apache.ignite.internal.transactions.TxDeadlockException;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -446,7 +446,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            if (inTx() && cctx.tm().deadlockDetection()) {
+            if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
                 Set<KeyCacheObject> keys = new HashSet<>();
 
                 List<GridLocalCacheEntry> entries = entries();
@@ -473,7 +473,8 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
                             TxDeadlock deadlock = fut.get();
 
                             if (deadlock != null)
-                                err.compareAndSet(null, new TxDeadlockException(deadlock.toString(cctx.shared())));
+                                err.compareAndSet(null,
+                                    new TransactionDeadlockException(deadlock.toString(cctx.shared())));
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Unexpected error: ", e);

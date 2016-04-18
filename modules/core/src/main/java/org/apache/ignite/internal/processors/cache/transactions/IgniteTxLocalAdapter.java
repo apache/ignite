@@ -67,7 +67,7 @@ import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.transactions.TxDeadlockException;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -4071,7 +4071,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         /** {@inheritDoc} */
         @Override public final IgniteInternalFuture<T> apply(Boolean locked, @Nullable final Exception e) {
-            TxDeadlockException deadlockErr = X.cause(e, TxDeadlockException.class);
+            TransactionDeadlockException deadlockErr = X.cause(e, TransactionDeadlockException.class);
 
             if (e != null && deadlockErr == null) {
                 setRollbackOnly();
@@ -4089,9 +4089,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             if (deadlockErr != null || !locked) {
                 setRollbackOnly();
 
-                final GridClosureException ex = new GridClosureException(new IgniteTxTimeoutCheckedException("Failed to " +
-                    "acquire lock within provided timeout for transaction [timeout=" + timeout() +
-                    ", tx=" + this + ']', deadlockErr));
+                final GridClosureException ex = new GridClosureException(
+                    new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
+                        "for transaction [timeout=" + timeout() + ", tx=" + this + ']', deadlockErr)
+                );
 
                 if (commit && commitAfterLock())
                     return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {

@@ -756,7 +756,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                 cctx.tm().setTxTopologyHint(null);
         }
 
-        if (unlock && super.onDone(success, err)) {
+        if (super.onDone(success, err)) {
             if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
 
@@ -1089,7 +1089,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
             timedOut = true;
 
-            boolean releaseLocks = inTx() && cctx.tm().deadlockDetection();
+            boolean releaseLocks = inTx() && cctx.tm().deadlockDetectionEnabled();
 
             onComplete(false, false, !releaseLocks);
         }

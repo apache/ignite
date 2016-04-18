@@ -35,6 +35,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -63,13 +64,13 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.Gri
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.TxDeadlockFuture;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedMap;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -90,7 +91,7 @@ import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_COMPLETED_TX_COUNT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SLOW_TX_WARN_TIMEOUT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -129,6 +130,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Version in which deadlock detection introduced. */
     public static final IgniteProductVersion TX_DEADLOCK_DETECTION_SINCE = IgniteProductVersion.fromString("1.5.13");
 
+    /** Deadlock detection maximum iterations. */
+    static final int DEADLOCK_MAX_ITERS =
+        IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, 1000);
+
     /** Committing transactions. */
     private final ThreadLocal<IgniteInternalTx> threadCtx = new ThreadLocal<>();
 
@@ -147,8 +152,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Per-ID map for near transactions. */
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> nearIdMap = newMap();
 
-    /** Pending futures. */
-    private final ConcurrentMap<IgniteUuid, TxIdentifiableFuture<?>> futs = new ConcurrentHashMap8<>();
+    /** Deadlock detection futures. */
+    private final ConcurrentMap<IgniteUuid, TxDeadlockFuture> futs = new ConcurrentHashMap8<>();
 
     /** TX handler. */
     private IgniteTxHandler txHnd;
@@ -183,9 +188,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, GridCacheVersion> mappedVers =
         new ConcurrentHashMap8<>(5120);
 
-    /** Deadlock detection enabled. */
-    private boolean deadlockDetection = IgniteSystemProperties.getBoolean(IGNITE_TX_DEADLOCK_DETECTION_ENABLED, true);
-
     /** TxDeadlock detection. */
     private TxDeadlockDetection txDeadlockDetection;
 
@@ -209,18 +211,15 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(nodeId);
 
-                    Iterator<Map.Entry<IgniteUuid, TxIdentifiableFuture<?>>> it = futs.entrySet().iterator();
+                    Iterator<Map.Entry<IgniteUuid, TxDeadlockFuture>> it = futs.entrySet().iterator();
 
                     for (; it.hasNext();) {
-                        Map.Entry<IgniteUuid, TxIdentifiableFuture<?>> e = it.next();
+                        Map.Entry<IgniteUuid, TxDeadlockFuture> e = it.next();
 
-                        TxIdentifiableFuture<?> fut = e.getValue();
+                        TxDeadlockFuture fut = e.getValue();
 
-                        if (fut.nodeId.equals(nodeId)) {
+                        if (fut.nodeId().equals(nodeId))
                             fut.onDone(new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId));
-
-                            it.remove();
-                        }
                     }
                 }
             },
@@ -262,10 +261,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         IgniteClientDisconnectedException err =
             new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected.");
 
-        for (TxIdentifiableFuture<?> fut : futs.values())
+        for (TxDeadlockFuture fut : futs.values())
             fut.onDone(err);
-
-        futs.clear();
     }
 
     /**
@@ -1865,8 +1862,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * @return {@code True} if deadlock detection is enabled, otherwise - {@code false}.
      */
-    public boolean deadlockDetection() {
-        return deadlockDetection;
+    public boolean deadlockDetectionEnabled() {
+        return DEADLOCK_MAX_ITERS > 0;
     }
 
     /**
@@ -1886,15 +1883,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @param nodeId Node ID.
+     * @param fut Future.
      * @param txKeys Tx keys.
-     * @return Transactions locks and nodes.
      */
-    IgniteInternalFuture<TxLocksResponse> txLocksInfo(UUID nodeId, Set<IgniteTxKey> txKeys) {
-        if (!supportsDeadlockDetection(nodeId))
-            return new GridFinishedFuture<>((TxLocksResponse)null);
+    void txLocksInfo(TxDeadlockFuture fut, Set<IgniteTxKey> txKeys) {
+        UUID nodeId = fut.nodeId();
 
-        TxIdentifiableFuture<TxLocksResponse> fut = new TxIdentifiableFuture<>(nodeId);
+        if (!supportsDeadlockDetection(nodeId))
+            fut.onResult(null);
 
         TxLocksRequest req = new TxLocksRequest(fut.futureId(), txKeys);
 
@@ -1902,24 +1898,20 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             if (!cctx.localNodeId().equals(nodeId))
                 req.prepareMarshal(cctx);
 
-            addFuture(fut.futureId(), fut);
-
             cctx.gridIO().send(nodeId, TOPIC_TX, req, SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
             fut.onDone(e);
-
-            removeFuture(fut.futureId());
         }
-
-        return fut;
     }
 
     /**
      * @param nodeId Node ID.
      */
     private boolean supportsDeadlockDetection(UUID nodeId) {
-        return TX_DEADLOCK_DETECTION_SINCE.compareTo(cctx.node(nodeId).version()) <= 0;
+        ClusterNode node = cctx.node(nodeId);
+
+        return node != null && TX_DEADLOCK_DETECTION_SINCE.compareTo(node.version()) <= 0;
     }
 
     /**
@@ -2050,10 +2042,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /**
      * @param fut Future.
-     * @param futId Future ID.
      */
-    public void addFuture(IgniteUuid futId, TxIdentifiableFuture<?> fut) {
-        IgniteInternalFuture<?> old = futs.put(futId, fut);
+    public void addFuture(TxDeadlockFuture fut) {
+        TxDeadlockFuture old = futs.put(fut.futureId(), fut);
 
         assert old == null : old;
     }
@@ -2062,7 +2053,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param futId Future ID.
      * @return Found future.
      */
-    @Nullable public TxIdentifiableFuture future(IgniteUuid futId) {
+    @Nullable public TxDeadlockFuture future(IgniteUuid futId) {
         return futs.get(futId);
     }
 
@@ -2291,87 +2282,114 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     *
-     */
-    private class TxIdentifiableFuture<R> extends GridFutureAdapter<R> {
-        /** Future ID. */
-        private IgniteUuid futId = IgniteUuid.randomUuid();
-
-        /**
-         * @param nodeId Node ID.
-         */
-        public TxIdentifiableFuture(UUID nodeId) {
-            this.nodeId = nodeId;
-        }
-
-        /** Node ID. */
-        private UUID nodeId;
-
-        /**
-         * @return Future ID.
-         */
-        public IgniteUuid futureId() {
-            return futId;
-        }
-
-        /**
-         * @return Node ID.
-         */
-        public UUID nodeId() {
-            return nodeId;
-        }
-    }
-
-    /**
      * Transactions deadlock detection process message listener.
      */
     private class DeadlockDetectionListener implements GridMessageListener {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public void onMessage(UUID nodeId, Object msg) {
-            unmarshall(nodeId, (GridCacheMessage)msg);
+            GridCacheMessage cacheMsg = (GridCacheMessage)msg;
 
-            if (log.isDebugEnabled())
-                log.debug("Message received [locNodeId=" + cctx.localNodeId() +
-                    ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
+            unmarshall(nodeId, cacheMsg);
 
-            if (msg instanceof TxLocksRequest) {
-                TxLocksRequest req = (TxLocksRequest)msg;
-
-                TxLocksResponse res = txLocksInfo(req.txKeys());
-
-                res.futureId(req.futureId());
-
+            if (cacheMsg.classError() != null) {
                 try {
-                    if (!cctx.localNodeId().equals(nodeId))
-                        res.prepareMarshal(cctx);
-
-                    cctx.gridIO().send(nodeId, TOPIC_TX, res, SYSTEM_POOL);
+                    processFailedMessage(nodeId, cacheMsg);
                 }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send response to node [node=" + nodeId + ", res=" + res + ']', e);
+                catch(Throwable e){
+                    U.error(log, "Failed to process message [senderId=" + nodeId +
+                        ", messageType=" + cacheMsg.getClass() + ']', e);
+
+                    if (e instanceof Error)
+                        throw (Error)e;
                 }
             }
-            else if (msg instanceof TxLocksResponse) {
-                TxLocksResponse res = (TxLocksResponse)msg;
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Message received [locNodeId=" + cctx.localNodeId() +
+                        ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
 
-                IgniteUuid futId = res.futureId();
+                if (msg instanceof TxLocksRequest) {
+                    TxLocksRequest req = (TxLocksRequest)msg;
 
-                GridFutureAdapter<TxLocksResponse> fut = future(futId);
+                    TxLocksResponse res = txLocksInfo(req.txKeys());
 
-                if (fut != null) {
+                    res.futureId(req.futureId());
+
                     try {
-                        fut.onDone(res);
+                        if (!cctx.localNodeId().equals(nodeId))
+                            res.prepareMarshal(cctx);
+
+                        cctx.gridIO().send(nodeId, TOPIC_TX, res, SYSTEM_POOL);
                     }
-                    finally {
-                        removeFuture(futId);
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send response to node [node=" + nodeId + ", res=" + res + ']', e);
                     }
+                }
+                else if (msg instanceof TxLocksResponse) {
+                    TxLocksResponse res = (TxLocksResponse)msg;
+
+                    IgniteUuid futId = res.futureId();
+
+                    TxDeadlockFuture fut = future(futId);
+
+                    if (fut != null)
+                        fut.onResult(res);
+                    else
+                        U.warn(log, "Unexpected response received " + res);
                 }
                 else
-                    U.warn(log, "Unexpected response received: " + res);
+                    throw new IllegalArgumentException("Unknown message [msg=" + msg + ']');
             }
-            else
-                throw new IllegalArgumentException("Unknown message [msg=" + msg + ']');
+        }
+
+        /**
+         * @param nodeId Node ID.
+         * @param msg Message.
+         */
+        private void processFailedMessage(UUID nodeId, GridCacheMessage msg) throws IgniteCheckedException {
+            switch (msg.directType()) {
+                case -5: {
+                    TxLocksRequest req = (TxLocksRequest)msg;
+
+                    TxLocksResponse res = new TxLocksResponse();
+
+                    res.futureId(req.futureId());
+
+                    try {
+                        cctx.io().send(nodeId, res, SYSTEM_POOL);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to send response to node (is node still alive?) [nodeId=" + nodeId +
+                            ", res=" + res + ']', e);
+                    }
+                }
+
+                break;
+
+                case -4: {
+                    TxLocksResponse res = (TxLocksResponse)msg;
+
+                    TxDeadlockFuture fut = future(res.futureId());
+
+                    if (fut == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to find future for get response [sender="
+                                + nodeId + ", res=" + res + ']');
+
+                        return;
+                    }
+
+                    fut.onResult(res);
+                }
+
+                break;
+
+                default:
+                    throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [msg=" +
+                        msg + ']', msg.classError());
+            }
+
         }
 
         /**

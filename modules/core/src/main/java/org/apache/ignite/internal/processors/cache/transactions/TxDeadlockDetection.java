@@ -26,23 +26,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager.DEADLOCK_MAX_ITERS;
 
 /**
  * Transactions deadlock detection.
  */
 public class TxDeadlockDetection {
+    /** Deadlock detection maximum iterations. */
+    private static final int DEADLOCK_TIMEOUT = getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, 60000);
+
     /** Cctx. */
     private final GridCacheSharedContext cctx;
 
@@ -64,13 +71,13 @@ public class TxDeadlockDetection {
      * @param keys Keys.
      * @return {@link TxDeadlock} if found, otherwise - {@code null}.
      */
-    IgniteInternalFuture<TxDeadlock> detectDeadlock(GridCacheVersion txId, Set<IgniteTxKey> keys) {
+    TxDeadlockFuture detectDeadlock(GridCacheVersion txId, Set<IgniteTxKey> keys) {
         if (log.isDebugEnabled()) {
             log.debug("Deadlock detection started " +
                 "[nodeId=" + cctx.localNodeId() + ", xidVersion=" + txId + ", keys=" + keys + ']');
         }
 
-        TxDeadLockFuture fut = new TxDeadLockFuture(txId, keys);
+        TxDeadlockFuture fut = new TxDeadlockFuture(cctx, txId, keys);
 
         fut.init();
 
@@ -131,7 +138,13 @@ public class TxDeadlockDetection {
     /**
      *
      */
-    private class TxDeadLockFuture extends GridFutureAdapter<TxDeadlock> {
+    static class TxDeadlockFuture extends GridFutureAdapter<TxDeadlock> {
+        /** Cctx. */
+        private final GridCacheSharedContext cctx;
+
+        /** Future ID. */
+        private final IgniteUuid futId;
+
         /** Tx ID. */
         private final GridCacheVersion txId;
 
@@ -168,11 +181,27 @@ public class TxDeadlockDetection {
         /** Transactions. */
         private final Map<GridCacheVersion, T2<UUID, Long>> txs;
 
+        /** Current processing node ID. */
+        private UUID curNodeId;
+
+        /** Iterations count. */
+        private int itersCnt;
+
+        /** Timeout object. */
+        private DeadlockTimeoutObject timeoutObj;
+
+        /** Timed out flag. */
+        private volatile boolean timedOut;
+
         /**
+         * @param cctx Context.
          * @param txId Tx ID.
          * @param keys Keys.
          */
-        private TxDeadLockFuture(GridCacheVersion txId, Set<IgniteTxKey> keys) {
+        @SuppressWarnings("unchecked")
+        private TxDeadlockFuture(GridCacheSharedContext cctx, GridCacheVersion txId, Set<IgniteTxKey> keys) {
+            this.cctx = cctx;
+            this.futId = IgniteUuid.randomUuid();
             this.txId = txId;
             this.keys = keys;
             this.processedKeys = new HashSet<>();
@@ -188,10 +217,32 @@ public class TxDeadlockDetection {
             IgniteInternalTx tx = cctx.tm().tx(txId);
 
             this.topVer = tx != null ? tx.topologyVersion() : null;
+
+            if (DEADLOCK_TIMEOUT > 0) {
+                timeoutObj = new DeadlockTimeoutObject();
+
+                cctx.time().addTimeoutObject(timeoutObj);
+            }
+        }
+
+        /**
+         * @return Future ID.
+         */
+        IgniteUuid futureId() {
+            return futId;
+        }
+
+        /**
+         * @return Last node ID.
+         */
+        UUID nodeId() {
+            return curNodeId;
         }
 
         /** */
         private void init() {
+            cctx.tm().addFuture(this);
+
             if (topVer == null) // Tx manager already stopped
                 onDone();
 
@@ -205,37 +256,18 @@ public class TxDeadlockDetection {
         private void map(@Nullable Set<IgniteTxKey> keys, Map<IgniteTxKey, TxLockList> txLocks) {
             mapTxKeys(keys, txLocks);
 
-            if (nodesQueue.isEmpty())
+            curNodeId = nodesQueue.pollFirst();
+
+            if (curNodeId == null || itersCnt++ >= DEADLOCK_MAX_ITERS || timedOut)
                 onDone();
             else {
-                final UUID nodeId = nodesQueue.pollFirst();
+                final Set<IgniteTxKey> txKeys = pendingKeys.get(curNodeId);
 
-                assert nodeId != null;
+                processedKeys.addAll(txKeys);
+                processedNodes.add(curNodeId);
+                pendingKeys.remove(curNodeId);
 
-                final Set<IgniteTxKey> txKeys = pendingKeys.get(nodeId);
-
-                final IgniteInternalFuture<TxLocksResponse> fut = cctx.tm().txLocksInfo(nodeId, txKeys);
-
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<TxLocksResponse>>() {
-                    @Override public void apply(IgniteInternalFuture<TxLocksResponse> fut) {
-                        try {
-                            TxLocksResponse res = fut.get();
-
-                            if (res != null) {
-                                processedKeys.addAll(txKeys);
-                                processedNodes.add(nodeId);
-                                pendingKeys.remove(nodeId);
-
-                                detect(res);
-                            }
-                            else
-                                onDone();
-                        }
-                        catch (IgniteCheckedException e) {
-                            onDone(e);
-                        }
-                    }
-                });
+                cctx.tm().txLocksInfo(this, txKeys);
             }
         }
 
@@ -433,11 +465,62 @@ public class TxDeadlockDetection {
                 }
             }
         }
+
+        /**
+         * @param res Response.
+         */
+        public void onResult(TxLocksResponse res) {
+            if (res != null) {
+                if (res.classError() != null)
+                    onDone(res.classError());
+                else
+                    detect(res);
+            }
+            else
+                onDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable TxDeadlock res, @Nullable Throwable err) {
+            if (isDone())
+                return false;
+
+            cctx.tm().removeFuture(futId);
+
+            if (timeoutObj != null)
+                cctx.time().removeTimeoutObject(timeoutObj);
+
+            return super.onDone(res, err);
+        }
+
+        /**
+         * Lock request timeout object.
+         */
+        private class DeadlockTimeoutObject extends GridTimeoutObjectAdapter {
+            /**
+             * Default constructor.
+             */
+            DeadlockTimeoutObject() {
+                super(DEADLOCK_TIMEOUT);
+            }
+
+            /** {@inheritDoc} */
+            @Override public void onTimeout() {
+                timedOut = true;
+
+                onDone();
+            }
+
+            /** {@inheritDoc} */
+            @Override public String toString() {
+                return S.toString(DeadlockTimeoutObject.class, this);
+            }
+        }
     }
 
     /**
      * Deque with Set semantic.
-     * Only only overridden methods can be used.
+     * Only overridden methods can be used.
      */
     private static class UniqueDeque<E> extends ArrayDeque<E> {
         /** Serial version UID. */

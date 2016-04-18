@@ -15,15 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.transactions;
+package org.apache.ignite.transactions;
 
 import org.apache.ignite.IgniteException;
 
 /**
  * Transaction deadlock exception.
+ * <p>
+ * This exception can be thrown from any cache method that modifies or reads data within transaction
+ * (explicit or implicit) with timeout in case when deadlock detection is enabled (enabled by default).
+ * <p>
+ * Usually this exception is cause for {@link TransactionTimeoutException}.
  */
-public class TxDeadlockException extends IgniteException {
-    /** */
+public class TransactionDeadlockException extends IgniteException {
+    /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
     /**
@@ -31,8 +36,7 @@ public class TxDeadlockException extends IgniteException {
      *
      * @param msg Error message.
      */
-    public TxDeadlockException(String msg) {
+    public TransactionDeadlockException(String msg) {
         super(msg);
     }
-
 }

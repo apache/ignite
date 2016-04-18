@@ -37,7 +37,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.transactions.TxDeadlockException;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -183,7 +183,7 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
             client = false;
 
-            startGridsMultiThreaded(nodesCnt);
+            startGrids(nodesCnt);
 
             if (clientTx) {
                 client = true;
@@ -223,7 +223,8 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     }
 
                     try (Transaction tx =
-                             ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, userThreadTx ? 0 : 1500, 0)
+                             ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ,
+                                 userThreadTx ? 0 : 500 + nodesCnt * 100, 0)
                     ) {
                         Integer key = keys.get(0);
 
@@ -265,12 +266,13 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     }
                     catch (Exception e) {
                         if (!userThreadTx) {
-                            // At least one stack trace should contain TxDeadlockException.
+                            // At least one stack trace should contain TransactionDeadlockException.
                             if (hasCause(e, IgniteTxTimeoutCheckedException.class) &&
-                                    hasCause(e, TxDeadlockException.class)
+                                    hasCause(e, TransactionDeadlockException.class)
                             ) {
                                 if (deadlock.compareAndSet(false, true))
-                                    U.error(log, "At least one stack trace should contain TxDeadlockException: ", e);
+                                    U.error(log, "At least one stack trace should contain " +
+                                            TransactionDeadlockException.class.getSimpleName(), e);
                             }
                         }
                     }
@@ -288,7 +290,7 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                 Ignite ignite = ignite(0);
 
-                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 1500, 0)) {
+                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 0)) {
                     IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
                     Integer key = primaryKey(ignite.cache(CACHE_NAME));
@@ -301,16 +303,16 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     tx.commit();
                 }
                 catch (Exception e) {
-                    U.error(log, "Stack trace should contain TxDeadlockException: ", e);
+                    U.error(log, "Stack trace should contain " +
+                        TransactionDeadlockException.class.getSimpleName() , e);
 
-                    if (hasCause(e, IgniteTxTimeoutCheckedException.class) && hasCause(e, TxDeadlockException.class))
+                    if (hasCause(e, IgniteTxTimeoutCheckedException.class) &&
+                        hasCause(e, TransactionDeadlockException.class))
                         deadlock.set(true);
                 }
             }
             else
                 txLatch.await();
-
-            U.sleep(1000);
 
             assertTrue(deadlock.get());
         }

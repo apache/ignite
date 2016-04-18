@@ -55,7 +55,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
-import org.apache.ignite.internal.transactions.TxDeadlockException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -71,6 +71,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -529,6 +530,10 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     @Override public boolean onDone(Boolean success, Throwable err) {
         if (log.isDebugEnabled())
             log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
+
+        // Local GridDhtLockFuture
+        if (this.err instanceof IgniteTxTimeoutCheckedException && cctx.tm().deadlockDetectionEnabled())
+            return false;
 
         if (isDone())
             return false;
@@ -1316,7 +1321,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            if (inTx() && cctx.tm().deadlockDetection()) {
+            if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
                 Set<KeyCacheObject> keys = new HashSet<>();
 
                 for (IgniteTxEntry txEntry : tx.allEntries()) {
@@ -1332,7 +1337,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                             TxDeadlock deadlock = fut.get();
 
                             if (deadlock != null)
-                                err = new TxDeadlockException(deadlock.toString(cctx.shared()));
+                                err = new TransactionDeadlockException(deadlock.toString(cctx.shared()));
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Unexpected error: ", err = e);
@@ -1449,6 +1454,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             }
 
             if (res.error() != null) {
+                if (res.error() instanceof IgniteTxTimeoutCheckedException && cctx.tm().deadlockDetectionEnabled())
+                    return;
+
                 if (log.isDebugEnabled())
                     log.debug("Finishing mini future with an error due to error in response [miniFut=" + this +
                         ", res=" + res + ']');
