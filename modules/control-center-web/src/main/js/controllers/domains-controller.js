@@ -1242,12 +1242,9 @@ consoleModule.controller('domainsController', [
             else if (!$common.isValidJavaClass('Value type', item.valueType, false, 'valueType'))
                 return false;
 
-            var str = $common.domainForStoreConfigured(item);
-            var qry = $common.domainForQueryConfigured(item);
-
-            if (item.queryMetadata === 'Configuration' && qry) {
+            if (item.queryMetadata === 'Configuration' && $common.domainForQueryConfigured(item)) {
                 if (_.isEmpty(item.fields))
-                    return showPopoverMessage($scope.ui, 'query', 'fields-legend', 'Query fields should not be empty');
+                    return showPopoverMessage($scope.ui, 'query', 'queryFields', 'Query fields should not be empty');
 
                 var indexes = item.indexes;
 
@@ -1260,7 +1257,7 @@ consoleModule.controller('domainsController', [
                 }
             }
 
-            if (str) {
+            if ($common.domainForStoreConfigured(item)) {
                 if ($common.isEmptyString(item.databaseSchema))
                     return showPopoverMessage($scope.ui, 'store', 'databaseSchema', 'Database schema should not be empty');
 
@@ -1268,13 +1265,13 @@ consoleModule.controller('domainsController', [
                     return showPopoverMessage($scope.ui, 'store', 'databaseTable', 'Database table should not be empty');
 
                 if (_.isEmpty(item.keyFields))
-                    return showPopoverMessage($scope.ui, 'store', 'keyFields-add', 'Key fields are not specified');
+                    return showPopoverMessage($scope.ui, 'store', 'keyFields', 'Key fields are not specified');
 
                 if ($common.isJavaBuiltInClass(item.keyType) && item.keyFields.length !== 1)
-                    return showPopoverMessage($scope.ui, 'store', 'keyFields-add', 'Only one field should be specified in case when key type is a Java built-in type');
+                    return showPopoverMessage($scope.ui, 'store', 'keyFields', 'Only one field should be specified in case when key type is a Java built-in type');
 
                 if (_.isEmpty(item.valueFields))
-                    return showPopoverMessage($scope.ui, 'store', 'valueFields-add', 'Value fields are not specified');
+                    return showPopoverMessage($scope.ui, 'store', 'valueFields', 'Value fields are not specified');
             }
             else if (!qry && item.queryMetadata === 'Configuration') {
                 return showPopoverMessage($scope.ui, 'query', 'query-title', 'SQL query domain model should be configured');

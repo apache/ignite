@@ -76,7 +76,7 @@ form.panel.panel-default(name='store' novalidate)
                     +text('Database table:', model + '.databaseTable', 'databaseTable', 'false', 'Input DB table name', 'Table name in database')
                 .settings-row(ng-init='keysTbl={type: "table-db-fields", model: "keyFields", focusId: "KeyField", ui: "table-db-fields"}')
                     ignite-form-group(ng-model='#{keyFields}' ng-form='#{keyFieldsForm}')
-                        ignite-form-field-label
+                        ignite-form-field-label(id='keyFields')
                             | Key fields
                         ignite-form-group-tooltip
                             | Collection of key fields descriptions for CacheJdbcPojoStore
@@ -99,7 +99,7 @@ form.panel.panel-default(name='store' novalidate)
                                             +table-db-field-edit('keysTbl', 'new', 'KeyField', '-1')
                 .settings-row(ng-init='valuesTbl={type: "table-db-fields", model: "valueFields", focusId: "ValueField", ui: "table-db-fields"}')
                     ignite-form-group(ng-model='#{valueFields}' ng-form='#{valueFieldsForm}')
-                        ignite-form-field-label
+                        ignite-form-field-label(id='valueFields')
                             | Value fields
                         ignite-form-group-tooltip
                             | Collection of value fields descriptions for CacheJdbcPojoStore

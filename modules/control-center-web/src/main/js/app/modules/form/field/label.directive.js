@@ -29,6 +29,9 @@ export default ['igniteFormFieldLabel', [() => {
 
                         const $label = $element.parent().parent().find('label');
 
+                        if ($element[0].id)
+                            $label[0].id = $element[0].id;
+
                         $label.append(clone);
                     });
                 }

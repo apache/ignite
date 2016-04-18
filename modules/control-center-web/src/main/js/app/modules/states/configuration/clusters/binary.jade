@@ -21,7 +21,7 @@ include ../../../../../app/helpers/jade/mixins.jade
 -var types = model + '.typeConfigurations'
 
 //- Mixin for java name field with enabled condition.
-mixin binary-types-java-class(lbl, model, name, enabled, required, tip)
+mixin binary-types-java-class(lbl, model, name, enabled, required, remove, autofocus, tip)
     -var errLbl = lbl.substring(0, lbl.length - 1)
 
     ignite-form-field
@@ -29,7 +29,8 @@ mixin binary-types-java-class(lbl, model, name, enabled, required, tip)
             | #{lbl}
         ignite-form-field-tooltip
             | !{tip}
-        +table-remove-button(types, 'Remove type configuration')
+        if (remove)
+            +table-remove-button(types, 'Remove type configuration')
         ignite-form-field-input-text(
             data-id='{{#{name}}}'
             data-name='{{#{name}}}'
@@ -37,6 +38,8 @@ mixin binary-types-java-class(lbl, model, name, enabled, required, tip)
             data-ng-disabled='!(#{enabled})'
             data-ng-required=required
             data-placeholder='Enter fully qualified class name'
+
+            data-ignite-form-field-input-autofocus=autofocus
 
             data-java-identifier='true'
             data-java-package-specified='true'

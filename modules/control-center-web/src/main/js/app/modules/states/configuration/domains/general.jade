@@ -39,7 +39,7 @@ form.panel.panel-default(name=form novalidate)
                             <li>Configuration via QueryEntity class</li>\
                         </ul>')
                 .settings-row
-                    +text-options('Key type', model + '.keyType', 'keyType', 'javaBuiltInClasses', 'true', 'Full class name for Key', 'Key class used to store key in cache')
+                    +text-options-required('Key type:', model + '.keyType', 'keyType', 'javaBuiltInClasses', 'true', 'true', 'Full class name for Key', 'Key class used to store key in cache')
                 .settings-row
                     +java-class('Value type:', form, model + '.valueType', 'valueType', 'true', 'true', 'Value class used to store value in cache')
             .col-sm-6

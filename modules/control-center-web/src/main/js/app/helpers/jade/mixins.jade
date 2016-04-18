@@ -123,7 +123,7 @@ mixin text(lbl, model, name, required, placeholder, tip)
     +text-enabled(lbl, model, name, 'true', required, placeholder, tip)
 
 //- Mixin for text field with enabled condition with options.
-mixin text-options(lbl, model, name, options, enabled, placeholder, tip)
+mixin text-options-required(lbl, model, name, options, enabled, required, placeholder, tip)
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
@@ -136,7 +136,12 @@ mixin text-options(lbl, model, name, options, enabled, placeholder, tip)
             data-options=options
             data-placeholder=placeholder
             data-ng-disabled='!(#{enabled})'
+            data-ng-required=required
         )
+
+//- Mixin for text field with enabled condition with options.
+mixin text-options(lbl, model, name, options, enabled, placeholder, tip)
+    +text-options-required(lbl, model, name, options, enabled, 'false', placeholder, tip)
 
 //- Mixin for required numeric field.
 mixin number-requited(lbl, model, name, required, enabled, placeholder, min, tip)
