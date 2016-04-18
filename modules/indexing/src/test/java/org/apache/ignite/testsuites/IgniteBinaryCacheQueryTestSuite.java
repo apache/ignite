@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.AtomicBinaryOffheapBatchTest;
 import org.apache.ignite.internal.processors.cache.BinarySerializationQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.BinarySerializationQueryWithReflectiveSerializerSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheBinaryObjectsScanSelfTest;
@@ -43,7 +44,6 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         // Serialization.
         suite.addTestSuite(BinarySerializationQuerySelfTest.class);
         suite.addTestSuite(BinarySerializationQueryWithReflectiveSerializerSelfTest.class);
-
         suite.addTestSuite(IgniteCacheBinaryObjectsScanSelfTest.class);
         suite.addTestSuite(CacheContinuousQueryLostPartitionTest.class);
 
