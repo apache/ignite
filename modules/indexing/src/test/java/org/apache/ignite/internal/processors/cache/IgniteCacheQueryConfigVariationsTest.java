@@ -17,14 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 
 /**
@@ -121,6 +126,41 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
                 for (Cache.Entry<Object, Object> entry : actual)
                     assertTrue(entry.getValue().equals(exp.get(entry.getKey())));
             }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("SubtractionInCompareTo")
+    public void testScanFilters() throws Exception {
+        IgniteCache<Object, Object> cache = jcache();
+
+        for (int i = 0; i < CNT; i++)
+            cache.put(key(i), value(i));
+
+        QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(new IgniteBiPredicate<Object, Object>() {
+            @Override public boolean apply(Object k, Object v) {
+                assertNotNull(k);
+                assertNotNull(v);
+
+                return valueOf(k) >= 20 && valueOf(v) < 40;
+            }
+        }));
+
+        List<Cache.Entry<Object, Object>> list = new ArrayList<>(q.getAll());
+
+        Collections.sort(list, new Comparator<Cache.Entry<Object, Object>>() {
+            @Override public int compare(Cache.Entry<Object, Object> e1, Cache.Entry<Object, Object> e2) {
+                return valueOf(e1.getKey()) - valueOf(e2.getKey());
+            }
+        });
+
+        for (int i = 20; i < 40; i++) {
+            Cache.Entry<Object, Object> e = list.get(i - 20);
+
+            assertEquals(i, valueOf(e.getKey()));
+            assertEquals(i, valueOf(e.getValue()));
         }
     }
 }

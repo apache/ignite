@@ -1894,7 +1894,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         if (!offheapEnabled || (!primary && !backup))
             return new GridEmptyCloseableIterator<>();
 
-        if (primary && backup)
+        if (primary && backup && part == null)
             return new GridCloseableIteratorAdapter<Map.Entry<byte[], byte[]>>() {
                 private GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> it = offheap.iterator(spaceName);
 

@@ -1023,18 +1023,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
 
                     private void advance() {
-                        Cache.Entry<K, V> next0 = null;
+                        IgniteBiTuple<K, V> next0 = null;
 
                         while (iter.hasNext()) {
-                            next0 = iter.next();
+                            Cache.Entry<K, V> cacheEntry = iter.next();
 
-                            if (keyValFilter != null && !keyValFilter.apply(next0.getKey(), next0.getValue()))
+                            if (keyValFilter != null && !keyValFilter.apply(cacheEntry.getKey(), cacheEntry.getValue()))
                                 continue;
+
+                            next0 = new IgniteBiTuple<>(cacheEntry.getKey(), cacheEntry.getValue());
 
                             break;
                         }
 
-                        next = next0 != null ? new IgniteBiTuple<>(next0.getKey(), next0.getValue()) : null;
+                        next = next0;
                     }
                 };
             }
@@ -1110,7 +1112,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         if (cctx.offheapTiered() && filter != null) {
-            OffheapIteratorClosure c = new OffheapIteratorClosure(filter, qry.keepBinary());
+            OffheapIteratorClosure c = new OffheapIteratorClosure(filter, qry.keepBinary(), locNode);
 
             return cctx.swap().rawOffHeapIterator(c, qry.partition(), true, backups);
         }
@@ -2741,17 +2743,23 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private boolean keepBinary;
 
+        /** */
+        private boolean locNode;
+
         /**
          * @param filter Filter.
          * @param keepBinary Keep binary flag.
+         * @param locNode Local node.
          */
         private OffheapIteratorClosure(
             @Nullable IgniteBiPredicate<K, V> filter,
-            boolean keepBinary) {
+            boolean keepBinary,
+            boolean locNode) {
             assert filter != null;
 
             this.filter = filter;
             this.keepBinary = keepBinary;
+            this.locNode = locNode;
         }
 
         /** {@inheritDoc} */
@@ -2766,15 +2774,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (!filter.apply(key, val))
                 return null;
 
-            if (key instanceof CacheObject)
-                ((CacheObject)key).prepareMarshal(cctx.cacheObjectContext());
+            if (locNode)
+                return new IgniteBiTuple<>(key, val);
+            else{
+                if (key instanceof CacheObject)
+                    ((CacheObject)key).prepareMarshal(cctx.cacheObjectContext());
 
-            val = (V)cctx.unwrapTemporary(e.value());
+                val = (V)cctx.unwrapTemporary(e.value());
 
-            if (val instanceof CacheObject)
-                ((CacheObject)val).prepareMarshal(cctx.cacheObjectContext());
+                if (val instanceof CacheObject)
+                    ((CacheObject)val).prepareMarshal(cctx.cacheObjectContext());
 
-            return new IgniteBiTuple<>(e.key(), val);
+                return new IgniteBiTuple<>(key, val);
+            }
         }
     }
 
