@@ -257,7 +257,7 @@ consoleModule.controller('sqlController', [
 
                     _setActiveCache();
                 })
-                .catch(function (err) {
+                .catch((err) => {
                     agentMonitor.showNodeError(err.message)
                 })
                 .finally(function () {
@@ -692,8 +692,8 @@ consoleModule.controller('sqlController', [
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => agentMonitor.query(args.cacheName, args.pageSize, args.query))
                 .then(_processQueryResult.bind(this, paragraph))
-                .catch(function (errMsg) {
-                    paragraph.errMsg = errMsg;
+                .catch((err) => {
+                    paragraph.errMsg = err.message;
                 });
         };
 
@@ -722,10 +722,10 @@ consoleModule.controller('sqlController', [
 
                     _tryStartRefresh(paragraph);
                 })
-                .catch(function (errMsg) {
-                    paragraph.errMsg = errMsg;
+                .catch((err) => {
+                    paragraph.errMsg = err.message;
 
-                        _showLoading(paragraph, false);
+                    _showLoading(paragraph, false);
 
                     $scope.stopRefresh(paragraph);
                 })
@@ -757,8 +757,8 @@ consoleModule.controller('sqlController', [
                     return agentMonitor.query(args.cacheName, args.pageSize, args.query);
                 })
                 .then(_processQueryResult.bind(this, paragraph))
-                .catch(function (errMsg) {
-                    paragraph.errMsg = errMsg;
+                .catch((err) => {
+                    paragraph.errMsg = err.message;
 
                     _showLoading(paragraph, false);
                 })
@@ -785,8 +785,8 @@ consoleModule.controller('sqlController', [
                     return agentMonitor.query(args.cacheName, args.pageSize);
                 })
                 .then(_processQueryResult.bind(this, paragraph))
-                .catch(function (errMsg) {
-                    paragraph.errMsg = errMsg;
+                .catch((err) => {
+                    paragraph.errMsg = err.message;
 
                     _showLoading(paragraph, false);
                 })
@@ -822,8 +822,8 @@ consoleModule.controller('sqlController', [
                     if (res.last)
                         delete paragraph.queryId;
                 })
-                .catch(function (errMsg) {
-                    paragraph.errMsg = errMsg;
+                .catch((err) => {
+                    paragraph.errMsg = err.message;
 
                     _showLoading(paragraph, false);
                 })
