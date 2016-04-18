@@ -500,6 +500,11 @@ public class IgniteTxHandler {
             return;
         }
 
+        IgniteInternalTx tx = ctx.tm().tx(res.version());
+
+        if (tx != null)
+            res.txState(tx.txState());
+
         fut.onResult(nodeId, res);
     }
 
@@ -535,6 +540,11 @@ public class IgniteTxHandler {
 
             return;
         }
+
+        IgniteInternalTx tx = ctx.tm().tx(res.version());
+
+        if (tx != null)
+            res.txState(tx.txState());
 
         fut.onResult(nodeId, res);
     }
@@ -819,6 +829,9 @@ public class IgniteTxHandler {
             if (nearTx != null)
                 res.nearEvicted(nearTx.evicted());
 
+            if (dhtTx != null)
+                req.txState(dhtTx.txState());
+
             if (dhtTx != null && !F.isEmpty(dhtTx.invalidPartitions()))
                 res.invalidPartitionsByCacheId(dhtTx.invalidPartitions());
 
@@ -871,7 +884,7 @@ public class IgniteTxHandler {
             }
             else
                 U.warn(log, "Failed to send tx response to remote node (will rollback transaction) [node=" + nodeId +
-                    ", xid=" + req.version() + ", err=" +  e.getMessage() + ']');
+                    ", xid=" + req.version() + ", err=" + e.getMessage() + ']');
 
             if (nearTx != null)
                 nearTx.rollback();
@@ -1320,8 +1333,7 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     protected void processCheckPreparedTxRequest(final UUID nodeId,
-        final GridCacheTxRecoveryRequest req)
-    {
+        final GridCacheTxRecoveryRequest req) {
         if (log.isDebugEnabled())
             log.debug("Processing check prepared transaction requests [nodeId=" + nodeId + ", req=" + req + ']');
 

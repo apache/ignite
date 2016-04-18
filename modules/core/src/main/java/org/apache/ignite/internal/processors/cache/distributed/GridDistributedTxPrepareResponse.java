@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -43,6 +44,8 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
     /** Serialized error. */
     private byte[] errBytes;
+    @GridDirectTransient
+    private IgniteTxState txState;
 
     /**
      * Empty constructor (required by {@link Externalizable}).
@@ -87,6 +90,14 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
      */
     public boolean isRollback() {
         return err != null;
+    }
+
+    public IgniteTxState txState() {
+        return txState;
+    }
+
+    public void txState(IgniteTxState txState) {
+        this.txState = txState;
     }
 
     /** {@inheritDoc}

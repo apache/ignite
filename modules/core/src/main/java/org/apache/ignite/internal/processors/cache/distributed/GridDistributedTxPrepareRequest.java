@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
@@ -143,6 +144,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** IO policy. */
     private byte plc;
+
+    @GridDirectTransient
+    private IgniteTxState txState;
 
     /**
      * Required by {@link Externalizable}.
@@ -304,6 +308,14 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     public boolean onePhaseCommit() {
         return onePhaseCommit;
+    }
+
+    public IgniteTxState txState() {
+        return txState;
+    }
+
+    public void txState(IgniteTxState txState) {
+        this.txState = txState;
     }
 
     /** {@inheritDoc}
