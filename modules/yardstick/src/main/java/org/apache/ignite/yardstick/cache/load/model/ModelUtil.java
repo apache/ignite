@@ -110,7 +110,7 @@ public class ModelUtil {
                 res = new Truck(id, "Mark " + id, id / 2.123 * 100, Color.values()[id % colors], id / 4.123 * 100);
                 break;
             case "Person":
-                res = new Person(id, "First Name " + id, "Last Name " + id, id / 2.123 * 100);
+                res = new Person(id, id+1, "First Name " + id, "Last Name " + id, id / 2.123 * 100);
                 break;
             case "Organization":
                 res = new Organization(id, "Organization " + id);
