@@ -478,6 +478,47 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    public void testRandomPutGetRemove() {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        int cnt = 100_000;
+
+        Map<Integer, DbValue> map = new HashMap<>(cnt);
+
+        Random rnd = new GridRandom();
+
+        for (int i = 0 ; i < 500_000; i++) {
+            if (i % 5000 == 0)
+                X.println(" --> " + i);
+
+            int key = rnd.nextInt(cnt);
+
+            DbValue v0 = new DbValue(key, "test-value-" + rnd.nextInt(200), rnd.nextInt(500));
+
+            switch (rnd.nextInt(3)) {
+                case 0:
+                    assertEquals(map.put(key, v0), cache.getAndPut(key, v0));
+
+                case 1:
+                    assertEquals(map.get(key), cache.get(key));
+
+                    break;
+
+                case 2:
+                    assertEquals(map.remove(key), cache.getAndRemove(key));
+
+                    assertNull(cache.get(key));
+            }
+        }
+
+//        assertEquals(map.size(), cache.size(CachePeekMode.ALL));
+
+        for (Integer key : map.keySet())
+            assertEquals(map.get(key), cache.get(key));
+    }
+
     public void testPutGetRemoveMultipleBackward() throws Exception {
         IgniteEx ig = grid(0);
 
