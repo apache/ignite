@@ -44,8 +44,6 @@ public class IgniteBinaryCacheQueryTestSuite extends TestSuite {
         // Serialization.
         suite.addTestSuite(BinarySerializationQuerySelfTest.class);
         suite.addTestSuite(BinarySerializationQueryWithReflectiveSerializerSelfTest.class);
-        suite.addTestSuite(AtomicBinaryOffheapBatchTest.class);
-
         suite.addTestSuite(IgniteCacheBinaryObjectsScanSelfTest.class);
         suite.addTestSuite(CacheContinuousQueryLostPartitionTest.class);
 
