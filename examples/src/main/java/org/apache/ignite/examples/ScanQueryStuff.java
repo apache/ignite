@@ -70,7 +70,7 @@ public class ScanQueryStuff {
     /** */
     private static final int MAX_COUNT = 6_000_000;
 
-    private static CacheMemoryMode memMode = CacheMemoryMode.OFFHEAP_TIERED;
+    private static CacheMemoryMode memMode = CacheMemoryMode.ONHEAP_TIERED;
 
     public static void main(String[] args) throws InterruptedException {
         try (Ignite ignite = Ignition.start(igniteCfg("node1"));
