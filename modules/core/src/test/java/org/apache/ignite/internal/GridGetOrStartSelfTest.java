@@ -18,11 +18,14 @@
 package org.apache.ignite.internal;
 
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
  * The GridGetOrStartSelfTest tests get or start semantics.
