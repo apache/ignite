@@ -166,12 +166,12 @@ public class CassandraSessionImpl implements CassandraSession {
         Throwable error = new IgniteException(errorMsg);
 
         int dataSize = -1;
-        int processedCount = 0;
+        int processedCnt = 0;
 
         incrementSessionRefs();
 
         try {
-            while (dataSize != processedCount && error != null && attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
+            while (dataSize != processedCnt && error != null && attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
                 boolean tblAbsenceErrorFlag = false;
                 boolean hostsAvailabilityErrorFlag = false;
                 boolean prepStatementErrorFlag = false;
@@ -208,7 +208,7 @@ public class CassandraSessionImpl implements CassandraSession {
                         if (row != null)
                             assistant.process(row, futureResult.getKey());
 
-                        processedCount++;
+                        processedCnt++;
                     }
                     catch (Throwable e) {
                         if (CassandraHelper.isTableAbsenceError(e))
@@ -253,7 +253,7 @@ public class CassandraSessionImpl implements CassandraSession {
             decrementSessionRefs();
         }
 
-        errorMsg = "Failed to process " + (dataSize - processedCount) +
+        errorMsg = "Failed to process " + (dataSize - processedCnt) +
             " of " + dataSize + " elements during " + assistant.operationName() +
             " operation with Cassandra";
 

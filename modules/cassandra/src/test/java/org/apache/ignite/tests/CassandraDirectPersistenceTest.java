@@ -18,12 +18,9 @@
 package org.apache.ignite.tests;
 
 import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.tests.pojos.Person;
 import org.apache.ignite.tests.pojos.PersonId;
 import org.apache.ignite.tests.utils.CacheStoreHelper;
@@ -48,7 +45,7 @@ public class CassandraDirectPersistenceTest {
     public static void setUpClass() {
         if (CassandraHelper.useEmbeddedCassandra()) {
             try {
-                CassandraHelper.startEmbededCassandra();
+                CassandraHelper.startEmbeddedCassandra();
             }
             catch (Throwable e) {
                 throw new RuntimeException("Failed to start embedded Cassandra instance", e);
@@ -57,10 +54,13 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Testing admin connection to Cassandra");
         CassandraHelper.testAdminConnection();
+
         LOGGER.info("Testing regular connection to Cassandra");
         CassandraHelper.testRegularConnection();
+
         LOGGER.info("Dropping all artifacts from previous tests execution session");
         CassandraHelper.dropTestKeyspaces();
+
         LOGGER.info("Start tests execution");
     }
 
@@ -100,16 +100,16 @@ public class CassandraDirectPersistenceTest {
         Collection<CacheEntryImpl<String, String>> strEntries = TestsHelper.generateStringsEntries();
 
         Collection<Integer> fakeIntKeys = TestsHelper.getKeys(intEntries);
-        fakeIntKeys.add(new Integer(-1));
-        fakeIntKeys.add(new Integer(-2));
-        fakeIntKeys.add(new Integer(-3));
-        fakeIntKeys.add(new Integer(-4));
+        fakeIntKeys.add(-1);
+        fakeIntKeys.add(-2);
+        fakeIntKeys.add(-3);
+        fakeIntKeys.add(-4);
 
-        Collection<String> fakeStringKeys = TestsHelper.getKeys(strEntries);
-        fakeStringKeys.add("-1");
-        fakeStringKeys.add("-2");
-        fakeStringKeys.add("-3");
-        fakeStringKeys.add("-4");
+        Collection<String> fakeStrKeys = TestsHelper.getKeys(strEntries);
+        fakeStrKeys.add("-1");
+        fakeStrKeys.add("-2");
+        fakeStrKeys.add("-3");
+        fakeStrKeys.add("-4");
 
         LOGGER.info("Running PRIMITIVE strategy write tests");
 
@@ -141,7 +141,7 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running fake keys read tests");
 
-        intVal = (Integer)store1.load(new Integer(-1));
+        intVal = (Integer)store1.load(-1);
         if (intVal != null)
             throw new RuntimeException("Integer value with fake key '-1' was found in Cassandra");
 
@@ -169,7 +169,7 @@ public class CassandraDirectPersistenceTest {
         if (!TestsHelper.checkCollectionsEqual(intValues, intEntries))
             throw new RuntimeException("Integer values was incorrectly deserialized from Cassandra");
 
-        strValues = store2.loadAll(fakeStringKeys);
+        strValues = store2.loadAll(fakeStrKeys);
         if (!TestsHelper.checkCollectionsEqual(strValues, strEntries))
             throw new RuntimeException("String values was incorrectly deserialized from Cassandra");
 
@@ -189,11 +189,11 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Deleting fake keys");
 
-        store1.delete(new Integer(-1));
+        store1.delete(-1);
         store2.delete("-1");
 
         store1.deleteAll(fakeIntKeys);
-        store2.deleteAll(fakeStringKeys);
+        store2.deleteAll(fakeStrKeys);
 
         LOGGER.info("PRIMITIVE strategy delete tests passed");
     }

@@ -43,13 +43,13 @@ import org.xml.sax.InputSource;
 public class KeyValuePersistenceSettings implements Serializable {
     /**
      * Default Cassandra keyspace options which should be used to create new keyspace.
-     *
-     *  1) SimpleStrategy for replication work well for single data center Cassandra cluster.
-     *     If your Cassandra cluster deployed across multiple data centers it's better to use NetworkTopologyStrategy.
-     *
-     *  2) Three replicas will be created for each data block.
-     *
-     *  3) Setting DURABLE_WRITES to true specifies that all data should be written to commit log.
+     * <ul>
+     * <li> <b>SimpleStrategy</b> for replication work well for single data center Cassandra cluster.<br/>
+     *      If your Cassandra cluster deployed across multiple data centers it's better to use <b>NetworkTopologyStrategy</b>.
+     * </li>
+     * <li> Three replicas will be created for each data block. </li>
+     * <li> Setting DURABLE_WRITES to true specifies that all data should be written to commit log. </li>
+     * </ul>
      */
     private static final String DFLT_KEYSPACE_OPTIONS = "replication = {'class' : 'SimpleStrategy', " +
             "'replication_factor' : 3} and durable_writes = true";

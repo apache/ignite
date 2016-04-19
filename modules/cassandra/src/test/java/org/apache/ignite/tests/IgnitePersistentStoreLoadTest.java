@@ -59,7 +59,7 @@ public class IgnitePersistentStoreLoadTest extends LoadTestDriver {
 
             driver.runTest("BULK_WRITE", BulkWriteWorker.class, BulkWriteWorker.LOGGER_NAME);
 
-            //CassandraHelper.dropTestKeyspaces();
+            //CassandraHelper.dropTestKeyspaces();  // REVIEW This line is commented by purpose?
 
             LOGGER.info("Ignite load tests execution completed");
         }
