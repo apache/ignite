@@ -452,7 +452,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                     AffinityTopologyVersion topVer = topologyVersion();
 
-                    batchStoreCommit(writeMap().values(), true);
+                    batchStoreCommit(writeMap().values());
 
                     // Node that for near transactions we grab all entries.
                     for (IgniteTxEntry txEntry : (near() ? allEntries() : writeEntries())) {

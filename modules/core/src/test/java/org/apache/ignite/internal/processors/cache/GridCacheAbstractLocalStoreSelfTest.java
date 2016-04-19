@@ -107,6 +107,9 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /** */
     public static volatile boolean near = false;
 
+    /** */
+    public static volatile boolean locStoreBackups = true;
+
     /**
      *
      */
@@ -194,6 +197,9 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setBackups(backups);
         cacheCfg.setOffHeapMaxMemory(0);
         cacheCfg.setSwapEnabled(true);
+
+        if (locStoreBackups)
+            cacheCfg.setLocalStoreUpdateBackups(true);
 
         if (isOffHeapTieredMode())
             cacheCfg.setMemoryMode(OFFHEAP_TIERED);
