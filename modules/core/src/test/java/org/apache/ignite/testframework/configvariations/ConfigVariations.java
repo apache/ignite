@@ -215,7 +215,7 @@ public class ConfigVariations {
     /**
      * @return Marshaller.
      */
-    private static Factory<OptimizedMarshaller> optimizedMarshallerFactory() {
+    public static Factory<OptimizedMarshaller> optimizedMarshallerFactory() {
         return new Factory<OptimizedMarshaller>() {
             @Override public OptimizedMarshaller create() {
                 OptimizedMarshaller marsh = new OptimizedMarshaller(true);

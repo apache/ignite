@@ -289,6 +289,11 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         protected TestEnum enumVal;
 
         /**
+         * Default constructor must be accessible for deserialize subclasses by JDK serialization API.
+         */
+        TestObject() {
+        }
+        /**
          * @param val Value.
          */
         TestObject(int val) {
@@ -354,7 +359,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         /**
          * Default constructor.
          */
-        ExternalizableObject() {
+        public ExternalizableObject() {
             super(-1);
         }
 
