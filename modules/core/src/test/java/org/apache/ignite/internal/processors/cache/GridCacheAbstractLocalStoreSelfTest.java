@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -95,10 +96,16 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public static final int KEYS = 1000;
 
     /** */
-    public static final String BACKUP_CACHE = "backup";
+    public static final String BACKUP_CACHE_1 = "backup_1";
+
+    /** */
+    public static final String BACKUP_CACHE_2 = "backup_2";
 
     /** */
     public static volatile boolean primaryWriteOrderMode = false;
+
+    /** */
+    public static volatile boolean near = false;
 
     /**
      *
@@ -115,11 +122,15 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         cacheCfg.setAffinity(new RendezvousAffinityFunction());
 
-        CacheConfiguration cacheBackupCfg = cache(gridName, BACKUP_CACHE, 2);
+        CacheConfiguration cacheBackup1Cfg = cache(gridName, BACKUP_CACHE_1, 1);
 
-        cacheBackupCfg.setAffinity(new RendezvousAffinityFunction());
+        cacheBackup1Cfg.setAffinity(new RendezvousAffinityFunction());
 
-        cfg.setCacheConfiguration(cacheCfg, cacheBackupCfg);
+        CacheConfiguration cacheBackup2Cfg = cache(gridName, BACKUP_CACHE_2, 2);
+
+        cacheBackup2Cfg.setAffinity(new RendezvousAffinityFunction());
+
+        cfg.setCacheConfiguration(cacheCfg, cacheBackup1Cfg, cacheBackup2Cfg);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -194,7 +205,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @return Distribution mode.
      */
     protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
+        return near ? new NearCacheConfiguration() : null;
     }
 
     /**
@@ -316,7 +327,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
 
-        String name = BACKUP_CACHE;
+        String name = BACKUP_CACHE_2;
 
         int key1 = -1;
         int key2 = -1;
@@ -406,7 +417,14 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testLocalStoreCorrespondsAffinityWithBackups() throws Exception {
-        testLocalStoreCorrespondsAffinity(BACKUP_CACHE);
+        testLocalStoreCorrespondsAffinity(BACKUP_CACHE_2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalStoreCorrespondsAffinityWithBackup() throws Exception {
+        testLocalStoreCorrespondsAffinity(BACKUP_CACHE_1);
     }
 
     /**
@@ -420,66 +438,158 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     private void testLocalStoreCorrespondsAffinity(String name) throws Exception {
-        for (int i = 1; i <= 6; i++)
-            startGrid(i);
+        near = true;
 
-        awaitPartitionMapExchange();
+        try {
 
-        Random rn = new Random();
+            for (int i = 1; i <= 6; i++)
+                startGrid(i);
 
-        for (int i = 1; i <= 6; i++)
-            assertEquals(0, grid(i).cache(name).localSize(CachePeekMode.NEAR));
+            assertTrue(((IgniteCacheProxy)grid(1).cache(name)).context().isNear() ||
+                getCacheMode()  == REPLICATED);
 
-        for (int i = 0; i < KEYS; i++) {
-            Ignite ignite = grid(rn.nextInt(6) + 1);
+            awaitPartitionMapExchange();
 
-            try (Transaction tx = ignite.transactions().txStart()) {
-                ignite.cache(name).put(i, i);
+            Random rn = new Random();
 
-                for (int j = 0; j < 5; j++)
-                    ignite.cache(name).get(rn.nextInt(KEYS));
+            for (int i = 1; i <= 6; i++)
+                assertEquals(0, grid(i).cache(name).localSize(CachePeekMode.NEAR));
 
-                Map<Integer, Integer> m = new HashMap<>(5);
+            for (int i = 0; i < KEYS; i++) {
+                Ignite ignite = grid(rn.nextInt(6) + 1);
 
-                for (int j = 0; j < 5; j++) {
-                    Integer key = rn.nextInt(KEYS);
+                try (Transaction tx = ignite.transactions().txStart()) {
+                    ignite.cache(name).put(i, i);
 
-                    m.put(key, key);
+                    for (int j = 0; j < 5; j++)
+                        ignite.cache(name).get(rn.nextInt(KEYS));
+
+                    Map<Integer, Integer> m = new HashMap<>(5);
+
+                    for (int j = 0; j < 5; j++) {
+                        Integer key = rn.nextInt(KEYS);
+
+                        m.put(key, key);
+                    }
+
+                    ignite.cache(name).putAll(m);
+
+                    tx.commit();
+                }
+            }
+
+            for (int i = 1; i <= 6; i++) {
+                assertTrue(grid(i).cache(name).localSize(CachePeekMode.NEAR) > 0 ||
+                    getCacheMode()  == REPLICATED);
+            }
+
+            checkLocalStore(grid(1), LOCAL_STORE_1, name);
+            checkLocalStore(grid(2), LOCAL_STORE_2, name);
+            checkLocalStore(grid(3), LOCAL_STORE_3, name);
+            checkLocalStore(grid(4), LOCAL_STORE_4, name);
+            checkLocalStore(grid(5), LOCAL_STORE_5, name);
+            checkLocalStore(grid(6), LOCAL_STORE_6, name);
+
+            int fullStoreSize = LOCAL_STORE_1.map.size() +
+                LOCAL_STORE_2.map.size() +
+                LOCAL_STORE_3.map.size() +
+                LOCAL_STORE_4.map.size() +
+                LOCAL_STORE_5.map.size() +
+                LOCAL_STORE_6.map.size();
+
+            CacheConfiguration ccfg = grid(1).cache(name).getConfiguration(CacheConfiguration.class);
+
+            assertEquals(
+                getCacheMode()  == REPLICATED ?
+                    KEYS * 6 :
+                    ccfg.getBackups() * KEYS + KEYS,
+                fullStoreSize);
+
+        }
+        finally {
+            near = false;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalStoreWithNearKeys() throws Exception {
+        if (getCacheMode() == REPLICATED)
+            return;
+
+        near = true;
+
+        try {
+            for (int i = 1; i <= 3; i++)
+                startGrid(i);
+
+            awaitPartitionMapExchange();
+
+            Ignite ignite = grid(1);
+
+            int kP = -1;
+            int kB = -1;
+            int kN = -1;
+
+            int k = 0;
+
+            while (kP == -1 || kB == -1 || kN == -1) {
+                if (ignite.affinity(BACKUP_CACHE_1).isPrimary(grid(1).cluster().localNode(), k))
+                    kP = k;
+
+                if (ignite.affinity(BACKUP_CACHE_1).isBackup(grid(1).cluster().localNode(), k) &&
+                    ignite.affinity(BACKUP_CACHE_1).isPrimary(grid(2).cluster().localNode(), k))
+                    kB = k;
+
+                if (!ignite.affinity(BACKUP_CACHE_1).isPrimaryOrBackup(grid(1).cluster().localNode(), k) &&
+                    ignite.affinity(BACKUP_CACHE_1).isPrimary(grid(3).cluster().localNode(), k))
+                    kN = k;
+
+                k++;
+            }
+
+            assertTrue(kP != kB && kB != kN && kN != kP);
+
+            Map<Integer, Integer> m = new HashMap<>(3);
+
+            m.put(kP, kP);
+            m.put(kB, kB);
+            m.put(kN, kN);
+
+            for (int i = 1; i <= 3; i++) {
+                try (Transaction tx = grid(i).transactions().txStart()) {
+                    grid(i).cache(BACKUP_CACHE_1).putAll(m);
+
+                    tx.commit();
                 }
 
-                ignite.cache(name).putAll(m);
+                checkLocalStore(grid(1), LOCAL_STORE_1, BACKUP_CACHE_1, m.keySet());
+                checkLocalStore(grid(2), LOCAL_STORE_2, BACKUP_CACHE_1, m.keySet());
+                checkLocalStore(grid(3), LOCAL_STORE_3, BACKUP_CACHE_1, m.keySet());
 
-                tx.commit();
+                LOCAL_STORE_1.clear();
+                LOCAL_STORE_2.clear();
+                LOCAL_STORE_3.clear();
             }
+
+            for (int i = 1; i <= 3; i++) {
+                try (Transaction tx = grid(i).transactions().txStart()) {
+                    grid(i).cache(BACKUP_CACHE_1).withSkipStore().putAll(m);
+
+                    tx.commit();
+                }
+
+                assertTrue(LOCAL_STORE_1.map.isEmpty());
+                assertTrue(LOCAL_STORE_2.map.isEmpty());
+                assertTrue(LOCAL_STORE_3.map.isEmpty());
+            }
+
+            stopAllGrids();
         }
-
-        CacheConfiguration ccfg = grid(1).cache(name).getConfiguration(CacheConfiguration.class);
-
-        for (int i = 1; i <= 6; i++) {
-            assertTrue(grid(i).cache(name).localSize(CachePeekMode.NEAR) > 0 ||
-                ccfg.getCacheMode() == REPLICATED);
+        finally {
+            near = false;
         }
-
-        checkLocalStore(grid(1), LOCAL_STORE_1, name);
-        checkLocalStore(grid(2), LOCAL_STORE_2, name);
-        checkLocalStore(grid(3), LOCAL_STORE_3, name);
-        checkLocalStore(grid(4), LOCAL_STORE_4, name);
-        checkLocalStore(grid(5), LOCAL_STORE_5, name);
-        checkLocalStore(grid(6), LOCAL_STORE_6, name);
-
-        int fullStoreSize =
-            LOCAL_STORE_1.map.size() +
-            LOCAL_STORE_2.map.size() +
-            LOCAL_STORE_3.map.size() +
-            LOCAL_STORE_4.map.size() +
-            LOCAL_STORE_5.map.size() +
-            LOCAL_STORE_6.map.size();
-
-        assertEquals(
-            ccfg.getCacheMode() == REPLICATED ?
-                KEYS * 6 :
-                ccfg.getBackups() * KEYS + KEYS,
-            fullStoreSize);
     }
 
     /**
@@ -488,7 +598,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public void testBackupNode() throws Exception {
         Ignite ignite1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache = ignite1.cache(BACKUP_CACHE);
+        IgniteCache<Object, Object> cache = ignite1.cache(BACKUP_CACHE_2);
 
         for (int i = 0; i < KEYS; i++)
             cache.put(i, i);
@@ -613,6 +723,23 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
                 assertEquals(store.load(i).get1().intValue(), i);
             else
                 assertNull(store.load(i));
+        }
+    }
+
+    /**
+     * Checks that local stores contains only primary entry.
+     *  @param ignite Ignite.
+     * @param store Store.
+     * @param name Cache name.
+     * @param keys keys.
+     */
+    private void checkLocalStore(Ignite ignite, CacheStore<Integer, IgniteBiTuple<Integer, ?>> store, String name,
+        Set<Integer> keys) {
+        for (int key : keys) {
+            if (ignite.affinity(name).isPrimaryOrBackup(ignite.cluster().localNode(), key))
+                assertEquals(store.load(key).get1().intValue(), key);
+            else
+                assertNull(store.load(key));
         }
     }
 

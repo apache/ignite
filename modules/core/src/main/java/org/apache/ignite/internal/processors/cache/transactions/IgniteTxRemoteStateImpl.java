@@ -150,17 +150,9 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
-        int storeCnt = 0;
+        int locStoreCnt = cctx.getLocalStoreCount();
 
-        for (Object cacheCtx : cctx.cacheContexts()) {
-            CacheStoreManager store = ((GridCacheContext)cacheCtx).store();
-
-            if (store.configured() &&
-                store.isLocal()) // Only local stores take part at tx on backup node.
-                storeCnt++;
-        }
-
-        if (storeCnt > 0 && !writeMap.isEmpty()) {
+        if (locStoreCnt > 0 && !writeMap.isEmpty()) {
             Collection<CacheStoreManager> stores = null;
 
             for (IgniteTxEntry e : writeMap.values()) {
@@ -171,11 +163,11 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
 
                 if (store.configured() && store.isLocal()) {
                     if (stores == null)
-                        stores = new ArrayList<>(storeCnt);
+                        stores = new ArrayList<>(locStoreCnt);
 
                     stores.add(store);
 
-                    if (stores.size() == storeCnt)
+                    if (stores.size() == locStoreCnt)
                         break;
                 }
             }

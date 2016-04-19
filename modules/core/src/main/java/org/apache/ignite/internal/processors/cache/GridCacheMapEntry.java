@@ -3333,31 +3333,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     cctx.dataStructures().onEntryUpdated(key, false, true);
                 }
 
-                if (cctx.store().isLocal() && val != null) {
-                    if (cctx.conflictNeedResolve()) {
-                        IgniteBiTuple<?, GridCacheVersion> t = (IgniteBiTuple)cctx.store().loadRaw(null, key);
-
-                        GridCacheVersionedEntryEx oldEntry = new GridCachePlainVersionedEntry<>(
-                            key,
-                            t.get1(),
-                            ttl,
-                            expireTime,
-                            t.get2());
-
-                        GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry<>(
-                            key,
-                            val,
-                            ttl,
-                            expireTime,
-                            ver);
-
-                        GridCacheVersionConflictContext<?, ?> conflictCtx =
-                            cctx.conflictResolve(oldEntry, newEntry, false);
-
-                        if (conflictCtx.isUseNew())
-                            cctx.store().put(null, key, val, ver);
-                    }
-                    else
+                if (cctx.store().isLocal()) {
+                    if (val != null)
                         cctx.store().put(null, key, val, ver);
                 }
 
