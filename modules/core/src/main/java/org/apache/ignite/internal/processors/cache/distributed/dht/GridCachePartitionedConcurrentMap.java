@@ -27,6 +27,7 @@ import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -52,9 +53,18 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         this.ctx = ctx;
     }
 
+    @Nullable private GridDhtLocalPartition localPartition(KeyCacheObject key, AffinityTopologyVersion topVer, boolean create) {
+        int p = key.partition();
+
+        if (p == -1)
+            p = ctx.affinity().partition(key);
+
+        return ctx.topology().localPartition(p, topVer, create);
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public GridCacheMapEntry getEntry(KeyCacheObject key) {
-        GridDhtLocalPartition part = ctx.topology().localPartition(key, false);
+        GridDhtLocalPartition part = localPartition(key, AffinityTopologyVersion.NONE, false);
 
         if (part == null)
             return null;
@@ -65,7 +75,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     /** {@inheritDoc} */
     @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create, boolean touch) {
-        GridDhtLocalPartition part = ctx.topology().localPartition(key, create);
+        GridDhtLocalPartition part = localPartition(key, topVer, create);
 
         if (part == null)
             return null;
@@ -97,17 +107,17 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
 
     /** {@inheritDoc} */
     @Override public void incrementPublicSize(GridCacheEntryEx e) {
-        ctx.topology().localPartition(e.key(), true).incrementPublicSize(e);
+        localPartition(e.key(), AffinityTopologyVersion.NONE, true).incrementPublicSize(e);
     }
 
     /** {@inheritDoc} */
     @Override public void decrementPublicSize(GridCacheEntryEx e) {
-        ctx.topology().localPartition(e.key(), true).decrementPublicSize(e);
+        localPartition(e.key(), AffinityTopologyVersion.NONE, true).decrementPublicSize(e);
     }
 
     /** {@inheritDoc} */
     @Override public boolean removeEntry(GridCacheEntryEx entry) {
-        GridDhtLocalPartition part = ctx.topology().localPartition(entry.key(), false);
+        GridDhtLocalPartition part = localPartition(entry.key(), AffinityTopologyVersion.NONE, false);
 
         if (part == null)
             return false;

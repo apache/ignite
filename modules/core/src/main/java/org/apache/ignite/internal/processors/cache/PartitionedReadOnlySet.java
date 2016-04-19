@@ -25,14 +25,24 @@ import java.util.Iterator;
 import java.util.Set;
 import org.apache.ignite.internal.util.typedef.F;
 
+/**
+ * Read-only wrapper over multiple sets.
+ * @param <T>
+ */
 public class PartitionedReadOnlySet<T> extends AbstractSet<T> {
 
+    /** */
     private final Collection<Set<T>> sets;
 
+    /**
+     * Constructor.
+     * @param sets Internal sets.
+     */
     public PartitionedReadOnlySet(Collection<Set<T>> sets) {
         this.sets = sets;
     }
 
+    /** {@inheritDoc} */
     @Override public Iterator<T> iterator() {
         Collection<Iterator<T>> iterators = new ArrayList<>(sets.size());
 
@@ -43,6 +53,7 @@ public class PartitionedReadOnlySet<T> extends AbstractSet<T> {
         return F.flatIterators(iterators);
     }
 
+    /** {@inheritDoc} */
     @Override public int size() {
         int size = 0;
 
@@ -53,6 +64,7 @@ public class PartitionedReadOnlySet<T> extends AbstractSet<T> {
         return size;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean contains(Object o) {
         for (Set<T> set : sets)
             if (set.contains(o))

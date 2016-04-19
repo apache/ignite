@@ -55,6 +55,7 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
     /** Cache context. */
     private final GridCacheContext ctx;
 
+    /** Public size counter. */
     private final AtomicInteger pubSize = new AtomicInteger();
 
     /**
@@ -234,14 +235,17 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
         return map.size();
     }
 
+    /** {@inheritDoc} */
     @Override public int publicSize() {
         return pubSize.get();
     }
 
+    /** {@inheritDoc} */
     @Override public void incrementPublicSize(GridCacheEntryEx e) {
         pubSize.incrementAndGet();
     }
 
+    /** {@inheritDoc} */
     @Override public void decrementPublicSize(GridCacheEntryEx e) {
         pubSize.decrementAndGet();
     }
