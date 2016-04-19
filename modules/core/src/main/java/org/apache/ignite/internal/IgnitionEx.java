@@ -499,7 +499,7 @@ public class IgnitionEx {
 
         U.warn(null, "Default Spring XML file not found (is IGNITE_HOME set?): " + DFLT_CFG);
 
-        return start0(new GridStartContext(new IgniteConfiguration(), null, springCtx)).grid();
+        return start0(new GridStartContext(new IgniteConfiguration(), null, springCtx), true).grid();
     }
 
     /**
@@ -512,11 +512,25 @@ public class IgnitionEx {
      *      also if named grid has already been started.
      */
     public static Ignite start(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return start(cfg, null);
+        return start(cfg, null, true);
     }
 
     /**
-     * Starts grid with given configuration. Note that this method is no-op if grid with the name
+     * Starts a grid with given configuration. If the grid is already started and failIfStarted set to TRUE
+     * an exception will be thrown.
+     *
+     * @param cfg Grid configuration. This cannot be {@code null}.
+     * failIfStarted Throw or not an exception if grid is already started.
+     * @return Started grid.
+     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
+     *      also if named grid has already been started.
+     */
+    public static Ignite start(IgniteConfiguration cfg, boolean failIfStarted) throws IgniteCheckedException {
+        return start(cfg, null, failIfStarted);
+    }
+
+    /**
+     * Starts grid with given configuration. Note that this method will throw and exception if grid with the name
      * provided in given configuration is already started.
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
@@ -531,7 +545,27 @@ public class IgnitionEx {
     public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
         A.notNull(cfg, "cfg");
 
-        return start0(new GridStartContext(cfg, null, springCtx)).grid();
+        return start0(new GridStartContext(cfg, null, springCtx), true).grid();
+    }
+
+    /**
+     * Starts grid with given configuration. If the grid is already started and failIfStarted set to TRUE
+     * an exception will be thrown.
+     *
+     * @param cfg Grid configuration. This cannot be {@code null}.
+     * @param springCtx Optional Spring application context, possibly {@code null}.
+     *      Spring bean definitions for bean injection are taken from this context.
+     *      If provided, this context can be injected into grid tasks and grid jobs using
+     *      {@link SpringApplicationContextResource @SpringApplicationContextResource} annotation.
+     * @param failIfStarted Throw or not an exception if grid is already started.
+     * @return Started grid.
+     * @throws IgniteCheckedException If grid could not be started. This exception will be thrown
+     *      also if named grid has already been started.
+     */
+    public static Ignite start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx, boolean failIfStarted) throws IgniteCheckedException {
+        A.notNull(cfg, "cfg");
+
+        return start0(new GridStartContext(cfg, null, springCtx), failIfStarted).grid();
     }
 
     /**
@@ -927,7 +961,7 @@ public class IgnitionEx {
 
                 // Use either user defined context or our one.
                 IgniteNamedInstance grid = start0(
-                    new GridStartContext(cfg, springCfgUrl, springCtx == null ? cfgMap.get2() : springCtx));
+                    new GridStartContext(cfg, springCfgUrl, springCtx == null ? cfgMap.get2() : springCtx), true);
 
                 // Add it if it was not stopped during startup.
                 if (grid != null)
@@ -958,10 +992,11 @@ public class IgnitionEx {
      * Starts grid with given configuration.
      *
      * @param startCtx Start context.
+     * @param failIfStarted Throw or not an exception if grid is already started.
      * @return Started grid.
      * @throws IgniteCheckedException If grid could not be started.
      */
-    private static IgniteNamedInstance start0(GridStartContext startCtx) throws IgniteCheckedException {
+    private static IgniteNamedInstance start0(GridStartContext startCtx, boolean failIfStarted ) throws IgniteCheckedException {
         assert startCtx != null;
 
         String name = startCtx.config().getGridName();
@@ -984,12 +1019,15 @@ public class IgnitionEx {
             }
         }
 
-        if (old != null) {
-            if (name == null)
-                throw new IgniteCheckedException("Default Ignite instance has already been started.");
+        if (old != null)
+            if (failIfStarted) {
+                if (name == null)
+                    throw new IgniteCheckedException("Default Ignite instance has already been started.");
+                else
+                    throw new IgniteCheckedException("Ignite instance with this name has already been started: " + name);
+            }
             else
-                throw new IgniteCheckedException("Ignite instance with this name has already been started: " + name);
-        }
+                return old;
 
         if (startCtx.config().getWarmupClosure() != null)
             startCtx.config().getWarmupClosure().apply(startCtx.config());
