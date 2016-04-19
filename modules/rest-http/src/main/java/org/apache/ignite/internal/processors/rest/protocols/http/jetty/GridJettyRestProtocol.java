@@ -168,8 +168,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         }
 
         int initPort = connector.getPort();
-
-        int lastPort = initPort + config().getPortRange() - 1;
+        int portRange = config().getPortRange();
+        int lastPort = portRange == 0 ? initPort : initPort + portRange - 1;
 
         for (port = initPort; port <= lastPort; port++) {
             connector.setPort(port);
