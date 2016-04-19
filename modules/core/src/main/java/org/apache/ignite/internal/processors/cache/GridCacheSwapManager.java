@@ -1860,7 +1860,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         checkIteratorQueue();
 
         if (primary && backup)
-            return offheap.iterator(spaceName, c);
+            return offheap.iterator(spaceName, c, part);
 
         AffinityTopologyVersion ver = cctx.affinity().affinityTopologyVersion();
 

@@ -213,9 +213,8 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
     /**
      * @throws Exception If failed.
      */
-    // TODO uncomment.
     @SuppressWarnings("SubtractionInCompareTo")
-    public void _testScanQueryPartitionFilter() throws Exception {
+    public void testScanQueryPartitionFilter() throws Exception {
         IgniteCache<Object, Object> cache = jcache();
 
         Affinity<Object> affinity = testedGrid().affinity(cacheName());
@@ -252,9 +251,11 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
         for (int part = 0; part < affinity.partitions(); part++) {
             info(">>>>> part=" + part);
 
-            QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(part));
+            QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(part, filter));
 
-            checkQueryResults(partMap.get(part), q);
+            Map<Object, Object> expMap = partMap.get(part);
+
+            checkQueryResults(expMap == null ? Collections.emptyMap() : expMap, q);
         }
     }
 
@@ -290,9 +291,5 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
         finally {
             cursor.close();
         }
-    }
-
-    @Override public boolean isDebug() {
-        return true;
     }
 }
