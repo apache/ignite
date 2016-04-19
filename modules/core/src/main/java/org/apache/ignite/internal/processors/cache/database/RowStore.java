@@ -19,18 +19,15 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.dwordsOffset;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.linkFromDwordOffset;
@@ -42,22 +39,19 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  */
 public class RowStore<T extends CacheDataRow> {
     /** */
-    private final FreeList freeList;
+    protected final FreeList freeList;
 
     /** */
-    private final PageMemory pageMem;
+    protected final PageMemory pageMem;
 
     /** */
-    private final GridCacheContext<?,?> cctx;
+    protected final GridCacheContext<?,?> cctx;
 
     /** */
-    private final CacheObjectContext coctx;
+    protected final CacheObjectContext coctx;
 
     /** */
     private volatile long lastDataPageId;
-
-    /** */
-    private final RowFactory<T> rowFactory;
 
     /** */
     private final PageHandler<CacheDataRow> writeRow = new PageHandler<CacheDataRow>() {
@@ -94,13 +88,11 @@ public class RowStore<T extends CacheDataRow> {
     /**
      * @param cctx Cache context.
      */
-    public RowStore(GridCacheContext<?,?> cctx, RowFactory<T> rowFactory, FreeList freeList) {
-        assert rowFactory != null;
+    public RowStore(GridCacheContext<?,?> cctx, FreeList freeList) {
         assert cctx != null;
 
         this.cctx = cctx;
         this.freeList = freeList;
-        this.rowFactory = rowFactory;
 
         coctx = cctx.cacheObjectContext();
         pageMem = cctx.shared().database().pageMemory();
@@ -111,7 +103,7 @@ public class RowStore<T extends CacheDataRow> {
      * @return Page.
      * @throws IgniteCheckedException If failed.
      */
-    private Page page(long pageId) throws IgniteCheckedException {
+    protected final Page page(long pageId) throws IgniteCheckedException {
         return pageMem.page(new FullPageId(pageId, cctx.cacheId()));
     }
 
@@ -135,63 +127,6 @@ public class RowStore<T extends CacheDataRow> {
 
         try (Page page = page(pageId(link))) {
             writePage(page, rmvRow, null, dwordsOffset(link), 0);
-        }
-    }
-
-    /**
-     * !!! This method must be invoked in read or write lock of referring index page. It is needed to
-     * !!! make sure that row at this link will be invisible, when the link will be removed from
-     * !!! from all the index pages, so that row can be safely erased from the data page.
-     *
-     * @param link Link.
-     * @return Row.
-     * @throws IgniteCheckedException If failed.
-     */
-    public T getRow(long link) throws IgniteCheckedException {
-        try (Page page = page(pageId(link))) {
-            ByteBuffer buf = page.getForRead();
-
-            try {
-                T existing = rowFactory.cachedRow(link);
-
-                if (existing != null)
-                    return existing;
-
-                DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
-
-                int dataOff = io.getDataOffset(buf, dwordsOffset(link));
-
-                buf.position(dataOff);
-
-                // Skip entry size.
-                buf.getShort();
-
-                CacheObject key = coctx.processor().toCacheObject(coctx, buf);
-                CacheObject val = coctx.processor().toCacheObject(coctx, buf);
-
-                int topVer = buf.getInt();
-                int nodeOrderDrId = buf.getInt();
-                long globalTime = buf.getLong();
-                long order = buf.getLong();
-
-                GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
-
-                T row;
-
-                try {
-                    row = rowFactory.createRow(key, val, ver, link, 0);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-
-                assert row.version() != null : row;
-
-                return row;
-            }
-            finally {
-                page.releaseRead();
-            }
         }
     }
 
@@ -246,28 +181,5 @@ public class RowStore<T extends CacheDataRow> {
 
             nextDataPage(pageId, row.partition());
         }
-    }
-
-    /**
-     *
-     */
-    protected interface RowFactory<T> {
-        /**
-         * @param link Link.
-         * @return Row.
-         */
-        T cachedRow(long link);
-
-        /**
-         * @param key Key.
-         * @param val Value.
-         * @param ver Version.
-         * @param link Link.
-         * @param expirationTime Expiration time.
-         * @return Row.
-         * @throws IgniteCheckedException If failed.
-         */
-        T createRow(CacheObject key, CacheObject val, GridCacheVersion ver, long link, long expirationTime)
-            throws IgniteCheckedException;
     }
 }

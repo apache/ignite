@@ -17,62 +17,99 @@
 
 package org.apache.ignite.internal.processors.query.h2.database;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+
+import static org.apache.ignite.internal.pagemem.PageIdUtils.dwordsOffset;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
  * Data store for H2 rows.
  */
 public class H2RowStore extends RowStore<GridH2Row> {
+    /** */
+    private final GridH2RowDescriptor rowDesc;
+
     /**
      * @param rowDesc Row descriptor.
      * @param cctx Cache context.
      * @param freeList Free list.
      */
     public H2RowStore(GridH2RowDescriptor rowDesc, GridCacheContext<?,?> cctx, FreeList freeList) {
-        super(cctx, new H2RowFactory(rowDesc), freeList);
+        super(cctx, freeList);
+
+        this.rowDesc = rowDesc;
     }
+
     /**
+     * !!! This method must be invoked in read or write lock of referring index page. It is needed to
+     * !!! make sure that row at this link will be invisible, when the link will be removed from
+     * !!! from all the index pages, so that row can be safely erased from the data page.
      *
+     * @param link Link.
+     * @return Row.
+     * @throws IgniteCheckedException If failed.
      */
-    static class H2RowFactory implements RowFactory<GridH2Row> {
-        /** */
-        private final GridH2RowDescriptor rowDesc;
+    public GridH2Row getRow(long link) throws IgniteCheckedException {
+        try (Page page = page(pageId(link))) {
+            ByteBuffer buf = page.getForRead();
 
-        /**
-         * @param rowDesc Row descriptor.
-         */
-        public H2RowFactory(GridH2RowDescriptor rowDesc) {
-            assert rowDesc != null;
+            try {
+                GridH2Row existing = rowDesc.cachedRow(link);
 
-            this.rowDesc = rowDesc;
-        }
+                if (existing != null)
+                    return existing;
 
-        /** {@inheritDoc} */
-        @Override public GridH2Row cachedRow(long link) {
-            return rowDesc.cachedRow(link);
-        }
+                DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-        /** {@inheritDoc} */
-        @Override public GridH2Row createRow(CacheObject key,
-            CacheObject val,
-            GridCacheVersion ver,
-            long link,
-            long expirationTime) throws IgniteCheckedException {
-            GridH2Row row = rowDesc.createRow(key, PageIdUtils.partId(link), val, ver, 0);
+                int dataOff = io.getDataOffset(buf, dwordsOffset(link));
 
-            row.link = link;
+                buf.position(dataOff);
 
-            rowDesc.cache(row);
+                // Skip entry size.
+                buf.getShort();
 
-            return row;
+                CacheObject key = coctx.processor().toCacheObject(coctx, buf);
+                CacheObject val = coctx.processor().toCacheObject(coctx, buf);
+
+                int topVer = buf.getInt();
+                int nodeOrderDrId = buf.getInt();
+                long globalTime = buf.getLong();
+                long order = buf.getLong();
+
+                GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
+
+                GridH2Row row;
+
+                try {
+                    row = rowDesc.createRow(key, PageIdUtils.partId(link), val, ver, 0);
+
+                    row.link = link;
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+
+                assert row.ver != null;
+
+                rowDesc.cache(row);
+
+                return row;
+            }
+            finally {
+                page.releaseRead();
+            }
         }
     }
 }
