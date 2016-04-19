@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database.freelist;
+package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ThreadLocalRandom;
@@ -25,9 +25,9 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jsr166.ConcurrentHashMap8;
@@ -48,12 +48,12 @@ public class FreeList {
     private final ConcurrentHashMap8<Integer,GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
 
     /** */
-    private final PageHandler<GridH2Row> writeRow = new PageHandler<GridH2Row>() {
-        @Override public int run(Page page, ByteBuffer buf, GridH2Row row, int entrySize)
+    private final PageHandler<CacheDataRow> writeRow = new PageHandler<CacheDataRow>() {
+        @Override public int run(Page page, ByteBuffer buf, CacheDataRow row, int entrySize)
             throws IgniteCheckedException {
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-            int idx = io.addRow(cctx.cacheObjectContext(), buf, row.key, row.val, row.ver, entrySize);
+            int idx = io.addRow(cctx.cacheObjectContext(), buf, row.key(), row.value(), row.version(), entrySize);
 
             assert idx >= 0;
 
@@ -130,14 +130,14 @@ public class FreeList {
      * @param row Row.
      * @throws IgniteCheckedException If failed.
      */
-    public void writeRowData(GridH2Row row) throws IgniteCheckedException {
-        assert row.link == 0;
+    public void writeRowData(CacheDataRow row) throws IgniteCheckedException {
+        // assert row.link == 0;
 
-        int entrySize = DataPageIO.getEntrySize(cctx.cacheObjectContext(), row.key, row.val);
+        int entrySize = DataPageIO.getEntrySize(cctx.cacheObjectContext(), row.key(), row.value());
 
         assert entrySize > 0 && entrySize < Short.MAX_VALUE: entrySize;
 
-        FreeTree tree = tree(row.partId);
+        FreeTree tree = tree(row.partition());
         FreeItem item = take(tree, (short)entrySize);
 
         Page page = null;
@@ -147,7 +147,7 @@ public class FreeList {
             if (item == null) {
                 DataPageIO io = DataPageIO.VERSIONS.latest();
 
-                page = allocatePage(row.partId);
+                page = allocatePage(row.partition());
 
                 ByteBuffer buf = page.getForInitialWrite();
 

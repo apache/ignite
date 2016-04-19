@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database.freelist;
+package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
@@ -26,9 +26,9 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.query.h2.database.freelist.io.FreeIO;
-import org.apache.ignite.internal.processors.query.h2.database.freelist.io.FreeInnerIO;
-import org.apache.ignite.internal.processors.query.h2.database.freelist.io.FreeLeafIO;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeIO;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInnerIO;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeLeafIO;
 
 /**
  * Data structure for data pages and their free spaces.

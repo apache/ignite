@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database.freelist;
+package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import org.apache.ignite.internal.pagemem.FullPageId;
 

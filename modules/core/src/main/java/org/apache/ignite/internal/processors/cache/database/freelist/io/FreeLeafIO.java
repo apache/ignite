@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database.freelist.io;
+package org.apache.ignite.internal.processors.cache.database.freelist.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
-import org.apache.ignite.internal.processors.query.h2.database.freelist.FreeItem;
+import org.apache.ignite.internal.processors.cache.database.freelist.FreeItem;
 
 /**
  * Routines for free list leaf pages.

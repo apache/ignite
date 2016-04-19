@@ -15,25 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.database.freelist.io;
+package org.apache.ignite.internal.processors.cache.database;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
- * Common routines for free list pages.
+ *
  */
-public interface FreeIO {
-    /**
-     * @param buf Buffer.
-     * @param idx Index.
-     * @return Dispersed free space.
-     */
-    public int dispersedFreeSpace(ByteBuffer buf, int idx);
+public interface CacheDataRow {
+    public CacheObject key();
 
-    /**
-     * @param buf Buffer.
-     * @param idx Index.
-     * @return Free space.
-     */
-    public short freeSpace(ByteBuffer buf, int idx);
+    public CacheObject value();
+
+    public GridCacheVersion version();
+
+    public int partition();
+
+    public long link();
+
+    public void link(long link);
 }

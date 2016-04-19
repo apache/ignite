@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.h2.result.Row;
 import org.h2.value.Value;
 
 /**
  * Row with locking support needed for unique key conflicts resolution.
  */
-public class GridH2Row extends Row implements GridSearchRowPointer {
+public class GridH2Row extends Row implements GridSearchRowPointer, CacheDataRow {
     /** */
     public long link; // TODO remove
 
@@ -61,5 +62,35 @@ public class GridH2Row extends Row implements GridSearchRowPointer {
     /** {@inheritDoc} */
     @Override public void decrementRefCount() {
         throw new IllegalStateException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject key() {
+        return key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheObject value() {
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion version() {
+        return ver;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long link() {
+        return link;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void link(long link) {
+        this.link = link;
     }
 }
