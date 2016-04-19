@@ -50,7 +50,11 @@ public enum GridRedisCommand {
     /** INCRBYFLOAT. */
     INCRBYFLOAT("INCRBYFLOAT"),
     /** APPEND. */
-    APPEND("APPEND");
+    APPEND("APPEND"),
+    /** STRLEN. */
+    STRLEN("STRLEN"),
+    /** GETSET. */
+    GETSET("GETSET");
 
     /** String for command. */
     private final String cmd;

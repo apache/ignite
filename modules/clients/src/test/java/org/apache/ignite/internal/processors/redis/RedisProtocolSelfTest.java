@@ -167,6 +167,18 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testGetSet() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            jcache().put("getSetKey1", 1);
+
+            Assert.assertEquals("1", jedis.getSet("getSetKey1", "0"));
+            Assert.assertNull(jedis.get("getSetNonExistingKey"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testMGet() throws Exception {
         try (Jedis jedis = pool.getResource()) {
             jcache().put("getKey1", "getVal1");
@@ -283,6 +295,18 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals(5, (long)jedis.append("appendKey1", "Hello"));
             Assert.assertEquals(12, (long)jedis.append("appendKey1", " World!"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStrlen() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            Assert.assertEquals(0, (long)jedis.strlen("strlenKeyNonExisting"));
+
+            jcache().put("strlenKey", "abc");
+            Assert.assertEquals(3, (long)jedis.strlen("strlenKey"));
         }
     }
 }

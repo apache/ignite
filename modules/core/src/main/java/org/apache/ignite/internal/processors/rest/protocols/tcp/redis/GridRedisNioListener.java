@@ -28,10 +28,12 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.Gr
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisConnectionCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisAppendCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisGetCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisGetSetCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisIncrDecrCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisMGetCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisMSetCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisSetCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisStrlenCommandHandler;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -66,6 +68,8 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         addCommandHandler(new GridRedisMGetCommandHandler(ctx, hnd));
         addCommandHandler(new GridRedisIncrDecrCommandHandler(ctx, hnd));
         addCommandHandler(new GridRedisAppendCommandHandler(ctx, hnd));
+        addCommandHandler(new GridRedisGetSetCommandHandler(ctx, hnd));
+        addCommandHandler(new GridRedisStrlenCommandHandler(ctx, hnd));
     }
 
     /**
