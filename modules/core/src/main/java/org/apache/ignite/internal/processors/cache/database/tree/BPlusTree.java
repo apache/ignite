@@ -1082,8 +1082,16 @@ public abstract class BPlusTree<L, T extends L> {
 
         // Randomization is for smoothing worst case scenarios. Probability of merge attempt
         // is proportional to free space in our page (discounted on fill factor).
-        return ThreadLocalRandom.current().nextInt(maxCnt - minCnt) >= cnt - minCnt;
+        return randomInt(maxCnt - minCnt) >= cnt - minCnt;
     }
+
+    /**
+     * @param max Max.
+     * @return Random value from {@code 0} (inclusive) to the given max value exclusive.
+     */
+     public static int randomInt(int max) {
+         return ThreadLocalRandom.current().nextInt(max);
+     }
 
     /**
      * @param cur Current tail element.

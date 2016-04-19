@@ -17,41 +17,36 @@
 
 package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
+import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.lang.IgniteBiTuple;
+
+import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.randomInt;
 
 /**
  * Reuse list for index pages.
  */
 public class ReuseList {
     /** */
-    private final ReuseTree[] trees = new ReuseTree[16];
-
-    /** */
-    private final GridCacheContext<?,?> cctx;
+    private final ReuseTree[] trees;
 
     /**
-     * @param cctx Cache context.
+     * @param cacheId Cache ID.
+     * @param pageMem Page memory.
+     * @param metaStore Meta store.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseList(GridCacheContext<?,?> cctx) throws IgniteCheckedException {
-        this.cctx = cctx;
-
-        PageMemory pageMem = cctx.shared().database().pageMemory();
-
-        MetadataStorage metaStore = cctx.shared().database().meta();
+    public ReuseList(int cacheId, PageMemory pageMem, int stripes, MetaStore metaStore) throws IgniteCheckedException {
+        trees = new ReuseTree[stripes];
 
         for (int i = 0; i < trees.length; i++) {
-            String idxName = i + "##" + cctx.cacheId() + "_reuse";
+            String idxName = i + "##" + cacheId + "_reuse";
 
-            IgniteBiTuple<FullPageId,Boolean> t = metaStore.getOrAllocateForIndex(cctx.cacheId(), idxName);
+            IgniteBiTuple<FullPageId,Boolean> t = metaStore.getOrAllocateForIndex(cacheId, idxName);
 
-            trees[i] = new ReuseTree(cctx.cacheId(), pageMem, t.get1(), t.get2());
+            trees[i] = new ReuseTree(cacheId, pageMem, t.get1(), t.get2());
         }
     }
 
@@ -60,7 +55,7 @@ public class ReuseList {
      * @throws IgniteCheckedException If failed.
      */
     public FullPageId take() throws IgniteCheckedException {
-        return trees[ThreadLocalRandom.current().nextInt(trees.length)].removeFirst();
+        return trees.length == 0 ? null : trees[randomInt(trees.length)].removeFirst();
     }
 
     /**
@@ -68,6 +63,9 @@ public class ReuseList {
      * @throws IgniteCheckedException If failed.
      */
     public void put(FullPageId fullPageId) throws IgniteCheckedException {
-        trees[ThreadLocalRandom.current().nextInt(trees.length)].put(fullPageId);
+        assert fullPageId != null;
+
+        if (trees.length != 0)
+            trees[randomInt(trees.length)].put(fullPageId);
     }
 }
