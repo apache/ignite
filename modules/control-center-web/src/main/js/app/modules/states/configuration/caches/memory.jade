@@ -60,8 +60,8 @@ form.panel.panel-default(name='memory' novalidate)
                             </li>\
                         </ul>')
                 .settings-row(data-ng-show=model + '.memoryMode !== "OFFHEAP_VALUES"')
-                    +number-requited('Off-heap max memory:', model + '.offHeapMaxMemory', 'offHeapMaxMemory',
-                        model + '.memoryMode === "OFFHEAP_TIERED"', 'true', '-1', '-1',
+                    +number-required('Off-heap max memory:', model + '.offHeapMaxMemory', 'offHeapMaxMemory', 'true',
+                        model + '.memoryMode === "OFFHEAP_TIERED"', '-1', '-1',
                         'Sets maximum amount of memory available to off-heap storage<br/>\
                         Possible values are:\
                         <ul>\
@@ -74,9 +74,8 @@ form.panel.panel-default(name='memory' novalidate)
                     -var swapEnabled = model + '.swapEnabled'
                     -var offHeapMaxMemory = model + '.offHeapMaxMemory'
 
-                    +evictionPolicy(model + '.evictionPolicy', 'evictionPolicy',
+                    +evictionPolicy(model + '.evictionPolicy', 'evictionPolicy', 'true',
                         onHeapTired  + ' && (' + swapEnabled + '|| _.isNumber(' + offHeapMaxMemory + ') &&' + offHeapMaxMemory + ' >= 0)',
-                        'true',
                         'Optional cache eviction policy<br/>\
                         Must be set for entries to be evicted from on - heap to off - heap or swap')
                 .settings-row

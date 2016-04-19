@@ -39,6 +39,6 @@ form.panel.panel-default(name='server-near-cache' novalidate ng-show='#{model}.c
                     +number('Start size:', nearCfg + '.nearStartSize', 'nearStartSize', enabled, '375000', '0',
                         'Initial cache size for near cache which will be used to pre-create internal hash table after start')
                 .settings-row
-                    +evictionPolicy(model + '.nearConfiguration.nearEvictionPolicy', 'nearCacheEvictionPolicy', 'false', enabled, 'Near cache eviction policy')
+                    +evictionPolicy(model + '.nearConfiguration.nearEvictionPolicy', 'nearCacheEvictionPolicy', enabled, 'false', 'Near cache eviction policy')
             .col-sm-6
                 +preview-xml-java(model, 'cacheServerNearCache')

@@ -1242,7 +1242,9 @@ consoleModule.controller('domainsController', [
             else if (!$common.isValidJavaClass('Value type', item.valueType, false, 'valueType'))
                 return false;
 
-            if (item.queryMetadata === 'Configuration' && $common.domainForQueryConfigured(item)) {
+            var qry = $common.domainForQueryConfigured(item);
+
+            if (item.queryMetadata === 'Configuration' && qry) {
                 if (_.isEmpty(item.fields))
                     return showPopoverMessage($scope.ui, 'query', 'queryFields', 'Query fields should not be empty');
 

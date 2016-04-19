@@ -60,7 +60,7 @@ import './decorator/tooltip';
 
 import './modules/Demo/Demo.module';
 import './modules/form/form.module';
-import './modules/JavaTypes/JavaTypes.provider';
+import './services/JavaTypes.service.js';
 import './modules/QueryNotebooks/QueryNotebooks.provider';
 
 import './modules/states/signin.state';
@@ -100,6 +100,7 @@ import confirm from './services/confirm.service';
 import IgniteCountries from './services/Countries.service';
 import IgniteChartColors from './services/ChartColors.service';
 import IgniteAgentMonitor from './services/AgentMonitor.service';
+import JavaTypes from './services/JavaTypes.service';
 
 // Providers.
 
@@ -153,7 +154,6 @@ angular
     'ignite-console.user',
     'ignite-console.branding',
     'ignite-console.Form',
-    'ignite-console.JavaTypes',
     'ignite-console.QueryNotebooks',
     'ignite-console.ace',
     'ignite-console.demo',
@@ -193,6 +193,7 @@ angular
 .service(...IgniteCountries)
 .service(...IgniteChartColors)
 .service(...IgniteAgentMonitor)
+.service(...JavaTypes)
 // Providers.
 // Filters.
 .filter(...hasPojo)

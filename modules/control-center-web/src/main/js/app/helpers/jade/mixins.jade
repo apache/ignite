@@ -136,6 +136,33 @@ mixin java-class(lbl, form, model, name, enabled, required, tip)
             +error-feedback(err + '.javaKeywords', 'javaKeywords', errLbl + ' could not contains reserved Java keyword!', name)
             +error-feedback(err + '.javaBuiltInClass', 'javaBuiltInClass', errLbl + ' should not be the Java built-in class!', name)
 
+//- Mixin for text field with enabled condition with options.
+mixin java-class-typeahead(lbl, form, model, name, options, enabled, required, placeholder, tip)
+    -var err = form + '.' + name + '.$error'
+    -var errLbl = lbl.substring(0, lbl.length - 1)
+
+    ignite-form-field
+        ignite-form-field-label
+            | #{lbl}
+        ignite-form-field-tooltip
+            | !{tip}
+        ignite-form-field-input-datalist(
+            data-id=name
+            data-name=name
+            data-ng-model=model
+            data-options=options
+            data-placeholder=placeholder
+            data-ng-disabled='!(#{enabled})'
+            data-ng-required=required
+
+            data-java-identifier='true'
+            data-java-package-specified='allow-built-in'
+            data-java-keywords='true'
+        )
+            +error-feedback(err + '.javaIdentifier', 'javaIdentifier', errLbl + ' is invalid Java identifier!', name)
+            +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', errLbl + ' does not have package specified!', name)
+            +error-feedback(err + '.javaKeywords', 'javaKeywords', errLbl + ' could not contains reserved Java keyword!', name)
+
 //- Mixin for text field.
 mixin text-ip-address(lbl, form, model, name, enabled, placeholder, tip)
     ignite-form-field
@@ -174,7 +201,7 @@ mixin text(lbl, model, name, required, placeholder, tip)
     +text-enabled(lbl, model, name, 'true', required, placeholder, tip)
 
 //- Mixin for text field with enabled condition with options.
-mixin text-options-required(lbl, model, name, options, enabled, required, placeholder, tip)
+mixin text-options(lbl, model, name, options, enabled, required, placeholder, tip)
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
@@ -190,12 +217,8 @@ mixin text-options-required(lbl, model, name, options, enabled, required, placeh
             data-ng-required=required
         )
 
-//- Mixin for text field with enabled condition with options.
-mixin text-options(lbl, model, name, options, enabled, placeholder, tip)
-    +text-options-required(lbl, model, name, options, enabled, 'false', placeholder, tip)
-
 //- Mixin for required numeric field.
-mixin number-requited(lbl, model, name, required, enabled, placeholder, min, tip)
+mixin number-required(lbl, model, name, enabled, required, placeholder, min, tip)
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
@@ -235,10 +258,10 @@ mixin number-min-max-step(lbl, model, name, enabled, placeholder, min, max, step
 
 //- Mixin for numeric field.
 mixin number(lbl, model, name, enabled, placeholder, min, tip)
-    +number-requited(lbl, model, name, 'false', enabled, placeholder, min, tip)
+    +required(lbl, model, name, enabled, 'false', placeholder, min, tip)
 
 //- Mixin for required dropdown field.
-mixin dropdown-required-empty(lbl, model, name, required, enabled, placeholder, placeholderEmpty, options, tip)
+mixin dropdown-required-empty(lbl, model, name, enabled, required, placeholder, placeholderEmpty, options, tip)
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
@@ -249,13 +272,13 @@ mixin dropdown-required-empty(lbl, model, name, required, enabled, placeholder, 
             data-name=name
             data-options=options
             data-ng-model=model
-            data-ng-required=required
             data-ng-disabled='!(#{enabled})'
+            data-ng-required=required
             data-placeholder='{{#{options}.length > 0 ? "#{placeholder}" : "#{placeholderEmpty}"}}'
         )
 
 //- Mixin for required dropdown field.
-mixin dropdown-required(lbl, model, name, required, enabled, placeholder, options, tip)
+mixin dropdown-required(lbl, model, name, enabled, required, placeholder, options, tip)
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
@@ -266,14 +289,14 @@ mixin dropdown-required(lbl, model, name, required, enabled, placeholder, option
             data-name=name
             data-options=options
             data-ng-model=model
-            data-ng-required=required
             data-ng-disabled='!(#{enabled})'
+            data-ng-required=required
             data-placeholder=placeholder
         )
 
 //- Mixin for dropdown field.
 mixin dropdown(lbl, model, name, enabled, placeholder, options, tip)
-    +dropdown-required(lbl, model, name, 'false', enabled, placeholder, options, tip)
+    +dropdown-required(lbl, model, name, enabled, 'false', placeholder, options, tip)
 
 //- Mixin for dropdown-multiple field.
 mixin dropdown-multiple(lbl, model, name, placeholder, placeholderEmpty, options, tip)
@@ -444,11 +467,11 @@ mixin cacheMode(lbl, model, name, placeholder)
     )
 
 //- Mixin for eviction policy.
-mixin evictionPolicy(model, name, required, enabled, tip)
+mixin evictionPolicy(model, name, enabled, required, tip)
     -var kind = model + '.kind'
     -var policy = model + '[' + kind + ']'
 
-    +dropdown-required('Eviction policy:', kind, name + 'Kind', required, enabled, 'Not set',
+    +dropdown-required('Eviction policy:', kind, name + 'Kind', enabled, required, 'Not set',
         '[\
             {value: "LRU", label: "LRU"},\
             {value: "FIFO", label: "FIFO"},\

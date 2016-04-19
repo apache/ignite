@@ -18,13 +18,24 @@
 import template from './datalist.jade!';
 
 export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (guid, $table) => {
-    const link = (scope, $element, attrs, [form, label]) => {
-        const {id, name} = scope;
+    const link = (scope, el, attrs, [ngModel, form, label]) => {
+        const {id, ngModelName} = scope;
+
+        const name = ngModelName;
 
         scope.id = id || guid();
+        scope.form = form;
+        scope.name = ngModelName + 'TextInput';
+        scope.ngModel = ngModel;
+
+        Object.defineProperty(scope, 'field', {
+            get: () => scope.form[scope.name]
+        });
 
         if (label) {
             label.for = scope.id;
+
+            scope.label = label;
 
             scope.$watch('required', (required) => {
                 label.required = required || false;
@@ -32,7 +43,14 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (gu
         }
 
         form.$defaults = form.$defaults || {};
-        form.$defaults[name] = _.cloneDeep(scope.value);
+
+        if (form.$pristine) {
+            if (!(_.isNull(form.$defaults[name]) || _.isUndefined(form.$defaults[name]))) {
+                scope.value = form.$defaults[name];
+                ngModel.$setViewValue(scope.value);
+            } else
+                form.$defaults[name] = _.cloneDeep(scope.value);
+        }
 
         const setAsDefault = () => {
             if (!form.$pristine) return;
@@ -44,6 +62,30 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (gu
         scope.$watch(() => form.$pristine, setAsDefault);
         scope.$watch('value', setAsDefault);
 
+        const checkValid = () => {
+            const input = el.find('input');
+
+            const invalid = ngModel.$invalid || (input[0].required && !input[0].value);
+
+            input.removeClass(invalid ? 'ng-valid' : 'ng-invalid');
+            input.addClass(invalid ? 'ng-invalid' : 'ng-valid');
+        };
+
+        scope.ngChange = () => {
+            ngModel.$setViewValue(scope.value);
+
+            if (JSON.stringify(scope.value) !== JSON.stringify(form.$defaults[name]))
+                ngModel.$setDirty();
+            else
+                ngModel.$setPristine();
+
+            setTimeout(checkValid, 100); // Use setTimeout() workaround of problem of two controllers.
+        };
+
+        ngModel.$render = () => {
+            scope.value = ngModel.$modelValue;
+        };
+
         // TODO LEGACY
         scope.tableReset = () => {
             $table.tableSaveAndReset();
@@ -54,20 +96,21 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (gu
         restrict: 'E',
         scope: {
             id: '@',
-            name: '@',
+            ngModelName: '@name',
             placeholder: '@',
             required: '=ngRequired',
             disabled: '=ngDisabled',
-
-            focus: '=ngFocus',
+            ngBlur: '&',
 
             options: '=',
-            value: '=ngModel'
+
+            focus: '=ngFocus',
+            autofocus: '=igniteFormFieldInputAutofocus'
         },
         link,
         template,
         replace: true,
         transclude: true,
-        require: ['^form', '?^igniteFormField']
+        require: ['ngModel', '^form', '?^igniteFormField']
     };
 }]];

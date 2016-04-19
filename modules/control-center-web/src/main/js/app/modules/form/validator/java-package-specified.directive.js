@@ -15,15 +15,18 @@
  * limitations under the License.
  */
 
-export default ['javaPackageSpecified', [() => {
+export default ['javaPackageSpecified', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (_.isUndefined(attrs.javaPackageSpecified) || !attrs.javaPackageSpecified)
+        if (_.isUndefined(attrs.javaPackageSpecified))
             return;
+
+        const allowBuiltIn = 'allow-built-in' === attrs.javaPackageSpecified;
 
         ngModel.$validators.javaPackageSpecified = (value) => {
             const err = ngModel.$error.javaPackageSpecified;
 
-            return (ngModel.$invalid && (_.isUndefined(err) || !err)) || !value || !(value.split('.').length < 2);
+            return (ngModel.$invalid && (_.isUndefined(err) || !err)) || !value || !(value.split('.').length < 2) ||
+                (allowBuiltIn && !JavaTypes.nonBuiltInClass(value));
         };
     };
 

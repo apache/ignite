@@ -14,20 +14,38 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+mixin feedback(isCheckPristine, error, errorMessage)
+    -var checkPristine = isCheckPristine ? '!field.$pristine && ' : ''
+
+    i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-if='#{checkPristine}field.$error.#{error}'
+        bs-tooltip='"#{errorMessage}"'
+        ignite-error=error
+        ignite-error-message=errorMessage
+    )
+
 .input-tip
     input.form-control(
         id='{{ id }}'
         name='{{ name }}'
-        placeholder='{{ placeholder }}' 
-        data-min-length='1'
-
-        bs-typeahead
-        bs-options='item for item in options' 
-        retain-selection
-        container='body'
+        placeholder='{{ placeholder }}'
 
         data-ng-model='value'
+
+        data-ng-blur='ngBlur()'
+        data-ng-change='ngChange()'
+        data-ng-required='required || false'
         data-ng-disabled='disabled || false'
+
+        data-ignite-form-field-input-autofocus='autofocus || false'
+
+        bs-typeahead
+        bs-options='item for item in options'
+        container='body'
+        data-min-length='1'
+        retain-selection
     )
+
+    +feedback(true, 'required', '{{ label.name }} could not be empty!')
 
     span(ng-transclude='')
