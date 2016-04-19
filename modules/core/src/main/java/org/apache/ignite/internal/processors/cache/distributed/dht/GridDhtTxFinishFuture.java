@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -46,6 +45,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 
 /**
@@ -126,7 +127,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
+                    f.onNodeLeft(new ClusterTopologyCheckedException("Remote node left grid: " + nodeId), true);
 
                     return true;
                 }
@@ -217,8 +218,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 if (finishErr == null)
                     finishErr = this.tx.commitError();
 
-                // Always send finish reply.
-                this.tx.sendFinishReply(commit, finishErr);
+                if (tx.syncMode() != PRIMARY_SYNC)
+                    this.tx.sendFinishReply(commit, finishErr);
 
                 // Don't forget to clean up.
                 cctx.mvcc().removeFuture(futId);
@@ -277,7 +278,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         if (tx.onePhaseCommit())
             return false;
 
-        boolean sync = commit ? tx.syncCommit() : tx.syncRollback();
+        boolean sync = tx.syncMode() == FULL_SYNC;
 
         if (tx.explicitLock())
             sync = true;
@@ -327,7 +328,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
-                    fut.onResult((ClusterTopologyCheckedException)e);
+                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
                 else
                     fut.onResult(e);
             }
@@ -346,7 +347,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         if (tx.onePhaseCommit())
             return false;
 
-        boolean sync = commit ? tx.syncCommit() : tx.syncRollback();
+        boolean sync = tx.syncMode() == FULL_SYNC;
 
         if (tx.explicitLock())
             sync = true;
@@ -413,7 +414,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.
                 if (e instanceof ClusterTopologyCheckedException)
-                    fut.onResult((ClusterTopologyCheckedException)e);
+                    fut.onNodeLeft((ClusterTopologyCheckedException)e);
                 else
                     fut.onResult(e);
             }
@@ -467,7 +468,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
                     if (e instanceof ClusterTopologyCheckedException)
-                        fut.onResult((ClusterTopologyCheckedException)e);
+                        fut.onNodeLeft((ClusterTopologyCheckedException)e);
                     else
                         fut.onResult(e);
                 }
@@ -563,7 +564,15 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        void onNodeLeft(ClusterTopologyCheckedException e) {
+            onNodeLeft(e, false);
+        }
+
+        /**
+         * @param e Node failure.
+         * @param discoThread {@code True} if executed from discovery thread.
+         */
+        void onNodeLeft(ClusterTopologyCheckedException e, boolean discoThread) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
 

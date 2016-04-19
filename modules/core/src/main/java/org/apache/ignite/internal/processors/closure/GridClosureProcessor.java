@@ -1746,6 +1746,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
+        @GridToStringInclude
         protected IgniteClosure<T, R> job;
 
         /** */
@@ -1810,6 +1811,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
+        @GridToStringInclude
         protected IgniteClosure<T, R> job;
 
         /** */
@@ -1941,6 +1943,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
+        @GridToStringInclude
         protected Callable<R> c;
 
         /**
@@ -2002,6 +2005,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
+        @GridToStringInclude
         protected Callable<R> c;
 
         /**
@@ -2123,6 +2127,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
+        @GridToStringInclude
         protected Runnable r;
 
         /**
@@ -2179,6 +2184,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
+        @GridToStringInclude
         protected Runnable r;
 
         /**

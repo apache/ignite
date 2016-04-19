@@ -93,13 +93,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                DiscoverySpi = new TcpDiscoverySpi
-                {
-                    IpFinder = new TcpDiscoveryStaticIpFinder
-                    {
-                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
-                    }
-                }
+                DiscoverySpi = TestUtils.GetStaticDiscovery()
             };
 
             _grid = (Ignite) Ignition.Start(cfg);

@@ -244,14 +244,15 @@ namespace ignite
          *
          * @return Error message.
          */
-        const char* GetText() const;
+        const char* GetText() const IGNITE_NO_THROW;
 
         /**
-         * Get error message. Synonim for GetText().
+         * Implementation of the standard std::exception::what() method.
+         * Synonym for GetText() method.
          *
-         * @return Error message.
+         * @return Error message string.
          */
-        virtual const char* what() const;
+        virtual const char* what() const IGNITE_NO_THROW;
 
         /**
          * Set error.
