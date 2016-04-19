@@ -16,7 +16,7 @@
  *
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.util;
 
 import java.util.AbstractSet;
 import java.util.ArrayList;

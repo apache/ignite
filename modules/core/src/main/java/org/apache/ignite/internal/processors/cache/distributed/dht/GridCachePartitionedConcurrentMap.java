@@ -20,20 +20,18 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.PartitionedReadOnlySet;
+import org.apache.ignite.internal.util.PartitionedReadOnlySet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,6 +51,12 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         this.ctx = ctx;
     }
 
+    /**
+     * @param key Key.
+     * @param topVer Topology version.
+     * @param create Create flag.
+     * @return Local partition.
+     */
     @Nullable private GridDhtLocalPartition localPartition(KeyCacheObject key, AffinityTopologyVersion topVer, boolean create) {
         int p = key.partition();
 
