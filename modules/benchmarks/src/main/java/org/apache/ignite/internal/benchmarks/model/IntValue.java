@@ -94,7 +94,6 @@ public class IntValue implements Externalizable, Binarylizable {
         IntValue value = (IntValue)o;
 
         return val == value.val;
-
     }
 
     /** {@inheritDoc} */

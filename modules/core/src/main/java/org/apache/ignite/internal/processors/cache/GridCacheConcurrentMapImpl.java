@@ -38,7 +38,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_DESTROYED;
  * Implementation of concurrent cache map.
  */
 public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
-
     /** Default load factor. */
     private static final float DFLT_LOAD_FACTOR = 0.75f;
 
@@ -91,10 +90,16 @@ public class GridCacheConcurrentMapImpl implements GridCacheConcurrentMap {
      *      negative or the load factor or concurrencyLevel are
      *      non-positive.
      */
-    public GridCacheConcurrentMapImpl(GridCacheContext ctx, GridCacheMapEntryFactory factory, int initialCapacity,
-        float loadFactor, int concurrencyLevel) {
+    public GridCacheConcurrentMapImpl(
+        GridCacheContext ctx,
+        GridCacheMapEntryFactory factory,
+        int initialCapacity,
+        float loadFactor,
+        int concurrencyLevel
+    ) {
         this.ctx = ctx;
         this.factory = factory;
+
         map = new ConcurrentHashMap8<>(initialCapacity, loadFactor, concurrencyLevel);
     }
 

@@ -27,10 +27,8 @@ import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Read-only wrapper over multiple sets.
- * @param <T>
  */
 public class PartitionedReadOnlySet<T> extends AbstractSet<T> {
-
     /** */
     private final Collection<Set<T>> sets;
 
@@ -46,9 +44,8 @@ public class PartitionedReadOnlySet<T> extends AbstractSet<T> {
     @Override public Iterator<T> iterator() {
         Collection<Iterator<T>> iterators = new ArrayList<>(sets.size());
 
-        for (Set<T> set : sets) {
+        for (Set<T> set : sets)
             iterators.add(set.iterator());
-        }
 
         return F.flatIterators(iterators);
     }
@@ -57,9 +54,8 @@ public class PartitionedReadOnlySet<T> extends AbstractSet<T> {
     @Override public int size() {
         int size = 0;
 
-        for (Set<T> set : sets) {
+        for (Set<T> set : sets)
             size += set.size();
-        }
 
         return size;
     }

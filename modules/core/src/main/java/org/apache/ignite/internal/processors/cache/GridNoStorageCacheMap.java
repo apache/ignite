@@ -29,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
  * Empty cache map that will never store any entries.
  */
 public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
-
     /** Context. */
     private final GridCacheContext ctx;
 
@@ -73,12 +72,12 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
 
     /** {@inheritDoc} */
     @Override public void incrementPublicSize(GridCacheEntryEx e) {
-        // noop
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void decrementPublicSize(GridCacheEntryEx e) {
-        // noop
+        // No-op.
     }
 
     /** {@inheritDoc} */

@@ -1146,12 +1146,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         if (val == null && op != GridCacheOperation.DELETE)
             throw new NullPointerException("Null value.");
 
-            KeyCacheObject cacheKey = cctx.toCacheKeyObject(key, true);
+        KeyCacheObject cacheKey = cctx.toCacheKeyObject(key, true);
 
         if (op != TRANSFORM)
             val = cctx.toCacheObject(val);
 
-            ClusterNode primary = cctx.affinity().primary(cacheKey.partition(), topVer);
+        ClusterNode primary = cctx.affinity().primary(cacheKey.partition(), topVer);
 
         if (primary == null)
             throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +

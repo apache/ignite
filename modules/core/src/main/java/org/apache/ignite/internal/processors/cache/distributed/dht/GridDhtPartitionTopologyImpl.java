@@ -178,10 +178,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         GridDhtLocalPartition[] locPartsCopy = new GridDhtLocalPartition[locParts.length];
 
         lock.readLock().lock();
+
         try {
-            for (int i = 0; i < locParts.length; i++) {
+            for (int i = 0; i < locParts.length; i++)
                 locPartsCopy[i] = locParts[i];
-            }
         }
         finally {
             lock.readLock().unlock();
@@ -714,6 +714,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         GridDhtLocalPartition[] locPartsCopy = new GridDhtLocalPartition[parts.length];
 
         lock.readLock().lock();
+
         try {
             for (int i = 0; i < parts.length; i++)
                 locPartsCopy[i] = locParts[parts[i]];
@@ -734,7 +735,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     /** {@inheritDoc} */
     @Override public List<GridDhtLocalPartition> localPartitions() {
         LinkedList<GridDhtLocalPartition> list = new LinkedList<>();
+
         lock.readLock().lock();
+
         try {
             for (int i = 0; i < locParts.length; i++) {
                 GridDhtLocalPartition part = locParts[i];
@@ -742,6 +745,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 if (part != null)
                     list.add(part);
             }
+
             return list;
         }
         finally {
@@ -773,9 +777,11 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         Map<Integer, GridDhtPartitionState> map = new HashMap<>();
 
         lock.readLock().lock();
+
         try {
             for (int i = 0; i < locParts.length; i++) {
                 GridDhtLocalPartition part = locParts[i];
+
                 if (part == null)
                     continue;
 
@@ -1233,6 +1239,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         for (int p = 0; p < locParts.length; p++) {
             GridDhtLocalPartition part = locParts[p];
+
             if (part == null)
                 continue;
 
@@ -1489,9 +1496,11 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         X.println(">>>  Cache partition topology stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
 
         lock.readLock().lock();
+
         try {
             for (int i = 0; i < locParts.length; i++) {
                 GridDhtLocalPartition part = locParts[i];
+
                 if (part == null)
                     continue;
 

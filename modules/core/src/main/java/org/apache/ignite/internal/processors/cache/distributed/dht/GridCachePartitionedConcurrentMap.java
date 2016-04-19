@@ -33,13 +33,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.PartitionedReadOnlySet;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * An implementation of GridCacheConcurrentMap that will delegate all method calls to corresponding local partition.
  */
 public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap {
-
     /** Context. */
     private final GridCacheContext ctx;
 
@@ -57,7 +57,11 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
      * @param create Create flag.
      * @return Local partition.
      */
-    @Nullable private GridDhtLocalPartition localPartition(KeyCacheObject key, AffinityTopologyVersion topVer, boolean create) {
+    @Nullable private GridDhtLocalPartition localPartition(
+        KeyCacheObject key,
+        AffinityTopologyVersion topVer,
+        boolean create
+    ) {
         int p = key.partition();
 
         if (p == -1)
@@ -91,9 +95,8 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     @Override public int size() {
         int size = 0;
 
-        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions())
             size += part.size();
-        }
 
         return size;
     }
@@ -102,9 +105,8 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     @Override public int publicSize() {
         int size = 0;
 
-        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions())
             size += part.publicSize();
-        }
 
         return size;
     }
@@ -138,9 +140,8 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
         Collection<Set<KeyCacheObject>> sets = new ArrayList<>();
 
-        for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
+        for (GridDhtLocalPartition partition : ctx.topology().localPartitions())
             sets.add(partition.keySet(filter));
-        }
 
         return new PartitionedReadOnlySet<>(sets);
     }
@@ -151,9 +152,8 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
             @Override public Iterator<GridCacheMapEntry> iterator() {
                 List<Iterator<GridCacheMapEntry>> iterators = new ArrayList<>();
 
-                for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
+                for (GridDhtLocalPartition partition : ctx.topology().localPartitions())
                     iterators.add(partition.entries(filter).iterator());
-                }
 
                 return F.flatIterators(iterators);
             }
@@ -166,9 +166,8 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
             @Override public Iterator<GridCacheMapEntry> iterator() {
                 List<Iterator<GridCacheMapEntry>> iterators = new ArrayList<>();
 
-                for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
+                for (GridDhtLocalPartition partition : ctx.topology().localPartitions())
                     iterators.add(partition.allEntries(filter).iterator());
-                }
 
                 return F.flatIterators(iterators);
             }
@@ -179,10 +178,14 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
         Collection<Set<GridCacheMapEntry>> sets = new ArrayList<>();
 
-        for (GridDhtLocalPartition partition : ctx.topology().localPartitions()) {
+        for (GridDhtLocalPartition partition : ctx.topology().localPartitions())
             sets.add(partition.entrySet(filter));
-        }
 
         return new PartitionedReadOnlySet<>(sets);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCachePartitionedConcurrentMap.class, this);
     }
 }

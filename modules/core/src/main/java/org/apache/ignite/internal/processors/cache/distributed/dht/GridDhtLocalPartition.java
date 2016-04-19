@@ -283,7 +283,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * @param entry Entry to remove.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter") void onRemoved(GridDhtCacheEntry entry) {
+    void onRemoved(GridDhtCacheEntry entry) {
         assert entry.obsolete() : entry;
 
         // Make sure to remove exactly this entry.
@@ -658,7 +658,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
-        Iterator<GridDhtCacheEntry> it = (Iterator) map.allEntries().iterator();
+        Iterator<GridDhtCacheEntry> it = (Iterator)map.allEntries().iterator();
 
         GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
 
@@ -686,11 +686,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 try {
                     cached = it.next();
 
-                    if ((cached).clearInternal(clearVer, swap, extras)) {
+                    if (cached.clearInternal(clearVer, swap, extras)) {
                         map.removeEntry(cached);
 
                         if (!cached.isInternal()) {
-
                             if (rec) {
                                 cctx.events().addEvent(cached.partition(),
                                     cached.key(),
