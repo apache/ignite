@@ -612,7 +612,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
 
         if (loc == null) {
-            GridDhtLocalPartition old = locParts.putIfAbsent(p, loc = new GridDhtLocalPartition(cctx, p));
+            GridDhtLocalPartition old = locParts.putIfAbsent(p, loc = new GridDhtLocalPartition(cctx, p, entryFactory));
 
             assert old == null : old;
         }
