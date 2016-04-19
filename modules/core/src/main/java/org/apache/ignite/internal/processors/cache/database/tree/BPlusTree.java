@@ -319,7 +319,7 @@ public abstract class BPlusTree<L, T extends L> {
             // We may need to replace inner key or want to merge this leaf with sibling after the remove -> keep lock.
             if (r.needReplaceInner == TRUE ||
                 // We need to make sure that we have back or forward to be able to merge.
-                ((r.fwdId != 0 || r.backId != 0) && mayMerge(--cnt, io.getMaxCount(buf)))) {
+                ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - 1, io.getMaxCount(buf)))) {
                 r.addTail(leaf, buf, io, 0, false, Integer.MIN_VALUE);
 
                 if (r.needReplaceInner == FALSE)
@@ -1141,6 +1141,8 @@ public abstract class BPlusTree<L, T extends L> {
             if (prntIdx == prntCnt) // It was a right turn.
                 prntIdx--;
 
+            // We can be sure that we have enough free space to store split key here,
+            // because we've done remove already and did not release child locks.
             inner(cur.io).store(cur.buf, cnt, prnt.io, prnt.buf, prntIdx);
 
             cnt++;
@@ -1149,9 +1151,9 @@ public abstract class BPlusTree<L, T extends L> {
         cur.io.copyItems(fwdBuf, cur.buf, 0, cnt, fwdCnt, true);
         cur.io.setForward(cur.buf, cur.io.getForward(fwdBuf));
 
-        // Update parent.
         assert prntCnt > 0: prntCnt;
 
+        // Remove split key from parent. If parent is root and becomes empty, it will be freed by doRemove.
         doRemove(prnt.io, prnt.page, prnt.buf, prntCnt, prnt.idx, meta, prnt.lvl, false);
 
         // Forward page is now empty and has no links.
@@ -1171,12 +1173,17 @@ public abstract class BPlusTree<L, T extends L> {
         assert cnt > 0: cnt;
         assert inner.fwd == null: "if we've found our inner key in this page it can't be a back page";
 
-        // We need to check if the branch we are going to drop is from the left or right.
+        // We need to check if the branch we are going to drop goes to the left or to the right.
         boolean kickLeft = inner.down.page.id() == inner(inner.io).getLeft(inner.buf, inner.idx);
+
         assert kickLeft || inner.down.page.id() == inner(inner.io).getRight(inner.buf, inner.idx);
 
+        // Remove found inner key from inner page.
         doRemove(inner.io, inner.page, inner.buf, cnt, inner.idx, meta, inner.lvl, kickLeft);
 
+        // If inner page was root and became empty, it was freed in doRemove.
+        // Otherwise we can be sure that inner page was not freed, at lead it must become
+        // an empty routing page. Thus always starting from inner.down here.
         for (Tail t = inner.down; t != null; t = t.down) {
             if (t.fwd != null)
                 t = t.fwd;
@@ -1984,11 +1991,8 @@ public abstract class BPlusTree<L, T extends L> {
                 assert inner(inner.io).getLeft(inner.buf, innerIdx) == leaf.page.id();
             }
 
-            // Try to merge the whole branch up if possible.
-            for (int i = 1, end = tail.lvl - 1; i < end; i++) { // TODO fix deadlock here
-                if (!merge(i, false, true))
-                    break;
-            }
+            // We can't merge the whole branch up here because of locking rules.
+            // Here we've already locked the whole branch from the bottom to the top.
         }
 
         /**
@@ -2012,7 +2016,7 @@ public abstract class BPlusTree<L, T extends L> {
                 // We don't have a back page -> last move was to the left.
                 long fwdId = cur.io.getForward(cur.buf);
 
-                if (fwdId == 0)  // We can get 0 only in the last rightmost page with empty parent -> drop both.
+                if (fwdId == 0) // We can get 0 only in the last rightmost page with empty routing parent -> drop both.
                     return false;
 
                 int cnt = cur.io.getCount(cur.buf);
