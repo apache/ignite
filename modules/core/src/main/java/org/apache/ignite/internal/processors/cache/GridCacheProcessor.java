@@ -1300,6 +1300,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
         IgniteCacheDatabaseManager dbMgr = createDatabaseManager(cfg);
 
+        boolean cacheIndexing = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cfg);
+
+        IgniteCacheOffheapManager offheapMgr = new IgniteCacheOffheapManager(cacheIndexing);
+
         storeMgr.initialize(cfgStore, sesHolders);
 
         GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
@@ -1324,6 +1328,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ttlMgr,
             drMgr,
             dbMgr,
+            offheapMgr,
             rslvrMgr,
             pluginMgr,
             affMgr
@@ -1454,6 +1459,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 ttlMgr,
                 drMgr,
                 dbMgr,
+                offheapMgr,
                 rslvrMgr,
                 pluginMgr,
                 affMgr
@@ -1514,11 +1520,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     private IgniteCacheDatabaseManager createDatabaseManager(CacheConfiguration ccfg) throws IgniteCheckedException {
-        if (sharedCtx.database().enabled()) {
-            if (!INDEXING.inClassPath())
-                throw new IgniteCheckedException("Failed to create cache with database enabled (" + INDEXING.module() +
-                    " must be present in classpath)");
-
+        if (sharedCtx.database().enabled() && INDEXING.inClassPath()) {
             try {
                 return (IgniteCacheDatabaseManager)Class
                     .forName("org.apache.ignite.internal.processors.cache.database.IgniteCacheH2DatabaseManager")

@@ -483,7 +483,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
                 if (cctx.isDatabaseEnabled()) {
-                    IgniteBiTuple<CacheObject, GridCacheVersion> read = cctx.queries().read(key, partition());
+                    IgniteBiTuple<CacheObject, GridCacheVersion> read = cctx.offheap0().read(key, partition());
 
                     flags |= IS_UNSWAPPED_MASK;
 
@@ -1198,6 +1198,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             update(val, expireTime, ttl, newVer);
 
+            cctx.offheap0().put(key, val, newVer, partition());
+
             drReplicate(drType, val, newVer);
 
             recordNodeId(affNodeId, topVer);
@@ -1340,6 +1342,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             // Clear indexes inside of synchronization since indexes
             // can be updated without actually holding entry lock.
             clearIndex(old, ver);
+
+            cctx.offheap0().remove(key);
 
             boolean hadValPtr = hasOffHeapPointer();
 
@@ -2289,6 +2293,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 update(updated, newExpireTime, newTtl, newVer);
 
+                cctx.offheap0().put(key, updated, newVer, partition());
+
                 updateCntr0 = nextPartCounter(topVer);
 
                 if (updateCntr != null)
@@ -2373,6 +2379,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 // Clear value on backup. Entry will be removed from cache when it got evicted from queue.
                 update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, newVer);
+
+                cctx.offheap0().remove(key);
 
                 assert newSysTtl == CU.TTL_NOT_CHANGED;
                 assert newSysExpireTime == CU.EXPIRE_TIME_CALCULATE;

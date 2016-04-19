@@ -181,6 +181,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Database manager. */
     private IgniteCacheDatabaseManager dbMgr;
 
+    /** */
+    private IgniteCacheOffheapManager offheapMgr;
+
     /** Conflict resolver manager. */
     private CacheConflictResolutionManager rslvrMgr;
 
@@ -301,6 +304,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
         IgniteCacheDatabaseManager dbMgr,
+        IgniteCacheOffheapManager offheapMgr,
         CacheConflictResolutionManager<K, V> rslvrMgr,
         CachePluginManager pluginMgr,
         GridCacheAffinityManager affMgr
@@ -344,6 +348,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
         this.dbMgr = add(dbMgr);
+        this.offheapMgr = add(offheapMgr);
         this.rslvrMgr = add(rslvrMgr);
         this.pluginMgr = add(pluginMgr);
         this.affMgr = add(affMgr);
@@ -1078,6 +1083,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public <T extends IgniteCacheDatabaseManager> T database() {
         return (T)dbMgr;
+    }
+
+    public IgniteCacheOffheapManager offheap0() {
+        return offheapMgr;
     }
 
     /**
