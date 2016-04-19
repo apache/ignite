@@ -240,7 +240,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     protected GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
-            /** {@inheritDoc} */
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
