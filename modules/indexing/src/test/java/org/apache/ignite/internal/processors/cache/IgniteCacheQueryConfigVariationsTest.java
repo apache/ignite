@@ -27,10 +27,10 @@ import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 
@@ -73,7 +73,7 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
     /**
      * @throws Exception If failed.
      */
-    public void testScanPartirionQuery() throws Exception {
+    public void testScanPartitionQuery() throws Exception {
         IgniteCache<Object, Object> cache = jcache();
 
         GridCacheContext cctx = ((IgniteCacheProxy)cache).context();
@@ -119,21 +119,8 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
     public void testScanFilters() throws Exception {
         IgniteCache<Object, Object> cache = jcache();
 
-        GridCacheContext cctx = ((IgniteCacheProxy)cache).context();
-
-        Map<Object, Object> map = new HashMap<>();
-
-        for (int i = 0; i < CNT; i++) {
-            Object key = key(i);
-            Object val = value(i);
-
-            cache.put(key, val);
-
-            AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
-
-            if (cctx.affinity().localNode(key, topVer))
-                map.put(key, val);
-        }
+        for (int i = 0; i < CNT; i++)
+            cache.put(key(i), value(i));
 
         QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(new IgniteBiPredicate<Object, Object>() {
             @Override public boolean apply(Object k, Object v) {
@@ -168,6 +155,7 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
         IgniteCache<Object, Object> cache = jcache();
 
         ClusterNode locNode = testedGrid().cluster().localNode();
+        Affinity<Object> affinity = testedGrid().affinity(cacheName());
 
         Map<Object, Object> map = new HashMap<>();
 
@@ -177,8 +165,7 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
 
             cache.put(key, val);
 
-            if (!isClientMode() && (cacheMode() == REPLICATED
-                || testedGrid().affinity(cacheName()).isPrimary(locNode, key)))
+            if (!isClientMode() && (cacheMode() == REPLICATED || affinity.isPrimary(locNode, key)))
                 map.put(key, val);
         }
 
@@ -188,31 +175,124 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
     }
 
     /**
-     * @param expMap Expected map.
-     * @param qry Query.
+     * @throws Exception If failed.
      */
-    private void checkQueryResults(Map<Object, Object> expMap, QueryCursor<Cache.Entry<Object, Object>> qry) {
-        Iterator<Cache.Entry<Object, Object>> iter = qry.iterator();
+    @SuppressWarnings("SubtractionInCompareTo")
+    public void testScanQueryLocalFilter() throws Exception {
+        IgniteCache<Object, Object> cache = jcache();
 
-        assertNotNull(iter);
+        ClusterNode locNode = testedGrid().cluster().localNode();
 
-        int cnt = 0;
+        Map<Object, Object> map = new HashMap<>();
 
-        while (iter.hasNext()) {
-            Cache.Entry<Object, Object> e = iter.next();
+        IgniteBiPredicate<Object, Object> filter = new IgniteBiPredicate<Object, Object>() {
+            @Override public boolean apply(Object k, Object v) {
+                assertNotNull(k);
+                assertNotNull(v);
 
-            assertNotNull(e.getKey());
-            assertNotNull(e.getValue());
+                return valueOf(k) >= 20 && valueOf(v) < 40;
+            }
+        };
 
-            Object expVal = expMap.get(e.getKey());
+        for (int i = 0; i < CNT; i++) {
+            Object key = key(i);
+            Object val = value(i);
 
-            assertNotNull("Failed to resolve expected value for key: " + e.getKey(), expVal);
+            cache.put(key, val);
 
-            assertEquals(expVal, e.getValue());
-
-            cnt++;
+            if (!isClientMode() && (cacheMode() == REPLICATED
+                || testedGrid().affinity(cacheName()).isPrimary(locNode, key)) && filter.apply(key, val))
+                map.put(key, val);
         }
 
-        assertEquals(expMap.size(), cnt);
+        QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(filter).setLocal(true));
+
+        checkQueryResults(map, q);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    // TODO uncomment.
+    @SuppressWarnings("SubtractionInCompareTo")
+    public void _testScanQueryPartitionFilter() throws Exception {
+        IgniteCache<Object, Object> cache = jcache();
+
+        Affinity<Object> affinity = testedGrid().affinity(cacheName());
+
+        Map<Integer, Map<Object, Object>> partMap = new HashMap<>();
+
+        IgniteBiPredicate<Object, Object> filter = new IgniteBiPredicate<Object, Object>() {
+            @Override public boolean apply(Object k, Object v) {
+                assertNotNull(k);
+                assertNotNull(v);
+
+                return valueOf(k) >= 20 && valueOf(v) < 40;
+            }
+        };
+
+        for (int i = 0; i < CNT; i++) {
+            Object key = key(i);
+            Object val = value(i);
+
+            cache.put(key, val);
+
+            if (filter.apply(key, val)) {
+                int part = affinity.partition(key);
+
+                Map<Object, Object> map = partMap.get(part);
+
+                if (map == null)
+                    partMap.put(part, map = new HashMap<>());
+
+                map.put(key, val);
+            }
+        }
+
+        for (int part = 0; part < affinity.partitions(); part++) {
+            info(">>>>> part=" + part);
+
+            QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(part));
+
+            checkQueryResults(partMap.get(part), q);
+        }
+    }
+
+    /**
+     * @param expMap Expected map.
+     * @param cursor Query cursor.
+     */
+    private void checkQueryResults(Map<Object, Object> expMap, QueryCursor<Cache.Entry<Object, Object>> cursor) {
+        Iterator<Cache.Entry<Object, Object>> iter = cursor.iterator();
+
+        try {
+            assertNotNull(iter);
+
+            int cnt = 0;
+
+            while (iter.hasNext()) {
+                Cache.Entry<Object, Object> e = iter.next();
+
+                assertNotNull(e.getKey());
+                assertNotNull(e.getValue());
+
+                Object expVal = expMap.get(e.getKey());
+
+                assertNotNull("Failed to resolve expected value for key: " + e.getKey(), expVal);
+
+                assertEquals(expVal, e.getValue());
+
+                cnt++;
+            }
+
+            assertEquals(expMap.size(), cnt);
+        }
+        finally {
+            cursor.close();
+        }
+    }
+
+    @Override public boolean isDebug() {
+        return true;
     }
 }

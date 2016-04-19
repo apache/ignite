@@ -34,8 +34,15 @@ public class IgniteCacheConfigVariationQueryTestSuite extends TestSuite {
             "Cache Config Variations Query Test Suite",
             IgniteCacheQueryConfigVariationsTest.class)
             .withBasicCacheParams()
+//            .withCacheConfigFilters(new IgnitePredicate<CacheConfiguration>() {
+//                @Override public boolean apply(CacheConfiguration configuration) {
+//                    return configuration.getCacheMode() == CacheMode.REPLICATED && configuration.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED;
+//                }
+//            })
             .gridsCount(5).backups(1)
             .testedNodesCount(3).withClients()
+//            .specifyCacheParam(1, 0, 0, 0, 0, 0, 0, 0, 0)
+//            .specifyIgniteParam(0, 0, 0)
             .build();
 
     }

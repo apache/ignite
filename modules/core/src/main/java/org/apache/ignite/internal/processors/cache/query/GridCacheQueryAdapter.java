@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -46,7 +47,6 @@ import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -566,21 +566,24 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
 
-        Collection<ClusterNode> affNodes = CU.affinityNodes(cctx);
+        Collection<ClusterNode> affNodes = CU.affinityNodes(cctx, topVer);
 
         if (prj == null && part == null)
-            return affNodes;
+            return new ArrayList<>(affNodes);
 
         final Set<ClusterNode> owners =
             part == null ? Collections.<ClusterNode>emptySet() : new HashSet<>(cctx.topology().owners(part, topVer));
 
-        return F.view(affNodes, new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode n) {
-                return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
-                    (prj == null || prj.node(n.id()) != null) &&
-                    (part == null || owners.contains(n));
-            }
-        });
+        Collection<ClusterNode> nodes = new ArrayList<>();
+
+        for (ClusterNode n : affNodes) {
+            if (cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
+                (prj == null || prj.node(n.id()) != null) &&
+                (part == null || owners.contains(n)))
+                nodes.add(n);
+        }
+
+        return nodes;
     }
 
     /** {@inheritDoc} */
