@@ -460,7 +460,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject unswap() throws IgniteCheckedException, GridCacheEntryRemovedException {
+    @Override public final CacheObject unswap() throws IgniteCheckedException, GridCacheEntryRemovedException {
         return unswap(true);
     }
 
@@ -473,30 +473,25 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     @Nullable @Override public CacheObject unswap(boolean needVal)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        boolean swapEnabled = cctx.swap().swapEnabled();
-
-        if (!swapEnabled && !cctx.isOffHeapEnabled() && !cctx.isDatabaseEnabled())
-            return null;
-
         synchronized (this) {
             checkObsolete();
 
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
-                if (cctx.isDatabaseEnabled()) {
-                    IgniteBiTuple<CacheObject, GridCacheVersion> read = cctx.offheap0().read(key, partition());
+                IgniteBiTuple<CacheObject, GridCacheVersion> read = cctx.offheap0().read(key, partition());
 
-                    flags |= IS_UNSWAPPED_MASK;
+                flags |= IS_UNSWAPPED_MASK;
 
-                    if (read != null) {
-                        CacheObject idxVal = read.get1();
+                if (read != null) {
+                    CacheObject idxVal = read.get1();
 
-                        // Set unswapped value.
-                        update(idxVal, 0, 0, read.get2());
+                    // Set unswapped value.
+                    update(idxVal, 0, 0, read.get2());
 
-                        return idxVal;
-                    }
+                    return idxVal;
                 }
-                else {
+
+                // TODO GG-10884.
+                if (false) {
                     GridCacheSwapEntry e;
 
                     if (cctx.offheapTiered()) {
@@ -1684,6 +1679,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 update(updated, expireTime, ttl, ver);
 
+                cctx.offheap0().put(key, updated, ver, partition());
+
                 if (evt) {
                     CacheObject evtOld = null;
 
@@ -1720,6 +1717,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 clearIndex(old, this.ver);
 
                 update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver);
+
+                cctx.offheap0().remove(key);
 
                 if (cctx.offheapTiered() && hasValPtr) {
                     boolean rmv = cctx.swap().removeOffheap(key);
@@ -2639,6 +2638,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 clearIndex(val, ver);
 
                 releaseSwap();
+
+                cctx.offheap0().remove(key);
 
                 ret = true;
                 rmv = true;

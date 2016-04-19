@@ -457,6 +457,11 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public CacheObject unswap(boolean needVal) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheMvccCandidate addLocal(
         long threadId,
         GridCacheVersion ver,

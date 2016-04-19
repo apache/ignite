@@ -44,7 +44,6 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAttribu
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerSelfTest;
 import org.apache.ignite.internal.managers.discovery.IgniteTopologyPrintFormatSelfTest;
 import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTest;
-import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManagerSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceClientNodeTest;
 import org.apache.ignite.internal.processors.service.GridServicePackagePrivateSelfTest;
@@ -89,7 +88,6 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridDiscoverySelfTest.class);
         suite.addTestSuite(GridCommunicationSelfTest.class);
         suite.addTestSuite(GridEventStorageManagerSelfTest.class);
-        suite.addTestSuite(GridSwapSpaceManagerSelfTest.class);
         suite.addTestSuite(GridCommunicationSendMessageSelfTest.class);
         suite.addTestSuite(GridCacheMessageSelfTest.class);
         suite.addTestSuite(GridDeploymentManagerStopSelfTest.class);
