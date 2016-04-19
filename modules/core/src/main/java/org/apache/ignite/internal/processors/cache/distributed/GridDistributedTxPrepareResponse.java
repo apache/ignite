@@ -44,6 +44,8 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
     /** Serialized error. */
     private byte[] errBytes;
+
+    /** Transient TX state. */
     @GridDirectTransient
     private IgniteTxState txState;
 
@@ -92,10 +94,16 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         return err != null;
     }
 
+    /**
+     * @return Transient TX state.
+     */
     public IgniteTxState txState() {
         return txState;
     }
 
+    /**
+     * @param txState Transient TX state.
+     */
     public void txState(IgniteTxState txState) {
         this.txState = txState;
     }

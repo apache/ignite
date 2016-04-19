@@ -644,41 +644,35 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             if (msg instanceof GridDistributedTxPrepareRequest) {
                 IgniteTxState txState = ((GridDistributedTxPrepareRequest)msg).txState();
 
-                if (txState != null) {
-                    for (Integer cacheId : txState.cacheIds()) {
-                        GridCacheContext ctx = cctx.cacheContext(cacheId);
-
-                        if (ctx != null)
-                            CU.unwindEvicts(ctx);
-                    }
-                }
+                unwindEvicts(txState);
             }
             else if (msg instanceof GridDistributedTxPrepareResponse) {
                 IgniteTxState txState = ((GridDistributedTxPrepareResponse)msg).txState();
 
-                if (txState != null) {
-                    for (Integer cacheId : txState.cacheIds()) {
-                        GridCacheContext ctx = cctx.cacheContext(cacheId);
-
-                        if (ctx != null)
-                            CU.unwindEvicts(ctx);
-                    }
-                }
+                unwindEvicts(txState);
             }
             else if (msg instanceof GridDistributedTxFinishRequest) {
                 IgniteTxState txState = ((GridDistributedTxFinishRequest)msg).txState();
 
-                if (txState != null) {
-                    for (Integer cacheId : txState.cacheIds()) {
-                        GridCacheContext ctx = cctx.cacheContext(cacheId);
-
-                        if (ctx != null)
-                            CU.unwindEvicts(ctx);
-                    }
-                }
+                unwindEvicts(txState);
             }
             else {
                 GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
+
+                if (ctx != null)
+                    CU.unwindEvicts(ctx);
+            }
+        }
+    }
+
+    /**
+     * Unwind evicts.
+     * @param txState TX state.
+     */
+    private void unwindEvicts(IgniteTxState txState) {
+        if (txState != null) {
+            for (Integer cacheId : txState.cacheIds()) {
+                GridCacheContext ctx = cctx.cacheContext(cacheId);
 
                 if (ctx != null)
                     CU.unwindEvicts(ctx);

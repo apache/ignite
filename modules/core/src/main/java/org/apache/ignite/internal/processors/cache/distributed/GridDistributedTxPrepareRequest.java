@@ -145,6 +145,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** IO policy. */
     private byte plc;
 
+    /** Transient TX state. */
     @GridDirectTransient
     private IgniteTxState txState;
 
@@ -240,12 +241,16 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /**
      * @return Commit version.
      */
-    public GridCacheVersion writeVersion() { return writeVer; }
+    public GridCacheVersion writeVersion() {
+        return writeVer;
+    }
 
     /**
      * @return Invalidate flag.
      */
-    public boolean isInvalidate() { return invalidate; }
+    public boolean isInvalidate() {
+        return invalidate;
+    }
 
     /**
      * @return Transaction timeout.
@@ -310,10 +315,16 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         return onePhaseCommit;
     }
 
+    /**
+     * @return Transient TX state.
+     */
     public IgniteTxState txState() {
         return txState;
     }
 
+    /**
+     * @param txState Transient TX state.
+     */
     public void txState(IgniteTxState txState) {
         this.txState = txState;
     }
