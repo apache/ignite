@@ -56,26 +56,6 @@ consoleModule.controller('domainsController', [
         $scope.ui.usePrimitives = true;
         $scope.ui.generatedCachesClusters = [];
 
-        function restoreSelection() {
-            var lastSelectedDomain = angular.fromJson(sessionStorage.lastSelectedDomain);
-
-            if (lastSelectedDomain) {
-                var idx = _.findIndex($scope.domains, function (domain) {
-                    return domain._id === lastSelectedDomain;
-                });
-
-                if (idx >= 0)
-                    $scope.selectItem($scope.domains[idx]);
-                else {
-                    sessionStorage.removeItem('lastSelectedDomain');
-
-                    selectFirstItem();
-                }
-            }
-            else
-                selectFirstItem();
-        }
-
         function _mapCaches(caches) {
             return _.map(caches, function (cache) {
                 return {
@@ -1232,6 +1212,41 @@ consoleModule.controller('domainsController', [
 
         // Check domain model logical consistency.
         function validate(item) {
+            var form = $scope.ui.inputForm;
+            var errors = form.$error;
+            var errKeys = Object.keys(errors);
+
+            if (errKeys && errKeys.length > 0) {
+                var firstErrorKey = errKeys[0];
+
+                var firstError = errors[firstErrorKey][0];
+                var actualError = firstError.$error[firstErrorKey][0];
+
+                var errNameFull = actualError.$name;
+                var errNameShort = errNameFull;
+
+                if (errNameShort.endsWith('TextInput'))
+                    errNameShort = errNameShort.substring(0, errNameShort.length - 9);
+
+                var extractErrorMessage = function (errName) {
+                    try {
+                        return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
+                    }
+                    catch(ignored) {
+                        try {
+                            msg = form[firstError.$name].$errorMessages[errName][firstErrorKey];
+                        }
+                        catch(ignited) {
+                            return false;
+                        }
+                    }
+                };
+
+                var msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
+
+                return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
+            }
+
             if ($common.isEmptyString(item.keyType))
                 return showPopoverMessage($scope.ui, 'general', 'keyType', 'Key type should not be empty');
             else if (!$common.isValidJavaClass('Key type', item.keyType, true, 'keyType'))

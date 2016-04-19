@@ -258,7 +258,7 @@ mixin number-min-max-step(lbl, model, name, enabled, placeholder, min, max, step
 
 //- Mixin for numeric field.
 mixin number(lbl, model, name, enabled, placeholder, min, tip)
-    +required(lbl, model, name, enabled, 'false', placeholder, min, tip)
+    +number-required(lbl, model, name, enabled, 'false', placeholder, min, tip)
 
 //- Mixin for required dropdown field.
 mixin dropdown-required-empty(lbl, model, name, enabled, required, placeholder, placeholderEmpty, options, tip)
