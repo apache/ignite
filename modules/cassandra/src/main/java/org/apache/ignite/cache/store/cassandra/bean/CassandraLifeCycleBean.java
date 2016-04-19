@@ -22,7 +22,6 @@ import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.cassandra.service.CassandraDaemon;
 import org.apache.ignite.resources.LoggerResource;
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 /**
  * Implementation of {@link LifecycleBean} to start embedded Cassandra instance on Ignite cluster startup
@@ -48,12 +47,12 @@ public class CassandraLifeCycleBean implements LifecycleBean {
     private String jmxPort;
 
     /** YAML config file for embedded Cassandra */
-    private String cassandraConfigFile;
+    private String cassandraCfgFile;
 
     /**
      * Starts embedded Cassandra instance
      */
-    private void startEmbededCassandra() {
+    private void startEmbeddedCassandra() {
         if (log != null) {
             log.info("-------------------------------");
             log.info("| Starting embedded Cassandra |");
@@ -62,11 +61,13 @@ public class CassandraLifeCycleBean implements LifecycleBean {
 
         try {
             System.setProperty(CASSANDRA_JMX_PORT_PROP, jmxPort);
-            System.setProperty(CASSANDRA_CONFIG_PROP, FILE_PREFIX + cassandraConfigFile);
+            System.setProperty(CASSANDRA_CONFIG_PROP, FILE_PREFIX + cassandraCfgFile);
+
             embeddedCassandraDaemon = new CassandraDaemon(true);
             embeddedCassandraDaemon.init(null);
             embeddedCassandraDaemon.start();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException("Failed to start embedded Cassandra", e);
         }
 
@@ -124,23 +125,22 @@ public class CassandraLifeCycleBean implements LifecycleBean {
      * @return YAML config file
      */
     public String getCassandraConfigFile() {
-        return cassandraConfigFile;
+        return cassandraCfgFile;
     }
 
     /**
      * Setter for embedded Cassandra YAML config file
-     * @param cassandraConfigFile YAML config file
+     * @param cassandraCfgFile YAML config file
      */
-    public void setCassandraConfigFile(String cassandraConfigFile) {
-        this.cassandraConfigFile = cassandraConfigFile;
+    public void setCassandraConfigFile(String cassandraCfgFile) {
+        this.cassandraCfgFile = cassandraCfgFile;
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void onLifecycleEvent(LifecycleEventType event) {
-        if (event == LifecycleEventType.BEFORE_NODE_START)
-            startEmbededCassandra();
-        else if (event == LifecycleEventType.BEFORE_NODE_STOP)
+    @Override public void onLifecycleEvent(LifecycleEventType evt) {
+        if (evt == LifecycleEventType.BEFORE_NODE_START)
+            startEmbeddedCassandra();
+        else if (evt == LifecycleEventType.BEFORE_NODE_STOP)
             stopEmbededCassandra();
     }
 }

@@ -175,6 +175,7 @@ public class CassandraHelper {
      */
     public static boolean useEmbeddedCassandra() {
         String[] contactPoints = getContactPointsArray();
+
         return contactPoints != null && contactPoints.length == 1 && contactPoints[0].trim().startsWith("127.0.0.1");
     }
 
@@ -336,19 +337,22 @@ public class CassandraHelper {
     }
 
     /** */
-    public static void startEmbededCassandra() {
+    public static void startEmbeddedCassandra() {
         LOGGER.info("-------------------------------");
         LOGGER.info("| Starting embedded Cassandra |");
         LOGGER.info("-------------------------------");
 
         try {
-            ClassLoader classLoader = CassandraHelper.class.getClassLoader();
-            URL url = classLoader.getResource(EMBEDDED_CASSANDRA_YAML);
+            ClassLoader clsLdr = CassandraHelper.class.getClassLoader();
+            URL url = clsLdr.getResource(EMBEDDED_CASSANDRA_YAML);
+
             System.setProperty(CASSANDRA_CONFIG_PROP, FILE_PREFIX + url.getFile());
+
             embeddedCassandraDaemon = new CassandraDaemon(true);
             embeddedCassandraDaemon.init(null);
             embeddedCassandraDaemon.start();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException("Failed to start embedded Cassandra", e);
         }
 

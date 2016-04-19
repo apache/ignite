@@ -50,7 +50,7 @@ public class IgnitePersistentStoreTest {
     public static void setUpClass() {
         if (CassandraHelper.useEmbeddedCassandra()) {
             try {
-                CassandraHelper.startEmbededCassandra();
+                CassandraHelper.startEmbeddedCassandra();
             }
             catch (Throwable e) {
                 throw new RuntimeException("Failed to start embedded Cassandra instance", e);
@@ -59,10 +59,13 @@ public class IgnitePersistentStoreTest {
 
         LOGGER.info("Testing admin connection to Cassandra");
         CassandraHelper.testAdminConnection();
+
         LOGGER.info("Testing regular connection to Cassandra");
         CassandraHelper.testRegularConnection();
+
         LOGGER.info("Dropping all artifacts from previous tests execution session");
         CassandraHelper.dropTestKeyspaces();
+
         LOGGER.info("Start tests execution");
     }
 
