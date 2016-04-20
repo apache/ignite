@@ -3908,8 +3908,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (modes.swap)
                 size += swapMgr.swapEntriesCount(modes.primary, modes.backup, topVer);
 
-            if (modes.offheap)
-                size += swapMgr.offheapEntriesCount(modes.primary, modes.backup, topVer);
+            if (modes.offheap) {
+                if (ctx.isDatabaseEnabled())
+                    size += ctx.database().entriesCount(modes.primary, modes.backup, topVer);
+                else
+                    size += swapMgr.offheapEntriesCount(modes.primary, modes.backup, topVer);
+            }
         }
 
         return size;
