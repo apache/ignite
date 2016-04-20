@@ -301,7 +301,9 @@
                                             </fileset>
                                         </copy>
 
-                                        <fixcrlf file="${project.build.directory}/tests-package" includes="*.sh" eol="lf" eof="remove"/>
+                                        <fixcrlf file="${project.build.directory}/tests-package" eol="lf" eof="remove">
+                                            <include name="*.sh"/>
+                                        </fixcrlf>
                                     </then>
                                 </if>
                             </target>
