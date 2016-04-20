@@ -18,19 +18,20 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Abstract IO routines for B+Tree inner pages.
  */
 public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     /** */
-    protected static final int SHIFT_LEFT = ITEMS_OFF;
+    private static final int SHIFT_LEFT = ITEMS_OFF;
 
     /** */
-    protected static final int SHIFT_LINK = SHIFT_LEFT + 8;
+    private static final int SHIFT_LINK = SHIFT_LEFT + 8;
 
     /** */
-    protected final int SHIFT_RIGHT = SHIFT_LINK + itemSize;
+    private final int SHIFT_RIGHT = SHIFT_LINK + itemSize;
 
     /**
      * @param type Page type.
@@ -123,15 +124,25 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param srcIo Source IO.
      * @param src Source buffer.
      * @param srcIdx Source index.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract void store(ByteBuffer dst, int dstIdx, BPlusIO<L> srcIo, ByteBuffer src, int srcIdx);
+    public abstract void store(ByteBuffer dst, int dstIdx, BPlusIO<L> srcIo, ByteBuffer src, int srcIdx)
+        throws IgniteCheckedException;
 
     /**
      * @param idx Index of element.
      * @param shift It can be either link itself or left or right page ID.
      * @return Offset from byte buffer begin in bytes.
      */
-    protected final int offset(int idx, int shift) {
+    private int offset(int idx, int shift) {
         return shift + (8 + itemSize) * idx;
+    }
+
+    /**
+     * @param idx Index of element.
+     * @return Offset from byte buffer begin in bytes.
+     */
+    protected final int offset(int idx) {
+        return offset(idx, SHIFT_LINK);
     }
 }

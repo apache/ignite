@@ -39,28 +39,28 @@ public class FreeInnerIO extends BPlusInnerIO<FreeItem> implements FreeIO {
      * @param dispersedFreeSpace Dispersed free space.
      */
     private void store(ByteBuffer buf, int idx, int dispersedFreeSpace) {
-        int off = offset(idx, SHIFT_LINK);
+        int off = offset(idx);
 
         buf.putInt(off, dispersedFreeSpace);
     }
 
     /** {@inheritDoc} */
     @Override public int dispersedFreeSpace(ByteBuffer buf, int idx) {
-        int off = offset(idx, SHIFT_LINK);
+        int off = offset(idx);
 
         return buf.getInt(off);
     }
 
     /** {@inheritDoc} */
     @Override public short freeSpace(ByteBuffer buf, int idx) {
-        int off = offset(idx, SHIFT_LINK);
+        int off = offset(idx);
 
         return buf.getShort(off);
     }
 
     /** {@inheritDoc} */
     @Override public FreeItem getLookupRow(BPlusTree<FreeItem, ?> tree, ByteBuffer buf, int idx) {
-        int off = offset(idx, SHIFT_LINK);
+        int off = offset(idx);
 
         return new FreeItem(buf.getShort(off), buf.getShort(off + 2), 0, 0);
     }

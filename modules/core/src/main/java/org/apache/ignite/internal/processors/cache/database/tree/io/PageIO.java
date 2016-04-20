@@ -94,8 +94,6 @@ public abstract class PageIO {
      * @param type Type.
      */
     public static void setType(ByteBuffer buf, int type) {
-        assert type >= T_DATA && type <= T_H2_REF_INNER : type;
-
         buf.putShort(TYPE_OFF, (short)type);
 
         assert getType(buf) == type;

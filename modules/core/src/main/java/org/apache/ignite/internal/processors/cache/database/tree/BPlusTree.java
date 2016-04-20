@@ -380,14 +380,15 @@ public abstract class BPlusTree<L, T extends L> {
             boolean found = idx >= 0;
 
             if (found) {
-                if (lvl != 0) {
-                    assert r.needReplaceInner == TRUE : r.needReplaceInner;
+                if (lvl != 0 && r.needReplaceInner == TRUE) {
                     assert idx <= Short.MAX_VALUE : idx;
 
                     r.innerIdx = (short)idx;
 
                     r.needReplaceInner = READY;
                 }
+                else
+                    assert r.needMerge == TRUE: r.needMerge;
             }
             else {
                 idx = -idx - 1;
@@ -727,8 +728,7 @@ public abstract class BPlusTree<L, T extends L> {
      *
      * @return Tree as {@link String}.
      */
-    @SuppressWarnings("unused")
-    private String printTree() {
+    public String printTree() {
         long rootPageId;
 
         try (Page meta = page(metaPageId)) {
@@ -790,16 +790,12 @@ public abstract class BPlusTree<L, T extends L> {
 
         b.append('[');
 
-        if (io.canGetRow()) {
-            for (int i = 0; i < cnt; i++) {
-                if (i != 0)
-                    b.append(',');
+        for (int i = 0; i < cnt; i++) {
+            if (i != 0)
+                b.append(',');
 
-                b.append(getRow(io, buf, i));
-            }
+            b.append(io.canGetRow() ? getRow(io, buf, i) : io.getLookupRow(this, buf, i));
         }
-        else
-            b.append("<can't get keys>");
 
         b.append(']');
 
@@ -1289,13 +1285,6 @@ public abstract class BPlusTree<L, T extends L> {
         finally {
             p.releaseMeta();
         }
-
-//        if (p.split) {
-//            X.println(getName() + ": " + p.oldRow + " -> " + row);
-//            X.println("============new==========");
-//            X.println(printTree());
-//            X.println("=========================");
-//        }
     }
 
     /**
@@ -1915,6 +1904,7 @@ public abstract class BPlusTree<L, T extends L> {
             assert tail != null;
 
             if (needReplaceInner == READY) {
+                assert needMerge == FALSE: needMerge;
                 assert getTail(0, false) != null: "we must keep lock on the leaf page";
 
                 // We increment remove ID in write lock on leaf page, thus it is guaranteed that
@@ -1928,6 +1918,7 @@ public abstract class BPlusTree<L, T extends L> {
                 needReplaceInner = DONE;
             }
             else if (needMerge == READY) {
+                assert needReplaceInner == FALSE: needReplaceInner;
                 assert tail.down != null || tail.fwd.down != null;
 
                 boolean needMergeMore = merge(tail.lvl - 1, true, true);
@@ -2037,7 +2028,7 @@ public abstract class BPlusTree<L, T extends L> {
                     if (countAfterMerge(cur, fwdCnt) == -1)
                         return false;
 
-                    if (writePage(fwd, mergePages, this, 0, FALSE) == TRUE) {
+                    if (writePage(fwd, mergePages, this, lvl, FALSE) == TRUE) {
                         if (releaseMerged) {
                             prnt.down = null;
 

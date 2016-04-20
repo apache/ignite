@@ -494,7 +494,7 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         Random rnd = new GridRandom(seed);
 
         for (int i = 0 ; i < 1000_000; i++) {
-//            if (i % 5000 == 0)
+            if (i % 5000 == 0)
                 X.println(" --> " + i);
 
             int key = rnd.nextInt(cnt);
