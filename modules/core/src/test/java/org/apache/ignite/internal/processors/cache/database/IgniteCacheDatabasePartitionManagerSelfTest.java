@@ -2,9 +2,6 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import junit.framework.TestCase;
 
-/**
- * @author Ilya Lantukh
- */
 public class IgniteCacheDatabasePartitionManagerSelfTest extends TestCase {
 
     public void test() {
