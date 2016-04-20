@@ -439,7 +439,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             GridCacheEntryEx entry;
 
             try {
-                entry = cache.context().isSwapOrOffheapEnabled() ? cache.entryEx(key) : cache.peekEx(key);
+                entry = cache.context().isOffHeapEnabled() ? cache.entryEx(key) : cache.peekEx(key);
 
                 // If our DHT cache do has value, then we peek it.
                 if (entry != null) {

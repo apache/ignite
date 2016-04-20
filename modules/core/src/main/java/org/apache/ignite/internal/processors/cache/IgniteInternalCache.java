@@ -1557,14 +1557,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public CacheMetricsMXBean mxBean();
 
     /**
-     * Gets size (in bytes) of all entries swapped to disk.
-     *
-     * @return Size (in bytes) of all entries swapped to disk.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public long overflowSize() throws IgniteCheckedException;
-
-    /**
      * Gets number of cache entries stored in off-heap memory.
      *
      * @return Number of cache entries stored in off-heap memory.

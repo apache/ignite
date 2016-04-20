@@ -56,7 +56,6 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -177,9 +176,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Replication manager. */
     private GridCacheDrManager drMgr;
-
-    /** Database manager. */
-    private IgniteCacheDatabaseManager dbMgr;
 
     /** */
     private IgniteCacheOffheapManager offheapMgr;
@@ -303,7 +299,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheDataStructuresManager dataStructuresMgr,
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
-        IgniteCacheDatabaseManager dbMgr,
         IgniteCacheOffheapManager offheapMgr,
         CacheConflictResolutionManager<K, V> rslvrMgr,
         CachePluginManager pluginMgr,
@@ -324,7 +319,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert ttlMgr != null;
         assert rslvrMgr != null;
         assert pluginMgr != null;
-        assert dbMgr != null;
+        assert offheapMgr != null;
 
         this.ctx = ctx;
         this.sharedCtx = sharedCtx;
@@ -347,7 +342,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
-        this.dbMgr = add(dbMgr);
         this.offheapMgr = add(offheapMgr);
         this.rslvrMgr = add(rslvrMgr);
         this.pluginMgr = add(pluginMgr);
@@ -1078,13 +1072,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         return drMgr;
     }
 
-    /**
-     * @return Database manager.
-     */
-    public <T extends IgniteCacheDatabaseManager> T database() {
-        return (T)dbMgr;
-    }
-
     public IgniteCacheOffheapManager offheap0() {
         return offheapMgr;
     }
@@ -1441,21 +1428,22 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if swap store of off-heap cache are enabled.
      */
     public boolean isSwapOrOffheapEnabled() {
-        return swapMgr.swapEnabled() || isOffHeapEnabled();
+        return isOffHeapEnabled();
     }
 
     /**
      * @return {@code True} if offheap storage is enabled.
      */
     public boolean isOffHeapEnabled() {
-        return swapMgr.offHeapEnabled();
+        return offheapMgr.enabled();
     }
 
     /**
-     * @return If database is enabled.
+     * @return {@code True} if should use offheap (PageMemory) index.
      */
-    public boolean isDatabaseEnabled() {
-        return sharedCtx.database().enabled();
+    public boolean offheapIndex() {
+        // TODO GG-10884.
+        return true;
     }
 
     /**

@@ -425,41 +425,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean offheapSwapEvict(byte[] entry, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
-        assert cctx.swap().swapEnabled() && cctx.swap().offHeapEnabled() : this;
-
-        boolean obsolete;
-
-        synchronized (this) {
-            checkObsolete();
-
-            if (hasReaders() || !isStartVersion())
-                return false;
-
-            GridCacheMvcc mvcc = mvccExtras();
-
-            if (mvcc != null && !mvcc.isEmpty(obsoleteVer))
-                return false;
-
-            if (cctx.swap().offheapSwapEvict(key, entry, partition(), evictVer)) {
-                assert !hasValueUnlocked() : this;
-
-                obsolete = markObsolete0(obsoleteVer, false, null);
-
-                assert obsolete : this;
-            }
-            else
-                obsolete = false;
-        }
-
-        if (obsolete)
-            onMarkedObsolete();
-
-        return obsolete;
-    }
-
-    /** {@inheritDoc} */
     @Override public final CacheObject unswap() throws IgniteCheckedException, GridCacheEntryRemovedException {
         return unswap(true);
     }
@@ -550,65 +515,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void swap() throws IgniteCheckedException {
-        if (cctx.isSwapOrOffheapEnabled() && !deletedUnlocked() && hasValueUnlocked() && !detached()) {
-            assert Thread.holdsLock(this);
-
-            long expireTime = expireTimeExtras();
-
-            if (expireTime > 0 && U.currentTimeMillis() >= expireTime) { // Don't swap entry if it's expired.
-                // Entry might have been updated.
-                if (cctx.offheapTiered()) {
-                    cctx.swap().removeOffheap(key);
-
-                    offHeapPointer(0);
-                }
-
-                return;
-            }
-
-            if (cctx.offheapTiered() && hasOffHeapPointer()) {
-                if (log.isDebugEnabled())
-                    log.debug("Value did not change, skip write swap entry: " + this);
-
-                if (cctx.swap().offheapEvictionEnabled())
-                    cctx.swap().enableOffheapEviction(key(), partition());
-
-                return;
-            }
-
-            IgniteUuid valClsLdrId = null;
-            IgniteUuid keyClsLdrId = null;
-
-            if (cctx.deploymentEnabled()) {
-                if (val != null) {
-                    valClsLdrId = cctx.deploy().getClassLoaderId(
-                        U.detectObjectClassLoader(val.value(cctx.cacheObjectContext(), false)));
-                }
-
-                keyClsLdrId = cctx.deploy().getClassLoaderId(
-                    U.detectObjectClassLoader(key.value(cctx.cacheObjectContext(), false)));
-            }
-
-            IgniteBiTuple<byte[], Byte> valBytes = valueBytes0();
-
-            cctx.swap().write(key(),
-                ByteBuffer.wrap(valBytes.get1()),
-                valBytes.get2(),
-                ver,
-                ttlExtras(),
-                expireTime,
-                keyClsLdrId,
-                valClsLdrId);
-
-            if (log.isDebugEnabled())
-                log.debug("Wrote swap entry: " + this);
-        }
-    }
-
-    /**
      * @return Value bytes and flag indicating whether value is byte array.
      */
     protected IgniteBiTuple<byte[], Byte> valueBytes0() {
@@ -630,20 +536,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
-        }
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    protected final void releaseSwap() throws IgniteCheckedException {
-        if (cctx.isSwapOrOffheapEnabled()) {
-            synchronized (this) {
-                cctx.swap().remove(key());
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Removed swap entry [entry=" + this + ']');
         }
     }
 
@@ -796,10 +688,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     // If this entry is already expired (expiration time was too low),
                     // we simply remove from swap and clear index.
                     if (expired) {
-                        releaseSwap();
-
                         // Previous value is guaranteed to be null
                         clearIndex(null, ver);
+
+                        cctx.offheap0().remove(key);
                     }
                     else {
                         // Read and remove swap entry.
@@ -1020,8 +912,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 // If version matched, set value.
                 if (startVer.equals(ver)) {
-                    releaseSwap();
-
                     CacheObject old = rawGetOrUnmarshalUnlocked(false);
 
                     long expTime = CU.toExpireTime(ttl);
@@ -1044,6 +934,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
 
                     update(ret, expTime, ttl, nextVer);
+
+                    cctx.offheap0().put(key, ret, nextVer, partition());
 
                     touch = true;
 
@@ -1125,7 +1017,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             // Load and remove from swap if it is new.
             boolean startVer = isStartVersion();
 
-            if (startVer && (!cctx.isDatabaseEnabled() || retval || intercept))
+            if (startVer && (retval || intercept))
                 unswap(retval);
 
             newVer = explicitVer != null ? explicitVer : tx == null ?
@@ -1307,13 +1199,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert tx == null || (!tx.local() && tx.onePhaseCommit()) || tx.ownsLock(this) :
                 "Transaction does not own lock for remove[entry=" + this + ", tx=" + tx + ']';
-
-            boolean startVer = isStartVersion();
-
-            if (startVer) {
-                // Release swap.
-                releaseSwap();
-            }
 
             newVer = explicitVer != null ? explicitVer : tx == null ? nextVersion() : tx.writeVersion();
 
@@ -2637,8 +2522,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 clearIndex(val, ver);
 
-                releaseSwap();
-
                 cctx.offheap0().remove(key);
 
                 ret = true;
@@ -2816,9 +2699,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             ver = newVer;
 
-            releaseSwap();
-
             clearIndex(val, ver);
+
+            cctx.offheap0().remove(key);
 
             onInvalidate();
         }
@@ -3143,9 +3026,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 log.debug("Checked expiration time for entry [timeLeft=" + delta + ", entry=" + this + ']');
 
             if (delta <= 0) {
-                releaseSwap();
-
                 clearIndex(saveValueForIndexUnlocked(), ver);
+
+                cctx.offheap0().remove(key);
 
                 return true;
             }
@@ -3604,7 +3487,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     clearIndex(expiredVal, ver);
 
-                    releaseSwap();
+                    cctx.offheap0().remove(key);
 
                     if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
                         cctx.events().addEvent(partition(),
@@ -3912,6 +3795,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
+        // TODO GG-10884: evictions from offheap are not supported.
+
         boolean marked = false;
 
         try {
@@ -3929,20 +3814,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     CacheObject prev = saveOldValueUnlocked(false);
 
                     if (!hasReaders() && markObsolete0(obsoleteVer, false, null)) {
-                        if (swap) {
-                            if (!isStartVersion()) {
-                                try {
-                                    // Write to swap.
-                                    swap();
-                                }
-                                catch (IgniteCheckedException e) {
-                                    U.error(log, "Failed to write entry to swap storage: " + this, e);
-                                }
-                            }
-                        }
-                        else if (!cctx.isDatabaseEnabled())
-                            clearIndex(prev, ver);
-
                         // Nullify value after swap.
                         value(null);
 
@@ -3983,20 +3854,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         CacheObject prevVal = saveValueForIndexUnlocked();
 
                         if (!hasReaders() && markObsolete0(obsoleteVer, false, null)) {
-                            if (swap) {
-                                if (!isStartVersion()) {
-                                    try {
-                                        // Write to swap.
-                                        swap();
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        U.error(log, "Failed to write entry to swap storage: " + this, e);
-                                    }
-                                }
-                            }
-                            else if (!cctx.isDatabaseEnabled())
-                                clearIndex(prevVal, ver);
-
                             // Nullify value after swap.
                             value(null);
 
@@ -4052,7 +3909,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @Override public GridCacheBatchSwapEntry evictInBatchInternal(GridCacheVersion obsoleteVer)
         throws IgniteCheckedException {
         assert Thread.holdsLock(this);
-        assert cctx.isSwapOrOffheapEnabled();
+        assert cctx.isOffHeapEnabled();
         assert !obsolete();
 
         GridCacheBatchSwapEntry ret = null;

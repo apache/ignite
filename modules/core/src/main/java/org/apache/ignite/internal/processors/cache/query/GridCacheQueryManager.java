@@ -985,16 +985,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final GridIterator<IgniteBiTuple<K, V>> it;
 
-            if (cctx.isSwapOrOffheapEnabled()) {
+            if (cctx.isOffHeapEnabled()) {
                 List<GridIterator<IgniteBiTuple<K, V>>> iters = new ArrayList<>(3);
 
                 iters.add(heapIt);
 
                 if (cctx.isOffHeapEnabled())
                     iters.add(offheapIterator(qry, backups));
-
-                if (cctx.swap().swapEnabled())
-                    iters.add(swapIterator(qry, backups));
 
                 it = new CompoundIterator<>(iters);
             }
@@ -1040,24 +1037,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private static void closeScanFilter(Object f) {
         if (f instanceof PlatformCacheEntryFilter)
             ((PlatformCacheEntryFilter)f).onClose();
-    }
-
-    /**
-     * @param qry Query.
-     * @param backups Include backups.
-     * @return Swap iterator.
-     * @throws IgniteCheckedException If failed.
-     */
-    private GridIterator<IgniteBiTuple<K, V>> swapIterator(GridCacheQueryAdapter<?> qry, boolean backups)
-        throws IgniteCheckedException {
-        IgniteBiPredicate<K, V> filter = qry.scanFilter();
-
-        Integer part = qry.partition();
-
-        Iterator<Map.Entry<byte[], byte[]>> it = part == null ? cctx.swap().rawSwapIterator(true, backups) :
-            cctx.swap().rawSwapIterator(part);
-
-        return scanIterator(it, filter, qry.keepBinary());
     }
 
     /**

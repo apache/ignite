@@ -479,7 +479,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         Map<K, V> m = getAllInternal(Collections.singleton(key),
-            ctx.isSwapOrOffheapEnabled(),
+            true,
             ctx.readThrough(),
             taskName,
             deserializeBinary,
@@ -500,7 +500,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         return getAllInternal(keys,
-            ctx.isSwapOrOffheapEnabled(),
+            true,
             ctx.readThrough(),
             taskName,
             deserializeBinary,
@@ -524,12 +524,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     ) {
         A.notNull(keys, "keys");
 
-        final boolean swapOrOffheap = ctx.isSwapOrOffheapEnabled();
         final boolean storeEnabled = ctx.readThrough();
 
         return asyncOp(new Callable<Map<K, V>>() {
             @Override public Map<K, V> call() throws Exception {
-                return getAllInternal(keys, swapOrOffheap, storeEnabled, taskName, deserializeBinary, skipVals, needVer);
+                return getAllInternal(keys, true, storeEnabled, taskName, deserializeBinary, skipVals, needVer);
             }
         });
     }

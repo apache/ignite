@@ -655,7 +655,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private void clearAll() {
         GridCacheVersion clearVer = cctx.versions().next();
 
-        boolean swap = cctx.isSwapOrOffheapEnabled();
+        boolean swap = cctx.isOffHeapEnabled();
 
         boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 

@@ -54,12 +54,17 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     private CacheDataTree dataTree;
 
     /** */
-    private boolean indexingEnabled;
+    private final boolean enabled;
+
+    /** */
+    private final boolean indexingEnabled;
 
     /**
+     * @param enabled Enabled flag (offheap supposed to be disabled for near cache).
      * @param indexingEnabled {@code True} if indexing is enabled for cache.
      */
-    public IgniteCacheOffheapManager(boolean indexingEnabled) {
+    public IgniteCacheOffheapManager(boolean enabled, boolean indexingEnabled) {
+        this.enabled = enabled;
         this.indexingEnabled = indexingEnabled;
     }
 
@@ -67,7 +72,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        if (!indexingEnabled) {
+        if (enabled && !indexingEnabled) {
             IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
             IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), cctx.namexx());
@@ -84,6 +89,13 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @return Enabled flag.
+     */
+    public boolean enabled() {
+        return enabled;
+    }
+
+    /**
      * @param key Key.
      * @param val Value.
      * @param ver Version.
@@ -91,7 +103,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void put(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part) throws IgniteCheckedException {
-        if (indexingEnabled)
+        if (!enabled || indexingEnabled)
             return;
 
         DataRow dataRow = new DataRow(key, val, ver, part, 0);
@@ -106,7 +118,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void remove(KeyCacheObject key) throws IgniteCheckedException {
-        if (indexingEnabled)
+        if (!enabled || indexingEnabled)
             return;
 
         DataRow dataRow = dataTree.remove(new KeySearchRow(key));
@@ -126,7 +138,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      */
     @Nullable public IgniteBiTuple<CacheObject, GridCacheVersion> read(KeyCacheObject key, int part)
         throws IgniteCheckedException {
-        if (indexingEnabled)
+        if (!enabled || indexingEnabled)
             return cctx.queries().read(key, part);
 
         DataRow dataRow = dataTree.findOne(new KeySearchRow(key));

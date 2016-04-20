@@ -57,7 +57,8 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
 
         dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-        dbCfg.setPageSize(256);
+        // TODO GG-10884 increased to avoid errors on metadata cache update.
+        dbCfg.setPageSize(1024);
 
         dbCfg.setPageCacheSize(100 * 1024 * 1024);
 

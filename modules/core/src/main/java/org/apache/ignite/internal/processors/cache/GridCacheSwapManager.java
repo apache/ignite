@@ -137,53 +137,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
-     *
-     */
-    public void unwindOffheapEvicts() {
-        if (!offheapToSwapEvicts)
-            return;
-
-        Collection<IgniteBiTuple<byte[], byte[]>> evicts = offheapEvicts.get();
-
-        if (evicts != null) {
-            GridCacheVersion obsoleteVer = cctx.versions().next();
-
-            for (IgniteBiTuple<byte[], byte[]> t : evicts) {
-                try {
-                    byte[] kb = t.get1();
-                    byte[] vb = t.get2();
-
-                    GridCacheVersion evictVer = GridCacheSwapEntryImpl.version(vb);
-
-                    KeyCacheObject key = cctx.toCacheKeyObject(kb);
-
-                    while (true) {
-                        GridCacheEntryEx entry = cctx.cache().entryEx(key);
-
-                        try {
-                            if (entry.offheapSwapEvict(vb, evictVer, obsoleteVer))
-                                cctx.cache().removeEntry(entry);
-
-                            break;
-                        }
-                        catch (GridCacheEntryRemovedException ignore) {
-                            // Retry.
-                        }
-                    }
-                }
-                catch (GridDhtInvalidPartitionException e) {
-                    // Skip entry.
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to unmarshal off-heap entry", e);
-                }
-            }
-
-            offheapEvicts.set(null);
-        }
-    }
-
-    /**
      * Initializes off-heap space.
      */
     private void initOffHeap() {
@@ -256,13 +209,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             "cache configuration [cache=" + cctx.name() +
             ", offHeapMaxMemory=" + cctx.config().getOffHeapMaxMemory() + ']',
             "Off-heap evictions started: " + cctx.name());
-    }
-
-    /**
-     * @return {@code True} if swap store is enabled.
-     */
-    public boolean swapEnabled() {
-        return swapEnabled;
     }
 
     /**
@@ -1415,15 +1361,15 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     @Nullable public GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> iterator(
         final int part)
         throws IgniteCheckedException {
-        if (!swapEnabled() && !offHeapEnabled())
+        if (!offHeapEnabled())
             return null;
 
         checkIteratorQueue();
 
-        if (offHeapEnabled() && !swapEnabled())
+        if (offHeapEnabled())
             return offHeapIterator(part);
 
-        if (swapEnabled() && !offHeapEnabled())
+        if (!offHeapEnabled())
             return swapIterator(part);
 
         // Both, swap and off-heap are enabled.
@@ -1493,15 +1439,15 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      */
     @Nullable public GridCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator()
         throws IgniteCheckedException {
-        if (!swapEnabled() && !offHeapEnabled())
+        if (!offHeapEnabled())
             return new GridEmptyCloseableIterator<>();
 
         checkIteratorQueue();
 
-        if (offHeapEnabled() && !swapEnabled())
+        if (offHeapEnabled())
             return rawOffHeapIterator(null, true, true);
 
-        if (swapEnabled() && !offHeapEnabled())
+        if (!offHeapEnabled())
             return rawSwapIterator(true, true);
 
         // Both, swap and off-heap are enabled.

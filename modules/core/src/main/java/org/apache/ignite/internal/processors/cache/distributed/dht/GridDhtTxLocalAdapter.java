@@ -584,7 +584,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 if (txEntry == null) {
                     GridDhtCacheEntry cached;
 
-                    if (dhtCache.context().isSwapOrOffheapEnabled()) {
+                    if (dhtCache.context().isOffHeapEnabled()) {
                         while (true) {
                             try {
                                 cached = dhtCache.entryExx(key, topVer);

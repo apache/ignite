@@ -150,14 +150,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOverflowSize() {
-        try {
-            GridCacheAdapter<?, ?> cache = cctx.cache();
-
-            return cache != null ? cache.overflowSize() : -1;
-        }
-        catch (IgniteCheckedException ignored) {
-            return -1;
-        }
+        return 0;
     }
 
     /** {@inheritDoc} */

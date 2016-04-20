@@ -583,7 +583,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 update(null, 0L, 0L, ver);
 
                 if (swap) {
-                    releaseSwap();
+                    cctx.offheap0().remove(key);
 
                     if (log.isDebugEnabled())
                         log.debug("Entry has been cleared from swap storage: " + this);

@@ -77,7 +77,6 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseManager;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
@@ -1298,11 +1297,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
-        IgniteCacheDatabaseManager dbMgr = createDatabaseManager(cfg);
 
-        boolean cacheIndexing = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cfg);
+        boolean cacheIndexingEnabled = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cfg);
 
-        IgniteCacheOffheapManager offheapMgr = new IgniteCacheOffheapManager(cacheIndexing);
+        IgniteCacheOffheapManager offheapMgr = new IgniteCacheOffheapManager(cfg.getCacheMode() == LOCAL ||
+            !GridCacheUtils.isNearEnabled(cfg),
+            cacheIndexingEnabled);
 
         storeMgr.initialize(cfgStore, sesHolders);
 
@@ -1327,7 +1327,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataStructuresMgr,
             ttlMgr,
             drMgr,
-            dbMgr,
             offheapMgr,
             rslvrMgr,
             pluginMgr,
@@ -1432,6 +1431,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * ===============================================
              */
             swapMgr = new GridCacheSwapManager(true);
+            offheapMgr = new IgniteCacheOffheapManager(true, cacheIndexingEnabled);
             evictMgr = new GridCacheEvictionManager();
             evtMgr = new GridCacheEventManager();
             pluginMgr = new CachePluginManager(ctx, cfg);
@@ -1458,7 +1458,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
-                dbMgr,
                 offheapMgr,
                 rslvrMgr,
                 pluginMgr,
@@ -1517,21 +1516,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             registerMbean(cache.mxBean(), cache.name(), false);
 
         return ret;
-    }
-
-    private IgniteCacheDatabaseManager createDatabaseManager(CacheConfiguration ccfg) throws IgniteCheckedException {
-        if (sharedCtx.database().enabled() && INDEXING.inClassPath()) {
-            try {
-                return (IgniteCacheDatabaseManager)Class
-                    .forName("org.apache.ignite.internal.processors.cache.database.IgniteCacheH2DatabaseManager")
-                    .newInstance();
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException(e);
-            }
-        }
-        else
-            return new IgniteCacheNoopDatabaseManager();
     }
 
     /**

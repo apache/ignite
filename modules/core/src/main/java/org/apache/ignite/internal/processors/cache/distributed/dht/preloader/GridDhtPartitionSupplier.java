@@ -284,7 +284,7 @@ class GridDhtPartitionSupplier {
                 GridCacheEntryInfoCollectSwapListener swapLsnr = null;
 
                 try {
-                    if (phase == SupplyContextPhase.NEW && cctx.isSwapOrOffheapEnabled()) {
+                    if (phase == SupplyContextPhase.NEW && cctx.isOffHeapEnabled()) {
                         swapLsnr = new GridCacheEntryInfoCollectSwapListener(log);
 
                         cctx.swap().addOffHeapListener(part, swapLsnr);
@@ -375,7 +375,7 @@ class GridDhtPartitionSupplier {
                         }
                     }
 
-                    if (phase == SupplyContextPhase.SWAP && cctx.isSwapOrOffheapEnabled()) {
+                    if (phase == SupplyContextPhase.SWAP && cctx.isOffHeapEnabled()) {
                         GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> iter =
                             sctx != null && sctx.entryIt != null ?
                                 (GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>>)sctx.entryIt :
@@ -785,7 +785,7 @@ class GridDhtPartitionSupplier {
                 GridCacheEntryInfoCollectSwapListener swapLsnr = null;
 
                 try {
-                    if (cctx.isSwapOrOffheapEnabled()) {
+                    if (cctx.isOffHeapEnabled()) {
                         swapLsnr = new GridCacheEntryInfoCollectSwapListener(log);
 
                         cctx.swap().addOffHeapListener(part, swapLsnr);
@@ -836,7 +836,7 @@ class GridDhtPartitionSupplier {
                     if (partMissing)
                         continue;
 
-                    if (cctx.isSwapOrOffheapEnabled()) {
+                    if (cctx.isOffHeapEnabled()) {
                         GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> iter =
                             cctx.swap().iterator(part);
 

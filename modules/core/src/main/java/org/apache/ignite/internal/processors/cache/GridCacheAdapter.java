@@ -1861,7 +1861,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 final boolean storeEnabled = !skipVals && readThrough && ctx.readThrough();
 
-                final boolean needEntry = storeEnabled || ctx.isSwapOrOffheapEnabled() || ctx.isDatabaseEnabled();
+                final boolean needEntry = storeEnabled || ctx.offheap0().enabled();
 
                 Map<KeyCacheObject, GridCacheVersion> misses = null;
 
@@ -1878,7 +1878,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                         try {
                             T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(null,
-                                ctx.isSwapOrOffheapEnabled() || ctx.isDatabaseEnabled(),
+                                ctx.offheap0().enabled(),
                                 /*unmarshal*/true,
                                 /*update-metrics*/!skipVals,
                                 /*event*/!skipVals,
@@ -3458,13 +3458,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return txs.txStartEx(ctx, concurrency, isolation, timeout, txSize).proxy();
     }
 
-    /** {@inheritDoc} */
-    @Override public long overflowSize() throws IgniteCheckedException {
-        GridCacheSwapManager swapMgr = ctx.swap();
-
-        return swapMgr != null ? swapMgr.swapSize() : -1;
-    }
-
     /**
      * Checks if cache is working in JTA transaction and enlist cache as XAResource if necessary.
      *
@@ -4001,7 +3994,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        if (!ctx0.isSwapOrOffheapEnabled() && ctx0.kernalContext().discovery().size() == 1)
+        if (!ctx0.isOffHeapEnabled() && ctx0.kernalContext().discovery().size() == 1)
             return localIteratorHonorExpirePolicy(opCtx);
 
         CacheQueryFuture<Map.Entry<K, V>> fut = ctx0.queries().createScanQuery(null, null, ctx.keepBinary())
@@ -4602,7 +4595,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         try {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            GridCacheEntryEx entry = ctx.isSwapOrOffheapEnabled() ? entryEx(cacheKey) : peekEx(cacheKey);
+            GridCacheEntryEx entry = ctx.isOffHeapEnabled() ? entryEx(cacheKey) : peekEx(cacheKey);
 
             if (entry != null)
                 return entry.clear(obsoleteVer, readers, null);
@@ -4639,7 +4632,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         GridCacheVersion obsoleteVer = ctx.versions().next();
 
-        if (!ctx.evicts().evictSyncOrNearSync() && ctx.isSwapOrOffheapEnabled()) {
+        if (!ctx.evicts().evictSyncOrNearSync() && ctx.isOffHeapEnabled()) {
             try {
                 ctx.evicts().batchEvict(keys, obsoleteVer);
             }

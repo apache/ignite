@@ -983,7 +983,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         int size = keys.size();
 
-        boolean swap = cache.context().isSwapOrOffheapEnabled();
+        boolean swap = cache.context().isOffHeapEnabled();
 
         for (int i = 0; i < size; i++) {
             try {

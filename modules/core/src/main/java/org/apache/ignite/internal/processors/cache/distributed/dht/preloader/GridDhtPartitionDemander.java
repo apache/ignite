@@ -697,7 +697,7 @@ public class GridDhtPartitionDemander {
                                 false, null, null, null, true);
                     }
                     else {
-                        if (cctx.isSwapOrOffheapEnabled())
+                        if (cctx.isOffHeapEnabled())
                             cctx.evicts().touch(cached, topVer); // Start tracking.
 
                         if (log.isDebugEnabled())

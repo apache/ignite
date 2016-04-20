@@ -1435,8 +1435,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         return false;
                     }
 
-                    if (!cacheCtx.isDatabaseEnabled())
-                        entry1.unswap();
+// TODO GG-10884.
+//                    if (!cacheCtx.isDatabaseEnabled())
+//                        entry1.unswap();
 
                     break;
                 }

@@ -67,13 +67,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @return {@code True} if database is enabled.
-     */
-    public boolean enabled() {
-        return cctx.kernalContext().config().getDatabaseConfiguration() != null;
-    }
-
-    /**
      * @return Page memory instance.
      */
     public PageMemory pageMemory() {

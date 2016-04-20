@@ -185,7 +185,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             throw new IgniteCheckedException("Configuration parameter 'evictSynchronizedKeyBufferSize' cannot be negative.");
 
         if (!cctx.isLocal()) {
-            evictSync = cfg.isEvictSynchronized() && !cctx.isNear() && !cctx.isSwapOrOffheapEnabled();
+            evictSync = cfg.isEvictSynchronized() && !cctx.isNear() && !cctx.isOffHeapEnabled();
 
             nearSync = isNearEnabled(cctx) && !cctx.isNear() && cfg.isEvictSynchronized();
         }
@@ -706,7 +706,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         boolean hasVal = recordable && entry.hasValue();
 
-        boolean evicted = entry.evictInternal(cctx.isSwapOrOffheapEnabled(), obsoleteVer, filter);
+        boolean evicted = entry.evictInternal(cctx.isOffHeapEnabled(), obsoleteVer, filter);
 
         if (evicted) {
             // Remove manually evicted entry from policy.
@@ -735,9 +735,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      * @param txEntry Transactional entry.
      */
     public void touch(IgniteTxEntry txEntry, boolean loc) {
-        if (!plcEnabled && memoryMode != OFFHEAP_TIERED && !cctx.isDatabaseEnabled())
-            return;
-
         if (!loc) {
             if (cctx.isNear())
                 return;
@@ -759,20 +756,27 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
         }
 
-        if (memoryMode == OFFHEAP_TIERED || cctx.isDatabaseEnabled()) {
-            try {
-                evict0(cctx.cache(), e, cctx.versions().next(), null, false);
-            }
-            catch (IgniteCheckedException ex) {
-                U.error(log, "Failed to evict entry from on heap memory: " + e, ex);
-            }
+        try {
+            evict0(cctx.cache(), e, cctx.versions().next(), null, false);
         }
-        else {
-            notifyPolicy(e);
-
-            if (evictSyncAgr)
-                waitForEvictionFutures();
+        catch (IgniteCheckedException ex) {
+            U.error(log, "Failed to evict entry from on heap memory: " + e, ex);
         }
+// TODO GG-10884.
+//        if (memoryMode == OFFHEAP_TIERED || cctx.isDatabaseEnabled()) {
+//            try {
+//                evict0(cctx.cache(), e, cctx.versions().next(), null, false);
+//            }
+//            catch (IgniteCheckedException ex) {
+//                U.error(log, "Failed to evict entry from on heap memory: " + e, ex);
+//            }
+//        }
+//        else {
+//            notifyPolicy(e);
+//
+//            if (evictSyncAgr)
+//                waitForEvictionFutures();
+//        }
     }
 
     /**
@@ -791,7 +795,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
         }
 
-        if (!cctx.isNear() && (memoryMode == OFFHEAP_TIERED || cctx.isDatabaseEnabled())) {
+        if (!cctx.isNear()) {
             try {
                 evict0(cctx.cache(), e, cctx.versions().next(), null, false);
             }
@@ -951,7 +955,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      */
     public void batchEvict(Collection<?> keys, @Nullable GridCacheVersion obsoleteVer) throws IgniteCheckedException {
         assert !evictSyncAgr;
-        assert cctx.isSwapOrOffheapEnabled();
+        assert cctx.isOffHeapEnabled();
 
         List<GridCacheEntryEx> locked = new ArrayList<>(keys.size());
 

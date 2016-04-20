@@ -544,7 +544,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 GridCacheEntryEx entry = null;
 
-                if (cctx.isSwapOrOffheapEnabled()) {
+                if (cctx.isOffHeapEnabled()) {
                     while (true) {
                         try {
                             entry = cctx.dht().entryEx(k);
@@ -579,7 +579,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     if (info != null && !info.isNew())
                         res.addInfo(info);
 
-                    if (cctx.isSwapOrOffheapEnabled())
+                    if (cctx.isOffHeapEnabled())
                         cctx.evicts().touch(entry, msg.topologyVersion());
                 }
                 else if (log.isDebugEnabled())

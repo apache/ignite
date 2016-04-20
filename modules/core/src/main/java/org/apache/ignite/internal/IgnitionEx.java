@@ -57,6 +57,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.DatabaseConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -1896,6 +1897,16 @@ public class IgnitionEx {
             initializeDefaultSpi(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
+
+            if (myCfg.getDatabaseConfiguration() == null) {
+                DatabaseConfiguration dbCfg = new DatabaseConfiguration();
+
+                dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+                dbCfg.setPageSize(100 * 1024);
+                dbCfg.setPageCacheSize(100 * 1024 * 1024);
+
+                myCfg.setDatabaseConfiguration(dbCfg);
+            }
 
             return myCfg;
         }
