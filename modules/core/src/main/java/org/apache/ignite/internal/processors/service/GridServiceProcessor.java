@@ -1096,12 +1096,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
 
             return cache.context().itHolder().iterator(qry.execute(),
-                new CacheIteratorConverter<Object, Map.Entry<Object,Object>>() {
-                    @Override protected Object convert(Map.Entry<Object, Object> e) {
+                new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object, Object>>() {
+                    @Override protected Cache.Entry<Object, Object> convert(Map.Entry<Object, Object> e) {
                         return new CacheEntryImpl<>(e.getKey(), e.getValue());
                     }
 
-                    @Override protected void remove(Object item) {
+                    @Override protected void remove(Cache.Entry<Object, Object> item) {
                         throw new UnsupportedOperationException();
                     }
                 }
