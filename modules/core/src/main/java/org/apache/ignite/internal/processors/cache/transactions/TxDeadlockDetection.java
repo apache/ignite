@@ -24,8 +24,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -36,7 +38,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT;
@@ -49,6 +50,9 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxM
 public class TxDeadlockDetection {
     /** Deadlock detection maximum iterations. */
     private static final int DEADLOCK_TIMEOUT = getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, 60000);
+
+    /** Sequence. */
+    private static final AtomicLong SEQ = new AtomicLong();
 
     /** Cctx. */
     private final GridCacheSharedContext cctx;
@@ -143,7 +147,7 @@ public class TxDeadlockDetection {
         private final GridCacheSharedContext cctx;
 
         /** Future ID. */
-        private final IgniteUuid futId;
+        private final long futId;
 
         /** Tx ID. */
         private final GridCacheVersion txId;
@@ -193,6 +197,9 @@ public class TxDeadlockDetection {
         /** Timed out flag. */
         private volatile boolean timedOut;
 
+        /** Mutex. */
+        private final Object mux = new Object();
+
         /**
          * @param cctx Context.
          * @param txId Tx ID.
@@ -201,7 +208,7 @@ public class TxDeadlockDetection {
         @SuppressWarnings("unchecked")
         private TxDeadlockFuture(GridCacheSharedContext cctx, GridCacheVersion txId, Set<IgniteTxKey> keys) {
             this.cctx = cctx;
-            this.futId = IgniteUuid.randomUuid();
+            this.futId = SEQ.incrementAndGet();
             this.txId = txId;
             this.keys = keys;
             this.processedKeys = new HashSet<>();
@@ -228,7 +235,7 @@ public class TxDeadlockDetection {
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        long futureId() {
             return futId;
         }
 
@@ -236,7 +243,9 @@ public class TxDeadlockDetection {
          * @return Last node ID.
          */
         UUID nodeId() {
-            return curNodeId;
+            synchronized (mux) {
+                return curNodeId;
+            }
         }
 
         /** */
@@ -256,16 +265,20 @@ public class TxDeadlockDetection {
         private void map(@Nullable Set<IgniteTxKey> keys, Map<IgniteTxKey, TxLockList> txLocks) {
             mapTxKeys(keys, txLocks);
 
-            curNodeId = nodesQueue.pollFirst();
+            UUID nodeId = nodesQueue.pollFirst();
 
-            if (curNodeId == null || itersCnt++ >= DEADLOCK_MAX_ITERS || timedOut)
+            boolean set = compareAndSet(null, nodeId);
+
+            assert set;
+
+            if (nodeId == null || itersCnt++ >= DEADLOCK_MAX_ITERS || timedOut)
                 onDone();
             else {
-                final Set<IgniteTxKey> txKeys = pendingKeys.get(curNodeId);
+                final Set<IgniteTxKey> txKeys = pendingKeys.get(nodeId);
 
                 processedKeys.addAll(txKeys);
-                processedNodes.add(curNodeId);
-                pendingKeys.remove(curNodeId);
+                processedNodes.add(nodeId);
+                pendingKeys.remove(nodeId);
 
                 cctx.tm().txLocksInfo(this, txKeys);
             }
@@ -469,8 +482,10 @@ public class TxDeadlockDetection {
         /**
          * @param res Response.
          */
-        public void onResult(TxLocksResponse res) {
-            if (res != null) {
+        public void onResult(UUID nodeId, TxLocksResponse res) {
+            boolean set = compareAndSet(nodeId, null);
+
+            if (res != null && set) {
                 if (res.classError() != null)
                     onDone(res.classError());
                 else
@@ -478,6 +493,31 @@ public class TxDeadlockDetection {
             }
             else
                 onDone();
+        }
+
+        /**
+         * @param exp Expected.
+         * @param val Value.
+         */
+        private boolean compareAndSet(UUID exp, UUID val) {
+            synchronized (mux) {
+                if (Objects.equals(curNodeId, exp)) {
+                    curNodeId = val;
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /**
+         * @param nodeId Node ID.
+         * @param err Err.
+         */
+        public void onComplete(UUID nodeId, Throwable err) {
+            if (compareAndSet(nodeId, null))
+                onDone(err);
         }
 
         /** {@inheritDoc} */

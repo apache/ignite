@@ -25,13 +25,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -40,12 +39,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -60,6 +58,7 @@ import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
+import static org.apache.ignite.internal.util.typedef.X.cause;
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -87,8 +86,6 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         if (isDebug()) {
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -239,14 +236,15 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
         final AtomicInteger threadCnt = new AtomicInteger();
 
-        final CountDownLatch latch = new CountDownLatch(txCnt);
-        final CountDownLatch startLatch = new CountDownLatch(txCnt);
+        final CyclicBarrier barrier = new CyclicBarrier(txCnt);
 
-        final AtomicBoolean deadlock = new AtomicBoolean();
+        final AtomicReference<TransactionDeadlockException> deadlockErr = new AtomicReference<>();
 
         final List<List<Integer>> keySets = generateKeys(txCnt, loc, !lockPrimaryFirst);
 
         final Set<Integer> involvedKeys = new GridConcurrentHashSet<>();
+        final Set<Integer> involvedLockedKeys = new GridConcurrentHashSet<>();
+        final Set<IgniteInternalTx> involvedTxs = new GridConcurrentHashSet<>();
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
@@ -258,18 +256,11 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                 List<Integer> keys = keySets.get(threadNum - 1);
 
-                startLatch.countDown();
+                int txTimeout = 500 + txCnt * 100;
 
-                try {
-                    startLatch.await();
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, txTimeout, 0)) {
+                    involvedTxs.add(((TransactionProxyImpl)tx).tx());
 
-                try (Transaction tx =
-                         ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500 + txCnt * 100, 0)
-                ) {
                     Integer key = keys.get(0);
 
                     involvedKeys.add(key);
@@ -281,9 +272,9 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     cache.put(transformer.apply(key), 0);
 
-                    latch.countDown();
+                    involvedLockedKeys.add(key);
 
-                    latch.await();
+                    barrier.await();
 
                     key = keys.get(1);
 
@@ -323,7 +314,7 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     if (hasCause(e, IgniteTxTimeoutCheckedException.class) &&
                         hasCause(e, TransactionDeadlockException.class)
                         ) {
-                        if (deadlock.compareAndSet(false, true))
+                        if (deadlockErr.compareAndSet(null, cause(e, TransactionDeadlockException.class)))
                             U.error(log, "At least one stack trace should contain " +
                                 TransactionDeadlockException.class.getSimpleName(), e);
                     }
@@ -333,10 +324,13 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
         fut.get();
 
-        assertTrue(deadlock.get());
+        TransactionDeadlockException deadlockE = deadlockErr.get();
+
+        assertNotNull(deadlockE);
 
         U.sleep(1000);
 
+        // Check transactions and entry locks state.
         for (int i = 0; i < NODES_CNT * 2; i++) {
             Ignite ignite = ignite(i);
 
@@ -356,15 +350,32 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
             GridCacheAdapter<Object, Integer> intCache = internalCache(i, CACHE_NAME);
 
+            GridCacheConcurrentMap map = intCache.map();
+
             for (Integer key : involvedKeys) {
-                CacheEntry<Object, Integer> entry = intCache.getEntry(transformer.apply(key));
+                Object key0 = transformer.apply(key);
 
-                if (entry != null) {
-                    GridCacheMapEntry e = (GridCacheMapEntry)entry;
+                KeyCacheObject keyCacheObj = intCache.context().toCacheKeyObject(key0);
 
-                    assertNull(e.mvccAllLocal());
-                }
+                GridCacheMapEntry entry = map.getEntry(keyCacheObj);
+
+                if (entry != null)
+                    assertNull("Entry still has locks " + entry, entry.mvccAllLocal());
             }
+        }
+
+        // Check deadlock report
+        String msg = deadlockE.getMessage();
+
+        for (IgniteInternalTx tx : involvedTxs)
+            assertTrue(msg.contains(
+                "[txId=" + tx.xidVersion() + ", nodeId=" + tx.nodeId() + ", threadId=" + tx.threadId() + ']'));
+
+        for (Integer key : involvedKeys) {
+            if (involvedLockedKeys.contains(key))
+                assertTrue(msg.contains("[key=" + transformer.apply(key) + ", cache=" + CACHE_NAME + ']'));
+            else
+                assertFalse(msg.contains("[key=" + transformer.apply(key)));
         }
     }
 
@@ -457,10 +468,8 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
             KeyObject obj = (KeyObject)o;
 
-            if (id != obj.id)
-                return false;
+            return id == obj.id && name.equals(obj.name);
 
-            return name.equals(obj.name);
         }
 
         /** {@inheritDoc} */

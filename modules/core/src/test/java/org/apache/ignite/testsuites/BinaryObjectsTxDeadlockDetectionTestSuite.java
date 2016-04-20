@@ -18,27 +18,20 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.transactions.DepthFirstSearchTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionCrossCacheTest;
-import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionTest;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Deadlock detection related tests.
+ *
  */
-public class TxDeadlockDetectionTestSuite extends TestSuite {
+public class BinaryObjectsTxDeadlockDetectionTestSuite {
     /**
      * @return Test suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Deadlock Detection Test Suite");
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        suite.addTestSuite(DepthFirstSearchTest.class);
-        suite.addTestSuite(TxPessimisticDeadlockDetectionTest.class);
-        suite.addTestSuite(TxPessimisticDeadlockDetectionCrossCacheTest.class);
-        suite.addTestSuite(TxDeadlockDetectionTest.class);
-
-        return suite;
+        return TxDeadlockDetectionTestSuite.suite();
     }
 }

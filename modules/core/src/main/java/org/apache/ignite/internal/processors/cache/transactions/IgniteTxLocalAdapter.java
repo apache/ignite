@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFinishedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
@@ -1834,8 +1835,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : CU.TTL_NOT_CHANGED;
 
+                long timeout = remainingTime();
+
+                if (timeout == 0)
+                    return new GridFinishedFuture<>(
+                        new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
+                            "for transaction [timeout=" + timeout() + ", tx=" + this + ']')
+                    );
+
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
-                    lockTimeout(),
+                    timeout,
                     this,
                     true,
                     true,
@@ -3096,8 +3105,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for put on key: " + enlisted);
 
+                long timeout = remainingTime();
+
+                if (timeout == 0)
+                    return new GridFinishedFuture<>(
+                        new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
+                            "for transaction [timeout=" + timeout() + ", tx=" + this + ']')
+                    );
+
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
-                    lockTimeout(),
+                    timeout,
                     this,
                     false,
                     retval,
@@ -3271,8 +3288,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for put on keys: " + enlisted);
 
+                long timeout = remainingTime();
+
+                if (timeout == 0)
+                    return new GridFinishedFuture<>(
+                        new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
+                            "for transaction [timeout=" + timeout() + ", tx=" + this + ']')
+                    );
+
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
-                    lockTimeout(),
+                    timeout,
                     this,
                     false,
                     retval,
@@ -3553,8 +3578,16 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             if (log.isDebugEnabled())
                 log.debug("Before acquiring transaction lock for remove on keys: " + enlisted);
 
+            long timeout = remainingTime();
+
+            if (timeout == 0)
+                return new GridFinishedFuture<>(
+                    new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
+                        "for transaction [timeout=" + timeout() + ", tx=" + this + ']')
+                );
+
             IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
-                lockTimeout(),
+                timeout,
                 this,
                 false,
                 retval,

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -51,8 +50,6 @@ public class TxPessimisticDeadlockDetectionCrossCacheTest extends GridCommonAbst
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         if (isDebug()) {
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -99,8 +96,7 @@ public class TxPessimisticDeadlockDetectionCrossCacheTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testDeadlock() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(2);
-        final CountDownLatch startLatch = new CountDownLatch(2);
+        final CyclicBarrier barrier = new CyclicBarrier(2);
 
         final AtomicInteger threadCnt = new AtomicInteger();
 
@@ -116,15 +112,6 @@ public class TxPessimisticDeadlockDetectionCrossCacheTest extends GridCommonAbst
 
                 IgniteCache<Integer, Integer> cache2 = ignite.cache("cache" + (threadNum == 0 ? 1 : 0));
 
-                startLatch.countDown();
-
-                try {
-                    startLatch.await();
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
                 try (Transaction tx =
                          ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 0)
                 ) {
@@ -135,10 +122,7 @@ public class TxPessimisticDeadlockDetectionCrossCacheTest extends GridCommonAbst
 
                     cache1.put(key1, 0);
 
-                    latch.countDown();
-
-                    latch.await();
-
+                    barrier.await();
 
                     int key2 = primaryKey(cache2);
 

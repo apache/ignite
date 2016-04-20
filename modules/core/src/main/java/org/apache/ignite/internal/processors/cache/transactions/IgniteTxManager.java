@@ -152,7 +152,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> nearIdMap = newMap();
 
     /** Deadlock detection futures. */
-    private final ConcurrentMap<IgniteUuid, TxDeadlockFuture> deadlockDetectFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Long, TxDeadlockFuture> deadlockDetectFuts = new ConcurrentHashMap8<>();
 
     /** TX handler. */
     private IgniteTxHandler txHnd;
@@ -210,15 +210,21 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(nodeId);
 
-                    Iterator<Map.Entry<IgniteUuid, TxDeadlockFuture>> it = deadlockDetectFuts.entrySet().iterator();
+                    Iterator<Map.Entry<Long, TxDeadlockFuture>> it = deadlockDetectFuts.entrySet().iterator();
 
                     for (; it.hasNext();) {
-                        Map.Entry<IgniteUuid, TxDeadlockFuture> e = it.next();
+                        Map.Entry<Long, TxDeadlockFuture> e = it.next();
 
                         TxDeadlockFuture fut = e.getValue();
 
-                        if (fut.nodeId().equals(nodeId))
-                            fut.onDone(new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId));
+                        UUID futNodeId = fut.nodeId();
+
+                        if (nodeId.equals(futNodeId)) {
+                            ClusterTopologyCheckedException err =
+                                new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId);
+
+                            fut.onComplete(futNodeId, err);
+                        }
                     }
                 }
             },
@@ -1896,11 +1902,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 cctx.gridIO().send(nodeId, TOPIC_TX, req, SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
-                fut.onDone(e);
+                U.warn(log, "Deadlock detection failed due to an error " + e);
+
+                fut.onDone();
             }
         }
         else
-            fut.onResult(null);
+            fut.onDone();
     }
 
     /**
@@ -2038,14 +2046,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param futId Future ID.
      * @return Found future.
      */
-    @Nullable public TxDeadlockFuture future(IgniteUuid futId) {
+    @Nullable public TxDeadlockFuture future(long futId) {
         return deadlockDetectFuts.get(futId);
     }
 
     /**
      * @param futId Future ID.
      */
-    public void removeFuture(IgniteUuid futId) {
+    public void removeFuture(long futId) {
         deadlockDetectFuts.remove(futId);
     }
 
@@ -2314,12 +2322,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 else if (msg instanceof TxLocksResponse) {
                     TxLocksResponse res = (TxLocksResponse)msg;
 
-                    IgniteUuid futId = res.futureId();
+                    long futId = res.futureId();
 
                     TxDeadlockFuture fut = future(futId);
 
                     if (fut != null)
-                        fut.onResult(res);
+                        fut.onResult(nodeId, res);
                     else
                         U.warn(log, "Unexpected response received " + res);
                 }
@@ -2365,7 +2373,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         return;
                     }
 
-                    fut.onResult(res);
+                    fut.onResult(nodeId, res);
                 }
 
                 break;

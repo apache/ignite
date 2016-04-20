@@ -30,7 +30,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -43,7 +42,7 @@ public class TxLocksResponse extends GridCacheMessage {
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */
-    private IgniteUuid futId;
+    private long futId;
 
     /** Locks for near txKeys of near transactions. */
     @GridToStringInclude
@@ -77,14 +76,14 @@ public class TxLocksResponse extends GridCacheMessage {
     /**
      * @return Future ID.
      */
-    public IgniteUuid futureId() {
+    public long futureId() {
         return futId;
     }
 
     /**
      * @param futId Future ID.
      */
-    public void futureId(IgniteUuid futId) {
+    public void futureId(long futId) {
         this.futId = futId;
     }
 
@@ -226,7 +225,7 @@ public class TxLocksResponse extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
@@ -266,7 +265,7 @@ public class TxLocksResponse extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;

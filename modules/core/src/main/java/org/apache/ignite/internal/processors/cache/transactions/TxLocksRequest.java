@@ -29,7 +29,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -38,11 +37,11 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Transactions lock list request.
  */
 public class TxLocksRequest extends GridCacheMessage {
-    /** Serial version uid. */
+    /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
     /** Future ID. */
-    private IgniteUuid futId;
+    private long futId;
 
     /** Tx keys. */
     @GridToStringInclude
@@ -64,8 +63,7 @@ public class TxLocksRequest extends GridCacheMessage {
      * @param futId Future ID.
      * @param txKeys Target tx keys.
      */
-    public TxLocksRequest(IgniteUuid futId, Set<IgniteTxKey> txKeys) {
-        A.notNull(futId, "futId");
+    public TxLocksRequest(long futId, Set<IgniteTxKey> txKeys) {
         A.notEmpty(txKeys, "txKeys");
 
         this.futId = futId;
@@ -75,7 +73,7 @@ public class TxLocksRequest extends GridCacheMessage {
     /**
      * @return Future ID.
      */
-    public IgniteUuid futureId() {
+    public long futureId() {
         return futId;
     }
 
@@ -142,7 +140,7 @@ public class TxLocksRequest extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
@@ -170,7 +168,7 @@ public class TxLocksRequest extends GridCacheMessage {
 
         switch (reader.state()) {
             case 3:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;
