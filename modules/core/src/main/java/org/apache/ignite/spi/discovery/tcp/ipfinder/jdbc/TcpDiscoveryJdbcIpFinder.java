@@ -76,8 +76,10 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
             + "\" where hostname = ? and port = ?";
 
     /** Query to create addresses table. */
-    public static final String CREATE_ADDRS_TABLE_QRY = "create table \"" + ADDRS_TABLE_NAME
-            + "\" (hostname VARCHAR(1024), port INT)";
+    public static final String CREATE_ADDRS_TABLE_QRY =
+        "create table \"" + ADDRS_TABLE_NAME + "\" (" +
+        "hostname VARCHAR(1024), " +
+        "port INT)";
 
     /** Query to check database validity. */
     public static final String CHK_QRY = "select count(*) from \"" + ADDRS_TABLE_NAME + "\"";
