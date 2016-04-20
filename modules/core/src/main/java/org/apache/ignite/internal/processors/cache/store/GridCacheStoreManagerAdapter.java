@@ -264,12 +264,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         return loadFromStore(tx, key, true);
     }
 
-    /** {@inheritDoc} */
-    @Override @Nullable public Object loadRaw(@Nullable IgniteInternalTx tx, KeyCacheObject key)
-        throws IgniteCheckedException {
-        return loadFromStore(tx, key, false);
-    }
-
     /**
      * Loads data from persistent store.
      *

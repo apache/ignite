@@ -456,6 +456,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
+        localStoreUpdateBackups = cc.isLocalStoreUpdateBackups();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
@@ -488,7 +489,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         typeMeta = cc.getTypeMetadata();
         writeBehindBatchSize = cc.getWriteBehindBatchSize();
         writeBehindEnabled = cc.isWriteBehindEnabled();
-        localStoreUpdateBackups = cc.isLocalStoreUpdateBackups();
         writeBehindFlushFreq = cc.getWriteBehindFlushFrequency();
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
@@ -1633,7 +1633,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Gets flag indicating whether local store keeps backups.
-     * @return {@code true} if local stores keep backup partitions or {@code false} if local stores
+     *
+     * @return {@code True} if local stores keep backup partitions or {@code false} if local stores
      * keep only primary partitions.
      */
     public boolean isLocalStoreUpdateBackups() {
@@ -1643,8 +1644,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets flag indicating whether local store keeps backups.
      * <p>
-     * Default value is {@code false}.
-     * @param localStoreUpdateBackups store backups flag.
+     * Default value is {@link #DFLT_LOCAL_STORE_UPDATE_BACKUPS}.
+     *
+     * @param localStoreUpdateBackups Store backups flag.
      */
     public void setLocalStoreUpdateBackups(boolean localStoreUpdateBackups) {
         this.localStoreUpdateBackups = localStoreUpdateBackups;

@@ -96,7 +96,7 @@ public class GridCacheSharedContext<K, V> {
     private Collection<CacheStoreSessionListener> storeSesLsnrs;
 
     /** Local store count. */
-    private AtomicInteger locStoreCnt;
+    private final AtomicInteger locStoreCnt;
 
     /**
      * @param kernalCtx  Context.
@@ -480,8 +480,7 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /**
-     * Return count of configured local stores.
-     * @return cnt.
+     * @return Count of caches with configured local stores.
      */
     public int getLocalStoreCount() {
         return locStoreCnt.get();

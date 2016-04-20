@@ -90,17 +90,6 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
     @Nullable public Object load(@Nullable IgniteInternalTx tx, KeyCacheObject key) throws IgniteCheckedException;
 
     /**
-     * Loads raw data from custom persistent store.
-     * For example, allows to get entry with version from local store.
-     *
-     * @param tx Cache transaction.
-     * @param key Cache key.
-     * @return Loaded value, possibly <tt>null</tt>.
-     * @throws IgniteCheckedException If data loading failed.
-     */
-    @Nullable public Object loadRaw(@Nullable IgniteInternalTx tx, KeyCacheObject key) throws IgniteCheckedException;
-
-    /**
      * Loads data from persistent store.
      *
      * @param tx Cache transaction.
