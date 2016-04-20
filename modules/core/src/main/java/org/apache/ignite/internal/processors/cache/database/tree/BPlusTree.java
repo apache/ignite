@@ -343,7 +343,7 @@ public abstract class BPlusTree<L, T extends L> {
                 return Remove.RETRY;
 
             // Correct locking order: from back to forward.
-            int res = doRemoveFromLeaf(r);
+            int res = r.doRemoveFromLeaf();
 
             // If we need to do more tricks, then we have to keep locks on back and leaf pages.
             if (res == Remove.FOUND && (r.needMerge == TRUE || r.needReplaceInner == TRUE)) {
@@ -365,7 +365,7 @@ public abstract class BPlusTree<L, T extends L> {
                 return Remove.RETRY;
 
             // Correct locking order: from back to forward.
-            int res = doLockTail(r, lvl);
+            int res = r.doLockTail(lvl);
 
             if (res == Remove.FOUND)
                 r.addTail(back, buf, io, lvl, true, Integer.MIN_VALUE);
@@ -926,7 +926,7 @@ public abstract class BPlusTree<L, T extends L> {
                         }
 
                         if (!r.isFinished() && !r.finishTail(false))
-                            return lockTail(r, page, backId, fwdId, lvl);
+                            return r.lockTail(page, backId, fwdId, lvl);
 
                         return res;
 
@@ -947,7 +947,7 @@ public abstract class BPlusTree<L, T extends L> {
                         assert lvl == 0 : lvl;
                         assert r.removed == null;
 
-                        res = removeFromLeaf(r, page, backId, fwdId);
+                        res = r.removeFromLeaf(page, backId, fwdId);
 
                         if (res == Remove.NOT_FOUND) {
                             assert r.ceil: "must be a retry if not a ceiling remove";
@@ -972,46 +972,6 @@ public abstract class BPlusTree<L, T extends L> {
             if (r.canRelease(page, lvl))
                 page.close();
         }
-    }
-
-    /**
-     * @param r Remove operation.
-     * @param leaf Leaf page.
-     * @param backId Back page ID.
-     * @param fwdId Forward ID.
-     * @return Result code.
-     * @throws IgniteCheckedException If failed.
-     */
-    private int removeFromLeaf(Remove r, Page leaf, long backId, long fwdId) throws IgniteCheckedException {
-        r.pageId = leaf.id();
-        r.page = leaf;
-        r.backId = backId;
-        r.fwdId = fwdId;
-
-        if (backId == 0)
-            return doRemoveFromLeaf(r); // Fast path.
-
-        // Lock back page before the remove, we'll need it for merges.
-        Page back = page(backId);
-
-        try {
-            return writePage(back, lockBackAndRemoveFromLeaf, r, 0, Remove.RETRY);
-        }
-        finally {
-            if (r.canRelease(back, 0))
-                back.close();
-        }
-    }
-
-    /**
-     * @param r Remove operation.
-     * @return Result code.
-     * @throws IgniteCheckedException If failed.
-     */
-    private int doRemoveFromLeaf(Remove r) throws IgniteCheckedException {
-        assert r.page != null;
-
-        return writePage(r.page, removeFromLeaf, r, 0, Remove.RETRY);
     }
 
     /**
@@ -1067,50 +1027,6 @@ public abstract class BPlusTree<L, T extends L> {
             return newCnt;
 
         return -1;
-    }
-
-    /**
-     * @param r Remove.
-     * @param page Page.
-     * @param backId Back page ID.
-     * @param fwdId Expected forward page ID.
-     * @param lvl Level.
-     * @return Result code.
-     * @throws IgniteCheckedException If failed.
-     */
-    private int lockTail(Remove r, Page page, long backId, long fwdId, int lvl) throws IgniteCheckedException {
-        assert r.needMerge == TRUE ^ r.needReplaceInner == TRUE: "we can do only one thing at once";
-
-        // Init parameters for the handlers.
-        r.pageId = page.id();
-        r.page = page;
-        r.fwdId = fwdId;
-        r.backId = backId;
-
-        if (backId == 0) // Back page ID is provided only when last move was to the right.
-            return doLockTail(r, lvl);
-
-        Page back = page(backId);
-
-        try {
-            return writePage(back, lockBackAndTail, r, lvl, Remove.RETRY);
-        }
-        finally {
-            if (r.canRelease(back, lvl))
-                back.close();
-        }
-    }
-
-    /**
-     * @param r Remove operation.
-     * @param lvl Level.
-     * @return Result code.
-     * @throws IgniteCheckedException If failed.
-     */
-    private int doLockTail(Remove r, int lvl) throws IgniteCheckedException {
-        assert r.page != null;
-
-        return writePage(r.page, lockTail, r, lvl, Remove.RETRY);
     }
 
     /**
@@ -1795,6 +1711,87 @@ public abstract class BPlusTree<L, T extends L> {
             finish();
 
             return true;
+        }
+
+        /**
+         * @param leaf Leaf page.
+         * @param backId Back page ID.
+         * @param fwdId Forward ID.
+         * @return Result code.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int removeFromLeaf(Page leaf, long backId, long fwdId) throws IgniteCheckedException {
+            this.pageId = leaf.id();
+            this.page = leaf;
+            this.backId = backId;
+            this.fwdId = fwdId;
+
+            if (backId == 0)
+                return doRemoveFromLeaf(); // Fast path.
+
+            // Lock back page before the remove, we'll need it for merges.
+            Page back = page(backId);
+
+            try {
+                return writePage(back, lockBackAndRemoveFromLeaf, this, 0, Remove.RETRY);
+            }
+            finally {
+                if (canRelease(back, 0))
+                    back.close();
+            }
+        }
+
+
+        /**
+         * @return Result code.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int doRemoveFromLeaf() throws IgniteCheckedException {
+            assert page != null;
+
+            return writePage(page, removeFromLeaf, this, 0, Remove.RETRY);
+        }
+
+        /**
+         * @param lvl Level.
+         * @return Result code.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int doLockTail(int lvl) throws IgniteCheckedException {
+            assert page != null;
+
+            return writePage(page, lockTail, this, lvl, Remove.RETRY);
+        }
+
+        /**
+         * @param page Page.
+         * @param backId Back page ID.
+         * @param fwdId Expected forward page ID.
+         * @param lvl Level.
+         * @return Result code.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int lockTail(Page page, long backId, long fwdId, int lvl) throws IgniteCheckedException {
+            assert needMerge == TRUE ^ needReplaceInner == TRUE: "we can do only one thing at once";
+
+            // Init parameters for the handlers.
+            this.pageId = page.id();
+            this.page = page;
+            this.fwdId = fwdId;
+            this.backId = backId;
+
+            if (backId == 0) // Back page ID is provided only when last move was to the right.
+                return doLockTail(lvl);
+
+            Page back = page(backId);
+
+            try {
+                return writePage(back, lockBackAndTail, this, lvl, Remove.RETRY);
+            }
+            finally {
+                if (canRelease(back, lvl))
+                    back.close();
+            }
         }
 
         /**
