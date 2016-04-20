@@ -24,7 +24,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -86,7 +85,6 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteExternaliza
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
@@ -101,11 +99,12 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFi
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridTriple;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -3911,7 +3910,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      * @return Distributed ignite cache iterator.
      */
-    public Iterator<Cache.Entry<K, V>> igniteIterator() {
+    public Iterator<Cache.Entry<K, V>> igniteIterator() throws IgniteCheckedException {
         GridCacheContext ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
@@ -3919,29 +3918,28 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (!ctx0.isSwapOrOffheapEnabled() && ctx0.kernalContext().discovery().size() == 1)
             return localIteratorHonorExpirePolicy(opCtx);
 
-        CacheQueryFuture<Map.Entry<K, V>> fut = ctx0.queries().createScanQuery(null, null, ctx.keepBinary())
+        GridCloseableIterator<Map.Entry<K, V>> iter = ctx0.queries().createScanQuery(null, null, ctx.keepBinary())
             .keepAll(false)
-            .execute();
+            .executeScanQuery();
 
-        return ctx.itHolder().iterator(fut, new CacheIteratorConverter<Cache.Entry<K, V>, Map.Entry<K, V>>() {
-            @Override protected Cache.Entry<K, V> convert(Map.Entry<K, V> e) {
-                return new CacheEntryImpl<>(e.getKey(), e.getValue());
+        final CacheWeakQueryIteratorsHolder.WeakReferenceCloseableIterator<Map.Entry<K, V>> iter0 =
+            ctx.itHolder().iterator(iter);
+
+        return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
+            @Override protected Cache.Entry<K, V> onNext() throws IgniteCheckedException {
+                Map.Entry<K, V> next = iter0.next();
+
+                return new CacheEntryImpl<>(next.getKey(), next.getValue());
             }
 
-            @Override protected void remove(Cache.Entry<K, V> item) {
-                CacheOperationContext prev = ctx.gate().enter(opCtx);
-
-                try {
-                    GridCacheAdapter.this.remove(item.getKey());
-                }
-                catch (IgniteCheckedException e) {
-                    throw CU.convertToCacheException(e);
-                }
-                finally {
-                    ctx.gate().leave(prev);
-                }
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                return iter0.hasNext();
             }
-        });
+
+            @Override protected void onClose() throws IgniteCheckedException {
+                iter0.close();
+            }
+        };
     }
 
     /**

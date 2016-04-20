@@ -1828,6 +1828,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         try {
             return ctx.cache().igniteIterator();
         }
+        catch (Exception e) {
+            if (e instanceof CacheException)
+                throw (CacheException)e;
+
+            throw new CacheException(e);
+        }
         finally {
             onLeave(gate, prev);
         }
