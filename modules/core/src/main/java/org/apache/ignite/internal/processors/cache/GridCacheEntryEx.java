@@ -931,7 +931,10 @@ public interface GridCacheEntryEx {
     public void updateTtl(@Nullable GridCacheVersion ver, long ttl) throws GridCacheEntryRemovedException;
 
     /**
-     * Tries to do offheap -> swap eviction.
+     * Called when entry should be evicted from offheap.
+     * <p>
+     * If swap is enabled tries to do offheap -> swap eviction, otherwise evicted value should
+     * be passed to query manager.
      *
      * @param entry Serialized swap entry.
      * @param evictVer Version when entry was selected for eviction.
@@ -940,7 +943,7 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @return {@code True} if entry was obsoleted and written to swap.
      */
-    public boolean offheapSwapEvict(byte[] entry, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
+    public boolean onOffheapEvict(byte[] entry, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
