@@ -93,7 +93,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     public static final TestLocalStore<Integer, Integer> LOCAL_STORE_6 = new TestLocalStore<>();
 
     /** */
-    public static final int KEYS = 1000;
+    public static final int KEYS = 1025;
 
     /** */
     public static final String BACKUP_CACHE_1 = "backup_1";
@@ -520,6 +520,27 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
+    public void testLocalStoreWithNearKeysPrimary() throws Exception {
+        try{
+            locStoreBackups = false;
+
+            testLocalStoreWithNearKeys();
+        }
+        finally {
+            locStoreBackups = true;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalStoreWithNearKeysPrimaryAndBackups() throws Exception {
+            testLocalStoreWithNearKeys();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testLocalStoreWithNearKeys() throws Exception {
         if (getCacheMode() == REPLICATED)
             return;
@@ -570,9 +591,9 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
                     tx.commit();
                 }
 
-                checkLocalStore(grid(1), LOCAL_STORE_1, BACKUP_CACHE_1, m.keySet());
-                checkLocalStore(grid(2), LOCAL_STORE_2, BACKUP_CACHE_1, m.keySet());
-                checkLocalStore(grid(3), LOCAL_STORE_3, BACKUP_CACHE_1, m.keySet());
+                checkLocalStore(grid(1), LOCAL_STORE_1, BACKUP_CACHE_1, m.keySet(), locStoreBackups);
+                checkLocalStore(grid(2), LOCAL_STORE_2, BACKUP_CACHE_1, m.keySet(), locStoreBackups);
+                checkLocalStore(grid(3), LOCAL_STORE_3, BACKUP_CACHE_1, m.keySet(), locStoreBackups);
 
                 LOCAL_STORE_1.clear();
                 LOCAL_STORE_2.clear();
@@ -733,7 +754,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     }
 
     /**
-     * Checks that local stores contains only primary entry.
+     * Checks that local stores contains primary and backup entries.
      *  @param ignite Ignite.
      * @param store Store.
      * @param name Cache name.
@@ -741,11 +762,32 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      */
     private void checkLocalStore(Ignite ignite, CacheStore<Integer, IgniteBiTuple<Integer, ?>> store, String name,
         Set<Integer> keys) {
+        checkLocalStore(ignite, store, name, keys, true);
+    }
+
+    /**
+     * Checks that local stores contains primary and backup or only primary entries.
+     *
+     * @param ignite Ignite.
+     * @param store Store.
+     * @param name Cache name.
+     * @param keys keys.
+     */
+    private void checkLocalStore(Ignite ignite, CacheStore<Integer, IgniteBiTuple<Integer, ?>> store, String name,
+        Set<Integer> keys, boolean withBackups) {
         for (int key : keys) {
-            if (ignite.affinity(name).isPrimaryOrBackup(ignite.cluster().localNode(), key))
-                assertEquals(store.load(key).get1().intValue(), key);
-            else
-                assertNull(store.load(key));
+            if (withBackups) {
+                if (ignite.affinity(name).isPrimaryOrBackup(ignite.cluster().localNode(), key))
+                    assertEquals(store.load(key).get1().intValue(), key);
+                else
+                    assertNull(store.load(key));
+            }
+            else {
+                if (ignite.affinity(name).isPrimary(ignite.cluster().localNode(), key))
+                    assertEquals(store.load(key).get1().intValue(), key);
+                else
+                    assertNull(store.load(key));
+            }
         }
     }
 
