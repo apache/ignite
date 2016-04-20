@@ -426,7 +426,9 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public CacheObject innerGet(@Nullable IgniteInternalTx tx,
+    @Override public CacheObject innerGet(
+        @Nullable GridCacheVersion ver,
+        @Nullable IgniteInternalTx tx,
         boolean readSwap,
         boolean readThrough,
         boolean failFast,
@@ -444,6 +446,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** @inheritDoc */
     @Nullable @Override public T2<CacheObject, GridCacheVersion> innerGetVersioned(
+        @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
         boolean readSwap,
         boolean unmarshal,
@@ -572,8 +575,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public boolean clear(GridCacheVersion ver, boolean readers,
-        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
+    @Override public boolean clear(GridCacheVersion ver, boolean readers) throws IgniteCheckedException {
         if (ver == null || ver.equals(this.ver)) {
             val = null;
 
@@ -678,7 +680,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public GridCacheVersionedEntryEx versionedEntry() throws IgniteCheckedException {
+    @Override public GridCacheVersionedEntryEx versionedEntry(final boolean keepBinary) throws IgniteCheckedException {
         return null;
     }
 
@@ -850,7 +852,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public boolean offheapSwapEvict(byte[] vb, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
+    @Override public boolean onOffheapEvict(byte[] vb, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return false;
     }

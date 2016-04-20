@@ -25,8 +25,10 @@ import java.io.ObjectInputValidation;
 import java.io.ObjectStreamClass;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -77,6 +79,7 @@ import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.LO
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.NULL;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.OBJ_ARR;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.PROPS;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.PROXY;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.SERIALIZABLE;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.SHORT;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.SHORT_ARR;
@@ -296,6 +299,16 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
             case CLS:
                 return readClass();
+
+            case PROXY:
+                Class<?>[] intfs = new Class<?>[readInt()];
+
+                for (int i = 0; i < intfs.length; i++)
+                    intfs[i] = readClass();
+
+                InvocationHandler ih = (InvocationHandler)readObject();
+
+                return Proxy.newProxyInstance(clsLdr != null ? clsLdr : U.gridClassLoader(), intfs, ih);
 
             case ENUM:
             case EXTERNALIZABLE:

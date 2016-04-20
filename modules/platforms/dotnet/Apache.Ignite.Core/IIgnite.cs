@@ -192,6 +192,34 @@ namespace Apache.Ignite.Core
         IAtomicLong GetAtomicLong(string name, long initialValue, bool create);
 
         /// <summary>
+        /// Gets an atomic sequence with specified name from cache.
+        /// Creates new atomic sequence in cache if it does not exist and <paramref name="create"/> is true.
+        /// </summary>
+        /// <param name="name">Name of the atomic sequence.</param>
+        /// <param name="initialValue">
+        /// Initial value for the atomic sequence. Ignored if <paramref name="create"/> is false.
+        /// </param>
+        /// <param name="create">Flag indicating whether atomic sequence should be created if it does not exist.</param>
+        /// <returns>Atomic sequence instance with specified name, 
+        /// or null if it does not exist and <paramref name="create"/> flag is not set.</returns>
+        /// <exception cref="IgniteException">If atomic sequence could not be fetched or created.</exception>
+        IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create);
+
+        /// <summary>
+        /// Gets an atomic reference with specified name from cache.
+        /// Creates new atomic reference in cache if it does not exist and <paramref name="create"/> is true.
+        /// </summary>
+        /// <param name="name">Name of the atomic reference.</param>
+        /// <param name="initialValue">
+        /// Initial value for the atomic reference. Ignored if <paramref name="create"/> is false.
+        /// </param>
+        /// <param name="create">Flag indicating whether atomic reference should be created if it does not exist.</param>
+        /// <returns>Atomic reference instance with specified name, 
+        /// or null if it does not exist and <paramref name="create"/> flag is not set.</returns>
+        /// <exception cref="IgniteException">If atomic reference could not be fetched or created.</exception>
+        IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create);
+
+        /// <summary>
         /// Gets the configuration of this Ignite instance.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]

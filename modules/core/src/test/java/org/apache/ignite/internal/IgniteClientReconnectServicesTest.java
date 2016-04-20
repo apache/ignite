@@ -134,7 +134,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
 
         Ignite srv = clientRouter(client);
 
-        BlockTpcCommunicationSpi commSpi = commSpi(srv);
+        BlockTcpCommunicationSpi commSpi = commSpi(srv);
 
         commSpi.blockMessage(GridNearTxPrepareResponse.class);
 
@@ -187,7 +187,7 @@ public class IgniteClientReconnectServicesTest extends IgniteClientReconnectAbst
 
         assertNotNull(srvc);
 
-        BlockTpcCommunicationSpi commSpi = commSpi(srv);
+        BlockTcpCommunicationSpi commSpi = commSpi(srv);
 
         commSpi.blockMessage(GridJobExecuteResponse.class);
 

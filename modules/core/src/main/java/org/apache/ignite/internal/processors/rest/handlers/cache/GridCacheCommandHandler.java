@@ -1486,7 +1486,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
-            CacheMetrics metrics = c.cache().metrics();
+            CacheMetrics metrics = c.cache().localMetrics();
 
             assert metrics != null;
 

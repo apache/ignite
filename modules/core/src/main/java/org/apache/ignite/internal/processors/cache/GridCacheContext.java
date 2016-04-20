@@ -126,7 +126,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String, String>>() {
         @Override protected IgniteBiTuple<String, String> initialValue() {
-            return F.t2();
+            return new IgniteBiTuple<>();
         }
     };
 
@@ -1121,30 +1121,22 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return No value filter.
      */
-    public CacheEntryPredicate[] noValArray() {
-        return new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue())};
+    public CacheEntryPredicate noVal() {
+        return new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
     }
 
     /**
      * @return Has value filter.
      */
-    public CacheEntryPredicate[] hasValArray() {
-        return new CacheEntryPredicate[]{new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue())};
-    }
-
-    /**
-     * @param val Value to check.
-     * @return Predicate array that checks for value.
-     */
-    public CacheEntryPredicate[] equalsValArray(V val) {
-        return new CacheEntryPredicate[]{new CacheEntryPredicateContainsValue(toCacheObject(val))};
+    public CacheEntryPredicate hasVal() {
+        return new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
     }
 
     /**
      * @param val Value to check.
      * @return Predicate that checks for value.
      */
-    public CacheEntryPredicate equalsValue(V val) {
+    public CacheEntryPredicate equalsVal(V val) {
         return new CacheEntryPredicateContainsValue(toCacheObject(val));
     }
 
@@ -1282,7 +1274,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * Sets thread local cache operation context.
      *
-     * @param opCtx Flags to set.
+     * @param opCtx Operation context.
      */
     public void operationContextPerCall(@Nullable CacheOperationContext opCtx) {
         if (nearContext())
@@ -1750,10 +1742,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Heap-based object.
      */
     @Nullable public <T> T unwrapTemporary(@Nullable Object obj) {
-        if (!offheapTiered())
+        if (!useOffheapEntry())
             return (T)obj;
 
-        return (T) cacheObjects().unwrapTemporary(this, obj);
+        return (T)cacheObjects().unwrapTemporary(this, obj);
     }
 
     /**

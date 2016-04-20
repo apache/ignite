@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -143,7 +142,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
      */
     protected void clearEntry(GridCacheEntryEx e) {
         try {
-            e.clear(obsoleteVer, readers, CU.empty0());
+            e.clear(obsoleteVer, readers);
         }
         catch (IgniteCheckedException ex) {
             U.error(log, "Failed to clearLocally entry from cache (will continue to clearLocally other entries): " + e, ex);

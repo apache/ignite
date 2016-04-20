@@ -146,7 +146,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
         builder = builder(obj);
 
-        builder.setField("objField", "value");
+        builder.setField("objField", "value", Object.class);
         builder.setField("otherField", (Object)null);
 
         obj = builder.build();
@@ -674,18 +674,24 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         builder.hashCode(100);
 
         builder.setField("collectionField", Arrays.asList(new Value(1), new Value(2)));
+        builder.setField("collectionField2", Arrays.asList(new Value(1), new Value(2)), Collection.class);
 
         BinaryObject po = builder.build();
 
         assertEquals(expectedHashCode("Class"), po.type().typeId());
         assertEquals(100, po.hashCode());
 
-        List<BinaryObject> list = po.field("collectionField");
+        List<Value> list = po.field("collectionField");
 
         assertEquals(2, list.size());
+        assertEquals(1, list.get(0).i);
+        assertEquals(2, list.get(1).i);
 
-        assertEquals(1, list.get(0).<Value>deserialize().i);
-        assertEquals(2, list.get(1).<Value>deserialize().i);
+        List<BinaryObject> list2 = po.field("collectionField2");
+
+        assertEquals(2, list2.size());
+        assertEquals(1, list2.get(0).<Value>deserialize().i);
+        assertEquals(2, list2.get(1).<Value>deserialize().i);
     }
 
     /**
@@ -697,17 +703,27 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         builder.hashCode(100);
 
         builder.setField("mapField", F.asMap(new Key(1), new Value(1), new Key(2), new Value(2)));
+        builder.setField("mapField2", F.asMap(new Key(1), new Value(1), new Key(2), new Value(2)), Map.class);
 
         BinaryObject po = builder.build();
 
         assertEquals(expectedHashCode("Class"), po.type().typeId());
         assertEquals(100, po.hashCode());
 
-        Map<BinaryObject, BinaryObject> map = po.field("mapField");
+        // Test non-standard map.
+        Map<Key, Value> map = po.field("mapField");
 
         assertEquals(2, map.size());
 
-        for (Map.Entry<BinaryObject, BinaryObject> e : map.entrySet())
+        for (Map.Entry<Key, Value> e : map.entrySet())
+            assertEquals(e.getKey().i, e.getValue().i);
+
+        // Test binary map
+        Map<BinaryObject, BinaryObject> map2 = po.field("mapField2");
+
+        assertEquals(2, map2.size());
+
+        for (Map.Entry<BinaryObject, BinaryObject> e : map2.entrySet())
             assertEquals(e.getKey().<Key>deserialize().i, e.getValue().<Value>deserialize().i);
     }
 
@@ -723,7 +739,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         builder.setField("f", 111.111f);
         builder.setField("iArr", new int[] {1, 2, 3});
         builder.setField("obj", new Key(1));
-        builder.setField("col", Arrays.asList(new Value(1), new Value(2)));
+        builder.setField("col", Arrays.asList(new Value(1), new Value(2)), Collection.class);
 
         BinaryObject po = builder.build();
 
@@ -755,7 +771,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
         builder.setField("f", 111.111f);
         builder.setField("iArr", new int[] {1, 2, 3});
         builder.setField("obj", new Key(1));
-        builder.setField("col", Arrays.asList(new Value(1), new Value(2)));
+        builder.setField("col", Arrays.asList(new Value(1), new Value(2)), Collection.class);
 
         BinaryObject po = builder.build();
 

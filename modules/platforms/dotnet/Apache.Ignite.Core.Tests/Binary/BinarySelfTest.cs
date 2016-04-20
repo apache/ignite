@@ -20,21 +20,27 @@
 // ReSharper disable PossibleInvalidOperationException
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedMember.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
+    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
-    /// 
+    /// Binary tests.
     /// </summary>
     [TestFixture]
     public class BinarySelfTest { 
@@ -47,7 +53,16 @@ namespace Apache.Ignite.Core.Tests.Binary
         [TestFixtureSetUp]
         public void BeforeTest()
         {
-            _marsh = new Marshaller(null);
+            _marsh = new Marshaller(GetBinaryConfiguration());
+        }
+
+        /// <summary>
+        /// Gets the binary configuration.
+        /// </summary>
+        /// <returns></returns>
+        protected virtual BinaryConfiguration GetBinaryConfiguration()
+        {
+            return new BinaryConfiguration { CompactFooter = true };
         }
         
         /**
@@ -476,6 +491,35 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(vals, newVals);
         }
 
+        /// <summary>
+        /// Checks that both methods produce identical results.
+        /// </summary>
+        [Test]
+        public void TestGuidSlowFast()
+        {
+            var stream = new BinaryHeapStream(128);
+
+            var guid = Guid.NewGuid();
+
+            BinaryUtils.WriteGuidFast(guid, stream);
+
+            stream.Seek(0, SeekOrigin.Begin);
+            Assert.AreEqual(guid, BinaryUtils.ReadGuidFast(stream));
+
+            stream.Seek(0, SeekOrigin.Begin);
+            Assert.AreEqual(guid, BinaryUtils.ReadGuidSlow(stream));
+
+
+            stream.Seek(0, SeekOrigin.Begin);
+            BinaryUtils.WriteGuidFast(guid, stream);
+
+            stream.Seek(0, SeekOrigin.Begin);
+            Assert.AreEqual(guid, BinaryUtils.ReadGuidFast(stream));
+
+            stream.Seek(0, SeekOrigin.Begin);
+            Assert.AreEqual(guid, BinaryUtils.ReadGuidSlow(stream));
+        }
+
         /**
         * <summary>Check write of enum.</summary>
         */
@@ -695,16 +739,22 @@ namespace Apache.Ignite.Core.Tests.Binary
          * <summary>Check write of primitive fields through reflection.</summary>
          */
         [Test]
-        public void TestPrimitiveFieldsReflective()
+        public void TestPrimitiveFieldsReflective([Values(false, true)] bool raw)
         {
-            ICollection<BinaryTypeConfiguration> typeCfgs = 
-                new List<BinaryTypeConfiguration>();
+            var serializer = new BinaryReflectiveSerializer {RawMode = raw};
 
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(PrimitiveFieldType)));
+            Assert.AreEqual(raw, serializer.RawMode);
 
-            BinaryConfiguration cfg = new BinaryConfiguration {TypeConfigurations = typeCfgs};
-
-            Marshaller marsh = new Marshaller(cfg);
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration(typeof (PrimitiveFieldType))
+                    {
+                        Serializer = serializer
+                    }
+                }
+            });
 
             PrimitiveFieldType obj = new PrimitiveFieldType();
 
@@ -895,15 +945,21 @@ namespace Apache.Ignite.Core.Tests.Binary
          * <summary>Check write of object with enums.</summary>
          */
         [Test]
-        public void TestEnumsReflective()
+        public void TestEnumsReflective([Values(false, true)] bool raw)
         {
             Marshaller marsh =
                 new Marshaller(new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
                     {
-                        new BinaryTypeConfiguration(typeof (EnumType)),
+                        new BinaryTypeConfiguration(typeof (EnumType))
+                        {
+                            Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                        },
                         new BinaryTypeConfiguration(typeof (TestEnum))
+                        {
+                            Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                        }
                     }
                 });
 
@@ -919,18 +975,26 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual(obj.GetHashCode(), portObj.GetHashCode());
 
-            // Test enum field in binary form
-            var binEnum = portObj.GetField<IBinaryObject>("PEnum");
-            Assert.AreEqual(obj.PEnum.GetHashCode(), binEnum.GetHashCode());
-            Assert.AreEqual((int) obj.PEnum, binEnum.EnumValue);
-            Assert.AreEqual(obj.PEnum, binEnum.Deserialize<TestEnum>());
-            Assert.AreEqual(obj.PEnum, binEnum.Deserialize<object>());
-            Assert.AreEqual(typeof(TestEnum), binEnum.Deserialize<object>().GetType());
-            Assert.AreEqual(null, binEnum.GetField<object>("someField"));
-            Assert.IsFalse(binEnum.HasField("anyField"));
+            if (!raw)
+            {
+                // Test enum field in binary form
+                var binEnum = portObj.GetField<IBinaryObject>("PEnum");
+                Assert.AreEqual(obj.PEnum.GetHashCode(), binEnum.GetHashCode());
+                Assert.AreEqual((int) obj.PEnum, binEnum.EnumValue);
+                Assert.AreEqual(obj.PEnum, binEnum.Deserialize<TestEnum>());
+                Assert.AreEqual(obj.PEnum, binEnum.Deserialize<object>());
+                Assert.AreEqual(typeof (TestEnum), binEnum.Deserialize<object>().GetType());
+                Assert.AreEqual(null, binEnum.GetField<object>("someField"));
+                Assert.IsFalse(binEnum.HasField("anyField"));
 
-            var binEnumArr = portObj.GetField<IBinaryObject[]>("PEnumArray");
-            Assert.IsTrue(binEnumArr.Select(x => x.Deserialize<TestEnum>()).SequenceEqual(obj.PEnumArray));
+                var binEnumArr = portObj.GetField<IBinaryObject[]>("PEnumArray");
+                Assert.IsTrue(binEnumArr.Select(x => x.Deserialize<TestEnum>()).SequenceEqual(obj.PEnumArray));
+            }
+            else
+            {
+                Assert.IsFalse(portObj.HasField("PEnum"));
+                Assert.IsFalse(portObj.HasField("PEnumArray"));
+            }
 
             EnumType newObj = portObj.Deserialize<EnumType>();
 
@@ -942,14 +1006,20 @@ namespace Apache.Ignite.Core.Tests.Binary
          * <summary>Check write of object with collections.</summary>
          */
         [Test]
-        public void TestCollectionsReflective()
+        public void TestCollectionsReflective([Values(false, true)] bool raw)
         {
             var marsh = new Marshaller(new BinaryConfiguration
             {
-                TypeConfigurations = new List<BinaryTypeConfiguration>
+                TypeConfigurations = new[]
                 {
-                    new BinaryTypeConfiguration(typeof (CollectionsType)),
+                    new BinaryTypeConfiguration(typeof (CollectionsType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                    },
                     new BinaryTypeConfiguration(typeof (InnerObjectType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                    }
                 }
             });
             
@@ -1011,29 +1081,39 @@ namespace Apache.Ignite.Core.Tests.Binary
          * <summary>Check write of object fields through reflective serializer.</summary>
          */
         [Test]
-        public void TestObjectReflective()
+        public void TestObjectReflective([Values(false, true)] bool raw)
         {
-            ICollection<BinaryTypeConfiguration> typeCfgs = 
-                new List<BinaryTypeConfiguration>();
-
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(OuterObjectType)));
-            typeCfgs.Add(new BinaryTypeConfiguration(typeof(InnerObjectType)));
-
-            BinaryConfiguration cfg = new BinaryConfiguration();
-
-            cfg.TypeConfigurations = typeCfgs;
-
-            Marshaller marsh = new Marshaller(cfg);
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration(typeof (OuterObjectType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                    },
+                    new BinaryTypeConfiguration(typeof (InnerObjectType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                    }
+                }
+            });
 
             CheckObject(marsh, new OuterObjectType(), new InnerObjectType());
         }
 
         [Test]
-        public void TestStructsReflective()
+        public void TestStructsReflective([Values(false, true)] bool raw)
         {
             var marsh = new Marshaller(new BinaryConfiguration
             {
-                TypeConfigurations = new[] {new BinaryTypeConfiguration(typeof (ReflectiveStruct))}
+                TypeConfigurations =
+                    new[]
+                    {
+                        new BinaryTypeConfiguration(typeof (ReflectiveStruct))
+                        {
+                            Serializer = new BinaryReflectiveSerializer {RawMode = raw}
+                        }
+                    }
             });
 
             var obj = new ReflectiveStruct(15, 28.8);
@@ -1176,6 +1256,87 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(newOuter.Inner == newOuter.Inner.Outer.RawInner);
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.Inner);
             Assert.IsTrue(newOuter.RawInner == newOuter.RawInner.Outer.RawInner);
+        }
+
+        [Test]
+        public void TestHandlesCollections()
+        {
+            var marsh = new Marshaller(new BinaryConfiguration
+            {
+                TypeConfigurations = new[]
+                {
+                    new BinaryTypeConfiguration(typeof (HandleCollection))
+                }
+            });
+
+            // Collection in collection dependency loop
+            var collection = new ArrayList {1, 2};
+            collection.Add(collection);
+
+            var collectionRaw = new ArrayList(collection);
+            collectionRaw.Add(collectionRaw);
+
+            var collectionObj = new ArrayList(collectionRaw);
+            collectionObj.Add(collectionObj);
+
+            var dict = new Hashtable { { 1, 1 }, { 2, 2 } };
+            dict.Add(3, dict);
+
+            var arr = collectionObj.ToArray();
+            arr[1] = arr;
+
+            object entry = new DictionaryEntry(1, 2);
+            var dictionaryEntryValSetter = DelegateConverter.CompileFieldSetter(typeof (DictionaryEntry)
+                .GetField("_value", BindingFlags.Instance | BindingFlags.NonPublic));
+            dictionaryEntryValSetter(entry, entry);  // modify boxed copy to create reference loop
+
+            var data = new HandleCollection
+            {
+                Collection = collection,
+                CollectionRaw = collectionRaw,
+                Object = collectionObj,
+                Dictionary = dict,
+                Array = arr,
+                DictionaryEntry = (DictionaryEntry) entry
+            };
+
+            var res = marsh.Unmarshal<HandleCollection>(marsh.Marshal(data));
+
+            var resCollection = (ArrayList) res.Collection;
+            Assert.AreEqual(collection[0], resCollection[0]);
+            Assert.AreEqual(collection[1], resCollection[1]);
+            Assert.AreSame(resCollection, resCollection[2]);
+
+            var resCollectionRaw = (ArrayList) res.CollectionRaw;
+            Assert.AreEqual(collectionRaw[0], resCollectionRaw[0]);
+            Assert.AreEqual(collectionRaw[1], resCollectionRaw[1]);
+            Assert.AreSame(resCollection, resCollectionRaw[2]);
+            Assert.AreSame(resCollectionRaw, resCollectionRaw[3]);
+
+            var resCollectionObj = (ArrayList) res.Object;
+            Assert.AreEqual(collectionObj[0], resCollectionObj[0]);
+            Assert.AreEqual(collectionObj[1], resCollectionObj[1]);
+            Assert.AreSame(resCollection, resCollectionObj[2]);
+            Assert.AreSame(resCollectionRaw, resCollectionObj[3]);
+            Assert.AreSame(resCollectionObj, resCollectionObj[4]);
+
+            var resDict = (Hashtable) res.Dictionary;
+            Assert.AreEqual(1, resDict[1]);
+            Assert.AreEqual(2, resDict[2]);
+            Assert.AreSame(resDict, resDict[3]);
+
+            var resArr = res.Array;
+            Assert.AreEqual(arr[0], resArr[0]);
+            Assert.AreSame(resArr, resArr[1]);
+            Assert.AreSame(resCollection, resArr[2]);
+            Assert.AreSame(resCollectionRaw, resArr[3]);
+            Assert.AreSame(resCollectionObj, resArr[4]);
+
+            var resEntry = res.DictionaryEntry;
+            var innerEntry = (DictionaryEntry) resEntry.Value;
+            Assert.AreEqual(1, resEntry.Key);
+            Assert.AreEqual(1, innerEntry.Key);
+            Assert.IsTrue(ReferenceEquals(innerEntry.Value, ((DictionaryEntry) innerEntry.Value).Value));
         }
 
         ///
@@ -1348,6 +1509,15 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             // ReSharper disable once ObjectCreationAsStatement
             Assert.Throws<BinaryObjectException>(() => new Marshaller(cfg));
+        }
+
+        /// <summary>
+        /// Tests the compact footer setting.
+        /// </summary>
+        [Test]
+        public void TestCompactFooterSetting()
+        {
+            Assert.AreEqual(GetBinaryConfiguration().CompactFooter, _marsh.CompactFooter);
         }
 
         private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
@@ -2096,6 +2266,36 @@ namespace Apache.Ignite.Core.Tests.Binary
                 RawInner = rawReader.ReadObject<HandleInner>();
 
                 RawAfter = rawReader.ReadString();
+            }
+        }
+
+        public class HandleCollection : IBinarizable
+        {
+            public ICollection Collection { get; set; }
+            public IDictionary Dictionary { get; set; }
+            public DictionaryEntry DictionaryEntry { get; set; }
+            public ICollection CollectionRaw { get; set; }
+            public object Object { get; set; }
+            public object[] Array { get; set; }
+
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteCollection("col", Collection);
+                writer.WriteDictionary("dict", Dictionary);
+                writer.WriteObject("dictEntry", DictionaryEntry);
+                writer.WriteObject("obj", Object);
+                writer.WriteArray("arr", Array);
+                writer.GetRawWriter().WriteCollection(CollectionRaw);
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                Collection = reader.ReadCollection("col");
+                Dictionary = reader.ReadDictionary("dict");
+                DictionaryEntry = reader.ReadObject<DictionaryEntry>("dictEntry");
+                Object = reader.ReadObject<object>("obj");
+                Array = reader.ReadArray<object>("arr");
+                CollectionRaw = reader.GetRawReader().ReadCollection();
             }
         }
 

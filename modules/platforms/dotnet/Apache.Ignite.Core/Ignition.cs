@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
@@ -116,6 +117,44 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Reads <see cref="IgniteConfiguration"/> from first <see cref="IgniteConfigurationSection"/> in the 
+        /// application configuration and starts Ignite.
+        /// </summary>
+        /// <returns>Started Ignite.</returns>
+        public static IIgnite StartFromApplicationConfiguration()
+        {
+            var cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+            var section = cfg.Sections.OfType<IgniteConfigurationSection>().FirstOrDefault();
+
+            if (section == null)
+                throw new ConfigurationErrorsException(
+                    string.Format("Could not find {0} in current application configuration",
+                        typeof(IgniteConfigurationSection).Name));
+
+            return Start(section.IgniteConfiguration);
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteConfiguration"/> from application configuration 
+        /// <see cref="IgniteConfigurationSection"/> with specified name and starts Ignite.
+        /// </summary>
+        /// <param name="sectionName">Name of the section.</param>
+        /// <returns>Started Ignite.</returns>
+        public static IIgnite StartFromApplicationConfiguration(string sectionName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
+
+            var section = ConfigurationManager.GetSection(sectionName) as IgniteConfigurationSection;
+
+            if (section == null)
+                throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'",
+                    typeof(IgniteConfigurationSection).Name, sectionName));
+
+            return Start(section.IgniteConfiguration);
+        }
+
+        /// <summary>
         /// Starts Ignite with given configuration.
         /// </summary>
         /// <returns>Started Ignite.</returns>
@@ -202,7 +241,7 @@ namespace Apache.Ignite.Core
         private static void CheckServerGc(IgniteConfiguration cfg)
         {
             if (!cfg.SuppressWarnings && !GCSettings.IsServerGC && Interlocked.CompareExchange(ref _gcWarn, 1, 0) == 0)
-                Console.WriteLine("GC server mode is not enabled, this could lead to less " +
+                Logger.LogWarning("GC server mode is not enabled, this could lead to less " +
                     "than optimal performance on multi-core machines (to enable see " +
                     "http://msdn.microsoft.com/en-us/library/ms229357(v=vs.110).aspx).");
         }
@@ -434,7 +473,44 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Gets a named Ignite instance. If Ignite name is {@code null} or empty string,
+        /// Gets a named Ignite instance. If Ignite name is <c>null</c> or empty string,
+        /// then default no-name Ignite will be returned. Note that caller of this method
+        /// should not assume that it will return the same instance every time.
+        /// <p />
+        /// Note that single process can run multiple Ignite instances and every Ignite instance (and its
+        /// node) can belong to a different grid. Ignite name defines what grid a particular Ignite
+        /// instance (and correspondingly its node) belongs to.
+        /// </summary>
+        /// <param name="name">Ignite name to which requested Ignite instance belongs. If <c>null</c>,
+        /// then Ignite instance belonging to a default no-name Ignite will be returned.</param>
+        /// <returns>
+        /// An instance of named grid.
+        /// </returns>
+        /// <exception cref="IgniteException">When there is no Ignite instance with specified name.</exception>
+        public static IIgnite GetIgnite(string name)
+        {
+            var ignite = TryGetIgnite(name);
+
+            if (ignite == null)
+                throw new IgniteException("Ignite instance was not properly started or was already stopped: " + name);
+
+            return ignite;
+        }
+
+        /// <summary>
+        /// Gets an instance of default no-name grid. Note that
+        /// caller of this method should not assume that it will return the same
+        /// instance every time.
+        /// </summary>
+        /// <returns>An instance of default no-name grid.</returns>
+        /// <exception cref="IgniteException">When there is no Ignite instance with specified name.</exception>
+        public static IIgnite GetIgnite()
+        {
+            return GetIgnite(null);
+        }
+
+        /// <summary>
+        /// Gets a named Ignite instance, or <c>null</c> if none found. If Ignite name is <c>null</c> or empty string,
         /// then default no-name Ignite will be returned. Note that caller of this method
         /// should not assume that it will return the same instance every time.
         /// <p/>
@@ -445,29 +521,26 @@ namespace Apache.Ignite.Core
         /// <param name="name">Ignite name to which requested Ignite instance belongs. If <c>null</c>,
         /// then Ignite instance belonging to a default no-name Ignite will be returned.
         /// </param>
-        /// <returns>An instance of named grid.</returns>
-        public static IIgnite GetIgnite(string name)
+        /// <returns>An instance of named grid, or null.</returns>
+        public static IIgnite TryGetIgnite(string name)
         {
             lock (SyncRoot)
             {
                 Ignite result;
 
-                if (!Nodes.TryGetValue(new NodeKey(name), out result))
-                    throw new IgniteException("Ignite instance was not properly started or was already stopped: " + name);
-
-                return result;
+                return !Nodes.TryGetValue(new NodeKey(name), out result) ? null : result;
             }
         }
 
         /// <summary>
-        /// Gets an instance of default no-name grid. Note that
+        /// Gets an instance of default no-name grid, or <c>null</c> if none found. Note that
         /// caller of this method should not assume that it will return the same
         /// instance every time.
         /// </summary>
-        /// <returns>An instance of default no-name grid.</returns>
-        public static IIgnite GetIgnite()
+        /// <returns>An instance of default no-name grid, or null.</returns>
+        public static IIgnite TryGetIgnite()
         {
-            return GetIgnite(null);
+            return TryGetIgnite(null);
         }
 
         /// <summary>

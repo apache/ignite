@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Events
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Base event implementation.

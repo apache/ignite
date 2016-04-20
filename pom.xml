@@ -84,6 +84,8 @@
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>
+        <module>modules/web/ignite-weblogic-test</module>
+        <module>modules/flink</module>
     </modules>
 
     <profiles>
@@ -429,6 +431,7 @@
         <profile>
             <id>benchmarks</id>
             <modules>
+                <module>modules/benchmarks</module>
                 <module>modules/yardstick</module>
                 <module>modules/benchmarks</module>
             </modules>

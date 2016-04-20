@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.compute;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -65,18 +67,28 @@ public class PlatformCompute extends PlatformAbstractTarget {
     /** Compute instance. */
     private final IgniteComputeImpl compute;
 
+    /** Compute instance for platform-only nodes. */
+    private final IgniteComputeImpl computeForPlatform;
+
     /** Future for previous asynchronous operation. */
     protected ThreadLocal<IgniteInternalFuture> curFut = new ThreadLocal<>();
     /**
      * Constructor.
      *
      * @param platformCtx Context.
-     * @param compute Compute instance.
+     * @param grp Cluster group.
      */
-    public PlatformCompute(PlatformContext platformCtx, IgniteComputeImpl compute) {
+    public PlatformCompute(PlatformContext platformCtx, ClusterGroup grp, String platformAttr) {
         super(platformCtx);
 
-        this.compute = compute;
+        assert grp != null;
+        assert platformAttr != null;
+
+        compute = (IgniteComputeImpl)grp.ignite().compute(grp);
+
+        ClusterGroup platformGrp = grp.forAttribute(platformAttr, platformCtx.platform());
+
+        computeForPlatform = (IgniteComputeImpl)grp.ignite().compute(platformGrp);
     }
 
     /** {@inheritDoc} */
@@ -153,7 +165,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 ((PlatformBalancingMultiClosureTask)task).jobs(jobs);
         }
 
-        platformCtx.kernalContext().task().setThreadContext(TC_SUBGRID, compute.clusterGroup().nodes());
+        platformCtx.kernalContext().task().setThreadContext(TC_SUBGRID, computeForPlatform.clusterGroup().nodes());
 
         return executeNative0(task);
     }
@@ -195,7 +207,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param topVer Topology version.
      */
     public PlatformListenable executeNative(long taskPtr, long topVer) {
-        final PlatformFullTask task = new PlatformFullTask(platformCtx, compute, taskPtr, topVer);
+        final PlatformFullTask task = new PlatformFullTask(platformCtx, computeForPlatform, taskPtr, topVer);
 
         return executeNative0(task);
     }
@@ -207,6 +219,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      */
     public void withTimeout(long timeout) {
         compute.withTimeout(timeout);
+        computeForPlatform.withTimeout(timeout);
     }
 
     /**
@@ -214,6 +227,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      */
     public void withNoFailover() {
         compute.withNoFailover();
+        computeForPlatform.withNoFailover();
     }
 
     /** <inheritDoc /> */
@@ -232,7 +246,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param task Task.
      */
     private PlatformListenable executeNative0(final PlatformAbstractTask task) {
-        IgniteInternalFuture fut = compute.executeAsync(task, null);
+        IgniteInternalFuture fut = computeForPlatform.executeAsync(task, null);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
             private static final long serialVersionUID = 0L;

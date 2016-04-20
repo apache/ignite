@@ -376,6 +376,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     if (needVer) {
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
+                            null,
                             /*swap*/true,
                             /*unmarshal*/true,
                             /**update-metrics*/false,
@@ -392,7 +393,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                         }
                     }
                     else {
-                        v = entry.innerGet(null,
+                        v = entry.innerGet(
+                            null,
+                            null,
                             /*swap*/true,
                             /*read-through*/false,
                             /*fail-fast*/true,
@@ -556,12 +559,12 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             }
 
             if (canRemap) {
-                IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer.topologyVersion());
+                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
 
-                topFut.listen(new CIX1<IgniteInternalFuture<Long>>() {
-                    @Override public void applyx(IgniteInternalFuture<Long> fut) {
+                topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                    @Override public void applyx(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                         try {
-                            AffinityTopologyVersion topVer = new AffinityTopologyVersion(fut.get());
+                            AffinityTopologyVersion topVer = fut.get();
 
                             remap(topVer);
                         }

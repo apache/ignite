@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -285,6 +286,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public Task<bool> ClientReconnectTask
+        {
+            get { return _ignite.GetCluster().ClientReconnectTask; }
+        }
+
+        /** <inheritdoc /> */
         public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
         {
             return _ignite.GetDataStreamer<TK, TV>(cacheName);
@@ -337,6 +344,18 @@ namespace Apache.Ignite.Core.Impl
         public IgniteConfiguration GetConfiguration()
         {
             return _ignite.GetConfiguration();
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
+        {
+            return _ignite.GetAtomicSequence(name, initialValue, create);
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
+        {
+            return _ignite.GetAtomicReference(name, initialValue, create);
         }
 
         /** <inheritdoc /> */
