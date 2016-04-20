@@ -119,7 +119,7 @@ public class TxLockList implements Message {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -7;
+        return -26;
     }
 
     /** {@inheritDoc} */

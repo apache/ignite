@@ -160,22 +160,22 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
-            case -7:
+            case -26:
                 msg = new TxLockList();
 
                 break;
 
-            case -6:
+            case -25:
                 msg = new TxLock();
 
                 break;
 
-            case -5:
+            case -24:
                 msg = new TxLocksRequest();
 
                 break;
 
-            case -4:
+            case -23:
                 msg = new TxLocksResponse();
 
                 break;

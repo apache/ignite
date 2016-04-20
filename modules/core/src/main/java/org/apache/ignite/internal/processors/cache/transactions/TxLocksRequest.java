@@ -192,7 +192,7 @@ public class TxLocksRequest extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -5;
+        return -24;
     }
 
     /** {@inheritDoc} */

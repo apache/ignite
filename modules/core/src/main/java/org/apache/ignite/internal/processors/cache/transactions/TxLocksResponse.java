@@ -304,7 +304,7 @@ public class TxLocksResponse extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return -4;
+        return -23;
     }
 
     /** {@inheritDoc} */
