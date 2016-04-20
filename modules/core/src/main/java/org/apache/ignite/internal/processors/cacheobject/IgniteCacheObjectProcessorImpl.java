@@ -197,9 +197,9 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf) throws IgniteCheckedException {
-        byte type = buf.get();
-
         int len = buf.getInt();
+
+        byte type = buf.get();
 
         byte[] data = new byte[len];
 

@@ -2572,7 +2572,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public GridH2Row createRow(CacheObject key, int partId, @Nullable CacheObject val, GridCacheVersion ver,
+        @Override public GridH2Row createRow(KeyCacheObject key, int partId, @Nullable CacheObject val, GridCacheVersion ver,
             long expirationTime) throws IgniteCheckedException {
             GridH2Row row;
 

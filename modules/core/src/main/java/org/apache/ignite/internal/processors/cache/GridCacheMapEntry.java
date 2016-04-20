@@ -935,7 +935,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     update(ret, expTime, ttl, nextVer);
 
-                    cctx.offheap0().put(key, ret, nextVer, partition());
+                    if (ret != null)
+                        cctx.offheap0().put(key, ret, nextVer, partition());
+                    else
+                        cctx.offheap0().remove(key);
 
                     touch = true;
 

@@ -42,6 +42,8 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -188,15 +190,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
             while (cur.next()) {
                 CacheDataRow row = cur.get();
 
-                try {
-                    KeyCacheObject key = row.key() instanceof KeyCacheObject ? (KeyCacheObject)row.key() :
-                        cctx.toCacheKeyObject(row.key().valueBytes(cctx.cacheObjectContext()));
-
-                    keys.add(key);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to obtain cache key: " + row.key(), e);
-                }
+                keys.add(row.key());
             }
 
             GridCacheVersion obsoleteVer = null;
@@ -288,17 +282,57 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         return cnt;
     }
 
+    public GridCloseableIterator<KeyCacheObject> iterator(final int part) throws IgniteCheckedException {
+        if (!enabled)
+            return null;
+
+        final GridCursor<? extends CacheDataRow> cur = dataTree.find(null, null);
+
+        return new GridCloseableIteratorAdapter<KeyCacheObject>() {
+            private KeyCacheObject next;
+
+            private void advance() throws IgniteCheckedException {
+                if (next != null)
+                    return;
+
+                while (cur.next()) {
+                    CacheDataRow row = cur.get();
+
+                    if (row.partition() == part) {
+                        next = (KeyCacheObject)row.key();
+
+                        break;
+                    }
+                }
+            }
+
+            @Override protected KeyCacheObject onNext() throws IgniteCheckedException {
+                KeyCacheObject res = next;
+
+                next = null;
+
+                return res;
+            }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                advance();
+
+                return next != null;
+            }
+        };
+    }
+
     /**
      *
      */
     static class KeySearchRow {
         /** */
-        protected final CacheObject key;
+        protected final KeyCacheObject key;
 
         /**
          * @param key Key.
          */
-        public KeySearchRow(CacheObject key) {
+        public KeySearchRow(KeyCacheObject key) {
             this.key = key;
         }
 
@@ -331,7 +365,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
          * @param part Partition.
          * @param link Link.
          */
-        public DataRow(CacheObject key, CacheObject val, GridCacheVersion ver, int part, long link) {
+        public DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long link) {
             super(key);
 
             this.val = val;
@@ -341,7 +375,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public CacheObject key() {
+        @Override public KeyCacheObject key() {
             return key;
         }
 
@@ -533,7 +567,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
 
             /** {@inheritDoc} */
             @Override public KeySearchRow create(ByteBuffer buf, long link, GridCacheContext cctx) throws IgniteCheckedException {
-                CacheObject key = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), buf);
+                KeyCacheObject key = cctx.cacheObjects().toKeyCacheObject(cctx.cacheObjectContext(), buf);
 
                 return new KeySearchRow(key);
             }
@@ -548,7 +582,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
 
             /** {@inheritDoc} */
             @Override public DataRow create(ByteBuffer buf, long link, GridCacheContext cctx) throws IgniteCheckedException {
-                CacheObject key = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), buf);
+                KeyCacheObject key = cctx.cacheObjects().toKeyCacheObject(cctx.cacheObjectContext(), buf);
                 CacheObject val = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), buf);
 
                 int topVer = buf.getInt();
