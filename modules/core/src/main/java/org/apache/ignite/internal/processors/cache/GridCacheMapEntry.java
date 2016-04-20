@@ -458,7 +458,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (!cctx.swap().swapEnabled()) {
                     CacheObject val = cctx.swap().unmarshalSwapEntryValue(entry);
 
-                    clearIndex(val);
+                    clearIndex(val, evictVer);
                 }
             }
             else
@@ -503,7 +503,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         CacheObject idxVal = read.get1();
 
                         // Set unswapped value.
-                        update(idxVal, 0, 0, read.get2());
+                        update(idxVal, 0, 0, read.get2(), true);
 
                         return idxVal;
                     }
