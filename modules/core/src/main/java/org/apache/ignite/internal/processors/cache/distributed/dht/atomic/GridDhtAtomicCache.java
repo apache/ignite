@@ -145,7 +145,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** Update reply closure. */
     private CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> updateReplyClos;
 
-    /** Pending  */
+    /** Pending */
     private ConcurrentMap<UUID, DeferredResponseBuffer> pendingResponses = new ConcurrentHashMap8<>();
 
     /** */
@@ -2057,7 +2057,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     op,
                     writeVal,
                     req.invokeArguments(),
-                    (primary || (ctx.store().isLocal() && ctx.config().isLocalStoreUpdateBackups()))
+                    (primary || (ctx.store().isLocal() && !ctx.shared().locStorePrimaryOnly()))
                         && writeThrough() && !req.skipStore(),
                     !req.skipStore(),
                     lsnrs != null || sndPrevVal || req.returnValue(),
@@ -2866,7 +2866,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             op,
                             op == TRANSFORM ? entryProcessor : val,
                             op == TRANSFORM ? req.invokeArguments() : null,
-                            /*write-through*/(ctx.store().isLocal() && ctx.config().isLocalStoreUpdateBackups())
+                            /*write-through*/(ctx.store().isLocal() && !ctx.shared().locStorePrimaryOnly())
                                 && writeThrough() && !req.skipStore(),
                             /*read-through*/false,
                             /*retval*/lsnrs != null,

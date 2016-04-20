@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -53,6 +54,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
 
 /**
  * Shared context.
@@ -97,6 +100,9 @@ public class GridCacheSharedContext<K, V> {
 
     /** Local store count. */
     private final AtomicInteger locStoreCnt;
+
+    /** Indicating whether local store keeps primary only. */
+    private final boolean locStorePrimaryOnly = IgniteSystemProperties.getBoolean(IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY);
 
     /**
      * @param kernalCtx  Context.
@@ -492,6 +498,11 @@ public class GridCacheSharedContext<K, V> {
      */
     public ClusterNode node(UUID nodeId) {
         return kernalCtx.discovery().node(nodeId);
+    }
+
+    /** Indicating whether local store keeps primary only. */
+    public boolean locStorePrimaryOnly() {
+        return locStorePrimaryOnly;
     }
 
     /**

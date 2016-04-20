@@ -213,9 +213,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
 
-    /** Default value for local store updating logic.*/
-    public static final boolean DFLT_LOCAL_STORE_UPDATE_BACKUPS = false;
-
     /** Cache name. */
     private String name;
 
@@ -397,9 +394,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Query entities. */
     private Collection<QueryEntity> qryEntities;
 
-    /** Local store keeps backups. */
-    private boolean localStoreUpdateBackups = DFLT_LOCAL_STORE_UPDATE_BACKUPS;
-
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -456,7 +450,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
-        localStoreUpdateBackups = cc.isLocalStoreUpdateBackups();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
@@ -1629,27 +1622,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         this.offHeapMaxMem = offHeapMaxMem;
 
         return this;
-    }
-
-    /**
-     * Gets flag indicating whether local store keeps backups.
-     *
-     * @return {@code True} if local stores keep backup partitions or {@code false} if local stores
-     * keep only primary partitions.
-     */
-    public boolean isLocalStoreUpdateBackups() {
-        return localStoreUpdateBackups;
-    }
-
-    /**
-     * Sets flag indicating whether local store keeps backups.
-     * <p>
-     * Default value is {@link #DFLT_LOCAL_STORE_UPDATE_BACKUPS}.
-     *
-     * @param localStoreUpdateBackups Store backups flag.
-     */
-    public void setLocalStoreUpdateBackups(boolean localStoreUpdateBackups) {
-        this.localStoreUpdateBackups = localStoreUpdateBackups;
     }
 
     /**
