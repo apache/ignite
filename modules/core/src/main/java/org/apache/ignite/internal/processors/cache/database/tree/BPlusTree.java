@@ -596,7 +596,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Cursor.
      * @throws IgniteCheckedException If failed.
      */
-    public GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
+    public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
         if (lower == null)
             return findNoLower(upper);
 
@@ -612,7 +612,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Found row.
      */
     @SuppressWarnings("unchecked")
-    public T findOne(L row) throws IgniteCheckedException {
+    public final T findOne(L row) throws IgniteCheckedException {
         GetOne g = new GetOne(row);
 
         doFind(g);
@@ -803,7 +803,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
-    public T removeCeil(L row) throws IgniteCheckedException {
+    public final T removeCeil(L row) throws IgniteCheckedException {
         assert row != null;
 
         return remove(row, true);
@@ -814,7 +814,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
-    public T remove(L row) throws IgniteCheckedException {
+    public final T remove(L row) throws IgniteCheckedException {
         assert row != null;
 
         return remove(row, false);
@@ -826,7 +826,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
-    public T remove(L row, boolean ceil) throws IgniteCheckedException {
+    public final T remove(L row, boolean ceil) throws IgniteCheckedException {
         Remove r = new Remove(row, ceil);
 
         try {
@@ -1005,7 +1005,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Old row.
      * @throws IgniteCheckedException If failed.
      */
-    public T put(T row) throws IgniteCheckedException {
+    public final T put(T row) throws IgniteCheckedException {
         Put p = new Put(row);
 
         try {
