@@ -853,6 +853,8 @@ public abstract class BPlusTree<L, T extends L> {
         finally {
             r.releaseTail();
             r.releaseMeta();
+
+            r.reuseEmptyPages();
         }
     }
 
@@ -1608,6 +1610,9 @@ public abstract class BPlusTree<L, T extends L> {
         Tail<L> tail;
 
         /** */
+        List<FullPageId> emptyPages;
+
+        /** */
         byte needReplaceInner = FALSE;
 
         /** */
@@ -1893,11 +1898,23 @@ public abstract class BPlusTree<L, T extends L> {
             // Mark removed.
             io.setRemoveId(buf, Long.MAX_VALUE);
 
-            // Reuse empty page.
-            if (reuseList != null) {
-//            U.dumpStack("page: " + page.fullId());
+            if (reuseList == null)
+                return; // We are not allowed to reuse pages.
 
-                reuseList.put(BPlusTree.this, page.fullId());
+            // We will reuse empty page.
+            if (emptyPages == null)
+                emptyPages = new ArrayList<>(4);
+
+            emptyPages.add(page.fullId());
+        }
+
+        /**
+         * @throws IgniteCheckedException If failed.
+         */
+        private void reuseEmptyPages() throws IgniteCheckedException {
+            if (emptyPages != null) {
+                for (int i = 0; i < emptyPages.size(); i++)
+                    reuseList.put(BPlusTree.this, emptyPages.get(i));
             }
         }
 
