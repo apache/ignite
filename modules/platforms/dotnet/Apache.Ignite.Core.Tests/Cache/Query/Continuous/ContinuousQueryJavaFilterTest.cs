@@ -23,10 +23,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Interop;
     using NUnit.Framework;
 
@@ -63,24 +65,35 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public void FixtureSetUp()
         {
             // Main .NET nodes
-            _ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            IList<String> jvmOpts = TestUtils.TestJavaOptions();
+
+            _ignite = Ignition.Start(new IgniteConfiguration
             {
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = jvmOpts,
                 SpringConfigUrl = SpringConfig,
-                BinaryConfiguration = new BinaryConfiguration(typeof (TestBinary))
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    TypeConfigurations = new List<BinaryTypeConfiguration>
+                    {
+                        new BinaryTypeConfiguration(typeof(TestBinary)) 
+                    }
+                }
             });
 
             // Second .NET node
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            Ignition.Start(new IgniteConfigurationEx
             {
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = jvmOpts,
                 SpringConfigUrl = SpringConfig2,
                 GridName = "dotNet2"
             });
 
-
             // Java-only node
             _javaNodeName = _ignite.GetCompute().ExecuteJavaTask<string>(StartTask, SpringConfig2);
 
-            Assert.IsTrue(_ignite.WaitTopology(3));
+            Assert.IsTrue(_ignite.WaitTopology(3, 5000));
         }
 
         /// <summary>
@@ -221,21 +234,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             var aff = _ignite.GetAffinity("qry");
             var localNode = _ignite.GetCluster().GetLocalNode();
 
+            // Get one key per node
+            var keyMap = aff.MapKeysToNodes(Enumerable.Range(1, 100));
+            Assert.AreEqual(3, keyMap.Count);
+            var keys = local
+                ? keyMap[localNode].Take(1)
+                : keyMap.Select(x => x.Value.First());
+
             using (cache.QueryContinuous(qry))
             {
                 // Run on many keys to test all nodes
-                for (var i = 0; i < 200; i++)
+                foreach (var key in keys)
                 {
-                    if (local && aff.MapKeyToNode(i).Id != localNode.Id)
-                        continue;
+                    _lastEvent = null;
+                    cache[key] = "validValue";
+
+                    TestUtils.WaitForCondition(() => _lastEvent != null, 2000);
+                    Assert.IsNotNull(_lastEvent);
+                    Assert.AreEqual(cache[key], _lastEvent.Value);
 
                     _lastEvent = null;
-                    cache[i] = "validValue";
-                    // ReSharper disable once PossibleNullReferenceException
-                    Assert.AreEqual(cache[i], _lastEvent.Value);
+                    cache[key] = "invalidValue";
 
-                    _lastEvent = null;
-                    cache[i] = "invalidValue";
+                    Thread.Sleep(2000);
                     Assert.IsNull(_lastEvent);
                 }
             }

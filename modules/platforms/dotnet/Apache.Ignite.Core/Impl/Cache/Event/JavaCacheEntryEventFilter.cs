@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Common.JavaObjects
+namespace Apache.Ignite.Core.Impl.Cache.Event
 {
     using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Cache entry event filter that delegates to Java.

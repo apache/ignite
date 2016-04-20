@@ -2057,7 +2057,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     op,
                     writeVal,
                     req.invokeArguments(),
-                    (primary || ctx.store().isLocal()) && writeThrough() && !req.skipStore(),
+                    (primary || (ctx.store().isLocal() && ctx.config().isLocalStoreUpdateBackups()))
+                        && writeThrough() && !req.skipStore(),
                     !req.skipStore(),
                     lsnrs != null || sndPrevVal || req.returnValue(),
                     req.keepBinary(),
@@ -2280,7 +2281,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         @Override public IgniteBiTuple<CacheObject, GridCacheVersion> apply(CacheObject v) {
                             return F.t(v, ver);
                         }
-                    }), false);
+                    }));
                 }
                 catch (CacheStorePartialUpdateException e) {
                     storeErr = e;
@@ -2865,7 +2866,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             op,
                             op == TRANSFORM ? entryProcessor : val,
                             op == TRANSFORM ? req.invokeArguments() : null,
-                            /*write-through*/ctx.store().isLocal() && writeThrough() && !req.skipStore(),
+                            /*write-through*/(ctx.store().isLocal() && ctx.config().isLocalStoreUpdateBackups())
+                                && writeThrough() && !req.skipStore(),
                             /*read-through*/false,
                             /*retval*/lsnrs != null,
                             req.keepBinary(),

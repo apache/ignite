@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -151,24 +150,26 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<CacheStoreManager> stores(GridCacheSharedContext cctx) {
-        Set<Integer> cacheIds = new HashSet<>(cctx.cacheContexts().size());
+        int locStoreCnt = cctx.getLocalStoreCount();
 
-        for (IgniteTxEntry e : readMap.values()) {
-            cacheIds.add(e.cacheId());
-        }
+        if (locStoreCnt > 0 && !writeMap.isEmpty()) {
+            Collection<CacheStoreManager> stores = null;
 
-        for (IgniteTxEntry e : writeMap.values()) {
-            cacheIds.add(e.cacheId());
-        }
+            for (IgniteTxEntry e : writeMap.values()) {
+                if (e.skipStore())
+                    continue;
 
-        if (!cacheIds.isEmpty()) {
-            Collection<CacheStoreManager> stores = new ArrayList<>(cacheIds.size());
+                CacheStoreManager store = e.context().store();
 
-            for (Integer cacheId : cacheIds) {
-                CacheStoreManager store = cctx.cacheContext(cacheId).store();
+                if (store.configured() && store.isLocal()) {
+                    if (stores == null)
+                        stores = new ArrayList<>(locStoreCnt);
 
-                if (store.configured() && store.isLocal())
                     stores.add(store);
+
+                    if (stores.size() == locStoreCnt)
+                        break;
+                }
             }
 
             return stores;

@@ -24,6 +24,7 @@ import java.util.ListIterator;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
@@ -94,6 +95,9 @@ public class GridCacheSharedContext<K, V> {
     /** Store session listeners. */
     private Collection<CacheStoreSessionListener> storeSesLsnrs;
 
+    /** Local store count. */
+    private AtomicInteger locStoreCnt;
+
     /**
      * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
@@ -125,6 +129,8 @@ public class GridCacheSharedContext<K, V> {
         txMetrics = new TransactionMetricsAdapter();
 
         ctxMap = new ConcurrentHashMap<>();
+
+        locStoreCnt = new AtomicInteger();
     }
 
     /**
@@ -242,6 +248,11 @@ public class GridCacheSharedContext<K, V> {
                 ", conflictingCacheName=" + existing.name() + ']');
         }
 
+        CacheStoreManager mgr = cacheCtx.store();
+
+        if (mgr.configured() && mgr.isLocal())
+            locStoreCnt.incrementAndGet();
+
         ctxMap.put(cacheCtx.cacheId(), cacheCtx);
     }
 
@@ -252,6 +263,11 @@ public class GridCacheSharedContext<K, V> {
         int cacheId = cacheCtx.cacheId();
 
         ctxMap.remove(cacheId, cacheCtx);
+
+        CacheStoreManager mgr = cacheCtx.store();
+
+        if (mgr.configured() && mgr.isLocal())
+            locStoreCnt.decrementAndGet();
 
         // Safely clean up the message listeners.
         ioMgr.removeHandlers(cacheId);
@@ -461,6 +477,14 @@ public class GridCacheSharedContext<K, V> {
      */
     public ClusterNode localNode() {
         return kernalCtx.discovery().localNode();
+    }
+
+    /**
+     * Return count of configured local stores.
+     * @return cnt.
+     */
+    public int getLocalStoreCount() {
+        return locStoreCnt.get();
     }
 
     /**

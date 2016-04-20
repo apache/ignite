@@ -1256,12 +1256,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * cache transaction can still be rolled back.
      *
      * @param writeEntries Transaction write set.
-     * @param localOnly Commit only to local store.
      * @throws IgniteCheckedException If batch update failed.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    protected void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries, boolean localOnly) throws IgniteCheckedException {
-        if (!storeEnabled() || internal())
+    protected void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries) throws IgniteCheckedException {
+        if (!storeEnabled() || internal() ||
+            (!local() && near())) // No need to work with local store at GridNearTxRemote.
             return;
 
         Collection<CacheStoreManager> stores = txState().stores(cctx);
@@ -1275,9 +1275,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
         boolean isWriteToStoreFromDht = first.isWriteToStoreFromDht();
 
-        boolean local = first.isLocal();
-
-        if ((!localOnly || local) && (near() || isWriteToStoreFromDht)) {
+        if ((local() || first.isLocal()) && (near() || isWriteToStoreFromDht)) {
             try {
                 if (writeEntries != null) {
                     Map<Object, IgniteBiTuple<Object, GridCacheVersion>> putMap = null;
@@ -1294,6 +1292,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                                 e.cached().detached() ||
                                 !e.context().affinity().primary(e.cached().partition(), topologyVersion()).isLocal();
                         }
+
+                        if (!skip && !local() && // Update local store at backups only if needed.
+                            !cctx.cacheContext(e.cacheId()).config().isLocalStoreUpdateBackups())
+                            skip = true;
 
                         if (skip)
                             continue;
@@ -1328,7 +1330,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                             // Batch-process puts if cache ID has changed.
                             if (writeStore != null && writeStore != cacheCtx.store()) {
                                 if (putMap != null && !putMap.isEmpty()) {
-                                    writeStore.putAll(this, putMap, false);
+                                    writeStore.putAll(this, putMap);
 
                                     // Reset.
                                     putMap.clear();
@@ -1367,7 +1369,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                             if (putMap != null && !putMap.isEmpty()) {
                                 assert writeStore != null;
 
-                                writeStore.putAll(this, putMap, false);
+                                writeStore.putAll(this, putMap);
 
                                 // Reset.
                                 putMap.clear();
@@ -1413,7 +1415,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                         assert writeStore != null;
 
                         // Batch put at the end of transaction.
-                        writeStore.putAll(this, putMap, false);
+                        writeStore.putAll(this, putMap);
                     }
 
                     if (rmvCol != null && !rmvCol.isEmpty()) {

@@ -90,6 +90,17 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
     @Nullable public Object load(@Nullable IgniteInternalTx tx, KeyCacheObject key) throws IgniteCheckedException;
 
     /**
+     * Loads raw data from custom persistent store.
+     * For example, allows to get entry with version from local store.
+     *
+     * @param tx Cache transaction.
+     * @param key Cache key.
+     * @return Loaded value, possibly <tt>null</tt>.
+     * @throws IgniteCheckedException If data loading failed.
+     */
+    @Nullable public Object loadRaw(@Nullable IgniteInternalTx tx, KeyCacheObject key) throws IgniteCheckedException;
+
+    /**
      * Loads data from persistent store.
      *
      * @param tx Cache transaction.
@@ -128,12 +139,10 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
      * @param key Key.
      * @param val Value.
      * @param ver Version.
-     * @param conflictResolve If {@code true} then performs conflicts resolution.
      * @return {@code true} If there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean put(@Nullable IgniteInternalTx tx, Object key, Object val, GridCacheVersion ver,
-        boolean conflictResolve)
+    public boolean put(@Nullable IgniteInternalTx tx, Object key, Object val, GridCacheVersion ver)
         throws IgniteCheckedException;
 
     /**
@@ -141,12 +150,10 @@ public interface CacheStoreManager<K, V> extends GridCacheManager<K, V> {
      *
      * @param tx Cache transaction.
      * @param map Map.
-     * @param conflictResolve If {@code true} then performs conflicts resolution.
      * @return {@code True} if there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean putAll(@Nullable IgniteInternalTx tx, Map<Object, IgniteBiTuple<Object, GridCacheVersion>> map,
-        boolean conflictResolve)
+    public boolean putAll(@Nullable IgniteInternalTx tx, Map<Object, IgniteBiTuple<Object, GridCacheVersion>> map)
         throws IgniteCheckedException;
 
     /**
