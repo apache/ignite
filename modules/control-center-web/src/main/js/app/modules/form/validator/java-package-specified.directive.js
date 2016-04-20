@@ -22,7 +22,7 @@ export default ['javaPackageSpecified', ['JavaTypes', (JavaTypes) => {
 
         const allowBuiltIn = attrs.javaPackageSpecified === 'allow-built-in';
 
-        ngModel.$validators.javaPackageSpecified = (value) => !value || !(value.split('.').length < 2) ||
+        ngModel.$validators.javaPackageSpecified = (value) => !value || !JavaTypes.validIdentifier(value) || JavaTypes.packageSpecified(value) ||
                 (allowBuiltIn && !JavaTypes.nonBuiltInClass(value));
     };
 

@@ -269,15 +269,6 @@ consoleModule.controller('igfsController', [
             if (errKeys && errKeys.length > 0) {
                 var firstErrorKey = errKeys[0];
 
-                if (errKeys.length > 1) {
-                    if (_.includes(errKeys, 'javaIdentifier'))
-                        firstErrorKey = 'javaIdentifier';
-                    else if (_.includes(errKeys, 'javaPackageSpecified'))
-                        firstErrorKey = 'javaPackageSpecified';
-                    else if (_.includes(errKeys, 'javaKeywords'))
-                        firstErrorKey = 'javaKeywords';
-                }
-
                 var firstError = errors[firstErrorKey][0];
                 var actualError = firstError.$error[firstErrorKey][0];
 

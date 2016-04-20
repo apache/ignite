@@ -61,6 +61,13 @@ export default ['JavaTypes', function() {
         },
         /**
          * @param {String} value text to check.
+         * @returns boolean 'true' if given text is a Java type with package.
+         */
+        packageSpecified(value) {
+            return value.split('.').length >= 2;
+        },
+        /**
+         * @param {String} value text to check.
          * @returns boolean 'true' if given text non Java keyword.
          */
         isKeywords(value) {
