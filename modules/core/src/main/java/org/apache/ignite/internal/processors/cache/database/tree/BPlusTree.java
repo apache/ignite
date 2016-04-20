@@ -621,41 +621,12 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
-     * Initialize the given operation.
-     *
-     * !!! Symmetrically with this method must be called {@link Get#releaseMeta()} in {@code finally} block.
-     *
-     * @param g Operation.
-     */
-    private void initOperation(Get g) throws IgniteCheckedException {
-        if (g.meta == null)
-            g.meta = page(metaPageId);
-
-        int rootLvl;
-        long rootId;
-
-        ByteBuffer buf = g.meta.getForRead();
-
-        try {
-            BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
-
-            rootLvl = io.getRootLevel(buf);
-            rootId = io.getLeftmostPageId(buf, rootLvl);
-        }
-        finally {
-            g.meta.releaseRead();
-        }
-
-        g.restartFromRoot(rootId, rootLvl, globalRmvId.get());
-    }
-
-    /**
      * @param g Get.
      */
     private void doFind(Get g) throws IgniteCheckedException {
         try {
             for (;;) { // Go down with retries.
-                initOperation(g);
+                g.initOperation();
 
                 switch (findDown(g, g.rootId, 0L, g.rootLvl)) {
                     case Get.RETRY:
@@ -860,7 +831,7 @@ public abstract class BPlusTree<L, T extends L> {
 
         try {
             for (;;) {
-                initOperation(r);
+                r.initOperation();
 
                 switch (removeDown(r, r.rootId, 0L, 0L, r.rootLvl)) {
                     case Remove.RETRY:
@@ -1039,7 +1010,7 @@ public abstract class BPlusTree<L, T extends L> {
 
         try {
             for (;;) { // Go down with retries.
-                initOperation(p);
+                p.initOperation();
 
                 switch (putDown(p, p.rootId, 0L, p.rootLvl)) {
                     case Put.RETRY:
@@ -1361,13 +1332,13 @@ public abstract class BPlusTree<L, T extends L> {
         /** */
         long rmvId;
 
-        /** Starting point root level. May be outdated. Must be modified only in {@link #initOperation(Get)}. */
+        /** Starting point root level. May be outdated. Must be modified only in {@link Get#initOperation()}. */
         int rootLvl;
 
-        /** Starting point root ID. May be outdated. Must be modified only in {@link #initOperation(Get)}. */
+        /** Starting point root ID. May be outdated. Must be modified only in {@link Get#initOperation()}. */
         long rootId;
 
-        /** Meta page. Initialized by {@link #initOperation(Get)}, released by {@link Get#releaseMeta()}. */
+        /** Meta page. Initialized by {@link Get#initOperation()}, released by {@link Get#releaseMeta()}. */
         Page meta;
 
         /** */
@@ -1392,11 +1363,40 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /**
+         * Initialize the given operation.
+         *
+         * !!! Symmetrically with this method must be called {@link Get#releaseMeta()} in {@code finally} block.
+         *
+         * @throws IgniteCheckedException If failed.
+         */
+        final void initOperation() throws IgniteCheckedException {
+            if (meta == null)
+                meta = page(metaPageId);
+
+            int rootLvl;
+            long rootId;
+
+            ByteBuffer buf = meta.getForRead();
+
+            try {
+                BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
+
+                rootLvl = io.getRootLevel(buf);
+                rootId = io.getLeftmostPageId(buf, rootLvl);
+            }
+            finally {
+                meta.releaseRead();
+            }
+
+            restartFromRoot(rootId, rootLvl, globalRmvId.get());
+        }
+
+        /**
          * @param rootId Root page ID.
          * @param rootLvl Root level.
          * @param rmvId Remove ID to be afraid of.
          */
-        void restartFromRoot(long rootId, int rootLvl, long rmvId) {
+        final void restartFromRoot(long rootId, int rootLvl, long rmvId) {
             this.rootId = rootId;
             this.rootLvl = rootLvl;
             this.rmvId = rmvId;
