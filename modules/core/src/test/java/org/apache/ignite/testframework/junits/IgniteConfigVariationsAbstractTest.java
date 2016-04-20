@@ -322,9 +322,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             TestObject val = (TestObject)o;
 
             return this.val == val.val
-                && (strVal != null
-                ? strVal.equals(val.strVal)
-                : val.strVal == null && enumVal == val.enumVal);
+//                && (strVal != null ? strVal.equals(val.strVal) : val.strVal == null && enumVal == val.enumVal);
+                && strVal.equals(val.strVal) && enumVal == val.enumVal;
         }
 
         /** {@inheritDoc} */
