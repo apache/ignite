@@ -37,6 +37,5 @@ public class IgniteCacheConfigVariationQueryTestSuite extends TestSuite {
             .gridsCount(5).backups(1)
             .testedNodesCount(3).withClients()
             .build();
-
     }
 }
