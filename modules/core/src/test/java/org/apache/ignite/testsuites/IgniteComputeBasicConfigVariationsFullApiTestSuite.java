@@ -37,16 +37,16 @@ public class IgniteComputeBasicConfigVariationsFullApiTestSuite  extends TestSui
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] BASIC_COMPUTE_SET = new ConfigParameter[][] {
             Parameters.objectParameters("setMarshaller",
+                    Parameters.factory(JdkMarshaller.class),
                     Parameters.factory(BinaryMarshaller.class),
-                    ConfigVariations.optimizedMarshallerFactory(),
-                    Parameters.factory(JdkMarshaller.class)
+                    ConfigVariations.optimizedMarshallerFactory()
             ),
             Parameters.booleanParameters("setPeerClassLoadingEnabled"),
             Parameters.booleanParameters("setMarshalLocalJobs"),
     };
 
     /**
-     * @return Cache API test suite.
+     * @return Compute API test suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {

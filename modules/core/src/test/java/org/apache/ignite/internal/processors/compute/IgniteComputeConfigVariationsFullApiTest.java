@@ -40,6 +40,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /** Max job count. */
     private static final int MAX_JOB_COUNT = 10;
 
+    /** Test cache name. */
+    private static final String CACHE_NAME = "test";
+
     /** Job factories. */
     private static final Factory[] jobFactories = new Factory[] {
         Parameters.factory(EchoJob.class),
@@ -54,10 +57,43 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         Parameters.factory(EchoClosureBinarylizable.class)
     };
 
+    /** Callable factories. */
+    private static final Factory[] callableFactories = new Factory[] {
+        Parameters.factory(EchoCallable.class),
+        Parameters.factory(EchoCallableExternalizable.class),
+        Parameters.factory(EchoCallableBinarylizable.class)
+    };
+
     /**
-     * @param test test object, job factory is passed as a parameter.
+     * @param expCnt Expected count.
+     * @param results Results.
+     * @param dataCls Data class.
      */
-    private void runWithAllFactories(Consumer<Factory<ComputeJobAdapter>> test, Factory[] factories) throws Exception {
+    private static void checkResultsClassCount(final int expCnt, final Collection<Object> results,
+        final Class dataCls) {
+        assertEquals("Count of the result objects' type mismatch (null values are filtered)",
+            expCnt,
+            results.stream().filter(o -> o != null)
+                .filter(o -> dataCls.equals(o.getClass())).count());
+    }
+
+    /**
+     * @param expCnt Expected count.
+     * @param results Results.
+     */
+    private static void checkNullCount(final int expCnt, final Collection<Object> results) {
+        assertEquals("Count of the null objects mismatch",
+            expCnt,
+            results.stream().filter(o -> o == null).count());
+    }
+
+    /**
+     * The test's wrapper runs the test with each factory from the factories array.
+     *
+     * @param test test object, a factory is passed as a parameter.
+     * @param factories various factories
+     */
+    private void runWithAllFactories(Consumer<Factory> test, Factory[] factories) throws Exception {
         for (int i = 0; i < factories.length; i++) {
             Factory factory = factories[i];
 
@@ -77,11 +113,13 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
-     * The wrapper for tests. Provides variations of the argument data model and job object data model
+     * The test's wrapper provides variations of the argument data model and user factories. The test is launched
+     * <code>factories.length * DataMode.values().length</code> times.
      *
      * @param test Test.
+     * @param factories various factories
      */
-    private void runTest(Factory[] factories, Consumer<Factory<ComputeJobAdapter>> test) throws Exception {
+    protected void runTest(Factory[] factories, Consumer<Factory> test) throws Exception {
         runInAllDataModes(() -> {
             try {
                 if ((getConfiguration().getMarshaller() instanceof JdkMarshaller)
@@ -102,25 +140,29 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     public void testExecuteTaskClass() throws Exception {
         runTest(jobFactories, (factory) -> {
+            // begin with negative to check 'null' value in the test
             final int[] i = {-1};
 
             List<Object> results = grid(0).compute().execute(TestTask.class,
-                new T2<>(factory, () -> value(i[0]++)));
+                new T2<>((Factory<ComputeJobAdapter>)factory, () -> value(i[0]++)));
 
-            checkExecuteJobResults(results);
+            checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+            checkNullCount(1, results);
         });
     }
 
     /**
      */
     public void testExecuteTask() throws Exception {
+        // begin with negative to check 'null' value in the test
         runTest(jobFactories, (factory) -> {
             final int[] i = {-1};
 
             List<Object> results = grid(0).compute().execute(new TestTask(),
-                new T2<>(factory, () -> value(i[0]++)));
+                new T2<>((Factory<ComputeJobAdapter>)factory, () -> value(i[0]++)));
 
-            checkExecuteJobResults(results);
+            checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+            checkNullCount(1, results);
         });
     }
 
@@ -128,56 +170,145 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     public void testBroadcast() throws Exception {
         runTest(closureFactories, (factory) -> {
+            final IgniteCompute comp = grid(0).compute();
+            final Collection<Object> resultsAllNull = comp.broadcast((IgniteClosure<Object, Object>)factory.create(), null);
 
-            IgniteCompute comp = grid(0).compute();
-            Collection<Object> results = comp.broadcast((IgniteClosure<Object, Object>)factory.create(), value(-1));
+            assertEquals("Result's size mismatch", gridCount(), resultsAllNull.size());
+            assertEquals("All results must be null", gridCount(), resultsAllNull.stream().filter(o -> o == null).count());
 
-            assertEquals(gridCount(), results.size());
-            assertEquals(gridCount(), results.stream().filter(o -> o == null).count());
-
-            results = grid(0).compute()
+            Collection<Object> resultsNotNull = grid(0).compute()
                 .broadcast((IgniteClosure<Object, Object>)factory.create(), value(0));
 
-            final Class dataCls = value(0).getClass();
-            assertEquals(gridCount(), results.stream().filter(o -> o != null)
-                .filter(o -> dataCls.equals(o.getClass())).count());
+            checkResultsClassCount(gridCount(), resultsNotNull, value(0).getClass());
         });
     }
 
     /**
      */
-    public void testApply() throws Exception {
+    public void testApplyAsync() throws Exception {
         runTest(closureFactories, (factory) -> {
-            IgniteCompute comp = grid(0).compute().withAsync();
+            final IgniteCompute comp = grid(0).compute().withAsync();
 
             List<ComputeTaskFuture<Object>> futures = IntStream.range(-1, MAX_JOB_COUNT - 1).mapToObj(i -> {
                 comp.apply((IgniteClosure<Object, Object>)factory.create(), value(i));
                 return comp.future();
             }).collect(Collectors.toList());
 
+            // wait for results
             Collection<Object> results = futures.stream().map(ComputeTaskFuture::get)
                 .collect(Collectors.toList());
 
-            checkExecuteJobResults(results);
+            checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+            checkNullCount(1, results);
         });
     }
 
-    /** {@inheritDoc} */
+    /**
+     */
+    public void testApplySync() throws Exception {
+        runTest(closureFactories, (factory) -> {
+            final IgniteCompute comp = grid(0).compute();
+
+            Collection<Object> results = IntStream.range(-1, MAX_JOB_COUNT - 1)
+                .mapToObj(i -> comp.apply((IgniteClosure<Object, Object>)factory.create(), value(i)))
+                .collect(Collectors.toList());
+
+            checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+            checkNullCount(1, results);
+        });
+    }
+
+    /**
+     */
+    public void testCallAsync() throws Exception {
+        runTest(callableFactories, (factory) -> {
+            final IgniteCompute comp = grid(0).compute().withAsync();
+
+            List<ComputeTaskFuture<Object>> futures = IntStream.range(-1, MAX_JOB_COUNT - 1).mapToObj(i -> {
+                EchoCallable job = (EchoCallable)factory.create();
+                job.setArg(value(i));
+
+                comp.call(job);
+                return comp.future();
+            }).collect(Collectors.toList());
+
+            // wait for results
+            Collection<Object> results = futures.stream().map(ComputeTaskFuture::get)
+                .collect(Collectors.toList());
+
+            checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+            checkNullCount(1, results);
+        });
+    }
+
+    /**
+     */
+    public void testCallSync() throws Exception {
+        runTest(callableFactories, (factory) -> {
+            final IgniteCompute comp = grid(0).compute();
+
+            Collection<Object> results = IntStream.range(-1, MAX_JOB_COUNT - 1).mapToObj(i -> {
+                EchoCallable job = (EchoCallable)factory.create();
+                job.setArg(value(i));
+
+                return comp.call(job);
+            }).collect(Collectors.toList());
+
+            checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+            checkNullCount(1, results);
+        });
+    }
+
+    /**
+     */
+    public void testCallCollection() throws Exception {
+        runTest(callableFactories, (factory) -> {
+            IgniteCompute comp = grid(0).compute();
+
+            List<? extends EchoCallable> jobs = IntStream.range(-1, MAX_JOB_COUNT - 1).mapToObj(i -> {
+                EchoCallable call = (EchoCallable)factory.create();
+                call.setArg(value(i));
+                return call;
+            }).collect(Collectors.toList());
+            comp.call((IgniteCallable<Object>)factory.create());
+
+            Collection<Object> results = comp.call(jobs);
+
+            checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+            checkNullCount(1, results);
+        });
+    }
+
+    /**
+     */
+    public void testDummyAffinityCall() throws Exception {
+
+        runTest(callableFactories, (factory) -> {
+            grid(0).getOrCreateCache(CACHE_NAME);
+            grid(0).cache(CACHE_NAME).putIfAbsent(key(0), value(0));
+
+            final IgniteCompute comp = grid(0).compute();
+
+            Collection<Object> results = IntStream.range(-1, MAX_JOB_COUNT - 1)
+                .mapToObj(i -> {
+                    EchoCallable job = (EchoCallable)factory.create();
+                    job.setArg(value(i));
+
+                    return comp.affinityCall("test", key(0), job);
+                }).collect(Collectors.toList());
+
+            checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+            checkNullCount(1, results);
+        });
+    }
+
+    /**
+     * Override the base method to return <code>null</code> value in case the valId is negative.
+     */
     @Nullable @Override public Object value(int valId) {
         if (valId < 0)
             return null;
         return super.value(valId);
-    }
-
-    /**
-     * @param results Results.
-     */
-    private void checkExecuteJobResults(Collection<Object> results) {
-        final Class dataCls = value(0).getClass();
-        assertEquals("Result objects type mismatch (null values are filtered)",
-            MAX_JOB_COUNT - 1, // null value is filtered
-            results.stream().filter(o -> o != null)
-                .filter(o -> dataCls.equals(o.getClass())).count());
     }
 
     /**
@@ -210,7 +341,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
-     * Echo job, plain object
+     * Echo job, serializable object
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoJob extends ComputeJobAdapter {
@@ -287,7 +418,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
-     * Echo job, plain object
+     * Echo job, serializable object
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoClosure implements IgniteClosure<Object, Object> {
@@ -307,7 +438,6 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-
         }
 
         /** {@inheritDoc} */
@@ -322,12 +452,85 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoClosureBinarylizable extends EchoClosure implements Binarylizable {
 
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        }
+    }
+
+    /**
+     * Test callable, serializable object
+     */
+    @SuppressWarnings({"PublicInnerClass"})
+    public static class EchoCallable implements IgniteCallable<Object> {
+        /** */
+        protected Object arg;
+
+        /**
+         */
+        public EchoCallable() {
+        }
+
+        /**
+         * @param arg Argument.
+         */
+        void setArg(@Nullable Object arg) {
+            this.arg = arg;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object call() throws Exception {
+            System.out.println((arg == null) ? "null" : arg.toString());
+            return arg;
+        }
+    }
+
+    /**
+     * Echo callable, externalizable object
+     */
+    @SuppressWarnings({"PublicInnerClass"})
+    public static class EchoCallableExternalizable extends EchoCallable implements Externalizable {
+        /**
+         * Default constructor.
+         */
+        public EchoCallableExternalizable() {
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(arg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            arg = in.readObject();
+        }
+    }
+
+    /**
+     * Echo callable, binarylizable object
+     */
+    @SuppressWarnings({"PublicInnerClass"})
+    public static class EchoCallableBinarylizable extends EchoCallable implements Binarylizable {
+
+        /**
+         * Default constructor.
+         */
+        public EchoCallableBinarylizable() {
 
         }
 
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.writeObject("arg", arg);
+        }
 
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            arg = reader.readObject("arg");
         }
     }
 }
