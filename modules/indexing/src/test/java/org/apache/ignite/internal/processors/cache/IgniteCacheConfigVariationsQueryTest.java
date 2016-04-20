@@ -76,81 +76,89 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
      */
     @SuppressWarnings("serial")
     public void testScanQuery() throws Exception {
-        try {
-            IgniteCache<Object, Object> cache = jcache();
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                try {
+                    IgniteCache<Object, Object> cache = jcache();
 
-            Map<Object, Object> map = new HashMap<Object, Object>() {{
-                for (int i = 0; i < CNT; i++)
-                    put(key(i), value(i));
-            }};
+                    Map<Object, Object> map = new HashMap<Object, Object>() {{
+                        for (int i = 0; i < CNT; i++)
+                            put(key(i), value(i));
+                    }};
 
-            registerEventListeners(map);
+                    registerEventListeners(map);
 
-            for (Map.Entry<Object, Object> e : map.entrySet())
-                cache.put(e.getKey(), e.getValue());
+                    for (Map.Entry<Object, Object> e : map.entrySet())
+                        cache.put(e.getKey(), e.getValue());
 
-            // Scan query.
-            QueryCursor<Cache.Entry<Object, Object>> qry = cache.query(new ScanQuery());
+                    // Scan query.
+                    QueryCursor<Cache.Entry<Object, Object>> qry = cache.query(new ScanQuery());
 
-            checkQueryResults(map, qry);
-        }
-        finally {
-            stopListeners();
-        }
+                    checkQueryResults(map, qry);
+                }
+                finally {
+                    stopListeners();
+                }
+            }
+        });
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testScanPartitionQuery() throws Exception {
-        IgniteCache<Object, Object> cache = jcache();
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                IgniteCache<Object, Object> cache = jcache();
 
-        GridCacheContext cctx = ((IgniteCacheProxy)cache).context();
+                GridCacheContext cctx = ((IgniteCacheProxy)cache).context();
 
-        Map<Integer, Map<Object, Object>> entries = new HashMap<>();
+                Map<Integer, Map<Object, Object>> entries = new HashMap<>();
 
-        for (int i = 0; i < CNT; i++) {
-            Object key = key(i);
-            Object val = value(i);
+                for (int i = 0; i < CNT; i++) {
+                    Object key = key(i);
+                    Object val = value(i);
 
-            cache.put(key, val);
+                    cache.put(key, val);
 
-            int part = cctx.affinity().partition(key);
+                    int part = cctx.affinity().partition(key);
 
-            Map<Object, Object> partEntries = entries.get(part);
+                    Map<Object, Object> partEntries = entries.get(part);
 
-            if (partEntries == null)
-                entries.put(part, partEntries = new HashMap<>());
+                    if (partEntries == null)
+                        entries.put(part, partEntries = new HashMap<>());
 
-            partEntries.put(key, val);
-        }
-
-        for (int i = 0; i < cctx.affinity().partitions(); i++) {
-            try {
-                Map<Object, Object> exp = entries.get(i);
-
-                if (exp == null)
-                    System.out.println();
-
-                registerEventListeners(exp);
-
-                ScanQuery<Object, Object> scan = new ScanQuery<>(i);
-
-                Collection<Cache.Entry<Object, Object>> actual = cache.query(scan).getAll();
-
-                assertEquals("Failed for partition: " + i, exp == null ? 0 : exp.size(), actual.size());
-
-                if (exp != null) {
-                    for (Cache.Entry<Object, Object> entry : actual)
-                        assertTrue(entry.getValue().equals(exp.get(entry.getKey())));
+                    partEntries.put(key, val);
                 }
 
-                checkEvents();
+                for (int i = 0; i < cctx.affinity().partitions(); i++) {
+                    try {
+                        Map<Object, Object> exp = entries.get(i);
+
+                        if (exp == null)
+                            System.out.println();
+
+                        registerEventListeners(exp);
+
+                        ScanQuery<Object, Object> scan = new ScanQuery<>(i);
+
+                        Collection<Cache.Entry<Object, Object>> actual = cache.query(scan).getAll();
+
+                        assertEquals("Failed for partition: " + i, exp == null ? 0 : exp.size(), actual.size());
+
+                        if (exp != null) {
+                            for (Cache.Entry<Object, Object> entry : actual)
+                                assertTrue(entry.getValue().equals(exp.get(entry.getKey())));
+                        }
+
+                        checkEvents();
+                    }
+                    finally {
+                        stopListeners();
+                    }
+                }
             }
-            finally {
-                stopListeners();
-            }
-        }
+        });
     }
 
     /**
@@ -158,39 +166,43 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
      */
     @SuppressWarnings("SubtractionInCompareTo")
     public void testScanFilters() throws Exception {
-        try {
-            IgniteCache<Object, Object> cache = jcache();
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                try {
+                    IgniteCache<Object, Object> cache = jcache();
 
-            IgniteBiPredicate<Object, Object> p = new IgniteBiPredicate<Object, Object>() {
-                @Override public boolean apply(Object k, Object v) {
-                    assertNotNull(k);
-                    assertNotNull(v);
+                    IgniteBiPredicate<Object, Object> p = new IgniteBiPredicate<Object, Object>() {
+                        @Override public boolean apply(Object k, Object v) {
+                            assertNotNull(k);
+                            assertNotNull(v);
 
-                    return valueOf(k) >= 20 && valueOf(v) < 40;
+                            return valueOf(k) >= 20 && valueOf(v) < 40;
+                        }
+                    };
+
+                    Map<Object, Object> exp = new HashMap<>();
+
+                    for (int i = 0; i < CNT; i++) {
+                        Object key = key(i);
+                        Object val = value(i);
+
+                        cache.put(key, val);
+
+                        if (p.apply(key, val))
+                            exp.put(key, val);
+                    }
+
+                    registerEventListeners(exp, true);
+
+                    QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(p));
+
+                    checkQueryResults(exp, q);
                 }
-            };
-
-            Map<Object, Object> exp = new HashMap<>();
-
-            for (int i = 0; i < CNT; i++) {
-                Object key = key(i);
-                Object val = value(i);
-
-                cache.put(key, val);
-
-                if (p.apply(key, val))
-                    exp.put(key, val);
+                finally {
+                    stopListeners();
+                }
             }
-
-            registerEventListeners(exp, true);
-
-            QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(p));
-
-            checkQueryResults(exp, q);
-        }
-        finally {
-            stopListeners();
-        }
+        });
     }
 
     /**
@@ -198,33 +210,37 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
      */
     @SuppressWarnings("SubtractionInCompareTo")
     public void testLocalScanQuery() throws Exception {
-        try {
-            IgniteCache<Object, Object> cache = jcache();
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                try {
+                    IgniteCache<Object, Object> cache = jcache();
 
-            ClusterNode locNode = testedGrid().cluster().localNode();
-            Affinity<Object> affinity = testedGrid().affinity(cacheName());
+                    ClusterNode locNode = testedGrid().cluster().localNode();
+                    Affinity<Object> affinity = testedGrid().affinity(cacheName());
 
-            Map<Object, Object> map = new HashMap<>();
+                    Map<Object, Object> map = new HashMap<>();
 
-            for (int i = 0; i < CNT; i++) {
-                Object key = key(i);
-                Object val = value(i);
+                    for (int i = 0; i < CNT; i++) {
+                        Object key = key(i);
+                        Object val = value(i);
 
-                cache.put(key, val);
+                        cache.put(key, val);
 
-                if (!isClientMode() && (cacheMode() == REPLICATED || affinity.isPrimary(locNode, key)))
-                    map.put(key, val);
+                        if (!isClientMode() && (cacheMode() == REPLICATED || affinity.isPrimary(locNode, key)))
+                            map.put(key, val);
+                    }
+
+                    registerEventListeners(map);
+
+                    QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>().setLocal(true));
+
+                    checkQueryResults(map, q);
+                }
+                finally {
+                    stopListeners();
+                }
             }
-
-            registerEventListeners(map);
-
-            QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>().setLocal(true));
-
-            checkQueryResults(map, q);
-        }
-        finally {
-            stopListeners();
-        }
+        });
     }
 
     /**
@@ -232,42 +248,46 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
      */
     @SuppressWarnings("SubtractionInCompareTo")
     public void testScanQueryLocalFilter() throws Exception {
-        try {
-            IgniteCache<Object, Object> cache = jcache();
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                try {
+                    IgniteCache<Object, Object> cache = jcache();
 
-            ClusterNode locNode = testedGrid().cluster().localNode();
+                    ClusterNode locNode = testedGrid().cluster().localNode();
 
-            Map<Object, Object> map = new HashMap<>();
+                    Map<Object, Object> map = new HashMap<>();
 
-            IgniteBiPredicate<Object, Object> filter = new IgniteBiPredicate<Object, Object>() {
-                @Override public boolean apply(Object k, Object v) {
-                    assertNotNull(k);
-                    assertNotNull(v);
+                    IgniteBiPredicate<Object, Object> filter = new IgniteBiPredicate<Object, Object>() {
+                        @Override public boolean apply(Object k, Object v) {
+                            assertNotNull(k);
+                            assertNotNull(v);
 
-                    return valueOf(k) >= 20 && valueOf(v) < 40;
+                            return valueOf(k) >= 20 && valueOf(v) < 40;
+                        }
+                    };
+
+                    for (int i = 0; i < CNT; i++) {
+                        Object key = key(i);
+                        Object val = value(i);
+
+                        cache.put(key, val);
+
+                        if (!isClientMode() && (cacheMode() == REPLICATED
+                            || testedGrid().affinity(cacheName()).isPrimary(locNode, key)) && filter.apply(key, val))
+                            map.put(key, val);
+                    }
+
+                    registerEventListeners(map, true);
+
+                    QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(filter).setLocal(true));
+
+                    checkQueryResults(map, q);
                 }
-            };
-
-            for (int i = 0; i < CNT; i++) {
-                Object key = key(i);
-                Object val = value(i);
-
-                cache.put(key, val);
-
-                if (!isClientMode() && (cacheMode() == REPLICATED
-                    || testedGrid().affinity(cacheName()).isPrimary(locNode, key)) && filter.apply(key, val))
-                    map.put(key, val);
+                finally {
+                    stopListeners();
+                }
             }
-
-            registerEventListeners(map, true);
-
-            QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(filter).setLocal(true));
-
-            checkQueryResults(map, q);
-        }
-        finally {
-            stopListeners();
-        }
+        });
     }
 
     /**
@@ -275,55 +295,59 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
      */
     @SuppressWarnings("SubtractionInCompareTo")
     public void testScanQueryPartitionFilter() throws Exception {
-        IgniteCache<Object, Object> cache = jcache();
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                IgniteCache<Object, Object> cache = jcache();
 
-        Affinity<Object> affinity = testedGrid().affinity(cacheName());
+                Affinity<Object> affinity = testedGrid().affinity(cacheName());
 
-        Map<Integer, Map<Object, Object>> partMap = new HashMap<>();
+                Map<Integer, Map<Object, Object>> partMap = new HashMap<>();
 
-        IgniteBiPredicate<Object, Object> filter = new IgniteBiPredicate<Object, Object>() {
-            @Override public boolean apply(Object k, Object v) {
-                assertNotNull(k);
-                assertNotNull(v);
+                IgniteBiPredicate<Object, Object> filter = new IgniteBiPredicate<Object, Object>() {
+                    @Override public boolean apply(Object k, Object v) {
+                        assertNotNull(k);
+                        assertNotNull(v);
 
-                return valueOf(k) >= 20 && valueOf(v) < 40;
+                        return valueOf(k) >= 20 && valueOf(v) < 40;
+                    }
+                };
+
+                for (int i = 0; i < CNT; i++) {
+                    Object key = key(i);
+                    Object val = value(i);
+
+                    cache.put(key, val);
+
+                    if (filter.apply(key, val)) {
+                        int part = affinity.partition(key);
+
+                        Map<Object, Object> map = partMap.get(part);
+
+                        if (map == null)
+                            partMap.put(part, map = new HashMap<>());
+
+                        map.put(key, val);
+                    }
+                }
+
+                for (int part = 0; part < affinity.partitions(); part++) {
+                    try {
+                        Map<Object, Object> expMap = partMap.get(part);
+
+                        expMap = expMap == null ? Collections.emptyMap() : expMap;
+
+                        registerEventListeners(expMap, true);
+
+                        QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(part, filter));
+
+                        checkQueryResults(expMap, q);
+                    }
+                    finally {
+                        stopListeners();
+                    }
+                }
             }
-        };
-
-        for (int i = 0; i < CNT; i++) {
-            Object key = key(i);
-            Object val = value(i);
-
-            cache.put(key, val);
-
-            if (filter.apply(key, val)) {
-                int part = affinity.partition(key);
-
-                Map<Object, Object> map = partMap.get(part);
-
-                if (map == null)
-                    partMap.put(part, map = new HashMap<>());
-
-                map.put(key, val);
-            }
-        }
-
-        for (int part = 0; part < affinity.partitions(); part++) {
-            try {
-                Map<Object, Object> expMap = partMap.get(part);
-
-                expMap = expMap == null ? Collections.emptyMap() : expMap;
-
-                registerEventListeners(expMap, true);
-
-                QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(part, filter));
-
-                checkQueryResults(expMap, q);
-            }
-            finally {
-                stopListeners();
-            }
-        }
+        });
     }
 
     /**
