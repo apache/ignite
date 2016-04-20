@@ -43,7 +43,6 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -991,7 +990,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         Integer part = qry.partition();
 
         if (part == null || cctx.isLocal()) {
-            if (plc == null) {
+            if (locNode && plc == null) {
                 GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
                 final Iterator<Cache.Entry<K, V>> iter = cache.localEntriesIterator(true, backups);
@@ -1572,8 +1571,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
 
                     if (readEvt) {
-                        K key0  = (K)cctx.unwrapBinaryIfNeeded(key, cctx.keepBinary());
-                        V val0  = (V)cctx.unwrapBinaryIfNeeded(val, cctx.keepBinary());
+                        K key0  = (K)cctx.unwrapBinaryIfNeeded(key, qry.keepBinary());
+                        V val0  = (V)cctx.unwrapBinaryIfNeeded(val, qry.keepBinary());
 
                         switch (type) {
                             case SQL:
