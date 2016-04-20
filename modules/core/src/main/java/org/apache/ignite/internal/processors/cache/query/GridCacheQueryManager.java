@@ -990,7 +990,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         Integer part = qry.partition();
 
         if (part == null || cctx.isLocal()) {
-            if (locNode && plc == null) {
+            if (locNode && plc == null && !cctx.isLocal()) {
                 GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
                 final Iterator<Cache.Entry<K, V>> iter = cache.localEntriesIterator(true, backups);
