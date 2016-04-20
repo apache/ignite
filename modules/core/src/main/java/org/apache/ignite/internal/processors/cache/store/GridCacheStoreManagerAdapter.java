@@ -237,8 +237,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                     log.warning("Since Ignite " + v.major() + "." + v.minor() + "." + v.maintenance() +
                         " Local Store keeps primary and backup partitions. " +
-                        "To keep primary partitions only please set " +
-                        IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY + " system property to 'true'");
+                        "To keep primary partitions only please set system property " +
+                        IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY + " to 'true'.");
                 }
             }
         }
