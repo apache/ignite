@@ -1859,7 +1859,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @return {@code True} if deadlock detection is enabled, otherwise - {@code false}.
+     * @return {@code True} if deadlock detection is enabled.
      */
     public boolean deadlockDetectionEnabled() {
         return DEADLOCK_MAX_ITERS > 0;
@@ -1869,16 +1869,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * Performs deadlock detection for given keys.
      *
      * @param txId Target tx ID.
-     * @param ctx Cache context.
      * @param keys Keys.
      * @return Detection result.
      */
     public IgniteInternalFuture<TxDeadlock> detectDeadlock(
         GridCacheVersion txId,
-        GridCacheContext<?, ?> ctx,
-        Collection<KeyCacheObject> keys
+        Set<IgniteTxKey> keys
     ) {
-        return txDeadlockDetection.detectDeadlock(txId, toIgniteTxKeys(ctx, keys));
+        return txDeadlockDetection.detectDeadlock(txId, keys);
     }
 
     /**
@@ -1888,20 +1886,21 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     void txLocksInfo(TxDeadlockFuture fut, Set<IgniteTxKey> txKeys) {
         UUID nodeId = fut.nodeId();
 
-        if (!supportsDeadlockDetection(nodeId))
+        if (supportsDeadlockDetection(nodeId)) {
+            TxLocksRequest req = new TxLocksRequest(fut.futureId(), txKeys);
+
+            try {
+                if (!cctx.localNodeId().equals(nodeId))
+                    req.prepareMarshal(cctx);
+
+                cctx.gridIO().send(nodeId, TOPIC_TX, req, SYSTEM_POOL);
+            }
+            catch (IgniteCheckedException e) {
+                fut.onDone(e);
+            }
+        }
+        else
             fut.onResult(null);
-
-        TxLocksRequest req = new TxLocksRequest(fut.futureId(), txKeys);
-
-        try {
-            if (!cctx.localNodeId().equals(nodeId))
-                req.prepareMarshal(cctx);
-
-            cctx.gridIO().send(nodeId, TOPIC_TX, req, SYSTEM_POOL);
-        }
-        catch (IgniteCheckedException e) {
-            fut.onDone(e);
-        }
     }
 
     /**
@@ -1910,20 +1909,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private boolean supportsDeadlockDetection(UUID nodeId) {
         ClusterNode node = cctx.node(nodeId);
 
-        return node != null && TX_DEADLOCK_DETECTION_SINCE.compareTo(node.version()) <= 0;
-    }
-
-    /**
-     * @param ctx Cache context.
-     * @param keys Keys.
-     */
-    private Set<IgniteTxKey> toIgniteTxKeys(GridCacheContext<?, ?> ctx, Collection<KeyCacheObject> keys) {
-        Set<IgniteTxKey> candidateKeys = U.newHashSet(keys.size());
-
-        for (KeyCacheObject key : keys)
-            candidateKeys.add(new IgniteTxKey(key, ctx.cacheId()));
-
-        return candidateKeys;
+        return node != null && TX_DEADLOCK_DETECTION_SINCE.compareToIgnoreTimestamp(node.version()) <= 0;
     }
 
     /**

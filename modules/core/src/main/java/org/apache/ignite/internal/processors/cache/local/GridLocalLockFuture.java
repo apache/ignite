@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -447,7 +448,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
                 log.debug("Timed out waiting for lock response: " + this);
 
             if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
-                Set<KeyCacheObject> keys = new HashSet<>();
+                Set<IgniteTxKey> keys = new HashSet<>();
 
                 List<GridLocalCacheEntry> entries = entries();
 
@@ -462,10 +463,10 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
                     GridCacheMvccCandidate cand = mvcc.get(0);
 
                     if (cand.owner() && cand.tx() && !cand.version().equals(tx.xidVersion()))
-                        keys.add(e.key());
+                        keys.add(e.txKey());
                 }
 
-                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx.nearXidVersion(), cctx, keys);
+                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx.nearXidVersion(), keys);
 
                 fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
                     @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
@@ -477,9 +478,9 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
                                     new TransactionDeadlockException(deadlock.toString(cctx.shared())));
                         }
                         catch (IgniteCheckedException e) {
-                            U.error(log, "Unexpected error: ", e);
-
                             err.compareAndSet(null, e);
+
+                            U.warn(log, "Failed to detect deadlock.", e);
                         }
 
                         onComplete(false);

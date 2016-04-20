@@ -457,8 +457,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     }
 
     /**
-     * @return Keys for which locks requested from remote nodes but response isn't received because some transaction
-     * already holds lock on one or more keys.
+     * @return Keys for which locks requested from remote nodes but response isn't received.
      */
     public Set<KeyCacheObject> requestedKeys() {
         Set<KeyCacheObject> requestedKeys = null;
@@ -1322,14 +1321,14 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 log.debug("Timed out waiting for lock response: " + this);
 
             if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
-                Set<KeyCacheObject> keys = new HashSet<>();
+                Set<IgniteTxKey> keys = new HashSet<>();
 
                 for (IgniteTxEntry txEntry : tx.allEntries()) {
                     if (!txEntry.locked())
-                        keys.add(txEntry.key());
+                        keys.add(txEntry.txKey());
                 }
 
-                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx.nearXidVersion(), cctx, keys);
+                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx.nearXidVersion(), keys);
 
                 fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
                     @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
@@ -1340,7 +1339,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                 err = new TransactionDeadlockException(deadlock.toString(cctx.shared()));
                         }
                         catch (IgniteCheckedException e) {
-                            U.error(log, "Unexpected error: ", err = e);
+                            err = e;
+
+                            U.warn(log, "Failed to detect deadlock.", e);
                         }
 
                         onComplete(false, true);

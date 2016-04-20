@@ -1089,9 +1089,9 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
             timedOut = true;
 
-            boolean releaseLocks = inTx() && cctx.tm().deadlockDetectionEnabled();
+            boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());
 
-            onComplete(false, false, !releaseLocks);
+            onComplete(false, false, releaseLocks);
         }
 
         /** {@inheritDoc} */
