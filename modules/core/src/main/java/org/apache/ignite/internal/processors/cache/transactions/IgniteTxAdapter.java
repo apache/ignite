@@ -1294,7 +1294,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                         }
 
                         if (!skip && !local() && // Update local store at backups only if needed.
-                            cctx.locStorePrimaryOnly())
+                            cctx.localStorePrimaryOnly())
                             skip = true;
 
                         if (skip)

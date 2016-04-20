@@ -501,7 +501,7 @@ public class GridCacheSharedContext<K, V> {
     }
 
     /** Indicating whether local store keeps primary only. */
-    public boolean locStorePrimaryOnly() {
+    public boolean localStorePrimaryOnly() {
         return locStorePrimaryOnly;
     }
 
