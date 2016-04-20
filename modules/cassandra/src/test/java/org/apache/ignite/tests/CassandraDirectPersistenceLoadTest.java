@@ -45,7 +45,19 @@ public class CassandraDirectPersistenceLoadTest extends LoadTestDriver {
 
             LoadTestDriver driver = new CassandraDirectPersistenceLoadTest();
 
-            CassandraHelper.dropTestKeyspaces();
+            /**
+             * Load test scripts could be executed from several machines. Current implementation can correctly,
+             * handle situation when Cassandra keyspace/table was dropped - for example by the same load test
+             * started a bit later on another machine. Moreover there is a warm up period for each load test.
+             * Thus all the delays related to keyspaces/tables recreation actions will not affect performance metrics,
+             * but it will be produced lots of "trash" output in the logs (related to correct handling of such
+             * exceptional situation and keyspace/table recreation).
+             *
+             * Thus dropping test keyspaces at the beginning of the tests makes sense only for Unit tests,
+             * but not for Load tests.
+            **/
+
+            //CassandraHelper.dropTestKeyspaces();
 
             driver.runTest("WRITE", WriteWorker.class, WriteWorker.LOGGER_NAME);
 
@@ -56,6 +68,16 @@ public class CassandraDirectPersistenceLoadTest extends LoadTestDriver {
             CassandraHelper.dropTestKeyspaces();
 
             driver.runTest("BULK_WRITE", BulkWriteWorker.class, BulkWriteWorker.LOGGER_NAME);
+
+            /**
+             * Load test script executed on one machine could complete earlier that the same load test executed from
+             * another machine. Current implementation can correctly handle situation when Cassandra keyspace/table
+             * was dropped (simply recreate it). But dropping keyspace/table during load tests execution and subsequent
+             * recreation of such objects can have SIGNIFICANT EFFECT on final performance metrics.
+             *
+             * Thus dropping test keyspaces at the end of the tests makes sense only for Unit tests,
+             * but not for Load tests.
+             */
 
             //CassandraHelper.dropTestKeyspaces(); // REVIEW This line is commented by purpose?
 
