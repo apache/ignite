@@ -21,9 +21,6 @@ export default ['javaKeywords', ['JavaTypes', (JavaTypes) => {
             return;
 
         ngModel.$validators.javaKeywords = (value) => {
-            if (ngModel.$invalid && !!ngModel.$error.javaKeywords)
-                return true;
-
             if (value) {
                 for (const item of value.split('.')) {
                     if (JavaTypes.isKeywords(item))

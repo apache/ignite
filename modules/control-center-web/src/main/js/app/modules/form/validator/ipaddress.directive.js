@@ -18,11 +18,6 @@
 export default ['ipaddress', [() => {
     const link = (scope, el, attrs, [ngModel]) => {
         ngModel.$validators.ipaddress = (modelValue, viewValue) => {
-            const err = ngModel.$error.ipaddress;
-
-            if (ngModel.$invalid && (_.isUndefined(err) || !err))
-                return true;
-
             if (ngModel.$isEmpty(modelValue) || _.isUndefined(attrs.ipaddress) || !attrs.ipaddress)
                 return true;
 

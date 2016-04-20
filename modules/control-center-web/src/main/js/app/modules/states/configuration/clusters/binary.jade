@@ -46,10 +46,10 @@ mixin binary-types-java-class(lbl, model, name, enabled, required, remove, autof
             data-java-keywords='true'
             data-java-built-in-class='true'
         )
-            +error-feedback('binary[' + name + '].$error.javaIdentifier', 'javaIdentifier', lbl + ' is invalid Java identifier!')
-            +error-feedback('binary[' + name + '].$error.javaPackageSpecified', 'javaPackageSpecified', lbl + ' does not have package specified!')
-            +error-feedback('binary[' + name + '].$error.javaKeywords', 'javaKeywords', lbl + ' could not contains reserved Java keyword!')
-            +error-feedback('binary[' + name + '].$error.javaBuiltInClass', 'javaBuiltInClass', lbl + ' should not be the Java built-in class!')
+            +error-feedback('binary[' + name + '].$error.javaBuiltInClass', 'javaBuiltInClass', lbl + ' should not be the Java built-in class!', '{{' + name + '}}')
+            +error-feedback('binary[' + name + '].$error.javaKeywords', 'javaKeywords', lbl + ' could not contains reserved Java keyword!', '{{' + name + '}}')
+            +error-feedback('binary[' + name + '].$error.javaPackageSpecified', 'javaPackageSpecified', lbl + ' does not have package specified!', '{{' + name + '}}')
+            +error-feedback('binary[' + name + '].$error.javaIdentifier', 'javaIdentifier', lbl + ' is invalid Java identifier!', '{{' + name + '}}')
 
 form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')

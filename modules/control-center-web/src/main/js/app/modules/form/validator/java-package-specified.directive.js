@@ -20,14 +20,10 @@ export default ['javaPackageSpecified', ['JavaTypes', (JavaTypes) => {
         if (_.isUndefined(attrs.javaPackageSpecified))
             return;
 
-        const allowBuiltIn = 'allow-built-in' === attrs.javaPackageSpecified;
+        const allowBuiltIn = attrs.javaPackageSpecified === 'allow-built-in';
 
-        ngModel.$validators.javaPackageSpecified = (value) => {
-            const err = ngModel.$error.javaPackageSpecified;
-
-            return (ngModel.$invalid && (_.isUndefined(err) || !err)) || !value || !(value.split('.').length < 2) ||
+        ngModel.$validators.javaPackageSpecified = (value) => !value || !(value.split('.').length < 2) ||
                 (allowBuiltIn && !JavaTypes.nonBuiltInClass(value));
-        };
     };
 
     return {

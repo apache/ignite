@@ -20,11 +20,7 @@ export default ['javaPackageName', ['JavaTypes', (JavaTypes) => {
         if (_.isUndefined(attrs.javaPackageName) || !attrs.javaPackageName)
             return;
 
-        ngModel.$validators.javaPackageName = (value) => {
-            const err = ngModel.$error.javaPackageName;
-
-            return (ngModel.$invalid && (_.isUndefined(err) || !err)) || JavaTypes.validPackage(value);
-        };
+        ngModel.$validators.javaPackageName = (value) => JavaTypes.validPackage(value);
     };
 
     return {

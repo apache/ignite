@@ -20,11 +20,7 @@ export default ['ignitePropertyValueSpecified', [() => {
         if (_.isUndefined(attrs.ignitePropertyValueSpecified) || !attrs.ignitePropertyValueSpecified)
             return;
 
-        ngModel.$validators.ignitePropertyValueSpecified = (value) => {
-            const err = ngModel.$error.ignitePropertyValueSpecified;
-
-            return (ngModel.$invalid && (_.isUndefined(err) || !err)) || value ? value.indexOf('=') > 0 : true;
-        };
+        ngModel.$validators.ignitePropertyValueSpecified = (value) => value ? value.indexOf('=') > 0 : true;
     };
 
     return {

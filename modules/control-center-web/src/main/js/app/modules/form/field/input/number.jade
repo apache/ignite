@@ -18,7 +18,7 @@ mixin feedback(isCheckPristine, error, errorMessage)
     -var checkPristine = isCheckPristine ? '!field.$pristine && ' : ''
 
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='#{checkPristine}field.$error.#{error}'
+        ng-if='#{checkPristine}field.$error.#{error}'
         bs-tooltip='"#{errorMessage}"'
         ignite-error=error
         ignite-error-message=errorMessage

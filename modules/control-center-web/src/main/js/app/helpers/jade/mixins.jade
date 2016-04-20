@@ -131,10 +131,10 @@ mixin java-class(lbl, form, model, name, enabled, required, tip)
             data-java-keywords='true'
             data-java-built-in-class='true'
         )
-            +error-feedback(err + '.javaIdentifier', 'javaIdentifier', errLbl + ' is invalid Java identifier!', name)
-            +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', errLbl + ' does not have package specified!', name)
-            +error-feedback(err + '.javaKeywords', 'javaKeywords', errLbl + ' could not contains reserved Java keyword!', name)
             +error-feedback(err + '.javaBuiltInClass', 'javaBuiltInClass', errLbl + ' should not be the Java built-in class!', name)
+            +error-feedback(err + '.javaKeywords', 'javaKeywords', errLbl + ' could not contains reserved Java keyword!', name)
+            +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', errLbl + ' does not have package specified!', name)
+            +error-feedback(err + '.javaIdentifier', 'javaIdentifier', errLbl + ' is invalid Java identifier!', name)
 
 //- Mixin for text field with enabled condition with options.
 mixin java-class-typeahead(lbl, form, model, name, options, enabled, required, placeholder, tip)
@@ -159,9 +159,9 @@ mixin java-class-typeahead(lbl, form, model, name, options, enabled, required, p
             data-java-package-specified='allow-built-in'
             data-java-keywords='true'
         )
-            +error-feedback(err + '.javaIdentifier', 'javaIdentifier', errLbl + ' is invalid Java identifier!', name)
-            +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', errLbl + ' does not have package specified!', name)
             +error-feedback(err + '.javaKeywords', 'javaKeywords', errLbl + ' could not contains reserved Java keyword!', name)
+            +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', errLbl + ' does not have package specified!', name)
+            +error-feedback(err + '.javaIdentifier', 'javaIdentifier', errLbl + ' is invalid Java identifier!', name)
 
 //- Mixin for text field.
 mixin text-ip-address(lbl, form, model, name, enabled, placeholder, tip)
@@ -368,10 +368,10 @@ mixin table-java-class-field(lbl, form, field, items, valid, save, newItem)
         on-escape=onEscape
         ng-blur=onBlur
     )
-        +error-feedback(err + '.javaIdentifier', 'javaIdentifier', lbl + ' is invalid Java identifier!')
-        +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', lbl + ' does not have package specified!')
-        +error-feedback(err + '.javaKeywords', 'javaKeywords', lbl + ' could not contains reserved Java keyword!')
         +error-feedback(err + '.javaBuiltInClass', 'javaBuiltInClass', lbl + ' should not be the Java built-in class!')
+        +error-feedback(err + '.javaKeywords', 'javaKeywords', lbl + ' could not contains reserved Java keyword!')
+        +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', lbl + ' does not have package specified!')
+        +error-feedback(err + '.javaIdentifier', 'javaIdentifier', lbl + ' is invalid Java identifier!')
 
         block
 

@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-
 // Java built-in class names.
 import JAVA_CLASSES from 'app/data/java-classes.json!';
 

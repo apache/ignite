@@ -21,11 +21,6 @@ export default ['ignitePropertyUnique', ['$parse', ($parse) => {
             return;
 
         ngModel.$validators.ignitePropertyUnique = (value) => {
-            const err = ngModel.$error.ignitePropertyUnique;
-
-            if (ngModel.$invalid && (_.isUndefined(err) || !err))
-                return true;
-
             const arr = $parse(attrs.ignitePropertyUnique)(scope);
 
             // Return true in case if array not exist, array empty.
