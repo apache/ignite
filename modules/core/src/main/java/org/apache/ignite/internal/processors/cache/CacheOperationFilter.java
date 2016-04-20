@@ -17,25 +17,45 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Update future for atomic cache.
+ * Cache operation filter.
  */
-public interface GridCacheAtomicFuture<R> extends GridCacheFuture<R> {
-    /**
-     * @return Future version.
-     */
-    public GridCacheVersion version();
+public enum CacheOperationFilter {
+    /** Always pass. */
+    ALWAYS,
+
+    /** No value. */
+    NO_VAL,
+
+    /** Has value. */
+    HAS_VAL,
+
+    /** Equals to value. */
+    EQUALS_VAL;
 
     /**
-     * Gets future that will be completed when it is safe when update is finished on the given version of topology.
+     * Creare predicate from operation filter.
      *
-     * @param topVer Topology version to finish.
-     * @return Future or {@code null} if no need to wait.
+     * @param val Optional value.
+     * @return Predicate.
      */
-    public IgniteInternalFuture<Void> completeFuture(AffinityTopologyVersion topVer);
+    @Nullable public CacheEntryPredicate createPredicate(@Nullable CacheObject val) {
+        switch (this) {
+            case ALWAYS:
+                return null;
+
+            case NO_VAL:
+                return new CacheEntryPredicateNoValue();
+
+            case HAS_VAL:
+                return new CacheEntryPredicateHasValue();
+
+            default:
+                assert this == EQUALS_VAL;
+
+                return new CacheEntryPredicateContainsValue(val);
+        }
+    }
 }
