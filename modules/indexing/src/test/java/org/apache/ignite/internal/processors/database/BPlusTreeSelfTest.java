@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
-import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -69,6 +68,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        long seed = System.nanoTime();
+
+        X.println("Test seed: " + seed);
+
+        TestTree.rnd = new Random(seed);
+
         pageMem = new PageMemoryImpl(log, new UnsafeMemoryProvider(64 * MB, 32 * MB), null, PAGE_SIZE, CPUS);
 
         pageMem.start();
@@ -200,29 +205,33 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      */
     private void doTestPutRemoveFindRandom(boolean canGetRow) throws IgniteCheckedException {
         TestTree tree = createTestTree(canGetRow);
+
         Map<Long,Long> map = new HashMap<>();
-
-        long seed = System.currentTimeMillis();
-
-        X.println("seed: " + seed);
-
-        Random rnd = new GridRandom(seed);
 
         int cnt = 100_000;
 
         for (int i = 0, end = 30 * cnt; i < end; i++) {
-            long x = rnd.nextInt(cnt);
+//            if (i % 1000 == 0)
+//                X.println(" -> " + i);
 
-            switch(rnd.nextInt(3)) {
+            long x = tree.randomInt(cnt);
+
+            switch(tree.randomInt(3)) {
                 case 0:
+//                    X.println("Put: " + x);
+
                     assertEquals(map.put(x, x), tree.put(x));
 
                 case 1:
+//                    X.println("Get: " + x);
+
                     assertEquals(map.get(x), tree.findOne(x));
 
                     break;
 
                 case 2:
+//                    X.println("Rmv: " + x);
+
                     assertEquals(map.remove(x), tree.remove(x));
 
                     break;
@@ -239,7 +248,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         GridCursor<Long> cursor = tree.find(null, null);
 
-        while(cursor.next()) {
+        while (cursor.next()) {
             Long x = cursor.get();
 
             assert x != null;
@@ -248,6 +257,67 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         assertTrue(map.isEmpty());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testRandomRemove0() throws IgniteCheckedException {
+        doTestRandomRemove(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testRandomRemove1() throws IgniteCheckedException {
+        doTestRandomRemove(true);
+    }
+
+    /**
+     * @param canGetRow Can get row from inner page.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doTestRandomRemove(boolean canGetRow) throws IgniteCheckedException {
+        TestTree tree = createTestTree(canGetRow);
+
+        Map<Long,Long> map = new HashMap<>();
+
+        int cnt = 100_000;
+
+        for (long x = 0; x < cnt; x++)
+            assertEquals(map.put(x,x), tree.put(x));
+
+        for (;;) {
+            for (int i = 0; i < 1000 && !map.isEmpty();) {
+                Long x = (long)tree.randomInt(cnt);
+
+                if (map.remove(x) != null) {
+                    assertEquals(x, tree.remove(x));
+                    assertNull(tree.remove(x));
+
+                    i++;
+                }
+            }
+
+            GridCursor<Long> cursor = tree.find(null, null);
+
+            int size = 0;
+
+            while (cursor.next()) {
+                size++;
+
+                Long x = cursor.get();
+
+                assert x != null;
+
+                assertEquals(map.get(x), x);
+            }
+
+            assertEquals(map.size(), size);
+
+            if (size == 0)
+                break;
+        }
     }
 
     /**
@@ -272,6 +342,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      */
     private static class TestTree extends BPlusTree<Long, Long> {
         /** */
+        static Random rnd;
+
+        /** */
         final boolean canGetRow;
 
         /**
@@ -288,6 +361,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             this.canGetRow = canGetRow;
 
             initNew();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int randomInt(int max) {
+            // Need to have predictable reproducibility.
+            return rnd.nextInt(max);
         }
 
         /** {@inheritDoc} */

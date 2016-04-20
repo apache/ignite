@@ -318,7 +318,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             r.removed = getRow(io, buf, idx);
 
-            doRemove(io, leaf, buf, cnt, idx, r.meta, lvl, false);
+            r.doRemove(io, leaf, buf, cnt, idx, lvl, false);
 
             // We may need to replace inner key or want to merge this leaf with sibling after the remove -> keep lock.
             if (r.needReplaceInner == TRUE ||
@@ -434,7 +434,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert t.io == io : "must be the same"; // Otherwise may be not compatible.
 
-            return mergePages(r.meta, prnt, t, fwd, fwdBuf) ? TRUE : FALSE;
+            return r.mergePages(prnt, t, fwd, fwdBuf) ? TRUE : FALSE;
         }
     };
 
@@ -850,14 +850,6 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
-     * @return Removed row.
-     * @throws IgniteCheckedException If failed.
-     */
-    public T removeFirst() throws IgniteCheckedException {
-        return remove(null, false); // TODO
-    }
-
-    /**
      * @param row Lookup row.
      * @param ceil If we can remove ceil row when we can not find exact.
      * @return Removed row.
@@ -890,46 +882,7 @@ public abstract class BPlusTree<L, T extends L> {
         finally {
             r.releaseTail();
             r.releaseMeta();
-
-//            if ("_key_PK".equals(getName()) && row.getValue(0).getInt() < 900) {
-//                X.println("row= " + row);
-//                X.println("rmv= " + r.removed);
-//                X.println("idx= " + getName());
-//                X.println(printTree());
-//                X.println("======================================");
-//            }
         }
-    }
-
-    /**
-     * @param io IO.
-     * @param buf Buffer.
-     * @param cnt Count.
-     * @param idx Index to remove.
-     * @param meta Meta page.
-     * @param lvl Level.
-     * @param kickLeftChild If we are dropping left child instead of the right one.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void doRemove(BPlusIO io, Page page, ByteBuffer buf, int cnt, int idx, Page meta, int lvl,
-        boolean kickLeftChild) throws IgniteCheckedException {
-        assert cnt > 0;
-        assert idx >= 0;
-        assert idx <= cnt;
-
-        if (idx == cnt) {
-            idx--; // This may happen in case of right turn, we need to remove the rightmost ref and link.
-
-            assert !kickLeftChild: "right child must be dropped here";
-        }
-
-        cnt--;
-
-        io.copyItems(buf, buf, idx + 1, idx, cnt - idx, kickLeftChild);
-        io.setCount(buf, cnt);
-
-        if (cnt == 0 && lvl != 0 && getRootLevel(meta) == lvl)
-            freePage(page, buf, io, meta, lvl); // Free root.
     }
 
     /**
@@ -1091,9 +1044,9 @@ public abstract class BPlusTree<L, T extends L> {
 
     /**
      * @param max Max.
-     * @return Random value from {@code 0} (inclusive) to the given max value exclusive.
+     * @return Random value from {@code 0} (inclusive) to the given max value (exclusive).
      */
-     public static int randomInt(int max) {
+     public int randomInt(int max) {
          return ThreadLocalRandom.current().nextInt(max);
      }
 
@@ -1114,113 +1067,6 @@ public abstract class BPlusTree<L, T extends L> {
             return newCnt;
 
         return -1;
-    }
-
-    /**
-     * @param prnt Parent tail.
-     * @param cur Current tail.
-     * @param fwd Forward page.
-     * @param fwdBuf Forward buffer.
-     * @throws IgniteCheckedException If failed.
-     */
-    private boolean mergePages(Page meta, Tail<L> prnt, Tail<L> cur, Page fwd, ByteBuffer fwdBuf)
-        throws IgniteCheckedException {
-        assert io(fwdBuf) == cur.io;
-
-        int cnt = cur.io.getCount(cur.buf);
-        int fwdCnt = cur.io.getCount(fwdBuf);
-        int newCnt = countAfterMerge(cur, fwdCnt);
-
-        if (newCnt == -1) // Not enough space.
-            return false;
-
-        cur.io.setCount(cur.buf, newCnt);
-
-        int prntCnt = prnt.io.getCount(prnt.buf);
-
-        // Move down split key in inner pages.
-        if (cur.lvl != 0) {
-            int prntIdx = prnt.idx;
-
-            if (prntIdx == prntCnt) // It was a right turn.
-                prntIdx--;
-
-            // We can be sure that we have enough free space to store split key here,
-            // because we've done remove already and did not release child locks.
-            inner(cur.io).store(cur.buf, cnt, prnt.io, prnt.buf, prntIdx);
-
-            cnt++;
-        }
-
-        cur.io.copyItems(fwdBuf, cur.buf, 0, cnt, fwdCnt, true);
-        cur.io.setForward(cur.buf, cur.io.getForward(fwdBuf));
-
-        assert prntCnt > 0: prntCnt;
-
-        // Remove split key from parent. If parent is root and becomes empty, it will be freed by doRemove.
-        doRemove(prnt.io, prnt.page, prnt.buf, prntCnt, prnt.idx, meta, prnt.lvl, false);
-
-        // Forward page is now empty and has no links.
-        freePage(fwd, fwdBuf, cur.io, meta, cur.lvl);
-
-        return true;
-    }
-
-    /**
-     * @param meta Meta.
-     * @param inner Inner replace page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void dropEmptyBranch(Page meta, Tail inner) throws IgniteCheckedException {
-        int cnt = inner.io.getCount(inner.buf);
-
-        assert cnt > 0: cnt;
-        assert inner.fwd == null: "if we've found our inner key in this page it can't be a back page";
-
-        // We need to check if the branch we are going to drop goes to the left or to the right.
-        boolean kickLeft = inner.down.page.id() == inner(inner.io).getLeft(inner.buf, inner.idx);
-
-        assert kickLeft || inner.down.page.id() == inner(inner.io).getRight(inner.buf, inner.idx);
-
-        // Remove found inner key from inner page.
-        doRemove(inner.io, inner.page, inner.buf, cnt, inner.idx, meta, inner.lvl, kickLeft);
-
-        // If inner page was root and became empty, it was freed in doRemove.
-        // Otherwise we can be sure that inner page was not freed, at lead it must become
-        // an empty routing page. Thus always starting from inner.down here.
-        for (Tail t = inner.down; t != null; t = t.down) {
-            if (t.fwd != null)
-                t = t.fwd;
-
-            assert t.io.getCount(t.buf) == 0;
-
-            freePage(t.page, t.buf, t.io, meta, t.lvl);
-        }
-    }
-
-    /**
-     * @param page Page.
-     * @param buf Buffer.
-     * @param io IO.
-     * @param meta Meta page.
-     * @param lvl Level.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void freePage(Page page, ByteBuffer buf, BPlusIO io, Page meta, int lvl)
-        throws IgniteCheckedException {
-        if (getLeftmostPageId(meta, lvl) == page.id()) {
-            // This logic will handle root as well.
-            long fwdId = io.getForward(buf);
-
-            writePage(meta, updateLeftmost, fwdId, lvl, FALSE);
-        }
-
-        // Mark removed.
-        io.setRemoveId(buf, Long.MAX_VALUE);
-
-        // Reuse empty page.
-        if (reuseList != null)
-            reuseList.put(this, page.fullId());
     }
 
     /**
@@ -1667,7 +1513,7 @@ public abstract class BPlusTree<L, T extends L> {
         /**
          * Release meta page.
          */
-        void releaseMeta() {
+        final void releaseMeta() {
             if (meta != null) {
                 meta.close();
                 meta = null;
@@ -1687,11 +1533,11 @@ public abstract class BPlusTree<L, T extends L> {
     /**
      * Get a single entry.
      */
-    private class GetOne extends Get {
+    private final class GetOne extends Get {
         /**
          * @param row Row.
          */
-        public GetOne(L row) {
+        private GetOne(L row) {
             super(row);
         }
 
@@ -1712,15 +1558,15 @@ public abstract class BPlusTree<L, T extends L> {
     /**
      * Get a cursor for range.
      */
-    private class GetCursor extends Get {
+    private final class GetCursor extends Get {
         /** */
-        private ForwardCursor cursor;
+        ForwardCursor cursor;
 
         /**
          * @param lower Lower bound.
          * @param upper Upper bound.
          */
-        public GetCursor(L lower, L upper) {
+        private GetCursor(L lower, L upper) {
             super(lower);
 
             cursor = new ForwardCursor(upper);
@@ -1754,7 +1600,7 @@ public abstract class BPlusTree<L, T extends L> {
     /**
      * Put operation.
      */
-    private class Put extends Get {
+    private final class Put extends Get {
         /** Right child page ID for split row. */
         long rightId;
 
@@ -1779,7 +1625,7 @@ public abstract class BPlusTree<L, T extends L> {
         /**
          * @param row Row.
          */
-        Put(T row) {
+        private Put(T row) {
             super(row);
         }
 
@@ -1838,7 +1684,7 @@ public abstract class BPlusTree<L, T extends L> {
     /**
      * Remove operation.
      */
-    private class Remove extends Get {
+    private final class Remove extends Get {
         /** */
         boolean ceil;
 
@@ -1864,7 +1710,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @param row Row.
          * @param ceil If we can remove ceil row when we can not find exact.
          */
-        Remove(L row, boolean ceil) {
+        private Remove(L row, boolean ceil) {
             super(row);
 
             this.ceil = ceil;
@@ -1896,7 +1742,7 @@ public abstract class BPlusTree<L, T extends L> {
         /**
          * Finish the operation.
          */
-        void finish() {
+        private void finish() {
             assert tail == null;
 
             row = null;
@@ -1909,7 +1755,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @return {@code false} If failed to finish and we need to lock more pages up.
          * @throws IgniteCheckedException If failed.
          */
-        boolean finishTail(boolean skipMergeMore) throws IgniteCheckedException {
+        private boolean finishTail(boolean skipMergeMore) throws IgniteCheckedException {
             assert !isFinished();
             assert needMerge != FALSE || needReplaceInner != FALSE;
             assert tail != null;
@@ -1952,6 +1798,144 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /**
+         * @param io IO.
+         * @param buf Buffer.
+         * @param cnt Count.
+         * @param idx Index to remove.
+         * @param lvl Level.
+         * @param kickLeftChild If we are dropping left child instead of the right one.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void doRemove(BPlusIO io, Page page, ByteBuffer buf, int cnt, int idx, int lvl,
+            boolean kickLeftChild) throws IgniteCheckedException {
+            assert cnt > 0;
+            assert idx >= 0;
+            assert idx <= cnt;
+
+            if (idx == cnt) {
+                idx--; // This may happen in case of right turn, we need to remove the rightmost ref and link.
+
+                assert !kickLeftChild: "right child must be dropped here";
+            }
+
+            cnt--;
+
+            io.copyItems(buf, buf, idx + 1, idx, cnt - idx, kickLeftChild);
+            io.setCount(buf, cnt);
+
+            if (cnt == 0 && lvl != 0 && getRootLevel(meta) == lvl)
+                freePage(page, buf, io, lvl); // Free root.
+        }
+
+        /**
+         * @param prnt Parent tail.
+         * @param cur Current tail.
+         * @param fwd Forward page.
+         * @param fwdBuf Forward buffer.
+         * @throws IgniteCheckedException If failed.
+         */
+        private boolean mergePages(Tail<L> prnt, Tail<L> cur, Page fwd, ByteBuffer fwdBuf)
+            throws IgniteCheckedException {
+            assert io(fwdBuf) == cur.io;
+
+            int cnt = cur.io.getCount(cur.buf);
+            int fwdCnt = cur.io.getCount(fwdBuf);
+            int newCnt = countAfterMerge(cur, fwdCnt);
+
+            if (newCnt == -1) // Not enough space.
+                return false;
+
+            cur.io.setCount(cur.buf, newCnt);
+
+            int prntCnt = prnt.io.getCount(prnt.buf);
+
+            // Move down split key in inner pages.
+            if (cur.lvl != 0) {
+                int prntIdx = prnt.idx;
+
+                if (prntIdx == prntCnt) // It was a right turn.
+                    prntIdx--;
+
+                // We can be sure that we have enough free space to store split key here,
+                // because we've done remove already and did not release child locks.
+                inner(cur.io).store(cur.buf, cnt, prnt.io, prnt.buf, prntIdx);
+
+                cnt++;
+            }
+
+            cur.io.copyItems(fwdBuf, cur.buf, 0, cnt, fwdCnt, true);
+            cur.io.setForward(cur.buf, cur.io.getForward(fwdBuf));
+
+            assert prntCnt > 0: prntCnt;
+
+            // Remove split key from parent. If parent is root and becomes empty, it will be freed by doRemove.
+            doRemove(prnt.io, prnt.page, prnt.buf, prntCnt, prnt.idx, prnt.lvl, false);
+
+            // Forward page is now empty and has no links.
+            freePage(fwd, fwdBuf, cur.io, cur.lvl);
+
+            return true;
+        }
+
+        /**
+         * @param page Page.
+         * @param buf Buffer.
+         * @param io IO.
+         * @param lvl Level.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void freePage(Page page, ByteBuffer buf, BPlusIO io, int lvl)
+            throws IgniteCheckedException {
+            if (getLeftmostPageId(meta, lvl) == page.id()) {
+                // This logic will handle root as well.
+                long fwdId = io.getForward(buf);
+
+                writePage(meta, updateLeftmost, fwdId, lvl, FALSE);
+            }
+
+            // Mark removed.
+            io.setRemoveId(buf, Long.MAX_VALUE);
+
+            // Reuse empty page.
+            if (reuseList != null) {
+//            U.dumpStack("page: " + page.fullId());
+
+                reuseList.put(BPlusTree.this, page.fullId());
+            }
+        }
+
+        /**
+         * @param inner Inner replace page.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void dropEmptyBranch(Tail inner) throws IgniteCheckedException {
+            int cnt = inner.io.getCount(inner.buf);
+
+            assert cnt > 0: cnt;
+            assert inner.fwd == null: "if we've found our inner key in this page it can't be a back page";
+
+            // We need to check if the branch we are going to drop goes to the left or to the right.
+            boolean kickLeft = inner.down.page.id() == inner(inner.io).getLeft(inner.buf, inner.idx);
+
+            assert kickLeft || inner.down.page.id() == inner(inner.io).getRight(inner.buf, inner.idx);
+
+            // Remove found inner key from inner page.
+            doRemove(inner.io, inner.page, inner.buf, cnt, inner.idx, inner.lvl, kickLeft);
+
+            // If inner page was root and became empty, it was freed in doRemove.
+            // Otherwise we can be sure that inner page was not freed, at lead it must become
+            // an empty routing page. Thus always starting from inner.down here.
+            for (Tail t = inner.down; t != null; t = t.down) {
+                if (t.fwd != null)
+                    t = t.fwd;
+
+                assert t.io.getCount(t.buf) == 0;
+
+                freePage(t.page, t.buf, t.io, t.lvl);
+            }
+        }
+
+        /**
          * @throws IgniteCheckedException If failed.
          */
         private void doReplaceInner() throws IgniteCheckedException {
@@ -1969,7 +1953,7 @@ public abstract class BPlusTree<L, T extends L> {
             if (cnt == 0) { // Merge empty leaf page.
                 if (!merge(0, true, false)) {
                     // For leaf pages this can happen only when parent is empty -> drop the whole branch.
-                    dropEmptyBranch(meta, inner);
+                    dropEmptyBranch(inner);
 
                     return;
                 }
@@ -2055,7 +2039,7 @@ public abstract class BPlusTree<L, T extends L> {
             else {
                 assert cur.io == back.io: "must always be the same"; // Otherwise may be not compatible.
 
-                if (mergePages(meta, prnt, back, cur.page, cur.buf)) {
+                if (mergePages(prnt, back, cur.page, cur.buf)) {
                     assert prnt.down == back;
                     assert back.fwd == cur;
 
@@ -2080,14 +2064,14 @@ public abstract class BPlusTree<L, T extends L> {
         /**
          * @return {@code true} If finished.
          */
-        boolean isFinished() {
+        private boolean isFinished() {
             return row == null;
         }
 
         /**
          * Release pages for all locked levels at the tail.
          */
-        void releaseTail() {
+        private void releaseTail() {
             Tail t = tail;
 
             tail = null;
@@ -2112,7 +2096,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @param lvl Level.
          * @return {@code true} If the given page is in tail.
          */
-        boolean isTail(long pageId, int lvl) {
+        private boolean isTail(long pageId, int lvl) {
             Tail t = tail;
 
             while (t != null) {
@@ -2139,7 +2123,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @param back If the given page is back page for the current tail, otherwise it must be an upper level page.
          * @param idx Insertion index.
          */
-        void addTail(Page page, ByteBuffer buf, BPlusIO<L> io, int lvl, boolean back, int idx) {
+        private void addTail(Page page, ByteBuffer buf, BPlusIO<L> io, int lvl, boolean back, int idx) {
             Tail<L> t = new Tail<>(page, buf, io, lvl, idx);
 
             if (back) {
@@ -2161,7 +2145,7 @@ public abstract class BPlusTree<L, T extends L> {
         /**
          * @return Non-back tail page.
          */
-        public Page nonBackTailPage() {
+        private Page nonBackTailPage() {
             assert tail != null;
 
             return tail.fwd == null ? tail.page : tail.fwd.page;
@@ -2172,7 +2156,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @param back Back page.
          * @return Tail.
          */
-        public Tail<L> getTail(int lvl, boolean back) {
+        private Tail<L> getTail(int lvl, boolean back) {
             assert lvl <= tail.lvl: "level is too high";
 
             Tail<L> t = tail;

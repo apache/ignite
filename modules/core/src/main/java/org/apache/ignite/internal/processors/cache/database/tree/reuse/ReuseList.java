@@ -19,18 +19,20 @@ package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.randomInt;
-
 /**
  * Reuse list for index pages.
  */
 public class ReuseList {
+    /** */
+    private static final FullPageId MIN = new FullPageId(0,0);
+
     /** */
     private final ReuseTree[] trees;
 
@@ -67,7 +69,7 @@ public class ReuseList {
     private ReuseTree tree(BPlusTree<?,?> client) {
         assert trees.length > 1;
 
-        int treeIdx = randomInt(trees.length);
+        int treeIdx = client.randomInt(trees.length);
 
         ReuseTree tree = trees[treeIdx];
 
@@ -92,7 +94,10 @@ public class ReuseList {
      * @throws IgniteCheckedException If failed.
      */
     public FullPageId take(BPlusTree<?,?> client) throws IgniteCheckedException {
-        return ready ? tree(client).removeFirst() : null;
+        assert PageIdUtils.pageIdx(MIN.pageId()) == 0;
+
+        // Remove and return page at min position.
+        return ready ? tree(client).removeCeil(MIN) : null;
     }
 
     /**

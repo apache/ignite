@@ -75,7 +75,7 @@ public class ReuseTree extends BPlusTree<FullPageId, FullPageId> {
         throws IgniteCheckedException {
         long pageIdx = io.isLeaf() ?
             PageIdUtils.pageIdx(((ReuseLeafIO)io).getPageId(buf, idx)) :
-            (((ReuseInnerIO)io).getPageIndex(buf, idx) & 0xFFFFFFFFL );
+            (((ReuseInnerIO)io).getPageIndex(buf, idx) & 0xFFFFFFFFL);
 
         return Long.compare(pageIdx, PageIdUtils.pageIdx(fullPageId.pageId()));
     }
