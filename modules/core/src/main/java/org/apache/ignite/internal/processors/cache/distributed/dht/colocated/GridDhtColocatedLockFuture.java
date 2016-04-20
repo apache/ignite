@@ -532,7 +532,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
 
         // Local GridDhtLockFuture
-        if (this.err instanceof IgniteTxTimeoutCheckedException && cctx.tm().deadlockDetectionEnabled())
+        if (inTx() && this.err instanceof IgniteTxTimeoutCheckedException && cctx.tm().deadlockDetectionEnabled())
             return false;
 
         if (isDone())
@@ -1454,7 +1454,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             }
 
             if (res.error() != null) {
-                if (res.error() instanceof IgniteTxTimeoutCheckedException && cctx.tm().deadlockDetectionEnabled())
+                if (inTx() && res.error() instanceof IgniteTxTimeoutCheckedException &&
+                    cctx.tm().deadlockDetectionEnabled())
                     return;
 
                 if (log.isDebugEnabled())

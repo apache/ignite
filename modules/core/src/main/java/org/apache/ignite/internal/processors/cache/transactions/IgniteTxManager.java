@@ -95,7 +95,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECT
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.GridTopic.TOPIC_TX;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
@@ -128,7 +127,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private static final int TX_SALVAGE_TIMEOUT = Integer.getInteger(IGNITE_TX_SALVAGE_TIMEOUT, 100);
 
     /** Version in which deadlock detection introduced. */
-    public static final IgniteProductVersion TX_DEADLOCK_DETECTION_SINCE = IgniteProductVersion.fromString("1.5.13");
+    public static final IgniteProductVersion TX_DEADLOCK_DETECTION_SINCE = IgniteProductVersion.fromString("1.5.14");
 
     /** Deadlock detection maximum iterations. */
     static final int DEADLOCK_MAX_ITERS =
@@ -241,7 +240,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
-        cctx.gridIO().removeMessageListener(TOPIC_CACHE);
+        cctx.gridIO().removeMessageListener(TOPIC_TX);
     }
 
     /** {@inheritDoc} */
