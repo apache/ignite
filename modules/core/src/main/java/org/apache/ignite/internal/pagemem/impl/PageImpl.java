@@ -151,8 +151,8 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer getForInitialWrite() {
-        assert getExclusiveOwnerThread() == null;
-        assert getState() == 0;
+        assert getExclusiveOwnerThread() == null: fullId();
+        assert getState() == 0: fullId();
 
         markDirty();
 
@@ -161,13 +161,11 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
     /** {@inheritDoc} */
     @Override public ByteBuffer getForWrite() {
-        Thread th = Thread.currentThread();
+        acquire(1); // This call is not reentrant.
 
-        if (getExclusiveOwnerThread() != th) {
-            acquire(1);
+        assert getExclusiveOwnerThread() == null: fullId();
 
-            setExclusiveOwnerThread(th);
-        }
+        setExclusiveOwnerThread(Thread.currentThread());
 
         return reset(buf);
     }
