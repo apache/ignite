@@ -984,7 +984,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.checkSecurity(SecurityPermission.CACHE_PUT);
 
-        final GridNearAtomicUpdateFuture updateFut =
+        final GridNearAtomicAbstractUpdateFuture updateFut =
             createSingleUpdateFuture(key, val, proc, invokeArgs, retval, filter, waitTopFut);
 
         return asyncOp(new CO<IgniteInternalFuture<Object>>() {
@@ -1016,7 +1016,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         ctx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
-        final GridNearAtomicUpdateFuture updateFut =
+        final GridNearAtomicAbstractUpdateFuture updateFut =
             createSingleUpdateFuture(key, null, null, null, retval, filter, true);
 
         if (statsEnabled)
@@ -1043,7 +1043,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param waitTopFut Whether to wait for topology future.
      * @return Future.
      */
-    private GridNearAtomicUpdateFuture createSingleUpdateFuture(
+    private GridNearAtomicAbstractUpdateFuture createSingleUpdateFuture(
         K key,
         @Nullable V val,
         @Nullable EntryProcessor proc,
@@ -1055,19 +1055,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         GridCacheOperation op;
-        Collection vals;
+        Object val0;
 
         if (val != null) {
             op = UPDATE;
-            vals = Collections.singletonList(val);
+            val0 = val;
         }
         else if (proc != null) {
             op = TRANSFORM;
-            vals = Collections.singletonList(proc);
+            val0 = proc;
         }
         else {
             op = DELETE;
-            vals = null;
+            val0 = null;
         }
 
         GridCacheDrInfo conflictPutVal = null;
@@ -1081,37 +1081,75 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (op == UPDATE) {
                 conflictPutVal = new GridCacheDrInfo(ctx.toCacheObject(val), ctx.versions().next(dcId));
 
-                vals = null;
+                val0 = null;
             }
             else if (op == GridCacheOperation.TRANSFORM) {
                 conflictPutVal = new GridCacheDrInfo(proc, ctx.versions().next(dcId));
 
-                vals = null;
+                val0 = null;
             }
             else
                 conflictRmvVer = ctx.versions().next(dcId);
         }
 
-        return new GridNearAtomicUpdateFuture(
-            ctx,
-            this,
-            ctx.config().getWriteSynchronizationMode(),
-            op,
-            Collections.singletonList(key),
-            vals,
-            invokeArgs,
-            conflictPutVal != null ? Collections.singleton(conflictPutVal) : null,
-            conflictRmvVer != null ? Collections.singleton(conflictRmvVer) : null,
-            retval,
-            false,
-            opCtx != null ? opCtx.expiry() : null,
-            CU.filterArray(filter),
-            ctx.subjectIdPerCall(null, opCtx),
-            ctx.kernalContext().job().currentTaskNameHash(),
-            opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary(),
-            opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
-            waitTopFut);
+        CacheEntryPredicate[] filters = CU.filterArray(filter);
+
+        if (conflictPutVal == null && conflictRmvVer == null && !isFastMap(filters, op)) {
+            return new GridNearAtomicSingleUpdateFuture(
+                ctx,
+                this,
+                ctx.config().getWriteSynchronizationMode(),
+                op,
+                key,
+                val0,
+                invokeArgs,
+                retval,
+                false,
+                opCtx != null ? opCtx.expiry() : null,
+                filters,
+                ctx.subjectIdPerCall(null, opCtx),
+                ctx.kernalContext().job().currentTaskNameHash(),
+                opCtx != null && opCtx.skipStore(),
+                opCtx != null && opCtx.isKeepBinary(),
+                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+                waitTopFut
+            );
+        }
+        else {
+            return new GridNearAtomicUpdateFuture(
+                ctx,
+                this,
+                ctx.config().getWriteSynchronizationMode(),
+                op,
+                Collections.singletonList(key),
+                val0 != null ? Collections.singletonList(val0) : null,
+                invokeArgs,
+                conflictPutVal != null ? Collections.singleton(conflictPutVal) : null,
+                conflictRmvVer != null ? Collections.singleton(conflictRmvVer) : null,
+                retval,
+                false,
+                opCtx != null ? opCtx.expiry() : null,
+                filters,
+                ctx.subjectIdPerCall(null, opCtx),
+                ctx.kernalContext().job().currentTaskNameHash(),
+                opCtx != null && opCtx.skipStore(),
+                opCtx != null && opCtx.isKeepBinary(),
+                opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
+                waitTopFut);
+        }
+    }
+
+    /**
+     * Whether this is fast-map operation.
+     *
+     * @param filters Filters.
+     * @param op Operation.
+     * @return {@code True} if fast-map.
+     */
+    public boolean isFastMap(CacheEntryPredicate[] filters, GridCacheOperation op) {
+        return F.isEmpty(filters) && op != TRANSFORM && ctx.config().getWriteSynchronizationMode() == FULL_SYNC &&
+            ctx.config().getAtomicWriteOrderMode() == CLOCK &&
+            !(ctx.writeThrough() && ctx.config().getInterceptor() != null);
     }
 
     /**
@@ -2893,10 +2931,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         res.nodeId(ctx.localNodeId());
 
-        GridNearAtomicUpdateFuture fut = (GridNearAtomicUpdateFuture)ctx.mvcc().atomicFuture(res.futureVersion());
+        GridNearAtomicAbstractUpdateFuture fut =
+            (GridNearAtomicAbstractUpdateFuture)ctx.mvcc().atomicFuture(res.futureVersion());
 
-        if (fut != null)
-            fut.onResult(nodeId, res, false);
+        if (fut != null) {
+            if (fut instanceof GridNearAtomicSingleUpdateFuture)
+                ((GridNearAtomicSingleUpdateFuture)fut).onResult(nodeId, res, false);
+            else
+                ((GridNearAtomicUpdateFuture)fut).onResult(nodeId, res, false);
+        }
         else
             U.warn(log, "Failed to find near update future for update response (will ignore) " +
                 "[nodeId=" + nodeId + ", res=" + res + ']');
