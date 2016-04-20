@@ -65,6 +65,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSwapEntryImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
@@ -426,6 +428,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         finally {
             leaveBusy();
         }
+    }
+
+    public List<BPlusTree<?, ? extends CacheDataRow>> pkIndexes() {
+        return qryProc.pkIndexes(space);
     }
 
     /**

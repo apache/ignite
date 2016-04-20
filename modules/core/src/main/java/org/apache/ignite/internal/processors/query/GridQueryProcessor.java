@@ -44,6 +44,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -722,6 +724,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             return idx.read(space, key, partId);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    public List<BPlusTree<?, ? extends CacheDataRow>> pkIndexes(String space) {
+        if (idx == null)
+            return null;
+
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to write to index (grid is stopping).");
+
+        try {
+            return idx.pkIndexes(space);
         }
         finally {
             busyLock.leaveBusy();

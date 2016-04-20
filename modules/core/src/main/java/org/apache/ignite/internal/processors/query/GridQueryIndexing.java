@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -206,6 +208,8 @@ public interface GridQueryIndexing {
      * @return Read versioned value.
      */
     IgniteBiTuple<CacheObject,GridCacheVersion> read(String space, KeyCacheObject key, int partId) throws IgniteCheckedException;
+
+    public List<BPlusTree<?, ? extends CacheDataRow>> pkIndexes(String space);
 
     /**
      * Will be called when entry with given key is swapped.

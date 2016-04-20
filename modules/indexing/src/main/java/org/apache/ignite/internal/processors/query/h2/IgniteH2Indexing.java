@@ -77,7 +77,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -625,6 +627,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<BPlusTree<?, ? extends CacheDataRow>> pkIndexes(String spaceName) {
+        Schema schema = schemas.get(schema(spaceName));
+
+        if (schema == null)
+            return Collections.emptyList();
+
+        List<BPlusTree<?, ? extends CacheDataRow>> res = null;
+
+        for (TableDescriptor tbl : schema.tbls.values()) {
+            if (tbl.pkTreeIdx != null) {
+                if (res == null)
+                    res = new ArrayList<>();
+
+                res.add(tbl.pkTreeIdx.tree());
+            }
+        }
+
+        return res != null ? res : Collections.<BPlusTree<?, ? extends CacheDataRow>>emptyList();
     }
 
     /** {@inheritDoc} */
@@ -1935,6 +1958,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** */
         private GridLuceneIndex luceneIdx;
 
+        /** */
+        private H2TreeIndex pkTreeIdx;
+
         /**
          * @param schema Schema.
          * @param type Type descriptor.
@@ -2116,7 +2142,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name +
                     ", rootPageId=" + page.get1() + ", allocated=" + page.get2() + ']');
 
-            return new H2TreeIndex(
+            H2TreeIndex idx = new H2TreeIndex(
                 cctx,
                 dbMgr.pageMemory(),
                 page.get1(),
@@ -2127,6 +2153,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 name,
                 pk,
                 cols);
+
+            if (pk) {
+                assert pkTreeIdx == null : pkTreeIdx;
+
+                pkTreeIdx = idx;
+            }
+
+            return idx;
         }
 
         /**

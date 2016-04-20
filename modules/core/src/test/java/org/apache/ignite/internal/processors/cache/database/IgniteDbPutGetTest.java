@@ -77,6 +77,25 @@ public class IgniteDbPutGetTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testSizeClear() throws Exception {
+        Ignite ignite = ignite(0);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(null);
+
+        cache.put(1, 1);
+        cache.put(2, 2);
+
+        assertEquals(2, cache.size());
+
+        cache.clear();
+
+        assertNull(cache.get(1));
+        assertNull(cache.get(2));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPutGet() throws Exception {
         Ignite ignite = ignite(0);
 

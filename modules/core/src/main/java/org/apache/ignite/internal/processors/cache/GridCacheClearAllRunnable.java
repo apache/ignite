@@ -87,8 +87,8 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
 
         // Clear swapped entries.
         if (!ctx.isNear()) {
-            if (ctx.isDatabaseEnabled())
-                ctx.database().clear(readers);
+            // TODO GG-10884.
+            ctx.offheap0().clear(readers);
 
             if (ctx.swap().offHeapEnabled()) {
                 if (GridQueryProcessor.isEnabled(ctx.config())) {

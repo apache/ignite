@@ -97,6 +97,13 @@ public class H2TreeIndex extends GridH2IndexBase {
         };
     }
 
+    /**
+     * @return Tree.
+     */
+    public H2Tree tree() {
+        return tree;
+    }
+
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow lower, SearchRow upper) {
         try {
