@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
@@ -66,6 +67,9 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageMemory pageMem;
+
+    /** */
+    private final ReuseList reuseList;
 
     /** */
     private final float minFill;
@@ -477,9 +481,11 @@ public abstract class BPlusTree<L, T extends L> {
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
      * @param metaPageId Meta page ID.
+     * @param reuseList Reuse list.
      * @throws IgniteCheckedException If failed.
      */
-    public BPlusTree(int cacheId, PageMemory pageMem, FullPageId metaPageId) throws IgniteCheckedException {
+    public BPlusTree(int cacheId, PageMemory pageMem, FullPageId metaPageId, ReuseList reuseList)
+        throws IgniteCheckedException {
         // TODO make configurable: 0 <= minFill <= maxFill <= 1
         minFill = 0f; // Testing worst case when merge happens only on empty page.
         maxFill = 0f; // Avoiding random effects on testing.
@@ -489,6 +495,7 @@ public abstract class BPlusTree<L, T extends L> {
         this.pageMem = pageMem;
         this.cacheId = cacheId;
         this.metaPageId = metaPageId.pageId();
+        this.reuseList = reuseList;
     }
 
     /**
@@ -728,6 +735,7 @@ public abstract class BPlusTree<L, T extends L> {
      *
      * @return Tree as {@link String}.
      */
+    @SuppressWarnings("unused")
     public String printTree() {
         long rootPageId;
 
@@ -1207,9 +1215,12 @@ public abstract class BPlusTree<L, T extends L> {
             writePage(meta, updateLeftmost, fwdId, lvl, FALSE);
         }
 
-        // Currently only emulate free.
+        // Mark removed.
         io.setRemoveId(buf, Long.MAX_VALUE);
-        // TODO do real free page: getForRead() and getForWrite() must return null for a free page.
+
+        // Reuse empty page.
+        if (reuseList != null)
+            reuseList.put(this, page.fullId());
     }
 
     /**
@@ -2291,7 +2302,13 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Allocated page.
      */
     private Page allocatePage() throws IgniteCheckedException {
-        FullPageId pageId = pageMem.allocatePage(cacheId, -1, PageIdAllocator.FLAG_IDX);
+        FullPageId pageId = null;
+
+        if (reuseList != null)
+            pageId = reuseList.take(this);
+
+        if (pageId == null)
+            pageId = pageMem.allocatePage(cacheId, -1, PageIdAllocator.FLAG_IDX);
 
         return pageMem.page(pageId);
     }

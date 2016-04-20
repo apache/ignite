@@ -21,6 +21,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.MetaStore;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.BPlusTree.randomInt;
@@ -32,40 +34,75 @@ public class ReuseList {
     /** */
     private final ReuseTree[] trees;
 
+    /** */
+    private boolean ready;
+
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
+     * @param segments Segments.
      * @param metaStore Meta store.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseList(int cacheId, PageMemory pageMem, int stripes, MetaStore metaStore) throws IgniteCheckedException {
-        trees = new ReuseTree[stripes];
+    public ReuseList(int cacheId, PageMemory pageMem, int segments, MetaStore metaStore) throws IgniteCheckedException {
+        A.ensure(segments > 1, "Segments must be greater than 1.");
+
+        trees = new ReuseTree[segments];
 
         for (int i = 0; i < trees.length; i++) {
             String idxName = i + "##" + cacheId + "_reuse";
 
             IgniteBiTuple<FullPageId,Boolean> t = metaStore.getOrAllocateForIndex(cacheId, idxName);
 
-            trees[i] = new ReuseTree(cacheId, pageMem, t.get1(), t.get2());
+            trees[i] = new ReuseTree(this, cacheId, pageMem, t.get1(), t.get2());
         }
+
+        ready = true;
     }
 
     /**
+     * @param client Client.
+     * @return Reuse tree.
+     */
+    private ReuseTree tree(BPlusTree<?,?> client) {
+        assert trees.length > 1;
+
+        int treeIdx = randomInt(trees.length);
+
+        ReuseTree tree = trees[treeIdx];
+
+        assert tree != null;
+
+        // Avoid dead locks.
+        if (tree == client) {
+            treeIdx++; // Go forward.
+
+            if (treeIdx == trees.length)
+                treeIdx = 0;
+
+            tree = trees[treeIdx];
+        }
+
+        return tree;
+    }
+
+    /**
+     * @param client Client tree.
      * @return Page ID.
      * @throws IgniteCheckedException If failed.
      */
-    public FullPageId take() throws IgniteCheckedException {
-        return trees.length == 0 ? null : trees[randomInt(trees.length)].removeFirst();
+    public FullPageId take(BPlusTree<?,?> client) throws IgniteCheckedException {
+        return ready ? tree(client).removeFirst() : null;
     }
 
     /**
      * @param fullPageId Page ID.
      * @throws IgniteCheckedException If failed.
      */
-    public void put(FullPageId fullPageId) throws IgniteCheckedException {
+    public void put(BPlusTree<?,?> client, FullPageId fullPageId) throws IgniteCheckedException {
         assert fullPageId != null;
+        assert ready;
 
-        if (trees.length != 0)
-            trees[randomInt(trees.length)].put(fullPageId);
+        tree(client).put(fullPageId);
     }
 }

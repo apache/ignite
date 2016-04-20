@@ -27,13 +27,17 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -60,11 +64,21 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** */
     private PageMemory pageMem;
 
+    /** */
+    private ReuseList reuseList;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         pageMem = new PageMemoryImpl(log, new UnsafeMemoryProvider(64 * MB, 32 * MB), null, PAGE_SIZE, CPUS);
 
         pageMem.start();
+
+        reuseList = new ReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
+            @Override public IgniteBiTuple<FullPageId,Boolean> getOrAllocateForIndex(int cacheId, String idxName)
+                throws IgniteCheckedException {
+                return new T2<>(allocatePage(), true);
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -242,7 +256,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private TestTree createTestTree(boolean canGetRow) throws IgniteCheckedException {
-        return new TestTree(canGetRow, CACHE_ID, pageMem, allocatePage());
+        return new TestTree(reuseList, canGetRow, CACHE_ID, pageMem, allocatePage());
     }
 
     /**
@@ -267,9 +281,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
          * @param metaPageId Meta page ID.
          * @throws IgniteCheckedException If failed.
          */
-        public TestTree(boolean canGetRow, int cacheId, PageMemory pageMem, FullPageId metaPageId)
+        public TestTree(ReuseList reuseList, boolean canGetRow, int cacheId, PageMemory pageMem, FullPageId metaPageId)
             throws IgniteCheckedException {
-            super(cacheId, pageMem, metaPageId);
+            super(cacheId, pageMem, metaPageId, reuseList);
 
             this.canGetRow = canGetRow;
 

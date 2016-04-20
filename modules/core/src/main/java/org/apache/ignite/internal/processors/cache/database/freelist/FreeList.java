@@ -27,6 +27,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -43,6 +44,9 @@ public class FreeList {
 
     /** */
     private final PageMemory pageMem;
+
+    /** */
+    private final ReuseList reuseList;
 
     /** */
     private final ConcurrentHashMap8<Integer,GridFutureAdapter<FreeTree>> trees = new ConcurrentHashMap8<>();
@@ -62,9 +66,10 @@ public class FreeList {
     };
 
     /**
+     * @param reuseList Reuse list.
      * @param cctx Cache context.
      */
-    public FreeList(GridCacheContext<?,?> cctx) {
+    public FreeList(GridCacheContext<?,?> cctx, ReuseList reuseList) {
         assert cctx != null;
 
         this.cctx = cctx;
@@ -72,6 +77,8 @@ public class FreeList {
         pageMem = cctx.shared().database().pageMemory();
 
         assert pageMem != null;
+
+        this.reuseList = reuseList;
     }
 
     /**
@@ -119,7 +126,7 @@ public class FreeList {
                 IgniteBiTuple<FullPageId,Boolean> t = cctx.shared().database().meta()
                     .getOrAllocateForIndex(cctx.cacheId(), idxName);
 
-                fut.onDone(new FreeTree(cctx.cacheId(), pageMem, t.get1(), t.get2()));
+                fut.onDone(new FreeTree(reuseList, cctx.cacheId(), pageMem, t.get1(), t.get2()));
             }
         }
 

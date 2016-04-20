@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.database;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
+import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowStore;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -33,6 +35,12 @@ import org.h2.table.IndexColumn;
 public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implements IgniteCacheDatabaseManager {
     /** Primary index. */
     private Index primaryIdx;
+
+    /** */
+    private FreeList freeList;
+
+    /** */
+    private ReuseList reuseList;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -64,9 +72,21 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
             log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name +
                 ", rootPageId=" + page.get1() + ", allocated=" + page.get2() + ']');
 
+        if (pk) {
+            if (primaryIdx != null)
+                throw new IgniteCheckedException("Primary index already exists for cache " +
+                    "(make sure only one key-value type pair is stored in the cache): " + cctx.name());
+
+            int cpus = Runtime.getRuntime().availableProcessors();
+
+            reuseList = new ReuseList(cctx.cacheId(), dbMgr.pageMemory(), cpus * 2, dbMgr.meta());
+            freeList = new FreeList(cctx, reuseList);
+        }
+
         Index idx = new H2TreeIndex(
             cctx,
             dbMgr.pageMemory(),
+            reuseList,
             page.get1(),
             page.get2(),
             keyCol,
@@ -76,13 +96,8 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
             pk,
             cols);
 
-        if (pk) {
-            if (primaryIdx != null)
-                throw new IgniteCheckedException("Primary index already exists for cache " +
-                    "(make sure only one key-value type pair is stored in the cache): " + cctx.name());
-
+        if (pk)
             primaryIdx = idx;
-        }
 
         return idx;
     }
@@ -92,6 +107,6 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
      * @return New row store for the given table.
      */
     public H2RowStore createRowStore(GridH2Table tbl) {
-        return new H2RowStore(tbl.rowDescriptor(), cctx, null); // new FreeList(cctx));
+        return new H2RowStore(tbl.rowDescriptor(), cctx, freeList);
     }
 }

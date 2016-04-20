@@ -21,29 +21,31 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeIO;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInnerIO;
+import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeIO;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInnerIO;
-import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeLeafIO;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 
 /**
  * Data structure for data pages and their free spaces.
  */
 public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
     /**
+     * @param reuseList Reuse list.
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
      * @param metaPageId Meta page ID.
      * @param initNew    Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public FreeTree(int cacheId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
+    public FreeTree(ReuseList reuseList, int cacheId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
         throws IgniteCheckedException {
-        super(cacheId, pageMem, metaPageId);
+        super(cacheId, pageMem, metaPageId, reuseList);
 
         assert pageMem != null;
 
