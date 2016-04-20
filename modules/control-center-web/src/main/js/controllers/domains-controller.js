@@ -1245,12 +1245,12 @@ consoleModule.controller('domainsController', [
 
             if ($common.isEmptyString(item.keyType))
                 return showPopoverMessage($scope.ui, 'general', 'keyType', 'Key type should not be empty');
-            else if (!$common.isValidJavaClass('Key type', item.keyType, true, 'keyType'))
+            else if (!$common.isValidJavaClass('Key type', item.keyType, true, 'keyType', false, $scope.ui, 'general'))
                 return false;
 
             if ($common.isEmptyString(item.valueType))
                 return showPopoverMessage($scope.ui, 'general', 'valueType', 'Value type should not be empty');
-            else if (!$common.isValidJavaClass('Value type', item.valueType, false, 'valueType'))
+            else if (!$common.isValidJavaClass('Value type', item.valueType, false, 'valueType', false, $scope.ui, 'general'))
                 return false;
 
             var qry = $common.domainForQueryConfigured(item);
@@ -1490,7 +1490,7 @@ consoleModule.controller('domainsController', [
                         return showPopoverMessage($scope.ui, 'query', $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
                 }
 
-                if (pairField.classValidation && !$common.isValidJavaClass(pairField.msg, pairValue.value, true, $table.tableFieldId(index, 'Value' + pairField.id)))
+                if (pairField.classValidation && !$common.isValidJavaClass(pairField.msg, pairValue.value, true, $table.tableFieldId(index, 'Value' + pairField.id), false, $scope.ui, 'query'))
                     return $table.tableFocusInvalidField(index, 'Value' + pairField.id);
             }
 
