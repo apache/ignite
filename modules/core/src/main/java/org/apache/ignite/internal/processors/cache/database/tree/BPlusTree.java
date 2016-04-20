@@ -432,7 +432,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             Tail<L> t = r.getTail(lvl, false);
 
-            assert t.io == io : "must be the same"; // Otherwise may be not compatible.
+            assert t.io == io : "must be the same"; // Otherwise can be not compatible.
 
             return r.mergePages(prnt, t, fwd, fwdBuf) ? TRUE : FALSE;
         }
@@ -1204,9 +1204,13 @@ public abstract class BPlusTree<L, T extends L> {
             try {
                 BPlusIO<L> io = io(buf);
 
-                assert io.getCount(buf) > 0;
+                assert io.getCount(buf) >= 0; // Count can be 0 if it is a routing page.
 
-                return inner(io).getLeft(buf, 0);
+                long res = inner(io).getLeft(buf, 0);
+
+                assert res != 0: "inner page with no route down: " + page.fullId();
+
+                return res;
             }
             finally {
                 page.releaseRead();
@@ -1936,14 +1940,14 @@ public abstract class BPlusTree<L, T extends L> {
             // Remove found inner key from inner page.
             doRemove(inner.io, inner.page, inner.buf, cnt, inner.idx, inner.lvl, kickLeft);
 
-            // If inner page was root and became empty, it was freed in doRemove.
+            // If inner page was root and became empty, it was handled in doRemove.
             // Otherwise we can be sure that inner page was not freed, at lead it must become
             // an empty routing page. Thus always starting from inner.down here.
             for (Tail t = inner.down; t != null; t = t.down) {
                 if (t.fwd != null)
                     t = t.fwd;
 
-                assert t.io.getCount(t.buf) == 0;
+                assert t.io.getCount(t.buf) == 0: row;
 
                 freePage(t.page, t.buf, t.io, t.lvl);
             }
@@ -2051,21 +2055,23 @@ public abstract class BPlusTree<L, T extends L> {
                 }
             }
             else {
-                assert cur.io == back.io: "must always be the same"; // Otherwise may be not compatible.
+                assert cur.io == back.io: "must always be the same"; // Otherwise can be not compatible.
 
                 if (mergePages(prnt, back, cur.page, cur.buf)) {
                     assert prnt.down == back;
                     assert back.fwd == cur;
 
-                    // Back becomes current.
+                    // Back becomes current, current is dropped.
                     back.down = cur.down;
                     back.fwd = null;
+
+                    // Always unlock and release current because we made it invisible for further code.
+                    writeUnlockAndClose(cur.page);
 
                     if (releaseMerged) {
                         prnt.down = null;
 
                         writeUnlockAndClose(back.page);
-                        writeUnlockAndClose(cur.page);
                     }
 
                     return true;
