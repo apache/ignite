@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.S
 /**
  * Config Variations query tests.
  */
-public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVariationsAbstractTest {
+public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVariationsAbstractTest {
     /** */
     public static final int CNT = 50;
 

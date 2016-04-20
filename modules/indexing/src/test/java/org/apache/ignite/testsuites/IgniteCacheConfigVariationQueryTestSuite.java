@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.IgniteCacheQueryConfigVariationsTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheConfigVariationsQueryTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 
 /**
@@ -32,7 +32,7 @@ public class IgniteCacheConfigVariationQueryTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         return new ConfigVariationsTestSuiteBuilder(
             "Cache Config Variations Query Test Suite",
-            IgniteCacheQueryConfigVariationsTest.class)
+            IgniteCacheConfigVariationsQueryTest.class)
             .withBasicCacheParams()
 //            .withCacheConfigFilters(new IgnitePredicate<CacheConfiguration>() {
 //                @Override public boolean apply(CacheConfiguration configuration) {
