@@ -2178,6 +2178,9 @@ public class IgniteConfiguration {
     /**
      * Defines port range to try for time server start.
      *
+     * If port range value is <tt>0</tt>, then implementation will try bind only to the port provided by
+     * {@link #setTimeServerPortBase(int)} method and fail if binding to this port did not succeed.
+     *
      * @return Number of ports to try before server initialization fails.
      */
     public int getTimeServerPortRange() {
