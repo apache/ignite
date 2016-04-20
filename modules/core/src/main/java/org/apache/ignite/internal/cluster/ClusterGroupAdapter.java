@@ -108,8 +108,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
-        @Nullable IgnitePredicate<ClusterNode> p)
-    {
+        @Nullable IgnitePredicate<ClusterNode> p) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -126,8 +125,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
-        Set<UUID> ids)
-    {
+        Set<UUID> ids) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -148,8 +146,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     private ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
         @Nullable IgnitePredicate<ClusterNode> p,
-        Set<UUID> ids)
-    {
+        Set<UUID> ids) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -621,7 +618,26 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forDaemons() {
-        return forPredicate(new DaemonFilter());
+        if (F.isEmpty(ids)) {
+            guard();
+
+            try {
+                Collection<ClusterNode> all = F.concat(false, ctx.discovery().daemonNodes(), ctx.discovery().allNodes());
+                Set<UUID> nodeIds = U.newHashSet(all.size());
+                DaemonFilter filter = new DaemonFilter();
+
+                for (ClusterNode node : all)
+                    if (filter.apply(node))
+                        nodeIds.add(node.id());
+
+                return new ClusterGroupAdapter(ctx, subjId, nodeIds);
+            }
+            finally {
+                unguard();
+            }
+        }
+        else
+            return forPredicate(new DaemonFilter());
     }
 
     /** {@inheritDoc} */
