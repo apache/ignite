@@ -403,7 +403,7 @@ public abstract class BPlusTree<L, T extends L> {
             }
 
             // Check that we have a correct view of the world.
-            if (lvl != 0 && inner(io).getLeft(buf, idx) != r.nonBackTailPage().id()) {
+            if (lvl != 0 && inner(io).getLeft(buf, idx) != r.getTail(lvl - 1, false).page.id()) {
                 assert !found;
 
                 return Remove.RETRY;
@@ -806,7 +806,7 @@ public abstract class BPlusTree<L, T extends L> {
     public final T removeCeil(L row) throws IgniteCheckedException {
         assert row != null;
 
-        return remove(row, true);
+        return doRemove(row, true);
     }
 
     /**
@@ -817,7 +817,7 @@ public abstract class BPlusTree<L, T extends L> {
     public final T remove(L row) throws IgniteCheckedException {
         assert row != null;
 
-        return remove(row, false);
+        return doRemove(row, false);
     }
 
     /**
@@ -826,7 +826,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
-    public final T remove(L row, boolean ceil) throws IgniteCheckedException {
+    public final T doRemove(L row, boolean ceil) throws IgniteCheckedException {
         Remove r = new Remove(row, ceil);
 
         try {
@@ -2157,21 +2157,13 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /**
-         * @return Non-back tail page.
-         */
-        private Page nonBackTailPage() {
-            assert tail != null;
-
-            return tail.fwd == null ? tail.page : tail.fwd.page;
-        }
-
-        /**
          * @param lvl Level.
          * @param back Back page.
          * @return Tail.
          */
         private Tail<L> getTail(int lvl, boolean back) {
-            assert lvl <= tail.lvl: "level is too high";
+            assert tail != null;
+            assert lvl >= 0 && lvl <= tail.lvl: lvl;
 
             Tail<L> t = tail;
 
@@ -2181,7 +2173,7 @@ public abstract class BPlusTree<L, T extends L> {
                 else
                     t = t.down;
 
-                assert t != null : "level is too low";
+                assert t != null: lvl;
             }
 
             if (back)
