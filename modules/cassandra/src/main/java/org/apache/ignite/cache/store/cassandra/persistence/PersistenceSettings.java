@@ -219,18 +219,18 @@ public abstract class PersistenceSettings implements Serializable {
      */
     public String getTableColumnsDDL() {
         if (PersistenceStrategy.BLOB.equals(stgy))
-            return col + " " + DataType.Name.BLOB.toString();
+            return "  " + col + " " + DataType.Name.BLOB.toString();
 
         if (PersistenceStrategy.PRIMITIVE.equals(stgy))
-            return col + " " + PropertyMappingHelper.getCassandraType(javaCls);
+            return "  " + col + " " + PropertyMappingHelper.getCassandraType(javaCls);
 
         StringBuilder builder = new StringBuilder();
 
         for (PojoField field : getFields()) {
             if (builder.length() > 0)
-                builder.append(", ");
+                builder.append(",\n");
 
-            builder.append(field.getColumnDDL());
+            builder.append("  " + field.getColumnDDL());
         }
 
         if (builder.length() == 0) {

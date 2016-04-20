@@ -17,12 +17,7 @@
 
 package org.apache.ignite.cache.store.cassandra.persistence;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.io.Serializable;
+import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
 import javax.xml.parsers.DocumentBuilder;
@@ -112,10 +107,39 @@ public class KeyValuePersistenceSettings implements Serializable {
     /**
      * Constructs Ignite cache key/value persistence settings.
      *
+     * @param settingsFile xml file with persistence settings for Ignite cache key/value
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    public KeyValuePersistenceSettings(File settingsFile) {
+        InputStream in;
+
+        try {
+            in = new FileInputStream(settingsFile);
+        }
+        catch (IOException e) {
+            throw new IgniteException("Failed to get input stream for Cassandra persistence settings file: " +
+                    settingsFile.getAbsolutePath(), e);
+        }
+
+        init(loadSettings(in));
+    }
+
+    /**
+     * Constructs Ignite cache key/value persistence settings.
+     *
      * @param settingsRsrc resource containing xml with persistence settings for Ignite cache key/value
      */
     public KeyValuePersistenceSettings(Resource settingsRsrc) {
-        init(loadSettings(settingsRsrc));
+        InputStream in;
+
+        try {
+            in = settingsRsrc.getInputStream();
+        }
+        catch (IOException e) {
+            throw new IgniteException("Failed to get input stream for Cassandra persistence settings resource: " + settingsRsrc, e);
+        }
+
+        init(loadSettings(in));
     }
 
     /**
@@ -222,17 +246,14 @@ public class KeyValuePersistenceSettings implements Serializable {
 
         if (keyspaceOptions != null) {
             if (!keyspaceOptions.trim().toLowerCase().startsWith("with"))
-                builder.append(" with");
+                builder.append("\nwith");
 
             builder.append(" ").append(keyspaceOptions);
         }
 
-        String statement = builder.toString().trim();
+        String statement = builder.toString().trim().replaceAll(" +", " ");
 
-        if (!statement.endsWith(";"))
-            statement += ";";
-
-        return statement;
+        return statement.endsWith(";") ? statement : statement + ";";
     }
 
     /**
@@ -241,7 +262,7 @@ public class KeyValuePersistenceSettings implements Serializable {
      * @return Table DDL statement.
      */
     public String getTableDDLStatement() {
-        String colsDDL = keyPersistenceSettings.getTableColumnsDDL() + ", " + valPersistenceSettings.getTableColumnsDDL();
+        String colsDDL = keyPersistenceSettings.getTableColumnsDDL() + ",\n" + valPersistenceSettings.getTableColumnsDDL();
 
         String primaryKeyDDL = keyPersistenceSettings.getPrimaryKeyDDL();
 
@@ -258,12 +279,12 @@ public class KeyValuePersistenceSettings implements Serializable {
         StringBuilder builder = new StringBuilder();
 
         builder.append("create table if not exists ").append(keyspace).append(".").append(tbl);
-        builder.append(" (").append(colsDDL).append(", ").append(primaryKeyDDL).append(")");
+        builder.append("\n(\n").append(colsDDL).append(",\n").append(primaryKeyDDL).append("\n)");
 
         if (!optionsDDL.isEmpty())
-            builder.append(" ").append(optionsDDL);
+            builder.append(" \n").append(optionsDDL);
 
-        String tblDDL = builder.toString().trim();
+        String tblDDL = builder.toString().trim().replaceAll(" +", " ");
 
         return tblDDL.endsWith(";") ? tblDDL : tblDDL + ";";
     }
@@ -289,20 +310,12 @@ public class KeyValuePersistenceSettings implements Serializable {
     /**
      * Loads Ignite cache persistence settings from resource.
      *
-     * @param rsrc Resource.
+     * @param in Input stream.
      * @return String containing xml with Ignite cache persistence settings.
      */
-    private String loadSettings(Resource rsrc) {
+    private String loadSettings(InputStream in) {
         StringBuilder settings = new StringBuilder();
-        InputStream in;
         BufferedReader reader = null;
-
-        try {
-            in = rsrc.getInputStream();
-        }
-        catch (IOException e) {
-            throw new IgniteException("Failed to get input stream for Cassandra persistence settings resource: " + rsrc, e);
-        }
 
         try {
             reader = new BufferedReader(new InputStreamReader(in));
@@ -319,7 +332,7 @@ public class KeyValuePersistenceSettings implements Serializable {
             }
         }
         catch (Throwable e) {
-            throw new IgniteException("Failed to read input stream for Cassandra persistence settings resource: " + rsrc, e);
+            throw new IgniteException("Failed to read input stream for Cassandra persistence settings", e);
         }
         finally {
             U.closeQuiet(reader);
@@ -406,11 +419,11 @@ public class KeyValuePersistenceSettings implements Serializable {
 
             if (nodeName.equals(TABLE_OPTIONS_NODE)) {
                 tblOptions = el.getTextContent();
-                tblOptions = tblOptions.replace("\n", " ").replace("\r", "");
+                tblOptions = tblOptions.replace("\n", " ").replace("\r", "").replace("\t", " ");
             }
             else if (nodeName.equals(KEYSPACE_OPTIONS_NODE)) {
                 keyspaceOptions = el.getTextContent();
-                keyspaceOptions = keyspaceOptions.replace("\n", " ").replace("\r", "");
+                keyspaceOptions = keyspaceOptions.replace("\n", " ").replace("\r", "").replace("\t", " ");
             }
             else if (nodeName.equals(KEY_PERSISTENCE_NODE))
                 keyPersistenceSettings = new KeyPersistenceSettings(el);

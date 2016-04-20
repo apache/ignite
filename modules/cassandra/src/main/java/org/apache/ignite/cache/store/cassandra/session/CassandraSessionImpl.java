@@ -437,8 +437,8 @@ public class CassandraSessionImpl implements CassandraSession {
             try {
                 log.info("-----------------------------------------------------------------------");
                 log.info("Creating Cassandra keyspace '" + settings.getKeyspace() + "'");
-                log.info("-----------------------------------------------------------------------");
-                log.info(settings.getKeyspaceDDLStatement());
+                log.info("-----------------------------------------------------------------------\n\n" +
+                        settings.getKeyspaceDDLStatement() + "\n");
                 log.info("-----------------------------------------------------------------------");
                 session().execute(settings.getKeyspaceDDLStatement());
                 log.info("Cassandra keyspace '" + settings.getKeyspace() + "' was successfully created");
@@ -477,8 +477,8 @@ public class CassandraSessionImpl implements CassandraSession {
             try {
                 log.info("-----------------------------------------------------------------------");
                 log.info("Creating Cassandra table '" + settings.getTableFullName() + "'");
-                log.info("-----------------------------------------------------------------------");
-                log.info(settings.getTableDDLStatement());
+                log.info("-----------------------------------------------------------------------\n\n" +
+                        settings.getTableDDLStatement() + "\n");
                 log.info("-----------------------------------------------------------------------");
                 session().execute(settings.getTableDDLStatement());
                 log.info("Cassandra table '" + settings.getTableFullName() + "' was successfully created");

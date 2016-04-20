@@ -120,8 +120,8 @@ public class KeyPersistenceSettings extends PersistenceSettings {
         }
 
         return clusterKey.length() == 0 ?
-            "primary key ((" + partKey.toString() + "))" :
-            "primary key ((" + partKey.toString() + "), " + clusterKey.toString() + ")";
+            "  primary key ((" + partKey.toString() + "))" :
+            "  primary key ((" + partKey.toString() + "), " + clusterKey.toString() + ")";
     }
 
     /**
