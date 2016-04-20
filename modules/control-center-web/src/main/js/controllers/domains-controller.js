@@ -482,17 +482,13 @@ consoleModule.controller('domainsController', [
                 })
                 .then(function(schemas) {
                     $scope.importDomain.schemas = _.map(schemas, function (schema) {
-                        return {use: false, name: schema};
+                        return {use: true, name: schema};
                     });
 
                     $scope.importDomain.action = 'schemas';
 
                     if ($scope.importDomain.schemas.length === 0)
                         $scope.importDomainNext();
-                    else
-                        _.forEach($scope.importDomain.schemas, function (sch) {
-                            sch.use = true;
-                        });
 
                     $scope.importDomain.info = INFO_SELECT_SCHEMAS;
                     $scope.importDomain.loadingOptions = LOADING_TABLES;

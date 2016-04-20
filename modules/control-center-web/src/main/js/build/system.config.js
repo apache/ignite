@@ -15,15 +15,15 @@ System.config({
 
   map: {
     "ace": "github:ajaxorg/ace-builds@1.2.3",
-    "angular": "github:angular/bower-angular@1.5.3",
-    "angular-animate": "github:angular/bower-angular-animate@1.5.3",
+    "angular": "github:angular/bower-angular@1.5.5",
+    "angular-animate": "github:angular/bower-angular-animate@1.5.5",
     "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@1.4.0",
     "angular-gridster": "github:ManifestWebDesign/angular-gridster@0.13.5",
     "angular-loading": "github:darthwade/angular-loading@0.1.4",
     "angular-motion": "github:mgcrea/angular-motion@0.4.4",
     "angular-nvd3": "github:krispo/angular-nvd3@1.0.6",
     "angular-retina": "github:jrief/angular-retina@0.3.8",
-    "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.3",
+    "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.5",
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.8",
     "angular-socket-io": "github:btford/angular-socket-io@0.7.0",
     "angular-strap": "github:mgcrea/angular-strap@2.3.8",
@@ -37,14 +37,14 @@ System.config({
     "bootstrap-carousel": "github:twbs/bootstrap@3.3.6",
     "clean-css": "npm:clean-css@3.4.12",
     "core-js": "npm:core-js@1.2.6",
-    "css": "github:systemjs/plugin-css@0.1.20",
+    "css": "github:systemjs/plugin-css@0.1.21",
     "file-saver": "github:eligrey/FileSaver.js@master",
     "font-awesome": "npm:font-awesome@4.5.0",
     "jade": "github:johnsoftek/plugin-jade@0.6.0",
     "jquery": "github:components/jquery@2.2.1",
     "json": "github:systemjs/plugin-json@0.1.0",
     "jszip": "github:Stuk/jszip@2.6.0",
-    "lodash": "github:lodash/lodash@4.11.0",
+    "lodash": "github:lodash/lodash@4.11.1",
     "pdfmake": "github:bpampuch/pdfmake@0.1.20",
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
     "socket.io-client": "github:socketio/socket.io-client@1.4.5",
@@ -53,15 +53,15 @@ System.config({
       "pdfmake": "github:bpampuch/pdfmake@0.1.20"
     },
     "github:angular-ui/ui-router@0.2.18": {
-      "angular": "github:angular/bower-angular@1.5.3"
+      "angular": "github:angular/bower-angular@1.5.5"
     },
-    "github:angular/bower-angular-animate@1.5.3": {
-      "angular": "github:angular/bower-angular@1.5.3"
+    "github:angular/bower-angular-animate@1.5.5": {
+      "angular": "github:angular/bower-angular@1.5.5"
     },
-    "github:angular/bower-angular-sanitize@1.5.3": {
-      "angular": "github:angular/bower-angular@1.5.3"
+    "github:angular/bower-angular-sanitize@1.5.5": {
+      "angular": "github:angular/bower-angular@1.5.5"
     },
-    "github:angular/bower-angular@1.5.3": {
+    "github:angular/bower-angular@1.5.5": {
       "jquery": "github:components/jquery@2.2.1"
     },
     "github:btford/angular-socket-io@0.7.0": {
@@ -126,17 +126,17 @@ System.config({
       "nvd3": "npm:nvd3@1.8.1"
     },
     "github:mgcrea/angular-motion@0.4.4": {
-      "angular": "github:angular/bower-angular@1.5.3",
-      "css": "github:systemjs/plugin-css@0.1.20"
+      "angular": "github:angular/bower-angular@1.5.5",
+      "css": "github:systemjs/plugin-css@0.1.21"
     },
     "github:mgcrea/angular-strap@2.3.8": {
-      "angular": "github:angular/bower-angular@1.5.3",
-      "angular-animate": "github:angular/bower-angular-animate@1.5.3",
+      "angular": "github:angular/bower-angular@1.5.5",
+      "angular-animate": "github:angular/bower-angular-animate@1.5.5",
       "angular-motion": "github:mgcrea/angular-motion@0.4.4",
-      "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.3"
+      "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.5"
     },
     "github:twbs/bootstrap@3.3.6": {
-      "jquery": "github:components/jquery@2.2.1"
+      "jquery": "npm:jquery@2.2.3"
     },
     "npm:acorn-globals@1.0.9": {
       "acorn": "npm:acorn@2.7.0"
@@ -240,7 +240,7 @@ System.config({
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:font-awesome@4.5.0": {
-      "css": "github:systemjs/plugin-css@0.1.20"
+      "css": "github:systemjs/plugin-css@0.1.21"
     },
     "npm:graceful-readlink@1.0.1": {
       "fs": "github:jspm/nodelibs-fs@0.1.2"

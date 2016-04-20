@@ -167,7 +167,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
         var javaBuiltInTypes = [
             'BigDecimal', 'boolean', 'Boolean', 'byte', 'Byte', 'Date', 'double', 'Double', 'float', 'Float',
-            'int', 'Integer', 'long', 'Long', 'short', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
+            'int', 'Integer', 'long', 'Long', 'Object', 'short', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
         ];
 
         var javaBuiltInFullNameClasses = [
@@ -191,7 +191,9 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             'BIGINT',
             'BIT',
             'BOOLEAN',
+            'BLOB',
             'CHAR',
+            'CLOB',
             'DATE',
             'DECIMAL',
             'DOUBLE',
