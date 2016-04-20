@@ -43,6 +43,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -1571,6 +1572,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
 
                     if (readEvt) {
+                        K key0  = (K)cctx.unwrapBinaryIfNeeded(key, cctx.keepBinary());
+                        V val0  = (V)cctx.unwrapBinaryIfNeeded(val, cctx.keepBinary());
+
                         switch (type) {
                             case SQL:
                                 cctx.gridEvents().record(new CacheQueryReadEvent<>(
@@ -1586,8 +1590,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     qryInfo.arguments(),
                                     qry.subjectId(),
                                     taskName,
-                                    key,
-                                    val,
+                                    key0,
+                                    val0,
                                     null,
                                     null));
 
@@ -1607,8 +1611,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     null,
                                     qry.subjectId(),
                                     taskName,
-                                    key,
-                                    val,
+                                    key0,
+                                    val0,
                                     null,
                                     null));
 
@@ -1628,8 +1632,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     null,
                                     qry.subjectId(),
                                     taskName,
-                                    key,
-                                    val,
+                                    key0,
+                                    val0,
                                     null,
                                     null));
 
