@@ -138,13 +138,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     }
 
     /**
-     * @return Tested grid in client mode or not.
-     */
-    protected boolean isClientMode() {
-        return grid(testedNodeIdx).configuration().isClientMode();
-    }
-
-    /**
      * Starts caches dinamically.
      */
     private void startCachesDinamically() throws Exception {

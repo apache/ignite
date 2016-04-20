@@ -189,6 +189,28 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         return grid(testedNodeIdx);
     }
 
+
+    /**
+     * @return Tested grid in client mode or not.
+     */
+    protected boolean isClientMode() {
+        return grid(testedNodeIdx).configuration().isClientMode();
+    }
+
+    /**
+     * @return Count of server nodes at topology.
+     */
+    protected int serversGridCount() {
+        int cnt = 0;
+
+        for (int i = 0; i < gridCount(); i++) {
+            if (!grid(i).configuration().isClientMode())
+                cnt++;
+        }
+
+        return cnt;
+    }
+
     /**
      * Runs in all data modes.
      */

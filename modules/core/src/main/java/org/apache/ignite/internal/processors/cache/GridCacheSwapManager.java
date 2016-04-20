@@ -1848,7 +1848,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Off-heap iterator.
      */
     public <T> GridCloseableIterator<T> rawOffHeapIterator(final CX2<T2<Long, Integer>, T2<Long, Integer>, T> c,
-        Integer part,
+        @Nullable Integer part,
         boolean primary,
         boolean backup)
     {
@@ -1859,8 +1859,12 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         checkIteratorQueue();
 
-        if (primary && backup)
-            return offheap.iterator(spaceName, c, part);
+        if (primary && backup) {
+            if (part == null)
+                return offheap.iterator(spaceName, c);
+            else
+                return offheap.iterator(spaceName, c, part);
+        }
 
         AffinityTopologyVersion ver = cctx.affinity().affinityTopologyVersion();
 

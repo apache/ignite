@@ -25,16 +25,26 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.CacheQueryExecutedEvent;
+import org.apache.ignite.events.CacheQueryReadEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.SCAN;
 
 /**
  * Config Variations query tests.
@@ -256,6 +266,112 @@ public class IgniteCacheQueryConfigVariationsTest extends IgniteCacheConfigVaria
             Map<Object, Object> expMap = partMap.get(part);
 
             checkQueryResults(expMap == null ? Collections.emptyMap() : expMap, q);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testScanQueryEvents() throws Exception {
+        if (!isClientMode())
+            return;
+
+        final Map<Object, Object> map = new ConcurrentHashMap<>();
+        final CountDownLatch readLatch = new CountDownLatch(CNT - 10);
+        final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : serversGridCount());
+
+        IgnitePredicate[] objReadLsnrs = new IgnitePredicate[gridCount()];
+        IgnitePredicate[] qryExecLsnrs = new IgnitePredicate[gridCount()];
+
+        for (int i = 0; i < gridCount(); i++) {
+            IgnitePredicate<Event> pred = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assertTrue("Event: " + evt, evt instanceof CacheQueryReadEvent);
+
+                    CacheQueryReadEvent<Object, Object> qe = (CacheQueryReadEvent<Object, Object>)evt;
+
+                    assertEquals(SCAN.name(), qe.queryType());
+                    assertEquals(cacheName(), qe.cacheName());
+
+                    assertNull(qe.className());
+                    assertNull(null, qe.clause());
+                    assertNotNull(qe.scanQueryFilter());
+                    assertNull(qe.continuousQueryFilter());
+                    assertNull(qe.arguments());
+
+                    map.put(qe.key(), qe.value());
+
+                    assertFalse(readLatch.getCount() == 0);
+
+                    readLatch.countDown();
+
+                    return true;
+                }
+            };
+
+            grid(i).events().localListen(pred, EVT_CACHE_QUERY_OBJECT_READ);
+
+            objReadLsnrs[i] = pred;
+
+            IgnitePredicate<Event> execPred = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assertTrue("Event: " + evt, evt instanceof CacheQueryExecutedEvent);
+
+                    CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
+
+                    assertEquals(SCAN.name(), qe.queryType());
+                    assertEquals(cacheName(), qe.cacheName());
+
+                    assertNull(qe.className());
+                    assertNull(null, qe.clause());
+                    assertNotNull(qe.scanQueryFilter());
+                    assertNull(qe.continuousQueryFilter());
+                    assertNull(qe.arguments());
+
+                    assertFalse("Too many events.", execLatch.getCount() == 0);
+
+                    execLatch.countDown();
+
+                    return true;
+                }
+            };
+
+            grid(i).events().localListen(execPred, EVT_CACHE_QUERY_EXECUTED);
+
+            qryExecLsnrs[i] = execPred;
+        }
+
+        try {
+            IgniteCache<Object, Object> cache = jcache();
+
+            for (int i = 0; i < CNT; i++)
+                cache.put(key(i), value(i));
+
+            IgniteBiPredicate<Object, Object> filter = new IgniteBiPredicate<Object, Object>() {
+                @Override public boolean apply(Object k, Object v) {
+                    return valueOf(k) >= 10;
+                }
+            };
+
+            QueryCursor<Cache.Entry<Object, Object>> q = cache.query(new ScanQuery<>(filter));
+
+            q.getAll();
+
+            if (!execLatch.await(1000, MILLISECONDS))
+                fail("Remaining count: " + execLatch.getCount());
+
+            assertTrue(readLatch.await(1000, MILLISECONDS));
+
+            assertEquals(CNT - 10, map.size());
+
+            for (int i = 10; i < CNT; i++)
+                assertEquals(i, valueOf(map.get(key(i))));
+        }
+        finally {
+            for (int i = 0; i < gridCount(); i++) {
+                grid(i).events().stopLocalListen(objReadLsnrs[i]);
+                grid(i).events().stopLocalListen(qryExecLsnrs[i]);
+            }
         }
     }
 

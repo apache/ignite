@@ -1725,8 +1725,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param qry Query.
      */
-    @SuppressWarnings("unchecked")
-    protected GridCloseableIterator<IgniteBiTuple<K, V>> scanQueryLocal(GridCacheQueryAdapter qry) throws IgniteCheckedException {
+    @SuppressWarnings({"unchecked", "serial"})
+    protected GridCloseableIterator<IgniteBiTuple<K, V>> scanQueryLocal(final GridCacheQueryAdapter qry) throws IgniteCheckedException {
         if (!enterBusy())
             throw new IllegalStateException("Failed to process query request (grid is stopping).");
 
@@ -1736,25 +1736,75 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (log.isDebugEnabled())
                 log.debug("Running local SCAN query: " + qry);
 
-            String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
+            final String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
+            final IgniteBiPredicate filter = qry.scanFilter();
+            final String namex = cctx.namex();
+            final ClusterNode locNode = cctx.localNode();
+            final UUID subjId = qry.subjectId();
 
             if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
-                    cctx.localNode(),
+                    locNode,
                     "Scan query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
                     CacheQueryType.SCAN.name(),
-                    cctx.namex(),
+                    namex,
                     null,
                     null,
-                    qry.scanFilter(),
+                    filter,
                     null,
                     null,
-                    qry.subjectId(),
+                    subjId,
                     taskName));
             }
 
-            return scanIterator(qry, true);
+            final GridCloseableIterator<IgniteBiTuple<K, V>> iter = scanIterator(qry, true);
+
+            final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+            final boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+
+            return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
+                @Override protected IgniteBiTuple<K, V> onNext() throws IgniteCheckedException {
+                    long start = statsEnabled ? System.nanoTime() : 0L;
+
+                    IgniteBiTuple<K, V> next = iter.nextX();
+
+                    if (statsEnabled) {
+                        CacheMetricsImpl metrics = cctx.cache().metrics0();
+
+                        metrics.onRead(true);
+
+                        metrics.addGetTimeNanos(System.nanoTime() - start);
+                    }
+
+                    if (readEvt) {
+                        cctx.gridEvents().record(new CacheQueryReadEvent<>(
+                            cctx.localNode(),
+                            "Scan query entry read.",
+                            EVT_CACHE_QUERY_OBJECT_READ,
+                            CacheQueryType.SCAN.name(),
+                            namex,
+                            null,
+                            null,
+                            filter,
+                            null,
+                            null,
+                            subjId,
+                            taskName,
+                            next.getKey(),
+                            next.getValue(),
+                            null,
+                            null));
+                    }
+
+                    return next;
+                }
+
+                @Override protected boolean onHasNext() throws IgniteCheckedException {
+                    return iter.hasNextX();
+                }
+            };
         }
         finally {
             leaveBusy();

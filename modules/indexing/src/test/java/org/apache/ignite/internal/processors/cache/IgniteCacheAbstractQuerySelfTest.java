@@ -1319,13 +1319,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testScanQueryEvents() throws Exception {
-        checkScanQueryEvents();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void checkScanQueryEvents() throws Exception {
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(10);
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
