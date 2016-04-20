@@ -22,27 +22,29 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
+
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ResourceBundle;
+
+import org.apache.ignite.cache.store.cassandra.bean.CassandraLifeCycleBean;
 import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.session.pool.SessionPool;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lifecycle.LifecycleEventType;
+import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.log4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
-import org.apache.cassandra.service.CassandraDaemon;
 
 /**
  * Helper class providing bunch of utility methods to work with Cassandra
  */
 public class CassandraHelper {
-    /** */
-    private static final Logger LOGGER = Logger.getLogger(CassandraHelper.class.getName());
-
     /** */
     private static final ResourceBundle CREDENTIALS = ResourceBundle.getBundle("org/apache/ignite/tests/cassandra/credentials");
 
@@ -54,12 +56,6 @@ public class CassandraHelper {
 
     /** */
     private static final String EMBEDDED_CASSANDRA_YAML = "org/apache/ignite/tests/cassandra/embedded-cassandra.yaml";
-
-    /** */
-    private static final String CASSANDRA_CONFIG_PROP = "cassandra.config";
-
-    /** */
-    private static final String FILE_PREFIX = "file:///";
 
     /** */
     private static final ApplicationContext connectionContext = new ClassPathXmlApplicationContext("org/apache/ignite/tests/cassandra/connection-settings.xml");
@@ -83,7 +79,7 @@ public class CassandraHelper {
     private static Session regularSes;
 
     /** */
-    private static CassandraDaemon embeddedCassandraDaemon;
+    private static CassandraLifeCycleBean embeddedCassandraBean;
 
     /** */
     public static String getAdminUser() {
@@ -337,43 +333,28 @@ public class CassandraHelper {
     }
 
     /** */
-    public static void startEmbeddedCassandra() {
-        LOGGER.info("-------------------------------");
-        LOGGER.info("| Starting embedded Cassandra |");
-        LOGGER.info("-------------------------------");
+    public static void startEmbeddedCassandra(Logger logger) {
+        ClassLoader clsLdr = CassandraHelper.class.getClassLoader();
+        URL url = clsLdr.getResource(EMBEDDED_CASSANDRA_YAML);
+
+        embeddedCassandraBean = new CassandraLifeCycleBean();
+        embeddedCassandraBean.setCassandraConfigFile(url.getFile());
 
         try {
-            ClassLoader clsLdr = CassandraHelper.class.getClassLoader();
-            URL url = clsLdr.getResource(EMBEDDED_CASSANDRA_YAML);
-
-            System.setProperty(CASSANDRA_CONFIG_PROP, FILE_PREFIX + url.getFile());
-
-            embeddedCassandraDaemon = new CassandraDaemon(true);
-            embeddedCassandraDaemon.init(null);
-            embeddedCassandraDaemon.start();
+            Field logField = CassandraLifeCycleBean.class.getDeclaredField("log");
+            logField.setAccessible(true);
+            logField.set(embeddedCassandraBean, new Log4JLogger(logger));
         }
-        catch (Exception e) {
-            throw new RuntimeException("Failed to start embedded Cassandra", e);
+        catch (Throwable e) {
+            throw new RuntimeException("Failed to initialize logger for CassandraLifeCycleBean", e);
         }
 
-        LOGGER.info("------------------------------");
-        LOGGER.info("| Embedded Cassandra started |");
-        LOGGER.info("------------------------------");
+        embeddedCassandraBean.onLifecycleEvent(LifecycleEventType.BEFORE_NODE_START);
     }
 
     /** */
-    public static void stopEmbededCassandra() {
-        if (embeddedCassandraDaemon == null)
-            return;
-
-        LOGGER.info("-------------------------------");
-        LOGGER.info("| Stopping embedded Cassandra |");
-        LOGGER.info("-------------------------------");
-
-        embeddedCassandraDaemon.deactivate();
-
-        LOGGER.info("------------------------------");
-        LOGGER.info("| Embedded Cassandra stopped |");
-        LOGGER.info("------------------------------");
+    public static void stopEmbeddedCassandra() {
+        if (embeddedCassandraBean != null)
+            embeddedCassandraBean.onLifecycleEvent(LifecycleEventType.BEFORE_NODE_STOP);
     }
 }

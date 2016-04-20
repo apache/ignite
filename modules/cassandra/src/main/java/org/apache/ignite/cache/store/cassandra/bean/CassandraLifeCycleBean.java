@@ -50,61 +50,6 @@ public class CassandraLifeCycleBean implements LifecycleBean {
     private String cassandraCfgFile;
 
     /**
-     * Starts embedded Cassandra instance
-     */
-    private void startEmbeddedCassandra() {
-        if (log != null) {
-            log.info("-------------------------------");
-            log.info("| Starting embedded Cassandra |");
-            log.info("-------------------------------");
-        }
-
-        try {
-            System.setProperty(CASSANDRA_JMX_PORT_PROP, jmxPort);
-            System.setProperty(CASSANDRA_CONFIG_PROP, FILE_PREFIX + cassandraCfgFile);
-
-            embeddedCassandraDaemon = new CassandraDaemon(true);
-            embeddedCassandraDaemon.init(null);
-            embeddedCassandraDaemon.start();
-        }
-        catch (Exception e) {
-            throw new RuntimeException("Failed to start embedded Cassandra", e);
-        }
-
-        if (log != null) {
-            log.info("------------------------------");
-            log.info("| Embedded Cassandra started |");
-            log.info("------------------------------");
-        }
-    }
-
-    /**
-     * Stops embedded Cassandra instance
-     */
-    private void stopEmbededCassandra() {
-        if (log != null) {
-            log.info("-------------------------------");
-            log.info("| Stopping embedded Cassandra |");
-            log.info("-------------------------------");
-        }
-
-        if (embeddedCassandraDaemon != null) {
-            try {
-                embeddedCassandraDaemon.deactivate();
-            }
-            catch (Throwable e) {
-                throw new RuntimeException("Failed to stop embedded Cassandra", e);
-            }
-        }
-
-        if (log != null) {
-            log.info("------------------------------");
-            log.info("| Embedded Cassandra stopped |");
-            log.info("------------------------------");
-        }
-    }
-
-    /**
      * Returns JMX port for embedded Cassandra
      * @return JMX port
      */
@@ -141,6 +86,64 @@ public class CassandraLifeCycleBean implements LifecycleBean {
         if (evt == LifecycleEventType.BEFORE_NODE_START)
             startEmbeddedCassandra();
         else if (evt == LifecycleEventType.BEFORE_NODE_STOP)
-            stopEmbededCassandra();
+            stopEmbeddedCassandra();
+    }
+
+    /**
+     * Starts embedded Cassandra instance
+     */
+    private void startEmbeddedCassandra() {
+        if (log != null) {
+            log.info("-------------------------------");
+            log.info("| Starting embedded Cassandra |");
+            log.info("-------------------------------");
+        }
+
+        try {
+            if (jmxPort != null)
+                System.setProperty(CASSANDRA_JMX_PORT_PROP, jmxPort);
+
+            if (cassandraCfgFile != null)
+                System.setProperty(CASSANDRA_CONFIG_PROP, FILE_PREFIX + cassandraCfgFile);
+
+            embeddedCassandraDaemon = new CassandraDaemon(true);
+            embeddedCassandraDaemon.init(null);
+            embeddedCassandraDaemon.start();
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to start embedded Cassandra", e);
+        }
+
+        if (log != null) {
+            log.info("------------------------------");
+            log.info("| Embedded Cassandra started |");
+            log.info("------------------------------");
+        }
+    }
+
+    /**
+     * Stops embedded Cassandra instance
+     */
+    private void stopEmbeddedCassandra() {
+        if (log != null) {
+            log.info("-------------------------------");
+            log.info("| Stopping embedded Cassandra |");
+            log.info("-------------------------------");
+        }
+
+        if (embeddedCassandraDaemon != null) {
+            try {
+                embeddedCassandraDaemon.deactivate();
+            }
+            catch (Throwable e) {
+                throw new RuntimeException("Failed to stop embedded Cassandra", e);
+            }
+        }
+
+        if (log != null) {
+            log.info("------------------------------");
+            log.info("| Embedded Cassandra stopped |");
+            log.info("------------------------------");
+        }
     }
 }

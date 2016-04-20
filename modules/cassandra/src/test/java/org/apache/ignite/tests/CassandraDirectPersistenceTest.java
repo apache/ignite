@@ -45,7 +45,7 @@ public class CassandraDirectPersistenceTest {
     public static void setUpClass() {
         if (CassandraHelper.useEmbeddedCassandra()) {
             try {
-                CassandraHelper.startEmbeddedCassandra();
+                CassandraHelper.startEmbeddedCassandra(LOGGER);
             }
             catch (Throwable e) {
                 throw new RuntimeException("Failed to start embedded Cassandra instance", e);
@@ -75,7 +75,7 @@ public class CassandraDirectPersistenceTest {
 
             if (CassandraHelper.useEmbeddedCassandra()) {
                 try {
-                    CassandraHelper.stopEmbededCassandra();
+                    CassandraHelper.stopEmbeddedCassandra();
                 }
                 catch (Throwable e) {
                     LOGGER.error("Failed to stop embedded Cassandra instance", e);
