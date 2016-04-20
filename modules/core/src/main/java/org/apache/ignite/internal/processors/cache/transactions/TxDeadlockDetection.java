@@ -482,15 +482,16 @@ public class TxDeadlockDetection {
 
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable TxDeadlock res, @Nullable Throwable err) {
-            if (isDone())
-                return false;
+            if (super.onDone(res, err)) {
+                cctx.tm().removeFuture(futId);
 
-            cctx.tm().removeFuture(futId);
+                if (timeoutObj != null)
+                    cctx.time().removeTimeoutObject(timeoutObj);
 
-            if (timeoutObj != null)
-                cctx.time().removeTimeoutObject(timeoutObj);
+                return true;
+            }
 
-            return super.onDone(res, err);
+            return false;
         }
 
         /**

@@ -152,7 +152,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> nearIdMap = newMap();
 
     /** Deadlock detection futures. */
-    private final ConcurrentMap<IgniteUuid, TxDeadlockFuture> futs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<IgniteUuid, TxDeadlockFuture> deadlockDetectFuts = new ConcurrentHashMap8<>();
 
     /** TX handler. */
     private IgniteTxHandler txHnd;
@@ -210,7 +210,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(nodeId);
 
-                    Iterator<Map.Entry<IgniteUuid, TxDeadlockFuture>> it = futs.entrySet().iterator();
+                    Iterator<Map.Entry<IgniteUuid, TxDeadlockFuture>> it = deadlockDetectFuts.entrySet().iterator();
 
                     for (; it.hasNext();) {
                         Map.Entry<IgniteUuid, TxDeadlockFuture> e = it.next();
@@ -260,7 +260,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         IgniteClientDisconnectedException err =
             new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected.");
 
-        for (TxDeadlockFuture fut : futs.values())
+        for (TxDeadlockFuture fut : deadlockDetectFuts.values())
             fut.onDone(err);
     }
 
@@ -2029,7 +2029,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param fut Future.
      */
     public void addFuture(TxDeadlockFuture fut) {
-        TxDeadlockFuture old = futs.put(fut.futureId(), fut);
+        TxDeadlockFuture old = deadlockDetectFuts.put(fut.futureId(), fut);
 
         assert old == null : old;
     }
@@ -2039,14 +2039,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Found future.
      */
     @Nullable public TxDeadlockFuture future(IgniteUuid futId) {
-        return futs.get(futId);
+        return deadlockDetectFuts.get(futId);
     }
 
     /**
      * @param futId Future ID.
      */
     public void removeFuture(IgniteUuid futId) {
-        futs.remove(futId);
+        deadlockDetectFuts.remove(futId);
     }
 
     /**

@@ -137,7 +137,7 @@ public class TxDeadlock {
 
             Object val = CU.value(txKey.key(), cctx, true);
 
-            sb.append(e.getValue()).append(" [key=").append(val).append(", cache=").append(cctx.name()).append("]\n");
+            sb.append(e.getValue()).append(" [key=").append(val).append(", cache=").append(cctx.namexx()).append("]\n");
         }
 
         return sb.toString();
