@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
@@ -36,9 +35,6 @@ public class ReuseList {
     /** */
     private final ReuseTree[] trees;
 
-    /** */
-    private boolean ready;
-
     /**
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
@@ -49,17 +45,18 @@ public class ReuseList {
     public ReuseList(int cacheId, PageMemory pageMem, int segments, MetaStore metaStore) throws IgniteCheckedException {
         A.ensure(segments > 1, "Segments must be greater than 1.");
 
-        trees = new ReuseTree[segments];
+        ReuseTree[] trees0 = new ReuseTree[segments];
 
-        for (int i = 0; i < trees.length; i++) {
+        for (int i = 0; i < segments; i++) {
             String idxName = i + "##" + cacheId + "_reuse";
 
             IgniteBiTuple<FullPageId,Boolean> t = metaStore.getOrAllocateForIndex(cacheId, idxName);
 
-            trees[i] = new ReuseTree(this, cacheId, pageMem, t.get1(), t.get2());
+            trees0[i] = new ReuseTree(this, cacheId, pageMem, t.get1(), t.get2());
         }
 
-        ready = true;
+        // Later assignment is done intentionally, see null check in method take.
+        trees = trees0;
     }
 
     /**
@@ -75,9 +72,9 @@ public class ReuseList {
 
         assert tree != null;
 
-        // Avoid dead locks.
+        // Avoid recursion on the same tree.
         if (tree == client) {
-            treeIdx++; // Go forward.
+            treeIdx++; // Go forward and take the next tree.
 
             if (treeIdx == trees.length)
                 treeIdx = 0;
@@ -94,10 +91,8 @@ public class ReuseList {
      * @throws IgniteCheckedException If failed.
      */
     public FullPageId take(BPlusTree<?,?> client) throws IgniteCheckedException {
-        assert PageIdUtils.pageIdx(MIN.pageId()) == 0;
-
-        // Remove and return page at min position.
-        return ready ? tree(client).removeCeil(MIN) : null;
+        // Remove and return page at min possible position.
+        return trees == null ? null : tree(client).removeCeil(MIN);
     }
 
     /**
@@ -106,7 +101,6 @@ public class ReuseList {
      */
     public void put(BPlusTree<?,?> client, FullPageId fullPageId) throws IgniteCheckedException {
         assert fullPageId != null;
-        assert ready;
 
         tree(client).put(fullPageId);
     }
