@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheConditionalDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentOffHeapSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheDeploymentOffHeapValuesSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOrderedPreloadingSelfTest;
@@ -125,6 +126,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         suite.addTestSuite(GridCacheDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheDeploymentOffHeapSelfTest.class);
+        suite.addTestSuite(GridCacheDeploymentOffHeapValuesSelfTest.class);
         suite.addTestSuite(GridCacheConditionalDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheAtomicEntryProcessorDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheTransactionalEntryProcessorDeploymentSelfTest.class);

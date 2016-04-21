@@ -1034,7 +1034,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 else if (conflictPutVals != null) {
                     GridCacheDrInfo conflictPutVal = conflictPutValsIt.next();
 
-                    val = conflictPutVal.value();
+                    val = conflictPutVal.valueEx();
                     conflictVer = conflictPutVal.version();
                     conflictTtl =  conflictPutVal.ttl();
                     conflictExpireTime = conflictPutVal.expireTime();
@@ -1142,7 +1142,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 // Conflict PUT.
                 GridCacheDrInfo conflictPutVal = F.first(conflictPutVals);
 
-                val = conflictPutVal.value();
+                val = conflictPutVal.valueEx();
                 conflictVer = conflictPutVal.version();
                 conflictTtl = conflictPutVal.ttl();
                 conflictExpireTime = conflictPutVal.expireTime();

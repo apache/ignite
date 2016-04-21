@@ -46,6 +46,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -344,6 +345,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
             ccfg.setName("cache-1");
             ccfg.setAtomicityMode(ATOMIC);
             ccfg.setBackups(0);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
             res.add(ccfg);
         }
@@ -354,6 +356,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
             ccfg.setName("cache-2");
             ccfg.setAtomicityMode(ATOMIC);
             ccfg.setBackups(1);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
             res.add(ccfg);
         }
@@ -365,6 +368,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
             ccfg.setAtomicityMode(ATOMIC);
             ccfg.setBackups(1);
             ccfg.setAffinity(new FairAffinityFunction());
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
             res.add(ccfg);
         }
@@ -375,6 +379,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
             ccfg.setName("cache-4");
             ccfg.setAtomicityMode(TRANSACTIONAL);
             ccfg.setBackups(0);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
             res.add(ccfg);
         }
@@ -385,6 +390,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
             ccfg.setName("cache-5");
             ccfg.setAtomicityMode(TRANSACTIONAL);
             ccfg.setBackups(1);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
             res.add(ccfg);
         }
@@ -396,6 +402,7 @@ public class IgniteDynamicCacheStartNoExchangeTimeoutTest extends GridCommonAbst
             ccfg.setAtomicityMode(TRANSACTIONAL);
             ccfg.setBackups(1);
             ccfg.setAffinity(new FairAffinityFunction());
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
             res.add(ccfg);
         }

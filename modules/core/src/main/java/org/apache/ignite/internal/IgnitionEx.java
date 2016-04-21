@@ -62,6 +62,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -1239,7 +1240,7 @@ public class IgnitionEx {
     }
 
     /**
-     * Gets a name of the grid, which is owner of current thread. An Exception is thrown if
+     * Gets the grid, which is owner of current thread. An Exception is thrown if
      * current thread is not an {@link IgniteThread}.
      *
      * @return Grid instance related to current thread
@@ -1950,6 +1951,12 @@ public class IgnitionEx {
             }
 
             cfg.setCacheConfiguration(cacheCfgs.toArray(new CacheConfiguration[cacheCfgs.size()]));
+
+            // Iterate over IGFS caches and prepare their configurations if needed.
+            assert cfg.getCacheConfiguration() != null;
+
+            for (CacheConfiguration ccfg : cfg.getCacheConfiguration())
+                IgfsUtils.prepareCacheConfiguration(cfg, ccfg);
         }
 
         /**

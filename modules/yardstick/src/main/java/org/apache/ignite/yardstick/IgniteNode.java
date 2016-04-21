@@ -43,6 +43,7 @@ import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 
 /**
  * Standalone Ignite node.
@@ -150,6 +151,8 @@ public class IgniteNode implements BenchmarkServer {
         c.setCommunicationSpi(commSpi);
 
         ignite = IgniteSpring.start(c, appCtx);
+
+        BenchmarkUtils.println("Configured marshaller: " + ignite.cluster().localNode().attribute(ATTR_MARSHALLER));
     }
 
     /**

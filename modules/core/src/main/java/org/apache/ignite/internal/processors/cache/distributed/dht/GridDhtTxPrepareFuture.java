@@ -344,7 +344,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (evt && txEntry.op() == TRANSFORM)
                         entryProc = F.first(txEntry.entryProcessors()).get1();
 
+                    final boolean keepBinary = txEntry.keepBinary();
+
                     CacheObject val = cached.innerGet(
+                        null,
                         tx,
                         /*swap*/true,
                         readThrough,
@@ -357,7 +360,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         entryProc,
                         tx.resolveTaskName(),
                         null,
-                        txEntry.keepBinary());
+                        keepBinary);
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
@@ -373,9 +376,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                             boolean modified = false;
 
-                             for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(
-                                     txEntry.context(), key, val, txEntry.cached().version(), txEntry.keepBinary());
+                            for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
+                                 CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(key, val,
+                                     txEntry.cached().version(), keepBinary, txEntry.cached());
 
                                  try {
                                     EntryProcessor<Object, Object, Object> processor = t.get1();
@@ -419,7 +422,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             }
                         }
                         else if (retVal)
-                            ret.value(cacheCtx, val, txEntry.keepBinary());
+                            ret.value(cacheCtx, val, keepBinary);
                     }
 
                     if (hasFilters && !cacheCtx.isAll(cached, txEntry.filters())) {
@@ -929,7 +932,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (retVal ||
             !F.isEmpty(e.entryProcessors()) ||
             !F.isEmpty(e.filters()) ||
-            e.serializableReadVersion() != null) {
+            e.entryReadVersion() != null) {
             if (map == null)
                 map = new HashMap<>();
 
@@ -996,7 +999,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         throws IgniteCheckedException {
         try {
             for (IgniteTxEntry entry : entries) {
-                GridCacheVersion serReadVer = entry.serializableReadVersion();
+                GridCacheVersion serReadVer = entry.entryReadVersion();
 
                 if (serReadVer != null) {
                     entry.cached().unswap();
