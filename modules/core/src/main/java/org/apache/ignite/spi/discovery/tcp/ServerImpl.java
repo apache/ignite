@@ -2179,8 +2179,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 super.body();
             }
             catch (Throwable e) {
-                if (!spi.isNodeStopping0()) {
-                    final Ignite ignite = spi.ignite();
+                if (!spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING) {
+                        final Ignite ignite = spi.ignite();
 
                     if (ignite != null) {
                         U.error(log, "TcpDiscoverSpi's message worker thread failed abnormally. " +
