@@ -3,7 +3,9 @@ package org.apache.ignite.internal.processors.cache.database;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -76,7 +78,7 @@ public class IgniteCacheDatabasePartitionManager {
 
         private final int id;
 
-        private NavigableMap<Long, Object> updates = new TreeMap<>();
+        private NavigableSet<Long> updates = new TreeSet<>();
 
         private long lastApplied = 0;
 
@@ -92,7 +94,7 @@ public class IgniteCacheDatabasePartitionManager {
             if (updates.isEmpty())
                 return lastApplied;
 
-            return updates.lastKey();
+            return updates.last();
         }
 
         public synchronized void onUpdateReceived(long cntr) {
@@ -100,14 +102,14 @@ public class IgniteCacheDatabasePartitionManager {
                 return;
 
             if (cntr > lastApplied + 1) {
-                updates.put(cntr, null);
+                updates.add(cntr);
 
                 return;
             }
 
             int delta = 1;
 
-            Iterator<Long> iterator = updates.keySet().iterator();
+            Iterator<Long> iterator = updates.iterator();
 
             while (iterator.hasNext()) {
                 long next = iterator.next();
