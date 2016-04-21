@@ -57,7 +57,7 @@ public class IgniteComputeBasicConfigVariationsFullApiTestSuite extends TestSuit
                 .gridsCount(1)
                 .build());
 
-        // Tests run on server (node#0) & client(node#1)
+        // Tests run on server (node#0) & client(node#1).
         suite.addTest(new ConfigVariationsTestSuiteBuilder(
                 "3 servers, 1 client",
                 IgniteComputeConfigVariationsFullApiTest.class)

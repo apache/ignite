@@ -266,6 +266,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         runTest(closureFactories, new ComputeTest() {
             @Override public void test(Factory factory, IgniteEx ignite) throws Exception {
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     // value(i - 1): use negative argument of the value method to generate null value
                     results.add(ignite.compute().apply((IgniteClosure<Object, Object>)factory.create(), value(i - 1)));
@@ -294,7 +295,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                     futures.add(comp.future());
                 }
 
-                // wait for results
+                // Wait for results.
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
                 for (ComputeTaskFuture<Object> future : futures)
                     results.add(future.get());
@@ -331,8 +332,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     public void testCallCollection() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, IgniteEx ignite) throws Exception {
-
                 List<EchoCallable> jobs = new ArrayList<>(MAX_JOB_COUNT);
+
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     EchoCallable job = (EchoCallable)factory.create();
                     job.setArg(value(i - 1));
@@ -475,6 +476,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * Default constructor (required by ReflectionFactory).
          */
         public EchoJobBinarylizable() {
+            // No-op.
         }
 
         /** {@inheritDoc} */
