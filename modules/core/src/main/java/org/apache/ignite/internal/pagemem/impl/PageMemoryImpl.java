@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -79,8 +80,20 @@ public class  PageMemoryImpl implements PageMemory {
     /** Page ID offset  */
     public static final int PAGE_ID_OFFSET = 16;
 
-    /** Need a 8-byte pointer for linked list and 8 bytes for internal needs. */
-    public static final int PAGE_OVERHEAD = 24;
+    /** Page cache ID offset. */
+    public static final int PAGE_CACHE_ID_OFFSET = 24;
+
+    /** Page access timestamp */
+    public static final int PAGE_TIMESTAMP_OFFSET = 28;
+
+    /**
+     * Need a 8-byte pointer for linked list, 8 bytes for internal needs (flags),
+     * 4 bytes cache ID, 8 bytes timestamp.
+     */
+    public static final int PAGE_OVERHEAD = 36;
+
+    /** Number of random pages that will be picked for eviction. */
+    public static final int RANDOM_PAGES_EVICT_NUM = 5;
 
     /** Page size. */
     private int sysPageSize;
@@ -210,9 +223,14 @@ public class  PageMemoryImpl implements PageMemory {
 
             relPtr = allocateFreePage();
 
+            if (relPtr == INVALID_REL_PTR)
+                throw new OutOfMemoryException();
+
             absPtr = absolute(relPtr);
 
             writePageId(absPtr, pageId);
+            writePageCacheId(absPtr, cacheId);
+            atomicWriteCurrentTimestamp(absPtr);
         }
 
         // TODO pass an argument to decide whether the page should be cleaned.
@@ -309,7 +327,13 @@ public class  PageMemoryImpl implements PageMemory {
 
                 relPtr = borrowOrAllocateFreePage();
 
+                if (relPtr == INVALID_REL_PTR)
+                    relPtr = evictPage(seg);
+
                 long absPtr = absolute(relPtr);
+
+                writeFullPageId(absPtr, fullId);
+                atomicWriteCurrentTimestamp(absPtr);
 
                 // We can clear dirty flag after the page has been allocated.
                 setDirty(fullId, absPtr, false);
@@ -373,7 +397,7 @@ public class  PageMemoryImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public void getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf) {
+    @Override public boolean getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf) {
         assert tmpBuf.remaining() == pageSize();
 
         Segment seg = segment(pageId);
@@ -386,15 +410,16 @@ public class  PageMemoryImpl implements PageMemory {
             page = seg.acquiredPages.get(pageId);
 
             if (page != null) {
-                assert page.isDirty() : "Page is acquired for a checkpoint, but is not dirty: " + page;
+                if (!page.isDirty())
+                    return false;
 
                 page.acquireReference();
             }
             else {
                 long relPtr = seg.loadedPages.get(pageId, INVALID_REL_PTR);
 
-                assert relPtr != INVALID_REL_PTR : "Failed to get page checkpoint data (page has been evicted) " +
-                    "[pageId=" + pageId + ']';
+                if (relPtr == INVALID_REL_PTR)
+                    return false;
 
                 long absPtr = absolute(relPtr);
 
@@ -404,7 +429,7 @@ public class  PageMemoryImpl implements PageMemory {
 
                 setDirty(pageId, absPtr, false);
 
-                return;
+                return true;
             }
         }
         finally {
@@ -428,6 +453,8 @@ public class  PageMemoryImpl implements PageMemory {
         finally {
             releasePage(page);
         }
+
+        return true;
     }
 
     /**
@@ -529,6 +556,47 @@ public class  PageMemoryImpl implements PageMemory {
     }
 
     /**
+     * Reads cache ID from the page at the given absolute pointer.
+     *
+     * @param absPtr Absolute memory pointer to the page header.
+     * @return Cache ID written to the page.
+     */
+    int readPageCacheId(final long absPtr) {
+        return mem.readInt(absPtr + PAGE_CACHE_ID_OFFSET);
+    }
+
+    /**
+     * Writes cache ID from the page at the given absolute pointer.
+     *
+     * @param absPtr Absolute memory pointer to the page header.
+     * @param cacheId Cache ID to write.
+     */
+    void writePageCacheId(final long absPtr, final int cacheId) {
+        mem.writeInt(absPtr + PAGE_CACHE_ID_OFFSET, cacheId);
+    }
+
+    /**
+     * Reads page ID and cache ID from the page at the given absolute pointer.
+     *
+     * @param absPtr Absolute memory pointer to the page header.
+     * @return Full page ID written to the page.
+     */
+    FullPageId readFullPageId(final long absPtr) {
+        return new FullPageId(readPageId(absPtr), readPageCacheId(absPtr));
+    }
+
+    /**
+     * Writes page ID and cache ID from the page at the given absolute pointer.
+     *
+     * @param absPtr Absolute memory pointer to the page header.
+     * @param fullPageId Full page ID to write.
+     */
+    void writeFullPageId(final long absPtr, final FullPageId fullPageId) {
+        writePageId(absPtr, fullPageId.pageId());
+        writePageCacheId(absPtr, fullPageId.cacheId());
+    }
+
+    /**
      * @param absPtr Absolute pointer.
      * @return {@code True} if page is dirty.
      */
@@ -574,6 +642,23 @@ public class  PageMemoryImpl implements PageMemory {
             dirtyPages.add(pageId);
         else if (wasDirty && !dirty)
             dirtyPages.remove(pageId);
+    }
+
+    void atomicWriteCurrentTimestamp(final long absPtr) {
+        while (true) {
+            final long readTs = readTimestamp(absPtr);
+
+            if (mem.compareAndSwapLong(absPtr + PAGE_TIMESTAMP_OFFSET, readTs, U.currentTimeMillis()))
+                break;
+        }
+    }
+
+    void writeTimestamp(final long absPtr, final long ts) {
+        mem.writeLong(absPtr + PAGE_TIMESTAMP_OFFSET, ts);
+    }
+
+    long readTimestamp(final long absPtr) {
+        return mem.readLong(absPtr + PAGE_TIMESTAMP_OFFSET);
     }
 
     /**
@@ -749,14 +834,14 @@ public class  PageMemoryImpl implements PageMemory {
     /**
      * Requests next memory chunk from the system allocator.
      */
-    private void requestNextChunk() {
+    private boolean requestNextChunk() {
         assert Thread.holdsLock(this);
 
         int curIdx = currentChunk.idx;
 
         // If current chunk is the last one, fail.
         if (curIdx == chunks.size() - 1)
-            throw new OutOfMemoryException();
+            return false;
 
         Chunk chunk = chunks.get(curIdx + 1);
 
@@ -765,6 +850,8 @@ public class  PageMemoryImpl implements PageMemory {
                 ", base=0x" + U.hexLong(chunk.fr.address()) + ", len=" + chunk.size() + ']');
 
         currentChunk = chunk;
+
+        return true;
     }
 
     /**
@@ -834,13 +921,105 @@ public class  PageMemoryImpl implements PageMemory {
                 synchronized (this) {
                     Chunk full = currentChunk;
 
-                    if (chunk == full)
-                        requestNextChunk();
+                    if (chunk == full && !requestNextChunk())
+                        return INVALID_REL_PTR;
                 }
             }
             else
                 return relPtr;
         }
+    }
+
+    /**
+     * Evict random oldest page from memory to storage.
+     *
+     * @param seg Currently locked segment.
+     * @return Relative addres for evicted page.
+     * @throws IgniteCheckedException
+     */
+    private long evictPage(final Segment seg) throws IgniteCheckedException {
+        final ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        final long[] pageRelAddrs = new long[RANDOM_PAGES_EVICT_NUM];
+
+        final int cap = seg.loadedPages.capacity();
+
+        assert seg.loadedPages.size() >= RANDOM_PAGES_EVICT_NUM;
+
+        if (seg.acquiredPages.size() >= seg.loadedPages.size())
+            throw new OutOfMemoryException("No not acquired pages left for segment. Unable to evict.");
+
+        while (true) {
+            for (int i = 0; i < RANDOM_PAGES_EVICT_NUM; i++) {
+                // We need to lookup for pages only in current segment for thread safety,
+                // so peeking random memory will lead to checking for found page segment.
+                // It's much faster to check available pages for segment right away.
+                final long addr = seg.loadedPages.getNearestAt(rnd.nextInt(cap), INVALID_REL_PTR);
+
+                assert addr != INVALID_REL_PTR;
+
+                pageRelAddrs[i] = addr;
+            }
+
+            final long relEvictAddr = findSuitablePageRelAddr(pageRelAddrs);
+
+            assert relEvictAddr != INVALID_REL_PTR;
+
+            final long absEvictAddr = absolute(relEvictAddr);
+
+            assert absEvictAddr != dbMetaPageIdPtr;
+
+            final FullPageId fullPageId = readFullPageId(absEvictAddr);
+
+            assert seg.writeLock().isHeldByCurrentThread();
+
+            if (!seg.acquiredPages.containsKey(fullPageId))
+                seg.loadedPages.remove(fullPageId);
+            else
+                continue;
+
+            // Force flush data and free page.
+            if (isDirty(absEvictAddr)) {
+                storeMgr.write(fullPageId.cacheId(), fullPageId.pageId(), wrapPointer(absEvictAddr + PAGE_OVERHEAD, pageSize()));
+
+                setDirty(fullPageId, absEvictAddr, false);
+            }
+
+            return relEvictAddr;
+        }
+    }
+
+    /**
+     * Find oldest and preferable not dirty page from passed ones.
+     *
+     * @param relAddrs Addresses to find from.
+     * @return The oldest and may be dirty page relative address.
+     */
+    private long findSuitablePageRelAddr(final long[] relAddrs) {
+        long addr = INVALID_REL_PTR;
+        long ts = Long.MAX_VALUE;
+        long dirtyTs = Long.MAX_VALUE;
+        long dirtyAddr = INVALID_REL_PTR;
+
+        for (final long relAddr : relAddrs) {
+            final long absPageAddr = absolute(relAddr);
+
+            final long pageTs = readTimestamp(absPageAddr);
+
+            final boolean dirty = isDirty(absPageAddr);
+
+            if (pageTs < ts && !dirty) {
+                addr = relAddr;
+
+                ts = pageTs;
+            } else if (pageTs < dirtyTs && dirty) {
+                dirtyAddr = relAddr;
+
+                dirtyTs = pageTs;
+            }
+        }
+
+        return addr == INVALID_REL_PTR ? dirtyAddr : addr;
     }
 
     /**
@@ -877,7 +1056,10 @@ public class  PageMemoryImpl implements PageMemory {
          * @param len Length of the allocated memory.
          */
         private Segment(long ptr, long len, boolean clear) {
-            loadedPages = new FullPageIdTable(mem, ptr, len, clear);
+            loadedPages = new FullPageIdTable(mem, ptr, len, clear,
+                storeMgr == null // if null evictions won't be used
+                    ? FullPageIdTable.AddressingStrategy.QUADRATIC
+                    : FullPageIdTable.AddressingStrategy.LINEAR);
 
             acquiredPages = new HashMap<>(16, 0.75f);
         }
