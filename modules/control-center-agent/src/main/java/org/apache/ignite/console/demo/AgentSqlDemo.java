@@ -55,6 +55,7 @@ import org.apache.log4j.Logger;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
+import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
 
@@ -330,6 +331,8 @@ public class AgentSqlDemo {
 
         cfg.setLocalHost("127.0.0.1");
 
+        cfg.setIncludeEventTypes(EVTS_DISCOVERY);
+
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
         ipFinder.setAddresses(Collections.singletonList("127.0.0.1:60900.." + (60900 + NODE_CNT - 1)));
@@ -546,7 +549,7 @@ public class AgentSqlDemo {
      */
     public static boolean testDrive(AgentConfiguration acfg) {
         if (initLatch.compareAndSet(false, true)) {
-            log.info("DEMO: Starting embedded nodes for sql test-drive...");
+            log.info("DEMO: Starting embedded nodes for demo...");
 
             System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "1");
 

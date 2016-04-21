@@ -1164,6 +1164,17 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                     return {swapSpaceSpi: {kind: 'FileSwapSpaceSpi'}};
 
                 return undefined;
+            },
+            randomString: (len) => {
+                const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                const possibleLen = possible.length;
+
+                let res = '';
+
+                for (let i = 0; i < len; i++)
+                    res += possible.charAt(Math.floor(Math.random() * possibleLen));
+
+                return res;
             }
         };
     }]);

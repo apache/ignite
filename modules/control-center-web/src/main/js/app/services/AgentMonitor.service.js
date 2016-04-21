@@ -72,6 +72,9 @@ class IgniteAgentMonitor {
         this._scope.hasAgents = null;
         this._scope.showModal = false;
 
+        this._evtOrderKey = $common.randomString(20);
+        this._evtThrottleCntrKey = $common.randomString(20);
+
         /**
          * @type {Socket}
          */
@@ -285,6 +288,10 @@ class IgniteAgentMonitor {
      */
     next(queryId, pageSize) {
         return this._rest('node:query:fetch', queryId, pageSize);
+    }
+
+    collect() {
+        return this._rest('node:visor:collect', this._evtOrderKey, this._evtThrottleCntrKey);
     }
 
     stopWatch() {

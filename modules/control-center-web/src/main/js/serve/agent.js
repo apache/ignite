@@ -287,6 +287,27 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
             return this.executeRest(cmd);
         }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} evtOrderKey Event order key, unique for tab instance.
+         * @param {String} evtThrottleCntrKey Event throttle counter key, unique for tab instance.
+         * @returns {Promise}
+         */
+        collect(demo, evtOrderKey, evtThrottleCntrKey) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', '')
+                .addParam('p2', 'org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask')
+                .addParam('p3', 'org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg')
+                .addParam('p4', false)
+                .addParam('p5', 'CONSOLE_' + evtOrderKey)
+                .addParam('p6', evtThrottleCntrKey)
+                .addParam('p7', 10)
+                .addParam('p8', false);
+
+            return this.executeRest(cmd);
+        }
     }
 
     /**

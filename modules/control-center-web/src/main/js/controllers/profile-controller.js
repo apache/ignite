@@ -25,21 +25,9 @@ consoleModule.controller('profileController', [
 
         $scope.countries = countries;
 
-        const _randomString = (len) => {
-            const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            const possibleLen = possible.length;
-
-            let res = '';
-
-            for (let i = 0; i < len; i++)
-                res += possible.charAt(Math.floor(Math.random() * possibleLen));
-
-            return res;
-        };
-
         $scope.generateToken = () => {
             $confirm.confirm('Are you sure you want to change security token?')
-                .then(() => $scope.user.token = _randomString(20))
+                .then(() => $scope.user.token = $common.randomString(20))
         };
 
         const _cleanup = () => {
