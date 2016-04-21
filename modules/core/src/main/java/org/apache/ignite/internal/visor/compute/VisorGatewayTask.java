@@ -40,7 +40,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Task to run Visor tasks through http REST.
  */
 public class VisorGatewayTask implements ComputeTask<Object[], Object> {
     /** */
@@ -83,7 +83,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
     }
 
     /**
-     *
+     * Job to run Visor tasks through http REST.
      */
     private static class VisorGatewayJob extends ComputeJobAdapter {
         /** */
@@ -114,6 +114,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
          *
          * @param cls Target class.
          * @param val String representation.
+         * @return Object constructed from string.
          */
         private static Object toObject(Class cls, String val) {
             if (val == null || String.class == cls)
@@ -156,8 +157,9 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
          * Check if class is not a complex bean.
          *
          * @param cls Target class.
+         * @return {@code True} if class is primitive or build-in java type or IgniteUuid.
          */
-        private static Object isSimpleObject(Class cls) {
+        private static boolean isSimpleObject(Class cls) {
             return cls.isPrimitive() || cls.getName().startsWith("java.") ||  IgniteUuid.class == cls;
         }
 
@@ -176,7 +178,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 try {
                     Class<?> argCls = Class.forName(argClsName);
 
-                    if (isSimpleObject(argCls) == 4) {
+                    if (isSimpleObject(argCls)) {
                         String val = argument(3);
 
                         jobArgs = toObject(argCls, val);
@@ -249,9 +251,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 }
             }
 
-            VisorTaskArgument<?> taskArgs = new VisorTaskArgument<>(nids, jobArgs, false);
-
-            return ignite.compute().execute(taskName, taskArgs);
+            return ignite.compute().execute(taskName, new VisorTaskArgument<>(nids, jobArgs, false));
         }
     }
 }
