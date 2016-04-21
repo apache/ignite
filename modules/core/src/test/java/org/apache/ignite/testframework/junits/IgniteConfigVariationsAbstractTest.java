@@ -336,32 +336,89 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /**
-     *
+     * During deserialization, the fields of non-serializable classes will be initialized using the public or
+     * protected no-arg constructor of the class. A no-arg constructor must be accessible
+     * to the subclass that is serializable. The fields of serializable subclasses will be restored from the stream.
      */
-    protected static class SerializableObject extends TestObject implements Serializable {
+    public static class SerializableObject implements Serializable {
+        /** */
+        protected int val;
+
+        /** */
+        protected String strVal;
+
+        /** */
+        protected TestEnum enumVal;
+
+        /**
+         * Default constructor must be accessible for deserialize subclasses by JDK serialization API.
+         */
+        SerializableObject() {
+            // No-op.
+        }
+
         /**
          * @param val Value.
          */
         public SerializableObject(int val) {
-            super(val);
+            this.val = val;
+            strVal = "val" + val;
+
+            TestEnum[] values = TestEnum.values();
+            enumVal = values[Math.abs(val) % values.length];
+        }
+
+        /**
+         * @return Value.
+         */
+        public int value() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof SerializableObject))
+                return false;
+
+            SerializableObject val = (SerializableObject)o;
+
+            return getClass().equals(o.getClass()) && this.val == val.val && enumVal == val.enumVal
+                && strVal.equals(val.strVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return getClass().getSimpleName() + "[" +
+                "val=" + val +
+                ", strVal='" + strVal + '\'' +
+                ", enumVal=" + enumVal +
+                ']';
         }
     }
 
     /**
      *
      */
-    private static class ExternalizableObject extends TestObject implements Externalizable {
+    public static class ExternalizableObject extends TestObject implements Externalizable {
         /**
          * Default constructor.
          */
-        ExternalizableObject() {
+        public ExternalizableObject() {
             super(-1);
         }
 
         /**
          * @param val Value.
          */
-        ExternalizableObject(int val) {
+        public ExternalizableObject(int val) {
             super(val);
         }
 

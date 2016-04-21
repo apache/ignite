@@ -157,7 +157,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      * Implementation for {@link TestService}
      */
     public static class TestServiceImpl implements Service, TestService, Serializable {
-        /** Argument. */
+        /** Test value. */
         protected Object value;
 
         /**
