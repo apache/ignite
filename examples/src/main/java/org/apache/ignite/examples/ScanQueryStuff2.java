@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
@@ -128,24 +127,24 @@ public class ScanQueryStuff2 {
     }
 
     private static void check2(GridCacheQueryManager<Object, Object> queryManager) {
-        Iterator<IgniteBiTuple<Object, Object>> iter = queryManager.scanHeapIterator();
-
-        int cnt = 0;
-
-        while (iter.hasNext()) {
-            IgniteBiTuple<Object, Object> next = iter.next();
-
-            next.getKey();
-            next.getValue();
-
-            cnt++;
-        }
-
-//        if (entry == null)
-//            throw new RuntimeException("unexcpeted");
-
-        if (cnt < CNT)
-            throw new IllegalStateException("cnt:" + cnt);
+//        Iterator<IgniteBiTuple<Object, Object>> iter = queryManager.scanHeapIterator();
+//
+//        int cnt = 0;
+//
+//        while (iter.hasNext()) {
+//            IgniteBiTuple<Object, Object> next = iter.next();
+//
+//            next.getKey();
+//            next.getValue();
+//
+//            cnt++;
+//        }
+//
+////        if (entry == null)
+////            throw new RuntimeException("unexcpeted");
+//
+//        if (cnt < CNT)
+//            throw new IllegalStateException("cnt:" + cnt);
     }
 
     private static CacheConfiguration cacheCfg() {
