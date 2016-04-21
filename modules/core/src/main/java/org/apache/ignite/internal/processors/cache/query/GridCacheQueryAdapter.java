@@ -509,14 +509,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
-        GridCloseableIterator iter0;
-
         if (part != null && !cctx.isLocal())
-            iter0 = new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
+            return (GridCloseableIterator<R>)new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
         else
-            iter0 = loc ? qryMgr.scanQueryLocal(this) : qryMgr.scanQueryDistributed(this, nodes);
-
-        return iter0;
+            return loc ? qryMgr.scanQueryLocal(this) : qryMgr.scanQueryDistributed(this, nodes);
     }
 
     /**
@@ -635,7 +631,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
          * @param cctx Cache context.
          */
         private ScanQueryFallbackClosableIterator(int part, GridCacheQueryAdapter qry,
-            GridCacheQueryManager qryMgr, GridCacheContext cctx) throws IgniteCheckedException {
+            GridCacheQueryManager qryMgr, GridCacheContext cctx) {
             this.qry = qry;
             this.qryMgr = qryMgr;
             this.cctx = cctx;
@@ -675,13 +671,26 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
          *
          */
         @SuppressWarnings("unchecked")
-        private void init() throws IgniteCheckedException {
+        private void init() {
             final ClusterNode node = nodes.poll();
 
             T2<GridCloseableIterator<Map.Entry>, CacheQueryFuture<Map.Entry>> t0 = new T2<>();
 
-            if (node.isLocal())
-                t0.set1(qryMgr.scanQueryLocal(qry));
+            if (node.isLocal()) {
+                GridCloseableIterator it = null;
+                
+                try {
+                    it = qryMgr.scanQueryLocal(qry);
+                }
+                catch (IgniteClientDisconnectedCheckedException e) {
+                    throw CU.convertToCacheException(e);
+                }
+                catch (IgniteCheckedException e) {
+                    retryIfPossible(e);
+                }
+
+                t0.set1(it);
+            }
             else {
                 final GridCacheQueryBean bean = new GridCacheQueryBean(this.qry, null, null, null);
 
@@ -712,6 +721,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
             T2<GridCloseableIterator<Map.Entry>, CacheQueryFuture<Map.Entry>> t = tuple;
 
+            assert t != null;
+
             if (t.get1() != null) {
                 GridCloseableIterator<Map.Entry> iter = t.get1();
 
@@ -722,7 +733,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
                 return hasNext;
             }
-            else{
+            else {
                 CacheQueryFuture<Map.Entry> fut = t.get2();
 
                 assert fut != null;

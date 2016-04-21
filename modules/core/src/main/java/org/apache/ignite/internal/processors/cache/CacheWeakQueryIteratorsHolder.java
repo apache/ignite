@@ -38,8 +38,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
     private final ReferenceQueue refQueue = new ReferenceQueue();
 
     /** Iterators futures. */
-    private final Map<WeakReference<WeakQueryFutureIterator>, AutoCloseable> refs =
-        new ConcurrentHashMap8<>();
+    private final Map<WeakReference, AutoCloseable> refs = new ConcurrentHashMap8<>();
 
     /** Logger. */
     private final IgniteLogger log;
@@ -108,7 +107,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
         for (Reference itRef = refQueue.poll(); itRef != null;
             itRef = refQueue.poll()) {
             try {
-                WeakReference<WeakQueryFutureIterator> weakRef = (WeakReference<WeakQueryFutureIterator>)itRef;
+                WeakReference weakRef = (WeakReference)itRef;
 
                 AutoCloseable rsrc = refs.remove(weakRef);
 
@@ -143,7 +142,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
      *
      * @param <T> Type for iterator.
      */
-    public class WeakQueryFutureIterator<T> extends GridCloseableIteratorAdapter<T>
+    private class WeakQueryFutureIterator<T> extends GridCloseableIteratorAdapter<T>
         implements WeakReferenceCloseableIterator<T> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -229,10 +228,8 @@ public class CacheWeakQueryIteratorsHolder<V> {
             cur = null;
         }
 
-        /**
-         * @return Iterator weak reference.
-         */
-        public WeakReference<WeakQueryFutureIterator<T>> weakReference() {
+        /** {@inheritDoc} */
+        @Override public WeakReference<WeakQueryFutureIterator<T>> weakReference() {
             return weakRef;
         }
 
@@ -270,7 +267,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
         private final GridCloseableIterator<T> iter;
 
         /** */
-        private final WeakReference<WeakQueryCloseableIterator<T>> weakRef;
+        private final WeakReference weakRef;
 
         /**
          *
@@ -278,7 +275,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
         WeakQueryCloseableIterator(GridCloseableIterator<T> iter) {
             this.iter = iter;
 
-            weakRef = new WeakReference<>(this, refQueue);
+            weakRef = new WeakReference(this, refQueue);
        }
 
 
@@ -332,10 +329,8 @@ public class CacheWeakQueryIteratorsHolder<V> {
             refs.remove(weakRef);
         }
 
-        /**
-         * @return Iterator weak reference.
-         */
-        public WeakReference weakReference() {
+        /** {@inheritDoc} */
+        @Override public WeakReference weakReference() {
             return weakRef;
         }
     }

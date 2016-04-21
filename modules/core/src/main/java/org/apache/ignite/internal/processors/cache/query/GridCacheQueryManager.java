@@ -895,37 +895,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             };
         }
-        catch (IgniteCheckedException | RuntimeException e)
-        {
+        catch (IgniteCheckedException | RuntimeException e) {
             closeScanFilter(keyValFilter);
 
             throw e;
         }
-    }
-
-    // For performance testing.
-    public Iterator<IgniteBiTuple<K, V>> scanHeapIterator() {
-        IgniteInternalCache<K, V> prj0 = cctx.cache();
-
-        prj0 = prj0.keepBinary();
-
-        final IgniteInternalCache prj = prj0;
-
-        Iterator<K> keyIter = prj.keySetx().iterator();
-
-        final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
-
-        final GridCloseableIteratorAdapter<IgniteBiTuple<K, V>> heapIt =
-            new PeekValueExpiryAwareIterator(keyIter, null, topVer, null, false, true, true) {
-                @Override protected void onClose() {
-                    super.onClose();
-//
-//                    if (locPart0 != null)
-//                        locPart0.release();
-                }
-            };
-
-        return heapIt;
     }
 
     /**
@@ -990,6 +964,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         Integer part = qry.partition();
 
         if (part == null || cctx.isLocal()) {
+            // Performance optimization.
             if (locNode && plc == null && !cctx.isLocal()) {
                 GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
@@ -1055,7 +1030,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             // double check for owning state
             if (locPart == null || locPart.state() != OWNING || !locPart.reserve() || locPart.state() != OWNING)
                 throw new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
-                    "Partition can not be reserved");
+                    "Partition can not be reserved.");
 
             final GridDhtLocalPartition locPart0 = locPart;
 
@@ -1127,7 +1102,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param it Lazy swap or offheap iterator.
      * @param filter Scan filter.
      * @param keepBinary Keep binary flag.
-     * @param locNode
+     * @param locNode Local node.
      * @return Iterator.
      */
     private GridIteratorAdapter<IgniteBiTuple<K, V>> scanIterator(
@@ -1806,6 +1781,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 @Override protected boolean onHasNext() throws IgniteCheckedException {
                     return iter.hasNextX();
+                }
+
+                @Override protected void onClose() throws IgniteCheckedException {
+                    iter.close();
                 }
             };
         }
