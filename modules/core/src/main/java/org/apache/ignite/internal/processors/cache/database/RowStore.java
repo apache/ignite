@@ -54,25 +54,30 @@ public class RowStore<T extends CacheDataRow> {
     private volatile long lastDataPageId;
 
     /** */
+    @Deprecated
     private final PageHandler<CacheDataRow> writeRow = new PageHandler<CacheDataRow>() {
         @Override public int run(Page page, ByteBuffer buf, CacheDataRow row, int ignore) throws IgniteCheckedException {
             int entrySize = DataPageIO.getEntrySize(coctx, row.key(), row.value());
 
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
+            if (io.isEnoughSpace(buf, entrySize))
+                return -1;
+
             int idx = io.addRow(coctx, buf, row.key(), row.value(), row.version(), entrySize);
 
-            if (idx != -1) {
-                row.link(linkFromDwordOffset(page.id(), idx));
+            assert idx >= 0: idx;
 
-                assert row.link() != 0;
-            }
+            row.link(linkFromDwordOffset(page.id(), idx));
+
+            assert row.link() != 0;
 
             return idx;
         }
     };
 
     /** */
+    @Deprecated
     private final PageHandler<Void> rmvRow = new PageHandler<Void>() {
         @Override public int run(Page page, ByteBuffer buf, Void ignore, int itemId) throws IgniteCheckedException {
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
@@ -125,9 +130,13 @@ public class RowStore<T extends CacheDataRow> {
     public void removeRow(long link) throws IgniteCheckedException {
         assert link != 0;
 
-        try (Page page = page(pageId(link))) {
-            writePage(page, rmvRow, null, dwordsOffset(link), 0);
+        if (freeList == null) {
+            try (Page page = page(pageId(link))) {
+                writePage(page, rmvRow, null, dwordsOffset(link), 0);
+            }
         }
+        else
+            freeList.removeRow(link);
     }
 
     /**
@@ -156,16 +165,17 @@ public class RowStore<T extends CacheDataRow> {
      */
     public void addRow(CacheDataRow row) throws IgniteCheckedException {
         if (freeList == null)
-            writeRowData0(row);
+            writeRowDataOld(row);
         else
-            freeList.writeRowData(row);
+            freeList.insertRow(row);
     }
 
     /**
      * @param row Row.
      * @throws IgniteCheckedException If failed.
      */
-    private void writeRowData0(CacheDataRow row) throws IgniteCheckedException {
+    @Deprecated
+    private void writeRowDataOld(CacheDataRow row) throws IgniteCheckedException {
         assert row.link() == 0;
 
         while (row.link() == 0) {

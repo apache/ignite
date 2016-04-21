@@ -35,6 +35,9 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
  * Data structure for data pages and their free spaces.
  */
 public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
+    /** */
+    private final int partId;
+
     /**
      * @param reuseList Reuse list.
      * @param cacheId Cache ID.
@@ -43,14 +46,23 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
      * @param initNew    Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public FreeTree(ReuseList reuseList, int cacheId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
+    public FreeTree(ReuseList reuseList, int cacheId, int partId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
         throws IgniteCheckedException {
         super(cacheId, pageMem, metaPageId, reuseList);
+
+        this.partId = partId;
 
         assert pageMem != null;
 
         if (initNew)
             initNew();
+    }
+
+    /**
+     * @return Partition ID.
+     */
+    public int getPartId() {
+        return partId;
     }
 
     /** {@inheritDoc} */
@@ -76,12 +88,12 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
     /** {@inheritDoc} */
     @Override protected int compare(BPlusIO<FreeItem> io, ByteBuffer buf, int idx, FreeItem row)
         throws IgniteCheckedException {
-        if (io.isLeaf()) // In a leaf we can do a fair compare.
-            return Short.compare(((FreeIO)io).freeSpace(buf, idx), row.freeSpace());
+        int res = Short.compare(((FreeIO)io).getFreeSpace(buf, idx), row.freeSpace());
 
-        // In inner pages we do compare on dispersed free space to avoid contention on a single page
-        // when all the entries are equal and many pages have the same free space.
-        return Integer.compare(((FreeIO)io).dispersedFreeSpace(buf, idx), row.dispersedFreeSpace());
+        if (res == 0)
+            res = Long.compare(((FreeLeafIO)io).getPageIndex(buf, idx), FreeInnerIO.pageIndex(row.pageId()));
+
+        return res;
     }
 
     /** {@inheritDoc} */

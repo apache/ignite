@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
@@ -61,7 +61,41 @@ public class FreeList {
 
             assert idx >= 0;
 
-            return io.getFreeSpace(buf);
+            int freeSpace = io.getFreeSpace(buf);
+
+            // Put our free item.
+            tree(row.partition()).put(new FreeItem(freeSpace, page.id(), cctx.cacheId()));
+
+            return 0;
+        }
+    };
+
+    /** */
+    private final PageHandler<FreeTree> removeRow = new PageHandler<FreeTree>() {
+        @Override public int run(Page page, ByteBuffer buf, FreeTree tree, int itemId) throws IgniteCheckedException {
+            DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
+
+            assert DataPageIO.check(itemId): itemId;
+
+            int oldFreeSpace = io.getFreeSpace(buf);
+
+            io.removeRow(buf, (byte)itemId);
+
+            int newFreeSpace = io.getFreeSpace(buf);
+
+            // Move page to the new position with respect to the new free space.
+            FreeItem item = tree.remove(new FreeItem(oldFreeSpace, page.id(), cctx.cacheId()));
+
+            // If item is null, then it was removed concurrently by insertRow, because
+            // in removeRow we own the write lock on this page. Thus we can be sure that
+            // insertRow will update position correctly after us.
+            if (item != null) {
+                FreeItem old = tree.put(new FreeItem(newFreeSpace, page.id(), cctx.cacheId()));
+
+                assert old == null;
+            }
+
+            return 0;
         }
     };
 
@@ -83,14 +117,12 @@ public class FreeList {
 
     /**
      * @param tree Tree.
-     * @param neededSpace Needed free space.
+     * @param lookupItem Lookup item.
      * @return Free item or {@code null} if it was impossible to find one.
      * @throws IgniteCheckedException If failed.
      */
-    private FreeItem take(FreeTree tree, short neededSpace) throws IgniteCheckedException {
-        assert neededSpace > 0 && neededSpace < Short.MAX_VALUE: neededSpace;
-
-        FreeItem res = tree.removeCeil(new FreeItem(neededSpace, dispersion(), 0, 0));
+    private FreeItem take(FreeTree tree, FreeItem lookupItem) throws IgniteCheckedException {
+        FreeItem res = tree.removeCeil(lookupItem);
 
         assert res == null || (res.pageId() != 0 && res.cacheId() == cctx.cacheId()): res;
 
@@ -98,35 +130,28 @@ public class FreeList {
     }
 
     /**
-     * @return Random dispersion value.
-     */
-    private static short dispersion() {
-        return (short)ThreadLocalRandom.current().nextInt(Short.MIN_VALUE, Short.MAX_VALUE);
-    }
-
-    /**
-     * @param part Partition.
+     * @param partId Partition.
      * @return Tree.
      * @throws IgniteCheckedException If failed.
      */
-    private FreeTree tree(Integer part) throws IgniteCheckedException {
-        assert part >= 0 && part < Short.MAX_VALUE: part;
+    private FreeTree tree(Integer partId) throws IgniteCheckedException {
+        assert partId >= 0 && partId < Short.MAX_VALUE: partId;
 
-        GridFutureAdapter<FreeTree> fut = trees.get(part);
+        GridFutureAdapter<FreeTree> fut = trees.get(partId);
 
         if (fut == null) {
             fut = new GridFutureAdapter<>();
 
-            if (trees.putIfAbsent(part, fut) != null)
-                fut = trees.get(part);
+            if (trees.putIfAbsent(partId, fut) != null)
+                fut = trees.get(partId);
             else {
                 // Index name will be the same across restarts.
-                String idxName = part + "$$" + cctx.cacheId() + "_free";
+                String idxName = partId + "$$" + cctx.cacheId() + "_free";
 
                 IgniteBiTuple<FullPageId,Boolean> t = cctx.shared().database().meta()
                     .getOrAllocateForIndex(cctx.cacheId(), idxName);
 
-                fut.onDone(new FreeTree(reuseList, cctx.cacheId(), pageMem, t.get1(), t.get2()));
+                fut.onDone(new FreeTree(reuseList, cctx.cacheId(), partId, pageMem, t.get1(), t.get2()));
             }
         }
 
@@ -134,59 +159,51 @@ public class FreeList {
     }
 
     /**
+     * @param link Row link.
+     * @throws IgniteCheckedException
+     */
+    public void removeRow(long link) throws IgniteCheckedException {
+        assert link != 0;
+
+        long pageId = PageIdUtils.pageId(link);
+        int itemId = PageIdUtils.dwordsOffset(link);
+
+        try (Page page = pageMem.page(new FullPageId(pageId, cctx.cacheId()))) {
+            writePage(page, removeRow, null, itemId, -1);
+        }
+    }
+
+    /**
      * @param row Row.
      * @throws IgniteCheckedException If failed.
      */
-    public void writeRowData(CacheDataRow row) throws IgniteCheckedException {
-        // assert row.link == 0;
+    public void insertRow(CacheDataRow row) throws IgniteCheckedException {
+        assert row.link() == 0: row.link();
 
         int entrySize = DataPageIO.getEntrySize(cctx.cacheObjectContext(), row.key(), row.value());
 
         assert entrySize > 0 && entrySize < Short.MAX_VALUE: entrySize;
 
         FreeTree tree = tree(row.partition());
-        FreeItem item = take(tree, (short)entrySize);
 
-        Page page = null;
-        int freeSpace = -1;
+        // TODO add random pageIndex here for lower contention?
+        FreeItem item = take(tree, new FreeItem(entrySize, 0, cctx.cacheId()));
 
-        try {
+        try (Page page = item == null ?
+            allocateDataPage(row.partition()) :
+            pageMem.page(item)
+        ) {
             if (item == null) {
                 DataPageIO io = DataPageIO.VERSIONS.latest();
-
-                page = allocatePage(row.partition());
 
                 ByteBuffer buf = page.getForInitialWrite();
 
                 io.initNewPage(buf, page.id());
 
-                freeSpace = writeRow.run(page, buf, row, entrySize);
+                writeRow.run(page, buf, row, entrySize);
             }
-            else {
-                page = pageMem.page(item);
-
-                freeSpace = writePage(page, writeRow, row, entrySize, -1);
-            }
-        }
-        finally {
-            if (page != null) {
-                page.close();
-
-                if (freeSpace != -1) { // Put back to the tree.
-                    assert freeSpace >= 0 && freeSpace < Short.MAX_VALUE: freeSpace;
-
-                    if (item == null)
-                        item = new FreeItem((short)freeSpace, dispersion(), page.id(), cctx.cacheId());
-                    else {
-                        item.freeSpace((short)freeSpace);
-                        item.dispersion(dispersion());
-                    }
-
-                    FreeItem old = tree.put(item);
-
-                    assert old == null;
-                }
-            }
+            else
+                writePage(page, writeRow, row, entrySize, -1);
         }
     }
 
@@ -195,7 +212,7 @@ public class FreeList {
      * @return Page.
      * @throws IgniteCheckedException If failed.
      */
-    private Page allocatePage(int part) throws IgniteCheckedException {
+    private Page allocateDataPage(int part) throws IgniteCheckedException {
         FullPageId pageId = pageMem.allocatePage(cctx.cacheId(), part, PageIdAllocator.FLAG_DATA);
 
         return pageMem.page(pageId);

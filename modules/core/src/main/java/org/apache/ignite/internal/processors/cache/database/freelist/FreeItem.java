@@ -26,38 +26,17 @@ public class FreeItem extends FullPageId {
     /** */
     private short freeSpace;
 
-    /** */
-    private short dispersion;
-
     /**
      * @param freeSpace Free space.
-     * @param dispersion Dispersion.
      * @param pageId  Page ID.
      * @param cacheId Cache ID.
      */
-    public FreeItem(short freeSpace, short dispersion, long pageId, int cacheId) {
+    public FreeItem(int freeSpace, long pageId, int cacheId) {
         super(pageId, cacheId);
 
-        assert freeSpace >= 0: freeSpace;
+        assert freeSpace >= 0 && freeSpace <= Short.MAX_VALUE: freeSpace;
 
-        this.freeSpace = freeSpace;
-        this.dispersion = dispersion;
-    }
-
-    /**
-     * @param freeSpace Free space.
-     * @param dispersion Dispersion.
-     * @return Dispersed free space.
-     */
-    public static int disperse(int freeSpace, int dispersion) {
-        return (freeSpace << 16) | dispersion;
-    }
-
-    /**
-     * @return Dispersed free space.
-     */
-    public int dispersedFreeSpace() {
-        return disperse(freeSpace, dispersion);
+        this.freeSpace = (short)freeSpace;
     }
 
     /**
@@ -65,26 +44,5 @@ public class FreeItem extends FullPageId {
      */
     public short freeSpace() {
         return freeSpace;
-    }
-
-    /**
-     * @param freeSpace Free space.
-     */
-    public void freeSpace(short freeSpace) {
-        this.freeSpace = freeSpace;
-    }
-
-    /**
-     * @return Dispersion.
-     */
-    public short dispersion() {
-        return dispersion;
-    }
-
-    /**
-     * @param dispersion Dispersion.
-     */
-    public void dispersion(short dispersion) {
-        this.dispersion = dispersion;
     }
 }
