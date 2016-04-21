@@ -540,11 +540,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param bufSize Buffer size.
      * @param interval Time interval.
      * @param autoUnsubscribe Automatic unsubscribe flag.
+     * @param locOnly Local only flag.
      * @param prjPred Projection predicate.
      * @return Future.
      */
     @SuppressWarnings("TooBroadScope")
     public IgniteInternalFuture<UUID> startRoutine(GridContinuousHandler hnd,
+        boolean locOnly,
         int bufSize,
         long interval,
         boolean autoUnsubscribe,
@@ -553,11 +555,29 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         assert bufSize > 0;
         assert interval >= 0;
 
-        // Whether local node is included in routine.
-        boolean locIncluded = prjPred == null || prjPred.apply(ctx.discovery().localNode());
-
         // Generate ID.
         final UUID routineId = UUID.randomUUID();
+
+        // Register routine locally.
+        locInfos.put(routineId, new LocalRoutineInfo(prjPred, hnd, bufSize, interval, autoUnsubscribe));
+
+        if (locOnly) {
+            try {
+                registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true);
+
+                hnd.onListenerRegistered(routineId, ctx);
+
+                return new GridFinishedFuture<>(routineId);
+            }
+            catch (IgniteCheckedException e) {
+                unregisterHandler(routineId, hnd, true);
+
+                return new GridFinishedFuture<>(e);
+            }
+        }
+
+        // Whether local node is included in routine.
+        boolean locIncluded = prjPred == null || prjPred.apply(ctx.discovery().localNode());
 
         StartRequestData reqData = new StartRequestData(prjPred, hnd.clone(), bufSize, interval, autoUnsubscribe);
 
@@ -612,9 +632,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
             });
         }
-
-        // Register routine locally.
-        locInfos.put(routineId, new LocalRoutineInfo(prjPred, hnd, bufSize, interval, autoUnsubscribe));
 
         StartFuture fut = new StartFuture(ctx, routineId);
 
