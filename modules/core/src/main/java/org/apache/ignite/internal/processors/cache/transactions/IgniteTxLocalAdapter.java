@@ -1838,10 +1838,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 long timeout = remainingTime();
 
                 if (timeout == 0)
-                    return new GridFinishedFuture<>(
-                        new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-                            "for transaction [timeout=" + timeout() + ", tx=" + this + ']')
-                    );
+                    return new GridFinishedFuture<>(timeoutException());
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
                     timeout,
@@ -3108,10 +3105,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 long timeout = remainingTime();
 
                 if (timeout == 0)
-                    return new GridFinishedFuture<>(
-                        new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-                            "for transaction [timeout=" + timeout() + ", tx=" + this + ']')
-                    );
+                    return new GridFinishedFuture<>(timeoutException());
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                     timeout,
@@ -3291,10 +3285,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 long timeout = remainingTime();
 
                 if (timeout == 0)
-                    return new GridFinishedFuture<>(
-                        new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-                            "for transaction [timeout=" + timeout() + ", tx=" + this + ']')
-                    );
+                    return new GridFinishedFuture<>(timeoutException());
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                     timeout,
@@ -3581,10 +3572,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             long timeout = remainingTime();
 
             if (timeout == 0)
-                return new GridFinishedFuture<>(
-                    new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-                        "for transaction [timeout=" + timeout() + ", tx=" + this + ']')
-                );
+                return new GridFinishedFuture<>(timeoutException());
 
             IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                 timeout,

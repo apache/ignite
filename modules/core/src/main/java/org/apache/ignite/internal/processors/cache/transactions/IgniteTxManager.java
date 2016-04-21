@@ -210,22 +210,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     if (txFinishSync != null)
                         txFinishSync.onNodeLeft(nodeId);
 
-                    Iterator<Map.Entry<Long, TxDeadlockFuture>> it = deadlockDetectFuts.entrySet().iterator();
-
-                    for (; it.hasNext();) {
-                        Map.Entry<Long, TxDeadlockFuture> e = it.next();
-
-                        TxDeadlockFuture fut = e.getValue();
-
-                        UUID futNodeId = fut.nodeId();
-
-                        if (nodeId.equals(futNodeId)) {
-                            ClusterTopologyCheckedException err =
-                                new ClusterTopologyCheckedException("Remote node has left topology: " + nodeId);
-
-                            fut.onComplete(futNodeId, err);
-                        }
-                    }
+                    for (TxDeadlockFuture fut : deadlockDetectFuts.values())
+                        fut.onNodeLeft(nodeId);
                 }
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT);
@@ -1886,38 +1872,56 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @param nodeId Node ID.
      * @param fut Future.
      * @param txKeys Tx keys.
      */
-    void txLocksInfo(TxDeadlockFuture fut, Set<IgniteTxKey> txKeys) {
-        UUID nodeId = fut.nodeId();
+    void txLocksInfo(UUID nodeId, TxDeadlockFuture fut, Set<IgniteTxKey> txKeys) {
+        ClusterNode node = cctx.node(nodeId);
 
-        if (supportsDeadlockDetection(nodeId)) {
+        if (node == null) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to finish deadlock detection, node left: " + nodeId);
+
+            fut.onDone();
+
+            return;
+        }
+
+        if (supportsDeadlockDetection(node)) {
             TxLocksRequest req = new TxLocksRequest(fut.futureId(), txKeys);
 
             try {
                 if (!cctx.localNodeId().equals(nodeId))
                     req.prepareMarshal(cctx);
 
-                cctx.gridIO().send(nodeId, TOPIC_TX, req, SYSTEM_POOL);
+                cctx.gridIO().send(node, TOPIC_TX, req, SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
-                U.warn(log, "Deadlock detection failed due to an error " + e);
+                if (e instanceof ClusterTopologyCheckedException) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to finish deadlock detection, node left: " + nodeId);
+                }
+                else
+                    U.warn(log, "Failed to finish deadlock detection: " + e, e);
 
                 fut.onDone();
             }
         }
-        else
+        else {
+            if (log.isDebugEnabled())
+                log.debug("Failed to finish deadlock detection, node does not support deadlock detection: " + node);
+
             fut.onDone();
+        }
     }
 
     /**
-     * @param nodeId Node ID.
+     * @param node Node.
+     * @return {@code True} if node supports deadlock detection protocol.
      */
-    private boolean supportsDeadlockDetection(UUID nodeId) {
-        ClusterNode node = cctx.node(nodeId);
-
-        return node != null && TX_DEADLOCK_DETECTION_SINCE.compareToIgnoreTimestamp(node.version()) <= 0;
+    private boolean supportsDeadlockDetection(ClusterNode node) {
+        return TX_DEADLOCK_DETECTION_SINCE.compareToIgnoreTimestamp(node.version()) <= 0;
     }
 
     /**

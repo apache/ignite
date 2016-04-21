@@ -697,10 +697,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         long timeout = remainingTime();
 
         if (timeout == 0)
-            return new GridFinishedFuture<>(
-                new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-                    "for transaction [timeout=" + timeout() + ", tx=" + this + ']')
-            );
+            return new GridFinishedFuture<>(timeoutException());
 
         IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
             timeout,

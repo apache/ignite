@@ -143,7 +143,7 @@ public class TxDeadlockDetection {
      *
      */
     static class TxDeadlockFuture extends GridFutureAdapter<TxDeadlock> {
-        /** Cctx. */
+        /** Context. */
         private final GridCacheSharedContext cctx;
 
         /** Future ID. */
@@ -240,11 +240,16 @@ public class TxDeadlockDetection {
         }
 
         /**
-         * @return Last node ID.
+         * @param nodeId Node ID.
          */
-        UUID nodeId() {
-            synchronized (mux) {
-                return curNodeId;
+        public void onNodeLeft(UUID nodeId) {
+            if (compareAndSet(nodeId, null)) {
+                IgniteLogger log = cctx.logger(TxDeadlockDetection.class);
+
+                if (log.isDebugEnabled())
+                    log.debug("Failed to finish deadlock detection, node left: " + nodeId);
+
+                onDone();
             }
         }
 
@@ -280,7 +285,7 @@ public class TxDeadlockDetection {
                 processedNodes.add(nodeId);
                 pendingKeys.remove(nodeId);
 
-                cctx.tm().txLocksInfo(this, txKeys);
+                cctx.tm().txLocksInfo(nodeId, this, txKeys);
             }
         }
 

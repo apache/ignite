@@ -107,6 +107,8 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
                             startGrid(NODES_CNT);
 
+                            awaitPartitionMapExchange();
+
                             U.sleep(500);
 
                             stopGrid(NODES_CNT);
@@ -136,8 +138,8 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
                         try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 0)) {
                             ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
 
-                            for (int i = 0; i < 500; i++) {
-                                int key = rnd.nextInt(100);
+                            for (int i = 0; i < 50; i++) {
+                                int key = rnd.nextInt(50);
 
                                 if (log.isDebugEnabled()) {
                                     log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
