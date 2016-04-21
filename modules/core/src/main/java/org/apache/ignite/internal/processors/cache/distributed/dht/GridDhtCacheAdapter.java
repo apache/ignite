@@ -185,9 +185,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 int hash,
                 CacheObject val
             ) {
-                if (ctx.useOffheapEntry())
-                    return new GridDhtOffHeapCacheEntry(ctx, topVer, key, hash, val);
-
                 return new GridDhtCacheEntry(ctx, topVer, key, hash, val);
             }
         });
@@ -983,33 +980,26 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         int size = keys.size();
 
-        boolean swap = cache.context().isOffHeapEnabled();
-
         for (int i = 0; i < size; i++) {
             try {
                 GridCacheEntryEx entry = null;
 
                 try {
-                    if (swap) {
-                        while (true) {
-                            try {
-                                entry = cache.entryEx(keys.get(i));
+                    while (true) {
+                        try {
+                            entry = cache.entryEx(keys.get(i));
 
-                                entry.unswap(false);
+                            entry.unswap(false);
 
-                                break;
-                            }
-                            catch (GridCacheEntryRemovedException e) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Got removed entry: " + entry);
-                            }
+                            break;
+                        }
+                        catch (GridCacheEntryRemovedException e) {
+                            if (log.isDebugEnabled())
+                                log.debug("Got removed entry: " + entry);
                         }
                     }
-                    else
-                        entry = cache.peekEx(keys.get(i));
 
-                    if (entry != null)
-                        entry.updateTtl(vers.get(i), ttl);
+                    entry.updateTtl(vers.get(i), ttl);
                 }
                 finally {
                     if (entry != null)

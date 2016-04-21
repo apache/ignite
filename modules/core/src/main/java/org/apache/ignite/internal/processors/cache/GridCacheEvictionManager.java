@@ -706,7 +706,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
         boolean hasVal = recordable && entry.hasValue();
 
-        boolean evicted = entry.evictInternal(cctx.isOffHeapEnabled(), obsoleteVer, filter);
+        boolean evicted = entry.evictInternal(obsoleteVer, filter);
 
         if (evicted) {
             // Remove manually evicted entry from policy.
@@ -955,7 +955,6 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      */
     public void batchEvict(Collection<?> keys, @Nullable GridCacheVersion obsoleteVer) throws IgniteCheckedException {
         assert !evictSyncAgr;
-        assert cctx.isOffHeapEnabled();
 
         List<GridCacheEntryEx> locked = new ArrayList<>(keys.size());
 

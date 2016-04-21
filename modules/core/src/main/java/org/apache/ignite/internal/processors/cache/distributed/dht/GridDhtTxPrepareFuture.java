@@ -362,13 +362,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                     CacheObject val = cached.innerGet(
                         tx,
-                        /*swap*/true,
                         readThrough,
-                        /*fail fast*/false,
-                        /*unmarshal*/true,
                         /*metrics*/retVal,
                         /*event*/evt,
-                        /*tmp*/false,
                         tx.subjectId(),
                         entryProc,
                         tx.resolveTaskName(),

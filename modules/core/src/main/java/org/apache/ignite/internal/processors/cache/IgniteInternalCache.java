@@ -1517,17 +1517,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public long primarySizeLong();
 
     /**
-     * This method unswaps cache entries by given keys, if any, from swap storage
-     * into memory.
-     * <h2 class="header">Transactions</h2>
-     * This method is not transactional.
-     *
-     * @param keys Keys to promote entries for.
-     * @throws IgniteCheckedException If promote failed.
-     */
-    public void promoteAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
-
-    /**
      * Gets configuration bean for this cache.
      *
      * @return Configuration bean for this cache.
@@ -1569,22 +1558,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Allocated memory size.
      */
     public long offHeapAllocatedSize();
-
-    /**
-     * Gets size in bytes for swap space.
-     *
-     * @return Size in bytes.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long swapSize() throws IgniteCheckedException;
-
-    /**
-     * Gets number of swap entries (keys).
-     *
-     * @return Number of entries stored in swap.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long swapKeys() throws IgniteCheckedException;
 
     /**
      * Forces this cache node to re-balance its partitions. This method is usually used when

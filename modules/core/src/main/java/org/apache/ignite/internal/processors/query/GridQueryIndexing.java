@@ -189,8 +189,13 @@ public interface GridQueryIndexing {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, KeyCacheObject key, int partId,
-        CacheObject val, GridCacheVersion ver, long expirationTime) throws IgniteCheckedException;
+    public boolean store(@Nullable String spaceName,
+        GridQueryTypeDescriptor type,
+        KeyCacheObject key,
+        int partId,
+        CacheObject val,
+        GridCacheVersion ver,
+        long expirationTime) throws IgniteCheckedException;
 
     /**
      * Removes index entry by key.
@@ -200,7 +205,7 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException;
+    public boolean remove(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException;
 
     /**
      * @param space Space name.

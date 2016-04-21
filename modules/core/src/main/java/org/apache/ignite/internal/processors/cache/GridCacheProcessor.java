@@ -1300,9 +1300,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         boolean cacheIndexingEnabled = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cfg);
 
-        IgniteCacheOffheapManager offheapMgr = new IgniteCacheOffheapManager(cfg.getCacheMode() == LOCAL ||
-            !GridCacheUtils.isNearEnabled(cfg),
-            cacheIndexingEnabled);
+        IgniteCacheOffheapManager offheapMgr = new IgniteCacheOffheapManager(cacheIndexingEnabled);
 
         storeMgr.initialize(cfgStore, sesHolders);
 
@@ -1431,7 +1429,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * ===============================================
              */
             swapMgr = new GridCacheSwapManager(true);
-            offheapMgr = new IgniteCacheOffheapManager(true, cacheIndexingEnabled);
             evictMgr = new GridCacheEvictionManager();
             evtMgr = new GridCacheEventManager();
             pluginMgr = new CachePluginManager(ctx, cfg);

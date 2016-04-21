@@ -116,15 +116,6 @@ public interface GridCacheEntryEx {
     public CacheObject rawGet();
 
     /**
-     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held,
-     *        temporary object can used for filter evaluation or transform closure execution and
-     *        should not be returned to user.
-     * @return Value (unmarshalled if needed).
-     * @throws IgniteCheckedException If failed.
-     */
-    public CacheObject rawGetOrUnmarshal(boolean tmp) throws IgniteCheckedException;
-
-    /**
      * @return {@code True} if has value or value bytes.
      */
     public boolean hasValue();
@@ -218,14 +209,13 @@ public interface GridCacheEntryEx {
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
-     * @param swap Swap flag.
      * @param obsoleteVer Version for eviction.
      * @param filter Optional filter.
      * @return {@code True} if entry could be evicted.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
-        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException;
+    public boolean evictInternal(GridCacheVersion obsoleteVer, @Nullable CacheEntryPredicate[] filter)
+        throws IgniteCheckedException;
 
     /**
      * Evicts entry when batch evict is performed. When called, does not write entry data to swap, but instead
@@ -274,16 +264,9 @@ public interface GridCacheEntryEx {
 
     /**
      * @param tx Ongoing transaction (possibly null).
-     * @param readSwap Flag indicating whether to check swap memory.
      * @param readThrough Flag indicating whether to read through.
-     * @param failFast If {@code true}, then throw {@link GridCacheFilterFailedException} if
-     *      filter didn't pass.
-     * @param unmarshal Unmarshal flag.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
-     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held,
-     *        temporary object can used for filter evaluation or transform closure execution and
-     *        should not be returned to user.
      * @param subjId Subject ID initiated this read.
      * @param transformClo Transform closure to record event.
      * @param taskName Task name.
@@ -293,13 +276,9 @@ public interface GridCacheEntryEx {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @Nullable public CacheObject innerGet(@Nullable IgniteInternalTx tx,
-        boolean readSwap,
         boolean readThrough,
-        boolean failFast,
-        boolean unmarshal,
         boolean updateMetrics,
         boolean evt,
-        boolean tmp,
         UUID subjId,
         Object transformClo,
         String taskName,
@@ -309,8 +288,6 @@ public interface GridCacheEntryEx {
 
     /**
      * @param tx Cache transaction.
-     * @param readSwap Flag indicating whether to check swap memory.
-     * @param unmarshal Unmarshal flag.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
      * @param subjId Subject ID initiated this read.
@@ -323,8 +300,6 @@ public interface GridCacheEntryEx {
      */
     @Nullable public T2<CacheObject, GridCacheVersion> innerGetVersioned(
         IgniteInternalTx tx,
-        boolean readSwap,
-        boolean unmarshal,
         boolean updateMetrics,
         boolean evt,
         UUID subjId,
@@ -341,8 +316,7 @@ public interface GridCacheEntryEx {
      * @throws IgniteCheckedException If reload failed.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
-    @Nullable public CacheObject innerReload() throws IgniteCheckedException,
-        GridCacheEntryRemovedException;
+    @Nullable public CacheObject innerReload() throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Cache transaction.

@@ -439,7 +439,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             GridCacheEntryEx entry;
 
             try {
-                entry = cache.context().isOffHeapEnabled() ? cache.entryEx(key) : cache.peekEx(key);
+                entry = cache.entryEx(key);
 
                 // If our DHT cache do has value, then we peek it.
                 if (entry != null) {
@@ -451,8 +451,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     if (needVer) {
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
                             subjId,
@@ -468,13 +466,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     }
                     else {
                         v = entry.innerGet(null,
-                            /*swap*/true,
                             /*read-through*/false,
-                            /*fail-fast*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
-                            /*temporary*/false,
                             subjId,
                             null,
                             taskName,

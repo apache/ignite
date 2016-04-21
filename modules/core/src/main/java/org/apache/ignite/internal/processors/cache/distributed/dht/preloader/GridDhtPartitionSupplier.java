@@ -288,7 +288,6 @@ class GridDhtPartitionSupplier {
                         swapLsnr = new GridCacheEntryInfoCollectSwapListener(log);
 
                         cctx.swap().addOffHeapListener(part, swapLsnr);
-                        cctx.swap().addSwapListener(part, swapLsnr);
                     }
 
                     boolean partMissing = false;
@@ -789,7 +788,6 @@ class GridDhtPartitionSupplier {
                         swapLsnr = new GridCacheEntryInfoCollectSwapListener(log);
 
                         cctx.swap().addOffHeapListener(part, swapLsnr);
-                        cctx.swap().addSwapListener(part, swapLsnr);
                     }
 
                     boolean partMissing = false;

@@ -117,7 +117,6 @@ import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -800,9 +799,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
             startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
-
-            // Off-heap processor has no dependencies.
-            startProcessor(new GridOffHeapProcessor(ctx));
 
             // Closure processor should be started before all others
             // (except for resource processor), as many components can depend on it.

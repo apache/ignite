@@ -175,15 +175,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
     public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf) throws IgniteCheckedException;
 
     /**
-     * @param ctx Context.
-     * @param valPtr Value pointer.
-     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held.
-     * @return Cache object.
-     * @throws IgniteCheckedException If failed.
-     */
-    public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp) throws IgniteCheckedException;
-
-    /**
      * @param obj Value.
      * @return {@code True} if object is of known immutable type.
      */

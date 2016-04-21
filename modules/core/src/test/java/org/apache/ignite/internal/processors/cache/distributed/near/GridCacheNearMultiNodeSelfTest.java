@@ -399,7 +399,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 GridDhtCacheEntry entry = (GridDhtCacheEntry)dht(primaryGrid(2)).peekEx(2);
 
                 if (entry != null)
-                    assertNull("Unexpected entry: " + entry, entry.rawGetOrUnmarshal(false));
+                    assertNull("Unexpected entry: " + entry, entry.rawGet());
 
                 assertNotNull(localPeek(dht(primaryGrid(3)), 3));
 

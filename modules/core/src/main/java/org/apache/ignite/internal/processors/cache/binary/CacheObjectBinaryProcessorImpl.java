@@ -824,20 +824,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp)
-        throws IgniteCheckedException {
-        if (!((CacheObjectBinaryContext)ctx.cacheObjectContext()).binaryEnabled())
-            return super.toCacheObject(ctx, valPtr, tmp);
-
-        Object val = unmarshal(valPtr, !tmp);
-
-        if (val instanceof BinaryObjectOffheapImpl)
-            return (BinaryObjectOffheapImpl)val;
-
-        return new CacheObjectImpl(val, null);
-    }
-
-    /** {@inheritDoc} */
     @Override public Object unwrapTemporary(GridCacheContext ctx, Object obj) throws BinaryObjectException {
         if (!((CacheObjectBinaryContext)ctx.cacheObjectContext()).binaryEnabled())
             return obj;

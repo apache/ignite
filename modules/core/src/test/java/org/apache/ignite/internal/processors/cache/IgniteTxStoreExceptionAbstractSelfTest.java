@@ -378,7 +378,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
                 assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore,
                     entry.hasValue());
                 assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null,
-                    entry.rawGetOrUnmarshal(false));
+                    entry.rawGet());
             }
 
             if (cache.isNear()) {
@@ -391,7 +391,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
                     assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore,
                         entry.hasValue());
                     assertEquals("Unexpected entry for grid [idx=" + i + ", entry=" + entry + ']', putBefore ? 1 : null,
-                        entry.rawGetOrUnmarshal(false));
+                        entry.rawGet());
                 }
             }
         }

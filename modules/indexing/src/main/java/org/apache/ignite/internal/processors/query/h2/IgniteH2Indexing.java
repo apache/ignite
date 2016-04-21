@@ -518,14 +518,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, KeyCacheObject k, int partId,
+    @Override public boolean store(@Nullable String spaceName, GridQueryTypeDescriptor type, KeyCacheObject k, int partId,
         CacheObject v, GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         removeKey(spaceName, k, partId, ver, tbl);
 
         if (tbl == null)
-            return; // Type was rejected.
+            return false; // Type was rejected.
 
         if (expirationTime == 0)
             expirationTime = Long.MAX_VALUE;
@@ -534,6 +534,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (tbl.luceneIdx != null)
             tbl.luceneIdx.store(k, v, ver, expirationTime);
+
+        return true;
     }
 
     /**
@@ -581,7 +583,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val,
+    @Override public boolean remove(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val,
         GridCacheVersion ver) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ", val=" + val + ']');
@@ -598,10 +600,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     if (tbl.luceneIdx != null)
                         tbl.luceneIdx.remove(key);
 
-                    return;
+                    return true;
                 }
             }
         }
+
+        return false;
     }
 
     /** {@inheritDoc} */

@@ -126,9 +126,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 int hash,
                 CacheObject val
             ) {
-                if (ctx.useOffheapEntry())
-                    return new GridDhtColocatedOffHeapCacheEntry(ctx, topVer, key, hash, val);
-
                 return new GridDhtColocatedCacheEntry(ctx, topVer, key, hash, val);
             }
         });
@@ -473,7 +470,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 while (true) {
                     try {
-                        entry = ctx.isOffHeapEnabled() ? entryEx(key) : peekEx(key);
+                        entry = entryEx(key);
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
@@ -485,8 +482,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             if (needVer) {
                                 T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                                     null,
-                                    /*swap*/true,
-                                    /*unmarshal*/true,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
                                     subjId,
@@ -502,13 +497,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             }
                             else {
                                 v = entry.innerGet(null,
-                                    /*swap*/true,
                                     /*read-through*/false,
-                                    /*fail-fast*/true,
-                                    /*unmarshal*/true,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
-                                    /*temporary*/false,
                                     subjId,
                                     null,
                                     taskName,

@@ -479,7 +479,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         Map<K, V> m = getAllInternal(Collections.singleton(key),
-            true,
             ctx.readThrough(),
             taskName,
             deserializeBinary,
@@ -500,7 +499,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         return getAllInternal(keys,
-            true,
             ctx.readThrough(),
             taskName,
             deserializeBinary,
@@ -528,7 +526,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         return asyncOp(new Callable<Map<K, V>>() {
             @Override public Map<K, V> call() throws Exception {
-                return getAllInternal(keys, true, storeEnabled, taskName, deserializeBinary, skipVals, needVer);
+                return getAllInternal(keys, storeEnabled, taskName, deserializeBinary, skipVals, needVer);
             }
         });
     }
@@ -537,7 +535,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * Entry point to all public API get methods.
      *
      * @param keys Keys to remove.
-     * @param swapOrOffheap {@code True} if swap of off-heap storage are enabled.
      * @param storeEnabled Store enabled flag.
      * @param taskName Task name.
      * @param deserializeBinary Deserialize binary .
@@ -548,7 +545,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      */
     @SuppressWarnings("ConstantConditions")
     private Map<K, V> getAllInternal(@Nullable Collection<? extends K> keys,
-        boolean swapOrOffheap,
         boolean storeEnabled,
         String taskName,
         boolean deserializeBinary,
@@ -583,7 +579,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
             while (true) {
                 try {
-                    entry = swapOrOffheap ? entryEx(cacheKey) : peekEx(cacheKey);
+                    entry = entryEx(cacheKey);
 
                     if (entry != null) {
                         CacheObject v ;
@@ -592,8 +588,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         if (needVer) {
                             T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                                 null,
-                                /*swap*/swapOrOffheap,
-                                /*unmarshal*/true,
                                 /**update-metrics*/false,
                                 /*event*/!skipVals,
                                 subjId,
@@ -620,13 +614,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         }
                         else {
                             v = entry.innerGet(null,
-                                /*swap*/swapOrOffheap,
                                 /*read-through*/false,
-                                /*fail-fast*/false,
-                                /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /**event*/!skipVals,
-                                /**temporary*/false,
                                 subjId,
                                 null,
                                 taskName,
@@ -1177,13 +1167,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             (EntryProcessor<Object, Object, Object>)val;
 
                         CacheObject old = entry.innerGet(null,
-                            /*swap*/true,
                             /*read-through*/true,
-                            /*fail-fast*/false,
-                            /*unmarshal*/true,
                             /**update-metrics*/true,
                             /**event*/true,
-                            /**temporary*/true,
                             subjId,
                             entryProcessor,
                             taskName,
@@ -1299,13 +1285,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                         if (intercept) {
                             CacheObject old = entry.innerGet(null,
-                                /*swap*/true,
                                 /*read-through*/ctx.loadPreviousValue(),
-                                /*fail-fast*/false,
-                                /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /**event*/true,
-                                /**temporary*/true,
                                 subjId,
                                 null,
                                 taskName,
@@ -1334,13 +1316,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
                         if (intercept) {
                             CacheObject old = entry.innerGet(null,
-                                /*swap*/true,
                                 /*read-through*/ctx.loadPreviousValue(),
-                                /*fail-fast*/false,
-                                /*unmarshal*/true,
                                 /**update-metrics*/true,
                                 /**event*/true,
-                                /**temporary*/true,
                                 subjId,
                                 null,
                                 taskName,

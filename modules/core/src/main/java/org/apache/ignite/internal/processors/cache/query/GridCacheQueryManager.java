@@ -392,20 +392,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException In case of error.
      */
-    public void store(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver, long expirationTime)
+    public boolean store(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver, long expirationTime)
         throws IgniteCheckedException {
         assert key != null;
         assert val != null;
         assert enabled();
 
         if (key instanceof GridCacheInternal)
-            return; // No-op.
+            return false; // No-op.
 
         if (!enterBusy())
-            return; // Ignore index update when node is stopping.
+            return false; // Ignore index update when node is stopping.
 
         try {
-            qryProc.store(space, key, partId, val, ver, expirationTime);
+            return qryProc.store(space, key, partId, val, ver, expirationTime);
         }
         finally {
             invalidateResultCache();
@@ -440,17 +440,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    public void remove(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
+    public boolean remove(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         assert key != null;
 
         if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
-            return; // No-op.
+            return false; // No-op.
 
         if (!enterBusy())
-            return; // Ignore index update when node is stopping.
+            return false; // Ignore index update when node is stopping.
 
         try {
-            qryProc.remove(space, key, partId, val, ver);
+            return qryProc.remove(space, key, partId, val, ver);
         }
         finally {
             invalidateResultCache();
@@ -996,8 +996,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 iters.add(heapIt);
 
-                if (cctx.isOffHeapEnabled())
-                    iters.add(offheapIterator(qry, backups));
+                iters.add(offheapIterator(qry, backups));
 
                 it = new CompoundIterator<>(iters);
             }
@@ -1053,16 +1052,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridIterator<IgniteBiTuple<K, V>> offheapIterator(GridCacheQueryAdapter<?> qry, boolean backups) {
         IgniteBiPredicate<K, V> filter = qry.scanFilter();
 
-        if (cctx.offheapTiered() && filter != null) {
-            OffheapIteratorClosure c = new OffheapIteratorClosure(filter, qry.keepBinary());
-
-            return cctx.swap().rawOffHeapIterator(c, qry.partition(), true, backups);
-        }
-        else {
-            Iterator<Map.Entry<byte[], byte[]>> it = cctx.swap().rawOffHeapIterator(qry.partition(), true, backups);
-
-            return scanIterator(it, filter, qry.keepBinary());
-        }
+        return cctx.offheap().scanQueryIterator(filter);
     }
 
     /**
@@ -2564,105 +2554,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override GridCacheVersion version() {
             return GridCacheSwapEntryImpl.version(e.getValue());
-        }
-    }
-
-    /**
-     *
-     */
-    private class LazyOffheapEntry extends AbstractLazySwapEntry {
-        /** */
-        private final T2<Long, Integer> keyPtr;
-
-        /** */
-        private final T2<Long, Integer> valPtr;
-
-        /**
-         * @param keyPtr Key address.
-         * @param valPtr Value address.
-         */
-        private LazyOffheapEntry(T2<Long, Integer> keyPtr, T2<Long, Integer> valPtr) {
-            assert keyPtr != null;
-            assert valPtr != null;
-
-            this.keyPtr = keyPtr;
-            this.valPtr = valPtr;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected byte[] keyBytes() {
-            return U.copyMemory(keyPtr.get1(), keyPtr.get2());
-        }
-
-        /** {@inheritDoc} */
-        @Override protected V unmarshalValue() throws IgniteCheckedException {
-            long ptr = GridCacheOffheapSwapEntry.valueAddress(valPtr.get1(), valPtr.get2());
-
-            CacheObject obj = cctx.fromOffheap(ptr, false);
-
-            V val = CU.value(obj, cctx, false);
-
-            assert val != null;
-
-            return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override long timeToLive() {
-            return GridCacheOffheapSwapEntry.timeToLive(valPtr.get1());
-        }
-
-        /** {@inheritDoc} */
-        @Override long expireTime() {
-            return GridCacheOffheapSwapEntry.expireTime(valPtr.get1());
-        }
-
-        /** {@inheritDoc} */
-        @Override GridCacheVersion version() {
-            return GridCacheOffheapSwapEntry.version(valPtr.get1());
-        }
-    }
-
-    /**
-     *
-     */
-    private class OffheapIteratorClosure
-        extends CX2<T2<Long, Integer>, T2<Long, Integer>, IgniteBiTuple<K, V>> {
-        /** */
-        private static final long serialVersionUID = 7410163202728985912L;
-
-        /** */
-        private IgniteBiPredicate<K, V> filter;
-
-        /** */
-        private boolean keepBinary;
-
-        /**
-         * @param filter Filter.
-         * @param keepBinary Keep binary flag.
-         */
-        private OffheapIteratorClosure(
-            @Nullable IgniteBiPredicate<K, V> filter,
-            boolean keepBinary) {
-            assert filter != null;
-
-            this.filter = filter;
-            this.keepBinary = keepBinary;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<K, V> applyx(T2<Long, Integer> keyPtr,
-            T2<Long, Integer> valPtr)
-            throws IgniteCheckedException {
-            LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
-
-            K key = (K)cctx.unwrapBinaryIfNeeded(e.key(), keepBinary);
-            V val = (V)cctx.unwrapBinaryIfNeeded(e.value(), keepBinary);
-
-            if (!filter.apply(key, val))
-                return null;
-
-            return new IgniteBiTuple<>(e.key(), (V)cctx.unwrapTemporary(e.value()));
         }
     }
 

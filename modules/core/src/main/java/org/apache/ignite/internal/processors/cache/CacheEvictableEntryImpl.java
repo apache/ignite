@@ -103,14 +103,10 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
 
             byte[] valBytes = null;
 
-            if (cctx.useOffheapEntry())
-                valBytes = cctx.offheap().get(cctx.swap().spaceName(), cached.partition(), key, keyBytes);
-            else {
-                CacheObject cacheObj = cached.valueBytes();
+            CacheObject cacheObj = cached.valueBytes();
 
-                if (cacheObj != null)
-                    valBytes = cacheObj.valueBytes(cctx.cacheObjectContext());
-            }
+            if (cacheObj != null)
+                valBytes = cacheObj.valueBytes(cctx.cacheObjectContext());
 
             return valBytes == null ? keyBytes.length : keyBytes.length + valBytes.length;
         }

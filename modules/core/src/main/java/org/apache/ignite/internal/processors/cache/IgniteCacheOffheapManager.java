@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -41,13 +42,17 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -65,17 +70,13 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     private CacheDataTree dataTree;
 
     /** */
-    private final boolean enabled;
-
-    /** */
     private final boolean indexingEnabled;
 
     /**
      * @param enabled Enabled flag (offheap supposed to be disabled for near cache).
      * @param indexingEnabled {@code True} if indexing is enabled for cache.
      */
-    public IgniteCacheOffheapManager(boolean enabled, boolean indexingEnabled) {
-        this.enabled = enabled;
+    public IgniteCacheOffheapManager(boolean indexingEnabled) {
         this.indexingEnabled = indexingEnabled;
     }
 
@@ -83,27 +84,18 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
-        if (enabled && !indexingEnabled) {
-            IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
+        IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-            IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), cctx.namexx());
+        IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), cctx.namexx());
 
-            rowStore = new CacheDataRowStore(cctx, null);
+        rowStore = new CacheDataRowStore(cctx, null);
 
-            dataTree = new CacheDataTree(rowStore, cctx, dbMgr.pageMemory(), page.get1(), page.get2());
-        }
+        dataTree = new CacheDataTree(rowStore, cctx, dbMgr.pageMemory(), page.get1(), page.get2());
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         super.onKernalStart0();
-    }
-
-    /**
-     * @return Enabled flag.
-     */
-    public boolean enabled() {
-        return enabled;
     }
 
     /**
@@ -113,9 +105,19 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      * @param part Partition.
      * @throws IgniteCheckedException If failed.
      */
-    public void put(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part) throws IgniteCheckedException {
-        if (!enabled || indexingEnabled)
-            return;
+    public void update(KeyCacheObject key,
+        CacheObject val,
+        GridCacheVersion ver,
+        long expireTime,
+        int part) throws IgniteCheckedException {
+        if (indexingEnabled) {
+            GridCacheQueryManager qryMgr = cctx.queries();
+
+            assert qryMgr.enabled();
+
+            if (qryMgr.store(key, part, val, ver, 0))
+                return;
+        }
 
         DataRow dataRow = new DataRow(key, val, ver, part, 0);
 
@@ -128,9 +130,15 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      * @param key Key.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(KeyCacheObject key) throws IgniteCheckedException {
-        if (!enabled || indexingEnabled)
-            return;
+    public void remove(KeyCacheObject key, CacheObject prevVal, GridCacheVersion prevVer, int part) throws IgniteCheckedException {
+        if (indexingEnabled) {
+            GridCacheQueryManager qryMgr = cctx.queries();
+
+            assert qryMgr.enabled();
+
+            if (qryMgr.remove(key, part, prevVal, prevVer))
+                return;
+        }
 
         DataRow dataRow = dataTree.remove(new KeySearchRow(key));
 
@@ -149,12 +157,18 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      */
     @Nullable public IgniteBiTuple<CacheObject, GridCacheVersion> read(KeyCacheObject key, int part)
         throws IgniteCheckedException {
-        if (!enabled || indexingEnabled)
+        if (indexingEnabled)
             return cctx.queries().read(key, part);
 
         DataRow dataRow = dataTree.findOne(new KeySearchRow(key));
 
         return dataRow != null ? F.t(dataRow.val, dataRow.ver) : null;
+    }
+
+    @Nullable CacheObject readValue(KeyCacheObject key, int part) throws IgniteCheckedException {
+        IgniteBiTuple<CacheObject, GridCacheVersion> t = read(key, part);
+
+        return t != null ? t.get1() : null;
     }
 
     /**
@@ -163,9 +177,6 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      * @param readers {@code True} to clear readers.
      */
     public void clear(boolean readers) {
-        if (!enabled)
-            return;
-
         if (dataTree != null)
             clear(dataTree, readers);
 
@@ -264,9 +275,6 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      */
     public long entriesCount(boolean primary, boolean backup, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
-        if (!enabled)
-            return 0;
-
         long cnt = 0;
 
         if (dataTree != null)
@@ -282,10 +290,64 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         return cnt;
     }
 
-    public GridCloseableIterator<KeyCacheObject> iterator(final int part) throws IgniteCheckedException {
-        if (!enabled)
-            return null;
+    public GridCloseableIterator<CacheDataRow> iterator() throws IgniteCheckedException {
+        final GridCursor<? extends CacheDataRow> cur = dataTree.find(null, null);
 
+        return new GridCloseableIteratorAdapter<CacheDataRow>() {
+            @Override protected CacheDataRow onNext() throws IgniteCheckedException {
+                return cur.get();
+            }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                return cur.next();
+            }
+        };
+    }
+
+    public long offHeapAllocatedSize() {
+        // TODO GG-10884.
+        return 0;
+    }
+
+    public <K, V> GridIterator<IgniteBiTuple<K, V>> scanQueryIterator(@Nullable IgniteBiPredicate<K, V> filter) {
+        // TODO GG-10884.
+        return new GridEmptyIterator<>();
+    }
+
+    public <K, V> GridCloseableIterator<Cache.Entry<K, V>> entriesIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
+        final GridCursor<? extends CacheDataRow> cur = dataTree.find(null, null);
+
+        return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
+            @Override protected Cache.Entry<K, V> onNext() throws IgniteCheckedException {
+                CacheDataRow row = cur.get();
+
+                return new CacheEntryImplEx<>((K)row.key(), (V)row.value(), row.version());
+            }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                return cur.next();
+            }
+        };
+    }
+
+    public GridCloseableIterator<KeyCacheObject> keysIterator() throws IgniteCheckedException {
+        final GridCursor<? extends CacheDataRow> cur = dataTree.find(null, null);
+
+        return new GridCloseableIteratorAdapter<KeyCacheObject>() {
+            @Override protected KeyCacheObject onNext() throws IgniteCheckedException {
+                CacheDataRow row = cur.get();
+
+                return row.key();
+            }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                return cur.next();
+            }
+        };
+    }
+
+    public GridCloseableIterator<KeyCacheObject> keysIterator(final int part) throws IgniteCheckedException {
         final GridCursor<? extends CacheDataRow> cur = dataTree.find(null, null);
 
         return new GridCloseableIteratorAdapter<KeyCacheObject>() {
@@ -299,7 +361,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
                     CacheDataRow row = cur.get();
 
                     if (row.partition() == part) {
-                        next = (KeyCacheObject)row.key();
+                        next = row.key();
 
                         break;
                     }

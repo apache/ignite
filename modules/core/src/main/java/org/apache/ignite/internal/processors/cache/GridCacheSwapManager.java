@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionAware;
@@ -126,7 +125,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         spaceName = CU.swapSpaceName(cctx);
 
         swapMgr = cctx.gridSwap();
-        offheap = cctx.offheap();
 
         swapEnabled = enabled && cctx.config().isSwapEnabled() && cctx.kernalContext().swap().enabled();
         offheapEnabled = enabled && cctx.config().getOffHeapMaxMemory() >= 0 &&

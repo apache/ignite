@@ -82,12 +82,10 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
-import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.lang.GridFunc;
-import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -143,9 +141,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Cache configuration. */
     private CacheConfiguration cacheCfg;
-
-    /** Unsafe memory object for direct memory allocation. */
-    private GridUnsafeMemory unsafeMemory;
 
     /** Affinity manager. */
     private GridCacheAffinityManager affMgr;
@@ -348,10 +343,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.affMgr = add(affMgr);
 
         log = ctx.log(getClass());
-
-        // Create unsafe memory only if writing values
-        unsafeMemory = (cacheCfg.getMemoryMode() == OFFHEAP_VALUES || cacheCfg.getMemoryMode() == OFFHEAP_TIERED) ?
-            new GridUnsafeMemory(cacheCfg.getOffHeapMaxMemory()) : null;
 
         gate = new GridCacheGateway<>(this);
 
@@ -666,13 +657,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Instance of {@link GridUnsafeMemory} object.
-     */
-    @Nullable public GridUnsafeMemory unsafeMemory() {
-        return unsafeMemory;
-    }
-
-    /**
      * @return Kernal context.
      */
     public GridKernalContext kernalContext() {
@@ -903,13 +887,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Grid off-heap processor.
-     */
-    public GridOffHeapProcessor offheap() {
-        return ctx.offheap();
-    }
-
-    /**
      * @return Grid deployment manager.
      */
     public GridDeploymentManager gridDeploy() {
@@ -1072,7 +1049,10 @@ public class GridCacheContext<K, V> implements Externalizable {
         return drMgr;
     }
 
-    public IgniteCacheOffheapManager offheap0() {
+    /**
+     * @return Offheap manager.
+     */
+    public IgniteCacheOffheapManager offheap() {
         return offheapMgr;
     }
 
@@ -1425,17 +1405,10 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if swap store of off-heap cache are enabled.
-     */
-    public boolean isSwapOrOffheapEnabled() {
-        return isOffHeapEnabled();
-    }
-
-    /**
      * @return {@code True} if offheap storage is enabled.
      */
     public boolean isOffHeapEnabled() {
-        return offheapMgr.enabled();
+        return true;
     }
 
     /**
@@ -1727,30 +1700,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if OFFHEAP_TIERED memory mode is enabled.
-     */
-    public boolean offheapTiered() {
-        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
-    }
-
-    /**
-     * @return {@code True} if should use entry with offheap value pointer.
-     */
-    public boolean useOffheapEntry() {
-        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES;
-    }
-
-    /**
      * Converts temporary offheap object to heap-based.
      *
      * @param obj Object.
      * @return Heap-based object.
      */
     @Nullable public <T> T unwrapTemporary(@Nullable Object obj) {
-        if (!offheapTiered())
-            return (T)obj;
-
-        return (T) cacheObjects().unwrapTemporary(this, obj);
+        return (T)cacheObjects().unwrapTemporary(this, obj);
     }
 
     /**
@@ -1878,19 +1834,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return ctx.cacheObjects().toCacheObject(cacheObjCtx, type, bytes);
-    }
-
-    /**
-     * @param valPtr Value pointer.
-     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held.
-     * @return Cache object.
-     * @throws IgniteCheckedException If failed.
-     */
-    public CacheObject fromOffheap(long valPtr, boolean tmp) throws IgniteCheckedException {
-        assert config().getMemoryMode() == OFFHEAP_TIERED || config().getMemoryMode() == OFFHEAP_VALUES : cacheCfg;
-        assert valPtr != 0;
-
-        return ctx.cacheObjects().toCacheObject(this, valPtr, tmp);
     }
 
     /**

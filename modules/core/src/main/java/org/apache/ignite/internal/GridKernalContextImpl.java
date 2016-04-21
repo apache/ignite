@@ -65,7 +65,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
@@ -205,10 +204,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringInclude
     private GridPortProcessor portProc;
-
-    /** */
-    @GridToStringInclude
-    private GridOffHeapProcessor offheapProc;
 
     /** */
     @GridToStringInclude
@@ -494,8 +489,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             dataLdrProc = (DataStreamProcessor)comp;
         else if (comp instanceof IgfsProcessorAdapter)
             igfsProc = (IgfsProcessorAdapter)comp;
-        else if (comp instanceof GridOffHeapProcessor)
-            offheapProc = (GridOffHeapProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
         else if (comp instanceof HadoopProcessorAdapter)
@@ -620,11 +613,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPortProcessor ports() {
         return portProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridOffHeapProcessor offheap() {
-        return offheapProc;
     }
 
     /** {@inheritDoc} */

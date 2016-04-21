@@ -185,9 +185,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 int hash,
                 CacheObject val
             ) {
-                if (ctx.useOffheapEntry())
-                    return new GridDhtAtomicOffHeapCacheEntry(ctx, topVer, key, hash, val);
-
                 return new GridDhtAtomicCacheEntry(ctx, topVer, key, hash, val);
             }
         });
@@ -1182,7 +1179,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 while (true) {
                     try {
-                        entry = ctx.isOffHeapEnabled() ? entryEx(key) : peekEx(key);
+                        entry = entryEx(key);
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
@@ -1194,8 +1191,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (needVer) {
                                 T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                                     null,
-                                    /*swap*/true,
-                                    /*unmarshal*/true,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
                                     subjId,
@@ -1211,13 +1206,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             }
                             else {
                                 v = entry.innerGet(null,
-                                    /*swap*/true,
                                     /*read-through*/false,
-                                    /*fail-fast*/true,
-                                    /*unmarshal*/true,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
-                                    /*temporary*/false,
                                     subjId,
                                     null,
                                     taskName,
@@ -1636,13 +1627,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     CacheObject old = entry.innerGet(
                         null,
-                        /*read swap*/true,
                         /*read through*/true,
-                        /*fail fast*/false,
-                        /*unmarshal*/true,
                         /*metrics*/true,
                         /*event*/true,
-                        /*temporary*/true,
                         req.subjectId(),
                         entryProcessor,
                         taskName,
@@ -1792,13 +1779,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (intercept) {
                         CacheObject old = entry.innerGet(
                              null,
-                            /*read swap*/true,
                             /*read through*/ctx.loadPreviousValue(),
-                            /*fail fast*/false,
-                            /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
-                            /*temporary*/true,
                             req.subjectId(),
                             null,
                             taskName,
@@ -1831,13 +1814,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     if (intercept) {
                         CacheObject old = entry.innerGet(
                             null,
-                            /*read swap*/true,
                             /*read through*/ctx.loadPreviousValue(),
-                            /*fail fast*/false,
-                            /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
-                            /*temporary*/true,
                             req.subjectId(),
                             null,
                             taskName,
@@ -1909,7 +1888,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (entry == null)
                 continue;
 
-            CacheObject val = entry.rawGetOrUnmarshal(false);
+            CacheObject val = entry.rawGet();
 
             if (val == null) {
                 if (needReload == null)

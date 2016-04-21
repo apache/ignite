@@ -127,15 +127,6 @@ public class VisorCache implements Serializable {
 
         name = cacheName;
 
-        try {
-            swapSize = ca.swapSize();
-            swapKeys = ca.swapKeys();
-        }
-        catch (IgniteCheckedException ignored) {
-            swapSize = -1;
-            swapKeys = -1;
-        }
-
         primaryPartitions = Collections.emptyList();
         backupPartitions = Collections.emptyList();
 

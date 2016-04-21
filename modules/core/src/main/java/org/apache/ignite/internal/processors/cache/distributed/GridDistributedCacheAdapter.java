@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -411,7 +410,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                                 }
                             }
 
-                            GridCloseableIterator<KeyCacheObject> iter = dht.context().offheap0().iterator(part);
+                            GridCloseableIterator<KeyCacheObject> iter = dht.context().offheap().keysIterator(part);
 
                             if (iter != null) {
                                 for (KeyCacheObject key : iter)

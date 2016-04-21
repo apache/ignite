@@ -336,7 +336,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         if (isNew() || !valid(AffinityTopologyVersion.NONE) || deletedUnlocked())
             return null;
         else {
-            CacheObject val0 = valueBytesUnlocked();
+            CacheObject val0 = this.val;
 
             return F.t(ver, val0);
         }
@@ -577,17 +577,10 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 if (log.isDebugEnabled())
                     log.debug("Entry has been marked obsolete: " + this);
 
-                clearIndex(prev, ver);
+                removeValue(prev, ver);
 
                 // Give to GC.
                 update(null, 0L, 0L, ver);
-
-                if (swap) {
-                    cctx.offheap0().remove(key);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Entry has been cleared from swap storage: " + this);
-                }
 
                 if (cctx.store().isLocal())
                     cctx.store().remove(null, key);

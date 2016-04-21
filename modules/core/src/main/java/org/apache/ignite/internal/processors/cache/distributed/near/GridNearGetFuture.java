@@ -435,8 +435,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     if (needVer) {
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/true,
                             /*event*/!skipVals,
                             subjId,
@@ -452,13 +450,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     }
                     else {
                         v = entry.innerGet(tx,
-                            /*swap*/false,
                             /*read-through*/false,
-                            /*fail-fast*/true,
-                            /*unmarshal*/true,
                             /*metrics*/true,
                             /*events*/!skipVals,
-                            /*temporary*/false,
                             subjId,
                             null,
                             taskName,
@@ -574,8 +568,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     if (needVer) {
                         T2<CacheObject, GridCacheVersion> res = dhtEntry.innerGetVersioned(
                             null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!nearRead && !skipVals,
                             subjId,
@@ -591,13 +583,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     }
                     else {
                         v = dhtEntry.innerGet(tx,
-                            /*swap*/true,
                             /*read-through*/false,
-                            /*fail-fast*/true,
-                            /*unmarshal*/true,
                             /*update-metrics*/false,
                             /*events*/!nearRead && !skipVals,
-                            /*temporary*/false,
                             subjId,
                             null,
                             taskName,

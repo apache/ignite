@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
-import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
@@ -155,13 +154,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Job processor
      */
     public GridJobProcessor job();
-
-    /**
-     * Gets offheap processor.
-     *
-     * @return Off-heap processor.
-     */
-    public GridOffHeapProcessor offheap();
 
     /**
      * Gets timeout processor.
