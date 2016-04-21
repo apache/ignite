@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -324,20 +325,21 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
         fut.get();
 
+        U.sleep(1000);
+
         TransactionDeadlockException deadlockE = deadlockErr.get();
 
         assertNotNull(deadlockE);
 
-        U.sleep(1000);
-
-        // Check transactions and entry locks state.
+        // Check transactions, futures and entry locks state.
         for (int i = 0; i < NODES_CNT * 2; i++) {
             Ignite ignite = ignite(i);
 
             int cacheId = ((IgniteCacheProxy)ignite.cache(CACHE_NAME)).context().cacheId();
 
-            Collection<IgniteInternalTx> activeTxs =
-                ((IgniteKernal)ignite).context().cache().context().tm().activeTransactions();
+            IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();
+
+            Collection<IgniteInternalTx> activeTxs = txMgr.activeTransactions();
 
             for (IgniteInternalTx tx : activeTxs) {
                 Collection<IgniteTxEntry> entries = tx.allEntries();
@@ -347,6 +349,11 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                         fail("Transaction still exists: " + tx);
                 }
             }
+
+            ConcurrentMap<Long, TxDeadlockDetection.TxDeadlockFuture> futs =
+                GridTestUtils.getFieldValue(txMgr, IgniteTxManager.class, "deadlockDetectFuts");
+
+            assertTrue(futs.isEmpty());
 
             GridCacheAdapter<Object, Integer> intCache = internalCache(i, CACHE_NAME);
 

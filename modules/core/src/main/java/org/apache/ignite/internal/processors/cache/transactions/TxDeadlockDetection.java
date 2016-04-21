@@ -147,7 +147,7 @@ public class TxDeadlockDetection {
         private final GridCacheSharedContext cctx;
 
         /** Future ID. */
-        private final long futId;
+        private final long futId = SEQ.incrementAndGet();
 
         /** Tx ID. */
         private final GridCacheVersion txId;
@@ -156,34 +156,34 @@ public class TxDeadlockDetection {
         private final Set<IgniteTxKey> keys;
 
         /** Processed keys. */
-        private final Set<IgniteTxKey> processedKeys;
+        private final Set<IgniteTxKey> processedKeys = new HashSet<>();
 
         /** Processed nodes. */
-        private final Set<UUID> processedNodes;
+        private final Set<UUID> processedNodes = new HashSet<>();
 
         /** Pending keys. */
-        private Map<UUID, Set<IgniteTxKey>> pendingKeys;
+        private Map<UUID, Set<IgniteTxKey>> pendingKeys = new HashMap<>();
 
         /** Nodes queue. */
-        private final UniqueDeque<UUID> nodesQueue;
+        private final UniqueDeque<UUID> nodesQueue = new UniqueDeque<>();
 
         /** Preferred nodes. */
-        private final Set<UUID> preferredNodes;
+        private final Set<UUID> preferredNodes = new HashSet<>();
 
         /** Tx locked keys. */
-        private final Map<GridCacheVersion, Set<IgniteTxKey>> txLockedKeys;
+        private final Map<GridCacheVersion, Set<IgniteTxKey>> txLockedKeys = new HashMap<>();
 
         /** Tx requested keys. */
-        private final Map<IgniteTxKey, Set<GridCacheVersion>> txRequestedKeys;
+        private final Map<IgniteTxKey, Set<GridCacheVersion>> txRequestedKeys = new HashMap<>();
 
         /** Wait-for-graph. */
-        private final Map<GridCacheVersion, Set<GridCacheVersion>> wfg;
+        private final Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<>();
 
         /** Topology version. */
         private final AffinityTopologyVersion topVer;
 
         /** Transactions. */
-        private final Map<GridCacheVersion, T2<UUID, Long>> txs;
+        private final Map<GridCacheVersion, T2<UUID, Long>> txs = new HashMap<>();
 
         /** Current processing node ID. */
         private UUID curNodeId;
@@ -208,18 +208,8 @@ public class TxDeadlockDetection {
         @SuppressWarnings("unchecked")
         private TxDeadlockFuture(GridCacheSharedContext cctx, GridCacheVersion txId, Set<IgniteTxKey> keys) {
             this.cctx = cctx;
-            this.futId = SEQ.incrementAndGet();
             this.txId = txId;
             this.keys = keys;
-            this.processedKeys = new HashSet<>();
-            this.processedNodes = new HashSet<>();
-            this.pendingKeys = new HashMap<>();
-            this.nodesQueue = new UniqueDeque<>();
-            this.preferredNodes = new HashSet<>();
-            this.txLockedKeys = new HashMap<>();
-            this.txRequestedKeys = new HashMap<>();
-            this.txs = new HashMap<>();
-            this.wfg = new HashMap<>();
 
             IgniteInternalTx tx = cctx.tm().tx(txId);
 
@@ -491,8 +481,13 @@ public class TxDeadlockDetection {
             boolean set = compareAndSet(nodeId, null);
 
             if (res != null && set) {
-                if (res.classError() != null)
-                    onDone(res.classError());
+                if (res.classError() != null) {
+                    IgniteLogger log = cctx.logger(TxDeadlockDetection.class);
+
+                    log.warning("Failed to finish deadlock detection due to an error: " + nodeId);
+
+                    onDone();
+                }
                 else
                     detect(res);
             }
@@ -514,15 +509,6 @@ public class TxDeadlockDetection {
             }
 
             return false;
-        }
-
-        /**
-         * @param nodeId Node ID.
-         * @param err Err.
-         */
-        public void onComplete(UUID nodeId, Throwable err) {
-            if (compareAndSet(nodeId, null))
-                onDone(err);
         }
 
         /** {@inheritDoc} */

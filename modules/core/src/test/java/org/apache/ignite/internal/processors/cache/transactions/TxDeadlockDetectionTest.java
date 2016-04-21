@@ -17,18 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -63,6 +75,10 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
             cfg.setDiscoverySpi(discoSpi);
         }
+
+        TcpCommunicationSpi commSpi = new TestCommunicationSpi();
+
+        cfg.setCommunicationSpi(commSpi);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -165,6 +181,8 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
             if (restartFut != null)
                 restartFut.get();
+
+            checkDetectionFuts();
         }
     }
 
@@ -218,6 +236,8 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
         assertTrue(timedOut.get());
 
         assertFalse(deadlock.get());
+
+        checkDetectionFuts();
     }
 
     /**
@@ -289,6 +309,186 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
             assertTrue(timedOut.get());
 
             assertFalse(deadlock.get());
+
+            checkDetectionFuts();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFailedTxLocksRequest() throws Exception {
+        doTestFailedMessage(TxLocksRequest.class);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFailedTxLocksResponse() throws Exception {
+        doTestFailedMessage(TxLocksResponse.class);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestFailedMessage(Class failCls) throws Exception {
+        try {
+            final int txCnt = 2;
+
+            final CyclicBarrier barrier = new CyclicBarrier(2);
+
+            final AtomicInteger threadCnt = new AtomicInteger();
+
+            final AtomicBoolean deadlock = new AtomicBoolean();
+
+            final AtomicBoolean timeout = new AtomicBoolean();
+
+            TestCommunicationSpi.failCls = failCls;
+
+            IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    int num = threadCnt.getAndIncrement();
+
+                    Ignite ignite = ignite(num);
+
+                    IgniteCache<Object, Integer> cache = ignite.cache(CACHE);
+
+                    try (Transaction tx =
+                             ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, num == 0 ? 500 : 1500, 0)
+                    ) {
+                        int key1 = primaryKey(ignite((num + 1) % txCnt).cache(CACHE));
+
+                        log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
+                            ", tx=" + tx + ", key=" + key1 + ']');
+
+                        cache.put(new TestKey(key1), 1);
+
+                        barrier.await();
+
+                        int key2 = primaryKey(cache);
+
+                        log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
+                            ", tx=" + tx + ", key=" + key2 + ']');
+
+                        cache.put(new TestKey(key2), 2);
+
+                        tx.commit();
+                    }
+                    catch (Exception e) {
+                        timeout.compareAndSet(false, hasCause(e, TransactionTimeoutException.class));
+
+                        deadlock.compareAndSet(false, hasCause(e, TransactionDeadlockException.class));
+                    }
+                }
+            }, 2, "tx-thread");
+
+            fut.get();
+
+            assertFalse(deadlock.get());
+
+            assertTrue(timeout.get());
+
+            checkDetectionFuts();
+        }
+        finally {
+            TestCommunicationSpi.failCls = null;
+            TestKey.failSer = false;
+        }
+    }
+
+    /**
+     *
+     */
+    private void checkDetectionFuts() {
+        for (int i = 0; i < NODES_CNT ; i++) {
+            Ignite ignite = ignite(i);
+
+            IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();
+
+            ConcurrentMap<Long, TxDeadlockDetection.TxDeadlockFuture> futs =
+                GridTestUtils.getFieldValue(txMgr, IgniteTxManager.class, "deadlockDetectFuts");
+
+            assertTrue(futs.isEmpty());
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestKey implements Externalizable {
+        /** Fail request. */
+        private static volatile boolean failSer = false;
+
+        /** Id. */
+        private int id;
+
+        /**
+         * Default constructor (required by Externalizable).
+         */
+        public TestKey() {
+            // No-op.
+        }
+
+        /**
+         * @param id Id.
+         */
+        public TestKey(int id) {
+            this.id = id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(id);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            if (failSer) {
+                TestCommunicationSpi.failCls = null;
+                failSer = false;
+
+                throw new IOException();
+            }
+
+            id = in.readInt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            TestKey key = (TestKey)o;
+
+            return id == key.id;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return id;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestCommunicationSpi extends TcpCommunicationSpi {
+        /** Fail response. */
+        private static volatile Class failCls;
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(
+            ClusterNode node,
+            Message msg,
+            IgniteInClosure<IgniteException> ackC
+        ) throws IgniteSpiException {
+            if (failCls != null && msg instanceof GridIoMessage &&
+                ((GridIoMessage)msg).message().getClass() == failCls)
+                TestKey.failSer = true;
+
+            super.sendMessage(node, msg, ackC);
         }
     }
 }

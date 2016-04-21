@@ -127,7 +127,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private static final int TX_SALVAGE_TIMEOUT = Integer.getInteger(IGNITE_TX_SALVAGE_TIMEOUT, 100);
 
     /** Version in which deadlock detection introduced. */
-    public static final IgniteProductVersion TX_DEADLOCK_DETECTION_SINCE = IgniteProductVersion.fromString("1.5.14");
+    public static final IgniteProductVersion TX_DEADLOCK_DETECTION_SINCE = IgniteProductVersion.fromString("1.5.15");
 
     /** Deadlock detection maximum iterations. */
     static final int DEADLOCK_MAX_ITERS =
@@ -2346,7 +2346,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          */
         private void processFailedMessage(UUID nodeId, GridCacheMessage msg) throws IgniteCheckedException {
             switch (msg.directType()) {
-                case -5: {
+                case -24: {
                     TxLocksRequest req = (TxLocksRequest)msg;
 
                     TxLocksResponse res = new TxLocksResponse();
@@ -2354,7 +2354,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     res.futureId(req.futureId());
 
                     try {
-                        cctx.io().send(nodeId, res, SYSTEM_POOL);
+                        cctx.gridIO().send(nodeId, TOPIC_TX, res, SYSTEM_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to send response to node (is node still alive?) [nodeId=" + nodeId +
@@ -2364,15 +2364,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 break;
 
-                case -4: {
+                case -23: {
                     TxLocksResponse res = (TxLocksResponse)msg;
 
                     TxDeadlockFuture fut = future(res.futureId());
 
                     if (fut == null) {
                         if (log.isDebugEnabled())
-                            log.debug("Failed to find future for get response [sender="
-                                + nodeId + ", res=" + res + ']');
+                            log.debug("Failed to find future for response [sender=" + nodeId + ", res=" + res + ']');
 
                         return;
                     }
@@ -2383,7 +2382,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 break;
 
                 default:
-                    throw new IgniteCheckedException("Failed to send response to node. Unsupported direct type [msg=" +
+                    throw new IgniteCheckedException("Failed to process message. Unsupported direct type [msg=" +
                         msg + ']', msg.classError());
             }
 
