@@ -16,17 +16,18 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'time'
 -var model = 'backupItem'
 
-form.panel.panel-default(name='time' novalidate)
-    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
+form.panel.panel-default(name=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label Time configuration
         ignite-form-field-tooltip.tipLabel
             | Time settings for CLOCK write ordering mode
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='time')
-        .panel-body(ng-if='__show__')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
                     +number('Samples size:', model + '.clockSyncSamples', 'clockSyncSamples', 'true', '8', '0',

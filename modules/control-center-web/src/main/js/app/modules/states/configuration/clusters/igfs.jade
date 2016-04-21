@@ -16,17 +16,18 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'igfs'
 -var model = 'backupItem'
 
-form.panel.panel-default(name='igfs' novalidate)
-    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
+form.panel.panel-default(name=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label IGFS
         ignite-form-field-tooltip.tipLabel
             | IGFS (Ignite In-Memory File System) configurations
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='igfs')
-        .panel-body(ng-if='__show__')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
                     +dropdown-multiple('<span>IGFS:</span>' +

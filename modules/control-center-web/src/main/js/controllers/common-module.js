@@ -615,30 +615,34 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             if (popover)
                 popover.hide();
 
+            var timeout = ui.isPanelLoaded(panelId) ? 100 : 500;
+
             ensureActivePanel(ui, panelId);
 
-            var body = $('body');
+            $timeout(function () {
+                var body = $('body');
 
-            var el = body.find('#' + id);
+                var el = body.find('#' + id);
 
-            if (!el || el.length === 0)
-                el = body.find('[name="' + id + '"]');
+                if (!el || el.length === 0)
+                    el = body.find('[name="' + id + '"]');
 
-            if (el && el.length > 0) {
-                if (!isElementInViewport(el[0])) {
-                    $location.hash(el[0].id);
+                if (el && el.length > 0) {
+                    if (!isElementInViewport(el[0])) {
+                        $location.hash(el[0].id);
 
-                    $anchorScroll();
+                        $anchorScroll();
+                    }
+
+                    var newPopover = $popover(el, {content: message});
+
+                    popover = newPopover;
+
+                    $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
+
+                    $timeout(function () { newPopover.hide(); }, showTime ? showTime : 5000);
                 }
-
-                var newPopover = $popover(el, {content: message});
-
-                popover = newPopover;
-
-                $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
-
-                $timeout(function () { newPopover.hide(); }, showTime ? showTime : 5000);
-            }
+            }, timeout);
 
             return false;
         }

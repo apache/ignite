@@ -16,18 +16,19 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'atomics'
 -var model = 'backupItem.atomicConfiguration'
 
-form.panel.panel-default(name='atomics' novalidate)
-    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
+form.panel.panel-default(name=form novalidate)
+    .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label Atomic configuration
         ignite-form-field-tooltip.tipLabel
             | Configuration for atomic data structures#[br]
             | Atomics are distributed across the cluster, essentially enabling performing atomic operations (such as increment-and-get or compare-and-set) with the same globally-visible value
         ignite-form-revert 
-    .panel-collapse(role='tabpanel' bs-collapse-target='' id='atomics')
-        .panel-body(ng-if='__show__')
+    .panel-collapse(role='tabpanel' bs-collapse-target='' id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
                     +dropdown('Cache mode:', model + '.cacheMode', 'cacheMode', 'true', 'PARTITIONED',

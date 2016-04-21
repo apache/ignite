@@ -20,14 +20,14 @@ include ../../../../../app/helpers/jade/mixins.jade
 -var model = 'backupItem'
 
 form.panel.panel-default(name=form novalidate)
-    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
+    .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label IPC
         ignite-form-field-tooltip.tipLabel
             | IGFS Inter-process communication properties
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
-        .panel-body(ng-if='__show__')
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 -var ipcEndpointConfiguration = model + '.ipcEndpointConfiguration'
                 -var enabled = model + '.ipcEndpointEnabled'

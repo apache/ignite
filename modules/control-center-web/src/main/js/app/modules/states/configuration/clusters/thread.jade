@@ -16,17 +16,18 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'pools'
 -var model = 'backupItem'
 
-form.panel.panel-default(name='pools' novalidate)
-    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
+form.panel.panel-default(name=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label Thread pools size
         ignite-form-field-tooltip.tipLabel
             | Settings for node thread pools
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='pools')
-        .panel-body(ng-if='__show__')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
                     +number('Public:', model + '.publicThreadPoolSize', 'publicThreadPoolSize', 'true', 'max(8, availableProcessors) * 2', '1',

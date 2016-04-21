@@ -16,19 +16,20 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'swap'
 -var model = 'backupItem'
 -var swapModel = model + '.swapSpaceSpi'
 -var fileSwapModel = swapModel + '.FileSwapSpaceSpi'
 
-form.panel.panel-default(name='swap' novalidate)
-    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
+form.panel.panel-default(name=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label Swap
         ignite-form-field-tooltip.tipLabel
             | Settings for overflow data to disk if it cannot fit in memory
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='swap')
-        .panel-body(ng-if='__show__')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
                     +dropdown('Swap space SPI:', swapModel + '.kind', 'swapSpaceSpi', 'true', 'Choose swap SPI',

@@ -22,14 +22,14 @@ include ../../../../../app/helpers/jade/mixins.jade
 -var sslEnabled = enabled + ' && ' + model + '.sslEnabled'
 
 form.panel.panel-default(name=form novalidate)
-    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label Connector configuration
         ignite-form-field-tooltip.tipLabel
             | REST access configuration
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
-        .panel-body(ng-if='__show__')
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
                     +checkbox('Enabled', enabled, 'restEnabled', 'Flag indicating whether to configure connector configuration')

@@ -16,20 +16,20 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'deployment'
 -var model = 'backupItem'
 -var exclude = model + '.peerClassLoadingLocalClassPathExclude'
--var form = 'deployment'
 -var enabled = 'backupItem.peerClassLoadingEnabled'
 
 form.panel.panel-default(name='deployment' novalidate)
-    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label Class deployment
         ignite-form-field-tooltip.tipLabel
             | Task and resources deployment in cluster
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='deployment')
-        .panel-body(ng-if='__show__')
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
                     +dropdown('Deployment mode:', model + '.deploymentMode', 'deploymentMode', 'true', 'SHARED',

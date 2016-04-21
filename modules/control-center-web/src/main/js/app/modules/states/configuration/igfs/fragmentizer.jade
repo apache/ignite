@@ -16,17 +16,18 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'fragmentizer'
 -var model = 'backupItem'
 
-form.panel.panel-default(name='fragmentizer' novalidate)
-    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
+form.panel.panel-default(name=form novalidate)
+    .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label Fragmentizer
         ignite-form-field-tooltip.tipLabel
             | Fragmentizer settings
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='fragmentizer')
-        .panel-body(ng-if='__show__')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 -var enabled = model + '.fragmentizerEnabled'
 

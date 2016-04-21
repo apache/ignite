@@ -16,17 +16,18 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'metrics'
 -var model = 'backupItem'
 
-form.panel.panel-default(name='metrics' novalidate)
-    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
+form.panel.panel-default(name=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label Metrics
         ignite-form-field-tooltip.tipLabel
             | Cluster runtime metrics settings
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='metrics')
-        .panel-body(ng-if='__show__')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
                     +number('Elapsed time:', model + '.metricsExpireTime', 'metricsExpireTime', 'true', 'Long.MAX_VALUE', '1',

@@ -16,11 +16,12 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
-- var model = 'backupItem'
-- var keyFields = model + '.keyFields'
-- var valueFields = model + '.valueFields'
-- var keyFieldsForm = 'storeKeyFields'
-- var valueFieldsForm = 'storeValueFields'
+-var form = 'store'
+-var model = 'backupItem'
+-var keyFields = model + '.keyFields'
+-var valueFields = model + '.valueFields'
+-var keyFieldsForm = 'storeKeyFields'
+-var valueFieldsForm = 'storeValueFields'
 
 //- LEGACY mixin for LEGACY db fields tables.
 mixin table-db-field-edit(tbl, prefix, focusId, index)
@@ -60,15 +61,15 @@ mixin table-db-field-edit(tbl, prefix, focusId, index)
         .input-tip
             button.select-toggle.form-control(id=javaTypeId ng-model=javaTypeModel data-placeholder='Java type' ng-class='{placeholder: !#{javaTypeModel}}' bs-select bs-options='item.value as item.label for item in {{supportedJavaTypes}}' on-enter=btnVisibleAndSave on-escape='tableReset()' tabindex='0')
 
-form.panel.panel-default(name='store' novalidate)
-    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
+form.panel.panel-default(name=form novalidate)
+    .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label Domain model for cache store
         ignite-form-field-tooltip.tipLabel
             | Domain model properties for fields queries
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='store')
-        .panel-body(ng-if='__show__')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
                     +text('Database schema:', model + '.databaseSchema', 'databaseSchema', 'false', 'Input DB schema name', 'Schema name in database')

@@ -16,17 +16,18 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'secondaryFileSystem'
 -var model = 'backupItem'
 
-form.panel.panel-default(name='secondaryFileSystem' novalidate)
-    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
+form.panel.panel-default(name=form novalidate)
+    .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label(id="secondaryFileSystem-title") Secondary file system
         ignite-form-field-tooltip.tipLabel
             | Secondary file system is provided for pass-through, write-through, and read-through purposes
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='secondaryFileSystem')
-        .panel-body(ng-if='__show__')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 -var enabled = model + '.secondaryFileSystemEnabled'
                 -var secondaryFileSystem = model + '.secondaryFileSystem'

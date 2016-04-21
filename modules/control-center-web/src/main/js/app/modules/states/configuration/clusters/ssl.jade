@@ -16,20 +16,21 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'sslConfiguration'
 -var cluster = 'backupItem'
 -var enabled = 'backupItem.sslEnabled'
 -var model = cluster + '.sslContextFactory'
 -var trust = model + '.trustManagers'
 
-form.panel.panel-default(name='sslConfiguration' novalidate)
-    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
+form.panel.panel-default(name=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label(id='sslConfiguration-title') SSL configuration
         ignite-form-field-tooltip.tipLabel
             | Settings for SSL configuration
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='sslConfiguration')
-        .panel-body(ng-if='__show__')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
                     +checkbox('Enabled', enabled, 'sslEnabled', 'Flag indicating whether to configure SSL configuration')
