@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowStore;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.index.Index;
 import org.h2.table.IndexColumn;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -34,9 +36,13 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
     /** Primary index. */
     private Index primaryIdx;
 
+    private IgniteCacheDatabaseSharedManager dbMgr;
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
+
+        dbMgr = cctx.shared().database();
     }
 
     /**
@@ -56,8 +62,6 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
         int valCol,
         IndexColumn[] cols
     ) throws IgniteCheckedException {
-        IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
-
         IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), name);
 
         if (log.isInfoEnabled())
@@ -93,5 +97,15 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
      */
     public H2RowStore createRowStore(GridH2Table tbl) {
         return new H2RowStore(tbl.rowDescriptor(), cctx, null); // new FreeList(cctx));
+    }
+
+    @Nullable @Override public IgniteCacheDatabasePartitionManager partitions() {
+        assert dbMgr != null;
+        try {
+            return new IgniteCacheDatabasePartitionManager(cctx.affinity().partitions(), dbMgr.pageMemory().page(new FullPageId(1, cctx.cacheId())).getForInitialWrite());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 }

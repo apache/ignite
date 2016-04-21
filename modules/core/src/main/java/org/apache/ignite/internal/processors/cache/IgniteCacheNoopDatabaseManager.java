@@ -18,10 +18,15 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseManager;
+import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabasePartitionManager;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 public class IgniteCacheNoopDatabaseManager extends GridCacheManagerAdapter implements IgniteCacheDatabaseManager {
 
+    @Nullable @Override public IgniteCacheDatabasePartitionManager partitions() {
+        return null;
+    }
 }
