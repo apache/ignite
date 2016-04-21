@@ -17,15 +17,7 @@
 
 package org.apache.ignite.internal.processors.compute;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import javax.cache.configuration.Factory;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -37,14 +29,26 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.testframework.configvariations.Parameters;
+import org.apache.ignite.lang.IgniteReducer;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
+
+import javax.cache.configuration.Factory;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 
 /**
  * Full API compute test.
@@ -56,25 +60,38 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /** Test cache name. */
     private static final String CACHE_NAME = "test";
 
+    /** */
+    private static final String STR_VAL = "string value";
+
+    /** */
+    private static final Object[] ARRAY_VAL = {"str0", "str1", "str2"};
+
     /** Job factories. */
-    private static final Factory[] jobFactories = new Factory[] {
-        Parameters.factory(EchoJob.class),
-        Parameters.factory(EchoJobExternalizable.class),
-        Parameters.factory(EchoJobBinarylizable.class)
+    private static final JobFactory[] jobFactories = new JobFactory[] {
+        new JobFactory(EchoJob.class),
+        new JobFactory(EchoJobExternalizable.class),
+        new JobFactory(EchoJobBinarylizable.class)
     };
 
     /** Closure factories. */
     private static final Factory[] closureFactories = new Factory[] {
-        Parameters.factory(EchoClosure.class),
-        Parameters.factory(EchoClosureExternalizable.class),
-        Parameters.factory(EchoClosureBinarylizable.class)
+        new JobFactory(EchoClosure.class),
+        new JobFactory(EchoClosureExternalizable.class),
+        new JobFactory(EchoClosureBinarylizable.class)
     };
 
     /** Callable factories. */
     private static final Factory[] callableFactories = new Factory[] {
-        Parameters.factory(EchoCallable.class),
-        Parameters.factory(EchoCallableExternalizable.class),
-        Parameters.factory(EchoCallableBinarylizable.class)
+        new JobFactory(EchoCallable.class),
+        new JobFactory(EchoCallableExternalizable.class),
+        new JobFactory(EchoCallableBinarylizable.class)
+    };
+
+    /** Runnable factories. */
+    private static final Factory[] runnableFactories = new Factory[] {
+        new JobFactory(ComputeTestRunnable.class),
+        new JobFactory(ComputeTestRunnableExternalizable.class),
+        new JobFactory(ComputeTestRunnableBinarylizable.class)
     };
 
     /**
@@ -111,34 +128,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
-     * The test's wrapper runs the test with each factory from the factories array.
-     *
-     * @param test test object, a factory is passed as a parameter.
-     * @param factories various factories
-     * @throws Exception If failed.
-     */
-    private void runWithAllFactories(Factory[] factories, ComputeTest test) throws Exception {
-        for (int i = 0; i < factories.length; i++) {
-            Factory factory = factories[i];
-
-            info("Running test with jobs model: " + factory.create().getClass().getName());
-
-            if (i != 0)
-                beforeTest();
-
-            try {
-                test.test(factory, grid(testedNodeIdx));
-            }
-            finally {
-                if (i + 1 != factories.length)
-                    afterTest();
-            }
-        }
-    }
-
-    /**
      * The test's wrapper provides variations of the argument data model and user factories. The test is launched {@code
-     * factories.length * DataMode.values().length} times.
+     * factories.length * DataMode.values().length} times with each datamodel and each factory.
      *
      * @param test Test.
      * @param factories various factories
@@ -147,18 +138,22 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     protected void runTest(final Factory[] factories, final ComputeTest test) throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
-                try {
-                    if ((getConfiguration().getMarshaller() instanceof JdkMarshaller)
-                        && (dataMode == DataMode.PLANE_OBJECT)) {
-                        info("Skip test for JdkMarshaller & PLANE_OBJECT data mode");
-                        return;
+                for (int i = 0; i < factories.length; i++) {
+                    Factory factory = factories[i];
+
+                    info("Running test with jobs model: " + factory.create().getClass().getSimpleName());
+
+                    if (i != 0)
+                        beforeTest();
+
+                    try {
+                        test.test(factory, grid(testedNodeIdx));
+                    }
+                    finally {
+                        if (i + 1 != factories.length)
+                            afterTest();
                     }
                 }
-                catch (Exception e) {
-                    assert false : e.getMessage();
-                }
-
-                runWithAllFactories(factories, test);
             }
         });
     }
@@ -168,18 +163,18 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     public void testExecuteTaskClass() throws Exception {
         runTest(jobFactories, new ComputeTest() {
-            @Override public void test(Factory factory, IgniteEx ignite) throws Exception {
-                // begin with negative to check 'null' value in the test
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                // Begin with negative to check 'null' value in the test.
                 final int[] i = {-1};
 
                 List<Object> results = ignite.compute().execute(
                     TestTask.class,
                     new T2<>((Factory<ComputeJobAdapter>)factory,
                         (Factory<Object>)new Factory<Object>() {
-                        @Override public Object create() {
-                            return value(i[0]++);
-                        }
-                    }));
+                            @Override public Object create() {
+                                return value(i[0]++);
+                            }
+                        }));
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
                 checkNullCount(1, results);
@@ -192,17 +187,17 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     public void testExecuteTask() throws Exception {
         runTest(jobFactories, new ComputeTest() {
-            @Override public void test(Factory factory, IgniteEx ignite) throws Exception {
-                // begin with negative to check 'null' value in the test
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                // Begin with negative to check 'null' value in the test.
                 final int[] i = {-1};
 
                 List<Object> results = ignite.compute().execute(new TestTask(),
                     new T2<>((Factory<ComputeJobAdapter>)factory,
                         (Factory<Object>)new Factory<Object>() {
-                        @Override public Object create() {
-                            return value(i[0]++);
-                        }
-                    }));
+                            @Override public Object create() {
+                                return value(i[0]++);
+                            }
+                        }));
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
                 checkNullCount(1, results);
@@ -213,9 +208,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
-    public void testBroadcast() throws Exception {
+    public void testBroadcastClosure() throws Exception {
         runTest(closureFactories, new ComputeTest() {
-            @Override public void test(Factory factory, IgniteEx ignite) throws Exception {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 final Collection<Object> resultsAllNull = ignite.compute()
                     .broadcast((IgniteClosure<Object, Object>)factory.create(), null);
 
@@ -236,19 +231,81 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    public void testBroadcastCallable() throws Exception {
+        runTest(callableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                EchoCallable job = (EchoCallable)factory.create();
+                job.setArg(null);
+
+                final Collection<Object> resultsAllNull = ignite.compute()
+                    .broadcast(job);
+
+                assertEquals("Result's size mismatch: job must be run on all server nodes",
+                    gridCount() - clientsCount(), resultsAllNull.size());
+
+                for (Object o : resultsAllNull)
+                    assertNull("All results must be null", o);
+
+                job.setArg(value(0));
+                Collection<Object> resultsNotNull = ignite.compute()
+                    .broadcast(job);
+
+                checkResultsClassCount(gridCount() - clientsCount(), resultsNotNull, value(0).getClass());
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBroadcastRunnable() throws Exception {
+        runTest(runnableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                IgniteRunnable job = (IgniteRunnable)factory.create();
+
+                ignite.compute().broadcast(job);
+                // All checks are inside the run() method of the job.
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRun() throws Exception {
+        runTest(runnableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                IgniteRunnable job = (IgniteRunnable)factory.create();
+
+                ignite.compute().run(job);
+                // All checks are inside the run() method of the job.
+
+                Collection<IgniteRunnable> jobs = new ArrayList<>(MAX_JOB_COUNT);
+                for (int i = 0; i < MAX_JOB_COUNT; ++i)
+                    jobs.add((IgniteRunnable)factory.create());
+
+                ignite.compute().run(jobs);
+                // All checks are inside the run() method of the job.
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testApplyAsync() throws Exception {
         runTest(closureFactories, new ComputeTest() {
-            @Override public void test(Factory factory, IgniteEx ignite) throws Exception {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 final IgniteCompute comp = ignite.compute().withAsync();
 
-                List<ComputeTaskFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
+                Collection<ComputeTaskFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
-                    // value(i - 1): use negative argument of the value method to generate null value
+                    // value(i - 1): use negative argument of the value method to generate nullong value.
                     comp.apply((IgniteClosure<Object, Object>)factory.create(), value(i - 1));
                     futures.add(comp.future());
                 }
 
-                // wait for results
+                // wait for results.
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
                 for (ComputeTaskFuture<Object> future : futures)
                     results.add(future.get());
@@ -264,11 +321,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     public void testApplySync() throws Exception {
         runTest(closureFactories, new ComputeTest() {
-            @Override public void test(Factory factory, IgniteEx ignite) throws Exception {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
 
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
-                    // value(i - 1): use negative argument of the value method to generate null value
+                    // value(i - 1): use negative argument of the value method to generate nullong value.
                     results.add(ignite.compute().apply((IgniteClosure<Object, Object>)factory.create(), value(i - 1)));
                 }
 
@@ -281,12 +338,69 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    public void testApplyForCollection() throws Exception {
+        runTest(closureFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                Collection<TestObject> params = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    // value(i - 1): use negative argument of the value method to generate nullong value.
+                    // Use type casting to avoid ambiguous for apply(Callable, Object) vs apply(Callable, Collection<Object>).
+                    params.add((TestObject)value(i - 1));
+                }
+
+                Collection<Object> results = ignite.compute()
+                    .apply((IgniteClosure<TestObject, Object>)factory.create(), params);
+
+                checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+                checkNullCount(1, results);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testApplyForCollectionWithReducer() throws Exception {
+        runTest(closureFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                Collection<Object> params = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    // value(i - 1): use negative argument of the value method to generate nullong value.
+                    params.add(value(i - 1));
+                }
+
+                boolean res = ignite.compute()
+                    .apply((IgniteClosure<Object, Object>)factory.create(), params, new IgniteReducer<Object, Boolean>() {
+
+                        private Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
+                        @Override public boolean collect(@Nullable Object o) {
+                            results.add(o);
+                            return true;
+                        }
+
+                        @Override public Boolean reduce() {
+                            checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+                            checkNullCount(1, results);
+                            return true;
+                        }
+                    });
+                assertTrue(res);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testCallAsync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
-            @Override public void test(Factory factory, IgniteEx ignite) throws Exception {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 final IgniteCompute comp = ignite.compute().withAsync();
 
-                List<ComputeTaskFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
+                Collection<ComputeTaskFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     EchoCallable job = (EchoCallable)factory.create();
                     job.setArg(value(i - 1));
@@ -311,7 +425,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     public void testCallSync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
-            @Override public void test(Factory factory, IgniteEx ignite) throws Exception {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
 
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
@@ -331,8 +445,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     public void testCallCollection() throws Exception {
         runTest(callableFactories, new ComputeTest() {
-            @Override public void test(Factory factory, IgniteEx ignite) throws Exception {
-                List<EchoCallable> jobs = new ArrayList<>(MAX_JOB_COUNT);
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                Collection<EchoCallable> jobs = new ArrayList<>(MAX_JOB_COUNT);
 
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     EchoCallable job = (EchoCallable)factory.create();
@@ -351,9 +465,43 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * @throws Exception If failed.
      */
+    public void testCallCollectionWithReducer() throws Exception {
+        runTest(callableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                Collection<EchoCallable> jobs = new ArrayList<>(MAX_JOB_COUNT);
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    EchoCallable job = (EchoCallable)factory.create();
+                    job.setArg(value(i - 1));
+                    jobs.add(job);
+                }
+
+                boolean res = ignite.compute().call(jobs, new IgniteReducer<Object, Boolean>() {
+                    private Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
+                    @Override public boolean collect(@Nullable Object o) {
+                        results.add(o);
+                        return true;
+                    }
+
+                    @Override public Boolean reduce() {
+                        checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+                        checkNullCount(1, results);
+                        return true;
+                    }
+                });
+
+                assertTrue(res);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDummyAffinityCall() throws Exception {
         runTest(callableFactories, new ComputeTest() {
-            @Override public void test(Factory factory, IgniteEx ignite) throws Exception {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
                 ignite.getOrCreateCache(CACHE_NAME);
 
                 final IgniteCompute comp = ignite.compute();
@@ -370,6 +518,54 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
                 checkNullCount(1, results);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDummyAffinityRun() throws Exception {
+        runTest(runnableFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                ignite.getOrCreateCache(CACHE_NAME);
+
+                final IgniteCompute comp = ignite.compute();
+
+                for (int i = 0; i < MAX_JOB_COUNT; ++i) {
+                    IgniteRunnable job = (IgniteRunnable)factory.create();
+
+                    comp.affinityRun("test", key(0), job);
+                }
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployExecuteByName() throws Exception {
+        runTest(jobFactories, new ComputeTest() {
+            @Override public void test(Factory factory, Ignite ignite) throws Exception {
+                final int[] i = {-1};
+
+                final IgniteCompute comp = ignite.compute();
+
+                comp.localDeployTask(TestTask.class, TestTask.class.getClassLoader());
+
+                List<Object> results = ignite.compute().execute(
+                    TestTask.class.getName(),
+                    new T2<>((Factory<ComputeJobAdapter>)factory,
+                        (Factory<Object>)new Factory<Object>() {
+                            @Override public Object create() {
+                                return value(i[0]++);
+                            }
+                        }));
+
+                checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
+                checkNullCount(1, results);
+
+                comp.undeployTask(TestTask.class.getName());
             }
         });
     }
@@ -392,7 +588,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param factory Factory.
          * @throws Exception If failed.
          */
-        public void test(Factory factory, IgniteEx ignite) throws Exception;
+        public void test(Factory factory, Ignite ignite) throws Exception;
     }
 
     /**
@@ -417,7 +613,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** {@inheritDoc} */
         @Nullable @Override public List<Object> reduce(List<ComputeJobResult> results) throws IgniteException {
             List<Object> ret = new ArrayList<>(results.size());
-            for(ComputeJobResult result : results)
+            for (ComputeJobResult result : results)
                 ret.add(result.getData());
 
             return ret;
@@ -425,10 +621,40 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
-     * Echo job, serializable object
+     * Echo job, serializable object. All fields are used only for serialization check.
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoJob extends ComputeJobAdapter {
+        /** */
+        private boolean isVal;
+
+        /** */
+        private byte bVal;
+
+        /** */
+        private char cVal;
+
+        /** */
+        private short sVal;
+
+        /** */
+        private int intVal;
+
+        /** */
+        private long lVal;
+
+        /** */
+        private float fltVal;
+
+        /** */
+        private double dblVal;
+
+        /** */
+        private String strVal;
+
+        /** */
+        private Object[] arrVal;
+
         /**
          * Default constructor (required by ReflectionFactory).
          */
@@ -436,19 +662,83 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             // No-op.
         }
 
+        /**
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        public EchoJob(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal, float fltVal,
+            double dblVal,
+            String strVal, Object[] arrVal) {
+            this.isVal = isVal;
+            this.bVal = bVal;
+            this.cVal = cVal;
+            this.sVal = sVal;
+            this.intVal = intVal;
+            this.lVal = lVal;
+            this.fltVal = fltVal;
+            this.dblVal = dblVal;
+            this.strVal = strVal;
+            this.arrVal = arrVal;
+        }
+
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
-            System.out.println((argument(0) == null) ? "null" : argument(0).toString());
+            checkState();
 
             return argument(0);
+        }
+
+        /**
+         * Check the object state after serialization / deserialization
+         */
+        protected void checkState() {
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
         }
     }
 
     /**
-     * Echo job, externalizable
+     * Echo job, externalizable. All fields are used only for serialization check.
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoJobExternalizable extends EchoJob implements Externalizable {
+        /** */
+        private boolean isVal;
+
+        /** */
+        private byte bVal;
+
+        /** */
+        private char cVal;
+
+        /** */
+        private short sVal;
+
+        /** */
+        private int intVal;
+
+        /** */
+        private long lVal;
+
+        /** */
+        private float fltVal;
+
+        /** */
+        private double dblVal;
+
+        /** */
+        private String strVal;
+
+        /** */
+        private Object[] arrVal;
+
         /**
          * Default constructor (required by {@link Externalizable}).
          */
@@ -456,22 +746,103 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             // No-op.
         }
 
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(argument(0));
+        /**
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        public EchoJobExternalizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
+            float fltVal,
+            double dblVal, String strVal, Object[] arrVal) {
+            this.isVal = isVal;
+            this.bVal = bVal;
+            this.cVal = cVal;
+            this.sVal = sVal;
+            this.intVal = intVal;
+            this.lVal = lVal;
+            this.fltVal = fltVal;
+            this.dblVal = dblVal;
+            this.strVal = strVal;
+            this.arrVal = arrVal;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(argument(0));
+
+            JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             setArguments(in.readObject());
+
+            isVal = in.readBoolean();
+            bVal = in.readByte();
+            cVal = in.readChar();
+            sVal = in.readShort();
+            intVal = in.readInt();
+            lVal = in.readLong();
+            fltVal = in.readFloat();
+            dblVal = in.readDouble();
+            strVal = (String)in.readObject();
+            arrVal = (Object[])in.readObject();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override protected void checkState() {
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
         }
     }
 
     /**
-     * Echo job, externalizable
+     * Echo job, externalizable. All fields are used only for serialization check.
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoJobBinarylizable extends EchoJob implements Binarylizable {
+        /** */
+        private boolean isVal;
+
+        /** */
+        private byte bVal;
+
+        /** */
+        private char cVal;
+
+        /** */
+        private short sVal;
+
+        /** */
+        private int intVal;
+
+        /** */
+        private long lVal;
+
+        /** */
+        private float fltVal;
+
+        /** */
+        private double dblVal;
+
+        /** */
+        private String strVal;
+
+        /** */
+        private Object[] arrVal;
+
         /**
          * Default constructor (required by ReflectionFactory).
          */
@@ -479,72 +850,399 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             // No-op.
         }
 
-        /** {@inheritDoc} */
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.writeObject("arg", argument(0));
+        /**
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        public EchoJobBinarylizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
+            float fltVal,
+            double dblVal, String strVal, Object[] arrVal) {
+            this.isVal = isVal;
+            this.bVal = bVal;
+            this.cVal = cVal;
+            this.sVal = sVal;
+            this.intVal = intVal;
+            this.lVal = lVal;
+            this.fltVal = fltVal;
+            this.dblVal = dblVal;
+            this.strVal = strVal;
+            this.arrVal = arrVal;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.writeObject("arg", argument(0));
+
+            JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             Object arg = reader.readObject("arg");
 
             setArguments(arg);
+
+            isVal = reader.readBoolean("isVal");
+            bVal = reader.readByte("bVal");
+            cVal = reader.readChar("cVal");
+            sVal = reader.readShort("sVal");
+            intVal = reader.readInt("intVal");
+            lVal = reader.readLong("lVal");
+            fltVal = reader.readFloat("fltVal");
+            dblVal = reader.readDouble("dblVal");
+            strVal = reader.readString("strVal");
+            arrVal = reader.readObjectArray("arrVal");
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override protected void checkState() {
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
         }
     }
 
     /**
-     * Echo job, serializable object
+     * Echo job, serializable object. All fields are used only for serialization check.
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoClosure implements IgniteClosure<Object, Object> {
+        /** */
+        private boolean isVal;
+
+        /** */
+        private byte bVal;
+
+        /** */
+        private char cVal;
+
+        /** */
+        private short sVal;
+
+        /** */
+        private int intVal;
+
+        /** */
+        private long lVal;
+
+        /** */
+        private float fltVal;
+
+        /** */
+        private double dblVal;
+
+        /** */
+        private String strVal;
+
+        /** */
+        private Object[] arrVal;
+
+        /**
+         * Default constructor.
+         */
+        public EchoClosure() {
+            // No-op.
+        }
+
+        /**
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        public EchoClosure(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal, float fltVal,
+            double dblVal,
+            String strVal, Object[] arrVal) {
+            this.isVal = isVal;
+            this.bVal = bVal;
+            this.cVal = cVal;
+            this.sVal = sVal;
+            this.intVal = intVal;
+            this.lVal = lVal;
+            this.fltVal = fltVal;
+            this.dblVal = dblVal;
+            this.strVal = strVal;
+            this.arrVal = arrVal;
+        }
+
         /** {@inheritDoc} */
         @Override public Object apply(Object arg) {
-            System.out.println((arg == null) ? "null" : arg.toString());
+            checkState();
 
             return arg;
+        }
+
+        /**
+         * Check the object state after serialization / deserialization
+         */
+        protected void checkState() {
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
         }
     }
 
     /**
-     * Echo closure, externalizable
+     * Echo closure, externalizable. All fields are used only for serialization check.
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoClosureExternalizable extends EchoClosure implements Externalizable {
+        /** */
+        private boolean isVal;
+
+        /** */
+        private byte bVal;
+
+        /** */
+        private char cVal;
+
+        /** */
+        private short sVal;
+
+        /** */
+        private int intVal;
+
+        /** */
+        private long lVal;
+
+        /** */
+        private float fltVal;
+
+        /** */
+        private double dblVal;
+
+        /** */
+        private String strVal;
+
+        /** */
+        private Object[] arrVal;
+
+        /**
+         * Default constructor (required by Externalizable).
+         */
+        public EchoClosureExternalizable() {
+            // No-op
+        }
+
+        /**
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        public EchoClosureExternalizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
+            float fltVal,
+            double dblVal, String strVal, Object[] arrVal) {
+            this.isVal = isVal;
+            this.bVal = bVal;
+            this.cVal = cVal;
+            this.sVal = sVal;
+            this.intVal = intVal;
+            this.lVal = lVal;
+            this.fltVal = fltVal;
+            this.dblVal = dblVal;
+            this.strVal = strVal;
+            this.arrVal = arrVal;
+        }
+
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
+            JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            isVal = in.readBoolean();
+            bVal = in.readByte();
+            cVal = in.readChar();
+            sVal = in.readShort();
+            intVal = in.readInt();
+            lVal = in.readLong();
+            fltVal = in.readFloat();
+            dblVal = in.readDouble();
+            strVal = (String)in.readObject();
+            arrVal = (Object[])in.readObject();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override protected void checkState() {
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
         }
     }
 
     /**
-     * Echo closure, externalizable
+     * Echo closure, externalizable. All fields are used only for serialization check.
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoClosureBinarylizable extends EchoClosure implements Binarylizable {
+        /** */
+        private boolean isVal;
+
+        /** */
+        private byte bVal;
+
+        /** */
+        private char cVal;
+
+        /** */
+        private short sVal;
+
+        /** */
+        private int intVal;
+
+        /** */
+        private long lVal;
+
+        /** */
+        private float fltVal;
+
+        /** */
+        private double dblVal;
+
+        /** */
+        private String strVal;
+
+        /** */
+        private Object[] arrVal;
+
+        /**
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        public EchoClosureBinarylizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
+            float fltVal,
+            double dblVal, String strVal, Object[] arrVal) {
+            this.isVal = isVal;
+            this.bVal = bVal;
+            this.cVal = cVal;
+            this.sVal = sVal;
+            this.intVal = intVal;
+            this.lVal = lVal;
+            this.fltVal = fltVal;
+            this.dblVal = dblVal;
+            this.strVal = strVal;
+            this.arrVal = arrVal;
+        }
+
         /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
         }
 
         /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            isVal = reader.readBoolean("isVal");
+            bVal = reader.readByte("bVal");
+            cVal = reader.readChar("cVal");
+            sVal = reader.readShort("sVal");
+            intVal = reader.readInt("intVal");
+            lVal = reader.readLong("lVal");
+            fltVal = reader.readFloat("fltVal");
+            dblVal = reader.readDouble("dblVal");
+            strVal = reader.readString("strVal");
+            arrVal = reader.readObjectArray("arrVal");
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override protected void checkState() {
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
         }
     }
 
     /**
-     * Test callable, serializable object
+     * Test callable, serializable object. All fields are used only for serialization check.
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoCallable implements IgniteCallable<Object> {
         /** */
         protected Object arg;
+        /** */
+        private boolean isVal;
+        /** */
+        private byte bVal;
+        /** */
+        private char cVal;
+        /** */
+        private short sVal;
+        /** */
+        private int intVal;
+        /** */
+        private long lVal;
+        /** */
+        private float fltVal;
+        /** */
+        private double dblVal;
+        /** */
+        private String strVal;
+        /** */
+        private Object[] arrVal;
 
         /**
+         * Default constructor.
          */
         public EchoCallable() {
             // No-op.
+        }
+
+        /**
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        public EchoCallable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal, float fltVal,
+            double dblVal,
+            String strVal, Object[] arrVal) {
+            this.isVal = isVal;
+            this.bVal = bVal;
+            this.cVal = cVal;
+            this.sVal = sVal;
+            this.intVal = intVal;
+            this.lVal = lVal;
+            this.fltVal = fltVal;
+            this.dblVal = dblVal;
+            this.strVal = strVal;
+            this.arrVal = arrVal;
         }
 
         /**
@@ -556,17 +1254,54 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
         /** {@inheritDoc} */
         @Nullable @Override public Object call() throws Exception {
-            System.out.println((arg == null) ? "null" : arg.toString());
+            checkState();
 
             return arg;
+        }
+
+        /**
+         * Check the object state after serialization / deserialization
+         */
+        protected void checkState() {
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
         }
     }
 
     /**
-     * Echo callable, externalizable object
+     * Echo callable, externalizable object. All fields are used only for serialization check.
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoCallableExternalizable extends EchoCallable implements Externalizable {
+        /** */
+        private boolean isVal;
+
+        /** */
+        private byte bVal;
+
+        /** */
+        private char cVal;
+
+        /** */
+        private short sVal;
+
+        /** */
+        private int intVal;
+
+        /** */
+        private long lVal;
+
+        /** */
+        private float fltVal;
+
+        /** */
+        private double dblVal;
+
+        /** */
+        private String strVal;
+
+        /** */
+        private Object[] arrVal;
+
         /**
          * Default constructor.
          */
@@ -574,22 +1309,103 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             // No-op.
         }
 
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(arg);
+        /**
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        public EchoCallableExternalizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
+            float fltVal,
+            double dblVal, String strVal, Object[] arrVal) {
+            this.isVal = isVal;
+            this.bVal = bVal;
+            this.cVal = cVal;
+            this.sVal = sVal;
+            this.intVal = intVal;
+            this.lVal = lVal;
+            this.fltVal = fltVal;
+            this.dblVal = dblVal;
+            this.strVal = strVal;
+            this.arrVal = arrVal;
         }
 
-        /** {@inheritDoc} */
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(arg);
+
+            JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             arg = in.readObject();
+
+            isVal = in.readBoolean();
+            bVal = in.readByte();
+            cVal = in.readChar();
+            sVal = in.readShort();
+            intVal = in.readInt();
+            lVal = in.readLong();
+            fltVal = in.readFloat();
+            dblVal = in.readDouble();
+            strVal = (String)in.readObject();
+            arrVal = (Object[])in.readObject();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override protected void checkState() {
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
         }
     }
 
     /**
-     * Echo callable, binarylizable object
+     * Echo callable, binarylizable object. All fields are used only for serialization check.
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoCallableBinarylizable extends EchoCallable implements Binarylizable {
+        /** */
+        private boolean isVal;
+
+        /** */
+        private byte bVal;
+
+        /** */
+        private char cVal;
+
+        /** */
+        private short sVal;
+
+        /** */
+        private int intVal;
+
+        /** */
+        private long lVal;
+
+        /** */
+        private float fltVal;
+
+        /** */
+        private double dblVal;
+
+        /** */
+        private String strVal;
+
+        /** */
+        private Object[] arrVal;
+
         /**
          * Default constructor.
          */
@@ -597,14 +1413,469 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             // No-op.
         }
 
-        /** {@inheritDoc} */
+        /**
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        public EchoCallableBinarylizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
+            float fltVal,
+            double dblVal, String strVal, Object[] arrVal) {
+            this.isVal = isVal;
+            this.bVal = bVal;
+            this.cVal = cVal;
+            this.sVal = sVal;
+            this.intVal = intVal;
+            this.lVal = lVal;
+            this.fltVal = fltVal;
+            this.dblVal = dblVal;
+            this.strVal = strVal;
+            this.arrVal = arrVal;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeObject("arg", arg);
+
+            JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            arg = reader.readObject("arg");
+
+            isVal = reader.readBoolean("isVal");
+            bVal = reader.readByte("bVal");
+            cVal = reader.readChar("cVal");
+            sVal = reader.readShort("sVal");
+            intVal = reader.readInt("intVal");
+            lVal = reader.readLong("lVal");
+            fltVal = reader.readFloat("fltVal");
+            dblVal = reader.readDouble("dblVal");
+            strVal = reader.readString("strVal");
+            arrVal = reader.readObjectArray("arrVal");
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override protected void checkState() {
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+        }
+    }
+
+    /**
+     * Test runnable, serializable object. All fields are used only for serialization check.
+     */
+    @SuppressWarnings({"PublicInnerClass"})
+    public static class ComputeTestRunnable implements IgniteRunnable {
+        /** */
+        private boolean isVal;
+
+        /** */
+        private byte bVal;
+
+        /** */
+        private char cVal;
+
+        /** */
+        private short sVal;
+
+        /** */
+        private int intVal;
+
+        /** */
+        private long lVal;
+
+        /** */
+        private float fltVal;
+
+        /** */
+        private double dblVal;
+
+        /** */
+        private String strVal;
+
+        /** */
+        private Object[] arrVal;
+
+        /**
+         * Default constructor.
+         */
+        public ComputeTestRunnable() {
+            // No-op.
+        }
+
+        /**
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        public ComputeTestRunnable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal, float fltVal,
+            double dblVal, String strVal, Object[] arrVal) {
+            this.isVal = isVal;
+            this.bVal = bVal;
+            this.cVal = cVal;
+            this.sVal = sVal;
+            this.intVal = intVal;
+            this.lVal = lVal;
+            this.fltVal = fltVal;
+            this.dblVal = dblVal;
+            this.strVal = strVal;
+            this.arrVal = arrVal;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void run() {
+            checkState();
+        }
+
+        /**
+         * Check the object state after serialization / deserialization
+         */
+        protected void checkState() {
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+        }
+    }
+
+    /**
+     * Test runnable, externalizable object. All fields are used only for serialization check.
+     */
+    public static class ComputeTestRunnableExternalizable extends ComputeTestRunnable implements Externalizable {
+        /** */
+        private boolean isVal;
+
+        /** */
+        private byte bVal;
+
+        /** */
+        private char cVal;
+
+        /** */
+        private short sVal;
+
+        /** */
+        private int intVal;
+
+        /** */
+        private long lVal;
+
+        /** */
+        private float fltVal;
+
+        /** */
+        private double dblVal;
+
+        /** */
+        private String strVal;
+
+        /** */
+        private Object[] arrVal;
+
+        /**
+         * Default constructor (required by Externalizable).
+         */
+        public ComputeTestRunnableExternalizable() {
+            // No-op
+        }
+
+        /**
+         * @param intVal int value.
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        public ComputeTestRunnableExternalizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
+            float fltVal, double dblVal, String strVal, Object[] arrVal) {
+            this.intVal = intVal;
+            this.isVal = isVal;
+            this.bVal = bVal;
+            this.cVal = cVal;
+            this.sVal = sVal;
+            this.lVal = lVal;
+            this.fltVal = fltVal;
+            this.dblVal = dblVal;
+            this.strVal = strVal;
+            this.arrVal = arrVal;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            isVal = in.readBoolean();
+            bVal = in.readByte();
+            cVal = in.readChar();
+            sVal = in.readShort();
+            intVal = in.readInt();
+            lVal = in.readLong();
+            fltVal = in.readFloat();
+            dblVal = in.readDouble();
+            strVal = (String)in.readObject();
+            arrVal = (Object[])in.readObject();
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override protected void checkState() {
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+        }
+    }
+
+    /**
+     * Test runnable, binarylizable object. All fields are used only for serialization check.
+     */
+    public static class ComputeTestRunnableBinarylizable extends ComputeTestRunnable implements Binarylizable {
+        /** */
+        private boolean isVal;
+
+        /** */
+        private byte bVal;
+
+        /** */
+        private char cVal;
+
+        /** */
+        private short sVal;
+
+        /** */
+        private int intVal;
+
+        /** */
+        private long lVal;
+
+        /** */
+        private float fltVal;
+
+        /** */
+        private double dblVal;
+
+        /** */
+        private String strVal;
+
+        /** */
+        private Object[] arrVal;
+
+        /**
+         * Default constructor.
+         */
+        public ComputeTestRunnableBinarylizable() {
+        }
+
+        /**
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        public ComputeTestRunnableBinarylizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
+            float fltVal, double dblVal, String strVal, Object[] arrVal) {
+            this.isVal = isVal;
+            this.bVal = bVal;
+            this.cVal = cVal;
+            this.sVal = sVal;
+            this.intVal = intVal;
+            this.lVal = lVal;
+            this.fltVal = fltVal;
+            this.dblVal = dblVal;
+            this.strVal = strVal;
+            this.arrVal = arrVal;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            isVal = reader.readBoolean("isVal");
+            bVal = reader.readByte("bVal");
+            cVal = reader.readChar("cVal");
+            sVal = reader.readShort("sVal");
+            intVal = reader.readInt("intVal");
+            lVal = reader.readLong("lVal");
+            fltVal = reader.readFloat("fltVal");
+            dblVal = reader.readDouble("dblVal");
+            strVal = reader.readString("strVal");
+            arrVal = reader.readObjectArray("arrVal");
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override protected void checkState() {
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+        }
+    }
+
+    /**
+     * Creates test jobs with tested parameters
+     */
+    private static class JobFactory<T> implements Factory<T> {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** */
+        private Class<?> cls;
+
+        /**
+         * @param cls Class.
+         */
+        JobFactory(Class<?> cls) {
+            this.cls = cls;
         }
 
         /** {@inheritDoc} */
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            arg = reader.readObject("arg");
+        @Override public T create() {
+            try {
+                Constructor<?> constructor = cls.getConstructor(Boolean.TYPE, Byte.TYPE, Character.TYPE,
+                    Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, String.class, Object[].class);
+
+                return (T)constructor.newInstance(true, Byte.MAX_VALUE, Character.MAX_VALUE, Short.MAX_VALUE,
+                    Integer.MAX_VALUE, Long.MAX_VALUE, Float.MAX_VALUE, Double.MAX_VALUE, STR_VAL, ARRAY_VAL);
+            }
+            catch (NoSuchMethodException | InstantiationException | InvocationTargetException |
+                IllegalAccessException e) {
+                throw new IgniteException("Failed to create object using default constructor: " + cls, e);
+            }
         }
     }
+
+
+    /**
+     * Collection of utility methods to simplify EchoJob*, EchoCLosure*, EchoCallable* and ComputeTestRunnable* classes
+     */
+    private static class JobUtils {
+
+        /**
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        private static void checkJobState(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
+            float fltVal,
+            double dblVal, String strVal, Object[] arrVal) {
+
+            assertEquals(true, isVal);
+            assertEquals(Byte.MAX_VALUE, bVal);
+            assertEquals(Character.MAX_VALUE, cVal);
+            assertEquals(Short.MAX_VALUE, sVal);
+            assertEquals(Integer.MAX_VALUE, intVal);
+            assertEquals(Long.MAX_VALUE, lVal);
+            assertEquals(Float.MAX_VALUE, fltVal);
+            assertEquals(Double.MAX_VALUE, dblVal);
+            assertEquals(STR_VAL, strVal);
+            Assert.assertArrayEquals(ARRAY_VAL, arrVal);
+        }
+
+        /**
+         * @param writer Writer.
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        private static void writeJobState(BinaryWriter writer, boolean isVal, byte bVal, char cVal, short sVal,
+            int intVal, long lVal, float fltVal, double dblVal, String strVal,
+            Object[] arrVal) throws BinaryObjectException {
+
+            writer.writeBoolean("isVal", isVal);
+            writer.writeByte("bVal", bVal);
+            writer.writeChar("cVal", cVal);
+            writer.writeShort("sVal", sVal);
+            writer.writeInt("intVal", intVal);
+            writer.writeLong("lVal", lVal);
+            writer.writeFloat("fltVal", fltVal);
+            writer.writeDouble("dblVal", dblVal);
+            writer.writeString("strVal", strVal);
+            writer.writeObjectArray("arrVal", arrVal);
+        }
+
+        /**
+         * @param out Out.
+         * @param isVal boolean value.
+         * @param bVal byte value.
+         * @param cVal char value.
+         * @param sVal short value.
+         * @param intVal int value.
+         * @param lVal long value.
+         * @param fltVal float value.
+         * @param dblVal double value.
+         * @param strVal String value.
+         * @param arrVal Array value.
+         */
+        private static void writeJobState(ObjectOutput out, boolean isVal, byte bVal, char cVal, short sVal,
+            int intVal, long lVal, float fltVal, double dblVal, String strVal, Object[] arrVal) throws IOException {
+
+            out.writeBoolean(isVal);
+            out.writeByte(bVal);
+            out.writeChar(cVal);
+            out.writeShort(sVal);
+            out.writeInt(intVal);
+            out.writeLong(lVal);
+            out.writeFloat(fltVal);
+            out.writeDouble(dblVal);
+            out.writeObject(strVal);
+            out.writeObject(arrVal);
+        }
+    }
+
 }

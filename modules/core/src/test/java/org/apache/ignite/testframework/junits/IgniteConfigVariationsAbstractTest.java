@@ -28,6 +28,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -196,6 +197,12 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     protected void runInAllDataModes(TestRunnable call) throws Exception {
         for (int i = 0; i < DataMode.values().length; i++) {
             dataMode = DataMode.values()[i];
+
+            if ((getConfiguration().getMarshaller() instanceof JdkMarshaller)
+                && (dataMode == DataMode.PLANE_OBJECT)) {
+                info("Skip test for JdkMarshaller & PLANE_OBJECT data mode");
+                continue;
+            }
 
             info("Running test in data mode: " + dataMode);
 
