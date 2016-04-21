@@ -16,10 +16,11 @@
 
 include ../../../../../app/helpers/jade/mixins.jade
 
+-var form = 'server-near-cache'
 -var model = 'backupItem'
 
-form.panel.panel-default(name='server-near-cache' novalidate ng-show='#{model}.cacheMode === "PARTITIONED"')
-    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
+form.panel.panel-default(name=form novalidate ng-show='#{model}.cacheMode === "PARTITIONED"')
+    .panel-heading(bs-collapse-toggle='' ng-click='ui.loadPanel("#{form}")')
         ignite-form-panel-chevron
         label Server near cache
         ignite-form-field-tooltip.tipLabel
@@ -27,8 +28,8 @@ form.panel.panel-default(name='server-near-cache' novalidate ng-show='#{model}.c
             | Near cache is a small local cache that stores most recently or most frequently accessed data#[br]
             | Should be used in case when it is impossible to send computations to remote nodes
         ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='server-near-cache')
-        .panel-body(ng-if='__show__')
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 -var enabled = model + '.nearCacheEnabled'
                 -var nearCfg = model + '.nearConfiguration'

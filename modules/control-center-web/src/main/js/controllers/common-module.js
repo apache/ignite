@@ -568,12 +568,14 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
         var popover = null;
 
-        function ensureActivePanel(ui, id, focusId) {
+        function ensureActivePanel(ui, pnl, focusId) {
             if (ui) {
                 var collapses = $('div.panel-collapse');
 
+                ui.loadPanel(pnl);
+
                 var idx = _.findIndex(collapses, function(collapse) {
-                    return collapse.id === id;
+                    return collapse.id === pnl;
                 });
 
                 if (idx >= 0) {
@@ -1045,6 +1047,14 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                     expanded: false,
                     groups: [],
                     errors: {},
+                    loadedPanels: [],
+                    loadPanel: function(pnl) {
+                        if (!_.includes(this.loadedPanels, pnl))
+                            this.loadedPanels.push(pnl);
+                    },
+                    isPanelLoaded: function(pnl) {
+                        return _.includes(this.loadedPanels, pnl);
+                    },
                     addGroups: function (general, advanced) {
                         if (general)
                             $.merge(this.groups, general);
