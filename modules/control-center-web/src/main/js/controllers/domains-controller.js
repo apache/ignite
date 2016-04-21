@@ -849,24 +849,31 @@ consoleModule.controller('domainsController', [
                     if (table.action === IMPORT_DM_NEW_CACHE) {
                         var template = _.find(_importCachesOrTemplates, {value: table.cacheOrTemplate});
 
-                        newDomain.newCache = angular.copy(template.cache);
+                        var newCache = angular.copy(template.cache);
 
-                        delete newDomain.newCache._id;
-                        newDomain.newCache.name = typeName + 'Cache';
-                        newDomain.newCache.clusters = $scope.ui.generatedCachesClusters;
+                        newDomain.newCache = newCache;
+
+                        delete newCache._id;
+                        newCache.name = typeName + 'Cache';
+                        newCache.clusters = $scope.ui.generatedCachesClusters;
 
                         // POJO store factory is not defined in template.
-                        if (!newDomain.newCache.cacheStoreFactory ||
-                            newDomain.newCache.cacheStoreFactory.kind !== 'CacheJdbcPojoStoreFactory') {
+                        if (!newCache.cacheStoreFactory ||
+                            newCache.cacheStoreFactory.kind !== 'CacheJdbcPojoStoreFactory') {
                             var dialect = $scope.importDomain.demo ? 'H2' : $scope.selectedPreset.db;
 
-                            newDomain.newCache.cacheStoreFactory = {
+                            newCache.cacheStoreFactory = {
                                 kind: 'CacheJdbcPojoStoreFactory',
                                 CacheJdbcPojoStoreFactory: {
                                     dataSourceBean: 'ds' + dialect,
                                     dialect: dialect
                                 }
                             };
+                        }
+
+                        if (!newCache.readThrough && !newCache.writeThrough) {
+                            newCache.readThrough = true;
+                            newCache.writeThrough = true;
                         }
                     }
                     else {
