@@ -21,9 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.compute.IgniteComputeConfigVariationsFullApiTest;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
@@ -32,7 +30,7 @@ import org.apache.ignite.testframework.configvariations.Parameters;
 /**
  * Full API compute test.
  */
-public class IgniteComputeBasicConfigVariationsFullApiTestSuite  extends TestSuite {
+public class IgniteComputeBasicConfigVariationsFullApiTestSuite extends TestSuite {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] BASIC_COMPUTE_SET = new ConfigParameter[][] {

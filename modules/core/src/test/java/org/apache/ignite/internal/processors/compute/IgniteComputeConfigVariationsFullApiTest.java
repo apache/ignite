@@ -17,19 +17,33 @@
 
 package org.apache.ignite.internal.processors.compute;
 
-import org.apache.ignite.*;
-import org.apache.ignite.binary.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.testframework.configvariations.*;
-import org.apache.ignite.testframework.junits.*;
-import org.jetbrains.annotations.*;
-
-import javax.cache.configuration.*;
-import java.io.*;
-import java.util.*;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import javax.cache.configuration.Factory;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.compute.ComputeTaskSplitAdapter;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.testframework.configvariations.Parameters;
+import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Full API compute test.
@@ -70,9 +84,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     private static void checkResultsClassCount(final int expCnt, final Collection<Object> results,
         final Class dataCls) {
         int cnt = 0;
-        for (Object o : results)
+
+        for (Object o : results) {
             if ((o != null) && dataCls.equals(o.getClass()))
                 ++cnt;
+        }
 
         assertEquals("Count of the result objects' type mismatch (null values are filtered)", expCnt, cnt);
     }
@@ -83,12 +99,13 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     private static void checkNullCount(final int expCnt, final Collection<Object> results) {
         int cnt = 0;
-        for (Object o : results)
+
+        for (Object o : results) {
             if (o == null)
                 ++cnt;
+        }
 
         assertEquals("Count of the result objects' type mismatch (null values are filtered)", expCnt, cnt);
-
         assertEquals("Count of the null objects mismatch", expCnt, cnt);
     }
 
@@ -97,6 +114,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @param test test object, a factory is passed as a parameter.
      * @param factories various factories
+     * @throws Exception If failed.
      */
     private void runWithAllFactories(ComputeTest test, Factory[] factories) throws Exception {
         for (int i = 0; i < factories.length; i++) {
@@ -123,6 +141,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      *
      * @param test Test.
      * @param factories various factories
+     * @throws Exception If failed.
      */
     protected void runTest(final Factory[] factories, final ComputeTest test) throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -144,6 +163,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
+     * @throws Exception If failed.
      */
     public void testExecuteTaskClass() throws Exception {
         runTest(jobFactories, new ComputeTest() {
@@ -167,6 +187,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
+     * @throws Exception If failed.
      */
     public void testExecuteTask() throws Exception {
         runTest(jobFactories, new ComputeTest() {
@@ -189,6 +210,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
+     * @throws Exception If failed.
      */
     public void testBroadcast() throws Exception {
         runTest(closureFactories, new ComputeTest() {
@@ -209,6 +231,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
+     * @throws Exception If failed.
      */
     public void testApplyAsync() throws Exception {
         runTest(closureFactories, new ComputeTest() {
@@ -234,6 +257,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
+     * @throws Exception If failed.
      */
     public void testApplySync() throws Exception {
         runTest(closureFactories, new ComputeTest() {
@@ -253,6 +277,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
+     * @throws Exception If failed.
      */
     public void testCallAsync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
@@ -280,6 +305,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
+     * @throws Exception If failed.
      */
     public void testCallSync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
@@ -300,6 +326,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
+     * @throws Exception If failed.
      */
     public void testCallCollection() throws Exception {
         runTest(callableFactories, new ComputeTest() {
@@ -322,18 +349,20 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     }
 
     /**
+     * @throws Exception If failed.
      */
     public void testDummyAffinityCall() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory) throws Exception {
                 grid(0).getOrCreateCache(CACHE_NAME);
-                grid(0).cache(CACHE_NAME).putIfAbsent(key(0), value(0));
 
                 final IgniteCompute comp = grid(0).compute();
 
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     EchoCallable job = (EchoCallable)factory.create();
+
                     job.setArg(value(i - 1));
 
                     results.add(comp.affinityCall("test", key(0), job));
@@ -351,6 +380,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     @Nullable @Override public Object value(int valId) {
         if (valId < 0)
             return null;
+
         return super.value(valId);
     }
 
@@ -359,6 +389,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     public static interface ComputeTest {
         /**
+         * @param factory Factory.
          * @throws Exception If failed.
          */
         public void test(Factory factory) throws Exception;
@@ -367,12 +398,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     /**
      * Creates set of jobs.
      */
-    @SuppressWarnings({"PublicInnerClass"})
     static class TestTask
         extends ComputeTaskSplitAdapter<T2<Factory<ComputeJobAdapter>, Factory<Object>>, List<Object>> {
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize,
             T2<Factory<ComputeJobAdapter>, Factory<Object>> factoriesJobAndArg) throws IgniteException {
             Collection<ComputeJob> jobs = new HashSet<>();
@@ -382,12 +410,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 job.setArguments(factoriesJobAndArg.get2().create());
                 jobs.add(job);
             }
+
             return jobs;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Nullable @Override public List<Object> reduce(List<ComputeJobResult> results) throws IgniteException {
             List<Object> ret = new ArrayList<>(results.size());
             for(ComputeJobResult result : results)
@@ -402,18 +429,17 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoJob extends ComputeJobAdapter {
-
         /**
          * Default constructor (required by ReflectionFactory).
          */
         public EchoJob() {
+            // No-op.
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
             System.out.println((argument(0) == null) ? "null" : argument(0).toString());
+
             return argument(0);
         }
     }
@@ -423,23 +449,19 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoJobExternalizable extends EchoJob implements Externalizable {
-
         /**
-         * Default constructor (required by Externalizable).
+         * Default constructor (required by {@link Externalizable}).
          */
         public EchoJobExternalizable() {
+            // No-op.
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(argument(0));
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             setArguments(in.readObject());
         }
@@ -450,23 +472,18 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoJobBinarylizable extends EchoJob implements Binarylizable {
-
         /**
          * Default constructor (required by ReflectionFactory).
          */
         public EchoJobBinarylizable() {
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeObject("arg", argument(0));
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             Object arg = reader.readObject("arg");
 
@@ -479,10 +496,10 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoClosure implements IgniteClosure<Object, Object> {
-
         /** {@inheritDoc} */
         @Override public Object apply(Object arg) {
             System.out.println((arg == null) ? "null" : arg.toString());
+
             return arg;
         }
     }
@@ -492,14 +509,12 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoClosureExternalizable extends EchoClosure implements Externalizable {
-
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-
         }
     }
 
@@ -508,7 +523,6 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoClosureBinarylizable extends EchoClosure implements Binarylizable {
-
         /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         }
@@ -529,6 +543,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /**
          */
         public EchoCallable() {
+            // No-op.
         }
 
         /**
@@ -541,6 +556,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** {@inheritDoc} */
         @Nullable @Override public Object call() throws Exception {
             System.out.println((arg == null) ? "null" : arg.toString());
+
             return arg;
         }
     }
@@ -554,6 +570,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * Default constructor.
          */
         public EchoCallableExternalizable() {
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -572,12 +589,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static class EchoCallableBinarylizable extends EchoCallable implements Binarylizable {
-
         /**
          * Default constructor.
          */
         public EchoCallableBinarylizable() {
-
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -590,5 +606,4 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             arg = reader.readObject("arg");
         }
     }
-
 }

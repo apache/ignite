@@ -292,7 +292,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
          * Default constructor must be accessible for deserialize subclasses by JDK serialization API.
          */
         TestObject() {
+            // No-op.
         }
+
         /**
          * @param val Value.
          */
@@ -320,6 +322,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
                 return false;
 
             TestObject val = (TestObject)o;
+
+            assert strVal != null : this;
 
             return this.val == val.val
 //                && (strVal != null ? strVal.equals(val.strVal) : val.strVal == null && enumVal == val.enumVal);
