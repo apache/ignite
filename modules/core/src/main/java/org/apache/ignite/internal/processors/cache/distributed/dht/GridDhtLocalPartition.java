@@ -149,6 +149,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
 
         dbPartMgr = cctx.database().partitions();
+
+        if (dbPartMgr != null)
+            cntr.set(dbPartMgr.getLastAppliedUpdate(id));
     }
 
     /**
