@@ -91,19 +91,19 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * (value is <tt>create table if not exists ENTRIES (key other primary key, val other)</tt>).
      */
     public static final String DFLT_CREATE_TBL_QRY = "create table if not exists ENTRIES " +
-        "(key binary primary key, val binary)";
+        "(`key` binary primary key, val binary)";
 
     /** Default load entry query (value is <tt>select * from ENTRIES where key=?</tt>). */
-    public static final String DFLT_LOAD_QRY = "select * from ENTRIES where key=?";
+    public static final String DFLT_LOAD_QRY = "select * from ENTRIES where `key`=?";
 
     /** Default update entry query (value is <tt>select * from ENTRIES where key=?</tt>). */
-    public static final String DFLT_UPDATE_QRY = "update ENTRIES set val=? where key=?";
+    public static final String DFLT_UPDATE_QRY = "update ENTRIES set val=? where `key`=?";
 
     /** Default insert entry query (value is <tt>insert into ENTRIES (key, val) values (?, ?)</tt>). */
-    public static final String DFLT_INSERT_QRY = "insert into ENTRIES (key, val) values (?, ?)";
+    public static final String DFLT_INSERT_QRY = "insert into ENTRIES (`key`, val) values (?, ?)";
 
     /** Default delete entry query (value is <tt>delete from ENTRIES where key=?</tt>). */
-    public static final String DFLT_DEL_QRY = "delete from ENTRIES where key=?";
+    public static final String DFLT_DEL_QRY = "delete from ENTRIES where `key`=?";
 
     /** Connection attribute name. */
     private static final String ATTR_CONN = "JDBC_STORE_CONNECTION";
