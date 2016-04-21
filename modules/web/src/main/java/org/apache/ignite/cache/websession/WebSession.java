@@ -240,7 +240,12 @@ class WebSession implements HttpSession, Externalizable {
         if (!isValid)
             throw new IllegalStateException("Call on invalidated session!");
 
-        return attrs.get(name);
+        Object val = attrs.get(name);
+
+        if (val != null && updates != null)
+            updates.add(new T2<>(name, val));
+
+        return val;
     }
 
     /** {@inheritDoc} */

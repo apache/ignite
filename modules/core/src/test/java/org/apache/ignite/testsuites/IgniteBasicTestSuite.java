@@ -23,6 +23,7 @@ import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
+import org.apache.ignite.internal.GridGetOrStartSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
 import org.apache.ignite.internal.GridNodeMetricsLogSelfTest;
@@ -128,6 +129,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(ParametersTest.class);
         suite.addTestSuite(VariationsIteratorTest.class);
         suite.addTestSuite(ConfigVariationsTestSuiteBuilderTest.class);
+
+        GridTestUtils.addTestIfNeeded(suite, GridGetOrStartSelfTest.class, ignoredTests);
 
         return suite;
     }
