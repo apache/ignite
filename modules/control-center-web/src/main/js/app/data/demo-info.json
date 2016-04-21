@@ -1,0 +1,15 @@
+[
+    {
+        "title": "Apache Ignite Web Console Demo",
+        "message": [
+            "<div class='col-xs-12'>",
+            " <p>",
+            "  In order to try Apache Ignite Console in Demo mode you need to download and start ignite-web-agent.<br/>",
+            "  We prepared several predefined clusters, caches, domain models and IGFS file systems.<br/>",
+            "  You could try SQL and Monitoring features that will be executing on three nodes demo cluster that will be started inside agent.<br/>",
+            "  Also you could try import metadata from demo database which also started inside agent.",
+            " </p>",
+            "</div>"
+        ]
+    }
+]

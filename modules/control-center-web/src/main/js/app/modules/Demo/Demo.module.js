@@ -17,6 +17,8 @@
 
 import angular from 'angular';
 
+import DEMO_INFO from 'app/data/demo-info.json!';
+
 angular
 .module('ignite-console.demo', [
     'ignite-console.socket'
@@ -94,5 +96,44 @@ angular
 
                 _openTab('demo.reset');
             });
+    };
+}])
+.provider('igniteDemoInfo', [function() {
+    const items = DEMO_INFO;
+
+    this.update = (data) => items[0] = data;
+
+    this.$get = [() => {
+        return items;
+    }];
+}])
+.service('DemoInfo', ['$rootScope', '$modal', 'igniteDemoInfo', ($rootScope, $modal, igniteDemoInfo) => {
+    const scope = $rootScope.$new();
+
+    function _fillPage() {
+        const model = igniteDemoInfo;
+
+        scope.title = model[0].title;
+        scope.message = model[0].message.join(' ');
+    }
+
+    const dialog = $modal({
+        templateUrl: '/templates/demo-info.html',
+        scope,
+        placement: 'center',
+        show: false,
+        backdrop: 'static'
+    });
+
+    scope.close = () => {
+        dialog.hide();
+    };
+
+    return {
+        show: () => {
+            _fillPage();
+
+            dialog.$promise.then(dialog.show);
+        }
     };
 }]);
