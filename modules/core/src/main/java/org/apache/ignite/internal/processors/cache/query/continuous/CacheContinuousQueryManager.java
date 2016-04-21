@@ -648,6 +648,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         UUID id = cctx.kernalContext().continuous().startRoutine(
             hnd,
+            internal && loc,
             bufSize,
             timeInterval,
             autoUnsubscribe,
