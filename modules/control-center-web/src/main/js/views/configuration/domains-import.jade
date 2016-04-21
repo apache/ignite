@@ -178,6 +178,12 @@ mixin td-ellipses-lbl(w, lbl)
                                 | Use primitive types for NOT NULL table columns
                                 i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Use primitive types like "int", "long", "double" for POJOs fields generation in case of NOT NULL columns')
                     .settings-row
+                        .checkbox
+                            label
+                                input(id='domainGenerateAliases' type='checkbox' ng-model='ui.generateAliases')
+                                | Generate aliases for query fields
+                                i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Generate aliases for query fields with names from database fields')
+                    .settings-row
                         .col-xs-3.col-sm-2.col-md-2.required
                             label Clusters:
                         .col-xs-9.col-sm-10.col-md-10

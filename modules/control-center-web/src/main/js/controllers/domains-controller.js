@@ -54,6 +54,7 @@ consoleModule.controller('domainsController', [
             _toJavaPackage($scope.$root.user.email.replace('@', '.').split('.').reverse().join('.') + '.model');
         $scope.ui.builtinKeys = true;
         $scope.ui.usePrimitives = true;
+        $scope.ui.generateAliases = true;
         $scope.ui.generatedCachesClusters = [];
 
         function _mapCaches(caches) {
@@ -746,6 +747,7 @@ consoleModule.controller('domainsController', [
                     var indexes = [];
                     var keyFields = [];
                     var valFields = [];
+                    var aliases = [];
 
                     var tableName = table.tbl;
 
@@ -766,13 +768,19 @@ consoleModule.controller('domainsController', [
 
                         qryFields.push(queryField(colName, jdbcType));
 
+                        var fld = dbField(colName, jdbcType, nullable);
+
+                        if ($scope.ui.generateAliases && !_.find(aliases, {field: fld.javaFieldName}) &&
+                            fld.javaFieldName.toUpperCase() !== fld.databaseFieldName.toUpperCase())
+                            aliases.push({field: fld.javaFieldName, alias: fld.databaseFieldName});
+
                         if (col.key) {
-                            keyFields.push(dbField(colName, jdbcType, nullable));
+                            keyFields.push(fld);
 
                             _containKey = true;
                         }
                         else
-                            valFields.push(dbField(colName, jdbcType, nullable));
+                            valFields.push(fld);
                     });
 
                     containKey &= _containKey;
@@ -819,6 +827,7 @@ consoleModule.controller('domainsController', [
                     newDomain.fields = qryFields;
                     newDomain.indexes = indexes;
                     newDomain.keyFields = keyFields;
+                    newDomain.aliases = aliases;
                     newDomain.valueFields = valFields;
 
                     // If value fields not found - copy key fields.
