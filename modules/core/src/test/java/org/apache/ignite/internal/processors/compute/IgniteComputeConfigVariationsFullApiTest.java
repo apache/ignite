@@ -37,7 +37,7 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
@@ -127,12 +127,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 beforeTest();
 
             try {
-                info("Run test on server node");
-                test.test(factory, grid(IgniteConfigVariationsAbstractTest.SERVER_NODE_IDX));
-
-                info("Run test on client node");
-                if(gridCount() > IgniteConfigVariationsAbstractTest.CLIENT_NODE_IDX)
-                    test.test(factory, grid(IgniteConfigVariationsAbstractTest.CLIENT_NODE_IDX));
+                test.test(factory, grid(testedNodeIdx));
             }
             finally {
                 if (i + 1 != factories.length)
@@ -224,14 +219,16 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 final Collection<Object> resultsAllNull = ignite.compute()
                     .broadcast((IgniteClosure<Object, Object>)factory.create(), null);
 
-                assertEquals("Result's size mismatch", gridCount(), resultsAllNull.size());
+                assertEquals("Result's size mismatch: job must be run on all server nodes",
+                    gridCount() - clientsCount(), resultsAllNull.size());
+
                 for (Object o : resultsAllNull)
                     assertNull("All results must be null", o);
 
                 Collection<Object> resultsNotNull = ignite.compute()
                     .broadcast((IgniteClosure<Object, Object>)factory.create(), value(0));
 
-                checkResultsClassCount(gridCount(), resultsNotNull, value(0).getClass());
+                checkResultsClassCount(gridCount() - clientsCount(), resultsNotNull, value(0).getClass());
             }
         });
     }
