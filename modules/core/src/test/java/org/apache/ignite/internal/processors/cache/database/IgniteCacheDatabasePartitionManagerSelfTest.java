@@ -49,13 +49,13 @@ public class IgniteCacheDatabasePartitionManagerSelfTest extends TestCase {
         partMgr.onUpdateReceived(0, 2);
         partMgr.onUpdateReceived(0, 3);
 
-        assert partMgr.getLastAppliedUpdate(0) == 4;
+        assert partMgr.getLastAppliedUpdate(0) == 3;
         assert partMgr.getLastAppliedUpdate(1) == 0;
 
         partMgr.onUpdateReceived(1, 1);
 
-        assert partMgr.getLastAppliedUpdate(0) == 4;
-        assert partMgr.getLastAppliedUpdate(1) == 3;
+        assert partMgr.getLastAppliedUpdate(0) == 3;
+        assert partMgr.getLastAppliedUpdate(1) == 1;
     }
 
 }
