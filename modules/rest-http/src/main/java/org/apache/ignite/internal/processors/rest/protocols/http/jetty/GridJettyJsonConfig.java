@@ -35,14 +35,19 @@ import net.sf.json.processors.JsonBeanProcessor;
 import net.sf.json.processors.JsonBeanProcessorMatcher;
 import net.sf.json.processors.JsonValueProcessor;
 import net.sf.json.processors.JsonValueProcessorMatcher;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Jetty protocol json configuration.
  */
 class GridJettyJsonConfig extends JsonConfig {
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
      * Class for finding a matching JsonBeanProcessor.
      */
@@ -131,14 +136,11 @@ class GridJettyJsonConfig extends JsonConfig {
     };
 
     /**
-     * Class for finding a matching JsonValueProcessor.
-     */
-    private static final LessNamingProcessor LESS_NAMING_PROCESSOR = new LessNamingProcessor();
-
-    /**
      * Constructs default jetty json config.
      */
-    GridJettyJsonConfig() {
+    GridJettyJsonConfig(IgniteLogger log) {
+        this.log = log;
+
         setAllowNonStringKeys(true);
 
         registerJsonValueProcessor(UUID.class, UUID_PROCESSOR);
@@ -146,8 +148,10 @@ class GridJettyJsonConfig extends JsonConfig {
         registerJsonValueProcessor(Date.class, DATE_PROCESSOR);
         registerJsonValueProcessor(java.sql.Date.class, DATE_PROCESSOR);
 
-        registerJsonBeanProcessor(LessNamingProcessor.class, LESS_NAMING_PROCESSOR);
-        registerJsonValueProcessor(LessNamingProcessor.class, LESS_NAMING_PROCESSOR);
+        final LessNamingProcessor lessNamingProcessor = new LessNamingProcessor();
+
+        registerJsonBeanProcessor(LessNamingProcessor.class, lessNamingProcessor);
+        registerJsonValueProcessor(LessNamingProcessor.class, lessNamingProcessor);
 
         setJsonBeanProcessorMatcher(LESS_NAMING_BEAN_MATCHER);
         setJsonValueProcessorMatcher(LESS_NAMING_VALUE_MATCHER);
@@ -184,12 +188,12 @@ class GridJettyJsonConfig extends JsonConfig {
     /**
      * Helper class for simple to-json conversion for Visor classes.
      */
-    private static class LessNamingProcessor implements JsonBeanProcessor, JsonValueProcessor {
+    private class LessNamingProcessor implements JsonBeanProcessor, JsonValueProcessor {
         /** */
-        private static final Map<Class<?>, Collection<Method>> classCache = new HashMap<>();
+        private final Map<Class<?>, Collection<Method>> clsCache = new HashMap<>();
 
         /** */
-        private static final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+        private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
         /** {@inheritDoc} */
         @Override public JSONObject processBean(Object bean, JsonConfig jsonCfg) {
@@ -206,7 +210,7 @@ class GridJettyJsonConfig extends JsonConfig {
             rwLock.readLock().lock();
 
             try {
-                methods = classCache.get(cls);
+                methods = clsCache.get(cls);
             }
             finally {
                 rwLock.readLock().unlock();
@@ -237,7 +241,7 @@ class GridJettyJsonConfig extends JsonConfig {
                 rwLock.writeLock().lock();
 
                 try {
-                    classCache.put(cls, methods);
+                    clsCache.put(cls, methods);
                 }
                 finally {
                     rwLock.writeLock().unlock();
@@ -249,8 +253,9 @@ class GridJettyJsonConfig extends JsonConfig {
                 try {
                     ret.element(mtd.getName(), mtd.invoke(bean), jsonCfg);
                 }
-                catch (Exception ignored) {
-                    // No-op.
+                catch (Exception e) {
+                    U.error(log, "Failed to read object property [type= " + cls.getName()
+                        + ", prop=" + mtd.getName() + "]", e);
                 }
             }
 
