@@ -21,4 +21,10 @@ package org.apache.ignite.internal.pagemem.wal;
  *
  */
 public class StorageException extends Exception {
+    /**
+     * @param e Cause exception.
+     */
+    public StorageException(Exception e) {
+        super(e);
+    }
 }

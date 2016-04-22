@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.pagemem.wal.entry;
 
+import java.nio.ByteBuffer;
+
 /**
- *
+ * Log entry abstract class.
  */
 public abstract class WALEntry {
+    /**
+     * @return
+     */
+    public abstract byte type();
 }
