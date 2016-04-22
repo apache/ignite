@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -42,6 +43,10 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.retryTopologySafe;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -99,6 +104,93 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     public GridCacheSemaphoreImpl() {
         // No-op.
     }
+
+    private static class CompareAndSetEntryProcessor implements CacheEntryProcessor<GridCacheInternalKey,GridCacheSemaphoreState,Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+        private final int expVal;
+        private final int newVal;
+        private final boolean draining;
+        private final UUID nodeID;
+
+        private CompareAndSetEntryProcessor(int expVal, int newVal, boolean draining, UUID nodeId) {
+            this.expVal = expVal;
+            this.newVal = newVal;
+            this.draining = draining;
+            this.nodeID = nodeId;
+        }
+
+        @Override
+        public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheSemaphoreState> entry, Object... arguments) throws EntryProcessorException {
+            GridCacheSemaphoreState val = entry.getValue();
+
+            if (val == null)
+                throw new EntryProcessorException("Failed to find semaphore with given name: " + entry.getKey().name());
+
+            boolean retVal = val.getCount() == expVal;
+
+            if (retVal) {
+                // If this is not a call to drain permits,
+                // Modify global permission count for the calling node.
+                if (!draining) {
+
+                    Map<UUID,Integer> map = val.getWaiters();
+
+                    int waitingCnt = expVal - newVal;
+
+                    if(map.containsKey(nodeID))
+                        waitingCnt += map.get(nodeID);
+
+                    map.put(nodeID, waitingCnt);
+
+                    val.setWaiters(map);
+                }
+
+                val.setCount(newVal);
+
+                entry.setValue(val);
+
+            }
+
+            return retVal;
+        }
+    };
+    private static class ReleaseFailedNodeEntryProcessor implements CacheEntryProcessor<GridCacheInternalKey,GridCacheSemaphoreState,Map<UUID,Integer>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        private final UUID nodeId;
+
+        private ReleaseFailedNodeEntryProcessor(UUID nodeId) {
+            this.nodeId = nodeId;
+        }
+
+        @Override
+        public Map<UUID,Integer> process(MutableEntry<GridCacheInternalKey, GridCacheSemaphoreState> entry, Object... arguments) throws EntryProcessorException {
+            GridCacheSemaphoreState val = entry.getValue();
+
+            if (val == null)
+                throw new EntryProcessorException("Failed to find semaphore with given name: " + entry.getKey().name());
+
+            Map<UUID,Integer> map = val.getWaiters();
+
+            if(!map.containsKey(nodeId)){
+                return null;
+            }
+
+            int numPermits = map.get(nodeId);
+
+            if(numPermits > 0)
+                val.setCount(val.getCount() + numPermits);
+
+            map.remove(nodeId);
+
+            val.setWaiters(map);
+            entry.setValue(val);
+
+            return map;
+        }
+    };
 
     /**
      * Synchronization implementation for semaphore.
@@ -270,6 +362,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
             }
         }
 
+
         /**
          * This method is used for synchronizing the semaphore state across all nodes.
          *
@@ -283,44 +376,9 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx,
-                                semView,
-                                    PESSIMISTIC, REPEATABLE_READ)
-                            ) {
-                                GridCacheSemaphoreState val = semView.get(key);
-
-                                if (val == null)
-                                    throw new IgniteCheckedException("Failed to find semaphore with given name: " +
-                                        name);
-
-                                boolean retVal = val.getCount() == expVal;
-
-                                if (retVal) {
-                                    // If this is not a call to drain permits,
-                                    // Modify global permission count for the calling node.
-                                    if (!draining) {
-                                        UUID nodeID = ctx.localNodeId();
-
-                                        Map<UUID,Integer> map = val.getWaiters();
-
-                                        int waitingCnt = expVal - newVal;
-
-                                        if(map.containsKey(nodeID))
-                                            waitingCnt += map.get(nodeID);
-
-                                        map.put(nodeID, waitingCnt);
-
-                                        val.setWaiters(map);
-                                    }
-
-                                    val.setCount(newVal);
-
-                                    semView.put(key, val);
-
-                                    tx.commit();
-                                }
-
-                                return retVal;
+                            try {
+                                Boolean res = semView.invoke(key, new CompareAndSetEntryProcessor(expVal,newVal,draining,ctx.localNodeId())).get();
+                                return res;
                             }
                             catch (Error | Exception e) {
                                 if (!ctx.kernalContext().isStopping())
@@ -356,39 +414,13 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                 return CU.outTx(
                     retryTopologySafe(new Callable<Boolean>() {
                         @Override public Boolean call() throws Exception {
-                            try (
-                                IgniteInternalTx tx = CU.txStartInternal(ctx,
-                                    semView,
-                                    PESSIMISTIC, REPEATABLE_READ)
-                            ) {
-                                GridCacheSemaphoreState val = semView.get(key);
-
-                                if (val == null)
-                                    throw new IgniteCheckedException("Failed to find semaphore with given name: " +
-                                        name);
-
-                                Map<UUID,Integer> map = val.getWaiters();
-
-                                if(!map.containsKey(nodeId)){
-                                    tx.rollback();
-
+                            try {
+                                EntryProcessorResult<Map<UUID,Integer>> res = semView.invoke(key, new ReleaseFailedNodeEntryProcessor(nodeId));
+                                if(res.get() == null){
                                     return false;
                                 }
 
-                                int numPermits = map.get(nodeId);
-
-                                if(numPermits > 0)
-                                    val.setCount(val.getCount() + numPermits);
-
-                                map.remove(nodeId);
-
-                                val.setWaiters(map);
-
-                                semView.put(key, val);
-
-                                sync.nodeMap = map;
-
-                                tx.commit();
+                                sync.nodeMap = res.get();
 
                                 return true;
                             }
@@ -452,27 +484,15 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
                 sync = CU.outTx(
                     retryTopologySafe(new Callable<Sync>() {
                         @Override public Sync call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx,
-                                semView, PESSIMISTIC, REPEATABLE_READ)) {
-                                GridCacheSemaphoreState val = semView.get(key);
+                            GridCacheSemaphoreState val = semView.get(key);
 
-                                if (val == null) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to find semaphore with given name: " + name);
+                            if (val == null) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to find semaphore with given name: " + name);
 
-                                    return null;
-                                }
-
-                                final int count = val.getCount();
-
-                                Map<UUID, Integer> waiters = val.getWaiters();
-
-                                final boolean failoverSafe = val.isFailoverSafe();
-
-                                tx.commit();
-
-                                return new Sync(count, waiters, failoverSafe);
+                                return null;
                             }
+                            return new Sync(val.getCount(), val.getWaiters(), val.isFailoverSafe());
                         }
                     }),
                     ctx
@@ -627,6 +647,16 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
         }
     }
 
+    private static final CacheEntryProcessor<GridCacheInternalKey,GridCacheSemaphoreState,Integer> permitCountEntryProcessor = new CacheEntryProcessor<GridCacheInternalKey,GridCacheSemaphoreState,Integer>(){
+        /** */
+        private static final long serialVersionUID = 0L;
+        @Override
+        public Integer process(MutableEntry<GridCacheInternalKey, GridCacheSemaphoreState> entry, Object... arguments) throws EntryProcessorException {
+            GridCacheSemaphoreState val = entry.getValue();
+            return (val == null) ? null : val.getCount();
+        }
+    };
+
     /** {@inheritDoc} */
     @Override public int availablePermits() {
         ctx.kernalContext().gateway().readLock();
@@ -638,21 +668,10 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
             ret = CU.outTx(
                 retryTopologySafe(new Callable<Integer>() {
                     @Override public Integer call() throws Exception {
-                        try (
-                            IgniteInternalTx tx = CU.txStartInternal(ctx,
-                                semView, PESSIMISTIC, REPEATABLE_READ)
-                        ) {
-                            GridCacheSemaphoreState val = semView.get(key);
-
-                            if (val == null)
-                                throw new IgniteException("Failed to find semaphore with given name: " + name);
-
-                            int count = val.getCount();
-
-                            tx.rollback();
-
-                            return count;
-                        }
+                        Integer res = semView.invoke(key, permitCountEntryProcessor).get();
+                        if (res == null)
+                            throw new IgniteException("Failed to find semaphore with given name: " + name);
+                        return res;
                     }
                 }),
                 ctx
