@@ -133,9 +133,8 @@ angular
 
         return {
             restrict: 'EA',
-            require: '?ngModel',
-            link: (scope, elm, attrs, ngModel) => {
-
+            require: ['?ngModel', '?^form'],
+            link: (scope, elm, attrs, [ngModel, form]) => {
                 /**
                  * Corresponds the igniteAceConfig ACE configuration.
                  *
@@ -204,6 +203,9 @@ angular
                 };
 
                 attrs.$observe('readonly', (value) => acee.setReadOnly(!!value || value === ''));
+
+                if (form && ngModel)
+                    form.$removeControl(ngModel);
 
                 // Value Blind.
                 if (ngModel) {
