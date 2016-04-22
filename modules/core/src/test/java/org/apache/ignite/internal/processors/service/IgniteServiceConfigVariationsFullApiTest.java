@@ -39,7 +39,7 @@ import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest
  */
 public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariationsAbstractTest {
     /** Test service name. */
-    private static final String SERVICE_NAME = "echo";
+    private static final String SERVICE_NAME = "testService";
 
     /** Test object id counter */
     private static int counter;
@@ -126,6 +126,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
 
         // expect correct value after being read back
         int r = 1000;
+
         while(r-- > 0)
             assertEquals(expected, proxy.getValue());
 
