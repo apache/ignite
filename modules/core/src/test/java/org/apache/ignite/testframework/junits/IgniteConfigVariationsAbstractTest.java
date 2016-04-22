@@ -533,7 +533,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     protected boolean isCompatible() throws Exception {
         switch (dataMode) {
             case BINARILIZABLE:
-                return getConfiguration().getMarshaller() instanceof BinaryMarshaller;
             case PLANE_OBJECT:
                 return !(getConfiguration().getMarshaller() instanceof JdkMarshaller);
         }
