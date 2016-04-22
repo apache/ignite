@@ -26,10 +26,10 @@ import java.io.ObjectStreamException;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
@@ -39,9 +39,11 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
+
 import static org.apache.ignite.internal.util.typedef.internal.CU.retryTopologySafe;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Cache atomic stamped implementation.
@@ -258,6 +260,29 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         };
     }
 
+    private static class SetEntryProcessor<T,S> implements CacheEntryProcessor<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>, Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+        private final T val;
+        private final S stamp;
+
+        private SetEntryProcessor(T val, S stamp) {
+            this.val = val;
+            this.stamp = stamp;
+        }
+
+
+        @Override
+        public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> entry, Object... arguments) throws EntryProcessorException {
+            GridCacheAtomicStampedValue<T, S> stmp = entry.getValue();
+            if (stmp == null)
+                throw new EntryProcessorException("Failed to find atomic stamped with given name: " + entry.getKey().name());
+            stmp.set(this.val,this.stamp);
+            entry.setValue(stmp);
+            return true;
+        }
+    }
+
     /**
      * Method returns callable for execution {@link #set(Object,Object)}} operation in async and sync mode.
      *
@@ -268,18 +293,8 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private Callable<Boolean> internalSet(final T val, final S stamp) {
         return retryTopologySafe(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                    GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
-
-                    if (stmp == null)
-                        throw new IgniteCheckedException("Failed to find atomic stamped with given name: " + name);
-
-                    stmp.set(val, stamp);
-
-                    atomicView.put(key, stmp);
-
-                    tx.commit();
-
+                try {
+                    atomicView.invoke(key, new SetEntryProcessor(val,stamp)).get();
                     return true;
                 }
                 catch (Error | Exception e) {
@@ -289,6 +304,39 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
                 }
             }
         });
+    }
+
+    private static class CompareAndSetEntryProcessor<T,S> implements CacheEntryProcessor<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>, Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
+        private final IgnitePredicate<T> expValPred;
+        private final IgniteClosure<T, T> newValClos;
+        private final IgnitePredicate<S> expStampPred;
+        private final IgniteClosure<S, S> newStampClos;
+
+        private CompareAndSetEntryProcessor(IgnitePredicate<T> expValPred, IgniteClosure<T, T> newValClos, IgnitePredicate<S> expStampPred, IgniteClosure<S, S> newStampClos) {
+            this.expValPred = expValPred;
+            this.newValClos = newValClos;
+            this.expStampPred = expStampPred;
+            this.newStampClos = newStampClos;
+        }
+
+
+        @Override
+        public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> entry, Object... arguments) throws EntryProcessorException {
+            GridCacheAtomicStampedValue<T, S> stmp = entry.getValue();
+            if (stmp == null)
+                throw new EntryProcessorException("Failed to find atomic stamped with given name: " + entry.getKey().name());
+
+            if (!(expValPred.apply(stmp.value()) && expStampPred.apply(stmp.stamp()))) {
+                return false;
+            }
+            else {
+                stmp.set(newValClos.apply(stmp.value()), newStampClos.apply(stmp.stamp()));
+                entry.setValue(stmp);
+                return true;
+            }
+        }
     }
 
     /**
@@ -306,26 +354,9 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         final IgniteClosure<S, S> newStampClos) {
         return retryTopologySafe(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                    GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
-
-                    if (stmp == null)
-                        throw new IgniteCheckedException("Failed to find atomic stamped with given name: " + name);
-
-                    if (!(expValPred.apply(stmp.value()) && expStampPred.apply(stmp.stamp()))) {
-                        tx.setRollbackOnly();
-
-                        return false;
-                    }
-                    else {
-                        stmp.set(newValClos.apply(stmp.value()), newStampClos.apply(stmp.stamp()));
-
-                        atomicView.getAndPut(key, stmp);
-
-                        tx.commit();
-
-                        return true;
-                    }
+                try {
+                    EntryProcessorResult<Boolean> res = atomicView.invoke(key, new CompareAndSetEntryProcessor(expValPred,newValClos,expStampPred,newStampClos));
+                    return res.get();
                 }
                 catch (Error | Exception e) {
                     U.error(log, "Failed to compare and set [expValPred=" + expValPred + ", newValClos=" +
