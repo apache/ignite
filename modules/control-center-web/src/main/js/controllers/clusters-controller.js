@@ -445,9 +445,7 @@ consoleModule.controller('clustersController', [
 
                     $scope.ui.inputForm.$setPristine();
 
-                    var idx = _.findIndex($scope.clusters, function (cluster) {
-                        return cluster._id === _id;
-                    });
+                    var idx = _.findIndex($scope.clusters, (cluster) => cluster._id === _id);
 
                     if (idx >= 0)
                         angular.merge($scope.clusters[idx], item);
@@ -460,9 +458,7 @@ consoleModule.controller('clustersController', [
 
                     $common.showInfo('Cluster "' + item.name + '" saved.');
                 })
-                .error(function (errMsg) {
-                    $common.showError(errMsg);
-                });
+                .error((err) => $common.showError(err));
         }
 
         // Save cluster.

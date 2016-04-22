@@ -169,7 +169,8 @@ class GridJettyJsonConfig extends JsonConfig {
             return null;
 
         if (target.getSimpleName().startsWith("Visor") ||
-            target == GridCacheSqlMetadata.class || target == GridCacheSqlIndexMetadata.class)
+            GridCacheSqlMetadata.class.isAssignableFrom(target) ||
+            GridCacheSqlIndexMetadata.class.isAssignableFrom(target))
             return LessNamingProcessor.class;
 
         if (keys.contains(target))
@@ -231,6 +232,8 @@ class GridJettyJsonConfig extends JsonConfig {
                         mtd.getReturnType() == void.class ||
                         mtd.getReturnType() == cls)
                         continue;
+
+                    mtd.setAccessible(true);
 
                     methods.add(mtd);
                 }
