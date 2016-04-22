@@ -23,6 +23,7 @@ import igniteSidebar from './Sidebar.provider';
 import GeneratorXml from './generator/Xml.service';
 import GeneratorJava from './generator/Java.service';
 import GeneratorDocker from './generator/Docker.service';
+import GeneratorPom from './generator/Pom.service';
 
 import igniteSidebarDirective from './sidebar.directive';
 
@@ -36,4 +37,5 @@ angular
 .directive(...igniteSidebarDirective)
 .service(...GeneratorXml)
 .service(...GeneratorJava)
-.service(...GeneratorDocker);
+.service(...GeneratorDocker)
+.service(...GeneratorPom);

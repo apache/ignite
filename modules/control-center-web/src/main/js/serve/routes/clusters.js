@@ -97,7 +97,7 @@ module.exports.factory = function(_, express, mongo) {
                             .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
                             .then(() => mongo.Igfs.update({_id: {$in: igfss}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
                             .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
-                            .then(() => res.send(clusterId))
+                            .then(() => res.send(clusterId));
                     }
 
                     return (new mongo.Cluster(params)).save()
@@ -109,7 +109,7 @@ module.exports.factory = function(_, express, mongo) {
                         .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
                         .then(() => mongo.Igfs.update({_id: {$in: igfss}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
                         .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
-                        .then(() => res.send(clusterId))
+                        .then(() => res.send(clusterId));
                 })
                 .catch((err) => mongo.handleError(res, err));
         });

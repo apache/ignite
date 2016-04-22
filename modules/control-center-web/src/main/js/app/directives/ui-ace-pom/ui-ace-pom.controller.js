@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteVersion', function($scope, IgniteVersion) {
+export default ['$scope', 'GeneratorPom', 'IgniteVersion', function($scope, pom, IgniteVersion) {
     const ctrl = this;
 
     // Watchers definition.
@@ -25,8 +25,7 @@ export default ['$scope', 'IgniteVersion', function($scope, IgniteVersion) {
         if (!value)
             return;
 
-        // TODO IGNITE-2053: need move $generatorPom to services.
-        ctrl.data = $generatorPom.pom($scope.cluster, IgniteVersion.version).asString();
+        ctrl.data = pom.generate($scope.cluster, IgniteVersion.version).asString();
     };
 
     // Setup watchers.

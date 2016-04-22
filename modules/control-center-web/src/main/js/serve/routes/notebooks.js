@@ -103,13 +103,15 @@ module.exports.factory = function(express, mongo) {
          */
         router.post('/new', (req, res) => {
             mongo.spaceIds(req.currentUserId())
-                .then((spaceIds) => mongo.Notebook.findOne({space: spaceIds[0], name: req.body.name}))
-                .then((notebook) => {
-                    if (notebook)
-                        throw new Error('Notebook with name: "' + notebook.name + '" already exist.');
+                .then((spaceIds) =>
+                    mongo.Notebook.findOne({space: spaceIds[0], name: req.body.name})
+                        .then((notebook) => {
+                            if (notebook)
+                                throw new Error('Notebook with name: "' + notebook.name + '" already exist.');
 
-                    return (new mongo.Notebook({space: spaceIds[0], name: req.body.name})).save();
-                })
+                            return spaceIds;
+                        }))
+                .then((spaceIds) => (new mongo.Notebook({space: spaceIds[0], name: req.body.name})).save())
                 .then((notebook) => res.send(notebook._id))
                 .catch((err) => mongo.handleError(res, err));
         });
