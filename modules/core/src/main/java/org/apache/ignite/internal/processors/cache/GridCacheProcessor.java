@@ -2956,51 +2956,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param spaceName Space name.
-     * @param keyBytes Key bytes.
-     * @param valBytes Value bytes.
-     */
-    @SuppressWarnings({"unchecked"})
-    public void onEvictFromSwap(String spaceName, byte[] keyBytes, byte[] valBytes) {
-        assert spaceName != null;
-        assert keyBytes != null;
-        assert valBytes != null;
-
-        /*
-         * NOTE: this method should not have any synchronization because
-         * it is called from synchronization block within Swap SPI.
-         */
-
-        GridCacheAdapter cache = caches.get(maskNull(CU.cacheNameForSwapSpaceName(spaceName)));
-
-        assert cache != null : "Failed to resolve cache name for swap space name: " + spaceName;
-
-        GridCacheContext cctx = cache.configuration().getCacheMode() == PARTITIONED ?
-            ((GridNearCacheAdapter<?, ?>)cache).dht().context() : cache.context();
-
-        if (spaceName.equals(CU.swapSpaceName(cctx))) {
-            GridCacheQueryManager qryMgr = cctx.queries();
-
-            if (qryMgr.enabled()) {
-                try {
-                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
-
-                    CacheObject val = cctx.swap().unmarshalSwapEntryValue(valBytes);
-
-                    assert val != null;
-
-                    // TODO sql-store
-
-                    qryMgr.remove(key, cctx.affinity().partition(key), val, null);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to unmarshal key evicted from swap [swapSpaceName=" + spaceName + ']', e);
-                }
-            }
-        }
-    }
-
-    /**
      * @param cfg Cache configuration.
      * @return Query manager.
      */

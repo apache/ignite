@@ -1332,6 +1332,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (needVer) {
                                 T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                                     null,
+                                    null,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
                                     subjId,
@@ -1346,7 +1347,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 }
                             }
                             else {
-                                v = entry.innerGet(null,
+                                v = entry.innerGet(
+                                    null,
+                                    null,
                                     /*read-through*/false,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
@@ -1923,6 +1926,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (intercept) {
                         CacheObject old = entry.innerGet(
+                            null,
                              null,
                             /*read through*/ctx.loadPreviousValue(),
                             /*metrics*/true,
@@ -1958,6 +1962,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (intercept) {
                         CacheObject old = entry.innerGet(
+                            null,
                             null,
                             /*read through*/ctx.loadPreviousValue(),
                             /*metrics*/true,

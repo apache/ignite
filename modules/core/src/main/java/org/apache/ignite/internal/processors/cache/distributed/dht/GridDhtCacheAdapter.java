@@ -1012,6 +1012,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                             entry.unswap(false);
 
+                            entry.updateTtl(vers.get(i), ttl);
+
                             break;
                         }
                         catch (GridCacheEntryRemovedException e) {
@@ -1025,8 +1027,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             break;
                         }
                     }
-
-                    entry.updateTtl(vers.get(i), ttl);
                 }
                 finally {
                     if (entry != null)

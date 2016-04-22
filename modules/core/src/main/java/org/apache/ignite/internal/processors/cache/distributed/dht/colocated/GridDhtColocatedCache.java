@@ -484,6 +484,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             if (needVer) {
                                 T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                                     null,
+                                    null,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
                                     subjId,
@@ -498,7 +499,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 }
                             }
                             else {
-                                v = entry.innerGet(null,
+                                v = entry.innerGet(
+                                    null,
+                                    null,
                                     /*read-through*/false,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,

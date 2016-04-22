@@ -374,6 +374,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     if (needVer) {
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
+                            null,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
                             subjId,
@@ -388,7 +389,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                         }
                     }
                     else {
-                        v = entry.innerGet(null,
+                        v = entry.innerGet(
+                            null,
+                            null,
                             /*read-through*/false,
                             /**update-metrics*/false,
                             /*event*/!skipVals,

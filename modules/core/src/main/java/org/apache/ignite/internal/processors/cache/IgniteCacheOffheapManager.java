@@ -79,8 +79,11 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         this.indexingEnabled = indexingEnabled;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void start0() throws IgniteCheckedException {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void start0() throws IgniteCheckedException {
         super.start0();
 
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
@@ -92,8 +95,11 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         dataTree = new CacheDataTree(rowStore, cctx, dbMgr.pageMemory(), page.get1(), page.get2());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void onKernalStart0() throws IgniteCheckedException {
         super.onKernalStart0();
     }
 
@@ -103,8 +109,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     public boolean containsKey(KeyCacheObject key, int part) {
         try {
             return read(key, part) != null;
-        }
-        catch (IgniteCheckedException e) {
+        } catch (IgniteCheckedException e) {
             U.error(log, "Failed to read value", e);
 
             return false;
@@ -112,17 +117,17 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * @param key Key.
-     * @param val Value.
-     * @param ver Version.
+     * @param key  Key.
+     * @param val  Value.
+     * @param ver  Version.
      * @param part Partition.
      * @throws IgniteCheckedException If failed.
      */
     public void update(KeyCacheObject key,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        int part) throws IgniteCheckedException {
+                       CacheObject val,
+                       GridCacheVersion ver,
+                       long expireTime,
+                       int part) throws IgniteCheckedException {
         if (indexingEnabled) {
             GridCacheQueryManager qryMgr = cctx.queries();
 
@@ -163,12 +168,13 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * @param key Key to read.
+     * @param key  Key to read.
      * @param part Partition.
      * @return Value tuple, if available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteBiTuple<CacheObject, GridCacheVersion> read(KeyCacheObject key, int part)
+    @Nullable
+    public IgniteBiTuple<CacheObject, GridCacheVersion> read(KeyCacheObject key, int part)
         throws IgniteCheckedException {
         if (indexingEnabled)
             return cctx.queries().read(key, part);
@@ -178,7 +184,8 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         return dataRow != null ? F.t(dataRow.val, dataRow.ver) : null;
     }
 
-    @Nullable CacheObject readValue(KeyCacheObject key, int part) throws IgniteCheckedException {
+    @Nullable
+    CacheObject readValue(KeyCacheObject key, int part) throws IgniteCheckedException {
         IgniteBiTuple<CacheObject, GridCacheVersion> t = read(key, part);
 
         return t != null ? t.get1() : null;
@@ -207,7 +214,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * @param tree Tree.
+     * @param tree    Tree.
      * @param readers {@code True} to clear readers.
      */
     private void clear(BPlusTree<?, ? extends CacheDataRow> tree, boolean readers) {
@@ -231,33 +238,30 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
 
                     GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
-                    entry.clear(obsoleteVer, readers, null);
-                }
-                catch (GridDhtInvalidPartitionException ignore) {
+                    entry.clear(obsoleteVer, readers);
+                } catch (GridDhtInvalidPartitionException ignore) {
                     // Ignore.
-                }
-                catch (IgniteCheckedException e) {
+                } catch (IgniteCheckedException e) {
                     U.error(log, "Failed to clear cache entry: " + key, e);
                 }
             }
-        }
-        catch (IgniteCheckedException e) {
+        } catch (IgniteCheckedException e) {
             U.error(log, "Failed to clear cache entries.", e);
         }
     }
 
     /**
-     * @param tree Tree.
+     * @param tree    Tree.
      * @param primary Include primary node keys.
-     * @param backup Include backup node keys.
-     * @param topVer Topology version.
+     * @param backup  Include backup node keys.
+     * @param topVer  Topology version.
      * @return Entries count.
      * @throws IgniteCheckedException If failed.
      */
     private long entriesCount(BPlusTree<?, ? extends CacheDataRow> tree,
-        boolean primary,
-        boolean backup,
-        AffinityTopologyVersion topVer) throws IgniteCheckedException {
+                              boolean primary,
+                              boolean backup,
+                              AffinityTopologyVersion topVer) throws IgniteCheckedException {
         GridCursor<? extends CacheDataRow> cur = tree.find(null, null);
 
         ClusterNode locNode = cctx.localNode();
@@ -282,6 +286,10 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         }
 
         return cnt;
+    }
+
+    public long entriesCount(int part) {
+        return 0;
     }
 
     /**

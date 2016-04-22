@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheMvccEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheTtlEntryExtras;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -388,7 +389,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     CacheObject idxVal = read.get1();
 
                     // Set unswapped value.
-                    update(idxVal, 0, 0, read.get2());
+                    update(idxVal, 0, 0, read.get2(), false);
 
                     return idxVal;
                 }
@@ -524,7 +525,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return (T2<CacheObject, GridCacheVersion>)innerGet0(tx,
+        return (T2<CacheObject, GridCacheVersion>)innerGet0(
+            ver,
+            tx,
             false,
             evt,
             updateMetrics,
@@ -699,12 +702,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
         }
 
-        if (ret != null) {
-            assert tmp || !(ret instanceof BinaryObjectOffheapImpl);
-
+        if (ret != null)
             // If return value is consistent, then done.
             return retVer ? new T2<>(ret, resVer) : ret;
-        }
 
         boolean loadedFromStore = false;
 
@@ -770,7 +770,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
 
         assert ret == null || !retVer;
-        assert tmp || !(ret instanceof BinaryObjectOffheapImpl);
 
         return ret;
     }
@@ -1111,6 +1110,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert tx == null || (!tx.local() && tx.onePhaseCommit()) || tx.ownsLock(this) :
                 "Transaction does not own lock for remove[entry=" + this + ", tx=" + tx + ']';
 
+            boolean startVer = isStartVersion();
+
             newVer = explicitVer != null ? explicitVer : tx == null ? nextVersion() : tx.writeVersion();
 
             boolean internal = isInternal() || !context().userCache();
@@ -1118,7 +1119,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             Map<UUID, CacheContinuousQueryListener> lsnrCol =
                 notifyContinuousQueries(tx) ? cctx.continuousQueries().updateListeners(internal, false) : null;
 
-            // TODO GG-10884 need unswap?.
+            if (startVer && (retval || intercept || lsnrCol != null))
+                unswap();
+
             old = val;
 
             if (intercept) {
@@ -2416,13 +2419,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (log.isDebugEnabled())
                 log.debug("Entry has been marked obsolete: " + this);
 
-                removeValue(val, ver);
-
-                ret = true;
-                rmv = true;
-
-                break;
-            }
+            removeValue(val, ver);
         }
 
         onMarkedObsolete();
@@ -2726,7 +2723,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         ttlAndExpireTimeExtras(ttl, expireTime);
 
-        if (cctx.isSwapOrOffheapEnabled())
+        if (cctx.isOffHeapEnabled())
             flags |= IS_SWAPPING_REQUIRED;
 
         if (expireTime != 0 && expireTime != oldExpireTime && cctx.config().isEagerTtl())
@@ -3094,8 +3091,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (newVer == null)
                     newVer = cctx.versions().next();
-
-                CacheObject old = this.val;
 
                 long ttl = ttlExtras();
 
@@ -3631,7 +3626,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public boolean evictInternal(GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        // TODO GG-10884: evictions from offheap are not supported.
+        // TODO GG-10884: evictions from offheap(pagememory) are not supported.
 
         boolean marked = false;
 
@@ -3646,8 +3641,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     if (obsoleteVersionExtras() != null)
                         return true;
-
-                    CacheObject prev = saveOldValueUnlocked(false);
 
                     if (!hasReaders() && markObsolete0(obsoleteVer, false, null)) {
                         // Nullify value after swap.

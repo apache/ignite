@@ -44,7 +44,6 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerAttribu
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManagerSelfTest;
 import org.apache.ignite.internal.managers.discovery.IgniteTopologyPrintFormatSelfTest;
 import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTest;
-import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManagerSelfTest;
 import org.apache.ignite.internal.processors.cluster.GridUpdateNotifierSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceClientNodeTest;

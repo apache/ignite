@@ -531,6 +531,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         if (needVer) {
                             T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                                 null,
+                                null,
                                 /**update-metrics*/false,
                                 /*event*/!skipVals,
                                 subjId,
@@ -556,7 +557,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 success = false;
                         }
                         else {
-                            v = entry.innerGet(null,
+                            v = entry.innerGet(
+                                null,
+                                null,
                                 /*read-through*/false,
                                 /**update-metrics*/true,
                                 /**event*/!skipVals,
@@ -1111,7 +1114,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         EntryProcessor<Object, Object, Object> entryProcessor =
                             (EntryProcessor<Object, Object, Object>)val;
 
-                        CacheObject old = entry.innerGet(null,
+                        CacheObject old = entry.innerGet(
+                            null,
+                            null,
                             /*read-through*/true,
                             /**update-metrics*/true,
                             /**event*/true,
@@ -1229,7 +1234,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         CacheObject cacheVal = ctx.toCacheObject(val);
 
                         if (intercept) {
-                            CacheObject old = entry.innerGet(null,
+                            CacheObject old = entry.innerGet(
+                                null,
+                                null,
                                 /*read-through*/ctx.loadPreviousValue(),
                                 /**update-metrics*/true,
                                 /**event*/true,
@@ -1260,7 +1267,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         assert op == DELETE;
 
                         if (intercept) {
-                            CacheObject old = entry.innerGet(null,
+                            CacheObject old = entry.innerGet(
+                                null,
+                                null,
                                 /*read-through*/ctx.loadPreviousValue(),
                                 /**update-metrics*/true,
                                 /**event*/true,

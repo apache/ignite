@@ -1003,7 +1003,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 qry.keepBinary());
         }
 
-        if (cctx.offheapTiered() && filter != null) {
+        if (cctx.isOffHeapEnabled() && filter != null) {
             OffheapIteratorClosure c = new OffheapIteratorClosure(filter, qry.keepBinary());
 
             return cctx.swap().rawOffHeapIterator(c, qry.partition(), true, backups);
@@ -2574,7 +2574,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @Override protected V unmarshalValue() throws IgniteCheckedException {
             long ptr = GridCacheOffheapSwapEntry.valueAddress(valPtr.get1(), valPtr.get2());
 
-            return (V)cctx.fromOffheap(ptr, false);
+            return null;//(V)cctx.fromOffheap(ptr, false);
         }
 
         /** {@inheritDoc} */

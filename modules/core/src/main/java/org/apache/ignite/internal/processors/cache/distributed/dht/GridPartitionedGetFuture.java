@@ -451,6 +451,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     if (needVer) {
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
+                            null,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
                             subjId,
@@ -465,7 +466,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         }
                     }
                     else {
-                        v = entry.innerGet(null,
+                        v = entry.innerGet(
+                            null,
+                            null,
                             /*read-through*/false,
                             /**update-metrics*/false,
                             /*event*/!skipVals,

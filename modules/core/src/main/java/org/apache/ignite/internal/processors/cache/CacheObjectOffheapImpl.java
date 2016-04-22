@@ -122,4 +122,9 @@ public class CacheObjectOffheapImpl implements CacheObject {
     @Override public byte fieldsCount() {
         return 0;
     }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
 }
