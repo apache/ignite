@@ -62,6 +62,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -118,6 +119,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         cfg.setClientMode(client);
 
@@ -598,6 +600,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
             final List<CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> evts =
                 new CopyOnWriteArrayList<>();
 
+            if (noOpFilterFactory() != null)
+                qry.setRemoteFilterFactory(noOpFilterFactory());
+
             qry.setLocalListener(new CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>() {
                 @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
                     ? extends QueryTestValue>> events) throws CacheEntryListenerException {
@@ -684,8 +689,16 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
                     checkSingleEvent(evts.get(7), CREATED, new QueryTestValue(5), null);
                     checkSingleEvent(evts.get(8), EventType.UPDATED, new QueryTestValue(6), new QueryTestValue(5));
 
+                    evts.clear();
+
                     cache.remove(key);
                     cache.remove(key);
+
+                    assert GridTestUtils.waitForCondition(new PA() {
+                        @Override public boolean apply() {
+                            return evts.size() == 1;
+                        }
+                    }, 5_000);
 
                     evts.clear();
 
@@ -696,6 +709,13 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         finally {
             grid(getClientIndex()).destroyCache(ccfg.getName());
         }
+    }
+
+    /**
+     * @return No-op filter factory for batch operations.
+     */
+    protected Factory<? extends CacheEntryEventFilter<QueryTestKey, QueryTestValue>> noOpFilterFactory() {
+        return null;
     }
 
     /**
@@ -710,6 +730,9 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
             final List<CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue>> evts =
                 new CopyOnWriteArrayList<>();
+
+            if (noOpFilterFactory() != null)
+                qry.setRemoteFilterFactory(noOpFilterFactory());
 
             qry.setLocalListener(new CacheEntryUpdatedListener<QueryTestKey, QueryTestValue>() {
                 @Override public void onUpdated(Iterable<CacheEntryEvent<? extends QueryTestKey,
