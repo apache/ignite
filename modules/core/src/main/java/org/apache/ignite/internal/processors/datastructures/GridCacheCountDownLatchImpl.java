@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -39,6 +40,10 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
 
 import static org.apache.ignite.internal.util.typedef.internal.CU.retryTopologySafe;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -241,6 +246,21 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
             internalLatch.countDown();
     }
 
+
+    private static final CacheEntryProcessor<GridCacheInternalKey, GridCacheCountDownLatchValue, Integer> initLatchEntryProcessor = new CacheEntryProcessor<GridCacheInternalKey, GridCacheCountDownLatchValue, Integer>(){
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        @Override
+        public Integer process(MutableEntry<GridCacheInternalKey, GridCacheCountDownLatchValue> entry, Object... arguments) throws EntryProcessorException {
+            GridCacheCountDownLatchValue val = entry.getValue();
+            if (val == null) {
+                return null;
+            }
+
+            return val.get();
+        }
+    };
     /**
      * @throws IgniteCheckedException If operation failed.
      */
@@ -250,20 +270,13 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 internalLatch = CU.outTx(
                     retryTopologySafe(new Callable<CountDownLatch>() {
                         @Override public CountDownLatch call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
-                                GridCacheCountDownLatchValue val = latchView.get(key);
-
-                                if (val == null) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to find count down latch with given name: " + name);
-
-                                    return new CountDownLatch(0);
-                                }
-
-                                tx.commit();
-
-                                return new CountDownLatch(val.get());
+                            Integer res = latchView.invoke(key, initLatchEntryProcessor).get();
+                            if(res == null){
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to find count down latch with given name: " + name);
+                                return new CountDownLatch(0);
                             }
+                            return new CountDownLatch(res);
                         }
                     }),
                     ctx
@@ -348,6 +361,36 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         }
     }
 
+    private static class CountDownEntryProcessor implements CacheEntryProcessor<GridCacheInternalKey, GridCacheCountDownLatchValue, Integer> {
+        /** */
+        private static final long serialVersionUID = 0L;
+        private final int val;
+
+        private CountDownEntryProcessor(int val) {
+            this.val = val;
+        }
+
+        @Override
+        public Integer process(MutableEntry<GridCacheInternalKey, GridCacheCountDownLatchValue> entry, Object... arguments) throws EntryProcessorException {
+            GridCacheCountDownLatchValue latchVal = entry.getValue();
+            if (latchVal == null) {
+                return null;
+            }
+            int retVal = 0;
+
+            if (val > 0) {
+                retVal = latchVal.get() - val;
+
+                if (retVal < 0)
+                    retVal = 0;
+            }
+
+            latchVal.set(retVal);
+            entry.setValue(latchVal);
+            return retVal;
+        }
+    }
+
     /**
      *
      */
@@ -366,35 +409,13 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
-            try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
-                GridCacheCountDownLatchValue latchVal = latchView.get(key);
-
-                if (latchVal == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to find count down latch with given name: " + name);
-
-                    return 0;
-                }
-
-                int retVal;
-
-                if (val > 0) {
-                    retVal = latchVal.get() - val;
-
-                    if (retVal < 0)
-                        retVal = 0;
-                }
-                else
-                    retVal = 0;
-
-                latchVal.set(retVal);
-
-                latchView.put(key, latchVal);
-
-                tx.commit();
-
-                return retVal;
+            Integer res = latchView.invoke(key, new CountDownEntryProcessor(val)).get();
+            if(res == null){
+                if (log.isDebugEnabled())
+                    log.debug("Failed to find count down latch with given name: " + name);
+                return 0;
             }
+            return res;
         }
     }
 }
