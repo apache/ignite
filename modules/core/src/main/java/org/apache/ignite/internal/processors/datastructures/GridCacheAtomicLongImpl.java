@@ -23,22 +23,26 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.util.Comparator;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
+
 import static org.apache.ignite.internal.util.typedef.internal.CU.retryTopologySafe;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Cache atomic long implementation.
@@ -49,11 +53,11 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
 
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
-        new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
-            @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
-                return F.t2();
-            }
-        };
+            new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
+                @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
+                    return F.t2();
+                }
+            };
 
     /** Logger. */
     private IgniteLogger log;
@@ -91,25 +95,23 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     /** Callable for {@link #incrementAndGet()}. */
     private final Callable<Long> incAndGetCall = retryTopologySafe(new Callable<Long>() {
         @Override public Long call() throws Exception {
-            try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                GridCacheAtomicLongValue val = atomicView.get(key);
-
-                if (val == null)
-                    throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
-
-                long retVal = val.get() + 1;
-
-                val.set(retVal);
-
-                atomicView.put(key, val);
-
-                tx.commit();
-
-                return retVal;
+            try{
+                EntryProcessorResult<Long> res =  atomicView.invoke(key, new CacheEntryProcessor<GridCacheInternalKey, GridCacheAtomicLongValue, Long>() {
+                    @Override
+                    public Long process(MutableEntry<GridCacheInternalKey, GridCacheAtomicLongValue> entry, Object... arguments) throws EntryProcessorException {
+                        GridCacheAtomicLongValue val = entry.getValue();
+                        if (val == null)
+                            throw new EntryProcessorException("Failed to find atomic long with given name: " + name);
+                        long ret  = val.get() + 1;
+                        val.set(ret);
+                        entry.setValue(val);
+                        return ret;
+                    }
+                });
+                return res.get();
             }
             catch (Error | Exception e) {
                 U.error(log, "Failed to increment and get: " + this, e);
-
                 throw e;
             }
         }
@@ -118,25 +120,23 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     /** Callable for {@link #getAndIncrement()}. */
     private final Callable<Long> getAndIncCall = retryTopologySafe(new Callable<Long>() {
         @Override public Long call() throws Exception {
-            try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                GridCacheAtomicLongValue val = atomicView.get(key);
-
-                if (val == null)
-                    throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
-
-                long retVal = val.get();
-
-                val.set(retVal + 1);
-
-                atomicView.put(key, val);
-
-                tx.commit();
-
-                return retVal;
+            try{
+                EntryProcessorResult<Long> res =  atomicView.invoke(key, new CacheEntryProcessor<GridCacheInternalKey, GridCacheAtomicLongValue, Long>() {
+                    @Override
+                    public Long process(MutableEntry<GridCacheInternalKey, GridCacheAtomicLongValue> entry, Object... arguments) throws EntryProcessorException {
+                        GridCacheAtomicLongValue val = entry.getValue();
+                        if (val == null)
+                            throw new EntryProcessorException("Failed to find atomic long with given name: " + name);
+                        long ret  = val.get();
+                        val.set(ret + 1);
+                        entry.setValue(val);
+                        return ret;
+                    }
+                });
+                return res.get();
             }
             catch (Error | Exception e) {
                 U.error(log, "Failed to get and increment: " + this, e);
-
                 throw e;
             }
         }
@@ -145,25 +145,23 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     /** Callable for {@link #decrementAndGet()}. */
     private final Callable<Long> decAndGetCall = retryTopologySafe(new Callable<Long>() {
         @Override public Long call() throws Exception {
-            try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                GridCacheAtomicLongValue val = atomicView.get(key);
-
-                if (val == null)
-                    throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
-
-                long retVal = val.get() - 1;
-
-                val.set(retVal);
-
-                atomicView.put(key, val);
-
-                tx.commit();
-
-                return retVal;
+            try{
+                EntryProcessorResult<Long> res =  atomicView.invoke(key, new CacheEntryProcessor<GridCacheInternalKey, GridCacheAtomicLongValue, Long>() {
+                    @Override
+                    public Long process(MutableEntry<GridCacheInternalKey, GridCacheAtomicLongValue> entry, Object... arguments) throws EntryProcessorException {
+                        GridCacheAtomicLongValue val = entry.getValue();
+                        if (val == null)
+                            throw new EntryProcessorException("Failed to find atomic long with given name: " + name);
+                        long ret  = val.get() - 1;
+                        val.set(ret);
+                        entry.setValue(val);
+                        return ret;
+                    }
+                });
+                return res.get();
             }
             catch (Error | Exception e) {
                 U.error(log, "Failed to decrement and get: " + this, e);
-
                 throw e;
             }
         }
@@ -172,25 +170,23 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     /** Callable for {@link #getAndDecrement()}. */
     private final Callable<Long> getAndDecCall = retryTopologySafe(new Callable<Long>() {
         @Override public Long call() throws Exception {
-            try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                GridCacheAtomicLongValue val = atomicView.get(key);
-
-                if (val == null)
-                    throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
-
-                long retVal = val.get();
-
-                val.set(retVal - 1);
-
-                atomicView.put(key, val);
-
-                tx.commit();
-
-                return retVal;
+            try{
+                EntryProcessorResult<Long> res =  atomicView.invoke(key, new CacheEntryProcessor<GridCacheInternalKey, GridCacheAtomicLongValue, Long>() {
+                    @Override
+                    public Long process(MutableEntry<GridCacheInternalKey, GridCacheAtomicLongValue> entry, Object... arguments) throws EntryProcessorException {
+                        GridCacheAtomicLongValue val = entry.getValue();
+                        if (val == null)
+                            throw new EntryProcessorException("Failed to find atomic long with given name: " + name);
+                        long ret  = val.get() ;
+                        val.set(ret - 1);
+                        entry.setValue(val);
+                        return ret;
+                    }
+                });
+                return res.get();
             }
             catch (Error | Exception e) {
                 U.error(log, "Failed to get and decrement and get: " + this, e);
-
                 throw e;
             }
         }
@@ -212,7 +208,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
      * @param ctx CacheContext.
      */
     public GridCacheAtomicLongImpl(String name, GridCacheInternalKey key,
-        IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView, GridCacheContext ctx) {
+                                   IgniteInternalCache<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView, GridCacheContext ctx) {
         assert key != null;
         assert atomicView != null;
         assert ctx != null;
@@ -422,6 +418,27 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
         }
     }
 
+    private static class AddAndGetEntryProcessor implements CacheEntryProcessor<GridCacheInternalKey, GridCacheAtomicLongValue, Long>{
+        /** */
+        private static final long serialVersionUID = 0L;
+        private final long l;
+
+        private AddAndGetEntryProcessor(long l) {
+            this.l = l;
+        }
+
+        @Override
+        public Long process(MutableEntry<GridCacheInternalKey, GridCacheAtomicLongValue> entry, Object... arguments) throws EntryProcessorException {
+            GridCacheAtomicLongValue val = entry.getValue();
+            if (val == null)
+                throw new EntryProcessorException("Failed to find atomic long with given name: " + entry.getKey().name());
+            final long ret  = val.get() + l;
+            val.set(ret);
+            entry.setValue(val);
+            return ret;
+        }
+    }
+
     /**
      * Method returns callable for execution {@link #addAndGet(long)} operation in async and sync mode.
      *
@@ -431,21 +448,8 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     private Callable<Long> internalAddAndGet(final long l) {
         return retryTopologySafe(new Callable<Long>() {
             @Override public Long call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                    GridCacheAtomicLongValue val = atomicView.get(key);
-
-                    if (val == null)
-                        throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
-
-                    long retVal = val.get() + l;
-
-                    val.set(retVal);
-
-                    atomicView.put(key, val);
-
-                    tx.commit();
-
-                    return retVal;
+                try{
+                    return atomicView.invoke(key, new AddAndGetEntryProcessor(l)).get();
                 }
                 catch (Error | Exception e) {
                     U.error(log, "Failed to add and get: " + this, e);
@@ -456,6 +460,28 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
         });
     }
 
+    private static class GetAndAddEntryProcessor implements CacheEntryProcessor<GridCacheInternalKey, GridCacheAtomicLongValue, Long>{
+        /** */
+        private static final long serialVersionUID = 0L;
+        private final long l;
+
+        private GetAndAddEntryProcessor(long l) {
+            this.l = l;
+        }
+
+        @Override
+        public Long process(MutableEntry<GridCacheInternalKey, GridCacheAtomicLongValue> entry, Object... arguments) throws EntryProcessorException {
+            GridCacheAtomicLongValue val = entry.getValue();
+            if (val == null)
+                throw new EntryProcessorException("Failed to find atomic long with given name: " + entry.getKey().name());
+            final long ret  = val.get();
+            val.set(ret + l);
+            entry.setValue(val);
+            return ret;
+        }
+    }
+
+
     /**
      * Method returns callable for execution {@link #getAndAdd(long)} operation in async and sync mode.
      *
@@ -465,21 +491,8 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     private Callable<Long> internalGetAndAdd(final long l) {
         return retryTopologySafe(new Callable<Long>() {
             @Override public Long call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                    GridCacheAtomicLongValue val = atomicView.get(key);
-
-                    if (val == null)
-                        throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
-
-                    long retVal = val.get();
-
-                    val.set(retVal + l);
-
-                    atomicView.put(key, val);
-
-                    tx.commit();
-
-                    return retVal;
+                try{
+                    return atomicView.invoke(key, new GetAndAddEntryProcessor(l)).get();
                 }
                 catch (Error | Exception e) {
                     U.error(log, "Failed to get and add: " + this, e);
@@ -488,6 +501,27 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                 }
             }
         });
+    }
+
+    private static class GetAndSetEntryProcessor implements CacheEntryProcessor<GridCacheInternalKey, GridCacheAtomicLongValue, Long>{
+        /** */
+        private static final long serialVersionUID = 0L;
+        private final long l;
+
+        private GetAndSetEntryProcessor(long l) {
+            this.l = l;
+        }
+
+        @Override
+        public Long process(MutableEntry<GridCacheInternalKey, GridCacheAtomicLongValue> entry, Object... arguments) throws EntryProcessorException {
+            GridCacheAtomicLongValue val = entry.getValue();
+            if (val == null)
+                throw new EntryProcessorException("Failed to find atomic long with given name: " + entry.getKey().name());
+            final long ret  = val.get();
+            val.set(l);
+            entry.setValue(val);
+            return ret;
+        }
     }
 
     /**
@@ -499,21 +533,8 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     private Callable<Long> internalGetAndSet(final long l) {
         return new Callable<Long>() {
             @Override public Long call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                    GridCacheAtomicLongValue val = atomicView.get(key);
-
-                    if (val == null)
-                        throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
-
-                    long retVal = val.get();
-
-                    val.set(l);
-
-                    atomicView.put(key, val);
-
-                    tx.commit();
-
-                    return retVal;
+                try{
+                    return atomicView.invoke(key, new GetAndSetEntryProcessor(l)).get();
                 }
                 catch (Error | Exception e) {
                     U.error(log, "Failed to get and set: " + this, e);
@@ -522,6 +543,33 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
                 }
             }
         };
+    }
+
+    private static class CompareAndSetAndGetEntryProcessor implements CacheEntryProcessor<GridCacheInternalKey, GridCacheAtomicLongValue, Long>{
+        /** */
+        private static final long serialVersionUID = 0L;
+        private final long expVal;
+        private final long newVal;
+
+        private CompareAndSetAndGetEntryProcessor(long expVal, long newVal) {
+            this.expVal = expVal;
+            this.newVal = newVal;
+        }
+
+
+        @Override
+        public Long process(MutableEntry<GridCacheInternalKey, GridCacheAtomicLongValue> entry, Object... arguments) throws EntryProcessorException {
+            GridCacheAtomicLongValue val = entry.getValue();
+            if (val == null)
+                throw new EntryProcessorException("Failed to find atomic long with given name: " + entry.getKey().name());
+            long current  = val.get();
+            if(current == expVal){
+               val.set(newVal);
+                entry.setValue(val);
+            }
+            return current;
+
+        }
     }
 
     /**
@@ -535,27 +583,11 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     private Callable<Long> internalCompareAndSetAndGet(final long expVal, final long newVal) {
         return new Callable<Long>() {
             @Override public Long call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
-                    GridCacheAtomicLongValue val = atomicView.get(key);
-
-                    if (val == null)
-                        throw new IgniteCheckedException("Failed to find atomic long with given name: " + name);
-
-                    long retVal = val.get();
-
-                    if (retVal == expVal) {
-                        val.set(newVal);
-
-                        atomicView.getAndPut(key, val);
-
-                        tx.commit();
-                    }
-
-                    return retVal;
+                try{
+                    return atomicView.invoke(key,new CompareAndSetAndGetEntryProcessor(expVal,newVal)).get();
                 }
                 catch (Error | Exception e) {
                     U.error(log, "Failed to compare and set: " + this, e);
-
                     throw e;
                 }
             }
