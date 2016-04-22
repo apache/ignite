@@ -17,6 +17,17 @@
 
 package org.apache.ignite.internal.processors.compute;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -38,21 +49,10 @@ import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
-import javax.cache.configuration.Factory;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-
 /**
  * Full API compute test.
  */
+@SuppressWarnings("unchecked")
 public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariationsAbstractTest {
     /** Max job count. */
     private static final int MAX_JOB_COUNT = 10;
@@ -111,11 +111,15 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         assertEquals("Count of the result objects' type mismatch (null values are filtered)", expCnt, cnt);
     }
 
-    /** */
+    /**
+     * @return Expected valid result.
+     */
     private Collection<Object> createGoldenResults() {
         Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
         for (int i = 0; i < MAX_JOB_COUNT; ++i)
             results.add(value(i - 1));
+
         return results;
     }
 
@@ -316,6 +320,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     // value(i - 1): use negative argument of the value method to generate nullong value.
                     comp.apply((IgniteClosure<Object, Object>)factory.create(), value(i - 1));
+
                     futures.add(comp.future());
                 }
 
@@ -596,8 +601,16 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         return super.value(valId);
     }
 
+    /**
+     *
+     */
     enum TestJobEnum {
-        VALUE_0, VALUE_1, VALUE_2
+        /** */
+        VALUE_0,
+        /** */
+        VALUE_1,
+        /** */
+        VALUE_2
     }
 
     /**
@@ -606,6 +619,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     public interface ComputeTest {
         /**
          * @param factory Factory.
+         * @param ignite Ignite instance to use.
          * @throws Exception If failed.
          */
         public void test(Factory factory, Ignite ignite) throws Exception;
@@ -623,6 +637,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
             for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                 ComputeJobAdapter job = factoriesJobAndArg.get1().create();
+
                 job.setArguments(factoriesJobAndArg.get2().create());
                 jobs.add(job);
             }
@@ -633,6 +648,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** {@inheritDoc} */
         @Nullable @Override public List<Object> reduce(List<ComputeJobResult> results) throws IgniteException {
             List<Object> ret = new ArrayList<>(results.size());
+
             for (ComputeJobResult result : results)
                 ret.add(result.getData());
 
@@ -696,7 +712,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
-         * @param val enum value.
+         * @param val Enum value.
          */
         public EchoJob(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal, float fltVal,
             double dblVal,
@@ -785,7 +801,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
-         * @param val enum value.
+         * @param val Enum value.
          */
         public EchoJobExternalizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
@@ -895,7 +911,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
-         * @param val enum value.
+         * @param val Enum value.
          */
         public EchoJobBinarylizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
@@ -1007,7 +1023,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
-         * @param val enum value.
+         * @param val Enum value.
          */
         public EchoClosure(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal, float fltVal,
             double dblVal,
@@ -1096,7 +1112,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
-         * @param val enum value.
+         * @param val Enum value.
          */
         public EchoClosureExternalizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
@@ -1191,7 +1207,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
-         * @param val enum value.
+         * @param val Enum value.
          */
         public EchoClosureBinarylizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
@@ -1296,7 +1312,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
-         * @param val enum value.
+         * @param val Enum value.
          */
         public EchoCallable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal, float fltVal,
             double dblVal,
@@ -1392,7 +1408,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
-         * @param val enum value.
+         * @param val Enum value.
          */
         public EchoCallableExternalizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
@@ -1502,7 +1518,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
-         * @param val enum value.
+         * @param val Enum value.
          */
         public EchoCallableBinarylizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
@@ -1612,7 +1628,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
-         * @param val enum value.
+         * @param val Enum value.
          */
         public ComputeTestRunnable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal, float fltVal,
             double dblVal, String strVal, Object[] arrVal, TestJobEnum val) {
@@ -1699,7 +1715,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
-         * @param val enum value.
+         * @param val Enum value.
          */
         public ComputeTestRunnableExternalizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal, double dblVal, String strVal, Object[] arrVal,
@@ -1790,6 +1806,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * Default constructor.
          */
         public ComputeTestRunnableBinarylizable() {
+            // No-op.
         }
 
         /**
@@ -1803,7 +1820,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
-         * @param val enum value.
+         * @param val Enum value.
          */
         public ComputeTestRunnableBinarylizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal, double dblVal, String strVal, Object[] arrVal,
@@ -1876,8 +1893,16 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 Constructor<?> constructor = cls.getConstructor(Boolean.TYPE, Byte.TYPE, Character.TYPE,
                     Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, String.class, Object[].class, TestJobEnum.class);
 
-                return (T)constructor.newInstance(true, Byte.MAX_VALUE, Character.MAX_VALUE, Short.MAX_VALUE,
-                    Integer.MAX_VALUE, Long.MAX_VALUE, Float.MAX_VALUE, Double.MAX_VALUE, STR_VAL, ARRAY_VAL, TestJobEnum.VALUE_2);
+                return (T)constructor.newInstance(true,
+                    Byte.MAX_VALUE,
+                    Character.MAX_VALUE,
+                    Short.MAX_VALUE,
+                    Integer.MAX_VALUE,
+                    Long.MAX_VALUE,
+                    Float.MAX_VALUE,
+                    Double.MAX_VALUE,
+                    STR_VAL, ARRAY_VAL,
+                    TestJobEnum.VALUE_2);
             }
             catch (NoSuchMethodException | InstantiationException | InvocationTargetException |
                 IllegalAccessException e) {
@@ -1901,6 +1926,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param eVal Enum value.
          */
         private static void checkJobState(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
@@ -1930,6 +1956,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param eVal Enum value.
+         * @throws BinaryObjectException If failed.
          */
         private static void writeJobState(BinaryWriter writer, boolean isVal, byte bVal, char cVal, short sVal,
             int intVal, long lVal, float fltVal, double dblVal, String strVal,
@@ -1959,6 +1987,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param eVal Enum value.
+         * @throws IOException If failed.
          */
         private static void writeJobState(ObjectOutput out, boolean isVal, byte bVal, char cVal, short sVal,
             int intVal, long lVal, float fltVal, double dblVal, String strVal, Object[] arrVal,
@@ -1976,7 +2006,4 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             out.writeObject(eVal);
         }
     }
-
-    ;
-
 }
