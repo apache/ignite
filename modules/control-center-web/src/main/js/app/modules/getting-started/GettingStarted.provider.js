@@ -93,7 +93,7 @@ angular
         return {
             tryShow: (force) => {
                 try {
-                    scope.ui.showGettingStarted = typeof localStorage.showGettingStarted === 'undefined'
+                    scope.ui.showGettingStarted = _.isNil(localStorage.showGettingStarted)
                         || localStorage.showGettingStarted === 'true';
                 }
                 catch (ignore) {
