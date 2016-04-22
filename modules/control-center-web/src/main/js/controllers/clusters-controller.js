@@ -163,7 +163,11 @@ consoleModule.controller('clustersController', [
                 }, true);
 
                 if ($scope.$root.IgniteDemoMode) {
-                    DemoInfo.show();
+                    if (sessionStorage.showDemoInfo !== 'true') {
+                        sessionStorage.showDemoInfo = 'true';
+
+                        DemoInfo.show();
+                    }
                 }
 
             })
