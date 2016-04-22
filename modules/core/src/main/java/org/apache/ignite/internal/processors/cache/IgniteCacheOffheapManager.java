@@ -73,7 +73,6 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     private final boolean indexingEnabled;
 
     /**
-     * @param enabled Enabled flag (offheap supposed to be disabled for near cache).
      * @param indexingEnabled {@code True} if indexing is enabled for cache.
      */
     public IgniteCacheOffheapManager(boolean indexingEnabled) {
@@ -96,6 +95,20 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         super.onKernalStart0();
+    }
+
+    /**
+     * TODO: GG-10884, used on only from initialValue.
+     */
+    public boolean containsKey(KeyCacheObject key, int part) {
+        try {
+            return read(key, part) != null;
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to read value", e);
+
+            return false;
+        }
     }
 
     /**
@@ -186,6 +199,11 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
             for (BPlusTree<?, ? extends CacheDataRow> tree : idxs)
                 clear(tree, readers);
         }
+    }
+
+    public int onUndeploy(ClassLoader ldr) {
+        // TODO: GG-10884.
+        return 0;
     }
 
     /**
@@ -309,9 +327,55 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         return 0;
     }
 
-    public <K, V> GridIterator<IgniteBiTuple<K, V>> scanQueryIterator(@Nullable IgniteBiPredicate<K, V> filter) {
-        // TODO GG-10884.
-        return new GridEmptyIterator<>();
+    public <K, V> GridIterator<IgniteBiTuple<K, V>> scanQueryIterator(@Nullable final IgniteBiPredicate<K, V> filter, final boolean keepBinary)
+        throws IgniteCheckedException {
+        final GridCursor<? extends CacheDataRow> cur = dataTree.find(null, null);
+
+        return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
+            private IgniteBiTuple<K, V> next;
+
+            private void advance() throws IgniteCheckedException {
+                if (next != null)
+                    return;
+
+                CacheDataRow row = null;
+
+                if (filter != null) {
+                    while (cur.next()) {
+                        row = cur.get();
+
+                        K key = (K)cctx.unwrapBinaryIfNeeded(row.key(), keepBinary);
+                        V val = (V)cctx.unwrapBinaryIfNeeded(row.value(), keepBinary);
+
+                        if (!filter.apply(key, val))
+                            continue;
+
+                        break;
+                    }
+                }
+                else {
+                    if (cur.next())
+                        row = cur.get();
+                }
+
+                if (row != null)
+                    next = new IgniteBiTuple<>((K)row.key(), (V)row.value());
+            }
+
+            @Override protected IgniteBiTuple<K, V> onNext() throws IgniteCheckedException {
+                IgniteBiTuple<K, V> res = next;
+
+                next = null;
+
+                return res;
+            }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                advance();
+
+                return next != null;
+            }
+        };
     }
 
     public <K, V> GridCloseableIterator<Cache.Entry<K, V>> entriesIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)

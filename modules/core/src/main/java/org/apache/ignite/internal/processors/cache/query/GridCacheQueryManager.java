@@ -996,7 +996,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 iters.add(heapIt);
 
-                iters.add(offheapIterator(qry, backups));
+                //iters.add(offheapIterator(qry, backups));
 
                 it = new CompoundIterator<>(iters);
             }
@@ -1042,17 +1042,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private static void closeScanFilter(Object f) {
         if (f instanceof PlatformCacheEntryFilter)
             ((PlatformCacheEntryFilter)f).onClose();
-    }
-
-    /**
-     * @param qry Query.
-     * @param backups Include backups.
-     * @return Offheap iterator.
-     */
-    private GridIterator<IgniteBiTuple<K, V>> offheapIterator(GridCacheQueryAdapter<?> qry, boolean backups) {
-        IgniteBiPredicate<K, V> filter = qry.scanFilter();
-
-        return cctx.offheap().scanQueryIterator(filter);
     }
 
     /**

@@ -2907,7 +2907,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         synchronized (this) {
             checkObsolete();
 
-            if ((isNew() && !cctx.swap().containsKey(key, partition())) || (!preload && deletedUnlocked())) {
+            if ((isNew() && !cctx.offheap().containsKey(key, partition())) || (!preload && deletedUnlocked())) {
                 long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);

@@ -661,22 +661,24 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         Iterator<GridDhtCacheEntry> it = map.values().iterator();
 
+        // TODO GG-10884: need pass old value to indexing?
         GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
-
-        if (swap && GridQueryProcessor.isEnabled(cctx.config())) { // Indexing needs to unswap cache values.
-            Iterator<GridDhtCacheEntry> unswapIt = null;
-
-            try {
-                swapIt = cctx.swap().iterator(id);
-                unswapIt = unswapIterator(swapIt);
-            }
-            catch (Exception e) {
-                U.error(log, "Failed to clear swap for evicted partition: " + this, e);
-            }
-
-            if (unswapIt != null)
-                it = F.concat(it, unswapIt);
-        }
+//        GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
+//
+//        if (swap && GridQueryProcessor.isEnabled(cctx.config())) { // Indexing needs to unswap cache values.
+//            Iterator<GridDhtCacheEntry> unswapIt = null;
+//
+//            try {
+//                swapIt = cctx.swap().iterator(id);
+//                unswapIt = unswapIterator(swapIt);
+//            }
+//            catch (Exception e) {
+//                U.error(log, "Failed to clear swap for evicted partition: " + this, e);
+//            }
+//
+//            if (unswapIt != null)
+//                it = F.concat(it, unswapIt);
+//        }
 
         GridCacheObsoleteEntryExtras extras = new GridCacheObsoleteEntryExtras(clearVer);
 
@@ -714,7 +716,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 }
                 catch (GridDhtInvalidPartitionException e) {
                     assert map.isEmpty() && state() == EVICTED: "Invalid error [e=" + e + ", part=" + this + ']';
-                    assert swapEmpty() : "Invalid error when swap is not cleared [e=" + e + ", part=" + this + ']';
 
                     break; // Partition is already concurrently cleared and evicted.
                 }
@@ -725,28 +726,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         }
         finally {
             U.close(swapIt, log);
-        }
-    }
-
-    /**
-     * @return {@code True} if there are no swap entries for this partition.
-     */
-    private boolean swapEmpty() {
-        GridCloseableIterator<?> it0 = null;
-
-        try {
-            it0 = cctx.swap().iterator(id);
-
-            return it0 == null || !it0.hasNext();
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to get partition swap iterator: " + this, e);
-
-            return true;
-        }
-        finally {
-            if (it0 != null)
-                U.closeQuiet(it0);
         }
     }
 
