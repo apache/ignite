@@ -41,6 +41,9 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     /** Test service name. */
     private static final String SERVICE_NAME = "testService";
 
+    /** */
+    protected static final int CLIENT_NODE_IDX_2 = 4;
+
     /** Test object id counter */
     private static int counter;
 
@@ -100,31 +103,31 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
 
         Object expected = value(++counter);
 
-        // put value for testing Service instance serialization
+        // Put value for testing Service instance serialization.
         svc.setValue(expected);
 
         if (sticky)
-            // node singleton deployment requires stickiness to work correctly
+            // Node singleton deployment requires stickiness to work correctly.
             services.deployNodeSingleton(SERVICE_NAME, (Service)svc);
         else
-            // cluster singleton deployment already provides stickiness
+            // Cluster singleton deployment already provides stickiness.
             services.deployClusterSingleton(SERVICE_NAME, (Service)svc);
 
-        // expect correct value from local instance
+        // Expect correct value from local instance.
         assertEquals(expected, svc.getValue());
 
-        // use stickiness to make sure data will be fetched from the same instance
+        // Use stickiness to make sure data will be fetched from the same instance.
         TestService proxy = services.serviceProxy(SERVICE_NAME, TestService.class, sticky);
 
-        // expect that correct value is returned from deployed instance
+        // Expect that correct value is returned from deployed instance.
         assertEquals(expected, proxy.getValue());
 
         expected = value(++counter);
 
-        // change value
+        // Change value.
         proxy.setValue(expected);
 
-        // expect correct value after being read back
+        // Expect correct value after being read back.
         int r = 1000;
 
         while(r-- > 0)
@@ -174,7 +177,6 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
             // No-op
-            System.out.println();
         }
 
         /** {@inheritDoc} */
@@ -237,9 +239,11 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     /** {@inheritDoc} */
     @Override protected boolean expectedClient(String testGridName) {
         int i = testsCfg.gridCount();
+
         if (i < 5)
             return super.expectedClient(testGridName);
-        // use two client nodes if grid counter 5 or greater
-        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName) || getTestGridName(4).equals(testGridName);
+
+        // Use two client nodes if grid counter 5 or greater.
+        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName) || getTestGridName(CLIENT_NODE_IDX_2).equals(testGridName);
     }
 }
