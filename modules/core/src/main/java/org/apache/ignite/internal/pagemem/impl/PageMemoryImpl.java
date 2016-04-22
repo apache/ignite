@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -944,10 +945,12 @@ public class  PageMemoryImpl implements PageMemory {
 
         final int cap = seg.loadedPages.capacity();
 
-        assert seg.loadedPages.size() >= RANDOM_PAGES_EVICT_NUM;
-
         if (seg.acquiredPages.size() >= seg.loadedPages.size())
             throw new OutOfMemoryException("No not acquired pages left for segment. Unable to evict.");
+
+        // With big number of random picked pages we may fall into infinite loop, because
+        // every time the same page may be found.
+        SimpleLongSet ignored = null;
 
         while (true) {
             for (int i = 0; i < RANDOM_PAGES_EVICT_NUM; i++) {
@@ -958,7 +961,10 @@ public class  PageMemoryImpl implements PageMemory {
 
                 assert addr != INVALID_REL_PTR;
 
-                pageRelAddrs[i] = addr;
+                if (ignored != null && ignored.contains(addr))
+                    i--;
+                else
+                    pageRelAddrs[i] = addr;
             }
 
             final long relEvictAddr = findSuitablePageRelAddr(pageRelAddrs);
@@ -967,16 +973,31 @@ public class  PageMemoryImpl implements PageMemory {
 
             final long absEvictAddr = absolute(relEvictAddr);
 
-            assert absEvictAddr != dbMetaPageIdPtr;
-
             final FullPageId fullPageId = readFullPageId(absEvictAddr);
+
+            final long metaPageId = mem.readLong(dbMetaPageIdPtr);
+
+            if (fullPageId.pageId() == metaPageId && fullPageId.cacheId() == 0) {
+                if (ignored == null)
+                    ignored = new SimpleLongSet();
+
+                ignored.add(relEvictAddr);
+
+                continue;
+            }
 
             assert seg.writeLock().isHeldByCurrentThread();
 
             if (!seg.acquiredPages.containsKey(fullPageId))
                 seg.loadedPages.remove(fullPageId);
-            else
+            else {
+                if (ignored == null)
+                    ignored = new SimpleLongSet();
+
+                ignored.add(relEvictAddr);
+
                 continue;
+            }
 
             // Force flush data and free page.
             if (isDirty(absEvictAddr)) {
@@ -1035,6 +1056,31 @@ public class  PageMemoryImpl implements PageMemory {
 
             if (mem.compareAndSwapLong(freePageListPtr, freePageRelPtrMasked, relPtr))
                 return;
+        }
+    }
+
+    /**
+     * Long set based on BitSet.
+     */
+    private static class SimpleLongSet {
+        /** */
+        final BitSet bitSet = new BitSet();
+
+        /**
+         * Add value to set.
+         *
+         * @param val Value.
+         */
+        void add(final long val) {
+            bitSet.set((int)(val % Integer.MAX_VALUE));
+        }
+
+        /**
+         * @param val Value to check.
+         * @return {@code True} if set contains value.
+         */
+        boolean contains(final long val) {
+            return bitSet.get((int)(val % Integer.MAX_VALUE));
         }
     }
 
