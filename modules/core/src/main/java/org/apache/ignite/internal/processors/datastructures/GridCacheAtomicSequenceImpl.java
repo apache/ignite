@@ -30,6 +30,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -43,6 +44,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.util.typedef.internal.CU.retryTopologySafe;
@@ -477,68 +482,71 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private Callable<Long> internalUpdate(final long l, final boolean updated) {
         return retryTopologySafe(new Callable<Long>() {
             @Override public Long call() throws Exception {
-                try (IgniteInternalTx tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ)) {
-                    GridCacheAtomicSequenceValue seq = seqView.get(key);
+                try{
+                    EntryProcessorResult<Long> res = seqView.invoke(key, new CacheEntryProcessor<GridCacheInternalKey, GridCacheAtomicSequenceValue, Long>() {
+                        @Override
+                        public Long process(MutableEntry<GridCacheInternalKey, GridCacheAtomicSequenceValue> entry, Object... arguments) throws EntryProcessorException {
+                            GridCacheAtomicSequenceValue seq = entry.getValue();
 
-                    checkRemoved();
+                            checkRemoved();
 
-                    assert seq != null;
+                            assert seq != null;
 
-                    long curLocVal;
+                            long curLocVal;
 
-                    long newUpBound;
+                            long newUpBound;
 
-                    lock.lock();
+                            lock.lock();
 
-                    try {
-                        curLocVal = locVal;
+                            try {
+                                curLocVal = locVal;
 
-                        // If local range was already reserved in another thread.
-                        if (locVal + l <= upBound) {
-                            long retVal = locVal;
+                                // If local range was already reserved in another thread.
+                                if (locVal + l <= upBound) {
+                                    long retVal = locVal;
 
-                            locVal += l;
+                                    locVal += l;
 
-                            return updated ? locVal : retVal;
-                        }
+                                    return updated ? locVal : retVal;
+                                }
 
-                        long curGlobalVal = seq.get();
+                                long curGlobalVal = seq.get();
 
-                        long newLocVal;
+                                long newLocVal;
 
                         /* We should use offset because we already reserved left side of range.*/
-                        long off = batchSize > 1 ? batchSize - 1 : 1;
+                                long off = batchSize > 1 ? batchSize - 1 : 1;
 
-                        // Calculate new values for local counter, global counter and upper bound.
-                        if (curLocVal + l >= curGlobalVal) {
-                            newLocVal = curLocVal + l;
+                                // Calculate new values for local counter, global counter and upper bound.
+                                if (curLocVal + l >= curGlobalVal) {
+                                    newLocVal = curLocVal + l;
 
-                            newUpBound = newLocVal + off;
+                                    newUpBound = newLocVal + off;
+                                }
+                                else {
+                                    newLocVal = curGlobalVal;
+
+                                    newUpBound = newLocVal + off;
+                                }
+
+                                locVal = newLocVal;
+                                upBound = newUpBound;
+
+                                if (updated)
+                                    curLocVal = newLocVal;
+                            }
+                            finally {
+                                lock.unlock();
+                            }
+
+                            // Global counter must be more than reserved upper bound.
+                            seq.set(newUpBound + 1);
+                            entry.setValue(seq);
+
+                            return curLocVal;
                         }
-                        else {
-                            newLocVal = curGlobalVal;
-
-                            newUpBound = newLocVal + off;
-                        }
-
-                        locVal = newLocVal;
-                        upBound = newUpBound;
-
-                        if (updated)
-                            curLocVal = newLocVal;
-                    }
-                    finally {
-                        lock.unlock();
-                    }
-
-                    // Global counter must be more than reserved upper bound.
-                    seq.set(newUpBound + 1);
-
-                    seqView.put(key, seq);
-
-                    tx.commit();
-
-                    return curLocVal;
+                    });
+                    return res.get();
                 }
                 catch (Error | Exception e) {
                     U.error(log, "Failed to get and add: " + this, e);
