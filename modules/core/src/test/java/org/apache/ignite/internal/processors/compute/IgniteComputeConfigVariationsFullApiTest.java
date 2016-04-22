@@ -596,6 +596,10 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         return super.value(valId);
     }
 
+    enum TestJobEnum {
+        VALUE_0, VALUE_1, VALUE_2
+    }
+
     /**
      *
      */
@@ -671,6 +675,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** */
         private Object[] arrVal;
 
+        /** */
+        private TestJobEnum eVal;
+
         /**
          * Default constructor (required by ReflectionFactory).
          */
@@ -689,10 +696,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param val enum value.
          */
         public EchoJob(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal, float fltVal,
             double dblVal,
-            String strVal, Object[] arrVal) {
+            String strVal, Object[] arrVal, TestJobEnum val) {
             this.isVal = isVal;
             this.bVal = bVal;
             this.cVal = cVal;
@@ -703,6 +711,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             this.dblVal = dblVal;
             this.strVal = strVal;
             this.arrVal = arrVal;
+            eVal = val;
         }
 
         /** {@inheritDoc} */
@@ -716,7 +725,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * Check the object state after serialization / deserialization
          */
         protected void checkState() {
-            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
     }
 
@@ -755,6 +764,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** */
         private Object[] arrVal;
 
+        /** */
+        private TestJobEnum eVal;
+
         /**
          * Default constructor (required by {@link Externalizable}).
          */
@@ -773,10 +785,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param val enum value.
          */
         public EchoJobExternalizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
-            double dblVal, String strVal, Object[] arrVal) {
+            double dblVal, String strVal, Object[] arrVal, TestJobEnum val) {
             this.isVal = isVal;
             this.bVal = bVal;
             this.cVal = cVal;
@@ -787,6 +800,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             this.dblVal = dblVal;
             this.strVal = strVal;
             this.arrVal = arrVal;
+            eVal = val;
         }
 
         /**
@@ -795,7 +809,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(argument(0));
 
-            JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
         /**
@@ -814,13 +828,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             dblVal = in.readDouble();
             strVal = (String)in.readObject();
             arrVal = (Object[])in.readObject();
+            eVal = (TestJobEnum)in.readObject();
         }
 
         /**
          * {@inheritDoc}
          */
         @Override protected void checkState() {
-            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
     }
 
@@ -859,6 +874,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** */
         private Object[] arrVal;
 
+        /** */
+        private TestJobEnum eVal;
+
         /**
          * Default constructor (required by ReflectionFactory).
          */
@@ -877,10 +895,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param val enum value.
          */
         public EchoJobBinarylizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
-            double dblVal, String strVal, Object[] arrVal) {
+            double dblVal, String strVal, Object[] arrVal, TestJobEnum val) {
             this.isVal = isVal;
             this.bVal = bVal;
             this.cVal = cVal;
@@ -891,6 +910,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             this.dblVal = dblVal;
             this.strVal = strVal;
             this.arrVal = arrVal;
+            eVal = val;
         }
 
         /**
@@ -899,7 +919,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeObject("arg", argument(0));
 
-            JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
         /**
@@ -920,13 +940,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             dblVal = reader.readDouble("dblVal");
             strVal = reader.readString("strVal");
             arrVal = reader.readObjectArray("arrVal");
+            eVal = reader.readEnum("eVal");
         }
 
         /**
          * {@inheritDoc}
          */
         @Override protected void checkState() {
-            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
     }
 
@@ -965,6 +986,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** */
         private Object[] arrVal;
 
+        /** */
+        private TestJobEnum eVal;
+
         /**
          * Default constructor.
          */
@@ -983,10 +1007,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param val enum value.
          */
         public EchoClosure(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal, float fltVal,
             double dblVal,
-            String strVal, Object[] arrVal) {
+            String strVal, Object[] arrVal, TestJobEnum val) {
             this.isVal = isVal;
             this.bVal = bVal;
             this.cVal = cVal;
@@ -997,6 +1022,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             this.dblVal = dblVal;
             this.strVal = strVal;
             this.arrVal = arrVal;
+            eVal = val;
         }
 
         /** {@inheritDoc} */
@@ -1010,7 +1036,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * Check the object state after serialization / deserialization
          */
         protected void checkState() {
-            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
     }
 
@@ -1049,6 +1075,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** */
         private Object[] arrVal;
 
+        /** */
+        private TestJobEnum eVal;
+
         /**
          * Default constructor (required by Externalizable).
          */
@@ -1067,10 +1096,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param val enum value.
          */
         public EchoClosureExternalizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
-            double dblVal, String strVal, Object[] arrVal) {
+            double dblVal, String strVal, Object[] arrVal, TestJobEnum val) {
             this.isVal = isVal;
             this.bVal = bVal;
             this.cVal = cVal;
@@ -1081,11 +1111,12 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             this.dblVal = dblVal;
             this.strVal = strVal;
             this.arrVal = arrVal;
+            eVal = val;
         }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
         /** {@inheritDoc} */
@@ -1100,13 +1131,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             dblVal = in.readDouble();
             strVal = (String)in.readObject();
             arrVal = (Object[])in.readObject();
+            eVal = (TestJobEnum)in.readObject();
         }
 
         /**
          * {@inheritDoc}
          */
         @Override protected void checkState() {
-            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
     }
 
@@ -1145,6 +1177,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** */
         private Object[] arrVal;
 
+        /** */
+        private TestJobEnum eVal;
+
         /**
          * @param isVal boolean value.
          * @param bVal byte value.
@@ -1156,10 +1191,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param val enum value.
          */
         public EchoClosureBinarylizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
-            double dblVal, String strVal, Object[] arrVal) {
+            double dblVal, String strVal, Object[] arrVal, TestJobEnum val) {
             this.isVal = isVal;
             this.bVal = bVal;
             this.cVal = cVal;
@@ -1170,11 +1206,12 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             this.dblVal = dblVal;
             this.strVal = strVal;
             this.arrVal = arrVal;
+            eVal = val;
         }
 
         /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
         /** {@inheritDoc} */
@@ -1189,13 +1226,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             dblVal = reader.readDouble("dblVal");
             strVal = reader.readString("strVal");
             arrVal = reader.readObjectArray("arrVal");
+            eVal = reader.readEnum("eVal");
         }
 
         /**
          * {@inheritDoc}
          */
         @Override protected void checkState() {
-            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
     }
 
@@ -1206,26 +1244,39 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     public static class EchoCallable implements IgniteCallable<Object> {
         /** */
         protected Object arg;
+
         /** */
         private boolean isVal;
+
         /** */
         private byte bVal;
+
         /** */
         private char cVal;
+
         /** */
         private short sVal;
+
         /** */
         private int intVal;
+
         /** */
         private long lVal;
+
         /** */
         private float fltVal;
+
         /** */
         private double dblVal;
+
         /** */
         private String strVal;
+
         /** */
         private Object[] arrVal;
+
+        /** */
+        private TestJobEnum eVal;
 
         /**
          * Default constructor.
@@ -1245,10 +1296,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param val enum value.
          */
         public EchoCallable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal, float fltVal,
             double dblVal,
-            String strVal, Object[] arrVal) {
+            String strVal, Object[] arrVal, TestJobEnum val) {
             this.isVal = isVal;
             this.bVal = bVal;
             this.cVal = cVal;
@@ -1259,6 +1311,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             this.dblVal = dblVal;
             this.strVal = strVal;
             this.arrVal = arrVal;
+            eVal = val;
         }
 
         /**
@@ -1279,7 +1332,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * Check the object state after serialization / deserialization
          */
         protected void checkState() {
-            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
     }
 
@@ -1318,6 +1371,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** */
         private Object[] arrVal;
 
+        /** */
+        private TestJobEnum eVal;
+
         /**
          * Default constructor.
          */
@@ -1336,10 +1392,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param val enum value.
          */
         public EchoCallableExternalizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
-            double dblVal, String strVal, Object[] arrVal) {
+            double dblVal, String strVal, Object[] arrVal, TestJobEnum val) {
             this.isVal = isVal;
             this.bVal = bVal;
             this.cVal = cVal;
@@ -1350,6 +1407,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             this.dblVal = dblVal;
             this.strVal = strVal;
             this.arrVal = arrVal;
+            eVal = val;
         }
 
         /**
@@ -1358,7 +1416,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             out.writeObject(arg);
 
-            JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
         /**
@@ -1377,13 +1435,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             dblVal = in.readDouble();
             strVal = (String)in.readObject();
             arrVal = (Object[])in.readObject();
+            eVal = (TestJobEnum)in.readObject();
         }
 
         /**
          * {@inheritDoc}
          */
         @Override protected void checkState() {
-            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
     }
 
@@ -1422,6 +1481,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** */
         private Object[] arrVal;
 
+        /** */
+        private TestJobEnum eVal;
+
         /**
          * Default constructor.
          */
@@ -1440,10 +1502,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param val enum value.
          */
         public EchoCallableBinarylizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
-            double dblVal, String strVal, Object[] arrVal) {
+            double dblVal, String strVal, Object[] arrVal, TestJobEnum val) {
             this.isVal = isVal;
             this.bVal = bVal;
             this.cVal = cVal;
@@ -1454,6 +1517,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             this.dblVal = dblVal;
             this.strVal = strVal;
             this.arrVal = arrVal;
+            eVal = val;
         }
 
         /**
@@ -1462,7 +1526,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeObject("arg", arg);
 
-            JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
         /**
@@ -1481,13 +1545,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             dblVal = reader.readDouble("dblVal");
             strVal = reader.readString("strVal");
             arrVal = reader.readObjectArray("arrVal");
+            eVal = reader.readEnum("eVal");
         }
 
         /**
          * {@inheritDoc}
          */
         @Override protected void checkState() {
-            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
     }
 
@@ -1526,6 +1591,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** */
         private Object[] arrVal;
 
+        /** */
+        private TestJobEnum eVal;
+
         /**
          * Default constructor.
          */
@@ -1544,9 +1612,10 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param val enum value.
          */
         public ComputeTestRunnable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal, float fltVal,
-            double dblVal, String strVal, Object[] arrVal) {
+            double dblVal, String strVal, Object[] arrVal, TestJobEnum val) {
             this.isVal = isVal;
             this.bVal = bVal;
             this.cVal = cVal;
@@ -1557,6 +1626,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             this.dblVal = dblVal;
             this.strVal = strVal;
             this.arrVal = arrVal;
+            eVal = val;
         }
 
         /**
@@ -1570,7 +1640,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * Check the object state after serialization / deserialization
          */
         protected void checkState() {
-            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
     }
 
@@ -1608,6 +1678,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** */
         private Object[] arrVal;
 
+        /** */
+        private TestJobEnum eVal;
+
         /**
          * Default constructor (required by Externalizable).
          */
@@ -1616,19 +1689,21 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         }
 
         /**
-         * @param intVal int value.
          * @param isVal boolean value.
          * @param bVal byte value.
          * @param cVal char value.
          * @param sVal short value.
+         * @param intVal int value.
          * @param lVal long value.
          * @param fltVal float value.
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param val enum value.
          */
         public ComputeTestRunnableExternalizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
-            float fltVal, double dblVal, String strVal, Object[] arrVal) {
+            float fltVal, double dblVal, String strVal, Object[] arrVal,
+            TestJobEnum val) {
             this.intVal = intVal;
             this.isVal = isVal;
             this.bVal = bVal;
@@ -1639,13 +1714,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             this.dblVal = dblVal;
             this.strVal = strVal;
             this.arrVal = arrVal;
+            eVal = val;
         }
 
         /**
          * {@inheritDoc}
          */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.writeJobState(out, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
         /**
@@ -1662,13 +1738,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             dblVal = in.readDouble();
             strVal = (String)in.readObject();
             arrVal = (Object[])in.readObject();
+            eVal = (TestJobEnum)in.readObject();
         }
 
         /**
          * {@inheritDoc}
          */
         @Override protected void checkState() {
-            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
     }
 
@@ -1706,6 +1783,9 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         /** */
         private Object[] arrVal;
 
+        /** */
+        private TestJobEnum eVal;
+
         /**
          * Default constructor.
          */
@@ -1723,9 +1803,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param dblVal double value.
          * @param strVal String value.
          * @param arrVal Array value.
+         * @param val enum value.
          */
         public ComputeTestRunnableBinarylizable(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
-            float fltVal, double dblVal, String strVal, Object[] arrVal) {
+            float fltVal, double dblVal, String strVal, Object[] arrVal,
+            TestJobEnum val) {
             this.isVal = isVal;
             this.bVal = bVal;
             this.cVal = cVal;
@@ -1736,13 +1818,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             this.dblVal = dblVal;
             this.strVal = strVal;
             this.arrVal = arrVal;
+            eVal = val;
         }
 
         /**
          * {@inheritDoc}
          */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.writeJobState(writer, isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
 
         /**
@@ -1759,13 +1842,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             dblVal = reader.readDouble("dblVal");
             strVal = reader.readString("strVal");
             arrVal = reader.readObjectArray("arrVal");
+            eVal = reader.readEnum("eVal");
         }
 
         /**
          * {@inheritDoc}
          */
         @Override protected void checkState() {
-            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal);
+            JobUtils.checkJobState(isVal, bVal, cVal, sVal, intVal, lVal, fltVal, dblVal, strVal, arrVal, eVal);
         }
     }
 
@@ -1790,10 +1874,10 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         @Override public T create() {
             try {
                 Constructor<?> constructor = cls.getConstructor(Boolean.TYPE, Byte.TYPE, Character.TYPE,
-                    Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, String.class, Object[].class);
+                    Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, String.class, Object[].class, TestJobEnum.class);
 
                 return (T)constructor.newInstance(true, Byte.MAX_VALUE, Character.MAX_VALUE, Short.MAX_VALUE,
-                    Integer.MAX_VALUE, Long.MAX_VALUE, Float.MAX_VALUE, Double.MAX_VALUE, STR_VAL, ARRAY_VAL);
+                    Integer.MAX_VALUE, Long.MAX_VALUE, Float.MAX_VALUE, Double.MAX_VALUE, STR_VAL, ARRAY_VAL, TestJobEnum.VALUE_2);
             }
             catch (NoSuchMethodException | InstantiationException | InvocationTargetException |
                 IllegalAccessException e) {
@@ -1820,7 +1904,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          */
         private static void checkJobState(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
-            double dblVal, String strVal, Object[] arrVal) {
+            double dblVal, String strVal, Object[] arrVal, TestJobEnum eVal) {
             assertEquals(true, isVal);
             assertEquals(Byte.MAX_VALUE, bVal);
             assertEquals(Character.MAX_VALUE, cVal);
@@ -1831,6 +1915,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             assertEquals(Double.MAX_VALUE, dblVal);
             assertEquals(STR_VAL, strVal);
             Assert.assertArrayEquals(ARRAY_VAL, arrVal);
+            assertEquals(TestJobEnum.VALUE_2, eVal);
         }
 
         /**
@@ -1848,7 +1933,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          */
         private static void writeJobState(BinaryWriter writer, boolean isVal, byte bVal, char cVal, short sVal,
             int intVal, long lVal, float fltVal, double dblVal, String strVal,
-            Object[] arrVal) throws BinaryObjectException {
+            Object[] arrVal, TestJobEnum eVal) throws BinaryObjectException {
             writer.writeBoolean("isVal", isVal);
             writer.writeByte("bVal", bVal);
             writer.writeChar("cVal", cVal);
@@ -1859,6 +1944,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             writer.writeDouble("dblVal", dblVal);
             writer.writeString("strVal", strVal);
             writer.writeObjectArray("arrVal", arrVal);
+            writer.writeEnum("eVal", eVal);
         }
 
         /**
@@ -1875,7 +1961,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param arrVal Array value.
          */
         private static void writeJobState(ObjectOutput out, boolean isVal, byte bVal, char cVal, short sVal,
-            int intVal, long lVal, float fltVal, double dblVal, String strVal, Object[] arrVal) throws IOException {
+            int intVal, long lVal, float fltVal, double dblVal, String strVal, Object[] arrVal,
+            TestJobEnum eVal) throws IOException {
             out.writeBoolean(isVal);
             out.writeByte(bVal);
             out.writeChar(cVal);
@@ -1886,7 +1973,10 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             out.writeDouble(dblVal);
             out.writeObject(strVal);
             out.writeObject(arrVal);
+            out.writeObject(eVal);
         }
     }
+
+    ;
 
 }
