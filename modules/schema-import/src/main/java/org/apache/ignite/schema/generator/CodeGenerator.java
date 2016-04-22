@@ -561,12 +561,13 @@ public class CodeGenerator {
      * @param pojos POJO descriptors.
      * @param pkg Types package.
      * @param includeKeys {@code true} if key fields should be included into value class.
+     * @param generateAliases {@code true} if aliases should be generated for query fields.
      * @param outFolder Output folder.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      * @throws IOException If generation failed.
      */
     public static void snippet(Collection<PojoDescriptor> pojos, String pkg, boolean includeKeys,
-        String outFolder, ConfirmCallable askOverwrite) throws IOException {
+        boolean generateAliases, String outFolder, ConfirmCallable askOverwrite) throws IOException {
         File pkgFolder = new File(outFolder, pkg.replace('.', File.separatorChar));
 
         File cacheCfg = new File(pkgFolder, "CacheConfig.java");
@@ -662,6 +663,29 @@ public class CodeGenerator {
             add0(src, "");
             add2(src, "qryEntity.setFields(fields);");
             add0(src, "");
+
+            // Aliases.
+            if (generateAliases) {
+                Collection<PojoField> aliases = new ArrayList<>();
+
+                for (PojoField field : pojo.fields()) {
+                    if (!field.javaName().equalsIgnoreCase(field.dbName()))
+                        aliases.add(field);
+                }
+
+                if (!aliases.isEmpty()) {
+                    add2(src, "// Aliases for fields.");
+                    add2(src, "LinkedHashMap<String, String> aliases = new LinkedHashMap<>();");
+                    add0(src, "");
+
+                    for (PojoField alias : aliases)
+                        add2(src, "aliases.put(\"" + alias.javaName() + "\", \"" + alias.dbName() + "\");");
+
+                    add0(src, "");
+                    add2(src, "qryEntity.setAliases(aliases);");
+                    add0(src, "");
+                }
+            }
 
             // Indexes.
             Collection<QueryIndex> idxs = pojo.indexes();
