@@ -293,6 +293,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 // All checks are inside the run() method of the job.
 
                 Collection<IgniteRunnable> jobs = new ArrayList<>(MAX_JOB_COUNT);
+
                 for (int i = 0; i < MAX_JOB_COUNT; ++i)
                     jobs.add((IgniteRunnable)factory.create());
 
@@ -311,14 +312,16 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 final IgniteCompute comp = ignite.compute().withAsync();
 
                 Collection<ComputeTaskFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
+
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     // value(i - 1): use negative argument of the value method to generate nullong value.
                     comp.apply((IgniteClosure<Object, Object>)factory.create(), value(i - 1));
                     futures.add(comp.future());
                 }
 
-                // wait for results.
+                // Wait for results.
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
                 for (ComputeTaskFuture<Object> future : futures)
                     results.add(future.get());
 
@@ -413,6 +416,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 final IgniteCompute comp = ignite.compute().withAsync();
 
                 Collection<ComputeTaskFuture<Object>> futures = new ArrayList<>(MAX_JOB_COUNT);
+
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     EchoCallable job = (EchoCallable)factory.create();
                     job.setArg(value(i - 1));
@@ -438,8 +442,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
     public void testCallSync() throws Exception {
         runTest(callableFactories, new ComputeTest() {
             @Override public void test(Factory factory, Ignite ignite) throws Exception {
-
                 Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+
                 for (int i = 0; i < MAX_JOB_COUNT; ++i) {
                     EchoCallable job = (EchoCallable)factory.create();
                     job.setArg(value(i - 1));
@@ -1802,7 +1806,6 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      * Collection of utility methods to simplify EchoJob*, EchoCLosure*, EchoCallable* and ComputeTestRunnable* classes
      */
     private static class JobUtils {
-
         /**
          * @param isVal boolean value.
          * @param bVal byte value.
@@ -1818,7 +1821,6 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         private static void checkJobState(boolean isVal, byte bVal, char cVal, short sVal, int intVal, long lVal,
             float fltVal,
             double dblVal, String strVal, Object[] arrVal) {
-
             assertEquals(true, isVal);
             assertEquals(Byte.MAX_VALUE, bVal);
             assertEquals(Character.MAX_VALUE, cVal);
@@ -1847,7 +1849,6 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         private static void writeJobState(BinaryWriter writer, boolean isVal, byte bVal, char cVal, short sVal,
             int intVal, long lVal, float fltVal, double dblVal, String strVal,
             Object[] arrVal) throws BinaryObjectException {
-
             writer.writeBoolean("isVal", isVal);
             writer.writeByte("bVal", bVal);
             writer.writeChar("cVal", cVal);
@@ -1875,7 +1876,6 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          */
         private static void writeJobState(ObjectOutput out, boolean isVal, byte bVal, char cVal, short sVal,
             int intVal, long lVal, float fltVal, double dblVal, String strVal, Object[] arrVal) throws IOException {
-
             out.writeBoolean(isVal);
             out.writeByte(bVal);
             out.writeChar(cVal);
