@@ -263,6 +263,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testRandomRemove0() throws IgniteCheckedException {
+        // seed: 1461177795261173000, 1461187841179332000
         doTestRandomRemove(false);
     }
 
@@ -270,6 +271,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testRandomRemove1() throws IgniteCheckedException {
+        // seed: 1461188744119034000 1461188844311788000 1461189099834526000
         doTestRandomRemove(true);
     }
 
@@ -284,6 +286,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         int cnt = 100_000;
 
+        int rmv = 0;
+
         for (long x = 0; x < cnt; x++)
             assertEquals(map.put(x,x), tree.put(x));
 
@@ -292,9 +296,17 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 Long x = (long)tree.randomInt(cnt);
 
                 if (map.remove(x) != null) {
+//                    if (rmv > 93440) {
+//                        X.println("Rmv: " + rmv + " -> " + x);
+//
+//                        if (rmv == 93449)
+//                            X.println(tree.printTree());
+//                    }
+
                     assertEquals(x, tree.remove(x));
                     assertNull(tree.remove(x));
 
+                    rmv++;
                     i++;
                 }
             }
@@ -318,6 +330,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             if (size == 0)
                 break;
         }
+    }
+
+    private void doTestStagedPutRemove(boolean canGetRow) {
+        // TODO
     }
 
     /**
