@@ -1811,6 +1811,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (invokeRes == null)
                                 invokeRes = new GridCacheReturn(node.isLocal());
 
+                            computed = ctx.unwrapTemporary(computed);
+
                             invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null);
                         }
 
@@ -1953,9 +1955,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             req.keepBinary());
 
-                        Object val = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(ctx, entry.key(),
-                            old, req.keepBinary()),
-                            updated.value(ctx.cacheObjectContext(), false));
+                        Object val = ctx.config().getInterceptor().onBeforePut(
+                            new CacheLazyEntry(ctx, entry.key(), old, req.keepBinary()),
+                            ctx.unwrapBinaryIfNeeded(updated, req.keepBinary(), false));
 
                         if (val == null)
                             continue;
