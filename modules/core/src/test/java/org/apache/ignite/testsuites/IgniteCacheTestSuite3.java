@@ -198,7 +198,6 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         // Cache interceptor tests.
         suite.addTest(IgniteCacheInterceptorSelfTestSuite.suite());
-        suite.addTest(InterceptorWithKeepBinaryCacheTestSuite.suite());
 
         suite.addTestSuite(IgniteTxGetAfterStopTest.class);
 

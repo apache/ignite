@@ -22,7 +22,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import javax.cache.Cache;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
@@ -31,14 +30,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest.DataMode.PLANE_OBJECT;
@@ -48,12 +44,9 @@ import static org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstr
  *
  */
 @SuppressWarnings("unchecked")
-public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariationsAbstractTest {
+public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsAbstractTest {
     /** */
-    private static volatile boolean validate;
-
-    /** */
-    private static volatile boolean binaryObjExp = true;
+    protected static volatile boolean interceptorBinaryObjExp = true;
 
     /** */
     public static final int CNT = 10;
@@ -120,24 +113,9 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
     @Override protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cc = super.cacheConfiguration();
 
-        cc.setInterceptor(new TestInterceptor());
         cc.setStoreKeepBinary(true);
 
         return cc;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        validate = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        validate = false;
-
-        super.afterTest();
     }
 
     /**
@@ -445,7 +423,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                 }
 
                 // TODO IGNITE-2973: should be always false.
-                binaryObjExp = atomicityMode() == TRANSACTIONAL;
+                interceptorBinaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
                     for (final Object key : keys) {
@@ -466,7 +444,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     }
                 }
                 finally {
-                    binaryObjExp = true;
+                    interceptorBinaryObjExp = true;
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
@@ -553,7 +531,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                 }
 
                 // TODO IGNITE-2973: should be always false.
-                binaryObjExp = atomicityMode() == TRANSACTIONAL;
+                interceptorBinaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
                     for (final Object key : keys) {
@@ -588,7 +566,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     }
                 }
                 finally {
-                    binaryObjExp = true;
+                    interceptorBinaryObjExp = true;
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
@@ -647,7 +625,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                 }
 
                 // TODO IGNITE-2973: should be always false.
-                binaryObjExp = atomicityMode() == TRANSACTIONAL;
+                interceptorBinaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
                     for (final Object key : keys) {
@@ -678,7 +656,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     }
                 }
                 finally {
-                    binaryObjExp = true;
+                    interceptorBinaryObjExp = true;
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
@@ -777,7 +755,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                 }
 
                 // TODO IGNITE-2973: should be always false.
-                binaryObjExp = atomicityMode() == TRANSACTIONAL;
+                interceptorBinaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
                     for (final Object key : keys) {
@@ -822,7 +800,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     }
                 }
                 finally {
-                    binaryObjExp = true;
+                    interceptorBinaryObjExp = true;
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
@@ -861,7 +839,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                 cache.removeAll(keys);
 
                 // TODO IGNITE-2973: should be always false.
-                binaryObjExp = atomicityMode() == TRANSACTIONAL;
+                interceptorBinaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
                     resMap = cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
@@ -873,7 +851,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     checkInvokeAllResult(cache, resMap, value(0), value(1), false);
                 }
                 finally {
-                    binaryObjExp = true;
+                    interceptorBinaryObjExp = true;
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
@@ -952,7 +930,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                 }
 
                 // TODO IGNITE-2973: should be always false.
-                binaryObjExp = atomicityMode() == TRANSACTIONAL;
+                interceptorBinaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
                     try (Transaction tx = testedGrid().transactions().txStart(conc, isol)) {
@@ -978,7 +956,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     }
                 }
                 finally {
-                    binaryObjExp = true;
+                    interceptorBinaryObjExp = true;
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
@@ -1053,7 +1031,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                 cache.future().get();
 
                 // TODO IGNITE-2973: should be always false.
-                binaryObjExp = atomicityMode() == TRANSACTIONAL;
+                interceptorBinaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
                     cache.invokeAll(keys, INC_ENTRY_PROC_USER_OBJ, dataMode);
@@ -1073,7 +1051,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     cache.future().get();
                 }
                 finally {
-                    binaryObjExp = true;
+                    interceptorBinaryObjExp = true;
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
@@ -1157,7 +1135,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                 }
 
                 // TODO IGNITE-2973: should be always false.
-                binaryObjExp = atomicityMode() == TRANSACTIONAL;
+                interceptorBinaryObjExp = atomicityMode() == TRANSACTIONAL;
 
                 try {
                     try (Transaction tx = testedGrid().transactions().txStart(conc, isolation)) {
@@ -1189,7 +1167,7 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
                     }
                 }
                 finally {
-                    binaryObjExp = true;
+                    interceptorBinaryObjExp = true;
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
@@ -1249,72 +1227,6 @@ public class InterceptorWithKeepBinaryCacheTest extends IgniteCacheConfigVariati
 
                         tx.commit();
                     }
-                }
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    private static class TestInterceptor<K, V> implements CacheInterceptor<K, V> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** {@inheritDoc} */
-        @Nullable @Override public V onGet(K key, V val) {
-            // TODO IGNITE-2973: should always validate key here, but cannot due to the bug.
-            validate(key, val, false, true);
-
-            return val;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public V onBeforePut(Cache.Entry<K, V> e, V newVal) {
-            if (validate) {
-                validate(e.getKey(), e.getValue(), true, true);
-
-                if (newVal != null)
-                    assertEquals("NewVal: " + newVal, binaryObjExp, newVal instanceof BinaryObject);
-            }
-
-            return newVal;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAfterPut(Cache.Entry<K, V> entry) {
-            validate(entry.getKey(), entry.getValue(), true, false);
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple<Boolean, V> onBeforeRemove(Cache.Entry<K, V> entry) {
-            validate(entry.getKey(), entry.getValue(), true, true);
-
-            return new IgniteBiTuple<>(false, entry.getValue());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAfterRemove(Cache.Entry<K, V> entry) {
-            validate(entry.getKey(), entry.getValue(), true, true);
-        }
-
-        /**
-         * @param key Key.
-         * @param val Value.
-         * @param validateKey Validate key flag.
-         * @param validateVal Validate value flag.
-         */
-        private void validate(K key, V val, boolean validateKey, boolean validateVal) {
-            assertNotNull(key);
-
-            if (validate) {
-                if (validateKey)
-                    assertTrue("Key: " + key, key instanceof BinaryObject);
-
-                if (val != null) {
-                    // TODO IGNITE-2973: should always do this check, but cannot due to the bug.
-                    if (validateVal && binaryObjExp)
-                        assertTrue("Val: " + val, val instanceof BinaryObject);
                 }
             }
         }
