@@ -33,7 +33,6 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
@@ -254,6 +253,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
                 return new ExternalizableObject(keyId);
             case PLANE_OBJECT:
                 return new TestObject(keyId);
+            case BINARILIZABLE:
+                return new BinarylizableObject(keyId);
             default:
                 throw new IllegalArgumentException("mode: " + mode);
         }
