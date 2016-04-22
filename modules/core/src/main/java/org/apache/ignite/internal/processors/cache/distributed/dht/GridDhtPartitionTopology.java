@@ -87,9 +87,17 @@ public interface GridDhtPartitionTopology {
      * Pre-initializes this topology.
      *
      * @param exchFut Exchange future.
+     * @param affReady Affinity ready flag.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException;
+    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean affReady)
+        throws IgniteCheckedException;
+
+    /**
+     * @param exchFut Exchange future.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    public void initPartitions(GridDhtPartitionsExchangeFuture exchFut) throws IgniteInterruptedCheckedException;
 
     /**
      * Post-initializes this topology.
@@ -110,6 +118,11 @@ public interface GridDhtPartitionTopology {
      */
     @Nullable public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create)
         throws GridDhtInvalidPartitionException;
+
+    /**
+     * @param parts Partitions to release (should be reserved before).
+     */
+    public void releasePartitions(int... parts);
 
     /**
      * @param key Cache key.

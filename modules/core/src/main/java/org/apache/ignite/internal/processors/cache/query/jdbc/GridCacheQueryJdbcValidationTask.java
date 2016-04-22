@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query.jdbc;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
@@ -42,7 +43,7 @@ public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<St
     @Override protected Collection<? extends ComputeJob> split(int gridSize,
         @Nullable final String cacheName) {
         // Register big data usage.
-        return F.asSet(new ComputeJobAdapter() {
+        return Collections.singleton(new ComputeJobAdapter() {
             @IgniteInstanceResource
             private Ignite ignite;
 

@@ -30,26 +30,31 @@ namespace ignite
             throw err;
     }
 
-    IgniteError::IgniteError() : code(IGNITE_SUCCESS), msg(NULL)
+    IgniteError::IgniteError() :
+        code(IGNITE_SUCCESS),
+        msg(NULL)
     {
         // No-op.
     }
 
-    IgniteError::IgniteError(int32_t code) : code(code), msg(NULL)
+    IgniteError::IgniteError(int32_t code) :
+        code(code),
+        msg(NULL)
+    {
+    }
+
+    IgniteError::IgniteError(int32_t code, const char* msg) :
+        code(code),
+        msg(CopyChars(msg))
     {
         // No-op.
     }
 
-    IgniteError::IgniteError(int32_t code, const char* msg)
+    IgniteError::IgniteError(const IgniteError& other) :
+        code(other.code),
+        msg(CopyChars(other.msg))
     {
-        this->code = code;
-        this->msg = CopyChars(msg);
-    }
-
-    IgniteError::IgniteError(const IgniteError& other)
-    {
-        this->code = other.code;
-        this->msg = CopyChars(other.msg);
+        // No-op.
     }
 
     IgniteError& IgniteError::operator=(const IgniteError& other)
@@ -81,7 +86,7 @@ namespace ignite
         return code;
     }
 
-    const char* IgniteError::GetText() const
+    const char* IgniteError::GetText() const IGNITE_NO_THROW
     {
         if (code == IGNITE_SUCCESS)
             return "Operation completed successfully.";
@@ -90,7 +95,12 @@ namespace ignite
         else
             return  "No additional information available.";
     }
-    
+
+    const char* IgniteError::what() const IGNITE_NO_THROW
+    {
+        return GetText();
+    }
+
     void IgniteError::SetError(const int jniCode, const char* jniCls, const char* jniMsg, IgniteError* err)
     {
         if (jniCode == IGNITE_JNI_ERR_SUCCESS)

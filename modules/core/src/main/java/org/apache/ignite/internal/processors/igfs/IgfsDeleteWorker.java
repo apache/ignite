@@ -17,16 +17,10 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -37,9 +31,16 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
-import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_PURGED;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
-import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.TRASH_ID;
+import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_PURGED;
 
 /**
  * IGFS worker for removal from the trash directory.
@@ -150,15 +151,25 @@ public class IgfsDeleteWorker extends IgfsThread {
     }
 
     /**
-     * Perform cleanup of the trash directory.
+     * Perform cleanup of trash directories.
      */
     private void delete() {
-        IgfsFileInfo info = null;
+        for (int i = 0; i < IgfsUtils.TRASH_CONCURRENCY; i++)
+            delete(IgfsUtils.trashId(i));
+    }
+
+    /**
+     * Perform cleanup of concrete trash directory.
+     *
+     * @param trashId Trash ID.
+     */
+    private void delete(IgniteUuid trashId) {
+        IgfsEntryInfo info = null;
 
         try {
-            info = meta.info(TRASH_ID);
+            info = meta.info(trashId);
         }
-        catch(ClusterTopologyServerNotFoundException e) {
+        catch (ClusterTopologyServerNotFoundException e) {
             LT.warn(log, e, "Server nodes not found.");
         }
         catch (IgniteCheckedException e) {
@@ -174,7 +185,7 @@ public class IgfsDeleteWorker extends IgfsThread {
 
                 try {
                     if (!cancelled) {
-                        if (delete(entry.getKey(), fileId)) {
+                        if (delete(trashId, entry.getKey(), fileId)) {
                             if (log.isDebugEnabled())
                                 log.debug("Sending delete confirmation message [name=" + entry.getKey() +
                                     ", fileId=" + fileId + ']');
@@ -200,31 +211,32 @@ public class IgfsDeleteWorker extends IgfsThread {
     /**
      * Remove particular entry from the TRASH directory.
      *
+     * @param trashId ID of the trash directory.
      * @param name Entry name.
      * @param id Entry ID.
      * @return {@code True} in case the entry really was deleted form the file system by this call.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean delete(String name, IgniteUuid id) throws IgniteCheckedException {
+    private boolean delete(IgniteUuid trashId, String name, IgniteUuid id) throws IgniteCheckedException {
         assert name != null;
         assert id != null;
 
         while (true) {
-            IgfsFileInfo info = meta.info(id);
+            IgfsEntryInfo info = meta.info(id);
 
             if (info != null) {
                 if (info.isDirectory()) {
-                    if (!deleteDirectoryContents(TRASH_ID, id))
+                    if (!deleteDirectoryContents(trashId, id))
                         return false;
 
-                    if (meta.delete(TRASH_ID, name, id))
+                    if (meta.delete(trashId, name, id))
                         return true;
                 }
                 else {
                     assert info.isFile();
 
                     // Lock the file with special lock Id to prevent concurrent writing:
-                    IgfsFileInfo lockedInfo = meta.lock(id, true);
+                    IgfsEntryInfo lockedInfo = meta.lock(id, true);
 
                     if (lockedInfo == null)
                         return false; // File is locked, we cannot delete it.
@@ -235,10 +247,15 @@ public class IgfsDeleteWorker extends IgfsThread {
                     // In case this node crashes, other node will re-delete the file.
                     data.delete(lockedInfo).get();
 
-                    boolean ret = meta.delete(TRASH_ID, name, id);
+                    boolean ret = meta.delete(trashId, name, id);
 
-                    if (info.path() != null)
-                        IgfsUtils.sendEvents(igfsCtx.kernalContext(), info.path(), EVT_IGFS_FILE_PURGED);
+                    if (ret) {
+                        IgfsPath path = IgfsUtils.extractOriginalPathFromTrash(name);
+
+                        assert path != null;
+
+                        IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_PURGED);
+                    }
 
                     return ret;
                 }
@@ -261,7 +278,7 @@ public class IgfsDeleteWorker extends IgfsThread {
         assert id != null;
 
         while (true) {
-            IgfsFileInfo info = meta.info(id);
+            IgfsEntryInfo info = meta.info(id);
 
             if (info != null) {
                 assert info.isDirectory();
@@ -288,18 +305,18 @@ public class IgfsDeleteWorker extends IgfsThread {
                             failedFiles++;
                     }
                     else {
-                        IgfsFileInfo fileInfo = meta.info(entry.getValue().fileId());
+                        IgfsEntryInfo fileInfo = meta.info(entry.getValue().fileId());
 
                         if (fileInfo != null) {
                             assert fileInfo.isFile();
 
-                            IgfsFileInfo lockedInfo = meta.lock(fileInfo.id(), true);
+                            IgfsEntryInfo lockedInfo = meta.lock(fileInfo.id(), true);
 
                             if (lockedInfo == null)
                                 // File is already locked:
                                 failedFiles++;
                             else {
-                                assert IgfsMetaManager.DELETE_LOCK_ID.equals(lockedInfo.lockId());
+                                assert IgfsUtils.DELETE_LOCK_ID.equals(lockedInfo.lockId());
 
                                 fut.add(data.delete(lockedInfo));
 
@@ -352,7 +369,7 @@ public class IgfsDeleteWorker extends IgfsThread {
 
         for (ClusterNode node : nodes) {
             try {
-                igfsCtx.send(node, topic, msg, GridIoPolicy.SYSTEM_POOL);
+                igfsCtx.send(node, topic, msg, GridIoPolicy.IGFS_POOL);
             }
             catch (IgniteCheckedException e) {
                 U.warn(log, "Failed to send IGFS delete message to node [nodeId=" + node.id() +

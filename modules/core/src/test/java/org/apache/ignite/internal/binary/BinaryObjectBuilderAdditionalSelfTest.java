@@ -26,14 +26,15 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
+import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -43,12 +44,18 @@ import org.junit.Assert;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Timestamp;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -228,7 +235,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testDateArrayModification() {
         GridBinaryTestClasses.TestObjectAllTypes obj = new GridBinaryTestClasses.TestObjectAllTypes();
 
-        obj.dateArr =  new Date[] {new Date(11111), new Date(11111), new Date(11111)};
+        obj.dateArr = new Date[] {new Date(11111), new Date(11111), new Date(11111)};
 
         BinaryObjectBuilderImpl mutObj = wrap(obj);
 
@@ -492,7 +499,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         Object[] createdArr = {mutObj, "a", 1, new String[] {"s", "s"}, new byte[] {1, 2}, new UUID(3, 0)};
 
-        mutObj.setField("foo", createdArr.clone());
+        mutObj.setField("foo", createdArr.clone(), Object.class);
 
         GridBinaryTestClasses.TestObjectContainer res = mutObj.build().deserialize();
 
@@ -549,7 +556,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         ArrayList<Object> list = Lists.newArrayList(mutObj, "a", Lists.newArrayList(1, 2));
 
-        mutObj.setField("foo", list);
+        mutObj.setField("foo", list, Object.class);
 
         GridBinaryTestClasses.TestObjectContainer res = mutObj.build().deserialize();
 
@@ -647,7 +654,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         List<Object> list = Lists.newLinkedList(Arrays.asList(mutObj, "a", Lists.newLinkedList(Arrays.asList(1, 2))));
 
-        mutObj.setField("foo", list);
+        mutObj.setField("foo", list, Object.class);
 
         GridBinaryTestClasses.TestObjectContainer res = mutObj.build().deserialize();
 
@@ -730,7 +737,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         Set<Object> c = Sets.newHashSet(mutObj, "a", Sets.newHashSet(1, 2));
 
-        mutObj.setField("foo", c);
+        mutObj.setField("foo", c, Object.class);
 
         GridBinaryTestClasses.TestObjectContainer res = mutObj.build().deserialize();
 
@@ -809,7 +816,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         Map<Object, Object> map = Maps.newHashMap(ImmutableMap.of(mutObj, "a", "b", mutObj));
 
-        mutObj.setField("foo", map);
+        mutObj.setField("foo", map, Object.class);
 
         GridBinaryTestClasses.TestObjectContainer res = mutObj.build().deserialize();
 
@@ -989,6 +996,123 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     /**
      *
      */
+    public void testWrongMetadataNullField() {
+        BinaryObjectBuilder builder = binaries().builder("SomeType");
+
+        builder.setField("dateField", null);
+
+        builder.setField("objectField", null, Integer.class);
+
+        builder.build();
+
+        try {
+            builder = binaries().builder("SomeType");
+
+            builder.setField("dateField", new Date());
+
+            builder.build();
+        }
+        catch (BinaryObjectException ex) {
+            assertTrue(ex.getMessage().startsWith("Wrong value has been set"));
+        }
+
+        builder = binaries().builder("SomeType");
+
+        try {
+            builder.setField("objectField", new GridBinaryTestClasses.Company());
+
+            builder.build();
+
+            fail("BinaryObjectBuilder accepted wrong metadata");
+        }
+        catch (BinaryObjectException ex) {
+            assertTrue(ex.getMessage().startsWith("Wrong value has been set"));
+        }
+    }
+
+    /**
+     *
+     */
+    public void testWrongMetadataNullField2() {
+        BinaryObjectBuilder builder = binaries().builder("SomeType1");
+
+        builder.setField("dateField", null);
+
+        builder.setField("objectField", null, Integer.class);
+
+        BinaryObject obj = builder.build();
+
+        try {
+            builder = binaries().builder(obj);
+
+            builder.setField("dateField", new Date());
+
+            builder.build();
+        }
+        catch (BinaryObjectException ex) {
+            assertTrue(ex.getMessage().startsWith("Wrong value has been set"));
+        }
+
+        builder = binaries().builder(obj);
+
+        try {
+            builder.setField("objectField", new GridBinaryTestClasses.Company());
+
+            builder.build();
+
+            fail("BinaryObjectBuilder accepted wrong metadata");
+        }
+        catch (BinaryObjectException ex) {
+            assertTrue(ex.getMessage().startsWith("Wrong value has been set"));
+        }
+    }
+
+    /**
+     *
+     */
+    public void testCorrectMetadataNullField() {
+        BinaryObjectBuilder builder = binaries().builder("SomeType2");
+
+        builder.setField("dateField", null, Date.class);
+
+        builder.setField("objectField", null, GridBinaryTestClasses.Company.class);
+
+        builder.build();
+
+        builder = binaries().builder("SomeType2");
+
+        builder.setField("dateField", new Date());
+
+        builder.setField("objectField", new GridBinaryTestClasses.Company());
+
+        builder.build();
+
+    }
+
+    /**
+     *
+     */
+    public void testCorrectMetadataNullField2() {
+        BinaryObjectBuilder builder = binaries().builder("SomeType3");
+
+        builder.setField("dateField", null, Date.class);
+
+        builder.setField("objectField", null, GridBinaryTestClasses.Company.class);
+
+        BinaryObject obj = builder.build();
+
+        builder = binaries().builder(obj);
+
+        builder.setField("dateField", new Date());
+
+        builder.setField("objectField", new GridBinaryTestClasses.Company());
+
+        builder.build();
+    }
+
+    /**
+     *
+     */
     public void testDateInObjectField() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
@@ -1047,9 +1171,9 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         BinaryObjectBuilderImpl mutableObj = wrap(obj);
 
-        Date[] arr = { new Date() };
+        Date[] arr = {new Date()};
 
-        mutableObj.setField("foo", arr);
+        mutableObj.setField("foo", arr, Object.class);
 
         GridBinaryTestClasses.TestObjectContainer res = mutableObj.build().deserialize();
 
@@ -1066,9 +1190,9 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         BinaryObjectBuilderImpl mutableObj = wrap(obj);
 
-        Timestamp[] arr = { new Timestamp(100020003) };
+        Timestamp[] arr = {new Timestamp(100020003)};
 
-        mutableObj.setField("foo", arr);
+        mutableObj.setField("foo", arr, Object.class);
 
         GridBinaryTestClasses.TestObjectContainer res = mutableObj.build().deserialize();
 
@@ -1258,7 +1382,88 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         CacheObjectBinaryProcessorImpl processor = (CacheObjectBinaryProcessorImpl)(
             (IgniteBinaryImpl)binaries()).processor();
 
-        return new BinaryObjectBuilderImpl(processor.binaryContext(), processor.typeId(aCls.getName()), 
+        return new BinaryObjectBuilderImpl(processor.binaryContext(), processor.typeId(aCls.getName()),
             processor.binaryContext().userTypeName(aCls.getName()));
     }
+
+    /**
+     * Check that correct type is stored in binary object.
+     */
+    public void testCollectionsSerialization() {
+        final BinaryObjectBuilder root = newWrapper(BigInteger.class);
+
+        final List<Integer> arrList = new ArrayList<>();
+
+        arrList.add(Integer.MAX_VALUE);
+
+        final List<Integer> linkedList = new LinkedList<>();
+
+        linkedList.add(Integer.MAX_VALUE);
+
+        final Set<Integer> hashSet = new HashSet<>();
+
+        hashSet.add(Integer.MAX_VALUE);
+
+        final Set<Integer> linkedHashSet = new LinkedHashSet<>();
+
+        linkedHashSet.add(Integer.MAX_VALUE);
+
+        final Map<String, String> hashMap = new HashMap<>();
+
+        hashMap.put("key", "val");
+
+        final Map<String, String> linkedHashMap = new LinkedHashMap<>();
+
+        linkedHashMap.put("key", "val");
+
+        // collections
+        root.setField("arrayList", arrList);
+        root.setField("linkedList", linkedList);
+        root.setField("hashSet", hashSet);
+        root.setField("linkedHashSet", linkedHashSet);
+
+        root.setField("singletonList", Collections.singletonList(Integer.MAX_VALUE), Collection.class);
+        root.setField("singletonSet", Collections.singleton(Integer.MAX_VALUE), Collection.class);
+
+        // maps
+        root.setField("hashMap", hashMap);
+        root.setField("linkedHashMap", linkedHashMap);
+
+        root.setField("singletonMap", Collections.singletonMap("key", "val"), Map.class);
+
+        // objects
+        root.setField("asList", Collections.singletonList(Integer.MAX_VALUE));
+        root.setField("asSet", Collections.singleton(Integer.MAX_VALUE));
+        root.setField("asMap", Collections.singletonMap("key", "val"));
+        root.setField("asListHint", Collections.singletonList(Integer.MAX_VALUE), List.class);
+        root.setField("asSetHint", Collections.singleton(Integer.MAX_VALUE), Set.class);
+        root.setField("asMapHint", (AbstractMap)Collections.singletonMap("key", "val"), AbstractMap.class);
+
+        BinaryObject binaryObj = root.build();
+
+        final String COL = "Collection";
+        final String MAP = "Map";
+        final String OBJ = "Object";
+
+        assert COL.equals(binaryObj.type().fieldTypeName("arrayList"));
+        assert COL.equals(binaryObj.type().fieldTypeName("linkedList"));
+        assert COL.equals(binaryObj.type().fieldTypeName("hashSet"));
+        assert COL.equals(binaryObj.type().fieldTypeName("linkedHashSet"));
+        assert COL.equals(binaryObj.type().fieldTypeName("linkedHashSet"));
+        assert COL.equals(binaryObj.type().fieldTypeName("linkedHashSet"));
+
+        assert COL.equals(binaryObj.type().fieldTypeName("singletonList"));
+        assert COL.equals(binaryObj.type().fieldTypeName("singletonSet"));
+
+        assert MAP.equals(binaryObj.type().fieldTypeName("singletonMap"));
+
+        assert OBJ.equals(binaryObj.type().fieldTypeName("asList"));
+        assert OBJ.equals(binaryObj.type().fieldTypeName("asSet"));
+        assert OBJ.equals(binaryObj.type().fieldTypeName("asMap"));
+        assert OBJ.equals(binaryObj.type().fieldTypeName("asListHint"));
+        assert OBJ.equals(binaryObj.type().fieldTypeName("asSetHint"));
+        assert OBJ.equals(binaryObj.type().fieldTypeName("asMapHint"));
+
+    }
+
 }

@@ -48,6 +48,8 @@ import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
+import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
+import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
@@ -301,6 +303,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Query processor.
      */
     public GridQueryProcessor query();
+
+    /**
+     * Gets ODBC processor.
+     *
+     * @return ODBC processor.
+     */
+    public OdbcProcessor odbc();
 
     /**
      * @return Plugin processor.

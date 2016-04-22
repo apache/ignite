@@ -55,6 +55,7 @@ import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -89,6 +90,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -97,6 +99,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -134,6 +137,11 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         cfg.setCommunicationSpi(commSpi);
 
+        MemoryEventStorageSpi eventSpi = new MemoryEventStorageSpi();
+        eventSpi.setExpireCount(50);
+
+        cfg.setEventStorageSpi(eventSpi);
+
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(cacheMode());
@@ -142,12 +150,20 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         ccfg.setBackups(backups);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setNearConfiguration(nearCacheConfiguration());
+        ccfg.setMemoryMode(memoryMode());
 
         cfg.setCacheConfiguration(ccfg);
 
         cfg.setClientMode(client);
 
         return cfg;
+    }
+
+    /**
+     * @return Cache memory mode.
+     */
+    protected CacheMemoryMode memoryMode() {
+        return ONHEAP_TIERED;
     }
 
     /**
@@ -159,7 +175,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 5 * 60_000;
+        return 8 * 60_000;
     }
 
     /** {@inheritDoc} */
@@ -242,6 +258,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      */
     public void testRebalanceVersion() throws Exception {
         Ignite ignite0 = startGrid(0);
+
+        int minorVer = ignite0.configuration().isLateAffinityAssignment() ? 1 : 0;
+
         GridDhtPartitionTopology top0 = ((IgniteKernal)ignite0).context().cache().context().cacheContext(1).topology();
 
         assertTrue(top0.rebalanceFinished(new AffinityTopologyVersion(1)));
@@ -250,8 +269,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         Ignite ignite1 = startGrid(1);
         GridDhtPartitionTopology top1 = ((IgniteKernal)ignite1).context().cache().context().cacheContext(1).topology();
 
-        waitRebalanceFinished(ignite0, 2);
-        waitRebalanceFinished(ignite1, 2);
+        waitRebalanceFinished(ignite0, 2, minorVer);
+        waitRebalanceFinished(ignite1, 2, minorVer);
 
         assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(3)));
         assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(3)));
@@ -259,9 +278,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         Ignite ignite2 = startGrid(2);
         GridDhtPartitionTopology top2 = ((IgniteKernal)ignite2).context().cache().context().cacheContext(1).topology();
 
-        waitRebalanceFinished(ignite0, 3);
-        waitRebalanceFinished(ignite1, 3);
-        waitRebalanceFinished(ignite2, 3);
+        waitRebalanceFinished(ignite0, 3, minorVer);
+        waitRebalanceFinished(ignite1, 3, minorVer);
+        waitRebalanceFinished(ignite2, 3, minorVer);
 
         assertFalse(top0.rebalanceFinished(new AffinityTopologyVersion(4)));
         assertFalse(top1.rebalanceFinished(new AffinityTopologyVersion(4)));
@@ -279,9 +298,9 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         stopGrid(1);
 
-        waitRebalanceFinished(ignite0, 5);
-        waitRebalanceFinished(ignite2, 5);
-        waitRebalanceFinished(ignite3, 5);
+        waitRebalanceFinished(ignite0, 5, 0);
+        waitRebalanceFinished(ignite2, 5, 0);
+        waitRebalanceFinished(ignite3, 5, 0);
     }
 
     /**
@@ -289,8 +308,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @param topVer Topology version.
      * @throws Exception If failed.
      */
-    private void waitRebalanceFinished(Ignite ignite, long topVer) throws Exception {
-        final AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer);
+    private void waitRebalanceFinished(Ignite ignite, long topVer, int minorVer) throws Exception {
+        final AffinityTopologyVersion topVer0 = new AffinityTopologyVersion(topVer, minorVer);
 
         final GridDhtPartitionTopology top =
             ((IgniteKernal)ignite).context().cache().context().cacheContext(1).topology();
@@ -799,11 +818,6 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         checkBackupQueue(3, false);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isDebug() {
-        return true;
-    }
-
     /**
      * @param backups Number of backups.
      * @param updateFromClient If {@code true} executes cache update from client node.
@@ -1176,15 +1190,22 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      * @param cache Cache.
      * @param parts Number of partitions.
      * @return Keys.
+     * @throws Exception If failed.
      */
-    private List<Integer> testKeys(IgniteCache<Object, Object> cache, int parts) {
+    private List<Integer> testKeys(IgniteCache<Object, Object> cache, int parts) throws Exception {
         Ignite ignite = cache.unwrap(Ignite.class);
 
         List<Integer> res = new ArrayList<>();
 
-        Affinity<Object> aff = ignite.affinity(cache.getName());
+        final Affinity<Object> aff = ignite.affinity(cache.getName());
 
-        ClusterNode node = ignite.cluster().localNode();
+        final ClusterNode node = ignite.cluster().localNode();
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return aff.primaryPartitions(node).length > 0;
+            }
+        }, 5000));
 
         int[] nodeParts = aff.primaryPartitions(node);
 
@@ -1422,7 +1443,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             GridContinuousHandler hnd = GridTestUtils.getFieldValue(info, "hnd");
 
             if (hnd.isQuery() && hnd.cacheName() == null) {
-                backupQueue = GridTestUtils.getFieldValue(hnd, "backupQueue");
+                backupQueue = GridTestUtils.getFieldValue(hnd, CacheContinuousQueryHandler.class, "backupQueue");
 
                 break;
             }

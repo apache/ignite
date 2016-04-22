@@ -1780,7 +1780,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    public String toString() {
+    @Override public String toString() {
         return S.toString(DirectByteBufferStreamImplV2.class, this);
     }
 

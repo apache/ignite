@@ -65,6 +65,8 @@ import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
+import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
+import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
@@ -156,6 +158,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      * Processors.
      * ==========
      */
+
+    /** */
+    @GridToStringInclude
+    private OdbcProcessor odbcProc;
 
     /** */
     @GridToStringInclude
@@ -499,6 +505,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pluginProc = (IgnitePluginProcessor)comp;
         else if (comp instanceof GridQueryProcessor)
             qryProc = (GridQueryProcessor)comp;
+        else if (comp instanceof OdbcProcessor)
+            odbcProc = (OdbcProcessor)comp;
         else if (comp instanceof DataStructuresProcessor)
             dataStructuresProc = (DataStructuresProcessor)comp;
         else if (comp instanceof ClusterProcessor)
@@ -734,6 +742,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridQueryProcessor query() {
         return qryProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public OdbcProcessor odbc() {
+        return odbcProc;
     }
 
     /** {@inheritDoc} */

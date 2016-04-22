@@ -262,7 +262,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             false);
 
         // init() will register future for responses if future has remote mappings.
-        fut.init();
+        fut.init(null);
 
         return fut;
     }
@@ -351,8 +351,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Cache.Entry<K, V>> primaryEntrySet(
-        @Nullable final CacheEntryPredicate... filter) {
+    @Override public Set<Cache.Entry<K, V>> primaryEntrySet() {
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         Collection<Cache.Entry<K, V>> entries =
@@ -362,13 +361,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                     new C1<GridDhtLocalPartition, Collection<Cache.Entry<K, V>>>() {
                         @Override public Collection<Cache.Entry<K, V>> apply(GridDhtLocalPartition p) {
                             Collection<GridDhtCacheEntry> entries0 = p.entries();
-
-                            if (!F.isEmpty(filter))
-                                entries0 = F.view(entries0, new CacheEntryPredicateAdapter() {
-                                    @Override public boolean apply(GridCacheEntryEx e) {
-                                        return F.isAll(e, filter);
-                                    }
-                                });
 
                             return F.viewReadOnly(
                                 entries0,
@@ -394,26 +386,18 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public Set<K> keySet(@Nullable CacheEntryPredicate[] filter) {
-        return new GridCacheKeySet<>(ctx, entrySet(filter), null);
-    }
-
-    /**
-     * @param filter Entry filter.
-     * @return Keys for near cache only.
-     */
-    public Set<K> nearKeySet(@Nullable CacheEntryPredicate filter) {
-        return super.keySet(filter);
+    @Override public Set<K> keySet() {
+        return new GridCacheKeySet<>(ctx, entrySet(), null);
     }
 
     /** {@inheritDoc} */
-    @Override public Set<K> primaryKeySet(@Nullable CacheEntryPredicate... filter) {
-        return new GridCacheKeySet<>(ctx, primaryEntrySet(filter), null);
+    @Override public Set<K> primaryKeySet() {
+        return new GridCacheKeySet<>(ctx, primaryEntrySet(), null);
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<V> values(CacheEntryPredicate... filter) {
-        return new GridCacheValueCollection<>(ctx, entrySet(filter), ctx.vararg(F.<K, V>cacheHasPeekValue()));
+    @Override public Collection<V> values() {
+        return new GridCacheValueCollection<>(ctx, entrySet(), ctx.vararg(F.<K, V>cacheHasPeekValue()));
     }
 
     /** {@inheritDoc} */

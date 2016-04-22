@@ -263,6 +263,7 @@ public interface GridCacheEntryEx {
     public boolean partitionValid();
 
     /**
+     * @param ver Cache version to set. The version will be used on updating entry instead of generated one.
      * @param tx Ongoing transaction (possibly null).
      * @param readThrough Flag indicating whether to read through.
      * @param updateMetrics If {@code true} then metrics should be updated.
@@ -271,11 +272,13 @@ public interface GridCacheEntryEx {
      * @param transformClo Transform closure to record event.
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
+     * @param keepBinary Keep binary flag.
      * @return Cached value.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable public CacheObject innerGet(@Nullable IgniteInternalTx tx,
+    @Nullable public CacheObject innerGet(@Nullable GridCacheVersion ver,
+        @Nullable IgniteInternalTx tx,
         boolean readThrough,
         boolean updateMetrics,
         boolean evt,
@@ -287,6 +290,7 @@ public interface GridCacheEntryEx {
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
+     * @param ver Cache version to set. The version will be used on updating entry instead of generated one.
      * @param tx Cache transaction.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
@@ -294,11 +298,13 @@ public interface GridCacheEntryEx {
      * @param transformClo Transform closure to record event.
      * @param taskName Task name.
      * @param expiryPlc Expiry policy.
+     * @param keepBinary Keep binary flag.
      * @return Cached value and entry version.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @Nullable public T2<CacheObject, GridCacheVersion> innerGetVersioned(
+        @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
         boolean updateMetrics,
         boolean evt,
@@ -328,6 +334,7 @@ public interface GridCacheEntryEx {
      * @param ttl Time to live.
      * @param evt Flag to signal event notification.
      * @param metrics Flag to signal metrics update.
+     * @param keepBinary Keep binary flag.
      * @param topVer Topology version.
      * @param filter Filter.
      * @param drType DR type.
@@ -371,6 +378,7 @@ public interface GridCacheEntryEx {
      * @param retval {@code True} if value should be returned (and unmarshalled if needed).
      * @param evt Flag to signal event notification.
      * @param metrics Flag to signal metrics notification.
+     * @param keepBinary Keep binary flag.
      * @param topVer Topology version.
      * @param filter Filter.
      * @param drType DR type.
@@ -511,12 +519,10 @@ public interface GridCacheEntryEx {
      *
      * @param ver Obsolete version.
      * @param readers Flag to clear readers as well.
-     * @param filter Optional entry filter.
      * @throws IgniteCheckedException If failed to remove from swap.
      * @return {@code True} if entry was not being used, passed the filter and could be removed.
      */
-    public boolean clear(GridCacheVersion ver, boolean readers,
-        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException;
+    public boolean clear(GridCacheVersion ver, boolean readers) throws IgniteCheckedException;
 
     /**
      * This locks is called by transaction manager during prepare step
@@ -668,11 +674,12 @@ public interface GridCacheEntryEx {
     /**
      * Create versioned entry for this cache entry.
      *
+     * @param keepBinary Keep binary flag.
      * @return Versioned entry.
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    public <K, V> GridCacheVersionedEntryEx<K, V> versionedEntry()
+    public <K, V> GridCacheVersionedEntryEx<K, V> versionedEntry(final boolean keepBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
@@ -893,7 +900,7 @@ public interface GridCacheEntryEx {
      * @param ver Version.
      * @param ttl Time to live.
      */
-    public void updateTtl(@Nullable GridCacheVersion ver, long ttl);
+    public void updateTtl(@Nullable GridCacheVersion ver, long ttl) throws GridCacheEntryRemovedException;
 
     /**
      * @return Value.

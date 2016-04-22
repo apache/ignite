@@ -283,7 +283,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                     continue;
 
                 if (e.cached().obsolete()) {
-                    GridCacheEntryEx cached = cacheCtx.cache().entryEx(e.key());
+                    GridCacheEntryEx cached = cacheCtx.cache().entryEx(e.key(), topologyVersion());
 
                     e.cached(cached);
                 }
@@ -312,7 +312,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         break;
                     }
                     catch (GridCacheEntryRemovedException ignore) {
-                        GridCacheEntryEx cached = cacheCtx.cache().entryEx(e.key());
+                        GridCacheEntryEx cached = cacheCtx.cache().entryEx(e.key(), topologyVersion());
 
                         e.cached(cached);
                     }

@@ -51,7 +51,6 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
         disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
         disco.setIpFinder(IP_FINDER);
-        disco.setForceServerMode(true);
 
         cfg.setDiscoverySpi(disco);
 
@@ -73,7 +72,9 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGridsMultiThreaded(1, 2);
+        startGrid(2);
+
+        startGrid(1);
     }
 
     /** {@inheritDoc} */
@@ -84,12 +85,14 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testAffinity() throws IgniteCheckedException {
+    public void testAffinity() throws Exception {
         Ignite g1 = grid(1);
         Ignite g2 = grid(2);
 
         assert caches(g1).size() == 0;
         assert F.first(caches(g2)).getCacheMode() == PARTITIONED;
+
+        awaitPartitionMapExchange();
 
         Map<ClusterNode, Collection<String>> map = g1.<String>affinity(null).mapKeysToNodes(F.asList("1"));
 

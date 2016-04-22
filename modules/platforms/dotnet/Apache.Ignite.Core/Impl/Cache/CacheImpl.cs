@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// Native cache wrapper.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
-    internal class CacheImpl<TK, TV> : PlatformTarget, ICache<TK, TV>
+    internal class CacheImpl<TK, TV> : PlatformTarget, ICache<TK, TV>, ICacheInternal
     {
         /** Duration: unchanged. */
         private const long DurUnchanged = -2;
@@ -285,6 +285,23 @@ namespace Apache.Ignite.Core.Impl.Cache
 
                 writer.WriteArray(args);
             });
+        }
+
+        /** <inheritDoc /> */
+        public void LoadAll(IEnumerable<TK> keys, bool replaceExistingValues)
+        {
+            LoadAllAsync(keys, replaceExistingValues).Wait();
+        }
+
+        /** <inheritDoc /> */
+        public Task LoadAllAsync(IEnumerable<TK> keys, bool replaceExistingValues)
+        {
+            return GetFuture<object>((futId, futTyp) => DoOutOp((int) CacheOp.LoadAll, writer =>
+            {
+                writer.WriteLong(futId);
+                writer.WriteBoolean(replaceExistingValues);
+                WriteEnumerable(writer, keys);
+            })).Task;
         }
 
         /** <inheritDoc /> */
@@ -923,7 +940,27 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
+            return QueryFields(qry, ReadFieldsArrayList);
+        }
+
+        /// <summary>
+        /// Reads the fields array list.
+        /// </summary>
+        private static IList ReadFieldsArrayList(IBinaryRawReader reader, int count)
+        {
+            IList res = new ArrayList(count);
+
+            for (var i = 0; i < count; i++)
+                res.Add(reader.ReadObject<object>());
+
+            return res;
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc)
+        {
             IgniteArgumentCheck.NotNull(qry, "qry");
+            IgniteArgumentCheck.NotNull(readerFunc, "readerFunc");
 
             if (string.IsNullOrEmpty(qry.Sql))
                 throw new ArgumentException("Sql cannot be null or empty");
@@ -945,7 +982,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 cursor = UU.CacheOutOpQueryCursor(Target, (int) CacheOp.QrySqlFields, stream.SynchronizeOutput());
             }
         
-            return new FieldsQueryCursor(cursor, Marshaller, _flagKeepBinary);
+            return new FieldsQueryCursor<T>(cursor, Marshaller, _flagKeepBinary, readerFunc);
         }
 
         /** <inheritDoc /> */
@@ -981,9 +1018,18 @@ namespace Apache.Ignite.Core.Impl.Cache
             else
             {
                 writer.WriteInt(args.Length);
-        
+
                 foreach (var arg in args)
-                    writer.WriteObject(arg);
+                {
+                    // Write DateTime as TimeStamp always, otherwise it does not make sense
+                    // Wrapped DateTime comparison does not work in SQL
+                    var dt = arg as DateTime?;  // Works with DateTime also
+
+                    if (dt != null)
+                        writer.WriteTimestamp(dt);
+                    else
+                        writer.WriteObject(arg);
+                }
             }
         }
 
@@ -1170,7 +1216,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var msg = Unmarshal<string>(inStream);
                 
-            return new CacheEntryProcessorException(ExceptionUtils.GetException(clsName, msg));
+            return new CacheEntryProcessorException(ExceptionUtils.GetException(_ignite, clsName, msg));
         }
 
         /// <summary>

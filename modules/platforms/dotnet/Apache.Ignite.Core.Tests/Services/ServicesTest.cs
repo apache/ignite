@@ -15,17 +15,21 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618   // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
-    using System.Collections.Generic;
+    using System.Collections;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Services;
+    using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -239,11 +243,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestGetServiceProxy([Values(true, false)] bool binarizable)
         {
             // Test proxy without a service
-            var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
-
-            Assert.IsTrue(prx != null);
-
-            var ex = Assert.Throws<ServiceInvocationException>(() => Assert.IsTrue(prx.Initialized)).InnerException;
+            var ex = Assert.Throws<IgniteException>(()=> Services.GetServiceProxy<ITestIgniteService>(SvcName));
             Assert.AreEqual("Failed to find deployed service: " + SvcName, ex.Message);
 
             // Deploy to grid2 & grid3
@@ -259,7 +259,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(Services.GetService<ITestIgniteService>(SvcName));
 
             // Get proxy
-            prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
+            var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
 
             // Check proxy properties
             Assert.IsNotNull(prx);
@@ -506,6 +506,109 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc0);
         }
 
+        [Test]
+        public void TestCallJavaService()
+        {
+            const string javaSvcName = "javaService";
+
+            // Deploy Java service
+            Grid1.GetCompute()
+                .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
+
+            // Verify decriptor
+            var descriptor = Services.GetServiceDescriptors().Single(x => x.Name == javaSvcName);
+            Assert.AreEqual(javaSvcName, descriptor.Name);
+            Assert.Throws<ServiceInvocationException>(() =>
+            {
+                // ReSharper disable once UnusedVariable
+                var type = descriptor.Type;
+            });
+
+            var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false);
+            var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
+                .GetServiceProxy<IJavaService>(javaSvcName, false);
+
+            // Basics
+            Assert.IsTrue(svc.isInitialized());
+            Assert.IsTrue(svc.isExecuted());
+            Assert.IsFalse(svc.isCancelled());
+
+            // Primitives
+            Assert.AreEqual(4, svc.test((byte) 3));
+            Assert.AreEqual(5, svc.test((short) 4));
+            Assert.AreEqual(6, svc.test(5));
+            Assert.AreEqual(6, svc.test((long) 5));
+            Assert.AreEqual(3.8f, svc.test(2.3f));
+            Assert.AreEqual(5.8, svc.test(3.3));
+            Assert.IsFalse(svc.test(true));
+            Assert.AreEqual('b', svc.test('a'));
+            Assert.AreEqual("Foo!", svc.test("Foo"));
+
+            // Nullables (Java wrapper types)
+            Assert.AreEqual(4, svc.testWrapper(3));
+            Assert.AreEqual(5, svc.testWrapper((short?) 4));
+            Assert.AreEqual(6, svc.testWrapper((int?)5));
+            Assert.AreEqual(6, svc.testWrapper((long?) 5));
+            Assert.AreEqual(3.8f, svc.testWrapper(2.3f));
+            Assert.AreEqual(5.8, svc.testWrapper(3.3));
+            Assert.AreEqual(false, svc.testWrapper(true));
+            Assert.AreEqual('b', svc.testWrapper('a'));
+
+            // Arrays
+            Assert.AreEqual(new byte[] {2, 3, 4}, svc.testArray(new byte[] {1, 2, 3}));
+            Assert.AreEqual(new short[] {2, 3, 4}, svc.testArray(new short[] {1, 2, 3}));
+            Assert.AreEqual(new[] {2, 3, 4}, svc.testArray(new[] {1, 2, 3}));
+            Assert.AreEqual(new long[] {2, 3, 4}, svc.testArray(new long[] {1, 2, 3}));
+            Assert.AreEqual(new float[] {2, 3, 4}, svc.testArray(new float[] {1, 2, 3}));
+            Assert.AreEqual(new double[] {2, 3, 4}, svc.testArray(new double[] {1, 2, 3}));
+            Assert.AreEqual(new[] {"a1", "b1"}, svc.testArray(new [] {"a", "b"}));
+            Assert.AreEqual(new[] {'c', 'd'}, svc.testArray(new[] {'b', 'c'}));
+            Assert.AreEqual(new[] {false, true, false}, svc.testArray(new[] {true, false, true}));
+
+            // Nulls
+            Assert.AreEqual(9, svc.testNull(8));
+            Assert.IsNull(svc.testNull(null));
+
+            // params / varargs
+            Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5"));
+            Assert.AreEqual(0, svc.testParams());
+
+            // Overloads
+            Assert.AreEqual(3, svc.test(2, "1"));
+            Assert.AreEqual(3, svc.test("1", 2));
+
+            // Binary
+            Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
+
+            // Binary collections
+            var arr = new [] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x}).ToArray<object>();
+            Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
+                .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+            Assert.AreEqual(new[] {11, 12, 13}, 
+                svc.testBinarizableArray(arr).OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
+
+            // Binary object
+            Assert.AreEqual(15,
+                binSvc.testBinaryObject(
+                    Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = 6}))
+                    .GetField<int>("Field"));
+
+            Services.Cancel(javaSvcName);
+        }
+
+        /// <summary>
+        /// Tests the footer setting.
+        /// </summary>
+        [Test]
+        public void TestFooterSetting()
+        {
+            foreach (var grid in Grids)
+            {
+                Assert.AreEqual(CompactFooter, ((Ignite)grid).Marshaller.CompactFooter);
+                Assert.AreEqual(CompactFooter, grid.GetConfiguration().BinaryConfiguration.CompactFooter);
+            }
+        }
+
         /// <summary>
         /// Starts the grids.
         /// </summary>
@@ -514,9 +617,9 @@ namespace Apache.Ignite.Core.Tests.Services
             if (Grid1 != null)
                 return;
 
-            Grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            Grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            Grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            Grid1 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid1.xml"));
+            Grid2 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid2.xml"));
+            Grid3 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid3.xml"));
 
             Grids = new[] { Grid1, Grid2, Grid3 };
         }
@@ -558,22 +661,21 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private static IgniteConfiguration Configuration(string springConfigUrl)
+        private IgniteConfiguration GetConfiguration(string springConfigUrl)
         {
+            if (!CompactFooter)
+                springConfigUrl = ComputeApiTestFullFooter.ReplaceFooterSetting(springConfigUrl);
+
             return new IgniteConfiguration
             {
                 SpringConfigUrl = springConfigUrl,
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new List<BinaryTypeConfiguration>
-                    {
-                        new BinaryTypeConfiguration(typeof(TestIgniteServiceBinarizable)),
-                        new BinaryTypeConfiguration(typeof(TestIgniteServiceBinarizableErr)),
-                        new BinaryTypeConfiguration(typeof(BinarizableObject))
-                    }
-                }
+                BinaryConfiguration = new BinaryConfiguration(
+                    typeof (TestIgniteServiceBinarizable),
+                    typeof (TestIgniteServiceBinarizableErr),
+                    typeof (PlatformComputeBinarizable),
+                    typeof (BinarizableObject))
             };
         }
 
@@ -596,6 +698,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             get { return Grid1.GetServices(); }
         }
+
+        /// <summary>
+        /// Gets a value indicating whether compact footers should be used.
+        /// </summary>
+        protected virtual bool CompactFooter { get { return true; } }
 
         /// <summary>
         /// Test service interface for proxying.
@@ -829,6 +936,132 @@ namespace Apache.Ignite.Core.Tests.Services
         private class BinarizableObject
         {
             public int Val { get; set; }
+        }
+
+        /// <summary>
+        /// Java service proxy interface.
+        /// </summary>
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
+        private interface IJavaService
+        {
+            /** */
+            bool isCancelled();
+
+            /** */
+            bool isInitialized();
+
+            /** */
+            bool isExecuted();
+
+            /** */
+            byte test(byte x);
+
+            /** */
+            short test(short x);
+
+            /** */
+            int test(int x);
+
+            /** */
+            long test(long x);
+
+            /** */
+            float test(float x);
+
+            /** */
+            double test(double x);
+
+            /** */
+            char test(char x);
+
+            /** */
+            string test(string x);
+
+            /** */
+            bool test(bool x);
+
+            /** */
+            byte? testWrapper(byte? x);
+
+            /** */
+            short? testWrapper(short? x);
+
+            /** */
+            int? testWrapper(int? x);
+
+            /** */
+            long? testWrapper(long? x);
+
+            /** */
+            float? testWrapper(float? x);
+
+            /** */
+            double? testWrapper(double? x);
+
+            /** */
+            char? testWrapper(char? x);
+
+            /** */
+            bool? testWrapper(bool? x);
+
+            /** */
+            byte[] testArray(byte[] x);
+
+            /** */
+            short[] testArray(short[] x);
+
+            /** */
+            int[] testArray(int[] x);
+
+            /** */
+            long[] testArray(long[] x);
+
+            /** */
+            float[] testArray(float[] x);
+
+            /** */
+            double[] testArray(double[] x);
+
+            /** */
+            char[] testArray(char[] x);
+
+            /** */
+            string[] testArray(string[] x);
+
+            /** */
+            bool[] testArray(bool[] x);
+
+            /** */
+            int test(int x, string y);
+            /** */
+            int test(string x, int y);
+
+            /** */
+            int? testNull(int? x);
+
+            /** */
+            int testParams(params object[] args);
+
+            /** */
+            PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
+
+            /** */
+            object[] testBinarizableArray(object[] x);
+
+            /** */
+            ICollection testBinarizableCollection(ICollection x);
+
+            /** */
+            IBinaryObject testBinaryObject(IBinaryObject x);
+        }
+
+        /// <summary>
+        /// Interop class.
+        /// </summary>
+        private class PlatformComputeBinarizable
+        {
+            /** */
+            public int Field { get; set; }
         }
     }
 }

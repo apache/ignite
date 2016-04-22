@@ -108,6 +108,8 @@ public class CacheReadThroughRestartSelfTest extends GridCacheAbstractSelfTest {
 
         startGrids(2);
 
+        awaitPartitionMapExchange();
+
         Ignite ignite = grid(1);
 
         cache = ignite.cache(null);

@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -399,8 +398,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var exp = PopulateCache(cache, loc, cnt, x => x < 50);
 
             // 2. Validate results.
-            SqlQuery qry = loc ?  new SqlQuery(typeof(QueryPerson), "age < 50", true) :
-                new SqlQuery(typeof(QueryPerson), "age < 50");
+            var qry = new SqlQuery(typeof(QueryPerson), "age < 50", loc);
 
             ValidateQueryResults(cache, qry, exp, keepBinary);
         }
@@ -666,7 +664,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 var qry = new ScanQuery<int, TV> { Partition = part };
 
-                Console.WriteLine("Checking query on partition " + part);
                 ValidateQueryResults(cache, qry, exp0, keepBinary);
             }
 
@@ -683,7 +680,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 var qry = new ScanQuery<int, TV>(new ScanQueryFilter<TV>()) { Partition = part };
 
-                Console.WriteLine("Checking predicate query on partition " + part);
                 ValidateQueryResults(cache, qry, exp0, keepBinary);
             }
             
@@ -831,14 +827,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var exp = new HashSet<int>();
 
+            var aff = cache.Ignite.GetAffinity(cache.Name);
+
+            var localNode = cache.Ignite.GetCluster().GetLocalNode();
+
             for (var i = 0; i < cnt; i++)
             {
                 var val = rand.Next(100);
 
                 cache.Put(val, new QueryPerson(val.ToString(), val));
 
-                if (expectedEntryFilter(val) && (!loc || cache.Ignite.GetAffinity(cache.Name)
-                    .IsPrimary(cache.Ignite.GetCluster().GetLocalNode(), val)))
+                if (expectedEntryFilter(val) && (!loc || aff.IsPrimary(localNode, val)))
                     exp.Add(val);
             }
 
