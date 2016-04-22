@@ -206,7 +206,7 @@ angular
 
                 // Value Blind.
                 if (ngModel) {
-                    // Remove preview control from form for correct pristine.
+                    // Remove "ngModel" controller from parent form for correct dirty checks.
                     form && form.$removeControl(ngModel);
 
                     ngModel.$formatters.push((value) => {
