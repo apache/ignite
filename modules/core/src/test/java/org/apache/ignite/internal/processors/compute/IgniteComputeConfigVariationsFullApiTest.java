@@ -111,20 +111,30 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
         assertEquals("Count of the result objects' type mismatch (null values are filtered)", expCnt, cnt);
     }
 
+    /** */
+    private Collection<Object> createGoldenResults() {
+        Collection<Object> results = new ArrayList<>(MAX_JOB_COUNT);
+        for (int i = 0; i < MAX_JOB_COUNT; ++i)
+            results.add(value(i - 1));
+        return results;
+    }
+
     /**
-     * @param expCnt Expected count.
-     * @param results Results.
+     * @param msg Message.
+     * @param exp Expected.
+     * @param act Action.
      */
-    private static void checkNullCount(final int expCnt, final Collection<Object> results) {
-        int cnt = 0;
+    private <E> void assertCollectionsEquals(String msg, Collection<E> exp, Collection<E> act) {
+        assertEquals(msg + "; Size are different", exp.size(), act.size());
 
-        for (Object o : results) {
-            if (o == null)
-                ++cnt;
+        for (Object o : exp) {
+            if (!act.contains(o)) {
+                error("Expected: " + exp.toString());
+                error("Actual: " + act.toString());
+
+                assertTrue(msg + String.format("; actual collection doesn't contain the object [%s]", o), false);
+            }
         }
-
-        assertEquals("Count of the result objects' type mismatch (null values are filtered)", expCnt, cnt);
-        assertEquals("Count of the null objects mismatch", expCnt, cnt);
     }
 
     /**
@@ -177,7 +187,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                         }));
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
-                checkNullCount(1, results);
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
             }
         });
     }
@@ -200,7 +210,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                         }));
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
-                checkNullCount(1, results);
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
             }
         });
     }
@@ -251,6 +261,8 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                     .broadcast(job);
 
                 checkResultsClassCount(gridCount() - clientsCount(), resultsNotNull, value(0).getClass());
+                for (Object o : resultsNotNull)
+                    assertEquals("Invalid broadcast results", value(0), o);
             }
         });
     }
@@ -311,7 +323,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                     results.add(future.get());
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
-                checkNullCount(1, results);
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
             }
         });
     }
@@ -330,7 +342,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 }
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
-                checkNullCount(1, results);
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
             }
         });
     }
@@ -353,7 +365,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                     .apply((IgniteClosure<TestObject, Object>)factory.create(), params);
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
-                checkNullCount(1, results);
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
             }
         });
     }
@@ -383,7 +395,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
                         @Override public Boolean reduce() {
                             checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
-                            checkNullCount(1, results);
+                            assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
                             return true;
                         }
                     });
@@ -415,7 +427,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                     results.add(future.get());
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
-                checkNullCount(1, results);
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
             }
         });
     }
@@ -435,7 +447,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 }
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
-                checkNullCount(1, results);
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
             }
         });
     }
@@ -457,7 +469,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 Collection<Object> results = ignite.compute().call(jobs);
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
-                checkNullCount(1, results);
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
             }
         });
     }
@@ -486,7 +498,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
                     @Override public Boolean reduce() {
                         checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
-                        checkNullCount(1, results);
+                        assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
                         return true;
                     }
                 });
@@ -517,7 +529,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 }
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
-                checkNullCount(1, results);
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
             }
         });
     }
@@ -563,7 +575,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                         }));
 
                 checkResultsClassCount(MAX_JOB_COUNT - 1, results, value(0).getClass());
-                checkNullCount(1, results);
+                assertCollectionsEquals("Results value mismatch", createGoldenResults(), results);
 
                 comp.undeployTask(TestTask.class.getName());
             }
@@ -1785,7 +1797,6 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             }
         }
     }
-
 
     /**
      * Collection of utility methods to simplify EchoJob*, EchoCLosure*, EchoCallable* and ComputeTestRunnable* classes

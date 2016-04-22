@@ -21,7 +21,9 @@ import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
@@ -360,6 +362,31 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
          */
         public SerializableObject(int val) {
             super(val);
+        }
+
+        /**
+         * Custom serialization of superclass because {@link TestObject} is non-serializable.
+         *
+         * @param out output stream.
+         * @throws IOException if de-serialization failed.
+         */
+        private void writeObject(ObjectOutputStream out) throws IOException {
+            out.writeInt(val);
+            out.writeObject(strVal);
+            out.writeObject(enumVal);
+        }
+
+        /**
+         * Custom deserialization of superclass because {@link TestObject} is non-serializable.
+         *
+         * @param in input stream
+         * @throws IOException if de-serialization failed.
+         * @throws ClassNotFoundException if de-serialization failed.
+         */
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+            val = in.readInt();
+            strVal = (String)in.readObject();
+            enumVal = (TestEnum)in.readObject();
         }
     }
 
