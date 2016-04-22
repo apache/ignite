@@ -21,7 +21,9 @@ import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
@@ -206,8 +208,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             if ( !isCompatible() ) {
                 info("Skipping test in data mode: " + dataMode);
                 continue;
-            } else
-                info("Running test in data mode: " + dataMode);
+            }
+            
+            info("Running test in data mode: " + dataMode);
 
             if (i != 0)
                 beforeTest();
@@ -251,8 +254,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
                 return new ExternalizableObject(keyId);
             case PLANE_OBJECT:
                 return new TestObject(keyId);
-            case BINARILIZABLE:
-                return new BinarylizableObject(keyId);
             default:
                 throw new IllegalArgumentException("mode: " + mode);
         }
@@ -265,8 +266,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     public static int valueOf(Object obj) {
         if (obj instanceof TestObject)
             return ((TestObject)obj).value();
-        else if (obj instanceof SerializableObject)
-            return ((SerializableObject)obj).value();
         else
             throw new IllegalStateException();
     }
@@ -286,7 +285,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
                 return new TestObject(idx);
             case BINARILIZABLE:
                 return new BinarylizableObject(idx);
-
             default:
                 throw new IllegalArgumentException("mode: " + mode);
         }
@@ -304,6 +302,13 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
         /** */
         protected TestEnum enumVal;
+
+        /**
+         * Default constructor must be accessible for deserialize subclasses by JDK serialization API.
+         */
+        TestObject() {
+            // No-op.
+        }
 
         /**
          * @param val Value.
@@ -353,88 +358,57 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /**
-     * Required to use separate object for Serializable test otherwise JdkMarshaller not work
-     * ( parent class fields are ignored )
+     *
      */
-    public static class SerializableObject implements Serializable {
-        /** */
-        protected int val;
-
-        /** */
-        protected String strVal;
-
-        /** */
-        protected TestEnum enumVal;
-
-        /**
-         * Default constructor must be accessible for deserialize subclasses by JDK serialization API.
-         */
-        SerializableObject() {
-            // No-op.
-        }
-
+    protected static class SerializableObject extends TestObject implements Serializable {
         /**
          * @param val Value.
          */
         public SerializableObject(int val) {
-            this.val = val;
-            strVal = "val" + val;
-
-            TestEnum[] values = TestEnum.values();
-            enumVal = values[Math.abs(val) % values.length];
+            super(val);
         }
 
         /**
-         * @return Value.
+         * Custom serialization of superclass because {@link TestObject} is non-serializable.
+         *
+         * @param out output stream.
+         * @throws IOException if de-serialization failed.
          */
-        public int value() {
-            return val;
+        private void writeObject(ObjectOutputStream out) throws IOException {
+            out.writeInt(val);
+            out.writeObject(strVal);
+            out.writeObject(enumVal);
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (!(o instanceof SerializableObject))
-                return false;
-
-            SerializableObject val = (SerializableObject)o;
-
-            return getClass().equals(o.getClass()) && this.val == val.val && enumVal == val.enumVal
-                && strVal.equals(val.strVal);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return getClass().getSimpleName() + "[" +
-                "val=" + val +
-                ", strVal='" + strVal + '\'' +
-                ", enumVal=" + enumVal +
-                ']';
+        /**
+         * Custom deserialization of superclass because {@link TestObject} is non-serializable.
+         *
+         * @param in input stream
+         * @throws IOException if de-serialization failed.
+         * @throws ClassNotFoundException if de-serialization failed.
+         */
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+            val = in.readInt();
+            strVal = (String)in.readObject();
+            enumVal = (TestEnum)in.readObject();
         }
     }
 
     /**
      *
      */
-    public static class ExternalizableObject extends TestObject implements Externalizable {
+    private static class ExternalizableObject extends TestObject implements Externalizable {
         /**
          * Default constructor.
          */
-        public ExternalizableObject() {
+        ExternalizableObject() {
             super(-1);
         }
 
         /**
          * @param val Value.
          */
-        public ExternalizableObject(int val) {
+        ExternalizableObject(int val) {
             super(val);
         }
 
