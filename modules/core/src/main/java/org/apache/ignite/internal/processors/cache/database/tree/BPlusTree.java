@@ -318,13 +318,17 @@ public abstract class BPlusTree<L, T extends L> {
 
             r.removed = getRow(io, buf, idx);
 
-            r.doRemove(io, leaf, buf, cnt, idx, lvl, false);
+            r.doRemove(io, leaf, buf, cnt, idx, 0, false);
 
             // We may need to replace inner key or want to merge this leaf with sibling after the remove -> keep lock.
             if (r.needReplaceInner == TRUE ||
                 // We need to make sure that we have back or forward to be able to merge.
                 ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - 1, io.getMaxCount(buf)))) {
-                r.addTail(leaf, buf, io, 0, false, Integer.MIN_VALUE);
+                r.addTail(leaf, buf, io, 0, false, Tail.PRIMARY, Integer.MIN_VALUE);
+
+                if (r.fwdId != 0 && r.backId == 0) // If we have backId then we'll lock back page, nothing to do here.
+                    r.lockForward(0);
+
 
                 if (r.needReplaceInner == FALSE)
                     r.needMerge = TRUE;
@@ -368,9 +372,20 @@ public abstract class BPlusTree<L, T extends L> {
             int res = r.doLockTail(lvl);
 
             if (res == Remove.FOUND)
-                r.addTail(back, buf, io, lvl, true, Integer.MIN_VALUE);
+                r.addTail(back, buf, io, lvl, true, false, Integer.MIN_VALUE);
 
             return res;
+        }
+    };
+
+    /** */
+    private final PageHandler<Remove> lockTailForward = new GetPageHandler<Remove>() {
+        @Override protected int run0(Page page, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
+            throws IgniteCheckedException {
+
+            r.addTail(page, buf, io, lvl, false, false, Integer.MIN_VALUE);
+
+            return Remove.FOUND;
         }
     };
 
@@ -378,21 +393,21 @@ public abstract class BPlusTree<L, T extends L> {
     private final PageHandler<Remove> lockTail = new GetPageHandler<Remove>() {
         @Override public int run0(Page page, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
+            assert lvl > 0: lvl; // We are not at the bottom.
+
             int cnt = io.getCount(buf);
             int idx = findInsertionPoint(io, buf, cnt, r.row);
 
             boolean found = idx >= 0;
 
             if (found) {
-                if (lvl != 0 && r.needReplaceInner == TRUE) {
-                    assert idx <= Short.MAX_VALUE : idx;
+                // We could not miss the inner value on down move because of `triangle` invariant, thus it must be TRUE.
+                assert r.needReplaceInner == TRUE: r.needReplaceInner;
+                assert idx <= Short.MAX_VALUE : idx;
 
-                    r.innerIdx = (short)idx;
+                r.innerIdx = (short)idx;
 
-                    r.needReplaceInner = READY;
-                }
-                else
-                    assert r.needMerge == TRUE: r.needMerge;
+                r.needReplaceInner = READY;
             }
             else {
                 idx = -idx - 1;
@@ -409,7 +424,14 @@ public abstract class BPlusTree<L, T extends L> {
                 return Remove.RETRY;
             }
 
-            r.addTail(page, buf, io, lvl, false, idx);
+            // We don't have a back page, need to lock our forward and become a back for it.
+            // If found then we are on inner replacement page, it will be a top parent, no need to lock forward.
+            boolean back = !found && r.fwdId != 0 && r.backId == 0;
+
+            if (back)
+                r.lockForward(lvl);
+
+            r.addTail(page, buf, io, lvl, back, true, idx);
 
             if (r.needMerge == TRUE) {
                 assert r.needReplaceInner == FALSE;
@@ -1614,7 +1636,7 @@ public abstract class BPlusTree<L, T extends L> {
         Tail<L> tail;
 
         /** */
-        List<FullPageId> emptyPages;
+        List<FullPageId> emptyPages; // TODO May be use Object for single empty page
 
         /** */
         byte needReplaceInner = FALSE;
@@ -1730,6 +1752,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @throws IgniteCheckedException If failed.
          */
         private int removeFromLeaf(Page leaf, long backId, long fwdId) throws IgniteCheckedException {
+            // Init parameters.
             this.pageId = leaf.id();
             this.page = leaf;
             this.backId = backId;
@@ -1789,7 +1812,7 @@ public abstract class BPlusTree<L, T extends L> {
             this.fwdId = fwdId;
             this.backId = backId;
 
-            if (backId == 0) // Back page ID is provided only when last move was to the right.
+            if (backId == 0) // Back page ID is provided only when the last move was to the right.
                 return doLockTail(lvl);
 
             Page back = page(backId);
@@ -1801,6 +1824,20 @@ public abstract class BPlusTree<L, T extends L> {
                 if (canRelease(back, lvl))
                     back.close();
             }
+        }
+
+        /**
+         * @param lvl Level.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void lockForward(int lvl) throws IgniteCheckedException {
+            assert needReplaceInner == TRUE: needReplaceInner;
+            assert fwdId != 0;
+            assert backId == 0;
+
+            int res = writePage(page(fwdId), lockTailForward, this, lvl, Remove.RETRY);
+
+            assert res == Remove.FOUND;
         }
 
         /**
@@ -2141,10 +2178,13 @@ public abstract class BPlusTree<L, T extends L> {
          * @param io IO.
          * @param lvl Level.
          * @param back If the given page is back page for the current tail, otherwise it must be an upper level page.
-         * @param idx Insertion index.
+         * @param idx Insertion index or negative flag describing if the page is primary in this tail branch.
          */
-        private void addTail(Page page, ByteBuffer buf, BPlusIO<L> io, int lvl, boolean back, int idx) {
-            Tail<L> t = new Tail<>(page, buf, io, lvl, idx);
+        private void addTail(Page page, ByteBuffer buf, BPlusIO<L> io,
+            int lvl, boolean back, byte primary, int idx) {
+            assert primary == Tail.PRIMARY || primary == Tail.COMPLIMENTARY: primary;
+
+            Tail<L> t = new Tail<>(page, buf, io, primary == Tail.PRIMARY, lvl, idx);
 
             if (back) {
                 assert tail != null;
@@ -2194,6 +2234,12 @@ public abstract class BPlusTree<L, T extends L> {
      */
     private static class Tail<L> {
         /** */
+        static final byte PRIMARY = 1;
+
+        /** */
+        static final byte COMPLIMENTARY = 2;
+
+        /** */
         final Page page;
 
         /** */
@@ -2203,10 +2249,13 @@ public abstract class BPlusTree<L, T extends L> {
         final BPlusIO<L> io;
 
         /** */
-        final int lvl;
+        final boolean primary;
 
         /** */
-        final int idx;
+        final byte lvl;
+
+        /** */
+        final short idx;
 
         /** */
         Tail<L> fwd;
@@ -2218,17 +2267,21 @@ public abstract class BPlusTree<L, T extends L> {
          * @param page Write locked page.
          * @param buf Buffer.
          * @param io IO.
+         * @param primary Primary.
          * @param lvl Level.
          * @param idx Insertion index.
          */
-        private Tail(Page page, ByteBuffer buf, BPlusIO<L> io, int lvl, int idx) {
+        private Tail(Page page, ByteBuffer buf, BPlusIO<L> io, boolean primary, int lvl, int idx) {
+            assert idx == Integer.MIN_VALUE || (idx >= 0 && idx <= Short.MAX_VALUE): idx ;
+            assert lvl >= 0 && lvl <= Byte.MAX_VALUE: lvl;
             assert page != null;
 
             this.page = page;
             this.buf = buf;
             this.io = io;
-            this.lvl = lvl;
-            this.idx = idx;
+            this.primary = primary;
+            this.lvl = (byte)lvl;
+            this.idx = (short)idx;
         }
     }
 
