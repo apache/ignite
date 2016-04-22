@@ -89,7 +89,7 @@ module.exports.factory = function(_, express, mongo) {
             mongo.Cluster.findOne({space: params.space, name: params.name}).exec()
                 .then((_cluster) => {
                     if (_cluster && clusterId !== _cluster._id.toString())
-                        return res.status(500).send('Cluster with name: "' + _cluster.name + '" already exist.');
+                        throw new Error('Cluster with name: "' + _cluster.name + '" already exist.');
 
                     if (clusterId) {
                         return mongo.Cluster.update({_id: clusterId}, params, {upsert: true}).exec()
@@ -98,7 +98,6 @@ module.exports.factory = function(_, express, mongo) {
                             .then(() => mongo.Igfs.update({_id: {$in: igfss}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
                             .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
                             .then(() => res.send(clusterId))
-                            .catch((err) => mongo.handleError(res, err));
                     }
 
                     return (new mongo.Cluster(params)).save()
@@ -111,7 +110,6 @@ module.exports.factory = function(_, express, mongo) {
                         .then(() => mongo.Igfs.update({_id: {$in: igfss}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
                         .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
                         .then(() => res.send(clusterId))
-                        .catch((err) => mongo.handleError(res, err));
                 })
                 .catch((err) => mongo.handleError(res, err));
         });

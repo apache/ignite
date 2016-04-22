@@ -204,11 +204,11 @@ angular
 
                 attrs.$observe('readonly', (value) => acee.setReadOnly(!!value || value === ''));
 
-                if (form && ngModel)
-                    form.$removeControl(ngModel);
-
                 // Value Blind.
                 if (ngModel) {
+                    // Remove "ngModel" controller from parent form for correct dirty checks.
+                    form && form.$removeControl(ngModel);
+
                     ngModel.$formatters.push((value) => {
                         if (angular.isUndefined(value) || value === null)
                             return '';

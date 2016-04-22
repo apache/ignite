@@ -75,17 +75,16 @@ angular
                         return $q.when(angular.copy(_demoNotebook));
 
                     return $http.post('/api/v1/notebooks/get', {noteId})
-                        .then(({data}) => {
-                            return data;
-                        });
+                        .then(({data}) => data)
+                        .catch(({data}) => $q.reject(data));
                 },
                 save(notebook) {
                     if ($root.IgniteDemoMode)
                         return $q.when();
 
-                    return $http.post('/api/v1/notebooks/save', notebook).then(({data}) => {
-                        return data;
-                    });
+                    return $http.post('/api/v1/notebooks/save', notebook)
+                        .then(({data}) => data)
+                        .catch(({data}) => $q.reject(data));
                 },
                 remove(notebook) {
                     if ($root.IgniteDemoMode)
@@ -108,7 +107,8 @@ angular
 
                             if ($root.notebooks.length > 0)
                                 return $root.notebooks[$root.notebooks.length - 1];
-                        });
+                        })
+                        .catch(({data}) => $q.reject(data));
                 }
             };
         }];

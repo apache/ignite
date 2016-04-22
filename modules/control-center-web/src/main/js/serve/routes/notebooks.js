@@ -63,24 +63,24 @@ module.exports.factory = function(express, mongo) {
          */
         router.post('/save', (req, res) => {
             const note = req.body;
-            const noteId = note._id;
 
-            if (noteId) {
-                mongo.Notebook.update({_id: noteId}, note, {upsert: true}).exec()
-                    .then(() => res.send(noteId))
-                    .catch((err) => mongo.handleError(res, err));
-            }
-            else {
-                mongo.Notebook.findOne({space: note.space, name: note.name}).exec()
-                    .then((notebook) => {
-                        if (notebook)
-                            throw new Error('Notebook with name: "' + notebook.name + '" already exist.');
+            mongo.Notebook.findOne({space: note.space, name: note.name}).exec()
+                .then((notebook) => {
+                    if (notebook)
+                        throw new Error('Notebook with name: "' + notebook.name + '" already exist.');
 
-                        return (new mongo.Notebook(req.body)).save();
-                    })
-                    .then((notebook) => res.send(notebook._id))
-                    .catch((err) => mongo.handleError(res, err));
-            }
+                    const noteId = note._id;
+
+                    if (noteId) {
+                        return mongo.Notebook.update({_id: noteId}, note, {upsert: true}).exec()
+                            .then(() => res.send(noteId))
+                            .catch((err) => mongo.handleError(res, err));
+                    }
+
+                    return (new mongo.Notebook(req.body)).save();
+                })
+                .then((notebook) => res.send(notebook._id))
+                .catch((err) => mongo.handleError(res, err));
         });
 
         /**
@@ -103,7 +103,13 @@ module.exports.factory = function(express, mongo) {
          */
         router.post('/new', (req, res) => {
             mongo.spaceIds(req.currentUserId())
-                .then((spaceIds) => (new mongo.Notebook({space: spaceIds[0], name: req.body.name})).save())
+                .then((spaceIds) => mongo.Notebook.findOne({space: spaceIds[0], name: req.body.name}))
+                .then((notebook) => {
+                    if (notebook)
+                        throw new Error('Notebook with name: "' + notebook.name + '" already exist.');
+
+                    return (new mongo.Notebook({space: spaceIds[0], name: req.body.name})).save();
+                })
                 .then((notebook) => res.send(notebook._id))
                 .catch((err) => mongo.handleError(res, err));
         });

@@ -222,8 +222,8 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                         }
                     }
                 }
-                catch (Exception ignore) {
-                    throw new IgniteException("Failed to construct task argument");
+                catch (Exception e) {
+                    throw new IgniteException("Failed to construct task argument", e);
                 }
             }
 

@@ -72,8 +72,8 @@ consoleModule.controller('sqlController', [
 
         $scope.maskCacheName = (cacheName) => _.isEmpty(cacheName) ? "&lt;default&gt;" : cacheName;
 
-        var _handleException = function(errMsg) {
-            $common.showError(errMsg);
+        var _handleException = function(err) {
+            $common.showError(err);
         };
 
         // Time line X axis descriptor.
@@ -1536,9 +1536,7 @@ consoleModule.controller('sqlController', [
                         return cache;
                     }), 'name');
                 })
-                .catch(function (err) {
-                    console.log(err);
-                })
+                .catch((err) => _handleException(err))
                 .finally(function () {
                     $loading.finish('loadingCacheMetadata');
                 });
