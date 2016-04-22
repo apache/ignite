@@ -1161,8 +1161,19 @@ consoleModule.controller('domainsController', [
                 $loading.finish('loadingDomainModelsScreen');
             });
 
+        const clearFormDefaults = (ngFormCtrl) => {
+            ngFormCtrl.$defaults = {};
+
+            _.forOwn(ngFormCtrl, (value, key) => {
+                if(value && key !== '$$parentForm' && value.constructor.name === 'FormController') 
+                    clearFormDefaults(value)
+            });
+        };
+
         $scope.selectItem = function (item, backup) {
             function selectItem() {
+                clearFormDefaults($scope.ui.inputForm);
+
                 $table.tableReset();
 
                 $scope.selectedItem = item;
