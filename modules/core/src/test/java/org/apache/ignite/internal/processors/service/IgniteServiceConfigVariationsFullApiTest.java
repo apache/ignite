@@ -29,6 +29,7 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
@@ -42,7 +43,11 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     /** Test service name. */
     private static final String SERVICE_NAME = "echo";
 
+    /** Test object id counter */
+    private static int counter;
+
     /** Callable factories. */
+    @SuppressWarnings("unchecked")
     private static final Factory[] serviceFactories = new Factory[] {
         Parameters.factory(TestServiceImpl.class),
         Parameters.factory(TestServiceImplExternalizable.class),
@@ -50,92 +55,83 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     };
 
     /**
-     * The test's wrapper runs the test with each factory from the factories array.
-     *
-     * @param test test object, a factory is passed as a parameter.
-     * @param factories various factories
-     * @throws Exception If failed.
+     * Test node singleton deployment
      */
-    private void runWithAllFactories(Factory[] factories, ServiceTest test) throws Exception {
-        for (int i = 0; i < factories.length; i++) {
-            Factory factory = factories[i];
+    public void testNodeSingletonDeploy() throws Exception {
+        runInAllDataModes(new ServiceTestRunnable(false));
+    }
 
-            if (i != 0)
-                beforeTest();
+    /**
+     * Test cluster singleton deployment
+     */
+    public void testClusterSingletonDeploy() throws Exception {
+        runInAllDataModes(new ServiceTestRunnable(true));
+    }
 
-            try {
-                test.test(factory, grid(testedNodeIdx));
-            }
-            finally {
-                if (i + 1 != factories.length)
-                    afterTest();
-            }
+    /**
+     * Service test closure
+     */
+    private class ServiceTestRunnable implements TestRunnable {
+        /** Sticky. */
+        private final boolean sticky;
+
+        /**
+         * Default constructor
+         * @param sticky Sticky.
+         */
+        public ServiceTestRunnable(boolean sticky) {
+            this.sticky = sticky;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() throws Exception {
+            for (Factory factory : serviceFactories)
+                testService((TestService)factory.create(), sticky);
         }
     }
 
     /**
-     * The test's wrapper provides variations of the argument data model and user factories. The test is launched {@code
-     * factories.length * DataMode.values().length} times.
-     *
-     * @param test Test.
-     * @param factories various factories
-     * @throws Exception If failed.
+     * Tests deployment and contract.
+     * @param svc Service.
+     * @param sticky Sticky.
      */
-    protected void runTest(final Factory[] factories, final ServiceTest test) throws Exception {
-        runInAllDataModes(new TestRunnable() {
-            @Override public void run() throws Exception {
-                try {
-                    if ((getConfiguration().getMarshaller() instanceof JdkMarshaller)
-                        && (dataMode == DataMode.PLANE_OBJECT)) {
-                        info("Skip test for JdkMarshaller & PLANE_OBJECT data mode");
-                        return;
-                    }
-                }
-                catch (Exception e) {
-                    assert false : e.getMessage();
-                }
+    protected void testService(TestService svc, boolean sticky) throws Exception {
+        IgniteEx ignite = testedGrid();
 
-                runWithAllFactories(factories, test);
-            }
-        });
-    }
+        IgniteServices services = ignite.services();
 
-    /**
-     * Test cluster node singleton deployment
-     */
-    public void testNodeSingletonDeploy() throws Exception {
-        runTest(serviceFactories, new ServiceTest() {
-            @Override public void test(Factory factory, IgniteEx ignite) throws Exception {
-                IgniteServices services = ignite.services();
+        Object expected = value(++counter);
 
-                TestServiceImpl svc = (TestServiceImpl)factory.create();
+        // put value for testing Service instance serialization
+        svc.setValue(expected);
 
-                Object exp = value(1);
+        if (sticky)
+            // node singleton deployment requires stickiness to work correctly
+            services.deployNodeSingleton(SERVICE_NAME, (Service)svc);
+        else
+            // cluster singleton deployment already provides stickiness
+            services.deployClusterSingleton(SERVICE_NAME, (Service)svc);
 
-                // put value for testing Service instance serialization
-                svc.setValue(exp);
+        // expect correct value from local instance
+        assertEquals(expected, svc.getValue());
 
-                services.deployNodeSingleton(SERVICE_NAME, svc);
+        // use stickiness to make sure data will be fetched from the same instance
+        TestService proxy = services.serviceProxy(SERVICE_NAME, TestService.class, sticky);
 
-                // expect correct value from local instance
-                assertEquals(exp, svc.getValue());
+        // expect that correct value is returned from deployed instance
+        assertEquals(expected, proxy.getValue());
 
-                TestService stickyEcho = services.serviceProxy(SERVICE_NAME, TestService.class, true);
+        expected = value(++counter);
 
-                // expect correct value from deployed instance
-                assertEquals(exp, stickyEcho.getValue());
+        // change value
+        proxy.setValue(expected);
 
-                exp = value(2);
+        // expect correct value after being read back
+        int r = 1000;
+        while(r-- > 0)
+            assertEquals(expected, proxy.getValue());
 
-                // change value
-                stickyEcho.setValue(exp);
-
-                // expect correct value after being read back
-                assertEquals(exp, stickyEcho.getValue());
-
-                services.cancelAll();
-            }
-        });
+        services.cancelAll();
     }
 
     /**
@@ -169,7 +165,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
         /** {@inheritDoc} */
         @Override public Object getValue() throws Exception {
             return value;
-        };
+        }
 
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
@@ -239,15 +235,12 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
         }
     }
 
-    /**
-     * Service test closure
-     */
-    interface ServiceTest {
-        /**
-         * Runs test
-         * @param factory Factory.
-         * @param ignite Ignite.
-         */
-        void test(Factory factory, IgniteEx ignite) throws Exception;
+    /** {@inheritDoc} */
+    @Override protected boolean expectedClient(String testGridName) {
+        int i = testsCfg.gridCount();
+        if (i < 5)
+            return super.expectedClient(testGridName);
+        // use two client nodes if grid counter 5 or greater
+        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName) || getTestGridName(4).equals(testGridName);
     }
 }

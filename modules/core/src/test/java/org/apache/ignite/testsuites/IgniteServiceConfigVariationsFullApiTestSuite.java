@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.configvariations.Parameters;
 /**
  * Full API service test suit.
  */
-public class IgniteSerivceConfigVariationsFullApiTestSuite extends TestSuite {
+public class IgniteServiceConfigVariationsFullApiTestSuite extends TestSuite {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] PARAMS = new ConfigParameter[][] {
@@ -48,7 +48,7 @@ public class IgniteSerivceConfigVariationsFullApiTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Compute New Full API Test Suite");
+        TestSuite suite = new TestSuite("Service Deployment New Full API Test Suite");
 
         suite.addTest(new ConfigVariationsTestSuiteBuilder(
             "Single server",
@@ -58,14 +58,34 @@ public class IgniteSerivceConfigVariationsFullApiTestSuite extends TestSuite {
             .build());
 
         // Tests run on server (node#0) & client(node#1).
-//        suite.addTest(new ConfigVariationsTestSuiteBuilder(
-//            "3 servers, 1 client",
-//            IgniteServiceConfigVariationsFullApiTest.class)
-//            .igniteParams(BASIC_COMPUTE_SET)
-//            .gridsCount(4)
-//            .testedNodesCount(2)
-//            .withClients()
-//            .build());
+        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+            "1 server, 1 client",
+            IgniteServiceConfigVariationsFullApiTest.class)
+            .igniteParams(PARAMS)
+            .gridsCount(2)
+            .testedNodesCount(2)
+            .withClients()
+            .build());
+
+        // Tests run on servers (node#0,node#2,node#3) & client(node#1).
+        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+            "3 servers, 1 client",
+            IgniteServiceConfigVariationsFullApiTest.class)
+            .igniteParams(PARAMS)
+            .gridsCount(4)
+            .testedNodesCount(2)
+            .withClients()
+            .build());
+
+        // Tests run on servers (node#0,node#2,node#3) & client(node#1,node#4).
+        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+            "3 servers, 2 clients",
+            IgniteServiceConfigVariationsFullApiTest.class)
+            .igniteParams(PARAMS)
+            .gridsCount(5)
+            .testedNodesCount(2)
+            .withClients()
+            .build());
 
         return suite;
     }
