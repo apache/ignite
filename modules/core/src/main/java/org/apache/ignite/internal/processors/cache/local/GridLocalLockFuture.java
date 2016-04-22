@@ -93,7 +93,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private LockTimeoutObject timeoutObj;
 
     /** Lock timeout. */
-    private long timeout;
+    private final long timeout;
 
     /** Filter. */
     private CacheEntryPredicate[] filter;
@@ -121,6 +121,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         CacheEntryPredicate[] filter) {
         assert keys != null;
         assert cache != null;
+        assert (tx != null && timeout >= 0) || tx == null;
 
         this.cctx = cctx;
         this.cache = cache;

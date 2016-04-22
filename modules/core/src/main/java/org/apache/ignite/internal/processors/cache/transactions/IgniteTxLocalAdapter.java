@@ -1837,7 +1837,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 long timeout = remainingTime();
 
-                if (timeout == 0)
+                if (timeout == -1)
                     return new GridFinishedFuture<>(timeoutException());
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
@@ -3104,7 +3104,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 long timeout = remainingTime();
 
-                if (timeout == 0)
+                if (timeout == -1)
                     return new GridFinishedFuture<>(timeoutException());
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
@@ -3284,7 +3284,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                 long timeout = remainingTime();
 
-                if (timeout == 0)
+                if (timeout == -1)
                     return new GridFinishedFuture<>(timeoutException());
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
@@ -3571,7 +3571,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             long timeout = remainingTime();
 
-            if (timeout == 0)
+            if (timeout == -1)
                 return new GridFinishedFuture<>(timeoutException());
 
             IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
@@ -3729,7 +3729,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
         }
 
-        if (remainingTime() == 0 && setRollbackOnly())
+        if (remainingTime() == -1 && setRollbackOnly())
             throw new IgniteTxTimeoutCheckedException("Cache transaction timed out " +
                 "(was rolled back automatically): " + this);
     }
