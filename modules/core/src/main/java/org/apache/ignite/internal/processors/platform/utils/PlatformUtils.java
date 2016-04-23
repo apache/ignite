@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -570,6 +571,26 @@ public class PlatformUtils {
         writer.writeObjectDetached(evt.getKey());
         writer.writeObjectDetached(evt.getOldValue());
         writer.writeObjectDetached(evt.getValue());
+    }
+
+    /**
+     * Writes error.
+     *
+     * @param ex Error.
+     * @param writer Writer.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
+        writer.writeObjectDetached(ex.getClass().getName());
+        writer.writeObjectDetached(ex.getMessage());
+
+        PlatformNativeException nativeCause = X.cause(ex, PlatformNativeException.class);
+
+        if (nativeCause != null) {
+            writer.writeBoolean(true);
+            writer.writeObjectDetached(nativeCause.cause());
+        } else
+            writer.writeBoolean(false);
     }
 
     /**
