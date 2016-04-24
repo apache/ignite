@@ -1043,12 +1043,22 @@ public abstract class BPlusTree<L, T extends L> {
      * @param io IO.
      * @param buf Splitting buffer.
      * @param fwdBuf Forward buffer.
+     * @param idx Insertion index.
+     * @return {@code true} The middle index was shifted to the right.
      * @throws IgniteCheckedException If failed.
      */
-    private void splitPage(BPlusIO io, ByteBuffer buf, ByteBuffer fwdBuf)
+    private boolean splitPage(BPlusIO io, ByteBuffer buf, ByteBuffer fwdBuf, int idx)
         throws IgniteCheckedException {
         int cnt = io.getCount(buf);
-        int mid = 1 + (cnt >>> 1);
+        int mid = cnt >>> 1;
+
+        boolean res = false;
+
+        if (idx > mid) { // If insertion is going to be to the forward page, keep more in the back page.
+            mid++;
+
+            res = true;
+        }
 
         cnt -= mid;
 
@@ -1061,6 +1071,8 @@ public abstract class BPlusTree<L, T extends L> {
         // Setup forward-backward refs.
         io.setForward(fwdBuf, io.getForward(buf));
         io.setForward(buf, PageIO.getPageId(fwdBuf));
+
+        return res;
     }
 
     /**
@@ -1105,12 +1117,12 @@ public abstract class BPlusTree<L, T extends L> {
             ByteBuffer fwdBuf = fwd.getForInitialWrite();
             io.initNewPage(fwdBuf, fwd.id());
 
-            splitPage(io, buf, fwdBuf);
+            boolean midShift = splitPage(io, buf, fwdBuf, idx);
 
             // Do insert.
             int cnt = io.getCount(buf);
 
-            if (idx <= cnt) {
+            if (idx < cnt || (idx == cnt && !midShift)) {
                 insertSimple(io, buf, row, idx, rightId);
 
                 // Fix leftmost child of forward page, because newly inserted row will go up.
