@@ -632,7 +632,7 @@ public abstract class BPlusTree<L, T extends L> {
     private void doFind(Get g) throws IgniteCheckedException {
         try {
             for (;;) { // Go down with retries.
-                g.initOperation();
+                g.init();
 
                 switch (findDown(g, g.rootId, 0L, g.rootLvl)) {
                     case Get.RETRY:
@@ -832,12 +832,12 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
-    public final T doRemove(L row, boolean ceil) throws IgniteCheckedException {
+    private T doRemove(L row, boolean ceil) throws IgniteCheckedException {
         Remove r = new Remove(row, ceil);
 
         try {
             for (;;) {
-                r.initOperation();
+                r.init();
 
                 switch (removeDown(r, r.rootId, 0L, 0L, r.rootLvl)) {
                     case Remove.RETRY:
@@ -1018,7 +1018,7 @@ public abstract class BPlusTree<L, T extends L> {
 
         try {
             for (;;) { // Go down with retries.
-                p.initOperation();
+                p.init();
 
                 switch (putDown(p, p.rootId, 0L, p.rootLvl)) {
                     case Put.RETRY:
@@ -1325,13 +1325,13 @@ public abstract class BPlusTree<L, T extends L> {
         /** */
         long rmvId;
 
-        /** Starting point root level. May be outdated. Must be modified only in {@link Get#initOperation()}. */
+        /** Starting point root level. May be outdated. Must be modified only in {@link Get#init()}. */
         int rootLvl;
 
-        /** Starting point root ID. May be outdated. Must be modified only in {@link Get#initOperation()}. */
+        /** Starting point root ID. May be outdated. Must be modified only in {@link Get#init()}. */
         long rootId;
 
-        /** Meta page. Initialized by {@link Get#initOperation()}, released by {@link Get#releaseMeta()}. */
+        /** Meta page. Initialized by {@link Get#init()}, released by {@link Get#releaseMeta()}. */
         Page meta;
 
         /** */
@@ -1356,13 +1356,13 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /**
-         * Initialize the given operation.
+         * Initialize operation.
          *
          * !!! Symmetrically with this method must be called {@link Get#releaseMeta()} in {@code finally} block.
          *
          * @throws IgniteCheckedException If failed.
          */
-        final void initOperation() throws IgniteCheckedException {
+        final void init() throws IgniteCheckedException {
             if (meta == null)
                 meta = page(metaPageId);
 
