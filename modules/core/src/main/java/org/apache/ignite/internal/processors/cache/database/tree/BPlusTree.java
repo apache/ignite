@@ -445,7 +445,7 @@ public abstract class BPlusTree<L, T extends L> {
     };
 
     /** */
-    private final PageHandler<Long> updateLeftmost = new PageHandler<Long>() {
+    private final PageHandler<Long> updateFirst = new PageHandler<Long>() {
         @Override public int run(Page page, ByteBuffer buf, Long pageId, int lvl) throws IgniteCheckedException {
             assert pageId != null;
 
@@ -453,31 +453,29 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert io.getLevelsCount(buf) > lvl;
 
-            io.setLeftmostPageId(buf, lvl, pageId);
-
             if (pageId == 0) {
-                assert lvl == io.getRootLevel(buf);
+                assert lvl == io.getRootLevel(buf); // Can drop only root.
 
                 io.setLevelsCount(buf, lvl); // Decrease tree height.
             }
+            else
+                io.setFirstPageId(buf, lvl, pageId);
 
             return TRUE;
         }
     };
 
     /** */
-    private final PageHandler<Long> updateRoot = new PageHandler<Long>() {
+    private final PageHandler<Long> newRoot = new PageHandler<Long>() {
         @Override public int run(Page page, ByteBuffer buf, Long rootPageId, int lvl) throws IgniteCheckedException {
+            assert rootPageId != null;
+
             BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
 
-            int cnt = io.getLevelsCount(buf);
+            assert lvl == io.getLevelsCount(buf);
 
-            if (rootPageId != null) {
-                io.setLevelsCount(buf, cnt + 1);
-                io.setLeftmostPageId(buf, cnt, rootPageId);
-            }
-            else
-                io.setLevelsCount(buf, cnt - 1);
+            io.setLevelsCount(buf, lvl + 1);
+            io.setFirstPageId(buf, lvl, rootPageId);
 
             return TRUE;
         }
@@ -526,7 +524,7 @@ public abstract class BPlusTree<L, T extends L> {
                 latestLeafIO().initNewPage(root.getForInitialWrite(), root.id());
 
                 io.setLevelsCount(buf, 1);
-                io.setLeftmostPageId(buf, 0, root.id());
+                io.setFirstPageId(buf, 0, root.id());
             }
         }
     }
@@ -550,7 +548,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @param lvl Level, if {@code 0} then it is a bottom level, if {@link Integer#MIN_VALUE}, then root.
      * @return Page ID.
      */
-    private long getLeftmostPageId(Page meta, int lvl) {
+    private long getFirstPageId(Page meta, int lvl) {
         ByteBuffer buf = meta.getForRead();
 
         try {
@@ -562,7 +560,7 @@ public abstract class BPlusTree<L, T extends L> {
             if (lvl >= io.getLevelsCount(buf))
                 return 0;
 
-            return io.getLeftmostPageId(buf, lvl);
+            return io.getFirstPageId(buf, lvl);
         }
         finally {
             meta.releaseRead();
@@ -579,7 +577,7 @@ public abstract class BPlusTree<L, T extends L> {
         long firstPageId;
 
         try (Page meta = page(metaPageId)) {
-            firstPageId = getLeftmostPageId(meta, 0); // Level 0 is always at the bottom.
+            firstPageId = getFirstPageId(meta, 0); // Level 0 is always at the bottom.
         }
 
         try (Page first = page(firstPageId)) {
@@ -717,7 +715,7 @@ public abstract class BPlusTree<L, T extends L> {
         long rootPageId;
 
         try (Page meta = page(metaPageId)) {
-            rootPageId = getLeftmostPageId(meta, Integer.MIN_VALUE);
+            rootPageId = getFirstPageId(meta, Integer.MIN_VALUE);
         }
         catch (IgniteCheckedException e) {
             throw new IllegalStateException(e);
@@ -1122,14 +1120,14 @@ public abstract class BPlusTree<L, T extends L> {
             // Do insert.
             int cnt = io.getCount(buf);
 
-            if (idx < cnt || (idx == cnt && !midShift)) {
+            if (idx < cnt || (idx == cnt && !midShift)) { // Insert into back page.
                 insertSimple(io, buf, row, idx, rightId);
 
                 // Fix leftmost child of forward page, because newly inserted row will go up.
                 if (idx == cnt && !io.isLeaf())
                     inner(io).setLeft(fwdBuf, 0, rightId);
             }
-            else
+            else // Insert into newly allocated forward page.
                 insertSimple(io, fwdBuf, row, idx - cnt, rightId);
 
             // Do move up.
@@ -1159,7 +1157,7 @@ public abstract class BPlusTree<L, T extends L> {
                     inner(io).setRight(newRootBuf, 0, fwd.id());
                 }
 
-                int res = writePage(meta, updateRoot, newRootId, lvl + 1, FALSE);
+                int res = writePage(meta, newRoot, newRootId, lvl + 1, FALSE);
 
                 assert res == TRUE : "failed to update meta page";
 
@@ -1387,7 +1385,7 @@ public abstract class BPlusTree<L, T extends L> {
                 BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
 
                 rootLvl = io.getRootLevel(buf);
-                rootId = io.getLeftmostPageId(buf, rootLvl);
+                rootId = io.getFirstPageId(buf, rootLvl);
             }
             finally {
                 meta.releaseRead();
@@ -1904,11 +1902,11 @@ public abstract class BPlusTree<L, T extends L> {
          */
         private void freePage(Page page, ByteBuffer buf, BPlusIO io, int lvl)
             throws IgniteCheckedException {
-            if (getLeftmostPageId(meta, lvl) == page.id()) {
+            if (getFirstPageId(meta, lvl) == page.id()) {
                 // This logic will handle root as well.
                 long fwdId = io.getForward(buf);
 
-                writePage(meta, updateLeftmost, fwdId, lvl, FALSE);
+                writePage(meta, updateFirst, fwdId, lvl, FALSE);
             }
 
             // Mark removed.

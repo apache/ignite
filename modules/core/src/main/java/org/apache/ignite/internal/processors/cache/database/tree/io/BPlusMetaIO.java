@@ -79,9 +79,9 @@ public class BPlusMetaIO extends PageIO {
     /**
      * @param buf Buffer.
      * @param lvl Level.
-     * @return Page reference at that level.
+     * @return First page ID at that level.
      */
-    public long getLeftmostPageId(ByteBuffer buf, int lvl) {
+    public long getFirstPageId(ByteBuffer buf, int lvl) {
         return buf.getLong(offset(lvl));
     }
 
@@ -90,12 +90,12 @@ public class BPlusMetaIO extends PageIO {
      * @param lvl    Level.
      * @param pageId Page ID.
      */
-    public void setLeftmostPageId(ByteBuffer buf, int lvl, long pageId) {
+    public void setFirstPageId(ByteBuffer buf, int lvl, long pageId) {
         assert lvl >= 0 && lvl < getLevelsCount(buf);
 
         buf.putLong(offset(lvl), pageId);
 
-        assert getLeftmostPageId(buf, lvl) == pageId;
+        assert getFirstPageId(buf, lvl) == pageId;
     }
 
     /**
