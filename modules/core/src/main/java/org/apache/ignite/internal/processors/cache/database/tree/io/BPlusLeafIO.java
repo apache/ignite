@@ -33,7 +33,7 @@ public abstract class BPlusLeafIO<L> extends BPlusIO<L> {
     }
 
     /** {@inheritDoc} */
-    @Override public final int getMaxCount(ByteBuffer buf) {
+    @Override public int getMaxCount(ByteBuffer buf) {
         return (buf.capacity() - ITEMS_OFF) / itemSize;
     }
 
