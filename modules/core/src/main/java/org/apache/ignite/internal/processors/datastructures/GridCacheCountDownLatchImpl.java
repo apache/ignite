@@ -361,36 +361,6 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         }
     }
 
-    private static class CountDownEntryProcessor implements CacheEntryProcessor<GridCacheInternalKey, GridCacheCountDownLatchValue, Integer> {
-        /** */
-        private static final long serialVersionUID = 0L;
-        private final int val;
-
-        private CountDownEntryProcessor(int val) {
-            this.val = val;
-        }
-
-        @Override
-        public Integer process(MutableEntry<GridCacheInternalKey, GridCacheCountDownLatchValue> entry, Object... arguments) throws EntryProcessorException {
-            GridCacheCountDownLatchValue latchVal = entry.getValue();
-            if (latchVal == null) {
-                return null;
-            }
-            int retVal = 0;
-
-            if (val > 0) {
-                retVal = latchVal.get() - val;
-
-                if (retVal < 0)
-                    retVal = 0;
-            }
-
-            latchVal.set(retVal);
-            entry.setValue(latchVal);
-            return retVal;
-        }
-    }
-
     /**
      *
      */
@@ -409,13 +379,35 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
-            Integer res = latchView.invoke(key, new CountDownEntryProcessor(val)).get();
-            if(res == null){
-                if (log.isDebugEnabled())
-                    log.debug("Failed to find count down latch with given name: " + name);
-                return 0;
+            try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
+                GridCacheCountDownLatchValue latchVal = latchView.get(key);
+
+                if (latchVal == null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to find count down latch with given name: " + name);
+
+                    return 0;
+                }
+
+                int retVal;
+
+                if (val > 0) {
+                    retVal = latchVal.get() - val;
+
+                    if (retVal < 0)
+                        retVal = 0;
+                }
+                else
+                    retVal = 0;
+
+                latchVal.set(retVal);
+
+                latchView.put(key, latchVal);
+
+                tx.commit();
+
+                return retVal;
             }
-            return res;
         }
     }
 }
