@@ -49,6 +49,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         private const string StopTask = "org.apache.ignite.platform.PlatformStopIgniteTask";
 
         /** */
+        private const string PlatformFilter = "org.apache.ignite.platform.PlatformCacheEntryEventFilter";
+
+        /** */
+        private const string PlatformFilterFactory = "org.apache.ignite.platform.PlatformCacheEntryEventFilterFactory";
+
+        /** */
         private IIgnite _ignite;
         
         /** */
@@ -111,7 +117,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestFilter()
         {
-            var javaObj = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilter")
+            var javaObj = new JavaObject(PlatformFilter)
             {
                 Properties =
                 {
@@ -173,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestFactory()
         {
-            var javaObj = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilterFactory",
+            var javaObj = new JavaObject(PlatformFilterFactory,
                 new Dictionary<string, object> {{"startsWith", "valid"}});
 
             TestFilter(javaObj);
@@ -198,7 +204,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestInvalidProperty()
         {
-            var javaObject = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilter")
+            var javaObject = new JavaObject(PlatformFilter)
             {
                 Properties = {{"invalidProp", "123"}}
             };
