@@ -9,29 +9,37 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.internal.pagemem.Page;
 
 public class IgniteCacheDatabasePartitionManager {
 
     private final int partCount;
 
-    private final ByteBuffer buf;
+    private final Page page;
 
     private final AtomicReferenceArray<Partition> parts;
 
-    public IgniteCacheDatabasePartitionManager(int partCount, ByteBuffer buf) {
+    public IgniteCacheDatabasePartitionManager(int partCount, Page page) {
         this.partCount = partCount;
-        this.buf = buf;
+        this.page = page;
 
         parts = new AtomicReferenceArray<Partition>(partCount);
 
-        for (int i = 0; i < partCount; i++) {
-            long cntr = buf.getLong(i * 8);
+        ByteBuffer buf = page.getForRead();
 
-            Partition partition = new Partition(i);
+        try {
+            for (int i = 0; i < partCount; i++) {
+                long cntr = buf.getLong(i * 8);
 
-            partition.lastApplied = cntr;
+                Partition partition = new Partition(i);
 
-            parts.set(i, partition);
+                partition.lastApplied = cntr;
+
+                parts.set(i, partition);
+            }
+        }
+        finally {
+            page.releaseRead();
         }
     }
 
@@ -68,10 +76,19 @@ public class IgniteCacheDatabasePartitionManager {
         partition.onUpdateReceived(cntr);
     }
 
-    private void updateCounter(int part, long value) {
-        assert Thread.holdsLock(parts.get(part));
+    public void flushCounters() {
+        ByteBuffer buf = page.getForWrite();
 
-        buf.putLong(part * 8, value);
+        try {
+            for (int i = 0; i < partCount; i++) {
+                Partition part = parts.get(i);
+
+                buf.putLong(i * 8, part.getLastAppliedUpdate());
+            }
+        }
+        finally {
+            page.releaseWrite(true);
+        }
     }
 
     private class Partition {
@@ -123,8 +140,6 @@ public class IgniteCacheDatabasePartitionManager {
             }
 
             lastApplied += delta;
-
-            updateCounter(id, lastApplied);
         }
 
     }

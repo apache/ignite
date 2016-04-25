@@ -34,6 +34,15 @@ import java.util.Arrays;
  */
 public class MetadataStorage {
     /** */
+    public static final byte PAGE_TYPE_EMPTY = 0;
+
+    /** */
+    public static final byte PAGE_TYPE_INDEX = 1;
+
+    /** */
+    public static final byte PAGE_TYPE_PARTS = 2;
+
+    /** */
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     /** */
@@ -56,8 +65,21 @@ public class MetadataStorage {
         int cacheId,
         String idxName
     ) throws IgniteCheckedException {
-        byte[] idxNameBytes = idxName.getBytes(UTF_8);
+        return getOrAllocate(PAGE_TYPE_INDEX, cacheId, idxName.getBytes(UTF_8));
+    }
 
+    /**
+     * @param cacheId Cache ID.
+     * @return A tuple, consisting of a page ID and a boolean flag indicating whether the page was newly allocated.
+     * @throws IgniteCheckedException
+     */
+    public IgniteBiTuple<FullPageId, Boolean> getOrAllocateForPartitionCounters(int cacheId)
+        throws IgniteCheckedException {
+        return getOrAllocate(PAGE_TYPE_PARTS, cacheId, new byte[0]);
+    }
+
+    private IgniteBiTuple<FullPageId, Boolean> getOrAllocate(byte type, int cacheId, byte[] nameBytes)
+        throws IgniteCheckedException {
         FullPageId metaId = metaPage(cacheId);
 
         Page meta = pageMem.page(metaId);
@@ -66,15 +88,15 @@ public class MetadataStorage {
             while (true) {
                 SearchState state = new SearchState();
 
-                FullPageId existingIdxRoot = tryFindIndexRoot(meta, idxNameBytes, cacheId, state);
+                FullPageId existingRef = tryFindRef(meta, type, nameBytes, cacheId, state);
 
-                if (existingIdxRoot != null)
-                    return F.t(existingIdxRoot, false);
+                if (existingRef != null)
+                    return F.t(existingRef, false);
 
-                FullPageId allocatedRoot = allocateAndWriteIndexRoot(meta, cacheId, idxNameBytes, state);
+                FullPageId allocatedRef = allocateAndWrite(meta, type, cacheId, nameBytes, state);
 
-                if (allocatedRoot != null)
-                    return F.t(allocatedRoot, true);
+                if (allocatedRef != null)
+                    return F.t(allocatedRef, true);
                 // else retry.
             }
         }
@@ -85,10 +107,62 @@ public class MetadataStorage {
 
     /**
      * @param meta Cache metadata start page.
+     * @param type Type to find.
+     * @param nameBytes Name to find.
+     * @return Non-zero root page iD if an index with the given name was found.
+     */
+    private FullPageId tryFindRef(Page meta, byte type, byte[] nameBytes, int cacheId, SearchState state)
+        throws IgniteCheckedException {
+        ByteBuffer buf = meta.getForRead();
+
+        try {
+            // Save version
+            state.ver = meta.version();
+
+            long nextPageId = buf.getLong();
+
+            state.writePage = meta.id();
+
+            FullPageId rootPageId = scanForRoot(buf, type, nameBytes, cacheId);
+
+            if (rootPageId != null)
+                return rootPageId;
+
+            while (nextPageId > 0) {
+                // Meta page.
+                Page nextPage = pageMem.page(new FullPageId(nextPageId, 0));
+
+                try {
+                    state.writePage = nextPageId;
+
+                    nextPageId = buf.getLong();
+
+                    rootPageId = scanForRoot(buf, type, nameBytes, cacheId);
+
+                    if (rootPageId != null)
+                        return rootPageId;
+                }
+                finally {
+                    pageMem.releasePage(nextPage);
+                }
+            }
+
+            state.position = buf.position();
+        }
+        finally {
+            meta.releaseRead();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param meta Cache metadata start page.
      * @param idxNameBytes Index name to find.
      * @return Non-zero root page iD if an index with the given name was found.
      */
-    private FullPageId tryFindIndexRoot(Page meta, byte[] idxNameBytes, int cacheId, SearchState state) throws IgniteCheckedException {
+    private FullPageId tryFindIndexRoot(Page meta, byte[] idxNameBytes, int cacheId,
+        SearchState state) throws IgniteCheckedException {
         ByteBuffer buf = meta.getForRead();
 
         try {
@@ -134,18 +208,19 @@ public class MetadataStorage {
 
     /**
      * @param meta Cache metadata page.
+     * @param type Type of new page.
      * @param cacheId Cache ID.
-     * @param idxNameBytes Index name bytes.
+     * @param nameBytes Name bytes.
      * @param state Search state.
      * @return Root page ID for the index.
      */
-    private FullPageId allocateAndWriteIndexRoot(
-        Page meta,
-        int cacheId,
-        byte[] idxNameBytes,
-        SearchState state
-    ) throws IgniteCheckedException {
+    private FullPageId allocateAndWrite(Page meta, byte type, int cacheId, byte[] nameBytes,
+        SearchState state) throws IgniteCheckedException {
         ByteBuffer buf = meta.getForWrite();
+
+        assert type != PAGE_TYPE_EMPTY;
+
+        byte allocatorFlags = type == PAGE_TYPE_INDEX ? PageIdAllocator.FLAG_IDX : PageIdAllocator.FLAG_META;
 
         try {
             // The only case 0 can be returned.
@@ -176,9 +251,9 @@ public class MetadataStorage {
                 // Position buffer to the last record.
                 writeBuf.position(state.position);
 
-                FullPageId idxRoot = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX);
+                FullPageId newPageId = pageMem.allocatePage(cacheId, 0, allocatorFlags);
 
-                if (writeBuf.remaining() < idxNameBytes.length + 9) {
+                if (writeBuf.remaining() < nameBytes.length + 9) {
                     // Link new meta page.
                     FullPageId newMeta = pageMem.allocatePage(0, 0, PageIdAllocator.FLAG_META);
 
@@ -198,11 +273,12 @@ public class MetadataStorage {
                     writePageId = newMeta.pageId();
                 }
 
-                writeBuf.put((byte)idxNameBytes.length);
-                writeBuf.put(idxNameBytes);
-                writeBuf.putLong(idxRoot.pageId());
+                writeBuf.put(type);
+                writeBuf.put((byte)nameBytes.length);
+                writeBuf.put(nameBytes);
+                writeBuf.putLong(newPageId.pageId());
 
-                return idxRoot;
+                return newPageId;
             }
             finally {
                 if (writePageId != meta.id()) {
@@ -219,33 +295,39 @@ public class MetadataStorage {
         }
     }
 
-    /**
-     * @param buf Byte buffer to scan for the index.
-     * @param idxName Index name.
-     * @return Non-zero value if index with the given name was found.
-     */
-    private FullPageId scanForIndexRoot(ByteBuffer buf, byte[] idxName, int cacheId) {
-        // 10 = 1 byte per size + 1 byte minimal index name + 8 bytes page id.
-        while (buf.remaining() >= 10) {
-            int nameSize = buf.get() & 0xFF;
+    private FullPageId scanForRoot(ByteBuffer buf, byte type, byte[] refName, int cacheId) {
+        // 10 = 1 byte for type + 1 byte for size + 8 bytes page id.
+        while (buf.remaining() >= 11) {
+            byte type0 = buf.get();
 
-            if (nameSize == 0) {
+            if (type0 == PAGE_TYPE_EMPTY) {
                 // Rewind.
                 buf.position(buf.position() - 1);
 
                 return null;
             }
 
+            int nameSize = buf.get() & 0xFF;
+
             byte[] name = new byte[nameSize];
             buf.get(name);
 
             long pageId = buf.getLong();
 
-            if (Arrays.equals(name, idxName))
+            if (type0 == type && Arrays.equals(name, refName))
                 return new FullPageId(pageId, cacheId);
         }
 
         return null;
+    }
+
+    /**
+     * @param buf Byte buffer to scan for the index.
+     * @param idxName Index name.
+     * @return Non-zero value if index with the given name was found.
+     */
+    private FullPageId scanForIndexRoot(ByteBuffer buf, byte[] idxName, int cacheId) {
+        return scanForRoot(buf, PAGE_TYPE_INDEX, idxName, cacheId);
     }
 
     /**

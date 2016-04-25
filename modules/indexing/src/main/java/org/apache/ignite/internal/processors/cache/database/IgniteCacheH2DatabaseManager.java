@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.database;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowStore;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
@@ -102,7 +103,9 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
     @Nullable @Override public IgniteCacheDatabasePartitionManager partitions() {
         assert dbMgr != null;
         try {
-            return new IgniteCacheDatabasePartitionManager(cctx.affinity().partitions(), dbMgr.pageMemory().page(new FullPageId(1, cctx.cacheId())).getForInitialWrite());
+            Page page = dbMgr.pageMemory().page(dbMgr.meta().getOrAllocateForPartitionCounters(cctx.cacheId()).get1());
+
+            return new IgniteCacheDatabasePartitionManager(cctx.affinity().partitions(), page);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
