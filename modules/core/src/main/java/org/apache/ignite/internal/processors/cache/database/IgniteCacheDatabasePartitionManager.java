@@ -2,14 +2,19 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.internal.pagemem.Page;
+import org.jsr166.LongAdder8;
 
 public class IgniteCacheDatabasePartitionManager {
 
@@ -33,7 +38,7 @@ public class IgniteCacheDatabasePartitionManager {
 
                 Partition partition = new Partition(i);
 
-                partition.lastApplied = cntr;
+                partition.lastApplied.set(cntr);
 
                 parts.set(i, partition);
             }
@@ -95,51 +100,51 @@ public class IgniteCacheDatabasePartitionManager {
 
         private final int id;
 
-        private NavigableSet<Long> updates = new TreeSet<>();
+        private ConcurrentNavigableMap<Long, Boolean> updates = new ConcurrentSkipListMap<>();
 
-        private long lastApplied = 0;
+        private AtomicLong lastApplied = new AtomicLong(0);
 
         public Partition(int id) {
             this.id = id;
         }
 
-        public synchronized long getLastAppliedUpdate() {
-            return lastApplied;
+        public long getLastAppliedUpdate() {
+            return lastApplied.get();
         }
 
-        public synchronized long getLastReceivedUpdate() {
+        public long getLastReceivedUpdate() {
             if (updates.isEmpty())
-                return lastApplied;
+                return lastApplied.get();
 
-            return updates.last();
+            return updates.lastKey();
         }
 
-        public synchronized void onUpdateReceived(long cntr) {
-            if (cntr <= lastApplied)
+        public void onUpdateReceived(long cntr) {
+            boolean changed = updates.putIfAbsent(cntr, true) == null;
+
+            if (!changed)
                 return;
 
-            if (cntr > lastApplied + 1) {
-                updates.add(cntr);
+            while (true) {
+                Map.Entry<Long, Boolean> entry = updates.firstEntry();
 
-                return;
-            }
+                if (entry == null)
+                    return;
 
-            int delta = 1;
+                long first = entry.getKey();
 
-            Iterator<Long> iterator = updates.iterator();
+                long cntr0 = lastApplied.get();
 
-            while (iterator.hasNext()) {
-                long next = iterator.next();
-
-                if (next != lastApplied + delta + 1)
+                if (first <= cntr0)
+                    updates.remove(first);
+                else if (first == cntr0 + 1)
+                    if (lastApplied.compareAndSet(cntr0, first))
+                        updates.remove(first);
+                    else
+                        break;
+                else
                     break;
-
-                delta++;
-
-                iterator.remove();
             }
-
-            lastApplied += delta;
         }
 
     }
