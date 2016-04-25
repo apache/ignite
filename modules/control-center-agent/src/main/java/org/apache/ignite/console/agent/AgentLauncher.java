@@ -109,7 +109,7 @@ public class AgentLauncher {
             ConnectException ce = X.cause(e, ConnectException.class);
 
             if (ce != null)
-                log.warn(ce.getMessage());
+                log.error("Failed to receive response from server (connection refused).");
             else {
                 Exception ignore = X.cause(e, SSLHandshakeException.class);
 
@@ -120,9 +120,9 @@ public class AgentLauncher {
                     System.exit(1);
                 }
 
-                ignore = X.cause(e, SocketException.class);
+                ignore = X.cause(e, IOException.class);
 
-                if (ignore != null) {
+                if (ignore != null && "404".equals(ignore.getMessage())) {
                     log.error("Failed to receive response from server (connection refused).");
 
                     return;
