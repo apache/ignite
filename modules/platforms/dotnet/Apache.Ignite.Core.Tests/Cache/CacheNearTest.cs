@@ -171,6 +171,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             _lastEvent = null;
             cache[-1] = "test";
 
+            TestUtils.WaitForCondition(() => _lastEvent != null, 500);
             Assert.IsNotNull(_lastEvent);
             Assert.IsTrue(_lastEvent.IsNear);
 
