@@ -277,8 +277,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
         IgniteCacheProxy cache = reader.readBoolean()
-            ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
-            : (IgniteCacheProxy)ctx.grid().createCache(cfg);
+            ? (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg,
+                    PlatformConfigurationUtils.readNearConfiguration(reader))
+            : (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
 
         return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
