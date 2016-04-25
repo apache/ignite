@@ -246,24 +246,18 @@ consoleModule.controller('sqlController', [
                 });
         };
 
-        var _refreshFn = function() {
+        const _refreshFn = () =>
             agentMonitor.topology()
-                .then(function(clusters) {
+                .then((clusters) => {
                     agentMonitor.checkModal();
 
-                    var caches = _.flattenDeep(clusters.map(function (cluster) { return cluster.caches; }));
+                    const caches = _.flattenDeep(clusters.map((cluster) => cluster.caches));
 
                     $scope.caches = _.sortBy(_.uniqBy(_.reject(caches, { mode: 'LOCAL' }), 'name'), 'name');
 
                     _setActiveCache();
                 })
-                .catch((err) => {
-                    agentMonitor.showNodeError(err.message)
-                })
-                .finally(function () {
-                    $loading.finish('loading');
-                });
-        };
+                .catch((err) => agentMonitor.showNodeError(err.message));
 
         var loadNotebook = function (notebook) {
             $scope.notebook = notebook;
@@ -292,15 +286,21 @@ consoleModule.controller('sqlController', [
                     text: 'Back to Configuration',
                     goal: 'execute sql statements'
                 })
-                .then(function () {
+                .then(() => {
+                    if ($scope.$root.IgniteDemoMode)
+                        $state.current.data.loading = 'Enable SQL demo...';
+
                     $loading.start('loading');
 
-                    _refreshFn();
+                    _refreshFn()
+                        .finally(() => {
+                            if ($scope.$root.IgniteDemoMode)
+                                _.forEach($scope.notebook.paragraphs, $scope.execute);
 
-                    if ($scope.$root.IgniteDemoMode)
-                        _.forEach($scope.notebook.paragraphs, $scope.execute);
+                            $loading.finish('loading');
 
-                    stopTopology = $interval(_refreshFn, 5000, 0, false);
+                            stopTopology = $interval(_refreshFn, 5000, 0, false);
+                        });
                 });
         };
 

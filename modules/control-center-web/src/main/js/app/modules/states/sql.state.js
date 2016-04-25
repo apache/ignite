@@ -43,7 +43,7 @@ angular
         url: '/demo',
         templateUrl: '/sql/sql.html',
         data: {
-            loading: 'Enable SQL demo...'
+            loading: 'Enable SQL...'
         },
         metaTags: {
             title: 'SQL demo'
