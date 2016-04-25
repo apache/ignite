@@ -289,28 +289,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// </summary>
         private class TestBinary
         {
-            /** */
-            private readonly int _int;
-
-            /** */
-            private readonly string _string;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="TestBinary"/> class.
-            /// </summary>
             public TestBinary(int i, string s)
             {
-                _int = i;
-                _string = s;
+                Int = i;
+                String = s;
             }
 
-            /** <inheritdoc /> */
+            private int Int { get; }
+            private string String { get; }
+
             private bool Equals(TestBinary other)
             {
-                return _int == other._int && string.Equals(_string, other._string);
+                return Int == other.Int && string.Equals(String, other.String);
             }
 
-            /** <inheritdoc /> */
             public override bool Equals(object obj)
             {
                 if (ReferenceEquals(null, obj)) return false;
@@ -319,12 +311,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 return Equals((TestBinary) obj);
             }
 
-            /** <inheritdoc /> */
             public override int GetHashCode()
             {
                 unchecked
                 {
-                    return (_int*397) ^ (_string != null ? _string.GetHashCode() : 0);
+                    return (Int*397) ^ (String != null ? String.GetHashCode() : 0);
                 }
             }
         }
