@@ -39,11 +39,17 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
 
     private IgniteCacheDatabaseSharedManager dbMgr;
 
+    private IgniteCacheDatabasePartitionManager partMgr;
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
         dbMgr = cctx.shared().database();
+
+        Page page = dbMgr.pageMemory().page(dbMgr.meta().getOrAllocateForPartitionCounters(cctx.cacheId()).get1());
+
+        partMgr = new IgniteCacheDatabasePartitionManager(cctx.config().getAffinity().partitions(), page);
     }
 
     /**
@@ -101,14 +107,6 @@ public class IgniteCacheH2DatabaseManager extends GridCacheManagerAdapter implem
     }
 
     @Nullable @Override public IgniteCacheDatabasePartitionManager partitions() {
-        assert dbMgr != null;
-        try {
-            Page page = dbMgr.pageMemory().page(dbMgr.meta().getOrAllocateForPartitionCounters(cctx.cacheId()).get1());
-
-            return new IgniteCacheDatabasePartitionManager(cctx.affinity().partitions(), page);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        return partMgr;
     }
 }
