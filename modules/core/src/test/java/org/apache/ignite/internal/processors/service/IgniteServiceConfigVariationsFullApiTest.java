@@ -22,14 +22,19 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.configuration.Factory;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.configvariations.Parameters;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
@@ -41,6 +46,9 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     /** Test service name. */
     private static final String SERVICE_NAME = "testService";
 
+    /** Test service name. */
+    private static final String CACHE_NAME = "testCache";
+
     /** */
     protected static final int CLIENT_NODE_IDX_2 = 4;
 
@@ -51,7 +59,9 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     @SuppressWarnings("unchecked")
     private static final Factory[] serviceFactories = new Factory[] {
         Parameters.factory(TestServiceImpl.class),
+
         Parameters.factory(TestServiceImplExternalizable.class),
+
         Parameters.factory(TestServiceImplBinarylizable.class)
     };
 
@@ -59,14 +69,71 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      * Test node singleton deployment
      */
     public void testNodeSingletonDeploy() throws Exception {
-        runInAllDataModes(new ServiceTestRunnable(false));
+        runInAllDataModes(new ServiceTestRunnable(true, new DeployClosure() {
+            @Override public void run(IgniteServices services, String svcName, TestService svc) {
+                services.deployNodeSingleton(svcName, (Service)svc);
+            }
+        }));
     }
 
     /**
      * Test cluster singleton deployment
      */
     public void testClusterSingletonDeploy() throws Exception {
-        runInAllDataModes(new ServiceTestRunnable(true));
+        runInAllDataModes(new ServiceTestRunnable(false, new DeployClosure() {
+            @Override public void run(IgniteServices services, String svcName, TestService svc) {
+                services.deployClusterSingleton(svcName, (Service)svc);
+            }
+        }));
+    }
+
+    /**
+     * Test key affinity deployment
+     */
+    public void testKeyAffinityDeploy() throws Exception {
+        runInAllDataModes(new ServiceTestRunnable(false, new DeployClosure() {
+            @Override public void run(IgniteServices services, String svcName, TestService svc) {
+                IgniteCache<Object, Object> cache = grid(testedNodeIdx).getOrCreateCache(CACHE_NAME);
+
+                services.deployKeyAffinitySingleton(svcName, (Service)svc, cache.getName(), "1");
+            }
+        }));
+    }
+
+    /**
+     * Test multiple deployment
+     */
+    public void testMultipleDeploy() throws Exception {
+        runInAllDataModes(new ServiceTestRunnable(true, new DeployClosure() {
+            @Override public void run(IgniteServices services, String svcName, TestService svc) {
+                services.deployMultiple(svcName, (Service)svc, 0, 1);
+            }
+        }));
+    }
+
+    /**
+     * Test deployment
+     */
+    public void testDeploy() throws Exception {
+        runInAllDataModes(new ServiceTestRunnable(false, new DeployClosure() {
+            @Override public void run(IgniteServices services, String svcName, TestService svc) {
+                services.deployClusterSingleton(svcName, (Service)svc);
+
+                ServiceConfiguration cfg = new ServiceConfiguration();
+
+                cfg.setName(svcName);
+
+                cfg.setService((Service)svc);
+
+                cfg.setTotalCount(1);
+
+                cfg.setMaxPerNodeCount(1);
+
+                cfg.setNodeFilter(services.clusterGroup().predicate());
+
+                services.deploy(cfg);
+            }
+        }));
     }
 
     /**
@@ -76,19 +143,37 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
         /** Sticky. */
         private final boolean sticky;
 
+        /** Deploy closure */
+        private final DeployClosure deployC;
+
         /**
          * Default constructor
          * @param sticky Sticky.
          */
-        public ServiceTestRunnable(boolean sticky) {
+        public ServiceTestRunnable(boolean sticky, DeployClosure deployC) {
             this.sticky = sticky;
+
+            this.deployC = deployC;
         }
 
         /** {@inheritDoc} */
         @Override public void run() throws Exception {
             for (Factory factory : serviceFactories)
-                testService((TestService)factory.create(), sticky);
+                testService((TestService)factory.create(), sticky, deployC);
         }
+    }
+
+    /**
+     *
+     */
+    interface DeployClosure {
+        /**
+         * Deploy
+         * @param services Services.
+         * @param svcName Service name.
+         * @param svc Service.
+         */
+        void run(IgniteServices services, String svcName, TestService svc);
     }
 
     /**
@@ -96,7 +181,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
      * @param svc Service.
      * @param sticky Sticky.
      */
-    protected void testService(TestService svc, boolean sticky) throws Exception {
+    protected void testService(TestService svc, boolean sticky, DeployClosure deployC) throws Exception {
         IgniteEx ignite = testedGrid();
 
         IgniteServices services = ignite.services();
@@ -106,12 +191,7 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
         // Put value for testing Service instance serialization.
         svc.setValue(expected);
 
-        if (sticky)
-            // Node singleton deployment requires stickiness to work correctly.
-            services.deployNodeSingleton(SERVICE_NAME, (Service)svc);
-        else
-            // Cluster singleton deployment already provides stickiness.
-            services.deployClusterSingleton(SERVICE_NAME, (Service)svc);
+        deployC.run(services, SERVICE_NAME, svc);
 
         // Expect correct value from local instance.
         assertEquals(expected, svc.getValue());
@@ -133,7 +213,15 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
         while(r-- > 0)
             assertEquals(expected, proxy.getValue());
 
-        services.cancelAll();
+        assertEquals("Expected 1 deployed service", 1, services.serviceDescriptors().size());
+
+        // randomize stop method invocation
+        boolean tmp = ThreadLocalRandom.current().nextBoolean();
+
+        if (tmp)
+            services.cancelAll();
+        else
+            services.cancel(SERVICE_NAME);
     }
 
     /**
