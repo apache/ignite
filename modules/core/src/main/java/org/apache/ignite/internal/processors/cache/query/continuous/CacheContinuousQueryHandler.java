@@ -787,26 +787,31 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, ex);
         }
 
-        if (recordIgniteEvt && notify) {
-            ctx.event().record(new CacheQueryReadEvent<>(
-                ctx.discovery().localNode(),
-                "Continuous query executed.",
-                EVT_CACHE_QUERY_OBJECT_READ,
-                CacheQueryType.CONTINUOUS.name(),
-                cacheName,
-                null,
-                null,
-                null,
-                getEventFilter() instanceof CacheEntryEventSerializableFilter ?
-                    (CacheEntryEventSerializableFilter)getEventFilter() : null,
-                null,
-                nodeId,
-                taskName(),
-                evt.getKey(),
-                evt.getValue(),
-                evt.getOldValue(),
-                null
-            ));
+        try {
+            if (recordIgniteEvt && notify) {
+                ctx.event().record(new CacheQueryReadEvent<>(
+                    ctx.discovery().localNode(),
+                    "Continuous query executed.",
+                    EVT_CACHE_QUERY_OBJECT_READ,
+                    CacheQueryType.CONTINUOUS.name(),
+                    cacheName,
+                    null,
+                    null,
+                    null,
+                    getEventFilter() instanceof CacheEntryEventSerializableFilter ?
+                        (CacheEntryEventSerializableFilter)getEventFilter() : null,
+                    null,
+                    nodeId,
+                    taskName(),
+                    evt.getKey(),
+                    evt.getValue(),
+                    evt.getOldValue(),
+                    null
+                ));
+            }
+        }
+        catch (Exception e) {
+            U.error(ctx.log(getClass()), "Failed to fire EVT_CACHE_QUERY_OBJECT_READ event. ", e);
         }
     }
 

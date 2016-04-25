@@ -56,6 +56,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -86,6 +87,8 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
+
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
@@ -93,7 +96,7 @@ public class CacheContinuousQueryAsyncFilterListenerTest extends GridCommonAbstr
         cfg.setClientMode(client);
 
         MemoryEventStorageSpi storeSpi = new MemoryEventStorageSpi();
-        storeSpi.setExpireCount(1000);
+        storeSpi.setExpireCount(100);
 
         cfg.setEventStorageSpi(storeSpi);
 
