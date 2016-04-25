@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         private string _javaNodeName;
 
         /** */
-        private static volatile ICacheEntryEvent<int, string> _lastEvent;
+        private static volatile Tuple<int, object> _lastEvent;
 
         /// <summary>
         /// Fixture set up.
@@ -164,11 +164,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 }
             };
 
-            var filter = javaObj.ToCacheEntryEventFilter<int, string>();
-
-            TestFilter(filter);
-
-            // TODO: Test with cache of binary objects
+            TestFilter(javaObj);
         }
 
         /// <summary>
@@ -180,9 +176,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             var javaObj = new JavaObject("org.apache.ignite.platform.PlatformCacheEntryEventFilterFactory",
                 new Dictionary<string, object> {{"startsWith", "valid"}});
 
-            var filter = javaObj.ToCacheEntryEventFilter<int, string>();
-
-            TestFilter(filter);
+            TestFilter(javaObj);
         }
 
         /// <summary>
@@ -191,9 +185,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestInvalidClassName()
         {
-            var filter = new JavaObject("blabla").ToCacheEntryEventFilter<int, string>();
+            var javaObj = new JavaObject("blabla");
 
-            var ex = Assert.Throws<IgniteException>(() => TestFilter(filter));
+            var ex = Assert.Throws<IgniteException>(() => TestFilter(javaObj));
 
             Assert.IsTrue(ex.Message.StartsWith("Java object/factory class is not found"));
         }
@@ -209,9 +203,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Properties = {{"invalidProp", "123"}}
             };
 
-            var filter = javaObject.ToCacheEntryEventFilter<int, string>();
-
-            var ex = Assert.Throws<IgniteException>(() => TestFilter(filter));
+            var ex = Assert.Throws<IgniteException>(() => TestFilter(javaObject));
 
             Assert.IsTrue(ex.Message.StartsWith("Java object/factory class field is not found"));
         }
@@ -219,19 +211,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Tests the specified filter.
         /// </summary>
-        private void TestFilter(ICacheEntryEventFilter<int, string> pred)
+        private void TestFilter(JavaObject obj)
         {
-            TestFilter(pred, false);
-            TestFilter(pred, true);
+            // TODO: Test with cache of binary objects
+            var pred = obj.ToCacheEntryEventFilter<int, string>();
+
+            TestFilter(pred, false, "validValue", "invalidValue");
+            TestFilter(pred, true, "validValue", "invalidValue");
         }
 
         /// <summary>
         /// Tests the specified filter.
         /// </summary>
-        private void TestFilter(ICacheEntryEventFilter<int, string> pred, bool local)
+        private void TestFilter<T>(ICacheEntryEventFilter<int, T> pred, bool local, T validVal, T invalidVal)
         {
-            var cache = _ignite.GetOrCreateCache<int, string>("qry");
-            var qry = new ContinuousQuery<int, string>(new QueryListener(), pred, local);
+            var cache = _ignite.GetOrCreateCache<int, T>("qry");
+            var qry = new ContinuousQuery<int, T>(new QueryListener<T>(), pred, local);
             var aff = _ignite.GetAffinity("qry");
             var localNode = _ignite.GetCluster().GetLocalNode();
 
@@ -248,14 +243,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 foreach (var key in keys)
                 {
                     _lastEvent = null;
-                    cache[key] = "validValue";
+                    cache[key] = validVal;
 
                     TestUtils.WaitForCondition(() => _lastEvent != null, 2000);
                     Assert.IsNotNull(_lastEvent);
-                    Assert.AreEqual(cache[key], _lastEvent.Value);
+                    Assert.AreEqual(cache[key], _lastEvent.Item2);
 
                     _lastEvent = null;
-                    cache[key] = "invalidValue";
+                    cache[key] = invalidVal;
 
                     Thread.Sleep(2000);
                     Assert.IsNull(_lastEvent);
@@ -266,12 +261,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test listener.
         /// </summary>
-        private class QueryListener : ICacheEntryEventListener<int, string>
+        private class QueryListener<T> : ICacheEntryEventListener<int, T>
         {
             /** <inheritdoc /> */
-            public void OnEvent(IEnumerable<ICacheEntryEvent<int, string>> evts)
+            public void OnEvent(IEnumerable<ICacheEntryEvent<int, T>> evts)
             {
-                _lastEvent = evts.FirstOrDefault();
+                _lastEvent = evts.Select(e => Tuple.Create(e.Key, (object) e.Value)).FirstOrDefault();
             }
         }
 
