@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.cache.database.freelist.io;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeItem;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeTree;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 
@@ -48,6 +50,17 @@ public class FreeLeafIO extends BPlusLeafIO<FreeItem> implements FreeIO {
 
         buf.putShort(off, row.freeSpace());
         buf.putInt(off + 2, FreeInnerIO.pageIndex(row.pageId()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<FreeItem> srcIo, ByteBuffer src, int srcIdx)
+        throws IgniteCheckedException {
+        assert srcIo == this: srcIo;
+
+        int off = offset(dstIdx);
+
+        dst.putShort(off, getFreeSpace(src, srcIdx));
+        dst.putInt(off + 2, getPageIndex(src, srcIdx));
     }
 
     /** {@inheritDoc} */

@@ -93,13 +93,13 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
 
     /** {@inheritDoc} */
     @Override public final void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt,
-        boolean cpLeft) {
+        boolean cpLeft) throws IgniteCheckedException {
         assert srcIdx != dstIdx || src != dst;
 
         if (dstIdx > srcIdx) {
             for (int i = cnt - 1; i >= 0; i--) {
                 dst.putLong(offset(dstIdx + i, SHIFT_RIGHT), src.getLong(offset(srcIdx + i, SHIFT_RIGHT)));
-                dst.putLong(offset(dstIdx + i, SHIFT_LINK), src.getLong(offset(srcIdx + i, SHIFT_LINK)));
+                store(dst, dstIdx + i, this, src, srcIdx + i); // TODO optimize with copy by itemSize
             }
 
             if (cpLeft)
@@ -111,23 +111,10 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
 
             for (int i = 0; i < cnt; i++) {
                 dst.putLong(offset(dstIdx + i, SHIFT_RIGHT), src.getLong(offset(srcIdx + i, SHIFT_RIGHT)));
-                dst.putLong(offset(dstIdx + i, SHIFT_LINK), src.getLong(offset(srcIdx + i, SHIFT_LINK)));
+                store(dst, dstIdx + i, this, src, srcIdx + i); // TODO optimize with copy by itemSize
             }
         }
     }
-
-    /**
-     * Store row info from the given source.
-     *
-     * @param dst Destination buffer
-     * @param dstIdx Destination index.
-     * @param srcIo Source IO.
-     * @param src Source buffer.
-     * @param srcIdx Source index.
-     * @throws IgniteCheckedException If failed.
-     */
-    public abstract void store(ByteBuffer dst, int dstIdx, BPlusIO<L> srcIo, ByteBuffer src, int srcIdx)
-        throws IgniteCheckedException;
 
     /**
      * @param idx Index of element.
