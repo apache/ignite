@@ -61,6 +61,15 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static final int CACHE_ID = 100500;
 
     /** */
+    private static int MAX_COUNT = 0;
+
+    /** */
+    private static int PUT_INC = 1;
+
+    /** */
+    private static int RMV_INC = 1;
+
+    /** */
     private PageMemory pageMem;
 
     /** */
@@ -87,8 +96,62 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         pageMem.stop();
+
+        MAX_COUNT = 0;
+        PUT_INC = 1;
+        RMV_INC = -1;
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testSingle1() throws IgniteCheckedException {
+        MAX_COUNT = 1;
+        PUT_INC = -1;
+        RMV_INC = -1;
+
+        doTestPutRemoveForwardBackward(true);
+    }
+
+    /**
+     * @param canGetRow Can get row from inner page.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doTestPutRemoveForwardBackward(boolean canGetRow) throws IgniteCheckedException {
+        TestTree tree = createTestTree(canGetRow);
+
+        long cnt = 10;
+
+        for (long x = PUT_INC > 0 ? 0 : cnt - 1; x >= 0 && x < cnt; x += PUT_INC) {
+            assertNull(tree.findOne(x));
+
+            tree.put(x);
+
+            assertEquals(x, tree.findOne(x).longValue());
+        }
+
+        X.println(tree.printTree());
+
+        assertNull(tree.findOne(-1L));
+
+        for (long x = 0; x < cnt; x++)
+            assertEquals(x, tree.findOne(x).longValue());
+
+        assertNull(tree.findOne(cnt));
+
+        for (long x = RMV_INC > 0 ? 0 : cnt - 1; x >= 0 && x < cnt; x += RMV_INC) {
+            X.println(" -- " + x);
+
+            assertEquals(x, tree.remove(x).longValue());
+
+            assertNull(tree.findOne(x));
+
+            X.println(tree.printTree());
+        }
+
+        assertFalse(tree.find(null, null).next());
     }
 
     /**
@@ -438,6 +501,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * TODO refactor to use integer in inner page
      * Long inner.
      */
     private static final class LongInnerIO extends BPlusInnerIO<Long> {
@@ -451,6 +515,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
          */
         protected LongInnerIO(boolean canGetRow) {
             super(LONG_INNER_IO, 302, canGetRow, 8);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getMaxCount(ByteBuffer buf) {
+            if (MAX_COUNT != 0)
+                return MAX_COUNT;
+
+            return super.getMaxCount(buf);
         }
 
         /** {@inheritDoc} */
@@ -485,8 +557,23 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public int getMaxCount(ByteBuffer buf) {
+            if (MAX_COUNT != 0)
+                return MAX_COUNT;
+
+            return super.getMaxCount(buf);
+        }
+
+        /** {@inheritDoc} */
         @Override public void store(ByteBuffer buf, int idx, Long row) {
             buf.putLong(offset(idx), row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<Long> srcIo, ByteBuffer src, int srcIdx) {
+            assert srcIo == this;
+
+            dst.putLong(offset(dstIdx), src.getLong(offset(srcIdx)));
         }
 
         /** {@inheritDoc} */
