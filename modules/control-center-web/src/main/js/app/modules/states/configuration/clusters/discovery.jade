@@ -62,7 +62,7 @@ form.panel.panel-default(name=form novalidate)
                 .settings-row
                     +java-class('Discovery listener:', form, model + '.listener', 'discoListener', 'true', 'false', 'Grid discovery listener')
                 .settings-row
-                    +java-class('Data exchange:', model + '.dataExchange', 'dataExchange', 'true', 'false', 'Class name of handler for initial data exchange between Ignite nodes')
+                    +java-class('Data exchange:', form, model + '.dataExchange', 'dataExchange', 'true', 'false', 'Class name of handler for initial data exchange between Ignite nodes')
                 .settings-row
                     +java-class('Metrics provider:', form, model + '.metricsProvider', 'metricsProvider', 'true', 'false', 'Class name of metric provider to discovery SPI')
                 .settings-row
