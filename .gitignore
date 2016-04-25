@@ -33,5 +33,3 @@ git-patch-prop-local.sh
 .settings
 .classpath
 .project
-
-*.VC.opendb
