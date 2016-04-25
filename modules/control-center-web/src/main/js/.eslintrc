@@ -33,6 +33,7 @@ globals:
     $generatorDocker: true
     $generatorOptional: true
     saveAs: true
+    process: true
 
 rules:
     arrow-parens: [1, "always"]

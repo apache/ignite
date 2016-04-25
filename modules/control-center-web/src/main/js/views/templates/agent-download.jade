@@ -21,17 +21,14 @@
                 h4.modal-title(ng-if='!hasAgents') Connection to Ignite Web Agent is not established
                 h4.modal-title(ng-if='hasAgents') Connection to Ignite Node is not established
             .agent-download(ng-if='!hasAgents')
-                p Please download and run&nbsp;
-                    a(href='javascript:void(0)' ng-click='downloadAgent()') ignite-web-agent
-                    | &nbsp;in order to {{::agentGoal}}
+                p Please download and run #[a(href='javascript:void(0)' ng-click='downloadAgent()') ignite-web-agent] in order to {{::agentGoal}}
                 p For run:
                 ul
                     li Download and unzip&nbsp;
                         b ignite-web-agent
                         | &nbsp;archive
-                    li Run shell file&nbsp;
-                        b ignite-web-agent.{sh|bat}
-                p Refer to agent README.txt for more information.
+                    li Run shell file #[b ignite-web-agent.{sh|bat}]
+                p Refer to #[b README.txt] in agent folder for more information
                 .modal-advanced-options
                     i.fa.fa-chevron-circle-down(ng-show='agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
                     i.fa.fa-chevron-circle-right(ng-show='!agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
@@ -47,9 +44,7 @@
                     li Ignite Grid is up and running
                     li In agent settings check URI for connect to Ignite REST server
                     li Check agent logs for errors
-                    li Refer to&nbsp;
-                        b README.txt
-                        | &nbsp; in agent folder for more information
+                    li Refer to #[b README.txt] in agent folder for more information
             .modal-footer
                 button.btn.btn-default(ng-click='back()') {{::backText}}
                 button.btn.btn-primary(ng-if='!hasAgents' ng-click='downloadAgent()') Download zip
