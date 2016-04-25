@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
 {
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Impl.Cache.Event;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Interop;
 
     /// <summary>
@@ -33,6 +34,8 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// <typeparam name="TV">Value type.</typeparam>
         public static ICacheEntryEventFilter<TK, TV> ToCacheEntryEventFilter<TK, TV>(this JavaObject javaObject)
         {
+            IgniteArgumentCheck.NotNull(javaObject, "javaObject");
+
             return new JavaCacheEntryEventFilter<TK, TV>(javaObject.ClassName, javaObject.Properties);
         }
     }

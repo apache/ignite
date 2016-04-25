@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             });
 
             // Second .NET node
-            Ignition.Start(new IgniteConfigurationEx
+            Ignition.Start(new IgniteConfiguration
             {
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = jvmOpts,
