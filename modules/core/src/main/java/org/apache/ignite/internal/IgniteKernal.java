@@ -890,10 +890,22 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             suggestOptimizations(cfg);
 
             // Notify discovery manager the first to make sure that topology is discovered.
+            log.info("Component onKernalStart [comp=" + ctx.discovery().getClass().getSimpleName() +
+                ", node=" + cfg.getNodeId() + ']');
+
             ctx.discovery().onKernalStart();
+
+            log.info("Component onKernalStart finished [comp=" + ctx.discovery().getClass().getSimpleName() +
+                ", node=" + cfg.getNodeId() + ']');
+
+            log.info("Component onKernalStart [comp=" + ctx.io().getClass().getSimpleName() +
+                ", node=" + cfg.getNodeId() + ']');
 
             // Notify IO manager the second so further components can send and receive messages.
             ctx.io().onKernalStart();
+
+            log.info("Component onKernalStart finished [comp=" + ctx.io().getClass().getSimpleName() +
+                ", node=" + cfg.getNodeId() + ']');
 
             // Callbacks.
             for (GridComponent comp : ctx) {
@@ -905,8 +917,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 if (comp instanceof GridIoManager)
                     continue;
 
-                if (!skipDaemon(comp))
+                if (!skipDaemon(comp)) {
+                    log.info("Component onKernalStart [comp=" + comp.getClass().getSimpleName() +
+                        ", node=" + cfg.getNodeId() + ']');
+
                     comp.onKernalStart();
+
+                    log.info("Component onKernalStart finished [comp=" + comp.getClass().getSimpleName() +
+                        ", node=" + cfg.getNodeId() + ']');
+                }
             }
 
             // Register MBeans.
@@ -1464,8 +1483,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ctx.add(mgr);
 
         try {
-            if (!skipDaemon(mgr))
+            if (!skipDaemon(mgr)) {
+                log.info("Component start [comp=" + mgr.getClass().getSimpleName() +
+                    ", node=" + cfg.getNodeId() + ']');
+
                 mgr.start();
+
+                log.info("Component start finished [comp=" + mgr.getClass().getSimpleName() +
+                    ", node=" + cfg.getNodeId() + ']');
+            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to start manager: " + mgr , e);
@@ -1482,8 +1508,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ctx.add(proc);
 
         try {
-            if (!skipDaemon(proc))
+            if (!skipDaemon(proc)) {
+                log.info("Component start [comp=" + proc.getClass().getSimpleName() +
+                    ", node=" + cfg.getNodeId() + ']');
+
                 proc.start();
+
+                log.info("Component start finished [comp=" + proc.getClass().getSimpleName() +
+                    ", node=" + cfg.getNodeId() + ']');
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to start processor: " + proc, e);
