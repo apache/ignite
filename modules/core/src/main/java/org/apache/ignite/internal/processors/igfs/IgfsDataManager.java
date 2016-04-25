@@ -257,25 +257,13 @@ public class IgfsDataManager extends IgfsManager {
 
         UUID nodeId = igfsCtx.kernalContext().localNodeId();
 
-        if (prevAffKey != null) {
-            ClusterNode node = dataCache.affinity().mapKeyToNode(prevAffKey);
-
-            if (node == null)
-                return null; // No alive node for this cache.
-
-            if (node.isLocal())
-                return prevAffKey;
-        }
+        if (prevAffKey != null && dataCache.affinity().mapKeyToNode(prevAffKey).isLocal())
+            return prevAffKey;
 
         while (true) {
             IgniteUuid key = new IgniteUuid(nodeId, affKeyGen.getAndIncrement());
 
-            ClusterNode node = dataCache.affinity().mapKeyToNode(key);
-
-            if (node == null)
-                return null; // No alive node for this cache.
-
-            if (node.isLocal())
+            if (dataCache.affinity().mapKeyToNode(key).isLocal())
                 return key;
         }
     }
