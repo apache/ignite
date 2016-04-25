@@ -686,25 +686,27 @@ $generatorXml.clusterEvents = function (cluster, res) {
 
         res.startBlock('<property name="includeEventTypes">');
 
-        if (cluster.includeEventTypes.length === 1)
-            res.line('<util:constant static-field="org.apache.ignite.events.EventType.' + cluster.includeEventTypes[0] + '"/>');
+        const evtGrps = angular.element(document.getElementById('app')).injector().get('igniteEventGroups');
+
+        if (cluster.includeEventTypes.length === 1) {
+            const evtGrp = _.find(evtGrps, {value: cluster.includeEventTypes[0]});
+
+            if (evtGrp)
+                res.line('<util:constant static-field="' + evtGrp.class + '.' + evtGrp.value + '"/>');
+        }
         else {
             res.startBlock('<list>');
 
-            var evtGrps = angular.element(document.getElementById('app')).injector().get('igniteEventGroups');
+            _.forEach(cluster.includeEventTypes, (item, ix) => {
+                ix > 0 && res.line();
 
-            _.forEach(cluster.includeEventTypes, function(eventGroup, ix) {
-                if (ix > 0)
-                    res.line();
+                const evtGrp = _.find(evtGrps, {value: item});
 
-                res.line('<!-- EventType.' + eventGroup + ' -->');
+                if (evtGrp) {
+                    res.line('<!-- EventType.' + item + ' -->');
 
-                var evtGrp = _.find(evtGrps, {value: eventGroup});
-
-                if (evtGrp)
-                    _.forEach(evtGrp.events, function(event) {
-                        res.line('<util:constant static-field="' + evtGrp.class + '.' + event + '"/>');
-                    });
+                    _.forEach(evtGrp.events, (event) => res.line('<util:constant static-field="' + evtGrp.class + '.' + event + '"/>'));
+                }
             });
 
             res.endBlock('</list>');
