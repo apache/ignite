@@ -160,7 +160,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 @SuppressWarnings("All")
 class ServerImpl extends TcpDiscoveryImpl {
     /** */
-    private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 1024 * 10);
+    private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 50);
 
     /** */
     private static final IgniteProductVersion CUSTOM_MSG_ALLOW_JOINING_FOR_VERIFIED_SINCE =
@@ -1398,6 +1398,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 ", topSize=" + ring.allNodes().size() +
                 ", leavingNodesSize=" + leavingNodesSize + ", failedNodesSize=" + failedNodesSize +
                 ", msgWorker.queue.size=" + (msgWorker != null ? msgWorker.queueSize() : "N/A") +
+                ", clients=" + ring.clientNodes().size() +
+                ", clientWorkers=" + clientMsgWorkers.size() +
                 ", lastUpdate=" + (locNode != null ? U.format(locNode.lastUpdateTime()) : "N/A") +
                 ", heapFree=" + runtime.freeMemory() / (1024 * 1024) +
                 "M, heapTotal=" + runtime.maxMemory() / (1024 * 1024) + "M]");
@@ -1944,7 +1946,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private static class PendingMessages implements Iterable<TcpDiscoveryAbstractMessage> {
         /** */
-        private static final int MAX = 1024;
+        private static final int MAX = 50;
 
         /** Pending messages. */
         private final Queue<TcpDiscoveryAbstractMessage> msgs = new ArrayDeque<>(MAX * 2);
@@ -5628,7 +5630,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.sock = sock;
             this.clientNodeId = clientNodeId;
 
-            out = new BufferedOutputStream(sock.getOutputStream(), sock.getSendBufferSize());
+            out = new BufferedOutputStream(sock.getOutputStream(), 4096);
         }
 
         /**
@@ -5654,6 +5656,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
+            boolean success = false;
+
             try {
                 assert msg.verified() : msg;
 
@@ -5689,6 +5693,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     spi.writeToSocket(sock, out, msg, spi.failureDetectionTimeoutEnabled() ?
                         spi.failureDetectionTimeout() : spi.getSocketTimeout());
                 }
+
+                success = true;
             }
             catch (IgniteCheckedException | IOException e) {
                 if (log.isDebugEnabled())
@@ -5697,12 +5703,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 onException("Client connection failed [sock=" + sock + ", locNodeId="
                     + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']', e);
+            }
+            finally {
+                if (!success) {
+                    clientMsgWorkers.remove(clientNodeId, this);
 
-                clientMsgWorkers.remove(clientNodeId, this);
+                    U.interrupt(this);
 
-                U.interrupt(this);
-
-                U.closeQuiet(sock);
+                    U.closeQuiet(sock);
+                }
             }
         }
 
