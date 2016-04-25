@@ -161,7 +161,9 @@ public abstract class BPlusTree<L, T extends L> {
     private final PageHandler<Get> search = new GetPageHandler<Get>() {
         @Override public int run0(Page page, ByteBuffer buf, BPlusIO<L> io, Get g, int lvl)
             throws IgniteCheckedException {
-            g.backId = 0; // Usually we'll go left down.
+            boolean needBackIfRouting = g.backId != 0;
+
+            g.backId = 0; // Usually we'll go left down and don't need it.
 
             int cnt = io.getCount(buf);
             int idx = findInsertionPoint(io, buf, cnt, g.row);
@@ -200,14 +202,16 @@ public abstract class BPlusTree<L, T extends L> {
             else {
                 assert idx == cnt;
                 // Here child's forward is unknown to us (we either go right or it is an empty "routing" page),
-                // need to ask our forward about the child's forward (it must be leftmost child or our forward page).
+                // need to ask our forward about the child's forward (it must be leftmost child of our forward page).
                 // This is ok from the locking standpoint because we take all locks in the forward direction.
                 long fwdId = io.getForward(buf);
 
-                g.fwdId = fwdId == 0 ? 0 : getLeftmostChild(fwdId);
+                g.fwdId = fwdId == 0 ? 0 : getChild(fwdId, false);
 
-                if (cnt != 0) // If empty, it is a routing page and we go to the left, otherwise we go to the right.
+                if (cnt != 0) // It is not a routing page and we are going to the right, can get backId here.
                     g.backId = inner(io).getLeft(buf, cnt - 1);
+                else if (needBackIfRouting && g.getClass() == Remove.class)
+                    return Remove.GO_DOWN_X; // Can't get backId here because of possible deadlock.
             }
 
             return Get.GO_DOWN;
@@ -426,9 +430,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             // We don't have a back page, need to lock our forward and become a back for it.
             // If found then we are on inner replacement page, it will be a top parent, no need to lock forward.
-            boolean noBack = !found && r.fwdId != 0 && r.backId == 0;
-
-            if (noBack)
+            if (!found && r.fwdId != 0 && r.backId == 0)
                 r.lockForward(lvl);
 
             r.addTail(page, buf, io, lvl, Tail.EXACT, idx);
@@ -885,10 +887,16 @@ public abstract class BPlusTree<L, T extends L> {
                 // Init args.
                 r.pageId = pageId;
                 r.fwdId = fwdId;
+                r.backId = backId;
 
                 int res = readPage(page, search, r, lvl, Remove.RETRY);
 
                 switch (res) {
+                    case Remove.GO_DOWN_X:
+                        // We need to get backId here for our page, it must be the last child of our back.
+                        r.backId = getChild(backId, true);
+
+                        // Intentional fallthrough.
                     case Remove.GO_DOWN:
                         res = removeDown(r, r.pageId, r.backId, r.fwdId, lvl - 1);
 
@@ -929,7 +937,7 @@ public abstract class BPlusTree<L, T extends L> {
                         if (res == Remove.NOT_FOUND) {
                             assert r.ceil: "must be a retry if not a ceiling remove";
 
-                            r.finish(); // TODO may be try to remove from forward
+                            r.finish();
                         }
                         else if (res == Remove.FOUND && r.needReplaceInner == FALSE && r.needMerge == FALSE) {
                             // Finish if we don't need to do any merges.
@@ -1209,9 +1217,10 @@ public abstract class BPlusTree<L, T extends L> {
 
     /**
      * @param pageId Inner page ID.
-     * @return Leftmost child page ID.
+     * @param last If {@code true}, then get the last, else get the first child page.
+     * @return Child page ID.
      */
-    private long getLeftmostChild(long pageId) throws IgniteCheckedException {
+    private long getChild(long pageId, boolean last) throws IgniteCheckedException {
         try (Page page = page(pageId)) {
             assert page != null : "we've locked back page, forward can't be merged";
 
@@ -1220,9 +1229,11 @@ public abstract class BPlusTree<L, T extends L> {
             try {
                 BPlusIO<L> io = io(buf);
 
-                assert io.getCount(buf) >= 0; // Count can be 0 if it is a routing page.
+                // Count can be 0 here if it is a routing page, in this case we have single child.
+                int idx = last ? io.getCount(buf) : 0;
 
-                long res = inner(io).getLeft(buf, 0);
+                // getLeft(cnt) is the same as getRight(cnt - 1)
+                long res = inner(io).getLeft(buf, idx);
 
                 assert res != 0: "inner page with no route down: " + page.fullId();
 
@@ -1279,7 +1290,8 @@ public abstract class BPlusTree<L, T extends L> {
                         if (res == Put.RETRY_ROOT || p.isFinished())
                             return res;
 
-                        checkInterrupted();
+                        if (res == Put.RETRY)
+                            checkInterrupted();
 
                         continue; // We have to insert split row to this level or it is a retry.
 
@@ -1321,16 +1333,19 @@ public abstract class BPlusTree<L, T extends L> {
         static final int GO_DOWN = 1;
 
         /** */
-        static final int RETRY = 2;
-
-        /** */
-        static final int RETRY_ROOT = 3;
-
-        /** */
-        static final int NOT_FOUND = 4;
+        static final int GO_DOWN_X = 2;
 
         /** */
         static final int FOUND = 5;
+
+        /** */
+        static final int NOT_FOUND = 6;
+
+        /** */
+        static final int RETRY = 8;
+
+        /** */
+        static final int RETRY_ROOT = 9;
 
         /** */
         long rmvId;
@@ -1682,14 +1697,18 @@ public abstract class BPlusTree<L, T extends L> {
             assert needMerge != FALSE || needReplaceInner != FALSE;
             assert tail != null;
 
+            if (needReplaceInner == TRUE)
+                return false; // Need to find inner page.
+
             if (needReplaceInner == READY) {
                 assert needMerge == FALSE: needMerge;
-                assert getTail(0) != null: "we must keep lock on the leaf page";
 
                 // We increment remove ID in write lock on leaf page, thus it is guaranteed that
                 // any successor will get greater value than he had read at the beginning of the operation.
-                // Thus it will be guaranteed to do a retry from root.
-                globalRmvId.incrementAndGet(); // TODO replace with pageId bit patching
+                // Thus he is guaranteed to do a retry from root. Since inner replace takes locks on the whole branch
+                // and releases the locks only when the inner key is updated and the successor saw the updated removeId,
+                // then after retry from root, he will see updated inner key.
+                globalRmvId.incrementAndGet();
 
                 // Need to replace inner key with new max key for the left subtree.
                 doReplaceInner();
@@ -1828,13 +1847,13 @@ public abstract class BPlusTree<L, T extends L> {
             throws IgniteCheckedException {
             assert cnt > 0;
             assert idx >= 0;
-            assert idx <= cnt;
+            assert idx < cnt; // TODO check why is the code below exists
 
-            if (idx == cnt) {
-                idx--; // This may happen in case of right turn, we need to remove the rightmost ref and link.
-
-                assert !kickLeftChild: "right child must be dropped here";
-            }
+//            if (idx == cnt) {
+//                idx--; // This may happen in case of right turn, we need to remove the rightmost ref and link.
+//
+//                assert !kickLeftChild: "right child must be dropped here";
+//            }
 
             cnt--;
 
