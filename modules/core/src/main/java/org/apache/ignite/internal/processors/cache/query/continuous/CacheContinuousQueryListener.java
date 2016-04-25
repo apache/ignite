@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.util.Map;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous query listener.
  */
-interface CacheContinuousQueryListener<K, V> {
+public interface CacheContinuousQueryListener<K, V> {
     /**
      * Query execution callback.
      */
@@ -36,8 +38,10 @@ interface CacheContinuousQueryListener<K, V> {
      * @param evt Event
      * @param primary Primary flag.
      * @param recordIgniteEvt Whether to record event.
+     * @param fut Dht atomic future.
      */
-    public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt, boolean primary, boolean recordIgniteEvt);
+    public void onEntryUpdated(CacheContinuousQueryEvent<K, V> evt, boolean primary,
+        boolean recordIgniteEvt, @Nullable GridDhtAtomicUpdateFuture fut);
 
     /**
      * Listener unregistered callback.
@@ -67,8 +71,9 @@ interface CacheContinuousQueryListener<K, V> {
     /**
      * @param evt Event
      * @param topVer Topology version.
+     * @param primary Primary
      */
-    public void skipUpdateEvent(CacheContinuousQueryEvent<K, V> evt, AffinityTopologyVersion topVer);
+    public void skipUpdateEvent(CacheContinuousQueryEvent<K, V> evt, AffinityTopologyVersion topVer, boolean primary);
 
     /**
      * @param part Partition.

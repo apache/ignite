@@ -569,6 +569,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             }
                             else
                                 cacheCtx.affinity().clientEventTopologyChange(discoEvt, exchId.topologyVersion());
+
+                            if (!exchId.isJoined())
+                                cacheCtx.preloader().unwindUndeploys();
                         }
 
                         if (exchId.isLeft())
@@ -845,8 +848,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     // Partition release future is done so we can flush the write-behind store.
                     cacheCtx.store().forceFlush();
 
-                    // Process queued undeploys prior to sending/spreading map.
-                    cacheCtx.preloader().unwindUndeploys();
+                    if (!exchId.isJoined())
+                        // Process queued undeploys prior to sending/spreading map.
+                        cacheCtx.preloader().unwindUndeploys();
 
                     GridDhtPartitionTopology top = cacheCtx.topology();
 
@@ -925,7 +929,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         U.warn(log, "Failed to wait for partition release future [topVer=" + topologyVersion() +
             ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
 
-        cctx.exchange().dumpPendingObjects();
+        cctx.exchange().dumpDebugInfo();
     }
 
     /**
@@ -989,7 +993,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     locMap = new GridDhtPartitionMap(locMap.nodeId(), locMap.updateSequence(), locMap.map());
 
                 m.addLocalPartitionMap(cacheCtx.cacheId(), locMap);
-                
+
                 m.partitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters());
             }
         }

@@ -36,6 +36,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -47,6 +48,20 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReflectiveSerializer;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.jetbrains.annotations.Nullable;
+import sun.misc.Unsafe;
 
 /**
  * Binary class descriptor.
@@ -55,7 +70,14 @@ public class BinaryClassDescriptor {
     /** */
     public static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
+    /** Apache Ignite base package name. */
+    private static final String OAI_PKG = "org.apache.ignite";
+
+    /** JSR166 backport. */
+    private static final String JSR166_PKG = "org.jsr166";
+
     /** */
+    @GridToStringExclude
     private final BinaryContext ctx;
 
     /** */
@@ -65,7 +87,7 @@ public class BinaryClassDescriptor {
     private final BinarySerializer serializer;
 
     /** ID mapper. */
-    private final BinaryIdMapper idMapper;
+    private final BinaryInternalMapper mapper;
 
     /** */
     private final BinaryWriteMode mode;
@@ -112,6 +134,9 @@ public class BinaryClassDescriptor {
     /** */
     private final boolean excluded;
 
+    /** */
+    private final Class<?>[] intfs;
+
     /**
      * @param ctx Context.
      * @param cls Class.
@@ -119,7 +144,7 @@ public class BinaryClassDescriptor {
      * @param typeId Type ID.
      * @param typeName Type name.
      * @param affKeyFieldName Affinity key field name.
-     * @param idMapper ID mapper.
+     * @param mapper Mapper.
      * @param serializer Serializer.
      * @param metaDataEnabled Metadata enabled flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
@@ -132,14 +157,14 @@ public class BinaryClassDescriptor {
         int typeId,
         String typeName,
         @Nullable String affKeyFieldName,
-        @Nullable BinaryIdMapper idMapper,
+        @Nullable BinaryInternalMapper mapper,
         @Nullable BinarySerializer serializer,
         boolean metaDataEnabled,
         boolean registered
     ) throws BinaryObjectException {
         assert ctx != null;
         assert cls != null;
-        assert idMapper != null;
+        assert mapper != null;
 
         // If serializer is not defined at this point, then we have to user OptimizedMarshaller.
         useOptMarshaller = serializer == null;
@@ -155,7 +180,7 @@ public class BinaryClassDescriptor {
         this.typeName = typeName;
         this.affKeyFieldName = affKeyFieldName;
         this.serializer = serializer;
-        this.idMapper = idMapper;
+        this.mapper = mapper;
         this.registered = registered;
 
         schemaReg = ctx.schemaRegistry(typeId);
@@ -173,11 +198,14 @@ public class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType) {
-            U.quietAndWarn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be written in binary format because " +
-                "it either implements Externalizable interface or have writeObject/readObject methods. Please " +
-                "ensure that all nodes have this class in classpath. To enable binary serialization either " +
-                "implement " + Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
+        if (useOptMarshaller && userType && !cls.getName().startsWith(OAI_PKG) && !cls.getName().startsWith(JSR166_PKG)
+            && !U.isJdk(cls)) {
+            U.warn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
+                BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
+                "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
+                "used instead and class instances will be deserialized on the server. Please ensure that all nodes " +
+                "have this class in classpath. To enable binary serialization either implement " +
+                Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
                 "BinaryTypeConfiguration.setSerializer() method.");
         }
 
@@ -230,6 +258,16 @@ public class BinaryClassDescriptor {
                 fields = null;
                 stableFieldsMeta = null;
                 stableSchema = null;
+                intfs = null;
+
+                break;
+
+            case PROXY:
+                ctor = null;
+                fields = null;
+                stableFieldsMeta = null;
+                stableSchema = null;
+                intfs = cls.getInterfaces();
 
                 break;
 
@@ -238,6 +276,7 @@ public class BinaryClassDescriptor {
                 fields = null;
                 stableFieldsMeta = null;
                 stableSchema = null;
+                intfs = null;
 
                 break;
 
@@ -268,7 +307,7 @@ public class BinaryClassDescriptor {
 
                             assert added : name;
 
-                            int fieldId = idMapper.fieldId(typeId, name);
+                            int fieldId = this.mapper.fieldId(typeId, name);
 
                             if (!ids.add(fieldId))
                                 throw new BinaryObjectException("Duplicate field ID: " + name);
@@ -291,6 +330,8 @@ public class BinaryClassDescriptor {
                 fields = fields0.toArray(new BinaryFieldAccessor[fields0.size()]);
 
                 stableSchema = schemaBuilder.build();
+
+                intfs = null;
 
                 break;
 
@@ -612,6 +653,11 @@ public class BinaryClassDescriptor {
 
                 break;
 
+            case PROXY:
+                writer.doWriteProxy((Proxy)obj, intfs);
+
+                break;
+
             case BINARY_OBJ:
                 writer.doWriteBinaryObject((BinaryObjectImpl)obj);
 
@@ -634,7 +680,7 @@ public class BinaryClassDescriptor {
                             if (schemaReg.schema(schemaId) == null) {
                                 // This is new schema, let's update metadata.
                                 BinaryMetadataCollector collector =
-                                    new BinaryMetadataCollector(typeId, typeName, idMapper);
+                                    new BinaryMetadataCollector(typeId, typeName, mapper);
 
                                 if (serializer != null)
                                     serializer.writeBinary(obj, collector);
@@ -802,5 +848,10 @@ public class BinaryClassDescriptor {
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to get constructor for class: " + cls.getName(), e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BinaryClassDescriptor.class, this);
     }
 }
