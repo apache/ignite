@@ -249,5 +249,5 @@ public interface GridDhtPartitionTopology {
      */
     public boolean rebalanceFinished(AffinityTopologyVersion topVer);
 
-    public boolean outdated(GridDhtLocalPartition part);
+    public boolean ownIfUpToDate(GridDhtLocalPartition part);
 }

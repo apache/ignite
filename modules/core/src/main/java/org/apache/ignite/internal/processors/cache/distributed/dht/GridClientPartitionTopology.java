@@ -833,6 +833,12 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         return false;
     }
 
+    @Override public boolean ownIfUpToDate(GridDhtLocalPartition part) {
+        assert false : "Client topology should never own a partition: " + part;
+
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         assert updateSeq || lock.isWriteLockedByCurrentThread();
@@ -854,17 +860,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         finally {
             lock.writeLock().unlock();
         }
-    }
-
-    @Override public boolean outdated(GridDhtLocalPartition part) {
-        long partCntr = part.updateCounter();
-
-        Long cntr = cntrMap.get(part.id());
-
-        if (cntr == null)
-            return false;
-
-        return partCntr < cntr;
     }
 
     /** {@inheritDoc} */

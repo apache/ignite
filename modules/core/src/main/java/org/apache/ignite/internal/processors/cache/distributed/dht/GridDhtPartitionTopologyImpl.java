@@ -1294,15 +1294,35 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         }
     }
 
-    @Override public boolean outdated(GridDhtLocalPartition part) {
+    @Override public boolean ownIfUpToDate(GridDhtLocalPartition part) {
+        ClusterNode loc = cctx.localNode();
+
         long partCntr = part.updateCounter();
 
-        Long cntr = cntrMap.get(part.id());
+        lock.writeLock().lock();
 
-        if (cntr == null)
+        try {
+            Long cntr = cntrMap.get(part.id());
+
+            if (cntr == null || partCntr < cntr) {
+                if (part.own()) {
+                    updateLocal(part.id(), loc.id(), part.state(), updateSeq.incrementAndGet());
+
+                    consistencyCheck();
+
+                    return true;
+                }
+
+                consistencyCheck();
+
+                return false;
+            }
+
             return false;
-
-        return partCntr < cntr;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
