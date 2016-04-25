@@ -1591,7 +1591,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         IgniteCheckedException lastEx = null;
 
         // If configured TCP port is busy, find first available in range.
-        for (int port = locPort; port < locPort + locPortRange; port++) {
+        int lastPort = locPortRange == 0 ? locPort : locPort + locPortRange - 1;
+
+        for (int port = locPort; port <= lastPort; port++) {
             try {
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;

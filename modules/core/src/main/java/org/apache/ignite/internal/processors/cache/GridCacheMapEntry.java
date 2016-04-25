@@ -40,6 +40,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheMvccEntryExtras;
@@ -1248,6 +1249,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     tx.local(),
                     false,
                     updateCntr0,
+                    null,
                     topVer);
             }
 
@@ -1445,6 +1447,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     tx.local(),
                     false,
                     updateCntr0,
+                    null,
                     topVer);
             }
 
@@ -1821,6 +1824,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     true,
                     false,
                     updateCntr,
+                    null,
                     AffinityTopologyVersion.NONE);
             }
 
@@ -1870,7 +1874,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable final UUID subjId,
         final String taskName,
         @Nullable final CacheObject prevVal,
-        @Nullable final Long updateCntr
+        @Nullable final Long updateCntr,
+        @Nullable GridDhtAtomicUpdateFuture fut
     ) throws IgniteCheckedException, GridCacheEntryRemovedException, GridClosureException {
         assert cctx.atomic();
 
@@ -1899,7 +1904,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         Long updateCntr0 = null;
 
         synchronized (this) {
-            boolean needVal = intercept || retval || op == GridCacheOperation.TRANSFORM || !F.isEmptyOrNulls(filter);
+            boolean internal = isInternal() || !context().userCache();
+
+            Map<UUID, CacheContinuousQueryListener> lsnrs = cctx.continuousQueries().updateListeners(internal, false);
+
+            boolean needVal = lsnrs != null || intercept || retval || op == GridCacheOperation.TRANSFORM
+                || !F.isEmptyOrNulls(filter);
 
             checkObsolete();
 
@@ -2093,6 +2103,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 primary,
                                 false,
                                 updateCntr0,
+                                null,
                                 topVer);
                         }
 
@@ -2501,13 +2512,42 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (res)
                 updateMetrics(op, metrics);
 
+            // Continuous query filter should be perform under lock.
+            if (lsnrs != null) {
+                CacheObject evtVal = updated;
+                CacheObject evtOldVal = oldVal;
+
+                if (isOffHeapValuesOnly()) {
+                    evtVal = cctx.toCacheObject(cctx.unwrapTemporary(evtVal));
+
+                    evtOldVal = cctx.toCacheObject(cctx.unwrapTemporary(evtOldVal));
+                }
+
+                cctx.continuousQueries().onEntryUpdated(lsnrs, key, evtVal, evtOldVal, internal,
+                    partition(), primary, false, updateCntr0, fut, topVer);
+            }
+
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE, keepBinary);
 
             if (intercept) {
                 if (op == GridCacheOperation.UPDATE)
-                    cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(cctx, key, key0, updated, updated0, keepBinary, updateCntr0));
+                    cctx.config().getInterceptor().onAfterPut(new CacheLazyEntry(
+                        cctx,
+                        key,
+                        key0,
+                        updated,
+                        updated0,
+                        keepBinary,
+                        updateCntr0));
                 else
-                    cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(cctx, key, key0, oldVal, old0, keepBinary, updateCntr0));
+                    cctx.config().getInterceptor().onAfterRemove(new CacheLazyEntry(
+                        cctx,
+                        key,
+                        key0,
+                        oldVal,
+                        old0,
+                        keepBinary,
+                        updateCntr0));
 
                 if (interceptRes != null)
                     oldVal = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
@@ -3302,6 +3342,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         true,
                         preload,
                         updateCntr,
+                        null,
                         topVer);
 
                     cctx.dataStructures().onEntryUpdated(key, false, true);
