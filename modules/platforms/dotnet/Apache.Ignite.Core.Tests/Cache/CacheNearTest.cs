@@ -20,15 +20,19 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
+    using Apache.Ignite.Core.Events;
     using NUnit.Framework;
 
     /// <summary>
     /// Near cache test.
     /// </summary>
-    public class CacheNearTest
+    public class CacheNearTest : IEventListener<CacheEvent>
     {
         /** */
         private IIgnite _grid;
+
+        /** */
+        private volatile CacheEvent _lastEvent;
 
         /// <summary>
         /// Fixture set up.
@@ -47,7 +51,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                             EvictionPolicy = new FifoEvictionPolicy {MaxSize = 5}
                         }
                     }
-                }
+                },
+                IncludedEventTypes = new[] { EventType.CacheEntryCreated }
             };
 
             _grid = Ignition.Start(cfg);
@@ -134,13 +139,16 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 ClientMode = true,
-                GridName = "clientGrid"
+                GridName = "clientGrid",
+                IncludedEventTypes = new[] {EventType.CacheEntryCreated}
             };
 
             using (var clientGrid = Ignition.Start(cfg))
             {
                 var cache = clientGrid.CreateCache<int, string>(new CacheConfiguration(cacheName), 
                     new NearCacheConfiguration());
+
+                AssertCacheIsNear(cache);
 
                 cache[1] = "1";
                 Assert.AreEqual("1", cache[1]);
@@ -150,6 +158,30 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 Assert.AreEqual("1", cache2[1]);
             }
+        }
+
+        /// <summary>
+        /// Asserts the cache is near.
+        /// </summary>
+        private void AssertCacheIsNear(ICache<int, string> cache)
+        {
+            var events = cache.Ignite.GetEvents();
+            events.LocalListen(this, EventType.CacheEntryCreated);
+
+            _lastEvent = null;
+            cache[-1] = "test";
+
+            Assert.IsNotNull(_lastEvent);
+            Assert.IsTrue(_lastEvent.IsNear);
+
+            events.StopLocalListen(this, EventType.CacheEntryCreated);
+        }
+
+        /** <inheritdoc /> */
+        public bool Invoke(CacheEvent evt)
+        {
+            _lastEvent = evt;
+            return true;
         }
     }
 }
