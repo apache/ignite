@@ -28,7 +28,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Interop;
     using NUnit.Framework;
 
@@ -65,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public void FixtureSetUp()
         {
             // Main .NET nodes
-            IList<String> jvmOpts = TestUtils.TestJavaOptions();
+            var jvmOpts = TestUtils.TestJavaOptions();
 
             _ignite = Ignition.Start(new IgniteConfiguration
             {
