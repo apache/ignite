@@ -167,6 +167,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             var filter = javaObj.ToCacheEntryEventFilter<int, string>();
 
             TestFilter(filter);
+
+            // TODO: Test with cache of binary objects
         }
 
         /// <summary>
