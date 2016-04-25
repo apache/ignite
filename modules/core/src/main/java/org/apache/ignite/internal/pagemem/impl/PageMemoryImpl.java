@@ -956,6 +956,8 @@ public class  PageMemoryImpl implements PageMemory {
 
         long relEvictAddr = INVALID_REL_PTR;
 
+        int iterations = 0;
+
         while (true) {
             long cleanAddr = INVALID_REL_PTR;
             long cleanTs = Long.MAX_VALUE;
@@ -1004,10 +1006,12 @@ public class  PageMemoryImpl implements PageMemory {
             final long metaPageId = mem.readLong(dbMetaPageIdPtr);
 
             if (fullPageId.pageId() == metaPageId && fullPageId.cacheId() == 0) {
-                if (ignored == null)
-                    ignored = new HashSet<>();
+                if (++iterations > 2) {
+                    if (ignored == null)
+                        ignored = new HashSet<>();
 
-                ignored.add(relEvictAddr);
+                    ignored.add(relEvictAddr);
+                }
 
                 continue;
             }
@@ -1017,10 +1021,12 @@ public class  PageMemoryImpl implements PageMemory {
             if (!seg.acquiredPages.containsKey(fullPageId))
                 seg.loadedPages.remove(fullPageId);
             else {
-                if (ignored == null)
-                    ignored = new HashSet<>();
+                if (++iterations > 2) {
+                    if (ignored == null)
+                        ignored = new HashSet<>();
 
-                ignored.add(relEvictAddr);
+                    ignored.add(relEvictAddr);
+                }
 
                 continue;
             }
