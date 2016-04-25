@@ -257,7 +257,12 @@ consoleModule.controller('sqlController', [
 
                     _setActiveCache();
                 })
-                .catch((err) => agentMonitor.showNodeError(err.message));
+                .catch((err) => {
+                    if (err.code === 2)
+                        return agentMonitor.showNodeError('Agent is failed to authenticate in grid. Please check agent\'s login and password.');
+
+                    agentMonitor.showNodeError(err.message)}
+                );
 
         var loadNotebook = function (notebook) {
             $scope.notebook = notebook;
@@ -288,7 +293,7 @@ consoleModule.controller('sqlController', [
                 })
                 .then(() => {
                     if ($scope.$root.IgniteDemoMode)
-                        $state.current.data.loading = 'Enable SQL demo...';
+                        $state.current.data.loading = 'Demo grid is starting. Please wait...';
 
                     $loading.start('loading');
 

@@ -152,7 +152,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                     const code = res.code;
 
                     if (code === 401)
-                        return reject(Error('Failed to authenticate on node.', 2));
+                        return reject(new Error('Failed to authenticate on node.'));
 
                     if (code !== 200)
                         return reject(new Error(error || 'Failed connect to node and execute REST command.'));
@@ -163,7 +163,11 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                         if (msg.successStatus === 0)
                             return resolve(msg.response);
 
-                        reject(new Error(msg.error, msg.successStatus));
+                        const err = new Error(msg.error);
+
+                        err.code = msg.successStatus;
+
+                        reject(err);
                     }
                     catch (e) {
                         return reject(e);
