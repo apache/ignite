@@ -209,6 +209,31 @@ public class XmlGenerator {
     }
 
     /**
+     * Add query field aliases to xml document.
+     *
+     * @param doc XML document.
+     * @param parent Parent XML node.
+     * @param fields Map with fields.
+     */
+    private static void addQueryFieldAliases(Document doc, Node parent, Collection<PojoField> fields) {
+        Collection<PojoField> aliases = new ArrayList<>();
+
+        for (PojoField field : fields) {
+            if (!field.javaName().equalsIgnoreCase(field.dbName()))
+                aliases.add(field);
+        }
+
+        if (!aliases.isEmpty()) {
+            Element prop = addProperty(doc, parent, "aliases", null);
+
+            Element map = addElement(doc, prop, "util:map", "map-class", "java.util.LinkedHashMap");
+
+            for (PojoField alias : aliases)
+                addElement(doc, map, "entry", "key", alias.javaName(), "value", alias.dbName());
+        }
+    }
+
+    /**
      * Add indexes to xml document.
      *
      * @param doc XML document.
@@ -298,8 +323,9 @@ public class XmlGenerator {
      * @param parent Parent XML node.
      * @param pkg Package fo types.
      * @param pojo POJO descriptor.
+     * @param generateAliases {@code true} if aliases should be generated for query fields.
      */
-    private static void addQueryEntity(Document doc, Node parent, String pkg, PojoDescriptor pojo) {
+    private static void addQueryEntity(Document doc, Node parent, String pkg, PojoDescriptor pojo, boolean generateAliases) {
         Element bean = addBean(doc, parent, QueryEntity.class);
 
         addProperty(doc, bean, "keyType", pkg + "." + pojo.keyClassName());
@@ -310,6 +336,9 @@ public class XmlGenerator {
 
         addQueryFields(doc, bean, fields);
 
+        if (generateAliases)
+            addQueryFieldAliases(doc, bean, fields);
+
         addQueryIndexes(doc, bean, fields, pojo.indexes());
     }
 
@@ -318,12 +347,14 @@ public class XmlGenerator {
      *
      * @param pkg Package fo types.
      * @param pojo POJO descriptor.
+     * @param includeKeys {@code true} if key fields should be included into value class.
+     * @param generateAliases {@code true} if aliases should be generated for query fields.
      * @param out File to output result.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      */
-    public static void generate(String pkg, PojoDescriptor pojo, boolean includeKeys, File out,
+    public static void generate(String pkg, PojoDescriptor pojo, boolean includeKeys, boolean generateAliases, File out,
         ConfirmCallable askOverwrite) {
-        generate(pkg, Collections.singleton(pojo), includeKeys, out, askOverwrite);
+        generate(pkg, Collections.singleton(pojo), includeKeys, generateAliases, out, askOverwrite);
     }
 
     /**
@@ -331,11 +362,13 @@ public class XmlGenerator {
      *
      * @param pkg Package fo types.
      * @param pojos POJO descriptors.
+     * @param includeKeys {@code true} if key fields should be included into value class.
+     * @param generateAliases {@code true} if aliases should be generated for query fields.
      * @param out File to output result.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      */
-    public static void generate(String pkg, Collection<PojoDescriptor> pojos, boolean includeKeys, File out,
-        ConfirmCallable askOverwrite) {
+    public static void generate(String pkg, Collection<PojoDescriptor> pojos, boolean includeKeys,
+        boolean generateAliases, File out, ConfirmCallable askOverwrite) {
 
         File outFolder = out.getParentFile();
 
@@ -383,7 +416,7 @@ public class XmlGenerator {
                 addJdbcPojoStoreFactory(doc, typesItemsElem, pkg, pojo, includeKeys);
 
             for (PojoDescriptor pojo : pojos)
-                addQueryEntity(doc, beans, pkg, pojo);
+                addQueryEntity(doc, beans, pkg, pojo, generateAliases);
 
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
 
