@@ -18,6 +18,7 @@
 package org.apache.ignite.platform;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -44,7 +45,15 @@ public class PlatformCacheEntryEventFilterFactory implements Serializable,
 
         return new CacheEntryEventSerializableFilter() {
             @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
-                return ((String)event.getValue()).startsWith(startsWith);
+                Object value = event.getValue();
+
+                if (value instanceof String)
+                    return ((String)value).startsWith(startsWith);
+
+                assert value instanceof BinaryObject;
+
+                // TODO
+                return true;
             }
         };
     }
