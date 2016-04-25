@@ -368,6 +368,13 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration)
         {
+            return GetOrCreateCache<TK, TV>(configuration, null);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, 
+            NearCacheConfiguration nearConfiguration)
+        {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
@@ -375,6 +382,8 @@ namespace Apache.Ignite.Core.Impl
                 var writer = Marshaller.StartMarshal(stream);
 
                 configuration.Write(writer);
+
+                // TODO
 
                 stream.SynchronizeOutput();
 
@@ -391,6 +400,13 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration)
         {
+            return CreateCache<TK, TV>(configuration, null);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, 
+            NearCacheConfiguration nearConfiguration)
+        {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
@@ -398,6 +414,8 @@ namespace Apache.Ignite.Core.Impl
                 var writer = Marshaller.StartMarshal(stream);
 
                 configuration.Write(writer);
+
+                // TODO
 
                 stream.SynchronizeOutput();
 
