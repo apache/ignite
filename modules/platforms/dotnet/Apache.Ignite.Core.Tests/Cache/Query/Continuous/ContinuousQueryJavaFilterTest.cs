@@ -238,6 +238,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         private void TestFilter<T>(ICacheEntryEventFilter<int, T> pred, bool local, T validVal, T invalidVal)
         {
             var cache = _ignite.GetOrCreateCache<int, T>("qry");
+            cache.Clear();
+
             var qry = new ContinuousQuery<int, T>(new QueryListener<T>(), pred, local);
             var aff = _ignite.GetAffinity("qry");
             var localNode = _ignite.GetCluster().GetLocalNode();
@@ -293,8 +295,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 String = s;
             }
 
-            public int Int { get; set; }
-            public string String { get; set; }
+            public int Int { get; }
+            public string String { get; }
+
+            protected bool Equals(TestBinary other)
+            {
+                return Int == other.Int && string.Equals(String, other.String);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                if (ReferenceEquals(this, obj)) return true;
+                if (obj.GetType() != this.GetType()) return false;
+                return Equals((TestBinary) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (Int*397) ^ (String != null ? String.GetHashCode() : 0);
+                }
+            }
         }
     }
 }
