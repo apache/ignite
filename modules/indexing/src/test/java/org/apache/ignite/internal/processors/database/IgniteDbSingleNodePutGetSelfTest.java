@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -270,7 +271,69 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         assertTrue(plan, plan.contains("iVal_idx"));
     }
 
+    /**
+     * @throws Exception if failed.
+     */
+    public void testMultithreadedPut() throws Exception {
+        IgniteEx ig = grid(0);
 
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        X.println("Put start");
+
+        int cnt = 20_000;
+
+        try (IgniteDataStreamer<Integer, DbValue> st = ig.dataStreamer(null)) {
+            st.allowOverwrite(true);
+
+            for (int i = 0; i < cnt; i++) {
+                DbValue v0 = new DbValue(i, "test-value", i);
+
+                st.addData(i, v0);
+            }
+        }
+
+        X.println("Get start");
+
+        for (int i = 0; i < cnt; i++) {
+            DbValue v0 = new DbValue(i, "test-value", i);
+
+            assertEquals(v0, cache.get(i));
+        }
+
+        awaitPartitionMapExchange();
+
+        X.println("Query start");
+
+        assertEquals(cnt, cache.query(new SqlFieldsQuery("select null from dbvalue")).getAll().size());
+
+        int limit = 500;
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery("select ival, _val from dbvalue where ival < ? order by ival")
+            .setArgs(limit)).getAll();
+
+        assertEquals(limit, res.size());
+
+        for (int i = 0; i < limit; i++) {
+            List<?> row = res.get(i);
+
+            assertEquals(2, row.size());
+            assertEquals(i, row.get(0));
+
+            assertEquals(new DbValue(i, "test-value", i), row.get(1));
+        }
+
+        assertEquals(1, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival = 7899")).getAll().size());
+        assertEquals(2000, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 5000 and ival < 7000"))
+            .getAll().size());
+
+        String plan = cache.query(new SqlFieldsQuery(
+            "explain select lval from dbvalue where ival >= 5000 and ival < 7000")).getAll().get(0).get(0).toString();
+
+        assertTrue(plan, plan.contains("iVal_idx"));
+
+        cache.clear();
+    }
 
     /**
      * @throws Exception if failed.
@@ -435,6 +498,9 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception if failed.
+     */
     public void testPutGetRemoveMultipleForward() throws Exception {
         IgniteEx ig = grid(0);
 
