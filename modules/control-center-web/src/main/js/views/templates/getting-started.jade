@@ -14,17 +14,19 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.modal.center(role='dialog'): .modal-dialog: .modal-content
-    #errors-container.modal-header.header
-        button.close(ng-click='close()' aria-hidden='true') &times;
-        h4.modal-title {{title}}
-    .getting-started
-        .col-xs-12(ng-bind-html='message')
-    .modal-footer
-        .checkbox
-            label
-                input(type='checkbox' ng-model='ui.showGettingStarted')
-                | Show getting started on next login
-        a.btn.btn-primary(ng-disabled='isFirst()' ng-click='!isFirst() && prev()') Prev
-        a.btn.btn-primary(ng-disabled='isLast()' ng-click='!isLast() && next()') Next
-        a.btn.btn-primary(ng-click='close()') Close
+.modal.center(role='dialog')
+    .modal-dialog
+        .modal-content
+            #errors-container.modal-header.header
+                button.close(ng-click='close()' aria-hidden='true') &times;
+                h4.modal-title {{title}}
+            .getting-started
+                .col-xs-12(ng-bind-html='message')
+            .modal-footer
+                .checkbox
+                    label
+                        input(type='checkbox' ng-model='ui.showGettingStarted')
+                        | Show getting started on next login
+                a.btn.btn-primary(ng-disabled='isFirst()' ng-click='!isFirst() && prev()') Prev
+                a.btn.btn-primary(ng-disabled='isLast()' ng-click='!isLast() && next()') Next
+                a.btn.btn-primary(ng-click='close()') Close
