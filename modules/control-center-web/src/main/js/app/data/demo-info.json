@@ -3,12 +3,16 @@
         "title": "Apache Ignite Web Console Demo",
         "message": [
             "<div class='col-xs-12'>",
-            " <p>",
-            "  In order to try Apache Ignite Console in Demo mode you need to download and start ignite-web-agent.<br/>",
-            "  We prepared several predefined clusters, caches, domain models and IGFS file systems.<br/>",
-            "  You could try SQL and Monitoring features that will be executing on three nodes demo cluster that will be started inside agent.<br/>",
-            "  Also you could try import metadata from demo database which also started inside agent.",
-            " </p>",
+            " <p>Apache Ignite Console in Demo mode starts as a three-node cluster inside the ignite-web-agent. Click on:</p>",
+            " <ul>",
+            "  <li><b>Configuration</b> to checkout several predefined clusters, caches, domain models and IGFS.</li>",
+            "  <li><b>SQL</b> to run various SQL queries on the demo database, and view the data in a tabular form and as charts.</li>",
+            " </ul>",
+            " <p>In order to try Apache Ignite Console in Demo mode, you need to:</p>",
+            " <ul>",
+            " <li>Download and unzip ignite-web-agent archive</li> ",
+            " <li>Run shell file ignite-web-agent.{sh|bat}</li> ",
+            " </ul>",
             "</div>"
         ]
     }
