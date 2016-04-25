@@ -383,7 +383,13 @@ namespace Apache.Ignite.Core.Impl
 
                 configuration.Write(writer);
 
-                // TODO
+                if (nearConfiguration != null)
+                {
+                    writer.WriteBoolean(true);
+                    nearConfiguration.Write(writer);
+                }
+                else
+                    writer.WriteBoolean(false);
 
                 stream.SynchronizeOutput();
 
@@ -415,7 +421,13 @@ namespace Apache.Ignite.Core.Impl
 
                 configuration.Write(writer);
 
-                // TODO
+                if (nearConfiguration != null)
+                {
+                    writer.WriteBoolean(true);
+                    nearConfiguration.Write(writer);
+                }
+                else
+                    writer.WriteBoolean(false);
 
                 stream.SynchronizeOutput();
 

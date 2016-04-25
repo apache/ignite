@@ -264,7 +264,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
         CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createCache(cfg);
+        IgniteCacheProxy cache = reader.readBoolean()
+            ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
+            : (IgniteCacheProxy)ctx.grid().createCache(cfg);
 
         return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
@@ -274,7 +276,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
         CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
+        IgniteCacheProxy cache = reader.readBoolean()
+            ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
+            : (IgniteCacheProxy)ctx.grid().createCache(cfg);
 
         return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
