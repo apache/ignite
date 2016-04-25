@@ -223,7 +223,7 @@ angular
 .run(['$rootScope', ($root) => {
     $root._ = _;
 }])
-.run(['$rootScope', '$state', 'MetaTags', 'Auth', 'User', 'IgniteAgentMonitor', ($root, $state, $meta, Auth, User, AgentMonitor) => {
+.run(['$rootScope', '$state', 'MetaTags', 'Auth', 'User', 'IgniteAgentMonitor', ($root, $state, $meta, Auth, User, agentMonitor) => {
     $root.$state = $state;
 
     $root.$meta = $meta;
@@ -231,7 +231,7 @@ angular
     if (Auth.authorized) {
         User.read()
             .then((user) => $root.$broadcast('user', user))
-            .then(() => AgentMonitor.init());
+            .then(() => agentMonitor.init());
     }
 }])
 .run(['$rootScope', ($root) => {

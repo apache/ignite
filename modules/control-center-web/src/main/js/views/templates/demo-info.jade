@@ -18,10 +18,10 @@
     .modal-dialog
         .modal-content
             #errors-container.modal-header.header
-                button.close(ng-click='close()' aria-hidden='true') &times;
+                button.close(ng-show='hasAgents' ng-click='close()' aria-hidden='true') &times;
                 h4.modal-title {{title}}
             .getting-started
                 .col-xs-12(ng-bind-html='message')
             .modal-footer
-                button.btn.btn-primary(ng-click='downloadAgent()') Download zip
-                button.btn.btn-primary(ng-click='close()') Close
+                button.btn.btn-primary(ng-show='hasAgents' ng-click='close()') Close
+                button.btn.btn-primary(ng-hide='hasAgents' ng-click='downloadAgent()') Download zip

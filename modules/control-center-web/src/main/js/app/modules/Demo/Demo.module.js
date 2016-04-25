@@ -107,7 +107,7 @@ angular
         return items;
     }];
 }])
-.service('DemoInfo', ['$rootScope', '$modal', 'igniteDemoInfo', ($rootScope, $modal, igniteDemoInfo) => {
+.service('DemoInfo', ['$rootScope', '$modal', 'igniteDemoInfo', 'IgniteAgentMonitor', ($rootScope, $modal, igniteDemoInfo, agentMonitor) => {
     const scope = $rootScope.$new();
 
     function _fillPage() {
@@ -133,7 +133,10 @@ angular
         show: () => {
             _fillPage();
 
-            dialog.$promise.then(dialog.show);
+            dialog.$promise
+                .then(dialog.show)
+                .then(() => agentMonitor.awaitAgent())
+                .then(() => scope.hasAgents = true);
         }
     };
 }]);
