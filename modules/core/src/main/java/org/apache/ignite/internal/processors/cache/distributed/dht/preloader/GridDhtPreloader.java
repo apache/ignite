@@ -239,7 +239,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"LockAcquiredButNotSafelyReleased"})
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void onKernalStop() {
         if (log.isDebugEnabled())
             log.debug("DHT rebalancer onKernalStop callback.");
@@ -316,6 +316,13 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (part.state() != MOVING) {
                     if (log.isDebugEnabled())
                         log.debug("Skipping partition assignment (state is not MOVING): " + part);
+
+                    continue; // For.
+                }
+
+                if (!top.outdated(part)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Skipping partition assignment (partition is up-to-date): " + part);
 
                     continue; // For.
                 }
@@ -696,7 +703,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @param keys Keys to request.
      * @return Future for request.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
+    @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public GridDhtFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
         final GridDhtForceKeysFuture<?, ?> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
 
@@ -811,14 +818,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public void dumpDebugInfo() {
         if (!forceKeyFuts.isEmpty()) {
-            U.warn(log, "Pending force key futures [cache=" + cctx.name() +"]:");
+            U.warn(log, "Pending force key futures [cache=" + cctx.name() + "]:");
 
             for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
                 U.warn(log, ">>> " + fut);
         }
 
         if (!pendingAssignmentFetchFuts.isEmpty()) {
-            U.warn(log, "Pending assignment fetch futures [cache=" + cctx.name() +"]:");
+            U.warn(log, "Pending assignment fetch futures [cache=" + cctx.name() + "]:");
 
             for (GridDhtAssignmentFetchFuture fut : pendingAssignmentFetchFuts.values())
                 U.warn(log, ">>> " + fut);
@@ -848,7 +855,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (log.isDebugEnabled())
                 log.debug("Received message from node [node=" + nodeId + ", msg=" + msg + ']');
 
-            onMessage(node , msg);
+            onMessage(node, msg);
         }
 
         /**

@@ -856,6 +856,17 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         }
     }
 
+    @Override public boolean outdated(GridDhtLocalPartition part) {
+        long partCntr = part.updateCounter();
+
+        Long cntr = cntrMap.get(part.id());
+
+        if (cntr == null)
+            return false;
+
+        return partCntr < cntr;
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public GridDhtPartitionMap2 partitions(UUID nodeId) {
         lock.readLock().lock();
