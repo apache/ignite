@@ -188,7 +188,6 @@ public class PlatformCacheEntryEventFilter implements CacheEntryEventSerializabl
 
         assert value instanceof BinaryObject;
 
-        // TODO
-        return true;
+        return ((String)((BinaryObject)value).field("String")).startsWith(startsWith);
     }
 }

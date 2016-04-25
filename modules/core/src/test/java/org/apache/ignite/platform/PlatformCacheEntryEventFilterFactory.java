@@ -52,8 +52,7 @@ public class PlatformCacheEntryEventFilterFactory implements Serializable,
 
                 assert value instanceof BinaryObject;
 
-                // TODO
-                return true;
+                return ((String)((BinaryObject)value).field("String")).startsWith(startsWith);
             }
         };
     }
