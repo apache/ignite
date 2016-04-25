@@ -216,8 +216,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             dataMode = dataModes[i];
 
             if ((getConfiguration().getMarshaller() instanceof JdkMarshaller)
-                && (dataMode == DataMode.PLANE_OBJECT)) {
-                info("Skip test for JdkMarshaller & PLANE_OBJECT data mode");
+                && (dataMode == DataMode.PLANE_OBJECT || dataMode == DataMode.SERIALIZABLE)) {
+                info("Skip test for JdkMarshaller with PLANE_OBJECT & SERIALIZABLE data modes");
+
                 continue;
             }
 
@@ -266,6 +267,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         switch (mode) {
             case SERIALIZABLE:
                 return new SerializableObject(keyId);
+            case CUSTOM_SERIALIZABLE:
+                return new CustomSerializableObject(keyId);
             case EXTERNALIZABLE:
                 return new ExternalizableObject(keyId);
             case PLANE_OBJECT:
@@ -297,6 +300,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         switch (mode) {
             case SERIALIZABLE:
                 return new SerializableObject(idx);
+            case CUSTOM_SERIALIZABLE:
+                return new CustomSerializableObject(idx);
             case EXTERNALIZABLE:
                 return new ExternalizableObject(idx);
             case PLANE_OBJECT:
@@ -374,13 +379,37 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /**
-     *
+     * Can not be used by JdkMarshaller, because superclass {@link TestObject} is non-serializable.
      */
     protected static class SerializableObject extends TestObject implements Serializable {
+        /**
+         * Default constructor.
+         */
+        public SerializableObject() {
+        }
+
         /**
          * @param val Value.
          */
         public SerializableObject(int val) {
+            super(val);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class CustomSerializableObject extends TestObject implements Serializable {
+        /**
+         * Default constructor.
+         */
+        public CustomSerializableObject() {
+        }
+
+        /**
+         * @param val Value.
+         */
+        public CustomSerializableObject(int val) {
             super(val);
         }
 
@@ -417,7 +446,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         /**
          * Default constructor.
          */
-        public ExternalizableObject() {
+        ExternalizableObject() {
             super(-1);
         }
 
@@ -449,6 +478,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     public enum DataMode {
         /** Serializable objects. */
         SERIALIZABLE,
+
+        /** Customly serializable objects. */
+        CUSTOM_SERIALIZABLE,
 
         /** Externalizable objects. */
         EXTERNALIZABLE,
