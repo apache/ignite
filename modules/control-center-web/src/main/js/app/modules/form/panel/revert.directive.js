@@ -44,10 +44,7 @@ export default ['igniteFormRevert', ['$tooltip', '$table', ($tooltip, $table) =>
 
     return {
         restrict: 'E',
-        scope: {
-            model: '=ngModel',
-            models: '=models'
-        },
+        scope: { },
         template,
         link,
         replace: true,

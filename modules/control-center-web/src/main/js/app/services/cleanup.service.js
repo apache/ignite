@@ -22,6 +22,9 @@ export default ['$cleanup', () => {
 
         if (_.isObject(original)) {
             _.forOwn(original, (value, key) => {
+                if (/\$\$hashKey/.test(key))
+                    return;
+
                 const attr = cleanup(value);
 
                 if (!_.isNil(attr)) {

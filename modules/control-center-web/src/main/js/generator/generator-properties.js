@@ -121,10 +121,10 @@ $generatorProperties.sslProperties = function (cluster, res) {
 
         res.needEmptyLine = true;
 
-        if ($generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath))
+        if (_.isEmpty(cluster.sslContextFactory.keyStoreFilePath))
             res.line('ssl.key.storage.password=YOUR_SSL_KEY_STORAGE_PASSWORD');
 
-        if ($generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath))
+        if (_.isEmpty(cluster.sslContextFactory.trustStoreFilePath))
             res.line('ssl.trust.storage.password=YOUR_SSL_TRUST_STORAGE_PASSWORD');
     }
 

@@ -46,10 +46,10 @@ mixin binary-types-java-class(lbl, model, name, enabled, required, remove, autof
             data-java-keywords='true'
             data-java-built-in-class='true'
         )
-            +error-feedback('binary[' + name + '].$error.javaBuiltInClass', 'javaBuiltInClass', lbl + ' should not be the Java built-in class!', '{{' + name + '}}')
-            +error-feedback('binary[' + name + '].$error.javaKeywords', 'javaKeywords', lbl + ' could not contains reserved Java keyword!', '{{' + name + '}}')
-            +error-feedback('binary[' + name + '].$error.javaPackageSpecified', 'javaPackageSpecified', lbl + ' does not have package specified!', '{{' + name + '}}')
-            +error-feedback('binary[' + name + '].$error.javaIdentifier', 'javaIdentifier', lbl + ' is invalid Java identifier!', '{{' + name + '}}')
+            +error-feedback(form + 'TypeConfigurations[' + name + '].$error.javaBuiltInClass', 'javaBuiltInClass', lbl + ' should not be the Java built-in class!', '{{' + name + '}}')
+            +error-feedback(form + 'TypeConfigurations[' + name + '].$error.javaKeywords', 'javaKeywords', lbl + ' could not contains reserved Java keyword!', '{{' + name + '}}')
+            +error-feedback(form + 'TypeConfigurations[' + name + '].$error.javaPackageSpecified', 'javaPackageSpecified', lbl + ' does not have package specified!', '{{' + name + '}}')
+            +error-feedback(form + 'TypeConfigurations[' + name + '].$error.javaIdentifier', 'javaIdentifier', lbl + ' is invalid Java identifier!', '{{' + name + '}}')
 
 form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
@@ -70,7 +70,7 @@ form.panel.panel-default(name=form novalidate)
                 .settings-row
                     +java-class('Serializer:', form, model + '.serializer', 'serializer', 'true', 'false', 'Class with custom serialization logic for binary objects')
                 .settings-row
-                    ignite-form-group
+                    ignite-form-group(ng-form='#{form}TypeConfigurations' ng-model='#{types}')
                         ignite-form-field-label
                             | Type configurations
                         ignite-form-group-tooltip

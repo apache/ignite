@@ -824,17 +824,22 @@ $generatorXml.clusterSsl = function(cluster, res) {
         res = $generatorCommon.builder();
 
     if (cluster.sslEnabled && !_.isNil(cluster.sslContextFactory)) {
-        cluster.sslContextFactory.keyStorePassword =
-            $generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.keyStoreFilePath) ? '${ssl.key.storage.password}' : undefined;
+        let sslFactory;
 
-        cluster.sslContextFactory.trustStorePassword =
-            $generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath) ? '${ssl.trust.storage.password}' : undefined;
+        if (_.isEmpty(cluster.sslContextFactory.keyStoreFilePath) && _.isEmpty(cluster.sslContextFactory.trustStoreFilePath))
+            sslFactory = cluster.sslContextFactory;
+        else {
+            sslFactory = _.clone(cluster.sslContextFactory);
 
-        var propsDesc = $generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
+            sslFactory.keyStorePassword = _.isEmpty(cluster.sslContextFactory.keyStoreFilePath) ? null : '${ssl.key.storage.password}';
+            sslFactory.trustStorePassword = _.isEmpty(cluster.sslContextFactory.trustStoreFilePath) ? null : '${ssl.trust.storage.password}';
+        }
+
+        const propsDesc = $generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
             $generatorCommon.SSL_CONFIGURATION_TRUST_MANAGER_FACTORY :
             $generatorCommon.SSL_CONFIGURATION_TRUST_FILE_FACTORY;
 
-        $generatorXml.beanProperty(res, cluster.sslContextFactory, 'sslContextFactory', propsDesc, true);
+        $generatorXml.beanProperty(res, sslFactory, 'sslContextFactory', propsDesc, true);
 
         res.needEmptyLine = true;
     }
