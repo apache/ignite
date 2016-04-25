@@ -25,8 +25,10 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -231,7 +233,7 @@ public class  PageMemoryImpl implements PageMemory {
 
             writePageId(absPtr, pageId);
             writePageCacheId(absPtr, cacheId);
-            atomicWriteCurrentTimestamp(absPtr);
+            writeCurrentTimestamp(absPtr);
         }
 
         // TODO pass an argument to decide whether the page should be cleaned.
@@ -334,7 +336,7 @@ public class  PageMemoryImpl implements PageMemory {
                 long absPtr = absolute(relPtr);
 
                 writeFullPageId(absPtr, fullId);
-                atomicWriteCurrentTimestamp(absPtr);
+                writeCurrentTimestamp(absPtr);
 
                 // We can clear dirty flag after the page has been allocated.
                 setDirty(fullId, absPtr, false);
@@ -645,19 +647,21 @@ public class  PageMemoryImpl implements PageMemory {
             dirtyPages.remove(pageId);
     }
 
-    void atomicWriteCurrentTimestamp(final long absPtr) {
-        while (true) {
-            final long readTs = readTimestamp(absPtr);
-
-            if (mem.compareAndSwapLong(absPtr + PAGE_TIMESTAMP_OFFSET, readTs, U.currentTimeMillis()))
-                break;
-        }
+    /**
+     * Volatile write for current timestamp to page in {@code absAddr} address.
+     *
+     * @param absPtr Absolute page address.
+     */
+    void writeCurrentTimestamp(final long absPtr) {
+        mem.writeLongVolatile(absPtr + PAGE_TIMESTAMP_OFFSET, U.currentTimeMillis());
     }
 
-    void writeTimestamp(final long absPtr, final long ts) {
-        mem.writeLong(absPtr + PAGE_TIMESTAMP_OFFSET, ts);
-    }
-
+    /**
+     * Read for timestamp from page in {@code absAddr} address.
+     *
+     * @param absPtr Absolute page address.
+     * @return Timestamp.
+     */
     long readTimestamp(final long absPtr) {
         return mem.readLong(absPtr + PAGE_TIMESTAMP_OFFSET);
     }
@@ -941,8 +945,6 @@ public class  PageMemoryImpl implements PageMemory {
     private long evictPage(final Segment seg) throws IgniteCheckedException {
         final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        final long[] pageRelAddrs = new long[RANDOM_PAGES_EVICT_NUM];
-
         final int cap = seg.loadedPages.capacity();
 
         if (seg.acquiredPages.size() >= seg.loadedPages.size())
@@ -950,24 +952,48 @@ public class  PageMemoryImpl implements PageMemory {
 
         // With big number of random picked pages we may fall into infinite loop, because
         // every time the same page may be found.
-        SimpleLongSet ignored = null;
+        Set<Long> ignored = null;
+
+        long relEvictAddr = INVALID_REL_PTR;
 
         while (true) {
+            long cleanAddr = INVALID_REL_PTR;
+            long cleanTs = Long.MAX_VALUE;
+            long dirtyTs = Long.MAX_VALUE;
+            long dirtyAddr = INVALID_REL_PTR;
+
             for (int i = 0; i < RANDOM_PAGES_EVICT_NUM; i++) {
                 // We need to lookup for pages only in current segment for thread safety,
                 // so peeking random memory will lead to checking for found page segment.
                 // It's much faster to check available pages for segment right away.
-                final long addr = seg.loadedPages.getNearestAt(rnd.nextInt(cap), INVALID_REL_PTR);
+                final long rndAddr = seg.loadedPages.getNearestAt(rnd.nextInt(cap), INVALID_REL_PTR);
 
-                assert addr != INVALID_REL_PTR;
+                assert rndAddr != INVALID_REL_PTR;
 
-                if (ignored != null && ignored.contains(addr))
+                if (relEvictAddr == rndAddr || (ignored != null && ignored.contains(rndAddr))) {
                     i--;
-                else
-                    pageRelAddrs[i] = addr;
-            }
 
-            final long relEvictAddr = findSuitablePageRelAddr(pageRelAddrs);
+                    continue;
+                }
+
+                final long absPageAddr = absolute(rndAddr);
+
+                final long pageTs = readTimestamp(absPageAddr);
+
+                final boolean dirty = isDirty(absPageAddr);
+
+                if (pageTs < cleanTs && !dirty) {
+                    cleanAddr = rndAddr;
+
+                    cleanTs = pageTs;
+                } else if (pageTs < dirtyTs && dirty) {
+                    dirtyAddr = rndAddr;
+
+                    dirtyTs = pageTs;
+                }
+
+                relEvictAddr = cleanAddr == INVALID_REL_PTR ? dirtyAddr : cleanAddr;
+            }
 
             assert relEvictAddr != INVALID_REL_PTR;
 
@@ -979,7 +1005,7 @@ public class  PageMemoryImpl implements PageMemory {
 
             if (fullPageId.pageId() == metaPageId && fullPageId.cacheId() == 0) {
                 if (ignored == null)
-                    ignored = new SimpleLongSet();
+                    ignored = new HashSet<>();
 
                 ignored.add(relEvictAddr);
 
@@ -992,7 +1018,7 @@ public class  PageMemoryImpl implements PageMemory {
                 seg.loadedPages.remove(fullPageId);
             else {
                 if (ignored == null)
-                    ignored = new SimpleLongSet();
+                    ignored = new HashSet<>();
 
                 ignored.add(relEvictAddr);
 
@@ -1008,39 +1034,6 @@ public class  PageMemoryImpl implements PageMemory {
 
             return relEvictAddr;
         }
-    }
-
-    /**
-     * Find oldest and preferable not dirty page from passed ones.
-     *
-     * @param relAddrs Addresses to find from.
-     * @return The oldest and may be dirty page relative address.
-     */
-    private long findSuitablePageRelAddr(final long[] relAddrs) {
-        long addr = INVALID_REL_PTR;
-        long ts = Long.MAX_VALUE;
-        long dirtyTs = Long.MAX_VALUE;
-        long dirtyAddr = INVALID_REL_PTR;
-
-        for (final long relAddr : relAddrs) {
-            final long absPageAddr = absolute(relAddr);
-
-            final long pageTs = readTimestamp(absPageAddr);
-
-            final boolean dirty = isDirty(absPageAddr);
-
-            if (pageTs < ts && !dirty) {
-                addr = relAddr;
-
-                ts = pageTs;
-            } else if (pageTs < dirtyTs && dirty) {
-                dirtyAddr = relAddr;
-
-                dirtyTs = pageTs;
-            }
-        }
-
-        return addr == INVALID_REL_PTR ? dirtyAddr : addr;
     }
 
     /**

@@ -141,7 +141,7 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
     @Override public ByteBuffer getForRead() {
         acquireShared(1);
 
-        pageMem.atomicWriteCurrentTimestamp(ptr);
+        pageMem.writeCurrentTimestamp(ptr);
 
         return reset(buf.asReadOnlyBuffer());
     }
@@ -158,7 +158,7 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
         markDirty();
 
-        pageMem.atomicWriteCurrentTimestamp(ptr);
+        pageMem.writeCurrentTimestamp(ptr);
 
         return reset(buf);
     }
@@ -172,7 +172,7 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
             setExclusiveOwnerThread(th);
 
-            pageMem.atomicWriteCurrentTimestamp(ptr);
+            pageMem.writeCurrentTimestamp(ptr);
         }
 
         return reset(buf);
@@ -238,7 +238,7 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
     void acquireReference() {
         refCntUpd.incrementAndGet(this);
 
-        pageMem.atomicWriteCurrentTimestamp(ptr);
+        pageMem.writeCurrentTimestamp(ptr);
     }
 
     /**
