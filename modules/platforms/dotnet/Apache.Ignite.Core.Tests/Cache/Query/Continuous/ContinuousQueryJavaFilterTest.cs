@@ -137,11 +137,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     {"boolField", true},
                     {"guidField", Guid.Parse("1c579241-509d-47c6-a1a0-87462ae31e59")},
                     {
-                        "objField", new TestBinary
-                        {
-                            Int = 1,
-                            String = "2"
-                        }
+                        "objField", new TestBinary(1, "2")
+
                     },
                     {"charArr", new[] {'a'}},
                     {"byteArr", new[] {(byte) 1}},
@@ -158,11 +155,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     {
                         "objArr", new object[]
                         {
-                            new TestBinary
-                            {
-                                Int = 1,
-                                String = "2"
-                            }
+                            new TestBinary(1, "2")
                         }
                     },
                     {"arrayList", new ArrayList {"x"}},
@@ -219,11 +212,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// </summary>
         private void TestFilter(JavaObject obj)
         {
-            // TODO: Test with cache of binary objects
+            TestFilter(obj, true);
+            TestFilter(obj, false);
+        }
+
+        /// <summary>
+        /// Tests the specified filter.
+        /// </summary>
+        private void TestFilter(JavaObject obj, bool local)
+        {
+            // Test with cache of strings
             var pred = obj.ToCacheEntryEventFilter<int, string>();
 
-            TestFilter(pred, false, "validValue", "invalidValue");
-            TestFilter(pred, true, "validValue", "invalidValue");
+            TestFilter(pred, local, "validValue", "invalidValue");
+
+            // Test with cache of binary objects
+            var objPred = obj.ToCacheEntryEventFilter<int, TestBinary>();
+
+            TestFilter(objPred, local, new TestBinary(1, "validValue"), new TestBinary(2, "invalidValue"));
         }
 
         /// <summary>
@@ -281,6 +287,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// </summary>
         private class TestBinary
         {
+            public TestBinary(int i, string s)
+            {
+                Int = i;
+                String = s;
+            }
+
             public int Int { get; set; }
             public string String { get; set; }
         }
