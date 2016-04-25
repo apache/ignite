@@ -175,11 +175,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
             boolean affNode = cache.context().affinityNode();
 
-            cfgQryId = cache.context().continuousQueries().executeInternalQuery(
-                new DeploymentListener(), null, affNode, true, !affNode);
-
-            assignQryId = cache.context().continuousQueries().executeInternalQuery(
-                new AssignmentListener(), null, affNode, true, !affNode);
+// TODO 7.5.15-clients
+//            cfgQryId = cache.context().continuousQueries().executeInternalQuery(
+//                new DeploymentListener(), null, affNode, true, !affNode);
+//
+//            assignQryId = cache.context().continuousQueries().executeInternalQuery(
+//                new AssignmentListener(), null, affNode, true, !affNode);
         }
         finally {
             if (ctx.deploy().enabled())

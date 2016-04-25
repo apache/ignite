@@ -274,58 +274,59 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
 
         if (clientNode) {
-            assert !metaDataCache.context().affinityNode();
-
-            metaCacheQryId = metaDataCache.context().continuousQueries().executeInternalQuery(
-                new MetaDataEntryListener(),
-                new MetaDataEntryFilter(),
-                false,
-                true,
-                false);
-
-            while (true) {
-                ClusterNode oldestSrvNode =
-                    CU.oldestAliveCacheServerNode(ctx.cache().context(), AffinityTopologyVersion.NONE);
-
-                if (oldestSrvNode == null)
-                    break;
-
-                GridCacheQueryManager qryMgr = metaDataCache.context().queries();
-
-                CacheQuery<Map.Entry<BinaryMetadataKey, BinaryMetadata>> qry =
-                    qryMgr.createScanQuery(new MetaDataPredicate(), null, false);
-
-                qry.keepAll(false);
-
-                qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
-
-                try {
-                    CacheQueryFuture<Map.Entry<BinaryMetadataKey, BinaryMetadata>> fut = qry.execute();
-
-                    Map.Entry<BinaryMetadataKey, BinaryMetadata> next;
-
-                    while ((next = fut.next()) != null) {
-                        assert next.getKey() != null : next;
-                        assert next.getValue() != null : next;
-
-                        addClientCacheMetaData(next.getKey(), next.getValue());
-                    }
-                }
-                catch (IgniteCheckedException e) {
-                    if (!ctx.discovery().alive(oldestSrvNode) || !ctx.discovery().pingNode(oldestSrvNode.id()))
-                        continue;
-                    else
-                        throw e;
-                }
-                catch (CacheException e) {
-                    if (X.hasCause(e, ClusterTopologyCheckedException.class, ClusterTopologyException.class))
-                        continue;
-                    else
-                        throw e;
-                }
-
-                break;
-            }
+// TODO 7.5.15-clients
+//            assert !metaDataCache.context().affinityNode();
+//
+//            metaCacheQryId = metaDataCache.context().continuousQueries().executeInternalQuery(
+//                new MetaDataEntryListener(),
+//                new MetaDataEntryFilter(),
+//                false,
+//                true,
+//                false);
+//
+//            while (true) {
+//                ClusterNode oldestSrvNode =
+//                    CU.oldestAliveCacheServerNode(ctx.cache().context(), AffinityTopologyVersion.NONE);
+//
+//                if (oldestSrvNode == null)
+//                    break;
+//
+//                GridCacheQueryManager qryMgr = metaDataCache.context().queries();
+//
+//                CacheQuery<Map.Entry<BinaryMetadataKey, BinaryMetadata>> qry =
+//                    qryMgr.createScanQuery(new MetaDataPredicate(), null, false);
+//
+//                qry.keepAll(false);
+//
+//                qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
+//
+//                try {
+//                    CacheQueryFuture<Map.Entry<BinaryMetadataKey, BinaryMetadata>> fut = qry.execute();
+//
+//                    Map.Entry<BinaryMetadataKey, BinaryMetadata> next;
+//
+//                    while ((next = fut.next()) != null) {
+//                        assert next.getKey() != null : next;
+//                        assert next.getValue() != null : next;
+//
+//                        addClientCacheMetaData(next.getKey(), next.getValue());
+//                    }
+//                }
+//                catch (IgniteCheckedException e) {
+//                    if (!ctx.discovery().alive(oldestSrvNode) || !ctx.discovery().pingNode(oldestSrvNode.id()))
+//                        continue;
+//                    else
+//                        throw e;
+//                }
+//                catch (CacheException e) {
+//                    if (X.hasCause(e, ClusterTopologyCheckedException.class, ClusterTopologyException.class))
+//                        continue;
+//                    else
+//                        throw e;
+//                }
+//
+//                break;
+//            }
         }
 
         for (Map.Entry<Integer, BinaryMetadata> e : metaBuf.entrySet())
