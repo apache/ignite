@@ -107,7 +107,7 @@ angular
         return items;
     }];
 }])
-.service('DemoInfo', ['$rootScope', '$modal', 'igniteDemoInfo', 'IgniteAgentMonitor', ($rootScope, $modal, igniteDemoInfo, agentMonitor) => {
+.service('DemoInfo', ['$rootScope', '$modal', '$state', 'igniteDemoInfo', 'IgniteAgentMonitor', ($rootScope, $modal, $state, igniteDemoInfo, agentMonitor) => {
     const scope = $rootScope.$new();
 
     function _fillPage() {
@@ -127,6 +127,25 @@ angular
 
     scope.close = () => {
         dialog.hide();
+    };
+
+    scope.gotoConfiguration = () => {
+        scope.$$postDigest(() => $state.go('base.configuration.clusters'));
+    };
+
+    scope.downloadAgent = () => {
+        const lnk = document.createElement('a');
+
+        lnk.setAttribute('href', '/api/v1/agent/download/zip');
+        lnk.setAttribute('target', '_self');
+        lnk.setAttribute('download', null);
+        lnk.style.display = 'none';
+
+        document.body.appendChild(lnk);
+
+        lnk.click();
+
+        document.body.removeChild(lnk);
     };
 
     return {
