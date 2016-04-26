@@ -475,9 +475,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             if (i % 1000 == 0)
                 X.println(" --> " + i + "  " + x);
 
-//            if (i >= 57)
-//                X.println(tree.printTree());
-
             if (tree.randomInt(2) == 0)
                 assertEquals(map.put(x, x), tree.put(x));
             else {
@@ -489,11 +486,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             if (i % 100 == 0) {
                 GridCursor<Long> cursor = tree.find(null, null);
 
-                int size = 0;
-
                 while (cursor.next()) {
-                    size++;
-
                     x = cursor.get();
 
                     assert x != null;
@@ -501,7 +494,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     assertEquals(map.get(x), x);
                 }
 
-                assertEquals(map.size(), size);
+                assertEquals(map.size(), tree.size());
             }
         }
     }

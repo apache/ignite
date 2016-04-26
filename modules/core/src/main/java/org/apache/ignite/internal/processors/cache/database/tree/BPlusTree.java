@@ -577,7 +577,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @param upper Upper bound.
      * @return Cursor.
      */
-    private GridCursor<T> findNoLower(L upper) throws IgniteCheckedException {
+    private GridCursor<T> findLowerUnbounded(L upper) throws IgniteCheckedException {
         ForwardCursor cursor = new ForwardCursor(upper);
 
         long firstPageId;
@@ -608,7 +608,7 @@ public abstract class BPlusTree<L, T extends L> {
      */
     public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
         if (lower == null)
-            return findNoLower(upper);
+            return findLowerUnbounded(upper);
 
         GetCursor g = new GetCursor(lower, upper);
 
@@ -996,9 +996,50 @@ public abstract class BPlusTree<L, T extends L> {
      * @param max Max.
      * @return Random value from {@code 0} (inclusive) to the given max value (exclusive).
      */
-     public int randomInt(int max) {
+    public int randomInt(int max) {
          return ThreadLocalRandom.current().nextInt(max);
      }
+
+    /**
+     * TODO may produce wrong results on concurrent access
+     *
+     * @return Size.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final long size() throws IgniteCheckedException {
+        long cnt = 0;
+        long pageId;
+
+        try (Page meta = page(metaPageId)) {
+            pageId = getFirstPageId(meta, 0); // Level 0 is always at the bottom.
+        }
+
+        BPlusIO<L> io = null;
+
+        while (pageId != 0) {
+            try (Page page = page(pageId)) {
+                ByteBuffer buf = page.getForRead();
+
+                try {
+                    if (io == null) {
+                        io = io(buf);
+
+                        assert io.isLeaf();
+                    }
+
+                    cnt += io.getCount(buf);
+
+
+                    pageId = io.getForward(buf);
+                }
+                finally {
+                    page.releaseRead();
+                }
+            }
+        }
+
+        return cnt;
+    }
 
     /**
      * @param row Row.
@@ -1708,9 +1749,9 @@ public abstract class BPlusTree<L, T extends L> {
         /**
          * @param t Tail.
          * @return {@code true} If merged successfully or end reached.
-         * @throws IgniteCheckedException
+         * @throws IgniteCheckedException If failed.
          */
-        private boolean mergeDown(Tail<L> t) throws IgniteCheckedException {
+        private boolean mergeBottomUp(Tail<L> t) throws IgniteCheckedException {
             assert needMergeEmptyBranch == FALSE || needMergeEmptyBranch == DONE: needMergeEmptyBranch;
 
             if (t.down == null)
@@ -1719,7 +1760,7 @@ public abstract class BPlusTree<L, T extends L> {
             if (t.down.sibling == null) // We've merged something there.
                 return false;
 
-            return mergeDown(t.down) && merge(t);
+            return mergeBottomUp(t.down) && merge(t);
         }
 
         /**
@@ -1745,7 +1786,7 @@ public abstract class BPlusTree<L, T extends L> {
                 needMergeEmptyBranch = DONE;
             }
 
-            mergeDown(tail);
+            mergeBottomUp(tail);
 
             if (needReplaceInner == READY) {
                 // If we've merged empty branch right now, then the inner key was dropped.
