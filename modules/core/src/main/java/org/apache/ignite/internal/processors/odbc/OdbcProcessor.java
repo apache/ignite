@@ -45,9 +45,6 @@ public class OdbcProcessor extends GridProcessorAdapter {
     /** Default TCP direct buffer flag. */
     private static final boolean DFLT_TCP_DIRECT_BUF = false;
 
-    /** Default ODBC idle timeout. */
-    private static final int DFLT_IDLE_TIMEOUT = 7000;
-
     /** Default socket send and receive buffer size. */
     private static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
 
@@ -99,7 +96,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                     .socketReceiveBufferSize(DFLT_SOCK_BUF_SIZE)
                     .filters(new GridNioCodecFilter(new OdbcBufferedParser(), log, false))
                     .directMode(false)
-                    .idleTimeout(DFLT_IDLE_TIMEOUT)
+                    .idleTimeout(Long.MAX_VALUE)
                     .build();
 
                 srv.start();
