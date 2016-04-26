@@ -42,6 +42,10 @@ public class IgniteBenchmarkArguments {
     private String cfg = "config/ignite-localhost-config.xml";
 
     /** */
+    @Parameter(names = {"-qf", "--queryFile"}, description = "File of SQL queries")
+    private String qFile = null;
+
+    /** */
     @Parameter(names = {"-sm", "--syncMode"}, description = "Synchronization mode")
     private CacheWriteSynchronizationMode syncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
@@ -276,6 +280,13 @@ public class IgniteBenchmarkArguments {
      */
     public String configuration() {
         return cfg;
+    }
+
+    /**
+     * @return File contains SQL queries.
+     */
+    public String queriesFile() {
+        return qFile;
     }
 
     /**

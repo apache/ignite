@@ -17,6 +17,8 @@
 
 package org.apache.ignite.yardstick.cache.load;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -94,8 +96,11 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     /** Map cache name on value classes. */
     private Map<String, Class[]> valuesCacheClasses;
 
-    /** List of query descriptors by cache names */
+    /** List of query descriptors by cache names. */
     private Map<String, List<SqlCacheDescriptor>> cacheSqlDescriptors;
+
+    /** List of SQL queries. */
+    private List<String> queries;
 
     /**
      * Replace value entry processor.
@@ -141,6 +146,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         replaceEntryProc = new BenchmarkReplaceValueEntryProcessor(null);
         rmvEntryProc = new BenchmarkRemoveEntryProcessor();
         cacheSqlDescriptors = new HashMap<>();
+
+        loadQueries();
 
         for (String cacheName : ignite().cacheNames()) {
             IgniteCache<Object, Object> cache = ignite().cache(cacheName);
@@ -227,6 +234,28 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 txCaches.add(cache);
 
             availableCaches.add(cache);
+        }
+    }
+
+    /**
+     * Load query from file.
+     * @throws Exception If fail.
+     */
+    private void loadQueries() throws Exception {
+        queries = new ArrayList<>();
+
+        if (args.queriesFile() != null) {
+            try (FileReader fr = new FileReader(args.queriesFile())) {
+                try (BufferedReader br = new BufferedReader(fr)) {
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        if (line.trim().isEmpty())
+                            continue;
+
+                        queries.add(line.trim());
+                    }
+                }
+            }
         }
     }
 
@@ -703,7 +732,11 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
             int id = nextRandom(args.range());
 
-            Query sq = nextBoolean() ? randomDescriptor.getSqlQuery(id) : randomDescriptor.getSqlFieldsQuery(id);
+            Query sq;
+            if (queries.isEmpty())
+                sq = nextBoolean() ? randomDescriptor.getSqlQuery(id) : randomDescriptor.getSqlFieldsQuery(id);
+            else
+                sq = new SqlFieldsQuery(queries.get(nextRandom(queries.size())));
 
             try (QueryCursor cursor = cache.query(sq)) {
                 for (Object obj : cursor)
