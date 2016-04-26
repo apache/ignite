@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// ID of the lock if held or null if no lock held. 
         /// </summary>
-        [Obsolete("LocksId is no longer provided. This property is always null.")]
+        [Obsolete("LockId is no longer provided. This property is always null.")]
         [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Compatibility")]
         public object LockId { get { return null; } }
 
