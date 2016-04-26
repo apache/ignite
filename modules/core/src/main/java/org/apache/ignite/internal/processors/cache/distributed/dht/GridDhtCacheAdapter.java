@@ -240,7 +240,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     protected GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
-            /** {@inheritDoc} */
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
@@ -585,9 +584,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         for (GridDhtLocalPartition p : topology().currentLocalPartitions()) {
-            if (p == null)
-                continue;
-
             if (p.primary(topVer))
                 sum += p.publicSize();
         }
@@ -1261,9 +1257,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                         if (curIt == null) {
                             while (partIt.hasNext()) {
                                 GridDhtLocalPartition part = partIt.next();
-
-                                if (part == null)
-                                    continue;
 
                                 if (primary == part.primary(topVer)) {
                                     curIt = part.entries().iterator();

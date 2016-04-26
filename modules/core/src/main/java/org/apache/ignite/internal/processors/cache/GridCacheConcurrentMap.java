@@ -25,7 +25,6 @@ import org.jetbrains.annotations.Nullable;
  * Concurrent cache map.
  */
 public interface GridCacheConcurrentMap {
-
     /**
      * Returns the entry associated with the specified key in the
      * HashMap.  Returns null if the HashMap contains no mapping
@@ -34,7 +33,7 @@ public interface GridCacheConcurrentMap {
      * @param key Key.
      * @return Entry.
      */
-    @Nullable GridCacheMapEntry getEntry(KeyCacheObject key);
+    @Nullable public GridCacheMapEntry getEntry(KeyCacheObject key);
 
     /**
      * @param topVer Topology version.
@@ -44,7 +43,7 @@ public interface GridCacheConcurrentMap {
      * @return Triple where the first element is current entry associated with the key,
      *      the second is created entry and the third is doomed (all may be null).
      */
-    @Nullable GridCacheMapEntry putEntryIfObsoleteOrAbsent(
+    @Nullable public GridCacheMapEntry putEntryIfObsoleteOrAbsent(
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
         @Nullable CacheObject val,
@@ -57,14 +56,14 @@ public interface GridCacheConcurrentMap {
      * @param entry Entry to remove.
      * @return {@code True} if remove happened.
      */
-    boolean removeEntry(GridCacheEntryEx entry);
+    public boolean removeEntry(GridCacheEntryEx entry);
 
     /**
      * Returns the number of key-value mappings in this map.
      *
      * @return the number of key-value mappings in this map.
      */
-    int size();
+    public int size();
 
     /**
      * Returns the number of publicly available key-value mappings in this map.
@@ -72,44 +71,44 @@ public interface GridCacheConcurrentMap {
      *
      * @return the number of publicly available key-value mappings in this map.
      */
-    int publicSize();
+    public int publicSize();
 
     /**
      * Increments public size.
      *
      * @param e Entry that caused public size change.
      */
-    void incrementPublicSize(GridCacheEntryEx e);
+    public void incrementPublicSize(GridCacheEntryEx e);
 
     /**
      * Decrements public size.
      *
      * @param e Entry that caused public size change.
      */
-    void decrementPublicSize(GridCacheEntryEx e);
+    public void decrementPublicSize(GridCacheEntryEx e);
 
-    @Nullable GridCacheMapEntry randomEntry();
+    @Nullable public GridCacheMapEntry randomEntry();
 
     /**
      * @return Random entry out of hash map.
      */
-    Set<KeyCacheObject> keySet(CacheEntryPredicate... filter);
+    public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter);
 
     /**
      * @param filter Filter.
      * @return Iterable of the mappings contained in this map, excluding entries in unvisitable state.
      */
-    Iterable<GridCacheMapEntry> entries(CacheEntryPredicate... filter);
+    public Iterable<GridCacheMapEntry> entries(CacheEntryPredicate... filter);
 
     /**
      * @param filter Filter.
      * @return Iterable of the mappings contained in this map, including entries in unvisitable state.
      */
-    Iterable<GridCacheMapEntry> allEntries(CacheEntryPredicate... filter);
+    public Iterable<GridCacheMapEntry> allEntries(CacheEntryPredicate... filter);
 
     /**
      * @param filter Filter.
      * @return Set of the mappings contained in this map.
      */
-    Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter);
+    public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter);
 }

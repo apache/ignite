@@ -173,10 +173,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public boolean isDhtAtomic() {
         return true;
     }
+
     /** {@inheritDoc} */
     @Override protected GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
-            /** {@inheritDoc} */
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
@@ -345,7 +345,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 skipStore,
                 true,
                 needVer).get();
-        } catch (IgniteException e) {
+        }
+        catch (IgniteException e) {
             if (e.getCause(IgniteCheckedException.class) != null)
                 throw e.getCause(IgniteCheckedException.class);
             else
@@ -819,14 +820,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             true,
             TRANSFORM);
 
-        return resFut.chain(new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, Map<K, EntryProcessorResult<T>>>() {
-            @Override public Map<K, EntryProcessorResult<T>> applyx(
-                IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut) throws IgniteCheckedException {
-                Map<Object, EntryProcessorResult> resMap = (Map)fut.get();
+        return resFut.chain(
+            new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, Map<K, EntryProcessorResult<T>>>() {
+                @Override public Map<K, EntryProcessorResult<T>> applyx(
+                    IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut
+                ) throws IgniteCheckedException {
+                    Map<Object, EntryProcessorResult> resMap = (Map)fut.get();
 
-                return ctx.unwrapInvokeResult(resMap, keepBinary);
-            }
-        });
+                    return ctx.unwrapInvokeResult(resMap, keepBinary);
+                }
+            });
     }
 
     /** {@inheritDoc} */
@@ -1964,9 +1967,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             req.keepBinary());
 
-                        Object val = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(ctx, entry.key(),
-                                old, req.keepBinary()),
-                            updated.value(ctx.cacheObjectContext(), false));
+                        Object val = ctx.config().getInterceptor().onBeforePut(
+                            new CacheLazyEntry(
+                                ctx,
+                                entry.key(),
+                                old,
+                                req.keepBinary()),
+                            updated.value(
+                                ctx.cacheObjectContext(),
+                                false));
 
                         if (val == null)
                             continue;

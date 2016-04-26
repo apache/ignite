@@ -84,6 +84,7 @@ public class IntValue implements Externalizable, Binarylizable {
         val = reader.readInt("id");
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -93,9 +94,9 @@ public class IntValue implements Externalizable, Binarylizable {
         IntValue value = (IntValue)o;
 
         return val == value.val;
-
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return val;
     }

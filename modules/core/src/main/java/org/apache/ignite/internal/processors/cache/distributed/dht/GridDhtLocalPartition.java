@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -61,8 +59,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
@@ -287,7 +283,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /**
      * @param entry Entry to remove.
      */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter") void onRemoved(GridDhtCacheEntry entry) {
+    void onRemoved(GridDhtCacheEntry entry) {
         assert entry.obsolete() : entry;
 
         // Make sure to remove exactly this entry.
@@ -662,7 +658,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
-        Iterator<GridDhtCacheEntry> it = (Iterator) map.allEntries().iterator();
+        Iterator<GridDhtCacheEntry> it = (Iterator)map.allEntries().iterator();
 
         GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
 
@@ -690,11 +686,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 try {
                     cached = it.next();
 
-                    if ((cached).clearInternal(clearVer, swap, extras)) {
+                    if (cached.clearInternal(clearVer, swap, extras)) {
                         map.removeEntry(cached);
 
                         if (!cached.isInternal()) {
-
                             if (rec) {
                                 cctx.events().addEvent(cached.partition(),
                                     cached.key(),

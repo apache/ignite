@@ -288,9 +288,8 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         if (partIds != null && !partIds.isEmpty()) {
             assert partIds.size() == keys.size();
 
-            for (int i = 0; i < keys.size(); i++) {
+            for (int i = 0; i < keys.size(); i++)
                 keys.get(i).partition(partIds.get(i));
-            }
         }
     }
 
