@@ -455,23 +455,21 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Result.</returns>
         protected TR DoOutInOp<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction)
         {
-            using (PlatformMemoryStream stream = IgniteManager.Memory.Allocate().GetStream())
+            using (PlatformMemoryStream outStream = IgniteManager.Memory.Allocate().GetStream())
             {
-                //using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
+                using (PlatformMemoryStream inStream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    BinaryWriter writer = _marsh.StartMarshal(stream);
+                    BinaryWriter writer = _marsh.StartMarshal(outStream);
 
                     outAction(writer);
 
                     FinishMarshal(writer);
 
-                    UU.TargetInStreamOutStream(_target, type, stream.SynchronizeOutput(), 0);
+                    UU.TargetInStreamOutStream(_target, type, outStream.SynchronizeOutput(), inStream.MemoryPointer);
 
-                    stream.SynchronizeInput();
+                    inStream.SynchronizeInput();
 
-                    stream.Seek(0, SeekOrigin.Begin);
-
-                    return inAction(stream);
+                    return inAction(inStream);
                 }
             }
         }
