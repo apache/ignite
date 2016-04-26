@@ -46,7 +46,7 @@ import org.apache.ignite.cluster.ClusterNode;
  *     }
  *
  *     // Calculate load based on number of active and waiting jobs.
- *     public double getLoad(GridNode node, int jobsSentSinceLastUpdate) {
+ *     public double getLoad(ClusterNode node, int jobsSentSinceLastUpdate) {
  *         GridNodeMetrics metrics = node.getMetrics();
  *
  *         if (useAvg) {
