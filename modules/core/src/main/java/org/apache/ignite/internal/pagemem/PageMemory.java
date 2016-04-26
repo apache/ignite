@@ -73,7 +73,8 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @param pageId Page ID to get byte buffer for. The page ID must be present in the collection returned by
      *      the {@link #beginCheckpoint()} method call.
      * @param tmpBuf Temporary buffer to write changes into.
+     * @return {@code True} if data were read, {@code false} otherwise (data already saved to storage).
      * @throws IgniteException If failed to obtain page data.
      */
-    public void getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf);
+    public boolean getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf);
 }
