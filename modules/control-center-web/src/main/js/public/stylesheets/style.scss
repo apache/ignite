@@ -312,6 +312,11 @@ h1, h2, h3, h4, h5, h6 {
     float: none;
 }
 
+.modal-header {
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
 // Close icon
 .modal-header .close {
     margin-right: -2px;
@@ -322,7 +327,6 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .modal .modal-content {
-    border-radius: 0;
     background-color: $gray-lighter;
 
     .input-tip {
@@ -2040,4 +2044,3 @@ treecontrol.tree-classic {
 .nvd3 .nv-axis .nv-axisMaxMin text {
     font-weight: normal; /* Here the text can be modified*/
 }
-
