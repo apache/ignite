@@ -25,8 +25,8 @@ AM_CXXFLAGS = -Wall -std=c++0x
 
 noinst_PROGRAMS = ignite-odbc-tests
 
-ignite_odbc_tests_SOURCES = src/teamcity_boost.cpp                        \
-                            src/teamcity_messages.cpp                     \
+ignite_odbc_tests_SOURCES = src/teamcity/teamcity_boost.cpp               \
+                            src/teamcity/teamcity_messages.cpp            \
                             src/parser_test.cpp                           \
                             src/cursor_test.cpp                           \
                             src/connection_info_test.cpp                  \
