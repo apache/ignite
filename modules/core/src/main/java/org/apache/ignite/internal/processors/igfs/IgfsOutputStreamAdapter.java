@@ -70,7 +70,7 @@ abstract class IgfsOutputStreamAdapter extends IgfsOutputStream {
      *
      * @return Written bytes.
      */
-    public long bytes() {
+    public final long bytes() {
         return bytes;
     }
 

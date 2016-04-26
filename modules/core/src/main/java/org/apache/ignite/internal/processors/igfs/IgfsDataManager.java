@@ -32,14 +32,12 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -66,11 +64,13 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -112,7 +112,7 @@ public class IgfsDataManager extends IgfsManager {
     private DataInputBlocksWriter dataInputWriter = new DataInputBlocksWriter();
 
     /** Pending writes future. */
-    private ConcurrentMap<IgniteUuid, WriteCompletionFuture> pendingWrites = new ConcurrentHashMap8<>();
+    //private ConcurrentMap<IgniteUuid, WriteCompletionFuture> pendingWrites = new ConcurrentHashMap8<>();
 
     /** Affinity key generator. */
     private AtomicLong affKeyGen = new AtomicLong();
@@ -412,42 +412,42 @@ public class IgfsDataManager extends IgfsManager {
         return fut;
     }
 
-    /**
-     * Registers write future in igfs data manager.
-     *
-     * @param fileInfo File info of file opened to write.
-     * @return Future that will be completed when all ack messages are received or when write failed.
-     */
-    public IgniteInternalFuture<Boolean> writeStart(IgfsEntryInfo fileInfo) {
-        WriteCompletionFuture fut = new WriteCompletionFuture(fileInfo.id());
+//    /**
+//     * Registers write future in igfs data manager.
+//     *
+//     * @param fileInfo File info of file opened to write.
+//     * @return Future that will be completed when all ack messages are received or when write failed.
+//     */
+//    public IgniteInternalFuture<Boolean> writeStart(IgfsEntryInfo fileInfo) {
+//        WriteCompletionFuture fut = new WriteCompletionFuture(fileInfo.id());
+//
+//        WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileInfo.id(), fut);
+//
+//        assert oldFut == null : "Opened write that is being concurrently written: " + fileInfo;
+//
+//        if (log.isDebugEnabled())
+//            log.debug("Registered write completion future for file output stream [fileInfo=" + fileInfo +
+//                ", fut=" + fut + ']');
+//
+//        return fut;
+//    }
 
-        WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileInfo.id(), fut);
-
-        assert oldFut == null : "Opened write that is being concurrently written: " + fileInfo;
-
-        if (log.isDebugEnabled())
-            log.debug("Registered write completion future for file output stream [fileInfo=" + fileInfo +
-                ", fut=" + fut + ']');
-
-        return fut;
-    }
-
-    /**
-     * Notifies data manager that no further writes will be performed on stream.
-     *
-     * @param fileInfo File info being written.
-     */
-    public void writeClose(IgfsEntryInfo fileInfo) {
-        WriteCompletionFuture fut = pendingWrites.get(fileInfo.id());
-
-        if (fut != null)
-            fut.markWaitingLastAck();
-        else {
-            if (log.isDebugEnabled())
-                log.debug("Failed to find write completion future for file in pending write map (most likely it was " +
-                    "failed): " + fileInfo);
-        }
-    }
+//    /**
+//     * Notifies data manager that no further writes will be performed on stream.
+//     *
+//     * @param fileInfo File info being written.
+//     */
+//    public void writeClose(IgfsEntryInfo fileInfo) {
+//        WriteCompletionFuture fut = pendingWrites.get(fileInfo.id());
+//
+//        if (fut != null)
+//            fut.markWaitingLastAck();
+//        else {
+//            if (log.isDebugEnabled())
+//                log.debug("Failed to find write completion future for file in pending write map (most likely it was " +
+//                    "failed): " + fileInfo);
+//        }
+//    }
 
     /**
      * Store data blocks in file.<br/>
@@ -465,7 +465,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Remainder if data did not fill full block.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public byte[] storeDataBlocks(
+    public T2<byte[], GridCompoundFuture<Boolean, Void>> storeDataBlocks(
         IgfsEntryInfo fileInfo,
         long reservedLen,
         @Nullable byte[] remainder,
@@ -498,7 +498,7 @@ public class IgfsDataManager extends IgfsManager {
      * @return Remainder of data that did not fit the block if {@code flush} flag is {@code false}.
      * @throws IOException If store failed.
      */
-    @Nullable public byte[] storeDataBlocks(
+    public T2<byte[], GridCompoundFuture<Boolean, Void>> storeDataBlocks(
         IgfsEntryInfo fileInfo,
         long reservedLen,
         @Nullable byte[] remainder,
@@ -930,36 +930,48 @@ public class IgfsDataManager extends IgfsManager {
      * @param blocks Blocks to put in cache.
      * @throws IgniteCheckedException If batch processing failed.
      */
-    private void processBatch(IgniteUuid fileId, final Map<IgfsBlockKey, byte[]> blocks) throws IgniteCheckedException {
-        final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
+    private void processBatch(IgniteUuid fileId, final Map<IgfsBlockKey, byte[]> blocks,
+                              GridCompoundFuture<Boolean, Void> cf)
+        throws IgniteCheckedException {
+        assert cf != null;
+//        final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
+//
+//        if (completionFut == null) {
+//            if (log.isDebugEnabled())
+//                log.debug("Missing completion future for file write request (most likely exception occurred " +
+//                    "which will be thrown upon stream close) [fileId=" + fileId + ']');
+//
+//            return;
+//        }
+//
+//        // Throw exception if future is failed in the middle of writing.
+//        if (completionFut.isDone())
+//            completionFut.get();
+//
+//        completionFut.onWriteRequest();
 
-        if (completionFut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Missing completion future for file write request (most likely exception occurred " +
-                    "which will be thrown upon stream close) [fileId=" + fileId + ']');
+        assert !blocks.isEmpty();
 
-            return;
+        //GridCompoundFuture<Boolean, Void> fCmp = new GridCompoundFuture<>();
+
+        for (Map.Entry<IgfsBlockKey, byte[]> e: blocks.entrySet()) {
+            IgniteInternalFuture<Boolean> f = dataCachePrj.putAsync(e.getKey(), e.getValue());
+
+            cf.add(f);
         }
 
-        // Throw exception if future is failed in the middle of writing.
-        if (completionFut.isDone())
-            completionFut.get();
-
-        completionFut.onWriteRequest();
-
-        storeBlocksAsync(blocks).listen(new CI1<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> fut) {
-                try {
-                    fut.get();
-
-                    completionFut.onWriteAck();
-                }
-                catch (IgniteCheckedException e) {
-                    completionFut.onError(e);
-                }
-            }
-        });
-
+//        storeBlocksAsync(blocks).listen(new CI1<IgniteInternalFuture<?>>() {
+//            @Override public void apply(IgniteInternalFuture<?> fut) {
+//                try {
+//                    fut.get();
+//
+//                    completionFut.onWriteAck();
+//                }
+//                catch (IgniteCheckedException e) {
+//                    completionFut.onError(e);
+//                }
+//            }
+//        });
     }
 
     /**
@@ -1081,18 +1093,18 @@ public class IgfsDataManager extends IgfsManager {
         }
     }
 
-    /**
-     * Puts the blocks passed in to the data cache.
-     *
-     * @param blocks Blocks to write.
-     * @return Future that will be completed after put is done.
-     */
-    @SuppressWarnings("unchecked")
-    private IgniteInternalFuture<?> storeBlocksAsync(Map<IgfsBlockKey, byte[]> blocks) {
-        assert !blocks.isEmpty();
-
-        return dataCachePrj.putAllAsync(blocks);
-    }
+//    /**
+//     * Puts the blocks passed in to the data cache.
+//     *
+//     * @param blocks Blocks to write.
+//     * @return Future that will be completed after put is done.
+//     */
+//    @SuppressWarnings("unchecked")
+//    private IgniteInternalFuture<?> storeBlocksAsync(Map<IgfsBlockKey, byte[]> blocks) {
+//        assert !blocks.isEmpty();
+//
+//        return dataCachePrj.putAllAsync(blocks);
+//    }
 
     /**
      * Creates block key based on block ID, file info and local affinity range.
@@ -1145,25 +1157,27 @@ public class IgfsDataManager extends IgfsManager {
          * @param srcLen Data length to read from source.
          * @param flush Flush flag.
          * @param affinityRange Affinity range to update if file write can be colocated.
-         * @param batch Optional secondary file system worker batch.
+         * @param secondaryPutWorker Optional secondary file system worker batch.
          * @throws IgniteCheckedException If failed.
          * @return Data remainder if {@code flush} flag is {@code false}.
          */
-        @Nullable public byte[] storeDataBlocks(
-            IgfsEntryInfo fileInfo,
-            long reservedLen,
+        public final T2<byte[], GridCompoundFuture<Boolean,Void>> storeDataBlocks(
+            final IgfsEntryInfo fileInfo,
+            final long reservedLen,
             @Nullable byte[] remainder,
             final int remainderLen,
-            T src,
-            int srcLen,
-            boolean flush,
-            IgfsFileAffinityRange affinityRange,
-            @Nullable IgfsFileWorkerBatch batch
+            final T src,
+            final int srcLen,
+            final boolean flush,
+            final IgfsFileAffinityRange affinityRange,
+            final @Nullable IgfsFileWorkerBatch secondaryPutWorker
         ) throws IgniteCheckedException {
             final IgniteUuid id = fileInfo.id();
             final int blockSize = fileInfo.blockSize();
 
             final int len = remainderLen + srcLen;
+
+            final GridCompoundFuture<Boolean, Void> cf = new GridCompoundFuture<>();
 
             if (len > reservedLen)
                 throw new IgfsException("Not enough space reserved to store data [id=" + id +
@@ -1217,21 +1231,23 @@ public class IgfsDataManager extends IgfsManager {
                         assert written + portion.length == len;
 
                         if (!nodeBlocks.isEmpty()) {
-                            processBatch(id, nodeBlocks);
+                            processBatch(id, nodeBlocks, cf);
 
                             metrics.addWriteBlocks(1, 0);
                         }
 
-                        return portion;
+                        cf.markInitialized();
+
+                        return new T2<>(portion, cf); // exit point #1
                     }
                 }
 
                 int writtenSecondary = 0;
 
-                if (batch != null) {
-                    if (!batch.write(portion))
+                if (secondaryPutWorker != null) {
+                    if (!secondaryPutWorker.write(portion))
                         throw new IgniteCheckedException("Cannot write more data to the secondary file system output " +
-                            "stream because it was marked as closed: " + batch.path());
+                            "stream because it was marked as closed: " + secondaryPutWorker.path());
                     else
                         writtenSecondary = 1;
                 }
@@ -1239,7 +1255,7 @@ public class IgfsDataManager extends IgfsManager {
                 int writtenTotal = 0;
 
                 if (!nodeBlocks.isEmpty()) {
-                    processBatch(id, nodeBlocks);
+                    processBatch(id, nodeBlocks, cf);
 
                     writtenTotal = nodeBlocks.size();
                 }
@@ -1264,14 +1280,14 @@ public class IgfsDataManager extends IgfsManager {
 
             // Process final batch, if exists.
             if (!nodeBlocks.isEmpty()) {
-                processBatch(id, nodeBlocks);
+                processBatch(id, nodeBlocks, cf);
 
                 metrics.addWriteBlocks(nodeBlocks.size(), 0);
             }
 
             assert written == len;
 
-            return null;
+            return new T2<>(null, null); // exit point #2
         }
 
         /**
@@ -1512,152 +1528,152 @@ public class IgfsDataManager extends IgfsManager {
         }
     }
 
-    /**
-     * Allows output stream to await for all current acks.
-     *
-     * @param fileId File ID.
-     * @throws IgniteInterruptedCheckedException In case of interrupt.
-     */
-    void awaitAllAcksReceived(IgniteUuid fileId) throws IgniteInterruptedCheckedException {
-        WriteCompletionFuture fut = pendingWrites.get(fileId);
+//    /**
+//     * Allows output stream to await for all current acks.
+//     *
+//     * @param fileId File ID.
+//     * @throws IgniteInterruptedCheckedException In case of interrupt.
+//     */
+//    void awaitAllAcksReceived(IgniteUuid fileId) throws IgniteInterruptedCheckedException {
+//        WriteCompletionFuture fut = pendingWrites.get(fileId);
+//
+//        if (fut != null)
+//            fut.awaitAllAcksReceived();
+//    }
 
-        if (fut != null)
-            fut.awaitAllAcksReceived();
-    }
-
-    /**
-     * Future that is completed when all participating
-     * parts of the file are written.
-     */
-    private class WriteCompletionFuture extends GridFutureAdapter<Boolean> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** File id to remove future from map. */
-        private final IgniteUuid fileId;
-
-        /** Non-completed blocks count. It may both increase and decrease. */
-        private final AtomicInteger completedBlocksCnt = new AtomicInteger(0);
-
-        /** Lock for map-related conditions. */
-        private final Lock lock = new ReentrantLock();
-
-        /** Condition to wait for empty map. */
-        private final Condition allAcksRcvCond = lock.newCondition();
-
-        /** Flag indicating future is waiting for last ack. */
-        private volatile boolean awaitingLast;
-
-        /**
-         * @param fileId File id.
-         */
-        private WriteCompletionFuture(IgniteUuid fileId) {
-            assert fileId != null;
-
-            this.fileId = fileId;
-        }
-
-        /**
-         * Await all pending data blockes to be acked.
-         *
-         * @throws IgniteInterruptedCheckedException In case of interrupt.
-         */
-        public void awaitAllAcksReceived() throws IgniteInterruptedCheckedException {
-            lock.lock();
-
-            try {
-                while (completedBlocksCnt.get() > 0)
-                    U.await(allAcksRcvCond);
-            }
-            finally {
-                lock.unlock();
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
-            assert completedBlocksCnt.get() == 0;
-
-            if (!isDone()) {
-                pendingWrites.remove(fileId, this);
-
-                if (super.onDone(res, err))
-                    return true;
-            }
-
-            return false;
-        }
-
-        /**
-         * Write request will be asynchronously executed on node with given ID.
-         */
-        private void onWriteRequest() {
-            assert !awaitingLast; // Writing is finished, we should not receive more write requests.
-
-            if (!isDone())
-                completedBlocksCnt.incrementAndGet();
-        }
-
-        /**
-         * Error occurred on node with given ID.
-         *
-         * @param e Caught exception.
-         */
-        private void onError(IgniteCheckedException e) {
-            completedBlocksCnt.set(0);
-
-            signalNoAcks();
-
-            if (e.hasCause(IgfsOutOfSpaceException.class))
-                onDone(new IgniteCheckedException("Failed to write data (not enough space on node): ", e));
-            else
-                onDone(new IgniteCheckedException(
-                    "Failed to wait for write completion (write failed on node): ", e));
-        }
-
-        /**
-         * Write ack received from node with given ID for given batch ID.
-         */
-        private void onWriteAck() {
-            if (!isDone()) {
-                int afterAck = completedBlocksCnt.decrementAndGet();
-
-                assert afterAck >= 0 : "Received acknowledgement message for not registered batch.";
-
-                if (afterAck == 0) {
-                    signalNoAcks();
-
-                    if (awaitingLast)
-                        onDone(true);
-                }
-            }
-        }
-
-        /**
-         * Signal that currenlty there are no more pending acks.
-         */
-        private void signalNoAcks() {
-            lock.lock();
-
-            try {
-                allAcksRcvCond.signalAll();
-            }
-            finally {
-                lock.unlock();
-            }
-        }
-
-        /**
-         * Marks this future as waiting last ack.
-         */
-        private void markWaitingLastAck() {
-            awaitingLast = true;
-
-            if (log.isDebugEnabled())
-                log.debug("Marked write completion future as awaiting last ack: " + fileId);
-
-            if (completedBlocksCnt.get() == 0)
-                onDone(true);
-        }
-    }
+//    /**
+//     * Future that is completed when all participating
+//     * parts of the file are written.
+//     */
+//    private class WriteCompletionFuture extends GridFutureAdapter<Boolean> {
+//        /** */
+//        private static final long serialVersionUID = 0L;
+//
+//        /** File id to remove future from map. */
+//        private final IgniteUuid fileId;
+//
+//        /** Non-completed blocks count. It may both increase and decrease. */
+//        private final AtomicInteger completedBlocksCnt = new AtomicInteger(0);
+//
+//        /** Lock for map-related conditions. */
+//        private final Lock lock = new ReentrantLock();
+//
+//        /** Condition to wait for empty map. */
+//        private final Condition allAcksRcvCond = lock.newCondition();
+//
+//        /** Flag indicating future is waiting for last ack. */
+//        private volatile boolean awaitingLast;
+//
+//        /**
+//         * @param fileId File id.
+//         */
+//        private WriteCompletionFuture(IgniteUuid fileId) {
+//            assert fileId != null;
+//
+//            this.fileId = fileId;
+//        }
+//
+//        /**
+//         * Await all pending data blockes to be acked.
+//         *
+//         * @throws IgniteInterruptedCheckedException In case of interrupt.
+//         */
+//        public void awaitAllAcksReceived() throws IgniteInterruptedCheckedException {
+//            lock.lock();
+//
+//            try {
+//                while (completedBlocksCnt.get() > 0)
+//                    U.await(allAcksRcvCond);
+//            }
+//            finally {
+//                lock.unlock();
+//            }
+//        }
+//
+//        /** {@inheritDoc} */
+//        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
+//            assert completedBlocksCnt.get() == 0;
+//
+//            if (!isDone()) {
+//                pendingWrites.remove(fileId, this);
+//
+//                if (super.onDone(res, err))
+//                    return true;
+//            }
+//
+//            return false;
+//        }
+//
+//        /**
+//         * Write request will be asynchronously executed on node with given ID.
+//         */
+//        private void onWriteRequest() {
+//            assert !awaitingLast; // Writing is finished, we should not receive more write requests.
+//
+//            if (!isDone())
+//                completedBlocksCnt.incrementAndGet();
+//        }
+//
+//        /**
+//         * Error occurred on node with given ID.
+//         *
+//         * @param e Caught exception.
+//         */
+//        private void onError(IgniteCheckedException e) {
+//            completedBlocksCnt.set(0);
+//
+//            signalNoAcks();
+//
+//            if (e.hasCause(IgfsOutOfSpaceException.class))
+//                onDone(new IgniteCheckedException("Failed to write data (not enough space on node): ", e));
+//            else
+//                onDone(new IgniteCheckedException(
+//                    "Failed to wait for write completion (write failed on node): ", e));
+//        }
+//
+//        /**
+//         * Write ack received from node with given ID for given batch ID.
+//         */
+//        private void onWriteAck() {
+//            if (!isDone()) {
+//                int afterAck = completedBlocksCnt.decrementAndGet();
+//
+//                assert afterAck >= 0 : "Received acknowledgement message for not registered batch.";
+//
+//                if (afterAck == 0) {
+//                    signalNoAcks();
+//
+//                    if (awaitingLast)
+//                        onDone(true);
+//                }
+//            }
+//        }
+//
+//        /**
+//         * Signal that currenlty there are no more pending acks.
+//         */
+//        private void signalNoAcks() {
+//            lock.lock();
+//
+//            try {
+//                allAcksRcvCond.signalAll();
+//            }
+//            finally {
+//                lock.unlock();
+//            }
+//        }
+//
+//        /**
+//         * Marks this future as waiting last ack.
+//         */
+//        private void markWaitingLastAck() {
+//            awaitingLast = true;
+//
+//            if (log.isDebugEnabled())
+//                log.debug("Marked write completion future as awaiting last ack: " + fileId);
+//
+//            if (completedBlocksCnt.get() == 0)
+//                onDone(true);
+//        }
+//    }
 }
