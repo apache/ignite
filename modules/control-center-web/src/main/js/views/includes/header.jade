@@ -38,8 +38,9 @@ header#header.header
                     li(ui-sref-active='active'  ng-repeat='item in navbar.items')
                         a(ui-sref='{{::item.sref}}') {{::item.text}}
 
-                a(ng-if='!IgniteDemoMode' ng-controller='demoController')
-                    button.btn.btn-info(ng-click='startDemo()') Start demo
+                a(ng-controller='demoController')
+                    button.btn.btn-info(ng-if='IgniteDemoMode' ng-click='closeDemo()') Close demo
+                    button.btn.btn-info(ng-if='!IgniteDemoMode' ng-click='startDemo()') Start demo
 
                 ul.nav.navbar-nav.pull-right(ignite-userbar)
                     li(ng-class='{active: $state.includes("settings")}')

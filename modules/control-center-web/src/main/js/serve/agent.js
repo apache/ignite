@@ -152,7 +152,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                     const code = res.code;
 
                     if (code === 401)
-                        return reject(new Error('Failed to authenticate on node.'));
+                        return reject(new Error('Agent is failed to authenticate in grid. Please check agent\'s login and password or node port.'));
 
                     if (code !== 200)
                         return reject(new Error(error || 'Failed connect to node and execute REST command.'));
@@ -163,11 +163,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                         if (msg.successStatus === 0)
                             return resolve(msg.response);
 
-                        const err = new Error(msg.error);
-
-                        err.code = msg.successStatus;
-
-                        reject(err);
+                        reject(new Error('Agent is failed to authenticate in grid. Please check agent\'s login and password or node port.'));
                     }
                     catch (e) {
                         return reject(e);

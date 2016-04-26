@@ -97,6 +97,10 @@ angular
                 _openTab('demo.reset');
             });
     };
+
+    $scope.closeDemo = () => {
+        $window.close();
+    };
 }])
 .provider('igniteDemoInfo', [function() {
     const items = DEMO_INFO;
