@@ -207,6 +207,103 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         doTestPutRemove(false);
     }
 
+    // ------- 2 - 40
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_2_40_mm_1() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 2;
+        CNT = 40;
+        PUT_INC = -1;
+        RMV_INC = -1;
+
+        doTestPutRemove(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_2_40_mm_0() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 2;
+        CNT = 40;
+        PUT_INC = -1;
+        RMV_INC = -1;
+
+        doTestPutRemove(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_2_40_pm_1() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 2;
+        CNT = 40;
+        PUT_INC = 1;
+        RMV_INC = -1;
+
+        doTestPutRemove(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_2_40_pm_0() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 2;
+        CNT = 40;
+        PUT_INC = 1;
+        RMV_INC = -1;
+
+        doTestPutRemove(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_2_40_pp_1() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 2;
+        CNT = 40;
+        PUT_INC = 1;
+        RMV_INC = 1;
+
+        doTestPutRemove(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_2_40_pp_0() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 2;
+        CNT = 40;
+        PUT_INC = 1;
+        RMV_INC = 1;
+
+        doTestPutRemove(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_2_40_mp_1() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 2;
+        CNT = 40;
+        PUT_INC = -1;
+        RMV_INC = 1;
+
+        doTestPutRemove(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_2_40_mp_0() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 2;
+        CNT = 40;
+        PUT_INC = -1;
+        RMV_INC = 1;
+
+        doTestPutRemove(false);
+    }
+
     /**
      * @param canGetRow Can get row from inner page.
      * @throws IgniteCheckedException If failed.
@@ -214,7 +311,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private void doTestPutRemove(boolean canGetRow) throws IgniteCheckedException {
         TestTree tree = createTestTree(canGetRow);
 
-        long cnt = 10;
+        long cnt = CNT;
 
         for (long x = PUT_INC > 0 ? 0 : cnt - 1; x >= 0 && x < cnt; x += PUT_INC) {
             assertNull(tree.findOne(x));

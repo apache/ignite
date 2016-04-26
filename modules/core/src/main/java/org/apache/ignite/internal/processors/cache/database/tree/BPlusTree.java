@@ -1762,8 +1762,9 @@ public abstract class BPlusTree<L, T extends L> {
                 boolean mergeMore = mergeDown(tail);
 
                 if (needReplaceInner == READY) {
-                    // Need to replace inner key with new max key for the left subtree.
-                    replaceInner(needMergeEmptyBranch == DONE);
+                    // If we've merged empty branch then the inner key was dropped.
+                    if (needMergeEmptyBranch != DONE)
+                        replaceInner(); // Need to replace inner key with new max key for the left subtree.
 
                     needReplaceInner = DONE;
                 }
@@ -2007,10 +2008,9 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /**
-         * @param emptyBranchMerged If empty branch was merged.
          * @throws IgniteCheckedException If failed.
          */
-        private void replaceInner(boolean emptyBranchMerged) throws IgniteCheckedException {
+        private void replaceInner() throws IgniteCheckedException {
             assert needReplaceInner == READY: needReplaceInner;
             assert tail.lvl > 0: "leaf";
             assert innerIdx >= 0: innerIdx;
@@ -2025,21 +2025,14 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert leafCnt > 0: leafCnt; // Leaf must be merged at this point already if it was empty.
 
-            if (innerIdx == innerCnt) {
-                if (emptyBranchMerged)
-                    return; // Our inner key was dropped.
-
-                throw new IllegalStateException();
-            }
-
-            if (innerIdx < inner.getCount()) {
+            if (innerIdx < innerCnt) {
                 // Update inner key with the new biggest key of left subtree.
                 inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, leafCnt - 1);
                 leaf.io.setRemoveId(leaf.buf, globalRmvId.get());
             }
             else {
                 // If after leaf merge parent have lost inner key, we don't need to update it anymore.
-                assert innerIdx == inner.getCount();
+                assert innerIdx == innerCnt;
                 assert inner(inner.io).getLeft(inner.buf, innerIdx) == leaf.page.id();
             }
         }
