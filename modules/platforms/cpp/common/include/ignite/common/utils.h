@@ -17,19 +17,30 @@
 #ifndef _IGNITE_COMMON_UTILS
 #define _IGNITE_COMMON_UTILS
 
+#include <stdint.h>
+
+#include <cstring>
 #include <string>
 #include <sstream>
 #include <algorithm>
+
+#include <ignite/common/common.h>
+
+#ifdef IGNITE_FRIEND
+#   define IGNITE_FRIEND_EXPORT IGNITE_EXPORT
+#else
+#   define IGNITE_FRIEND_EXPORT
+#endif
 
 namespace ignite
 {
     namespace common
     {
-        namespace util
+        namespace utils
         {
             /**
-             * Transform string into lowercase.
-             *
+             * Replace all alphabetic symbols of the string with their lowercase
+             * versions.
              * @param str String to be transformed.
              */
             inline void IntoLower(std::string& str)
@@ -73,6 +84,184 @@ namespace ignite
             {
                 return atoi(str.c_str());
             }
+
+            /**
+             * Convert struct tm to time_t (UTC).
+             *
+             * @param time Standard C type struct tm value.
+             * @return Standard C type time_t value.
+             */
+            IGNITE_IMPORT_EXPORT time_t IgniteTimeGm(const tm& time);
+
+            /**
+             * Convert struct tm to time_t (Local time).
+             *
+             * @param time Standard C type struct tm value.
+             * @return Standard C type time_t value.
+             */
+            IGNITE_IMPORT_EXPORT time_t IgniteTimeLocal(const tm& time);
+
+            /**
+             * Convert time_t to struct tm (UTC).
+             *
+             * @param in Standard C type time_t value.
+             * @param out Standard C type struct tm value.
+             * @return True on success.
+             */
+            IGNITE_IMPORT_EXPORT bool IgniteGmTime(time_t in, tm& out);
+
+            /**
+             * Convert time_t to struct tm (Local time).
+             *
+             * @param in Standard C type time_t value.
+             * @param out Standard C type struct tm value.
+             * @return True on success.
+             */
+            IGNITE_IMPORT_EXPORT bool IgniteLocalTime(time_t in, tm& out);
+
+            /**
+             * Get number of leading zeroes in octet.
+             *
+             * @param octet Octet.
+             * @return Number of leading zero-bits.
+             */
+            IGNITE_IMPORT_EXPORT int LeadingZeroesForOctet(int8_t octet);
+
+            /**
+             * Get number of significant bits in octet.
+             *
+             * @param octet Octet.
+             * @return Number of significant bits.
+             */
+            inline int BitLengthForOctet(int8_t octet)
+            {
+                return 8 - LeadingZeroesForOctet(octet);
+            }
+
+            /**
+             * Check if the number is power of two.
+             *
+             * @param num Integer number.
+             * @return True if the number is power of two.
+             */
+            inline bool PowerOfTwo(int num)
+            {
+                return (num & (num - 1)) == 0;
+            }
+
+            /**
+             * Copy characters.
+             *
+             * @param val Value.
+             * @return Result.
+             */
+            IGNITE_IMPORT_EXPORT char* CopyChars(const char* val);
+
+            /**
+             * Release characters.
+             *
+             * @param val Value.
+             */
+            IGNITE_IMPORT_EXPORT void ReleaseChars(char* val);
+            
+            /**
+             * Read system environment variable taking thread-safety in count.
+             *
+             * @param name Environment variable name.
+             * @param found Whether environment variable with such name was found.
+             * @return Environment variable value.
+             */
+            IGNITE_IMPORT_EXPORT std::string GetEnv(const std::string& name, bool* found);
+                                
+            /**
+             * Ensure that file on the given path exists in the system.
+             *
+             * @param path Path.
+             * @return True if file exists, false otherwise.
+             */
+            IGNITE_IMPORT_EXPORT bool FileExists(const std::string& path);
+
+            /**
+             * Attempts to find JVM library to load it into the process later.
+             * First search is performed using the passed path argument (is not NULL).
+             * Then JRE_HOME is evaluated. Last, JAVA_HOME is evaluated.
+             *
+             * @param Explicitly defined path (optional).
+             * @param found Whether library was found.
+             * @return Path to the file.
+             */
+            IGNITE_IMPORT_EXPORT std::string FindJvmLibrary(const std::string* path, bool* found);
+
+            /**
+             * Load JVM library into the process.
+             *
+             * @param path Optional path to the library.
+             * @return Whether load was successful.
+             */
+            IGNITE_IMPORT_EXPORT bool LoadJvmLibrary(const std::string& path);
+
+            /**
+             * Resolve IGNITE_HOME directory. Resolution is performed in several
+             * steps:
+             * 1) Check for path provided as argument.
+             * 2) Check for environment variable.
+             * 3) Check for current working directory.
+             * Result of these 3 checks are evaluated based on existence of certain
+             * predefined folders inside possible GG home. If they are found, 
+             * IGNITE_HOME is considered resolved.
+             *
+             * @param path Optional path to evaluate.
+             * @param found Whether IGNITE_HOME home was found.
+             * @return Resolved GG home.
+             */
+            IGNITE_IMPORT_EXPORT std::string ResolveIgniteHome(const std::string* path, bool* found);
+
+            /**
+             * Create Ignite classpath based on user input and home directory.
+             *
+             * @param usrCp User's classpath.
+             * @param home Ignite home directory.
+             * @return Classpath.
+             */
+            IGNITE_IMPORT_EXPORT std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home);
+
+            /**
+             * Create Ignite classpath based on user input and home directory.
+             *
+             * @param usrCp User's classpath.
+             * @param home Ignite home directory.
+             * @param test Whether test classpath must be used.
+             * @return Classpath.
+             */
+            IGNITE_IMPORT_EXPORT std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home, bool test);
+
+            /**
+             * Safe array which automatically reclaims occupied memory when out of scope.
+             */
+            template<typename T>
+            struct IGNITE_IMPORT_EXPORT SafeArray
+            {
+                /** Target array. */
+                T* target;
+
+                /**
+                 * Constructor.
+                 */
+                SafeArray(int cap)
+                {
+                    target = new T[cap];
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~SafeArray()
+                {
+                    delete[] target;
+                }
+
+                IGNITE_NO_COPY_ASSIGNMENT(SafeArray);
+            };
         }
     }
 }

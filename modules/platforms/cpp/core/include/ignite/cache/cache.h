@@ -28,6 +28,7 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
+#include <ignite/common/ignite_error.h>
 
 #include "ignite/cache/cache_peek_mode.h"
 #include "ignite/cache/query/query_cursor.h"
@@ -38,7 +39,6 @@
 #include "ignite/cache/query/query_sql_fields.h"
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/operations.h"
-#include "ignite/ignite_error.h"
 
 namespace ignite
 {

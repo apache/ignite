@@ -31,6 +31,9 @@
     <ClInclude Include="..\..\include\ignite\common\utils.h">
       <Filter>Code</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\ignite_error.h">
+      <Filter>Code</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\common.cpp">
@@ -46,6 +49,12 @@
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\java.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ignite_error.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\utils.cpp">
       <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>

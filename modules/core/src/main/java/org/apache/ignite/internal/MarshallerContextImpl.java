@@ -119,7 +119,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         String old;
 
         try {
-            old = cache0.tryPutIfAbsent(id, clsName);
+            old = cache0.tryGetAndPut(id, clsName);
 
             if (old != null && !old.equals(clsName))
                 throw new IgniteCheckedException("Type ID collision detected [id=" + id + ", clsName1=" + clsName +
@@ -177,8 +177,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                     }
                 }
                 catch (IOException e) {
-                    throw new IgniteCheckedException("Failed to read class name from file [id=" + id +
-                        ", file=" + file.getAbsolutePath() + ']', e);
+                    throw new IgniteCheckedException("Class definition was not found " +
+                        "at marshaller cache and local file. " +
+                        "[id=" + id + ", file=" + file.getAbsolutePath() + ']');
                 }
             }
             finally {

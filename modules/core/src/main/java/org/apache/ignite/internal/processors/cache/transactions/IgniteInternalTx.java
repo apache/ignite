@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -386,15 +387,6 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public boolean ownsLockUnsafe(GridCacheEntryEx entry);
 
     /**
-     * For Partitioned caches, this flag is {@code false} for remote DHT and remote NEAR
-     * transactions because serializability of transaction is enforced on primary node. All
-     * other transaction types must enforce it.
-     *
-     * @return Enforce serializable flag.
-     */
-    public boolean enforceSerializable();
-
-    /**
      * @return {@code True} if near transaction.
      */
     public boolean near();
@@ -442,14 +434,9 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public boolean user();
 
     /**
-     * @return {@code True} if transaction is configured with synchronous commit flag.
+     * @return Transaction write synchronization mode.
      */
-    public boolean syncCommit();
-
-    /**
-     * @return {@code True} if transaction is configured with synchronous rollback flag.
-     */
-    public boolean syncRollback();
+    public CacheWriteSynchronizationMode syncMode();
 
     /**
      * @param key Key to check.
@@ -524,11 +511,6 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
          KeyCacheObject key) throws GridCacheFilterFailedException;
 
     /**
-     * @return Start version.
-     */
-    public GridCacheVersion startVersion();
-
-    /**
      * @return Transaction version.
      */
     public GridCacheVersion xidVersion();
@@ -542,12 +524,6 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param commitVer Commit version.
      */
     public void commitVersion(GridCacheVersion commitVer);
-
-    /**
-     * @return End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
-     *      assigned to this transaction at the end of write phase.
-     */
-    public GridCacheVersion endVersion();
 
     /**
      * Prepare state.

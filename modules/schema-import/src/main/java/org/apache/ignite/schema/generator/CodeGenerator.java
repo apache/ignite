@@ -556,32 +556,18 @@ public class CodeGenerator {
     }
 
     /**
-     * Find field by name.
-     *
-     * @param pojo POJO descriptor.
-     * @param name Field name to find.
-     * @return Field descriptor or {@code null} if not found.
-     */
-    private static PojoField findFieldByName(PojoDescriptor pojo, String name) {
-        for (PojoField field: pojo.valueFields(true))
-            if (field.dbName().equals(name))
-                return field;
-
-        return null;
-    }
-
-    /**
      * Generate java snippet for cache configuration with JDBC store and types metadata.
      *
      * @param pojos POJO descriptors.
      * @param pkg Types package.
      * @param includeKeys {@code true} if key fields should be included into value class.
+     * @param generateAliases {@code true} if aliases should be generated for query fields.
      * @param outFolder Output folder.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      * @throws IOException If generation failed.
      */
     public static void snippet(Collection<PojoDescriptor> pojos, String pkg, boolean includeKeys,
-        String outFolder, ConfirmCallable askOverwrite) throws IOException {
+        boolean generateAliases, String outFolder, ConfirmCallable askOverwrite) throws IOException {
         File pkgFolder = new File(outFolder, pkg.replace('.', File.separatorChar));
 
         File cacheCfg = new File(pkgFolder, "CacheConfig.java");
@@ -671,11 +657,35 @@ public class CodeGenerator {
             add0(src, "");
 
             for (PojoField field : pojo.fields())
-                add2(src, "fields.put(\"" + field.javaName() + "\", \"" + javaTypeName(field) + "\");");
+                add2(src, "fields.put(\"" + field.javaName() + "\", \"" +
+                    GeneratorUtils.boxPrimitiveType(field.javaTypeName()) + "\");");
 
             add0(src, "");
             add2(src, "qryEntity.setFields(fields);");
             add0(src, "");
+
+            // Aliases.
+            if (generateAliases) {
+                Collection<PojoField> aliases = new ArrayList<>();
+
+                for (PojoField field : pojo.fields()) {
+                    if (!field.javaName().equalsIgnoreCase(field.dbName()))
+                        aliases.add(field);
+                }
+
+                if (!aliases.isEmpty()) {
+                    add2(src, "// Aliases for fields.");
+                    add2(src, "LinkedHashMap<String, String> aliases = new LinkedHashMap<>();");
+                    add0(src, "");
+
+                    for (PojoField alias : aliases)
+                        add2(src, "aliases.put(\"" + alias.javaName() + "\", \"" + alias.dbName() + "\");");
+
+                    add0(src, "");
+                    add2(src, "qryEntity.setAliases(aliases);");
+                    add0(src, "");
+                }
+            }
 
             // Indexes.
             Collection<QueryIndex> idxs = pojo.indexes();
@@ -692,7 +702,7 @@ public class CodeGenerator {
                     List<T2<String, Boolean>> idxFlds = new ArrayList<>(sz);
 
                     for (Map.Entry<String, Boolean> idxFld : dbIdxFlds) {
-                        PojoField field = findFieldByName(pojo, idxFld.getKey());
+                        PojoField field = GeneratorUtils.findFieldByName(pojo.valueFields(true), idxFld.getKey());
 
                         if (field != null)
                             idxFlds.add(new T2<>(field.javaName(), idxFld.getValue()));

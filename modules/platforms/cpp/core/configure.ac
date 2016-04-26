@@ -57,6 +57,6 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_FUNC_ERROR_AT_LINE
 
-AC_CONFIG_FILES(Makefile include/Makefile os/linux/include/Makefile ignite.pc)
+AC_CONFIG_FILES(Makefile include/Makefile ignite.pc)
 
 AC_OUTPUT
