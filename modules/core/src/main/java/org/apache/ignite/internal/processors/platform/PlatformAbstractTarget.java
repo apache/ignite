@@ -38,6 +38,9 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** Constant: FALSE. */
     protected static final int FALSE = 0;
 
+    /** Constant: ERROR. */
+    protected static final int ERROR = -1;
+
     /** */
     private static final int OP_META = -1;
 

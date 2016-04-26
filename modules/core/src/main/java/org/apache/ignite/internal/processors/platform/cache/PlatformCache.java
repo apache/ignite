@@ -32,8 +32,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
@@ -399,10 +397,9 @@ public class PlatformCache extends PlatformAbstractTarget {
         catch (Exception e) {
             BinaryRawWriterEx writer = platformCtx.writer(mem);
 
-            writer.writeBoolean(false);  // error
             PlatformUtils.writeError(e, writer);
 
-            return FALSE;
+            return ERROR;
         }
 
         return TRUE;
