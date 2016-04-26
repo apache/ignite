@@ -1906,6 +1906,14 @@ treecontrol.tree-classic {
 }
 
 .grid {
+    .ui-grid-header-cell .ui-grid-cell-contents {
+        text-align: center
+    }
+
+    .ui-grid-cell .ui-grid-cell-contents {
+        text-align: center
+    }
+
     .ui-grid-column-menu-button {
         right: -5px;
     }
@@ -1917,6 +1925,41 @@ treecontrol.tree-classic {
     .ui-grid-column-menu-button-last-col {
         margin-right: 0
     }
+
+    .no-rows {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+        background: white;
+
+        .msg {
+            display: table;
+            width: 60%;
+            overflow: auto;
+            margin: auto;
+            padding: 10px;
+            position: absolute;
+
+            top: 0; left: 0; bottom: 0; right: 0;
+
+            opacity: 1;
+
+            background-color: #f5f5f5;
+            border-radius: 6px;
+            border: 1px solid $ignite-darck-border-color;
+
+            text-align: center;
+        }
+    }
+}
+
+.cell-right .ui-grid-cell-contents {
+    text-align: right !important;
+}
+
+.cell-left .ui-grid-cell-contents {
+    text-align: left !important;
 }
 
 .grid.ui-grid {
@@ -1997,3 +2040,4 @@ treecontrol.tree-classic {
 .nvd3 .nv-axis .nv-axisMaxMin text {
     font-weight: normal; /* Here the text can be modified*/
 }
+
