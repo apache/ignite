@@ -354,7 +354,14 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            var res = DoOutInOpNullable(CacheOp.Peek, key, EncodePeekModes(modes));
+            var res = DoOutInOpX((int)CacheOp.Peek,
+                w =>
+                {
+                    w.Write(key);
+                    w.WriteInt(EncodePeekModes(modes));
+                },
+                (s, r) => r == True ? new CacheResult<TV>(Unmarshal<TV>(s)) : new CacheResult<TV>(),
+                ReadException);
 
             value = res.Success ? res.Value : default(TV);
 
