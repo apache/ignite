@@ -25,6 +25,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -69,7 +70,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     @Override protected void beforeTestsStarted() throws Exception {
         assert testsCfg != null;
 
-//        FileUtils.deleteDirectory(workDir);
+        FileUtils.deleteDirectory(workDir);
 
         info("Ignite's 'work' directory has been cleaned.");
 
@@ -110,7 +111,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
             stopAllGrids();
 
-//            FileUtils.deleteDirectory(workDir);
+            FileUtils.deleteDirectory(workDir);
 
             info("Ignite's 'work' directory has been cleaned.");
 
@@ -191,7 +192,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     protected IgniteEx testedGrid() {
         return grid(testedNodeIdx);
     }
-
 
     /**
      * @return Tested grid in client mode or not.
