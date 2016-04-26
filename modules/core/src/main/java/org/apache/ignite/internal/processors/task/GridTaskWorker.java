@@ -594,7 +594,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 if (resCache && jobRes.size() > ctx.discovery().size() && jobRes.size() % SPLIT_WARN_THRESHOLD == 0)
                     LT.warn(log, null, "Number of jobs in task is too large for task: " + ses.getTaskName() +
                         ". Consider reducing number of jobs or disabling job result cache with " +
-                        "@GridComputeTaskNoResultCache annotation.");
+                        "@ComputeTaskNoResultCache annotation.");
             }
         }
 
@@ -801,7 +801,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 ComputeJobResultPolicy plc = result(jobRes, results);
 
                 if (plc == null) {
-                    String errMsg = "Failed to obtain remote job result policy for result from GridComputeTask.result(..) " +
+                    String errMsg = "Failed to obtain remote job result policy for result from ComputeTask.result(..) " +
                         "method that returned null (will fail the whole task): " + jobRes;
 
                     finishTask(null, new IgniteCheckedException(errMsg));
@@ -814,7 +814,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     // then there is no point to proceed.
                     if (state != State.WAITING) {
                         if (log.isDebugEnabled())
-                            log.debug("Ignoring GridComputeTask.result(..) value since task is already reducing or" +
+                            log.debug("Ignoring ComputeTask.result(..) value since task is already reducing or" +
                                 "finishing [res=" + res + ", job=" + ses + ", state=" + state + ']');
 
                         return;
@@ -941,7 +941,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     else if (X.hasCause(e, ComputeJobFailoverException.class)) {
                         IgniteCheckedException e0 = new IgniteCheckedException(" Job was not failed over because " +
                             "ComputeJobResultPolicy.FAILOVER was not returned from " +
-                            "ComputeTask.result(...) method for job result with GridComputeJobFailoverException.", e);
+                            "ComputeTask.result(...) method for job result with ComputeJobFailoverException.", e);
 
                         finishTask(null, e0);
 
@@ -957,7 +957,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 }
                 catch (Throwable e) {
                     String errMsg = "Failed to obtain remote job result policy for result from" +
-                        "GridComputeTask.result(..) method due to undeclared user exception " +
+                        "ComputeTask.result(..) method due to undeclared user exception " +
                         "(will fail the whole task): " + jobRes;
 
                     U.error(log, errMsg, e);
