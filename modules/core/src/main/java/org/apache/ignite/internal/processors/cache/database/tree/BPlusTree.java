@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandle
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.readPage;
@@ -1254,8 +1255,8 @@ public abstract class BPlusTree<L, T extends L> {
                         assert p.pageId != pageId;
                         assert p.fwdId != fwdId || fwdId == 0;
 
-                        // TODO race on go down?
-                        if (p.needReplaceInner == TRUE) { // Need to replace ref in inner page.
+                        // Need to replace key in inner page. There is no race because we keep tail lock after split.
+                        if (p.needReplaceInner == TRUE) {
                             p.needReplaceInner = FALSE; // Protect from retries.
 
                             res = writePage(page, replace, p, lvl, Put.RETRY);
@@ -1665,6 +1666,50 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /**
+         * @throws IgniteCheckedException If failed.
+         */
+        private void mergeEmptyBranch() throws IgniteCheckedException {
+            Tail<L> t = tail;
+
+            assert t.getCount() > 0;
+
+            boolean leaf = false;
+
+            // Find empty branch beginning.
+            for (Tail<L> t0 = t.down; t0 != null; t0 = t0.down) {
+                assert t0.type == Tail.EXACT: t0.type;
+
+                if (t0.getCount() != 0)
+                    t = t0;
+
+                leaf = t0.lvl == 0;
+            }
+
+            if (!leaf) // Can not merge empty branches in the middle of tree.
+                return;
+
+            while (t.lvl != 0) { // If we've found empty branch, merge it top down.
+                boolean res = merge(t, true);
+
+                assert res;
+
+                t = t.down;
+            }
+        }
+
+        /**
+         * @param t Tail.
+         * @return {@code true} If merged successfully or end reached.
+         * @throws IgniteCheckedException
+         */
+        private boolean mergeDown(Tail<L> t) throws IgniteCheckedException {
+            if (t.down == null || t.down.sibling == null)
+                return true;
+
+            return mergeDown(t.down) && merge(t, false);
+        }
+
+        /**
          * Process tail and finish.
          *
          * @return {@code false} If failed to finish and we need to lock more pages up.
@@ -1675,12 +1720,12 @@ public abstract class BPlusTree<L, T extends L> {
             assert tail.type == Tail.EXACT;
 
             // Need to lock more.
-            if (tail.down == null || needReplaceInner == TRUE || tail.io.getCount(tail.buf) == 0)
+            if (tail.down == null || needReplaceInner == TRUE || tail.getCount() == 0)
                 return false;
 
-            // Merge from the top to the bottom.
-            for (Tail<L> t = tail; t.down != null; t = t.down)
-                merge(t);
+            mergeEmptyBranch();
+
+            boolean mergeMore = mergeDown(tail);
 
             if (needReplaceInner == READY) {
                 // Need to replace inner key with new max key for the left subtree.
@@ -1689,11 +1734,15 @@ public abstract class BPlusTree<L, T extends L> {
                 needReplaceInner = DONE;
             }
 
-//            if (cnt == 0 && lvl != 0 && getRootLevel(meta) == lvl) TODO
-//                freePage(page, buf, io, lvl); // Free root.
+            if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel(meta) == tail.lvl)
+                freePage(tail.page, tail.buf, tail.io, tail.lvl, false); // Free root.
+            else if (mergeMore) {
+                doReleaseTail(tail.down);
 
-//            if (needMergeMore)
-//                return false;
+                tail.down = null;
+
+                return false;
+            }
 
             releaseTail();
             finish();
@@ -1819,32 +1868,37 @@ public abstract class BPlusTree<L, T extends L> {
          * @param prnt Parent tail.
          * @param left Left child tail.
          * @param right Right child tail.
+         * @param emptyBranch If we are merging an empty branch.
          * @return {@code true} If merged successfully.
          * @throws IgniteCheckedException If failed.
          */
-        private boolean mergePages(Tail<L> prnt, Tail<L> left, Tail<L> right) throws IgniteCheckedException {
+        private boolean doMerge(Tail<L> prnt, Tail<L> left, Tail<L> right, boolean emptyBranch)
+            throws IgniteCheckedException {
             assert right.io == left.io; // Otherwise incompatible.
             assert left.io.getForward(left.buf) == right.page.id();
 
-            int prntCnt = prnt.io.getCount(prnt.buf);
-            int backCnt = left.io.getCount(left.buf);
-            int curCnt = right.io.getCount(right.buf);
+            int prntCnt = prnt.getCount();
+            int leftCnt = left.getCount();
+            int rightCnt = right.getCount();
 
             assert prntCnt > 0: prntCnt;
 
-            int newCnt = backCnt + curCnt;
+            int newCnt = leftCnt + rightCnt;
 
-            // Need to move down split key in inner pages, but for the last key it will be a special case merge.
-            if (left.lvl != 0 && false) // TODO
+            // Need to move down split key in inner pages. For empty branch merge parent key will be just dropped.
+            if (left.lvl != 0 && !emptyBranch)
                 newCnt++;
 
-            if (newCnt > left.io.getMaxCount(left.buf))
+            if (newCnt > left.io.getMaxCount(left.buf)) {
+                assert !emptyBranch;
+
                 return false;
+            }
 
             left.io.setCount(left.buf, newCnt);
 
             // Move down split key in inner pages.
-            if (left.lvl != 0) {
+            if (left.lvl != 0 && !emptyBranch) {
                 int prntIdx = prnt.idx;
 
                 if (prntIdx == prntCnt) // It was a right turn.
@@ -1852,22 +1906,24 @@ public abstract class BPlusTree<L, T extends L> {
 
                 // We can be sure that we have enough free space to store split key here,
                 // because we've done remove already and did not release child locks.
-                left.io.store(left.buf, backCnt, prnt.io, prnt.buf, prntIdx);
+                left.io.store(left.buf, leftCnt, prnt.io, prnt.buf, prntIdx);
 
-                backCnt++;
+                leftCnt++;
             }
 
-            left.io.copyItems(right.buf, left.buf, 0, backCnt, curCnt, true);
+            left.io.copyItems(right.buf, left.buf, 0, leftCnt, rightCnt, !emptyBranch || rightCnt != 0);
             left.io.setForward(left.buf, right.io.getForward(right.buf));
 
             // Fix index for the right move: remove last item.
+            // For the empty branch we always remove the last item, because we always drop right child after merge.
             int prntIdx = prnt.idx == prntCnt ? prntCnt - 1 : prnt.idx;
 
-            // Remove split key from parent.
-            doRemove(prnt.io, prnt.buf, prntCnt, prntIdx);
+            // Remove split key from parent. Index -1 means that it is not actually our parent and we should not remove.
+            if (prntIdx != -1)
+                doRemove(prnt.io, prnt.buf, prntCnt, prntIdx);
 
-            // Forward page is now empty and has no links.
-            freePage(right.page, right.buf, right.io, right.lvl);
+            // Forward page is now empty and has no links, can free and release it right away.
+            freePage(right.page, right.buf, right.io, right.lvl, true);
 
             return true;
         }
@@ -1877,9 +1933,10 @@ public abstract class BPlusTree<L, T extends L> {
          * @param buf Buffer.
          * @param io IO.
          * @param lvl Level.
+         * @param release Release write lock and release page.
          * @throws IgniteCheckedException If failed.
          */
-        private void freePage(Page page, ByteBuffer buf, BPlusIO io, int lvl)
+        private void freePage(Page page, ByteBuffer buf, BPlusIO io, int lvl, boolean release)
             throws IgniteCheckedException {
             if (getFirstPageId(meta, lvl) == page.id()) {
                 // This logic will handle root as well.
@@ -1900,7 +1957,8 @@ public abstract class BPlusTree<L, T extends L> {
 
             emptyPages.add(page.fullId());
 
-            writeUnlockAndClose(page);
+            if (release)
+                writeUnlockAndClose(page);
         }
 
         /**
@@ -1925,31 +1983,32 @@ public abstract class BPlusTree<L, T extends L> {
             Tail<L> inner = tail;
 
             assert inner.type == Tail.EXACT: inner.type;
-            assert innerIdx < inner.io.getCount(inner.buf);
+            assert innerIdx < inner.getCount();
 
-            int cnt = leaf.io.getCount(leaf.buf);
+            int cnt = leaf.getCount();
 
             assert cnt > 0: cnt; // Leaf must be merged at this point already if it was empty.
 
-            if (innerIdx < inner.io.getCount(inner.buf)) {
+            if (innerIdx < inner.getCount()) {
                 // Update inner key with the new biggest key of left subtree.
                 inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, cnt - 1);
                 leaf.io.setRemoveId(leaf.buf, globalRmvId.get());
             }
             else {
                 // If after leaf merge parent have lost inner key, we don't need to update it anymore.
-                assert innerIdx == inner.io.getCount(inner.buf);
+                assert innerIdx == inner.getCount();
                 assert inner(inner.io).getLeft(inner.buf, innerIdx) == leaf.page.id();
             }
         }
 
         /**
          * @param prnt Parent for merge.
+         * @param emptyBranch If we are merging an empty branch.
          * @return {@code true} If merged, {@code false} if not (because of insufficient space or empty parent).
          * @throws IgniteCheckedException If failed.
          */
-        private boolean merge(Tail<L> prnt) throws IgniteCheckedException {
-            if (prnt.io.getCount(prnt.buf) == 0)
+        private boolean merge(Tail<L> prnt, boolean emptyBranch) throws IgniteCheckedException {
+            if (prnt.getCount() == 0)
                 return false; // Parent is an empty routing page, child forward page will have another parent.
 
             Tail<L> right = prnt.down;
@@ -1967,7 +2026,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert right.io == left.io: "must always be the same"; // Otherwise can be not compatible.
 
-            if (!mergePages(prnt, left, right))
+            if (!doMerge(prnt, left, right, emptyBranch))
                 return false;
 
             // left from BACK becomes EXACT.
@@ -1998,10 +2057,15 @@ public abstract class BPlusTree<L, T extends L> {
          * Release pages for all locked levels at the tail.
          */
         private void releaseTail() {
-            Tail t = tail;
+            doReleaseTail(tail);
 
             tail = null;
+        }
 
+        /**
+         * @param t Tail.
+         */
+        private void doReleaseTail(Tail<L> t) {
             while (t != null) {
                 writeUnlockAndClose(t.page);
 
@@ -2161,6 +2225,18 @@ public abstract class BPlusTree<L, T extends L> {
             this.type = type;
             this.lvl = (byte)lvl;
             this.idx = (short)idx;
+        }
+
+        /**
+         * @return Count.
+         */
+        private int getCount() {
+            return io.getCount(buf);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Tail.class, this, "pageId", page.id(), "cnt", getCount());
         }
     }
 

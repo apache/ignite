@@ -61,7 +61,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static final int CACHE_ID = 100500;
 
     /** */
-    private static int MAX_COUNT = 0;
+    private static int MAX_ITEMS_COUNT = 0;
+
+    /** */
+    private static int CNT = 10;
 
     /** */
     private static int PUT_INC = 1;
@@ -74,6 +77,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
     /** */
     private ReuseList reuseList;
+
+    @Override
+    protected long getTestTimeout() {
+        return 25 * 60 * 1000;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -99,27 +107,113 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         pageMem.stop();
 
-        MAX_COUNT = 0;
+        MAX_ITEMS_COUNT = 0;
         PUT_INC = 1;
         RMV_INC = -1;
+        CNT = 10;
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testSingle1() throws IgniteCheckedException {
-        MAX_COUNT = 1;
+    public void testPutRemove_1_10_mm_1() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 1;
+        CNT = 10;
         PUT_INC = -1;
         RMV_INC = -1;
 
-        doTestPutRemoveForwardBackward(true);
+        doTestPutRemove(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_1_10_mm_0() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 1;
+        CNT = 10;
+        PUT_INC = -1;
+        RMV_INC = -1;
+
+        doTestPutRemove(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_1_10_pm_1() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 1;
+        CNT = 10;
+        PUT_INC = 1;
+        RMV_INC = -1;
+
+        doTestPutRemove(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_1_10_pm_0() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 1;
+        CNT = 10;
+        PUT_INC = 1;
+        RMV_INC = -1;
+
+        doTestPutRemove(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_1_10_pp_1() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 1;
+        CNT = 10;
+        PUT_INC = 1;
+        RMV_INC = 1;
+
+        doTestPutRemove(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_1_10_pp_0() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 1;
+        CNT = 10;
+        PUT_INC = 1;
+        RMV_INC = 1;
+
+        doTestPutRemove(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_1_10_mp_1() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 1;
+        CNT = 10;
+        PUT_INC = -1;
+        RMV_INC = 1;
+
+        doTestPutRemove(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_1_10_mp_0() throws IgniteCheckedException {
+        MAX_ITEMS_COUNT = 1;
+        CNT = 10;
+        PUT_INC = -1;
+        RMV_INC = 1;
+
+        doTestPutRemove(false);
     }
 
     /**
      * @param canGetRow Can get row from inner page.
      * @throws IgniteCheckedException If failed.
      */
-    private void doTestPutRemoveForwardBackward(boolean canGetRow) throws IgniteCheckedException {
+    private void doTestPutRemove(boolean canGetRow) throws IgniteCheckedException {
         TestTree tree = createTestTree(canGetRow);
 
         long cnt = 10;
@@ -146,54 +240,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             assertEquals(x, tree.remove(x).longValue());
 
-            assertNull(tree.findOne(x));
-
             X.println(tree.printTree());
-        }
-
-        assertFalse(tree.find(null, null).next());
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void testPutFindRemoveForward0() throws IgniteCheckedException {
-        doTestPutFindRemoveForward(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void testPutFindRemoveForward1() throws IgniteCheckedException {
-        doTestPutFindRemoveForward(true);
-    }
-
-    /**
-     * @param canGetRow Can get row from inner page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void doTestPutFindRemoveForward(boolean canGetRow) throws IgniteCheckedException {
-        TestTree tree = createTestTree(canGetRow);
-
-        long cnt = 100_000;
-
-        for (long x = 0; x < cnt; x++) {
-            assertNull(tree.findOne(x));
-
-            tree.put(x);
-
-            assertEquals(x, tree.findOne(x).longValue());
-        }
-
-        assertNull(tree.findOne(-1L));
-
-        for (long x = 0; x < cnt; x++)
-            assertEquals(x, tree.findOne(x).longValue());
-
-        assertNull(tree.findOne(cnt));
-
-        for (long x = 0; x < cnt; x++) {
-            assertEquals(x, tree.remove(x).longValue());
 
             assertNull(tree.findOne(x));
         }
@@ -204,128 +251,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testPutRemoveFindBackward0() throws IgniteCheckedException {
-        doTestPutFindRemoveBackward(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void testPutRemoveFindBackward1() throws IgniteCheckedException {
-        doTestPutFindRemoveBackward(true);
-    }
-
-    /**
-     * @param canGetRow Can get row from inner page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void doTestPutFindRemoveBackward(boolean canGetRow) throws IgniteCheckedException {
-        TestTree tree = createTestTree(canGetRow);
-
-        long cnt = 100_000;
-
-        for (long x = cnt - 1; x >= 0; x--) {
-            assertNull(tree.findOne(x));
-
-            tree.put(x);
-
-            assertEquals(x, tree.findOne(x).longValue());
-        }
-
-        assertNull(tree.findOne(cnt));
-
-        for (long x = cnt - 1; x >= 0; x--)
-            assertEquals(x, tree.findOne(x).longValue());
-
-        assertNull(tree.findOne(-1L));
-
-        for (long x = cnt - 1; x >= 0; x--) {
-            assertEquals(x, tree.remove(x).longValue());
-
-            assertNull(tree.findOne(x));
-        }
-
-        assertFalse(tree.find(null, null).next());
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void testPutRemoveFindRandom0() throws IgniteCheckedException {
-        doTestPutRemoveFindRandom(false);
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void testPutRemoveFindRandom1() throws IgniteCheckedException {
-        doTestPutRemoveFindRandom(true);
-    }
-
-    /**
-     * @param canGetRow Can get row from inner page.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void doTestPutRemoveFindRandom(boolean canGetRow) throws IgniteCheckedException {
-        TestTree tree = createTestTree(canGetRow);
-
-        Map<Long,Long> map = new HashMap<>();
-
-        int cnt = 100_000;
-
-        for (int i = 0, end = 30 * cnt; i < end; i++) {
-//            if (i % 1000 == 0)
-//                X.println(" -> " + i);
-
-            long x = tree.randomInt(cnt);
-
-            switch(tree.randomInt(3)) {
-                case 0:
-//                    X.println("Put: " + x);
-
-                    assertEquals(map.put(x, x), tree.put(x));
-
-                case 1:
-//                    X.println("Get: " + x);
-
-                    assertEquals(map.get(x), tree.findOne(x));
-
-                    break;
-
-                case 2:
-//                    X.println("Rmv: " + x);
-
-                    assertEquals(map.remove(x), tree.remove(x));
-
-                    break;
-
-                default:
-                    fail();
-            }
-        }
-
-        assertFalse(map.isEmpty());
-
-        for (Long x : map.keySet())
-            assertEquals(map.get(x), tree.findOne(x));
-
-        GridCursor<Long> cursor = tree.find(null, null);
-
-        while (cursor.next()) {
-            Long x = cursor.get();
-
-            assert x != null;
-
-            assertEquals(map.remove(x), x);
-        }
-
-        assertTrue(map.isEmpty());
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void testRandomRemove0() throws IgniteCheckedException {
+    public void _testRandomRemove0() throws IgniteCheckedException {
         // seed: 1461177795261173000, 1461187841179332000
         doTestRandomRemove(false);
     }
@@ -333,7 +259,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testRandomRemove1() throws IgniteCheckedException {
+    public void _testRandomRemove1() throws IgniteCheckedException {
         // seed: 1461188744119034000 1461188844311788000 1461189099834526000
         doTestRandomRemove(true);
     }
@@ -519,8 +445,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public int getMaxCount(ByteBuffer buf) {
-            if (MAX_COUNT != 0)
-                return MAX_COUNT;
+            if (MAX_ITEMS_COUNT != 0)
+                return MAX_ITEMS_COUNT;
 
             return super.getMaxCount(buf);
         }
@@ -558,8 +484,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public int getMaxCount(ByteBuffer buf) {
-            if (MAX_COUNT != 0)
-                return MAX_COUNT;
+            if (MAX_ITEMS_COUNT != 0)
+                return MAX_ITEMS_COUNT;
 
             return super.getMaxCount(buf);
         }
