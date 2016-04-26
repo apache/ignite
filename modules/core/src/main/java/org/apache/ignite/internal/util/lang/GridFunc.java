@@ -287,7 +287,6 @@ public class GridFunc {
         }
     };
 
-
     /** */
     private static final IgniteClosure CACHE_ENTRY_VAL_GET = new IgniteClosure() {
         @SuppressWarnings({"unchecked"})
