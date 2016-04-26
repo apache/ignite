@@ -114,9 +114,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testPutRemove_1_10_mm_1() throws IgniteCheckedException {
+    public void testPutRemove_1_20_mm_1() throws IgniteCheckedException {
         MAX_ITEMS_COUNT = 1;
-        CNT = 10;
+        CNT = 20;
         PUT_INC = -1;
         RMV_INC = -1;
 
@@ -126,9 +126,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testPutRemove_1_10_mm_0() throws IgniteCheckedException {
+    public void testPutRemove_1_20_mm_0() throws IgniteCheckedException {
         MAX_ITEMS_COUNT = 1;
-        CNT = 10;
+        CNT = 20;
         PUT_INC = -1;
         RMV_INC = -1;
 
@@ -138,9 +138,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testPutRemove_1_10_pm_1() throws IgniteCheckedException {
+    public void testPutRemove_1_20_pm_1() throws IgniteCheckedException {
         MAX_ITEMS_COUNT = 1;
-        CNT = 10;
+        CNT = 20;
         PUT_INC = 1;
         RMV_INC = -1;
 
@@ -150,9 +150,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testPutRemove_1_10_pm_0() throws IgniteCheckedException {
+    public void testPutRemove_1_20_pm_0() throws IgniteCheckedException {
         MAX_ITEMS_COUNT = 1;
-        CNT = 10;
+        CNT = 20;
         PUT_INC = 1;
         RMV_INC = -1;
 
@@ -162,9 +162,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testPutRemove_1_10_pp_1() throws IgniteCheckedException {
+    public void testPutRemove_1_20_pp_1() throws IgniteCheckedException {
         MAX_ITEMS_COUNT = 1;
-        CNT = 10;
+        CNT = 20;
         PUT_INC = 1;
         RMV_INC = 1;
 
@@ -174,9 +174,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testPutRemove_1_10_pp_0() throws IgniteCheckedException {
+    public void testPutRemove_1_20_pp_0() throws IgniteCheckedException {
         MAX_ITEMS_COUNT = 1;
-        CNT = 10;
+        CNT = 20;
         PUT_INC = 1;
         RMV_INC = 1;
 
@@ -186,9 +186,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testPutRemove_1_10_mp_1() throws IgniteCheckedException {
+    public void testPutRemove_1_20_mp_1() throws IgniteCheckedException {
         MAX_ITEMS_COUNT = 1;
-        CNT = 10;
+        CNT = 20;
         PUT_INC = -1;
         RMV_INC = 1;
 
@@ -198,9 +198,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testPutRemove_1_10_mp_0() throws IgniteCheckedException {
+    public void testPutRemove_1_20_mp_0() throws IgniteCheckedException {
         MAX_ITEMS_COUNT = 1;
-        CNT = 10;
+        CNT = 20;
         PUT_INC = -1;
         RMV_INC = 1;
 
