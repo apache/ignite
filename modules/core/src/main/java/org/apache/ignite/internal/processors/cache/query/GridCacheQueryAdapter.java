@@ -674,13 +674,11 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private void init() {
             final ClusterNode node = nodes.poll();
 
-            T2<GridCloseableIterator<Map.Entry>, CacheQueryFuture<Map.Entry>> t0 = new T2<>();
-
             if (node.isLocal()) {
-                GridCloseableIterator it = null;
-                
                 try {
-                    it = qryMgr.scanQueryLocal(qry);
+                    GridCloseableIterator it = qryMgr.scanQueryLocal(qry);
+
+                    tuple= new T2(it, null);
                 }
                 catch (IgniteClientDisconnectedCheckedException e) {
                     throw CU.convertToCacheException(e);
@@ -688,16 +686,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 catch (IgniteCheckedException e) {
                     retryIfPossible(e);
                 }
-
-                t0.set1(it);
             }
             else {
                 final GridCacheQueryBean bean = new GridCacheQueryBean(this.qry, null, null, null);
 
-                t0.set2(qryMgr.queryDistributed(bean, Collections.singleton(node)));
+                tuple= new T2(null, qryMgr.queryDistributed(bean, Collections.singleton(node)));
             }
-
-            tuple = t0;
         }
 
         /** {@inheritDoc} */
@@ -716,32 +710,30 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         /** {@inheritDoc} */
         @Override protected boolean onHasNext() throws IgniteCheckedException {
-            if (cur != null)
-                return true;
+            while (true) {
+                if (cur != null)
+                    return true;
 
-            T2<GridCloseableIterator<Map.Entry>, CacheQueryFuture<Map.Entry>> t = tuple;
+                T2<GridCloseableIterator<Map.Entry>, CacheQueryFuture<Map.Entry>> t = tuple;
 
-            assert t != null;
-
-            if (t.get1() != null) {
                 GridCloseableIterator<Map.Entry> iter = t.get1();
 
-                boolean hasNext = iter.hasNext();
+                if (iter != null) {
+                    boolean hasNext = iter.hasNext();
 
-                if (hasNext)
-                    cur = iter.next();
+                    if (hasNext)
+                        cur = iter.next();
 
-                return hasNext;
-            }
-            else {
-                CacheQueryFuture<Map.Entry> fut = t.get2();
+                    return hasNext;
+                }
+                else {
+                    CacheQueryFuture<Map.Entry> fut = t.get2();
 
-                assert fut != null;
+                    assert fut != null;
 
-                if (firstItemReturned)
-                    return (cur = fut.next()) != null;
+                    if (firstItemReturned)
+                        return (cur = fut.next()) != null;
 
-                while (true) {
                     try {
                         ((GridCacheQueryFutureAdapter)fut).awaitFirstPage();
 
@@ -806,6 +798,19 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             catch (IgniteCheckedException ex) {
                 throw CU.convertToCacheException(ex);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onClose() throws IgniteCheckedException {
+            super.onClose();
+
+            T2<GridCloseableIterator<Map.Entry>, CacheQueryFuture<Map.Entry>> t = tuple;
+
+            if (t != null && t.get1() != null)
+                t.get1().close();
+
+            if (t != null && t.get2() != null)
+                t.get2().cancel();
         }
     }
 }
