@@ -390,6 +390,11 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                     return TRUE;
                 }
+
+                case OP_GET: {
+                    return writeResult(mem, cache.get(reader.readObjectDetached()));
+                }
+
             }
         }
         catch (Exception e) {
@@ -402,6 +407,18 @@ public class PlatformCache extends PlatformAbstractTarget {
         }
 
         return super.processInStreamOutLong(type, reader, mem);
+    }
+
+    private long writeResult(PlatformMemory mem, Object obj) {
+        if (obj == null)
+            return FALSE;
+
+        PlatformOutputStream out = mem.output();
+        BinaryRawWriterEx writer = platformCtx.writer(out);
+        writer.writeObjectDetached(obj);
+        out.synchronize();
+
+        return TRUE;
     }
 
     /**

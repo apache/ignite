@@ -389,19 +389,17 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            var result = DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
+            return DoOutInOpX((int) CacheOp.Get,
+                w => w.WriteObject(key),
+                (stream, hasValue) =>
+                {
+                    Debug.Assert(!IsAsync || !hasValue);
 
-            if (!IsAsync)
-            {
-                if (!result.Success)
-                    throw GetKeyNotFoundException();
+                    if (!IsAsync && !hasValue)
+                        throw GetKeyNotFoundException();
 
-                return result.Value;
-            }
-
-            Debug.Assert(!result.Success);
-
-            return default(TV);
+                    return hasValue ? Unmarshal<TV>(stream) : default(TV);
+                }, ReadException);
         }
 
         /** <inheritDoc /> */

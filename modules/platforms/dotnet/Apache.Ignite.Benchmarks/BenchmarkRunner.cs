@@ -36,7 +36,7 @@ namespace Apache.Ignite.Benchmarks
         public static void Main(string[] args)
         {
             args = new[] { 
-                typeof(PutBenchmark).FullName,
+                typeof(GetAsyncBenchmark).FullName,
                 "-ConfigPath", @"C:\W\incubator-ignite\modules\platforms\dotnet\Apache.Ignite.Benchmarks\Config\benchmark.xml",
                 "-Threads", "1",
                 "-Warmup", "0",

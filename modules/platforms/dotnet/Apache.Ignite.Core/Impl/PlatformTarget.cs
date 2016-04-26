@@ -477,7 +477,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
-        /// Perform out-in operation.
+        /// Perform out-in operation with a single stream.
         /// </summary>
         /// <typeparam name="TR">The type of the r.</typeparam>
         /// <param name="type">Operation type.</param>
@@ -487,7 +487,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// Result.
         /// </returns>
-        protected TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, TR> inAction,
+        protected TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, bool, TR> inAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
             Debug.Assert(inErrorAction != null);
@@ -510,14 +510,14 @@ namespace Apache.Ignite.Core.Impl
                 stream.Seek(0, SeekOrigin.Begin);
 
                 if (res != Error)
-                    return inAction != null ? inAction(stream) : default(TR);
+                    return inAction != null ? inAction(stream, res == True) : default(TR);
 
                 throw inErrorAction(stream);
             }
         }
 
         /// <summary>
-        /// Perform out-in operation.
+        /// Perform out-in operation with a single stream.
         /// </summary>
         /// <param name="type">Operation type.</param>
         /// <param name="outAction">Out action.</param>
