@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -714,7 +715,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
     /** {@inheritDoc} */
     @Override public List<GridDhtLocalPartition> localPartitions() {
-        LinkedList<GridDhtLocalPartition> list = new LinkedList<>();
+        List<GridDhtLocalPartition> list = new ArrayList<>(locParts.length());
 
         for (int i = 0; i < locParts.length(); i++) {
             GridDhtLocalPartition part = locParts.get(i);
@@ -726,8 +727,12 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridDhtLocalPartition> currentLocalPartitions() {
-        return localPartitions();
+    @Override public Iterable<GridDhtLocalPartition> currentLocalPartitions() {
+        return new Iterable<GridDhtLocalPartition>() {
+            @Override public Iterator<GridDhtLocalPartition> iterator() {
+                return new CurrentPartitionsIterator();
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -1575,6 +1580,52 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         ", nodeId=" + nodeId + ']';
                 }
             }
+        }
+    }
+
+    private class CurrentPartitionsIterator implements Iterator<GridDhtLocalPartition> {
+
+        private int nextIdx;
+
+        private GridDhtLocalPartition nextPart;
+
+        private CurrentPartitionsIterator() {
+            advance();
+        }
+
+        private void advance() {
+            while (nextIdx < locParts.length()) {
+                GridDhtLocalPartition part = locParts.get(nextIdx);
+
+                if (part != null) {
+                    nextPart = part;
+                    return;
+                }
+
+                nextIdx++;
+            }
+        }
+
+        @Override public boolean hasNext() {
+            return nextPart != null;
+        }
+
+        @Override public GridDhtLocalPartition next() {
+            if (nextPart == null)
+                throw new NoSuchElementException();
+
+            GridDhtLocalPartition retVal = nextPart;
+
+            nextPart = null;
+            nextIdx++;
+
+            advance();
+
+            return retVal;
+        }
+
+        @Override public void remove() {
+            throw new UnsupportedOperationException("remove");
         }
     }
 }
