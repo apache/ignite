@@ -17,8 +17,17 @@
 
 package org.apache.ignite.internal.pagemem.wal.entry;
 
+import java.util.Collection;
+
 /**
  *
  */
-public class PageEntry extends WALEntry {
+public class DataRecord extends WALRecord {
+    /** */
+    private Collection<DataEntry> writeEntries;
+
+    /** {@inheritDoc} */
+    @Override public RecordType type() {
+        return RecordType.DATA_RECORD;
+    }
 }

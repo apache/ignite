@@ -17,8 +17,35 @@
 
 package org.apache.ignite.internal.pagemem.wal.entry;
 
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+
 /**
  *
  */
-public class TxDataEntry extends WALEntry {
+public class DataEntry {
+    /** */
+    private int cacheId;
+
+    /** */
+    private CacheObject key;
+
+    /** */
+    private CacheObject val;
+
+    /** */
+    private GridCacheOperation op;
+
+    /** */
+    private GridCacheVersion nearXidVer;
+
+    /** */
+    private GridCacheVersion ver;
+
+    /** */
+    private int partId;
+
+    /** */
+    private long partCnt;
 }

@@ -19,11 +19,8 @@ package org.apache.ignite.internal.pagemem.wal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.pagemem.wal.entry.WALEntry;
+import org.apache.ignite.internal.pagemem.wal.entry.WALRecord;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.UUID;
 
 /**
  *
@@ -40,7 +37,7 @@ public interface WriteAheadLog {
      * @throws IgniteCheckedException If failed to construct log entry.
      * @throws StorageException If IO error occurred while writing log entry.
      */
-    public WALPointer log(WALEntry entry, boolean fsync) throws IgniteCheckedException, StorageException;
+    public WALPointer log(WALRecord entry, boolean fsync) throws IgniteCheckedException, StorageException;
 
     /**
      * Makes sure that all log entries written to the log up until the specified pointer are actually persisted to
@@ -60,7 +57,7 @@ public interface WriteAheadLog {
      * @throws IgniteException If failed to start iteration.
      * @throws StorageException If IO error occurred while reading WAL entries.
      */
-    public void replay(IgniteBiInClosure<WALPointer, WALEntry> visitor, WALPointer start)
+    public void replay(IgniteBiInClosure<WALPointer, WALRecord> visitor, WALPointer start)
         throws IgniteException, StorageException;
 
     /**

@@ -20,5 +20,21 @@ package org.apache.ignite.internal.pagemem.wal.entry;
 /**
  *
  */
-public class TxEndEntry extends WALEntry {
+public class PageSnapshot extends PageAbstractRecord {
+    /** */
+    private byte[] arr;
+
+    /**
+     * @param arr Backing array.
+     */
+    public PageSnapshot(byte[] arr) {
+        this.arr = arr;
+    }
+
+    /**
+     * @return Snapshot backing array.
+     */
+    public byte[] backingArray() {
+        return arr;
+    }
 }

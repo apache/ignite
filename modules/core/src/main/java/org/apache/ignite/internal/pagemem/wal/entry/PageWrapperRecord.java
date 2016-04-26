@@ -17,14 +17,24 @@
 
 package org.apache.ignite.internal.pagemem.wal.entry;
 
-import java.nio.ByteBuffer;
-
 /**
- * Log entry abstract class.
+ *
  */
-public abstract class WALEntry {
+public class PageWrapperRecord extends PageAbstractRecord {
+    /** */
+    private long pagePtr;
+
     /**
-     * @return
+     * @param pagePtr Page start pointer.
      */
-    public abstract byte type();
+    public PageWrapperRecord(long pagePtr) {
+        this.pagePtr = pagePtr;
+    }
+
+    /**
+     * @return Page start pointer.
+     */
+    public long pointer() {
+        return pagePtr;
+    }
 }

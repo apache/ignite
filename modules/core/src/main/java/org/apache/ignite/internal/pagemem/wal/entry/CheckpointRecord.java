@@ -20,5 +20,9 @@ package org.apache.ignite.internal.pagemem.wal.entry;
 /**
  *
  */
-public class CheckpointStartEntry extends WALEntry {
+public class CheckpointRecord extends WALRecord {
+    /** {@inheritDoc} */
+    @Override public RecordType type() {
+        return RecordType.CHECKPOINT_RECORD;
+    }
 }

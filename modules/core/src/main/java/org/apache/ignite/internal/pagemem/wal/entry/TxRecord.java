@@ -17,8 +17,17 @@
 
 package org.apache.ignite.internal.pagemem.wal.entry;
 
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+
 /**
  *
  */
-public class CheckpointEndEntry extends WALEntry {
+public class TxRecord extends WALRecord {
+    /** */
+    private GridCacheVersion nearXidVer;
+
+    /** {@inheritDoc} */
+    @Override public byte type() {
+        return TX_RECORD;
+    }
 }
