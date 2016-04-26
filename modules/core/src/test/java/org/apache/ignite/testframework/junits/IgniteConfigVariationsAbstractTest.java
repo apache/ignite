@@ -21,13 +21,16 @@ import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -197,6 +200,12 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         for (int i = 0; i < DataMode.values().length; i++) {
             dataMode = DataMode.values()[i];
 
+            if ((getConfiguration().getMarshaller() instanceof JdkMarshaller)
+                && (dataMode == DataMode.PLANE_OBJECT)) {
+                info("Skip test for JdkMarshaller & PLANE_OBJECT data mode");
+                continue;
+            }
+
             info("Running test in data mode: " + dataMode);
 
             if (i != 0)
@@ -289,6 +298,13 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         protected TestEnum enumVal;
 
         /**
+         * Default constructor must be accessible for deserialize subclasses by JDK serialization API.
+         */
+        TestObject() {
+            // No-op.
+        }
+
+        /**
          * @param val Value.
          */
         TestObject(int val) {
@@ -345,6 +361,31 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         public SerializableObject(int val) {
             super(val);
         }
+
+        /**
+         * Custom serialization of superclass because {@link TestObject} is non-serializable.
+         *
+         * @param out output stream.
+         * @throws IOException if de-serialization failed.
+         */
+        private void writeObject(ObjectOutputStream out) throws IOException {
+            out.writeInt(val);
+            out.writeObject(strVal);
+            out.writeObject(enumVal);
+        }
+
+        /**
+         * Custom deserialization of superclass because {@link TestObject} is non-serializable.
+         *
+         * @param in input stream
+         * @throws IOException if de-serialization failed.
+         * @throws ClassNotFoundException if de-serialization failed.
+         */
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+            val = in.readInt();
+            strVal = (String)in.readObject();
+            enumVal = (TestEnum)in.readObject();
+        }
     }
 
     /**
@@ -354,7 +395,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         /**
          * Default constructor.
          */
-        ExternalizableObject() {
+        public ExternalizableObject() {
             super(-1);
         }
 

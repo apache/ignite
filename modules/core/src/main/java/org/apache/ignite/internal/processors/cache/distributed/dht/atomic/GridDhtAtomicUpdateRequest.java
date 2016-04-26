@@ -83,10 +83,6 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     @GridDirectCollection(CacheObject.class)
     private List<CacheObject> prevVals;
 
-    /** */
-    @GridDirectCollection(int.class)
-    private List<Integer> partIds;
-
     /** Conflict versions. */
     @GridDirectCollection(GridCacheVersion.class)
     private List<GridCacheVersion> conflictVers;
@@ -154,6 +150,10 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /** On response flag. Access should be synced on future. */
     @GridDirectTransient
     private boolean onRes;
+
+    /** */
+    @GridDirectTransient
+    private List<Integer> partIds;
 
     /** */
     @GridDirectTransient
@@ -242,7 +242,6 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
      * @param partId Partition.
      * @param prevVal Previous value.
      * @param updateCntr Update counter.
-     * @param storeLocPrevVal If {@code true} stores previous value.
      */
     public void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
@@ -253,18 +252,11 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         boolean addPrevVal,
         int partId,
         @Nullable CacheObject prevVal,
-        @Nullable Long updateCntr,
-        boolean storeLocPrevVal) {
+        @Nullable Long updateCntr
+    ) {
         keys.add(key);
 
         partIds.add(partId);
-
-        if (storeLocPrevVal) {
-            if (locPrevVals == null)
-                locPrevVals = new ArrayList<>();
-
-            locPrevVals.add(prevVal);
-        }
 
         if (forceTransformBackups) {
             assert entryProcessor != null;
@@ -522,16 +514,6 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
             return prevVals.get(idx);
 
         return null;
-    }
-
-    /**
-     * @param idx Key index.
-     * @return Value.
-     */
-    @Nullable public CacheObject localPreviousValue(int idx) {
-        assert locPrevVals != null;
-
-        return locPrevVals.get(idx);
     }
 
     /**
@@ -1090,13 +1072,6 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     private void cleanup() {
         nearVals = null;
         prevVals = null;
-
-        // Do not keep values if they are not needed for continuous query notification.
-        if (locPrevVals == null) {
-            keys = null;
-            vals = null;
-            locPrevVals = null;
-        }
     }
 
     /** {@inheritDoc} */

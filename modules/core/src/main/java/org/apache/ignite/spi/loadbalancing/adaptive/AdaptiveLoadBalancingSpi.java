@@ -116,7 +116,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  *     }
  *
  *     // Calculate load based on number of active and waiting jobs.
- *     public double getLoad(GridNode node, int jobsSentSinceLastUpdate) {
+ *     public double getLoad(ClusterNode node, int jobsSentSinceLastUpdate) {
  *         GridNodeMetrics metrics = node.getMetrics();
  *
  *         if (useAvg) {
@@ -143,7 +143,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * is transparent to your code and is handled automatically by the adapter.
  * Here is an example of how your task will look:
  * <pre name="code" class="java">
- * public class MyFooBarTask extends GridComputeTaskSplitAdapter&lt;Object, Object&gt; {
+ * public class MyFooBarTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    &#64;Override
  *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
  *        List&lt;MyFooBarJob&gt; jobs = new ArrayList&lt;MyFooBarJob&gt;(gridSize);
@@ -165,14 +165,14 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  * case we manually inject load balancer and use it to pick the best node. Doing it in
  * such way would allow user to map some jobs manually and for others use load balancer.
  * <pre name="code" class="java">
- * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
+ * public class MyFooBarTask extends ComputeTaskAdapter&lt;String, String&gt; {
  *    // Inject load balancer.
  *    &#64;LoadBalancerResource
  *    ComputeLoadBalancer balancer;
  *
  *    // Map jobs to grid nodes.
- *    public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws IgniteCheckedException {
- *        Map&lt;MyFooBarJob, GridNode&gt; jobs = new HashMap&lt;MyFooBarJob, GridNode&gt;(subgrid.size());
+ *    public Map&lt;? extends ComputeJob, ClusterNode&gt; map(List&lt;ClusterNode&gt; subgrid, String arg) throws IgniteCheckedException {
+ *        Map&lt;MyFooBarJob, ClusterNode&gt; jobs = new HashMap&lt;MyFooBarJob, ClusterNode&gt;(subgrid.size());
  *
  *        // In more complex cases, you can actually do
  *        // more complicated assignments of jobs to nodes.
@@ -185,13 +185,13 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
  *    }
  *
  *    // Aggregate results into one compound result.
- *    public String reduce(List&lt;GridComputeJobResult&gt; results) throws IgniteCheckedException {
+ *    public String reduce(List&lt;ComputeJobResult&gt; results) throws IgniteCheckedException {
  *        // For the purpose of this example we simply
  *        // concatenate string representation of every
  *        // job result
  *        StringBuilder buf = new StringBuilder();
  *
- *        for (GridComputeJobResult res : results) {
+ *        for (ComputeJobResult res : results) {
  *            // Append string representation of result
  *            // returned by every job.
  *            buf.append(res.getData().string());
@@ -351,7 +351,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
                     }
 
                     case EVT_JOB_MAPPED: {
-                        // We should keep topology and use cache in GridComputeTask#map() method to
+                        // We should keep topology and use cache in ComputeTask#map() method to
                         // avoid O(n*n/2) complexity, after that we can drop caches.
                         // Here we set mapped property and later cache will be ignored
                         JobEvent jobEvt = (JobEvent)evt;
@@ -448,11 +448,11 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
         // Create new cached topology if there is no one. Do not
         // use cached topology after task has been mapped.
         if (weightedTop == null)
-            // Called from GridComputeTask#map(). Put new topology and false as not mapped yet.
+            // Called from ComputeTask#map(). Put new topology and false as not mapped yet.
             taskTops.put(ses.getId(), weightedTop = F.t(false, new WeightedTopology(top)));
         // We have topology - check if task has been mapped.
         else if (weightedTop.get1())
-            // Do not use cache after GridComputeTask#map().
+            // Do not use cache after ComputeTask#map().
             return new WeightedTopology(top).pickWeightedNode();
 
         return weightedTop.get2().pickWeightedNode();
