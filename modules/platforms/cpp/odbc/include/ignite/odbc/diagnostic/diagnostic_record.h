@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_DIAGNOSTIC_RECORD
-#define _IGNITE_ODBC_DRIVER_DIAGNOSTIC_RECORD
+#ifndef _IGNITE_ODBC_DIAGNOSTIC_DIAGNOSTIC_RECORD
+#define _IGNITE_ODBC_DIAGNOSTIC_DIAGNOSTIC_RECORD
 
 #include <stdint.h>
 
@@ -162,4 +162,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_DIAGNOSTIC_DIAGNOSTIC_RECORD

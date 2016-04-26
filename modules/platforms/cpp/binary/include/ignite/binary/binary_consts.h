@@ -20,8 +20,8 @@
  * Declares specific binary constatants
  */
 
-#ifndef _IGNITE_BINARY_CONSTS
-#define _IGNITE_BINARY_CONSTS
+#ifndef _IGNITE_BINARY_BINARY_CONSTS
+#define _IGNITE_BINARY_BINARY_CONSTS
 
 #include <ignite/common/common.h>
 
@@ -83,4 +83,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_BINARY_BINARY_CONSTS

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_BINARY_READER
-#define _IGNITE_IMPL_BINARY_READER
+#ifndef _IGNITE_IMPL_BINARY_BINARY_READER
+#define _IGNITE_IMPL_BINARY_BINARY_READER
 
 #include <stdint.h>
 
@@ -1419,4 +1419,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_BINARY_BINARY_READER

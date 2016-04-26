@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_INTEROP
-#define _IGNITE_IMPL_INTEROP
+#ifndef _IGNITE_IMPL_INTEROP_INTEROP
+#define _IGNITE_IMPL_INTEROP_INTEROP
 
 #include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/interop/interop_output_stream.h"
 #include "ignite/impl/interop/interop_input_stream.h"
 
-#endif
+#endif //_IGNITE_IMPL_INTEROP_INTEROP

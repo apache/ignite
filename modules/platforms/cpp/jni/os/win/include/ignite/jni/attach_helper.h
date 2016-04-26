@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _IGNITE_COMMON_ATTACH_HELPER
-#define _IGNITE_COMMON_ATTACH_HELPER
+#ifndef _IGNITE_JNI_ATTACH_HELPER
+#define _IGNITE_JNI_ATTACH_HELPER
 
 namespace ignite
 {
@@ -35,4 +35,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_COMMON_ATTACH_HELPER
+#endif //_IGNITE_JNI_ATTACH_HELPER

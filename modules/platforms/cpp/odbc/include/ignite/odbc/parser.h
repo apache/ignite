@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_PARSER
-#define _IGNITE_ODBC_DRIVER_PARSER
+#ifndef _IGNITE_ODBC_PARSER
+#define _IGNITE_ODBC_PARSER
 
 #include <stdint.h>
 
@@ -134,4 +134,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_PARSER

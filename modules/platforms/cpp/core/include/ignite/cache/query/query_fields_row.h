@@ -20,8 +20,8 @@
  * Declares ignite::cache::query::QueryFieldsRow class.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_FIELDS_ROW
-#define _IGNITE_CACHE_QUERY_FIELDS_ROW
+#ifndef _IGNITE_CACHE_QUERY_QUERY_FIELDS_ROW
+#define _IGNITE_CACHE_QUERY_QUERY_FIELDS_ROW
 
 #include <vector>
 
@@ -156,4 +156,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY_FIELDS_ROW

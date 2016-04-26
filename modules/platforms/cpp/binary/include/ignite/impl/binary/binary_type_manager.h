@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_BINARY_TYPE_MANAGER
-#define _IGNITE_IMPL_BINARY_TYPE_MANAGER
+#ifndef _IGNITE_IMPL_BINARY_BINARY_TYPE_MANAGER
+#define _IGNITE_IMPL_BINARY_BINARY_TYPE_MANAGER
 
 #include <vector>
 
@@ -117,4 +117,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_IMPL_BINARY_BINARY_TYPE_MANAGER

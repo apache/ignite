@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_COLUMN
-#define _IGNITE_ODBC_DRIVER_COLUMN
+#ifndef _IGNITE_ODBC_COLUMN
+#define _IGNITE_ODBC_COLUMN
 
 #include <stdint.h>
 
@@ -146,4 +146,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_COLUMN

@@ -20,8 +20,8 @@
  * Declares ignite::cache::Cache class.
  */
 
-#ifndef _IGNITE_CACHE
-#define _IGNITE_CACHE
+#ifndef _IGNITE_CACHE_CACHE
+#define _IGNITE_CACHE_CACHE
 
 #include <map>
 #include <set>
@@ -1198,4 +1198,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_CACHE_CACHE

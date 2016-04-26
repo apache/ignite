@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_COMMON_EXPORTS
-#define _IGNITE_COMMON_EXPORTS
+#ifndef _IGNITE_JNI_EXPORTS
+#define _IGNITE_JNI_EXPORTS
 
 #include "ignite/jni/java.h"
 
@@ -179,4 +179,4 @@ extern "C" {
     bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj);
 }
 
-#endif
+#endif //_IGNITE_JNI_EXPORTS

@@ -20,8 +20,8 @@
  * Declares ignite::binary::BinaryReader class.
  */
 
-#ifndef _IGNITE_BINARY_READER
-#define _IGNITE_BINARY_READER
+#ifndef _IGNITE_BINARY_BINARY_READER
+#define _IGNITE_BINARY_BINARY_READER
 
 #include <stdint.h>
 #include <string>
@@ -430,4 +430,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_BINARY_BINARY_READER

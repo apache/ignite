@@ -21,8 +21,8 @@
  * to declare binary type specialisation for user types.
  */
 
-#ifndef _IGNITE_BINARY_TYPE
-#define _IGNITE_BINARY_TYPE
+#ifndef _IGNITE_BINARY_BINARY_TYPE
+#define _IGNITE_BINARY_BINARY_TYPE
 
 #include <stdint.h>
 
@@ -307,4 +307,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_BINARY_BINARY_TYPE

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_INTEROP_INPUT_STREAM
-#define _IGNITE_IMPL_INTEROP_INPUT_STREAM
+#ifndef _IGNITE_IMPL_INTEROP_INTEROP_INPUT_STREAM
+#define _IGNITE_IMPL_INTEROP_INTEROP_INPUT_STREAM
 
 #include "ignite/impl/interop/interop_memory.h"
 
@@ -247,4 +247,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_IMPL_INTEROP_INTEROP_INPUT_STREAM

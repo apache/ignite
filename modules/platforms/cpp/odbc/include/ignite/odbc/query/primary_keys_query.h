@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_PRIMARY_KEYS_QUERY
-#define _IGNITE_ODBC_DRIVER_PRIMARY_KEYS_QUERY
+#ifndef _IGNITE_ODBC_QUERY_PRIMARY_KEYS_QUERY
+#define _IGNITE_ODBC_QUERY_PRIMARY_KEYS_QUERY
 
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/query/query.h"
@@ -134,4 +134,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_QUERY_PRIMARY_KEYS_QUERY

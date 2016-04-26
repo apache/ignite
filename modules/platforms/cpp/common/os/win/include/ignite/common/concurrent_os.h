@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_UTILS_CONCURRENT_OS
-#define _IGNITE_UTILS_CONCURRENT_OS
+#ifndef _IGNITE_COMMON_CONCURRENT_OS
+#define _IGNITE_COMMON_CONCURRENT_OS
 
 #include <map>
 #include <stdint.h>
@@ -403,4 +403,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_UTILS_CONCURRENT_OS
+#endif //_IGNITE_COMMON_CONCURRENT_OS

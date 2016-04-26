@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_BINARY_TYPE_UPDATER_IMPL
-#define _IGNITE_IMPL_BINARY_TYPE_UPDATER_IMPL
+#ifndef _IGNITE_IMPL_BINARY_BINARY_TYPE_UPDATER_IMPL
+#define _IGNITE_IMPL_BINARY_BINARY_TYPE_UPDATER_IMPL
 
 #include <ignite/jni/exports.h>
 
@@ -62,4 +62,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_IMPL_BINARY_BINARY_TYPE_UPDATER_IMPL

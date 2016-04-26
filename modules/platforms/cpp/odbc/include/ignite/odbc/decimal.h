@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_DECIMAL
-#define _IGNITE_DECIMAL
+#ifndef _IGNITE_ODBC_DECIMAL
+#define _IGNITE_ODBC_DECIMAL
 
 #include <stdint.h>
 
@@ -134,4 +134,4 @@ namespace ignite
 
 
 
-#endif
+#endif //_IGNITE_ODBC_DECIMAL

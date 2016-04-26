@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_COMMON_JVM
-#define _IGNITE_COMMON_JVM
+#ifndef _IGNITE_JNI_JAVA
+#define _IGNITE_JNI_JAVA
 
 #include <jni.h>
 
@@ -56,8 +56,8 @@ namespace ignite
             typedef int(JNICALL *ContinuousQueryFilterApplyHandler)(void* target, long long filterPtr, long long memPtr);
             typedef void(JNICALL *ContinuousQueryFilterReleaseHandler)(void* target, long long filterPtr);
 
-			typedef void(JNICALL *DataStreamerTopologyUpdateHandler)(void* target, long long ldrPtr, long long topVer, int topSize);
-			typedef void(JNICALL *DataStreamerStreamReceiverInvokeHandler)(void* target, long long ptr, void* cache, long long memPtr, unsigned char keepPortable);
+            typedef void(JNICALL *DataStreamerTopologyUpdateHandler)(void* target, long long ldrPtr, long long topVer, int topSize);
+            typedef void(JNICALL *DataStreamerStreamReceiverInvokeHandler)(void* target, long long ptr, void* cache, long long memPtr, unsigned char keepPortable);
 
             typedef void(JNICALL *FutureByteResultHandler)(void* target, long long futAddr, int res);
             typedef void(JNICALL *FutureBoolResultHandler)(void* target, long long futAddr, int res);
@@ -83,11 +83,11 @@ namespace ignite
             typedef int(JNICALL *EventFilterApplyHandler)(void* target, long long ptr, long long memPtr);
             typedef void(JNICALL *EventFilterDestroyHandler)(void* target, long long ptr);
 
-			typedef long long(JNICALL *ServiceInitHandler)(void* target, long long memPtr);
-			typedef void(JNICALL *ServiceExecuteHandler)(void* target, long long svcPtr, long long memPtr);
-			typedef void(JNICALL *ServiceCancelHandler)(void* target, long long svcPtr, long long memPtr);
-			typedef void(JNICALL *ServiceInvokeMethodHandler)(void* target, long long svcPtr, long long inMemPtr, long long outMemPtr);
-			typedef int(JNICALL *ClusterNodeFilterApplyHandler)(void* target, long long memPtr);
+            typedef long long(JNICALL *ServiceInitHandler)(void* target, long long memPtr);
+            typedef void(JNICALL *ServiceExecuteHandler)(void* target, long long svcPtr, long long memPtr);
+            typedef void(JNICALL *ServiceCancelHandler)(void* target, long long svcPtr, long long memPtr);
+            typedef void(JNICALL *ServiceInvokeMethodHandler)(void* target, long long svcPtr, long long inMemPtr, long long outMemPtr);
+            typedef int(JNICALL *ClusterNodeFilterApplyHandler)(void* target, long long memPtr);
 
             typedef long long(JNICALL *NodeInfoHandler)(void* target, long long memPtr);
 
@@ -133,8 +133,8 @@ namespace ignite
                 ContinuousQueryFilterApplyHandler contQryFilterApply;
                 ContinuousQueryFilterReleaseHandler contQryFilterRelease;
 
-				DataStreamerTopologyUpdateHandler dataStreamerTopologyUpdate;
-				DataStreamerStreamReceiverInvokeHandler streamReceiverInvoke;
+                DataStreamerTopologyUpdateHandler dataStreamerTopologyUpdate;
+                DataStreamerStreamReceiverInvokeHandler streamReceiverInvoke;
 
                 FutureByteResultHandler futByteRes;
                 FutureBoolResultHandler futBoolRes;
@@ -160,12 +160,12 @@ namespace ignite
                 EventFilterApplyHandler eventFilterApply;
                 EventFilterDestroyHandler eventFilterDestroy;
 
-				ServiceInitHandler serviceInit;
-				ServiceExecuteHandler serviceExecute;
-				ServiceCancelHandler serviceCancel;
-				ServiceInvokeMethodHandler serviceInvokeMethod;
-				
-				ClusterNodeFilterApplyHandler clusterNodeFilterApply;
+                ServiceInitHandler serviceInit;
+                ServiceExecuteHandler serviceExecute;
+                ServiceCancelHandler serviceCancel;
+                ServiceInvokeMethodHandler serviceInvokeMethod;
+
+                ClusterNodeFilterApplyHandler clusterNodeFilterApply;
 
                 NodeInfoHandler nodeInfo;
 
@@ -269,21 +269,21 @@ namespace ignite
                 jmethodID m_PlatformDataStreamer_setPerNodeBufSize;
                 jmethodID m_PlatformDataStreamer_getPerNodeParallelOps;
                 jmethodID m_PlatformDataStreamer_setPerNodeParallelOps;
-                
+
                 jclass c_PlatformEvents;
                 jmethodID m_PlatformEvents_withAsync;
                 jmethodID m_PlatformEvents_stopLocalListen;
                 jmethodID m_PlatformEvents_localListen;
                 jmethodID m_PlatformEvents_isEnabled;
-                
-				jclass c_PlatformServices;
-				jmethodID m_PlatformServices_withAsync;
-				jmethodID m_PlatformServices_withServerKeepPortable;
-				jmethodID m_PlatformServices_cancel;
-				jmethodID m_PlatformServices_cancelAll;
-				jmethodID m_PlatformServices_serviceProxy;
 
-				jclass c_PlatformIgnition;
+                jclass c_PlatformServices;
+                jmethodID m_PlatformServices_withAsync;
+                jmethodID m_PlatformServices_withServerKeepPortable;
+                jmethodID m_PlatformServices_cancel;
+                jmethodID m_PlatformServices_cancelAll;
+                jmethodID m_PlatformServices_serviceProxy;
+
+                jclass c_PlatformIgnition;
                 jmethodID m_PlatformIgnition_start;
                 jmethodID m_PlatformIgnition_instance;
                 jmethodID m_PlatformIgnition_environmentPointer;
@@ -527,7 +527,7 @@ namespace ignite
                 jobject ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
-				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
+                void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
                 
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
@@ -610,11 +610,11 @@ namespace ignite
                 void EventsLocalListen(jobject obj, long long hnd, int type);
                 bool EventsIsEnabled(jobject obj, int type);
                 
-				jobject ServicesWithAsync(jobject obj);
+                jobject ServicesWithAsync(jobject obj);
                 jobject ServicesWithServerKeepPortable(jobject obj);
-				void ServicesCancel(jobject obj, char* name);
-				void ServicesCancelAll(jobject obj);
-				void* ServicesGetServiceProxy(jobject obj, char* name, bool sticky);
+                void ServicesCancel(jobject obj, char* name);
+                void ServicesCancelAll(jobject obj);
+                void* ServicesGetServiceProxy(jobject obj, char* name, bool sticky);
 
                 long long AtomicLongGet(jobject obj);
                 long long AtomicLongIncrementAndGet(jobject obj);
@@ -688,8 +688,8 @@ namespace ignite
             JNIEXPORT jint JNICALL JniContinuousQueryFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong filterPtr, jlong memPtr);
             JNIEXPORT void JNICALL JniContinuousQueryFilterRelease(JNIEnv *env, jclass cls, jlong envPtr, jlong filterPtr);
 
-			JNIEXPORT void JNICALL JniDataStreamerTopologyUpdate(JNIEnv *env, jclass cls, jlong envPtr, jlong ldrPtr, jlong topVer, jint topSize);
-			JNIEXPORT void JNICALL JniDataStreamerStreamReceiverInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jobject cache, jlong memPtr, jboolean keepPortable);
+            JNIEXPORT void JNICALL JniDataStreamerTopologyUpdate(JNIEnv *env, jclass cls, jlong envPtr, jlong ldrPtr, jlong topVer, jint topSize);
+            JNIEXPORT void JNICALL JniDataStreamerStreamReceiverInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jobject cache, jlong memPtr, jboolean keepPortable);
 
             JNIEXPORT void JNICALL JniFutureByteResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jint res);
             JNIEXPORT void JNICALL JniFutureBoolResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jint res);
@@ -715,11 +715,11 @@ namespace ignite
             JNIEXPORT jint JNICALL JniEventFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr);
             JNIEXPORT void JNICALL JniEventFilterDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr);
 
-			JNIEXPORT jlong JNICALL JniServiceInit(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
-			JNIEXPORT void JNICALL JniServiceExecute(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr);
-			JNIEXPORT void JNICALL JniServiceCancel(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr);
-			JNIEXPORT void JNICALL JniServiceInvokeMethod(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong inMemPtr, jlong outMemPtr);
-			JNIEXPORT jint JNICALL JniClusterNodeFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
+            JNIEXPORT jlong JNICALL JniServiceInit(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
+            JNIEXPORT void JNICALL JniServiceExecute(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr);
+            JNIEXPORT void JNICALL JniServiceCancel(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr);
+            JNIEXPORT void JNICALL JniServiceInvokeMethod(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong inMemPtr, jlong outMemPtr);
+            JNIEXPORT jint JNICALL JniClusterNodeFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
 
             JNIEXPORT jlong JNICALL JniNodeInfo(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
 
@@ -735,4 +735,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_JNI_JAVA

@@ -157,4 +157,4 @@ namespace ignite
     };    
 }
 
-#endif
+#endif //_IGNITE_IGNITION

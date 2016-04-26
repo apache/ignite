@@ -20,8 +20,8 @@
  * Declares ignite::IgniteError class.
  */
 
-#ifndef _IGNITE_UTILS_ERROR
-#define _IGNITE_UTILS_ERROR
+#ifndef _IGNITE_IGNITE_ERROR
+#define _IGNITE_IGNITE_ERROR
 
 #include <stdint.h>
 
@@ -281,4 +281,4 @@ namespace ignite
     };    
 }
 
-#endif //_IGNITE_UTILS_ERROR
+#endif //_IGNITE_IGNITE_ERROR
