@@ -24,6 +24,9 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Input arguments for Ignite benchmarks.
  */
@@ -148,6 +151,17 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-pp", "--printPartitionStats"}, description = "Print partition statistics")
     private boolean printPartStats;
+
+    /** */
+    @Parameter(names = "--allow-operation", description = "List of cache operations")
+    private List<String> allowOperations = new ArrayList<>();
+
+    /**
+     * @return List of cache operations.
+     */
+    public List<String> allowOperations() {
+        return allowOperations;
+    }
 
     /**
      * @return If {@code true} when need to print partition statistics.

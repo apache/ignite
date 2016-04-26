@@ -64,6 +64,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.IgniteBenchmarkUtils;
 import org.apache.ignite.yardstick.cache.load.model.ModelUtil;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -101,6 +102,9 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
     /** List of SQL queries. */
     private List<String> queries;
+
+    /** List of allowable cache operations which will be executed. */
+    private List<Operation> allowOperations;
 
     /**
      * Replace value entry processor.
@@ -148,6 +152,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         cacheSqlDescriptors = new HashMap<>();
 
         loadQueries();
+
+        loadAllowOperations();
 
         for (String cacheName : ignite().cacheNames()) {
             IgniteCache<Object, Object> cache = ignite().cache(cacheName);
@@ -235,6 +241,19 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
             availableCaches.add(cache);
         }
+    }
+
+    /**
+     * Load allowable operation from parameters.
+     */
+    private void loadAllowOperations() {
+        allowOperations = new ArrayList<>();
+        if (args.allowOperations().isEmpty())
+            for (Operation op: Operation.values())
+                allowOperations.add(op);
+        else
+            for (String opName: args.allowOperations())
+                allowOperations.add(Operation.valueOf(opName.toUpperCase()));
     }
 
     /**
@@ -447,7 +466,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @throws Exception If fail.
      */
     private void executeRandomOperation(IgniteCache cache) throws Exception {
-        switch (Operation.valueOf(nextRandom(operations))) {
+        switch (nextRandomOperation()) {
             case PUT:
                 doPut(cache);
                 break;
@@ -495,6 +514,14 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             case SQL_QUERY:
                 doSqlQuery(cache);
         }
+    }
+
+    /**
+     * @return Operation.
+     */
+    @NotNull private Operation nextRandomOperation() {
+        Operation op = allowOperations.get(nextRandom(allowOperations.size()));
+        return op;
     }
 
     /**
