@@ -20,8 +20,8 @@
             #errors-container.modal-header.header
                 button.close(ng-click='close()' aria-hidden='true') &times;
                 h4.modal-title {{title}}
-            .getting-started
-                .col-xs-12(ng-bind-html='message')
+            .modal-body
+                div(ng-bind-html='message')
             .modal-footer
                 button.btn.btn-default(ng-class='hasAgents ? "btn-primary" : "btn-default"' ng-click='close()') Close
                 button.btn.btn-primary(ng-hide='hasAgents' ng-click='downloadAgent()') Download agent
