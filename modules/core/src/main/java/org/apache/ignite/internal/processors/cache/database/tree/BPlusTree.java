@@ -965,20 +965,6 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
-     * @param leftCnt Left count.
-     * @param rightCnt Right count.
-     * @param cap Capacity.
-     * @param leaf Is leaf pages.
-     * @return {@code true} If can merge these pages.
-     */
-    private boolean canMerge(int leftCnt, int rightCnt, int cap, boolean leaf) {
-        cap -= leftCnt;
-        cap -= rightCnt;
-
-        return cap > 0 || (cap == 0 && (leaf || leftCnt == 0 || rightCnt == 0));
-    }
-
-    /**
      * @param cnt Count.
      * @param cap Capacity.
      * @return {@code true} If may merge.
@@ -1628,7 +1614,7 @@ public abstract class BPlusTree<L, T extends L> {
         Tail<L> tail;
 
         /** */
-        List<FullPageId> emptyPages; // TODO May be use Object for single empty page
+        Object emptyPages;
 
         /** */
         byte needReplaceInner = FALSE;
@@ -1976,6 +1962,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @param release Release write lock and release page.
          * @throws IgniteCheckedException If failed.
          */
+        @SuppressWarnings("unchecked")
         private void freePage(Page page, ByteBuffer buf, BPlusIO io, int lvl, boolean release)
             throws IgniteCheckedException {
             if (getFirstPageId(meta, lvl) == page.id()) {
@@ -1988,26 +1975,46 @@ public abstract class BPlusTree<L, T extends L> {
             // Mark removed.
             io.setRemoveId(buf, Long.MAX_VALUE);
 
+            if (release)
+                writeUnlockAndClose(page);
+
             if (reuseList == null)
                 return; // We are not allowed to reuse pages.
 
-            // We will reuse empty page.
+            // Reuse empty page.
             if (emptyPages == null)
-                emptyPages = new ArrayList<>(4);
+                emptyPages = page.fullId();
+            else {
+                List<FullPageId> list;
 
-            emptyPages.add(page.fullId());
+                if (emptyPages.getClass() != ArrayList.class) {
+                    list = new ArrayList<>(5);
 
-            if (release)
-                writeUnlockAndClose(page);
+                    list.add((FullPageId)emptyPages);
+
+                    emptyPages = list;
+                }
+                else
+                    list = (List<FullPageId>)emptyPages;
+
+                list.add(page.fullId());
+            }
         }
 
         /**
          * @throws IgniteCheckedException If failed.
          */
+        @SuppressWarnings("unchecked")
         private void reuseEmptyPages() throws IgniteCheckedException {
             if (emptyPages != null) {
-                for (int i = 0; i < emptyPages.size(); i++)
-                    reuseList.put(BPlusTree.this, emptyPages.get(i));
+                if (emptyPages.getClass() != ArrayList.class)
+                    reuseList.put(BPlusTree.this, (FullPageId)emptyPages);
+                else {
+                    List<FullPageId> list = (List<FullPageId>)emptyPages;
+
+                    for (int i = 0; i < list.size(); i++)
+                        reuseList.put(BPlusTree.this, list.get(i));
+                }
             }
         }
 
