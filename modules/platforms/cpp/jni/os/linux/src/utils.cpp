@@ -14,11 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <cstring>
+
 #include <pthread.h>
 
-#include "ignite/jni/attach_helper.h"
+#include <sys/stat.h>
+#include <dirent.h>
+#include <dlfcn.h>
+
+#include "ignite/common/utils.h"
+#include "ignite/jni/utils.h"
 #include "ignite/jni/java.h"
 
+using namespace ignite::common;
 using namespace ignite::jni::java;
 
 namespace ignite
@@ -323,7 +331,7 @@ namespace ignite
             else
             {
                 bool javaEnvFound;
-                std::string javaEnv = GetEnv(JAVA_HOME, &javaEnvFound);
+                std::string javaEnv = GetEnv(JAVA_HOME, javaEnvFound);
 
                 if (javaEnvFound)
                 {
@@ -355,7 +363,7 @@ namespace ignite
             {
                 // 2. Check environment variable.
                 bool envFound;
-                std::string env = GetEnv(IGNITE_HOME, &envFound);
+                std::string env = GetEnv(IGNITE_HOME, envFound);
 
                 if (envFound)
                     return ResolveIgniteHome0(env, false, found);
@@ -373,7 +381,7 @@ namespace ignite
             if (home)
             {
                 bool envFound;
-                std::string env = GetEnv(IGNITE_NATIVE_TEST_CLASSPATH, &envFound);
+                std::string env = GetEnv(IGNITE_NATIVE_TEST_CLASSPATH, envFound);
 
                 forceTest = envFound && env.compare("true") == 0;
             }

@@ -18,8 +18,7 @@
 ACLOCAL_AMFLAGS =-I m4
 
 SUBDIRS = \
-    include \
-    os/linux/include
+    include
 
 lib_LTLIBRARIES = libignite-jni.la
 
