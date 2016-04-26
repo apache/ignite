@@ -676,6 +676,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * Range for local ports. Local node will try to bind on first available port
      * starting from {@link #getLocalPort()} up until
      * <tt>{@link #getLocalPort()} {@code + locPortRange}</tt>.
+     * If port range value is <tt>0</tt>, then implementation will try bind only to the port provided by
+     * {@link #setLocalPort(int)} method and fail if binding to this port did not succeed.
      * <p>
      * If not specified, default is {@link #DFLT_PORT_RANGE}.
      * <p>
