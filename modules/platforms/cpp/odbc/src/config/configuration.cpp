@@ -44,7 +44,7 @@ namespace ignite
                 const std::string host = "localhost";
 
                 /** Default value for port attribute. */
-                const uint16_t port = 11443;
+                const uint16_t port = 10800;
 
                 /** Default value for cache attribute. */
                 const std::string cache = "";
