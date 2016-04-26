@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Represents address along with port range.
