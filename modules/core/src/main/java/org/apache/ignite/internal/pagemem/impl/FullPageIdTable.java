@@ -75,6 +75,24 @@ public class FullPageIdTable {
     /** */
     protected DirectMemoryUtils mem;
 
+    /** Addressing strategy. */
+    private final AddressingStrategy strategy;
+
+    /** Specifies types of addressing. */
+    public enum AddressingStrategy {
+        /**
+         * Insertion will search for each available cell.
+         * Slower, but more suitable when used many removes/insertions.
+         */
+        LINEAR,
+
+        /**
+         * Insertion will search for available cell with limited steps.
+         * Faster, but requires more memory to resolve collisions.
+         */
+        QUADRATIC
+    }
+
     /**
      * @return Estimated memory size required for this map to store the given number of elements.
      */
@@ -90,11 +108,20 @@ public class FullPageIdTable {
      * @param len Allocated memory length.
      * @param clear If {@code true}, then memory is considered dirty and will be cleared. Otherwise,
      *      map will assume that the given memory region is in valid state.
+     * @param stgy Addressing strategy {@link AddressingStrategy}.
      */
-    public FullPageIdTable(DirectMemoryUtils mem, long addr, long len, boolean clear) {
+    public FullPageIdTable(DirectMemoryUtils mem, long addr, long len, boolean clear, AddressingStrategy stgy) {
         valPtr = addr;
+        this.strategy = stgy;
         capacity = (int)((len - 4) / BYTES_PER_ENTRY);
-        maxSteps = (int)Math.sqrt(capacity);
+
+        if (stgy == AddressingStrategy.LINEAR)
+            maxSteps = capacity;
+        else if (stgy == AddressingStrategy.QUADRATIC)
+            maxSteps = (int) Math.sqrt(capacity);
+        else
+            throw new IllegalArgumentException("Unsupported addressing strategy: " + stgy);
+
         this.mem = mem;
 
         if (clear)
@@ -164,6 +191,24 @@ public class FullPageIdTable {
     }
 
     /**
+     * Find nearest value from specified position to the right.
+     *
+     * @param idx Index to start searching from.
+     * @param absent Default value that will be returned if no values present.
+     * @return Closest value to the index or {@code absent} if no values found.
+     */
+    public long getNearestAt(final int idx, final long absent) {
+        for (int i = idx; i < capacity + idx; i++) {
+            final int idx2 = i >= capacity ? i - capacity : i;
+
+            if (isValuePresentAt(idx2))
+                return valueAt(idx2);
+        }
+
+        return absent;
+    }
+
+    /**
      * @param key Key.
      * @return Key index.
      */
@@ -175,7 +220,7 @@ public class FullPageIdTable {
         do {
             int res = testKeyAt(index, key);
 
-            if (res == EMPTY) {
+            if (res == EMPTY || res == REMOVED) {
                 setKeyAt(index, key.pageId(), key.cacheId());
 
                 incrementSize();
@@ -185,9 +230,14 @@ public class FullPageIdTable {
             else if (res == EQUAL)
                 return index;
             else
-                assert res == REMOVED || res == NOT_EQUAL;
+                assert res == NOT_EQUAL;
 
-            if ((index += step) >= capacity)
+            if (strategy == AddressingStrategy.QUADRATIC)
+                index += step;
+            else if (strategy == AddressingStrategy.LINEAR)
+                index++;
+
+            if (index >= capacity)
                 index -= capacity;
         }
         while (++step <= maxSteps);
@@ -214,7 +264,12 @@ public class FullPageIdTable {
             else
                 assert res == REMOVED || res == NOT_EQUAL;
 
-            if ((index += step) >= capacity)
+            if (strategy == AddressingStrategy.QUADRATIC)
+                index += step;
+            else if (strategy == AddressingStrategy.LINEAR)
+                index++;
+
+            if (index >= capacity)
                 index -= capacity;
         } while (++step <= maxSteps);
 
@@ -245,7 +300,12 @@ public class FullPageIdTable {
             else
                 assert res == REMOVED || res == NOT_EQUAL;
 
-            if ((index += step) >= capacity)
+            if (strategy == AddressingStrategy.QUADRATIC)
+                index += step;
+            else if (strategy == AddressingStrategy.LINEAR)
+                index++;
+
+            if (index >= capacity)
                 index -= capacity;
         }
         while (++step <= maxSteps);
@@ -272,6 +332,20 @@ public class FullPageIdTable {
             return EMPTY;
         else
             return NOT_EQUAL;
+    }
+
+    /**
+     * @param idx Index to test.
+     * @return {@code True} if value set for index.
+     */
+    private boolean isValuePresentAt(final int idx) {
+        long base = valPtr + 4 + (long)idx * BYTES_PER_ENTRY;
+
+        long pageId = mem.readLong(base);
+        int cacheId = mem.readInt(base + 8);
+
+        return !((pageId == REMOVED_PAGE_ID && cacheId == REMOVED_CACHE_ID)
+            || (pageId == EMPTY_PAGE_ID && cacheId == EMPTY_CACHE_ID));
     }
 
     /**
@@ -330,6 +404,6 @@ public class FullPageIdTable {
      *
      */
     private void decrementSize() {
-        mem.writeInt(valPtr, mem.readInt(valPtr) + 1);
+        mem.writeInt(valPtr, mem.readInt(valPtr) - 1);
     }
 }
