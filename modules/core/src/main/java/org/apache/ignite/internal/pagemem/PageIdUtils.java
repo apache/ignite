@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.pagemem;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
+
 /**
  * Utility class for page ID parts manipulation.
  *
@@ -54,7 +56,8 @@ public final class PageIdUtils {
     private static final int FLAG_MASK = ~(-1 << FLAG_SIZE);
 
     /** */
-    private static final long EFFECTIVE_INDEX_PAGE_ID_MASK = ((long)FLAG_MASK << (PAGE_IDX_SIZE + PART_ID_SIZE)) | PAGE_IDX_MASK;
+    private static final long EFFECTIVE_NON_DATA_PAGE_ID_MASK =
+        ((long)FLAG_MASK << (PAGE_IDX_SIZE + PART_ID_SIZE)) | PAGE_IDX_MASK;
 
     /** Maximum page number. */
     public static final int MAX_PAGE_NUM = (1 << PAGE_IDX_SIZE) - 1;
@@ -144,10 +147,10 @@ public final class PageIdUtils {
 
     /**
      * @param link Page link.
-     * @return Effective index page id.
+     * @return Effective page id.
      */
-    public static long effectiveIndexPageId(long link) {
-        return link & EFFECTIVE_INDEX_PAGE_ID_MASK;
+    public static long effectivePageId(long link) {
+        return flag(link) == FLAG_DATA ? pageId(link) : link & EFFECTIVE_NON_DATA_PAGE_ID_MASK;
     }
 
     /**

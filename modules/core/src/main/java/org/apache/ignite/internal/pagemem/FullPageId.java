@@ -19,10 +19,31 @@ package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
-import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
-
 /**
- *
+ * Compound object used to address a page in the global page space.
+ * <p>
+ * There are three types of pages in PageMemory system:
+ * <ul>
+ *     <li>DATA pages</li>
+ *     <li>INDEX pages</li>
+ *     <li>META pages</li>
+ * </ul>
+ * Generally, a full page ID consists of a cache ID and page ID. A page ID consists of
+ * file ID (22 bits) and page index (30 bits).
+ * Higher 12 bits of page ID are reserved for use in index pages to address entries inside data pages.
+ * File ID consists of 8 reserved bits, page type (2 bits) and partition ID (14 bits).
+ * Note that partition ID is not used in full page ID comparison for non-data pages.
+ * <p>
+ * The structure of a page ID is shown in the next diagram:
+ * <pre>
+ * +------------+--------+--+--------------+------------------------------+
+ * |   12 bits  | 8 bits |2b|   14 bits    |            30 bits           |
+ * +------------+--------+--+--------------+------------------------------+
+ * |   OFFSET   | RESRVD |FL| PARTITION ID |          PAGE INDEX          |
+ * +------------+--------+--+--------------+------------------------------+
+ *              |       FILE ID            |
+ *              +--------------------------+
+ * </pre>
  */
 public class FullPageId {
     /** */
@@ -42,7 +63,7 @@ public class FullPageId {
         this.pageId = PageIdUtils.pageId(pageId);
         this.cacheId = cacheId;
 
-        effectivePageId = PageIdUtils.flag(pageId) == FLAG_IDX ? PageIdUtils.effectiveIndexPageId(pageId) : this.pageId;
+        effectivePageId = PageIdUtils.effectivePageId(pageId);
     }
 
     /**
