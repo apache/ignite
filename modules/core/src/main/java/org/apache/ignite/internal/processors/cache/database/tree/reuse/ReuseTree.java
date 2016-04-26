@@ -33,7 +33,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseL
 /**
  * Reuse tree for index pages.
  */
-public class ReuseTree extends BPlusTree<FullPageId, FullPageId> {
+public final class ReuseTree extends BPlusTree<FullPageId, FullPageId> {
     /**
      * @param reuseList Reuse list.
      * @param cacheId Cache ID.

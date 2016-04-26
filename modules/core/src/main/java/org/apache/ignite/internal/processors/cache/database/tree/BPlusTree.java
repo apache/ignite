@@ -1001,6 +1001,16 @@ public abstract class BPlusTree<L, T extends L> {
      }
 
     /**
+     * @return Root level.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final int rootLevel() throws IgniteCheckedException {
+        try (Page meta = page(metaPageId)) {
+            return getRootLevel(meta);
+        }
+    }
+
+    /**
      * TODO may produce wrong results on concurrent access
      *
      * @return Size.

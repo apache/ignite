@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 /**
  * Reuse list leaf page IO routines.
  */
-public class ReuseLeafIO extends BPlusLeafIO<FullPageId> {
+public final class ReuseLeafIO extends BPlusLeafIO<FullPageId> {
     /** */
     public static final IOVersions<ReuseLeafIO> VERSIONS = new IOVersions<>(
         new ReuseLeafIO(1)

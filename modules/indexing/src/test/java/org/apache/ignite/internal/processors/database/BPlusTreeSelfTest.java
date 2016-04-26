@@ -27,13 +27,16 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -75,10 +78,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** */
     private ReuseList reuseList;
 
-    @Override
-    protected long getTestTimeout() {
-        return 25 * 60 * 1000;
-    }
+//    /** {@inheritDoc} */
+//    @Override protected long getTestTimeout() {
+//        return 25 * 60 * 1000;
+//    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -92,17 +95,35 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         pageMem.start();
 
-        reuseList = null;
-//            new ReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
-//            @Override public IgniteBiTuple<FullPageId,Boolean> getOrAllocateForIndex(int cacheId, String idxName)
-//                throws IgniteCheckedException {
-//                return new T2<>(allocatePage(), true);
-//            }
-//        });
+        reuseList = createReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
+            @Override public IgniteBiTuple<FullPageId,Boolean> getOrAllocateForIndex(int cacheId, String idxName)
+                throws IgniteCheckedException {
+                return new T2<>(allocatePage(), true);
+            }
+        });
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param pageMem Page memory.
+     * @param segments Segments.
+     * @param metaStore Store.
+     * @return Reuse list.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected ReuseList createReuseList(int cacheId, PageMemory pageMem, int segments, MetaStore metaStore)
+        throws IgniteCheckedException {
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        if (reuseList != null) {
+            long size = reuseList.size();
+
+            assertTrue("Reuse size: " + size, size < CNT);
+        }
+
         pageMem.stop();
 
         MAX_PER_PAGE = 0;
@@ -438,6 +459,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         assertFalse(tree.find(null, null).next());
+        assertEquals(0, tree.size());
+        assertEquals(0, tree.rootLevel());
     }
 
     /**
@@ -505,7 +528,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private TestTree createTestTree(boolean canGetRow) throws IgniteCheckedException {
-        return new TestTree(reuseList, canGetRow, CACHE_ID, pageMem, allocatePage());
+        TestTree tree = new TestTree(reuseList, canGetRow, CACHE_ID, pageMem, allocatePage());
+
+        assertEquals(0, tree.size());
+        assertEquals(0, tree.rootLevel());
+
+        return tree;
     }
 
     /**

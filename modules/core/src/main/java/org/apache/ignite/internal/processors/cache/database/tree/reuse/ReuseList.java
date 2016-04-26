@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 /**
  * Reuse list for index pages.
  */
-public class ReuseList {
+public final class ReuseList {
     /** */
     private static final FullPageId MIN = new FullPageId(0,0);
 
@@ -60,12 +60,23 @@ public class ReuseList {
     }
 
     /**
+     * @return Size.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long size() throws IgniteCheckedException {
+        long size = 0;
+
+        for (ReuseTree tree : trees)
+            size += tree.size();
+
+        return size;
+    }
+
+    /**
      * @param client Client.
      * @return Reuse tree.
      */
     private ReuseTree tree(BPlusTree<?,?> client) {
-        assert trees.length > 1;
-
         int treeIdx = client.randomInt(trees.length);
 
         ReuseTree tree = trees[treeIdx];

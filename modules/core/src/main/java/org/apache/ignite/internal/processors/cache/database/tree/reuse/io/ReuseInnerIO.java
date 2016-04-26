@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 /**
  * Reuse list inner page IO routines.
  */
-public class ReuseInnerIO extends BPlusInnerIO<FullPageId> {
+public final class ReuseInnerIO extends BPlusInnerIO<FullPageId> {
     /** */
     public static final IOVersions<ReuseInnerIO> VERSIONS = new IOVersions<>(
         new ReuseInnerIO(1)
