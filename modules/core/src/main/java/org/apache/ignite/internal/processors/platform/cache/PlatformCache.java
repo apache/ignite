@@ -325,7 +325,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 case OP_LOC_PROMOTE: {
                     cache.localPromote(PlatformUtils.readSet(reader));
 
-                    break;
+                    return TRUE;
                 }
 
                 case OP_REPLACE_3:
@@ -335,32 +335,32 @@ public class PlatformCache extends PlatformAbstractTarget {
                 case OP_LOC_LOAD_CACHE:
                     loadCache0(reader, true);
 
-                    break;
+                    return TRUE;
 
                 case OP_LOAD_CACHE:
                     loadCache0(reader, false);
 
-                    break;
+                    return TRUE;
 
                 case OP_CLEAR:
                     cache.clear(reader.readObjectDetached());
 
-                    break;
+                    return TRUE;
 
                 case OP_CLEAR_ALL:
                     cache.clearAll(PlatformUtils.readSet(reader));
 
-                    break;
+                    return TRUE;
 
                 case OP_LOCAL_CLEAR:
                     cache.localClear(reader.readObjectDetached());
 
-                    break;
+                    return TRUE;
 
                 case OP_LOCAL_CLEAR_ALL:
                     cache.localClearAll(PlatformUtils.readSet(reader));
 
-                    break;
+                    return TRUE;
 
                 case OP_PUT_IF_ABSENT: {
                     return cache.putIfAbsent(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
@@ -389,9 +389,6 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                     return TRUE;
                 }
-
-                default:
-                    return super.processInStreamOutLong(type, reader);
             }
         }
         catch (Exception e) {
@@ -402,7 +399,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             return ERROR;
         }
 
-        return TRUE;
+        return super.processInStreamOutLong(type, reader, mem);
     }
 
     /**

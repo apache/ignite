@@ -1384,7 +1384,13 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         private T DoOutInOp<T>(CacheOp op, Action<BinaryWriter> write, Func<IBinaryStream, T> read)
         {
-            return DoOutInOpX((int)op, write, read, ReadException);
+            return DoOutInOp((int) op, write, s =>
+            {
+                if (!s.ReadBool())
+                    throw ReadException(s);
+
+                return read(s);
+            });
         }
     }
 }
