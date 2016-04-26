@@ -414,13 +414,15 @@ public abstract class BPlusTree<L, T extends L> {
             boolean found = idx >= 0;
 
             if (found) {
-                // We can not miss the inner value on down move because of `triangle` invariant, thus it must be TRUE.
-                assert r.needReplaceInner == TRUE: r.needReplaceInner;
-                assert idx <= Short.MAX_VALUE : idx;
+                if (io.canGetRow()) {
+                    // We can not miss the inner value on down move because of `triangle` invariant, thus it must be TRUE.
+                    assert r.needReplaceInner == TRUE : r.needReplaceInner;
+                    assert idx <= Short.MAX_VALUE : idx;
 
-                r.innerIdx = (short)idx;
+                    r.innerIdx = (short)idx;
 
-                r.needReplaceInner = READY;
+                    r.needReplaceInner = READY;
+                }
             }
             else {
                 idx = -idx - 1;
