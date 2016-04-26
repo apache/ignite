@@ -245,7 +245,11 @@ public class GridCacheReturn implements Externalizable, Message {
 
             CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
 
-            resMap.put(key0 != null ? key0 : (keepBinary ? key : CU.value(key, cctx, true)), res0);
+            Object key1 = key0 != null ? key0 : (keepBinary ? key : CU.value(key, cctx, true));
+
+            U.dumpStack(">>>>> addEntryProcessResult [key=" + key + ", key0=" + key0 + ", res=" + res + ", keepBin=" + keepBinary + ", key1=" + key1);
+
+            resMap.put(key1, res0);
         }
         else {
             assert v == null;
