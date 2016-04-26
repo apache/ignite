@@ -89,7 +89,7 @@ angular
         if (!$scope.user.demoCreated)
             return _openTab('demo.reset');
 
-        $confirm.confirm('Would you like to continue with previous demo session?', true)
+        $confirm.confirm('Would you like to continue with previous demo session?', true, true)
             .then((resume) => {
                 if (resume)
                     return _openTab('demo.resume');

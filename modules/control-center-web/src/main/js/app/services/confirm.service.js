@@ -16,38 +16,46 @@
  */
 
 // Confirm popup service.
-export default ['$confirm', ['$modal', '$rootScope', '$q', ($modal, $root, $q) => {
+export default ['$confirm', ['$modal', '$rootScope', '$q', '$animate', ($modal, $root, $q, $animate) => {
     const scope = $root.$new();
 
     const modal = $modal({templateUrl: '/templates/confirm.html', scope, placement: 'center', show: false});
 
     let deferred;
 
-    scope.confirmYes = () => {
-        deferred.resolve(true);
+    const _hide = (animate) => {
+        $animate.enabled(modal.$element, animate);
 
         modal.hide();
+    };
+
+    scope.confirmYes = () => {
+        _hide(scope.animate);
+
+        deferred.resolve(true);
     };
 
     scope.confirmNo = () => {
-        deferred.resolve(false);
+        _hide(scope.animate);
 
-        modal.hide();
+        deferred.resolve(false);
     };
 
     scope.confirmCancel = () => {
-        deferred.reject('cancelled');
+        _hide(true);
 
-        modal.hide();
+        deferred.reject('cancelled');
     };
 
     /**
      *
      * @param {String } content
-     * @param {Boolean} yesNo
+     * @param {Boolean} [yesNo]
+     * @param {Boolean} [animate]
      * @returns {Promise}
      */
-    modal.confirm = (content, yesNo) => {
+    modal.confirm = (content, yesNo, animate) => {
+        scope.animate = !!animate;
         scope.content = content || 'Confirm?';
         scope.yesNo = !!yesNo;
 
