@@ -44,22 +44,20 @@ public class AtomicBinaryOffheapWithEnabledRowCacheBatchTest extends AtomicBinar
     @Override public void testBatchOperations() throws Exception {
         Ignite ignite = ignite(0);
         try (IgniteCache<Object, Object> dfltCache = ignite.cache(null)) {
+            for (int id = 0; id < 1000; id++) {
+                System.out.println(id);
 
-            try (IgniteDataStreamer<Object, Object> dataLdr = ignite.dataStreamer(dfltCache.getName())) {
-                for (int id = 0; id < 50; id++)
-                    dataLdr.addData(id, new Organization(id, "Organization " + id));
+                dfltCache.put(id, new Organization(id, "Organization " + id));
             }
 
-            for ( int i = 0; i < 50; i++ ) {
-                dfltCache.invoke(i, new CacheEntryProcessor<Object, Object, Object>() {
-                    @Override
-                    public Object process(MutableEntry<Object, Object> entry,
-                        Object... arguments) throws EntryProcessorException {
-                        entry.remove();
-                        return null;
-                    }
-                });
-            }
+            dfltCache.invoke(0, new CacheEntryProcessor<Object, Object, Object>() {
+                @Override
+                public Object process(MutableEntry<Object, Object> entry,
+                    Object... arguments) throws EntryProcessorException {
+                    entry.remove();
+                    return null;
+                }
+            });
         }
     }
 }
