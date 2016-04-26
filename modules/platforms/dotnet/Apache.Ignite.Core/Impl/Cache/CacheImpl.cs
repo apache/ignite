@@ -453,7 +453,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutInOpX((int) CacheOp.GetAll,
                 writer => WriteEnumerable(writer, keys),
-                (input, res) => ReadGetAllDictionary(Marshaller.StartUnmarshal(input, _flagKeepBinary)), 
+                (s, r) => r == True ? ReadGetAllDictionary(Marshaller.StartUnmarshal(s, _flagKeepBinary)) : null, 
                 ReadException);
         }
 
