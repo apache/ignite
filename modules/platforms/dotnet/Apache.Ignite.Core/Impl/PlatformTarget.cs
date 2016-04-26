@@ -487,7 +487,7 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>
         /// Result.
         /// </returns>
-        protected TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, bool, TR> inAction,
+        protected TR DoOutInOpX<TR>(int type, Action<BinaryWriter> outAction, Func<IBinaryStream, long, TR> inAction,
             Func<IBinaryStream, Exception> inErrorAction)
         {
             Debug.Assert(inErrorAction != null);
@@ -510,7 +510,7 @@ namespace Apache.Ignite.Core.Impl
                 stream.Seek(0, SeekOrigin.Begin);
 
                 if (res != Error)
-                    return inAction != null ? inAction(stream, res == True) : default(TR);
+                    return inAction != null ? inAction(stream, res) : default(TR);
 
                 throw inErrorAction(stream);
             }

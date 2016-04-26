@@ -364,17 +364,14 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                     return TRUE;
 
-                case OP_PUT_IF_ABSENT: {
+                case OP_PUT_IF_ABSENT:
                     return cache.putIfAbsent(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
-                }
 
-                case OP_REPLACE_2: {
+                case OP_REPLACE_2:
                     return cache.replace(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
-                }
 
-                case OP_REMOVE_OBJ: {
+                case OP_REMOVE_OBJ:
                     return cache.remove(reader.readObjectDetached()) ? TRUE : FALSE;
-                }
 
                 case OP_IS_LOCAL_LOCKED:
                     return cache.isLocalLocked(reader.readObjectDetached(), reader.readBoolean()) ? TRUE : FALSE;

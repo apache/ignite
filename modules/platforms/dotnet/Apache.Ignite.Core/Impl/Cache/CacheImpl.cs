@@ -354,11 +354,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            var res = DoOutInOpNullable<TV>((int)CacheOp.Peek, writer =>
-            {
-                writer.Write(key);
-                writer.WriteInt(EncodePeekModes(modes));
-            });
+            var res = DoOutInOpNullable(CacheOp.Peek, key, EncodePeekModes(modes));
 
             value = res.Success ? res.Value : default(TV);
 
@@ -390,9 +386,11 @@ namespace Apache.Ignite.Core.Impl.Cache
             IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOpX((int) CacheOp.Get,
-                w => w.WriteObject(key),
-                (stream, hasValue) =>
+                w => w.Write(key),
+                (stream, res) =>
                 {
+                    var hasValue = res == True;
+
                     Debug.Assert(!IsAsync || !hasValue);
 
                     if (!IsAsync && !hasValue)
@@ -424,7 +422,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             if (IsAsync)
                 throw new InvalidOperationException("TryGet can't be used in async mode.");
 
-            var res = DoOutInOpNullable<TK, TV>((int) CacheOp.Get, key);
+            var res = DoOutInOpNullable(CacheOp.Get, key);
 
             value = res.Value;
 
@@ -446,14 +444,10 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOp(CacheOp.GetAll,
+            return DoOutInOpX((int) CacheOp.GetAll,
                 writer => WriteEnumerable(writer, keys),
-                input =>
-                {
-                    var reader = Marshaller.StartUnmarshal(input, _flagKeepBinary);
-
-                    return ReadGetAllDictionary(reader);
-                });
+                (input, res) => ReadGetAllDictionary(Marshaller.StartUnmarshal(input, _flagKeepBinary)), 
+                ReadException);
         }
 
         /** <inheritDoc /> */
@@ -489,7 +483,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpNullable<TK, TV, TV>((int)CacheOp.GetAndPut, key, val);
+            return DoOutInOpNullable(CacheOp.GetAndPut, key, val);
         }
 
         /** <inheritDoc /> */
@@ -507,7 +501,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpNullable<TK, TV, TV>((int) CacheOp.GetAndReplace, key, val);
+            return DoOutInOpNullable(CacheOp.GetAndReplace, key, val);
         }
 
         /** <inheritDoc /> */
@@ -523,7 +517,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOpNullable<TK, TV>((int)CacheOp.GetAndRemove, key);
+            return DoOutInOpNullable(CacheOp.GetAndRemove, key);
         }
 
         /** <inheritDoc /> */
@@ -559,7 +553,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutInOpNullable<TK, TV, TV>((int)CacheOp.GetAndPutIfAbsent, key, val);
+            return DoOutInOpNullable(CacheOp.GetAndPutIfAbsent, key, val);
         }
 
         /** <inheritDoc /> */
@@ -809,23 +803,14 @@ namespace Apache.Ignite.Core.Impl.Cache
             var holder = new CacheEntryProcessorHolder(processor, arg,
                 (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TArg)a), typeof(TK), typeof(TV));
 
-            return DoOutInOp((int)CacheOp.Invoke, writer =>
-            {
-                writer.Write(key);
-                writer.Write(holder);
-            },
-                input =>
+            return DoOutInOpX((int) CacheOp.Invoke,
+                writer =>
                 {
-                    if (input.ReadBool())
-                    {
-                        var res = Unmarshal<object>(input);
-
-                        return res == null ? default(TRes) : (TRes) res;
-                    }
-
-                    throw ReadException(input);
-                }
-            );
+                    writer.Write(key);
+                    writer.Write(holder);
+                },
+                (input, res) => res == True ? Unmarshal<TRes>(input) : default(TRes),
+                ReadException);
         }
 
         /** <inheritDoc /> */
@@ -858,17 +843,19 @@ namespace Apache.Ignite.Core.Impl.Cache
             var holder = new CacheEntryProcessorHolder(processor, arg,
                 (e, a) => processor.Process((IMutableCacheEntry<TK, TV>)e, (TArg)a), typeof(TK), typeof(TV));
 
-            return DoOutInOp(CacheOp.InvokeAll,
+            return DoOutInOpX((int) CacheOp.InvokeAll,
                 writer =>
                 {
                     WriteEnumerable(writer, keys);
                     writer.Write(holder);
                 },
-                ReadInvokeAllResults<TRes>);
+                (input, res) => res == True ? ReadInvokeAllResults<TRes>(input) : null,
+                ReadException);
         }
 
         /** <inheritDoc /> */
-        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
+        public Task<IDictionary<TK, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TK> keys, 
+            ICacheEntryProcessor<TK, TV, TArg, TRes> processor, TArg arg)
         {
             AsyncInstance.InvokeAll(keys, processor, arg);
 
@@ -880,10 +867,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(key, "key");
 
-            return DoOutInOp(CacheOp.Lock, writer =>
-            {
-                writer.Write(key);
-            }, input => new CacheLock(input.ReadInt(), Target));
+            return DoOutInOpX((int) CacheOp.Lock, w => w.Write(key),
+                (stream, res) => new CacheLock(res, Target), ReadException);
         }
 
         /** <inheritdoc /> */
@@ -891,10 +876,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOp(CacheOp.LockAll, writer =>
-            {
-                WriteEnumerable(writer, keys);
-            }, input => new CacheLock(input.ReadInt(), Target));
+            return DoOutInOpX((int) CacheOp.Lock, w => WriteEnumerable(w, keys),
+                (stream, res) => new CacheLock(res, Target), ReadException);
         }
 
         /** <inheritdoc /> */
@@ -1258,74 +1241,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /// <summary>
-        /// Perform simple out-in operation accepting single argument.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="val">Value.</param>
-        /// <returns>Result.</returns>
-        private CacheResult<TR> DoOutInOpNullable<T1, TR>(int type, T1 val)
-        {
-            var res = DoOutInOp(type, w => w.Write(val), s =>
-            {
-                if (!s.ReadBool())
-                    throw ReadException(s);
-
-                return Unmarshal<object>(s);
-            });
-
-            return res == null
-                ? new CacheResult<TR>()
-                : new CacheResult<TR>((TR)res);
-        }
-
-        /// <summary>
-        /// Perform out-in operation.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="outAction">Out action.</param>
-        /// <returns>Result.</returns>
-        private CacheResult<TR> DoOutInOpNullable<TR>(int type, Action<BinaryWriter> outAction)
-        {
-            var res = DoOutInOp(type, outAction, s =>
-            {
-                if (!s.ReadBool())
-                    throw ReadException(s);
-
-                return Unmarshal<object>(s);
-            });
-
-            return res == null
-                ? new CacheResult<TR>()
-                : new CacheResult<TR>((TR)res);
-        }
-
-        /// <summary>
-        /// Perform simple out-in operation accepting single argument.
-        /// </summary>
-        /// <param name="type">Operation type.</param>
-        /// <param name="val1">Value.</param>
-        /// <param name="val2">Value.</param>
-        /// <returns>Result.</returns>
-        private CacheResult<TR> DoOutInOpNullable<T1, T2, TR>(int type, T1 val1, T2 val2)
-        {
-            var res = DoOutInOp(type, w =>
-            {
-                w.Write(val1);
-                w.Write(val2);
-            }, s =>
-            {
-                if (!s.ReadBool())
-                    throw ReadException(s);
-
-                return Unmarshal<object>(s);
-            });
-
-            return res == null
-                ? new CacheResult<TR>()
-                : new CacheResult<TR>((TR)res);
-        }
-
-        /// <summary>
         /// Does the out op.
         /// </summary>
         private bool DoOutOp<T1>(CacheOp op, T1 x)
@@ -1372,15 +1287,27 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Does the out-in op.
         /// </summary>
-        private T DoOutInOp<T>(CacheOp op, Action<BinaryWriter> write, Func<IBinaryStream, T> read)
+        private CacheResult<TV> DoOutInOpNullable(CacheOp cacheOp, TK x)
         {
-            return DoOutInOp((int) op, write, s =>
-            {
-                if (!s.ReadBool())
-                    throw ReadException(s);
+            return DoOutInOpX((int)cacheOp,
+                w => w.Write(x),
+                (stream, res) => res == True ? new CacheResult<TV>(Unmarshal<TV>(stream)) : new CacheResult<TV>(), 
+                ReadException);
+        }
 
-                return read(s);
-            });
+        /// <summary>
+        /// Does the out-in op.
+        /// </summary>
+        private CacheResult<TV> DoOutInOpNullable<T1, T2>(CacheOp cacheOp, T1 x, T2 y)
+        {
+            return DoOutInOpX((int)cacheOp,
+                w =>
+                {
+                    w.Write(x);
+                    w.Write(y);
+                },
+                (stream, res) => res == True ? new CacheResult<TV>(Unmarshal<TV>(stream)) : new CacheResult<TV>(), 
+                ReadException);
         }
     }
 }
