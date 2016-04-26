@@ -1706,7 +1706,7 @@ public abstract class BPlusTree<L, T extends L> {
             while (t.lvl != 0) { // If we've found empty branch, merge it top down.
                 boolean res = merge(t);
 
-                assert res;
+                assert res: needMergeEmptyBranch;
 
                 if (needMergeEmptyBranch == TRUE)
                     needMergeEmptyBranch = READY; // Need to mark that we've already done the first iteration.
@@ -1913,7 +1913,7 @@ public abstract class BPlusTree<L, T extends L> {
             int leftCnt = left.getCount();
             int rightCnt = right.getCount();
 
-            assert prntCnt > 0: prntCnt;
+            assert prntCnt > 0 || needMergeEmptyBranch == READY: prntCnt;
 
             int newCnt = leftCnt + rightCnt;
 
@@ -2048,7 +2048,10 @@ public abstract class BPlusTree<L, T extends L> {
          * @throws IgniteCheckedException If failed.
          */
         private boolean merge(Tail<L> prnt) throws IgniteCheckedException {
-            if (prnt.getCount() == 0)
+            // If we are merging empty branch this is acceptable because even if we merge
+            // two routing pages, one of them is effectively dropped in this merge, so just
+            // keep a single routing page.
+            if (prnt.getCount() == 0 && needMergeEmptyBranch != READY)
                 return false; // Parent is an empty routing page, child forward page will have another parent.
 
             Tail<L> right = prnt.down;
@@ -2097,12 +2100,6 @@ public abstract class BPlusTree<L, T extends L> {
          * Release pages for all locked levels at the tail.
          */
         private void releaseTail() {
-//            U.dumpStack("releaseTail");
-//            X.println("------>");
-//            for (Tail<L> t = tail; t != null; t = t.down)
-//                X.println("" + t);
-//            X.println("------<");
-
             doReleaseTail(tail);
 
             tail = null;
