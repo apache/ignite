@@ -611,38 +611,42 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             );
         }
 
+        const _showPopoverMessage = (id, message, showTime) => {
+            var body = $('body');
+
+            var el = body.find('#' + id);
+
+            if (!el || el.length === 0)
+                el = body.find('[name="' + id + '"]');
+
+            if (el && el.length > 0) {
+                if (!isElementInViewport(el[0])) {
+                    $location.hash(el[0].id);
+
+                    $anchorScroll();
+                }
+
+                var newPopover = $popover(el, {content: message});
+
+                popover = newPopover;
+
+                $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
+
+                $timeout(function () { newPopover.hide(); }, showTime || 5000);
+            }
+        };
+
         function showPopoverMessage(ui, panelId, id, message, showTime) {
             if (popover)
                 popover.hide();
 
-            var timeout = ui.isPanelLoaded(panelId) ? 100 : 500;
+            if (ui) {
+                ensureActivePanel(ui, panelId);
 
-            ensureActivePanel(ui, panelId);
-
-            $timeout(function () {
-                var body = $('body');
-
-                var el = body.find('#' + id);
-
-                if (!el || el.length === 0)
-                    el = body.find('[name="' + id + '"]');
-
-                if (el && el.length > 0) {
-                    if (!isElementInViewport(el[0])) {
-                        $location.hash(el[0].id);
-
-                        $anchorScroll();
-                    }
-
-                    var newPopover = $popover(el, {content: message});
-
-                    popover = newPopover;
-
-                    $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
-
-                    $timeout(function () { newPopover.hide(); }, showTime ? showTime : 5000);
-                }
-            }, timeout);
+                $timeout(() => _showPopoverMessage(id, message, showTime), ui.isPanelLoaded(panelId) ? 100 : 500);
+            }
+            else
+                _showPopoverMessage(id, message, showTime);
 
             return false;
         }
