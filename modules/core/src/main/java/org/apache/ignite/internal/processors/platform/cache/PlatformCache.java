@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformConfiguratio
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -391,10 +392,68 @@ public class PlatformCache extends PlatformAbstractTarget {
                     return TRUE;
                 }
 
-                case OP_GET: {
+                case OP_GET:
                     return writeResult(mem, cache.get(reader.readObjectDetached()));
+
+                case OP_GET_AND_PUT:
+                    return writeResult(mem, cache.getAndPut(reader.readObjectDetached(), reader.readObjectDetached()));
+
+                case OP_GET_AND_REPLACE:
+                    return writeResult(mem, cache.getAndReplace(reader.readObjectDetached(), reader.readObjectDetached()));
+
+                case OP_GET_AND_REMOVE:
+                    return writeResult(mem, cache.getAndRemove(reader.readObjectDetached()));
+
+                case OP_GET_AND_PUT_IF_ABSENT:
+                    return writeResult(mem, cache.getAndPutIfAbsent(reader.readObjectDetached(), reader.readObjectDetached()));
+
+                case OP_PEEK: {
+                    Object key = reader.readObjectDetached();
+
+                    CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
+
+                    return writeResult(mem, cache.localPeek(key, modes));
                 }
 
+                case OP_GET_ALL: {
+                    Set keys = PlatformUtils.readSet(reader);
+
+                    Map entries = cache.getAll(keys);
+
+                    return writeResult(mem, entries, new PlatformWriterClosure<Map>() {
+                        @Override public void write(BinaryRawWriterEx writer, Map val) {
+                            PlatformUtils.writeNullableMap(writer, val);
+                        }
+                    });
+                }
+
+                case OP_INVOKE: {
+                    Object key = reader.readObjectDetached();
+
+                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+
+                    return writeResult(mem, cache.invoke(key, proc));
+                }
+
+                case OP_INVOKE_ALL: {
+                    Set<Object> keys = PlatformUtils.readSet(reader);
+
+                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+
+                    Map results = cache.invokeAll(keys, proc);
+
+                    return writeResult(mem, results, new PlatformWriterClosure<Map>() {
+                        @Override public void write(BinaryRawWriterEx writer, Map val) {
+                            writeInvokeAllResult(writer, val);
+                        }
+                    });
+                }
+
+                case OP_LOCK:
+                    return registerLock(cache.lock(reader.readObjectDetached()));
+
+                case OP_LOCK_ALL:
+                    return registerLock(cache.lockAll(PlatformUtils.readCollection(reader)));
             }
         }
         catch (Exception e) {
@@ -409,15 +468,29 @@ public class PlatformCache extends PlatformAbstractTarget {
         return super.processInStreamOutLong(type, reader, mem);
     }
 
+    /**
+     * Writes the result to reused stream, if any.
+     */
     private long writeResult(PlatformMemory mem, Object obj) {
+        return writeResult(mem, obj, null);
+    }
+
+    /**
+     * Writes the result to reused stream, if any.
+     */
+    private long writeResult(PlatformMemory mem, Object obj, PlatformWriterClosure clo) {
         if (obj == null)
             return FALSE;
 
         PlatformOutputStream out = mem.output();
         BinaryRawWriterEx writer = platformCtx.writer(out);
-        writer.writeObjectDetached(obj);
-        out.synchronize();
 
+        if (clo == null)
+            writer.writeObjectDetached(obj);
+        else
+            clo.write(writer, obj);
+
+        out.synchronize();
         return TRUE;
     }
 
@@ -577,115 +650,6 @@ public class PlatformCache extends PlatformAbstractTarget {
             default:
                 super.processOutStream(type, writer);
         }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional", "ConstantConditions"})
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
-        throws IgniteCheckedException {
-
-        BinaryOutputStream out = writer.out();
-
-        out.position(1);  // Reserve for success flag
-
-        try {
-            switch (type) {
-                case OP_GET: {
-                    writer.writeObjectDetached(cache.get(reader.readObjectDetached()));
-
-                    break;
-                }
-
-                case OP_GET_AND_PUT: {
-                    writer.writeObjectDetached(cache.getAndPut(reader.readObjectDetached(), reader.readObjectDetached()));
-
-                    break;
-                }
-
-                case OP_GET_AND_REPLACE: {
-                    writer.writeObjectDetached(cache.getAndReplace(reader.readObjectDetached(),
-                        reader.readObjectDetached()));
-
-                    break;
-                }
-
-                case OP_GET_AND_REMOVE: {
-                    writer.writeObjectDetached(cache.getAndRemove(reader.readObjectDetached()));
-
-                    break;
-                }
-
-                case OP_GET_AND_PUT_IF_ABSENT: {
-                    writer.writeObjectDetached(cache.getAndPutIfAbsent(reader.readObjectDetached(), reader.readObjectDetached()));
-
-                    break;
-                }
-
-                case OP_PEEK: {
-                    Object key = reader.readObjectDetached();
-
-                    CachePeekMode[] modes = PlatformUtils.decodeCachePeekModes(reader.readInt());
-
-                    writer.writeObjectDetached(cache.localPeek(key, modes));
-
-                    break;
-                }
-
-                case OP_GET_ALL: {
-                    Set keys = PlatformUtils.readSet(reader);
-
-                    Map entries = cache.getAll(keys);
-
-                    PlatformUtils.writeNullableMap(writer, entries);
-
-                    break;
-                }
-
-                case OP_INVOKE: {
-                    Object key = reader.readObjectDetached();
-
-                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
-
-                    writer.writeObjectDetached(cache.invoke(key, proc));
-
-                    break;
-                }
-
-                case OP_INVOKE_ALL: {
-                    Set<Object> keys = PlatformUtils.readSet(reader);
-
-                    CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
-
-                    writeInvokeAllResult(writer, cache.invokeAll(keys, proc));
-
-                    break;
-                }
-
-                case OP_LOCK:
-                    writer.writeLong(registerLock(cache.lock(reader.readObjectDetached())));
-
-                    break;
-
-                case OP_LOCK_ALL:
-                    writer.writeLong(registerLock(cache.lockAll(PlatformUtils.readCollection(reader))));
-
-                    break;
-
-                default:
-                    super.processInStreamOutStream(type, reader, writer);
-            }
-        }
-        catch (Exception e) {
-            out.position(0);
-            writer.writeBoolean(false);  // error
-            PlatformUtils.writeError(e, writer);
-            return;
-        }
-
-        int pos = out.position();
-        out.position(0);
-        writer.writeBoolean(true);  // success
-        out.position(pos);
     }
 
     /** {@inheritDoc} */
