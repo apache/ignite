@@ -568,7 +568,7 @@ public class GridFunc {
      * Here's the typical example of how this method is used in {@code reduce()} method
      * implementation (this example sums up all the values of {@code Integer} type):
      * <pre name="code" class="java">
-     * public Integer reduce(List&lt;GridComputeJobResult&gt; res) throws IgniteCheckedException {
+     * public Integer reduce(List&lt;ComputeJobResult&gt; res) throws IgniteCheckedException {
      *     return F.sum(F.&lt;Integer&gt;jobResults(res));
      * }
      * </pre>
@@ -3014,7 +3014,7 @@ public class GridFunc {
                 }
             }
 
-            // T must be <T extends GridNode>.
+            // T must be <T extends ClusterNode>.
             return (IgnitePredicate<T>)new GridNodePredicate(ids);
         }
         else {
