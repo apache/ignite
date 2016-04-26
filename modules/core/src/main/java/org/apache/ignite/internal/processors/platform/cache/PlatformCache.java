@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.platform.cache.query.PlatformContin
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformQueryCursor;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
@@ -392,9 +393,10 @@ public class PlatformCache extends PlatformAbstractTarget {
             }
         }
         catch (Exception e) {
-            BinaryRawWriterEx writer = platformCtx.writer(mem);
-
+            PlatformOutputStream out = mem.output();
+            BinaryRawWriterEx writer = platformCtx.writer(out);
             PlatformUtils.writeError(e, writer);
+            out.synchronize();
 
             return ERROR;
         }
