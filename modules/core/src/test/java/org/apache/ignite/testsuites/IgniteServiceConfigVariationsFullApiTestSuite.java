@@ -36,7 +36,9 @@ public class IgniteServiceConfigVariationsFullApiTestSuite extends TestSuite {
     private static final ConfigParameter<IgniteConfiguration>[][] PARAMS = new ConfigParameter[][] {
         Parameters.objectParameters("setMarshaller",
             Parameters.factory(JdkMarshaller.class),
+
             Parameters.factory(BinaryMarshaller.class),
+
             ConfigVariations.optimizedMarshallerFactory()
         ),
 
