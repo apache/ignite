@@ -340,6 +340,9 @@ public abstract class BPlusTree<L, T extends L> {
             if (r.needReplaceInner == TRUE ||
                 // We need to make sure that we have back or forward to be able to merge.
                 ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - 1, io.getMaxCount(buf)))) {
+                if (cnt == 1) // It was the last item.
+                    r.needMergeEmptyBranch = TRUE;
+
                 // If we have backId then we've already locked back page, nothing to do here.
                 if (r.fwdId != 0 && r.backId == 0)
                     r.lockForward(0);
@@ -957,6 +960,20 @@ public abstract class BPlusTree<L, T extends L> {
             if (r.canRelease(page, lvl))
                 page.close();
         }
+    }
+
+    /**
+     * @param leftCnt Left count.
+     * @param rightCnt Right count.
+     * @param cap Capacity.
+     * @param leaf Is leaf pages.
+     * @return {@code true} If can merge these pages.
+     */
+    private boolean canMerge(int leftCnt, int rightCnt, int cap, boolean leaf) {
+        cap -= leftCnt;
+        cap -= rightCnt;
+
+        return cap > 0 || (cap == 0 && (leaf || leftCnt == 0 || rightCnt == 0));
     }
 
     /**
@@ -1614,6 +1631,9 @@ public abstract class BPlusTree<L, T extends L> {
         /** */
         byte needReplaceInner = FALSE;
 
+        /** */
+        byte needMergeEmptyBranch = FALSE;
+
         /** Removed row. */
         T removed;
 
@@ -1669,11 +1689,11 @@ public abstract class BPlusTree<L, T extends L> {
          * @throws IgniteCheckedException If failed.
          */
         private void mergeEmptyBranch() throws IgniteCheckedException {
+            assert needMergeEmptyBranch == TRUE;
+
             Tail<L> t = tail;
 
             assert t.getCount() > 0;
-
-            boolean leaf = false;
 
             // Find empty branch beginning.
             for (Tail<L> t0 = t.down; t0 != null; t0 = t0.down) {
@@ -1681,20 +1701,20 @@ public abstract class BPlusTree<L, T extends L> {
 
                 if (t0.getCount() != 0)
                     t = t0;
-
-                leaf = t0.lvl == 0;
             }
 
-            if (!leaf) // Can not merge empty branches in the middle of tree.
-                return;
-
             while (t.lvl != 0) { // If we've found empty branch, merge it top down.
-                boolean res = merge(t, true);
+                boolean res = merge(t);
 
                 assert res;
 
+                if (needMergeEmptyBranch == TRUE)
+                    needMergeEmptyBranch = READY; // Need to mark that we've already done the first iteration.
+
                 t = t.down;
             }
+
+            assert t.lvl == 0: t.lvl;
         }
 
         /**
@@ -1703,10 +1723,15 @@ public abstract class BPlusTree<L, T extends L> {
          * @throws IgniteCheckedException
          */
         private boolean mergeDown(Tail<L> t) throws IgniteCheckedException {
-            if (t.down == null || t.down.sibling == null)
+            assert needMergeEmptyBranch == FALSE || needMergeEmptyBranch == DONE: needMergeEmptyBranch;
+
+            if (t.down == null)
                 return true;
 
-            return mergeDown(t.down) && merge(t, false);
+            if (t.down.sibling == null) // We've merged something there.
+                return false;
+
+            return mergeDown(t.down) && merge(t);
         }
 
         /**
@@ -1719,29 +1744,37 @@ public abstract class BPlusTree<L, T extends L> {
             assert !isFinished();
             assert tail.type == Tail.EXACT;
 
-            // Need to lock more.
-            if (tail.down == null || needReplaceInner == TRUE || tail.getCount() == 0)
+            // Need to lock more to be able to merge.
+            if (needReplaceInner == TRUE ||
+                (needMergeEmptyBranch == TRUE && (tail.down == null || tail.getCount() == 0)))
                 return false;
 
-            mergeEmptyBranch();
+            // Can merge only if tail is not a routing page.
+            if (tail.getCount() > 0) {
+                if (needMergeEmptyBranch == TRUE) {
+                    mergeEmptyBranch();
 
-            boolean mergeMore = mergeDown(tail);
+                    needMergeEmptyBranch = DONE;
+                }
 
-            if (needReplaceInner == READY) {
-                // Need to replace inner key with new max key for the left subtree.
-                replaceInner();
+                boolean mergeMore = mergeDown(tail);
 
-                needReplaceInner = DONE;
-            }
+                if (needReplaceInner == READY) {
+                    // Need to replace inner key with new max key for the left subtree.
+                    replaceInner(needMergeEmptyBranch == DONE);
 
-            if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel(meta) == tail.lvl)
-                freePage(tail.page, tail.buf, tail.io, tail.lvl, false); // Free root.
-            else if (mergeMore) {
-                doReleaseTail(tail.down);
+                    needReplaceInner = DONE;
+                }
 
-                tail.down = null;
+                if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel(meta) == tail.lvl)
+                    freePage(tail.page, tail.buf, tail.io, tail.lvl, false); // Free root.
+                else if (mergeMore) {
+                    doReleaseTail(tail.down);
 
-                return false;
+                    tail.down = null;
+
+                    return false;
+                }
             }
 
             releaseTail();
@@ -1868,11 +1901,10 @@ public abstract class BPlusTree<L, T extends L> {
          * @param prnt Parent tail.
          * @param left Left child tail.
          * @param right Right child tail.
-         * @param emptyBranch If we are merging an empty branch.
          * @return {@code true} If merged successfully.
          * @throws IgniteCheckedException If failed.
          */
-        private boolean doMerge(Tail<L> prnt, Tail<L> left, Tail<L> right, boolean emptyBranch)
+        private boolean doMerge(Tail<L> prnt, Tail<L> left, Tail<L> right)
             throws IgniteCheckedException {
             assert right.io == left.io; // Otherwise incompatible.
             assert left.io.getForward(left.buf) == right.page.id();
@@ -1884,6 +1916,8 @@ public abstract class BPlusTree<L, T extends L> {
             assert prntCnt > 0: prntCnt;
 
             int newCnt = leftCnt + rightCnt;
+
+            boolean emptyBranch = needMergeEmptyBranch == TRUE || needMergeEmptyBranch == READY;
 
             // Need to move down split key in inner pages. For empty branch merge parent key will be just dropped.
             if (left.lvl != 0 && !emptyBranch)
@@ -1911,15 +1945,14 @@ public abstract class BPlusTree<L, T extends L> {
                 leftCnt++;
             }
 
-            left.io.copyItems(right.buf, left.buf, 0, leftCnt, rightCnt, !emptyBranch || rightCnt != 0);
+            left.io.copyItems(right.buf, left.buf, 0, leftCnt, rightCnt, !emptyBranch);
             left.io.setForward(left.buf, right.io.getForward(right.buf));
 
             // Fix index for the right move: remove last item.
-            // For the empty branch we always remove the last item, because we always drop right child after merge.
             int prntIdx = prnt.idx == prntCnt ? prntCnt - 1 : prnt.idx;
 
-            // Remove split key from parent. Index -1 means that it is not actually our parent and we should not remove.
-            if (prntIdx != -1)
+            // Remove split key from parent. If we ar emerging empty branch then remove only on the top iteration.
+            if (needMergeEmptyBranch != READY)
                 doRemove(prnt.io, prnt.buf, prntCnt, prntIdx);
 
             // Forward page is now empty and has no links, can free and release it right away.
@@ -1972,26 +2005,34 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /**
+         * @param emptyBranchMerged If empty branch was merged.
          * @throws IgniteCheckedException If failed.
          */
-        private void replaceInner() throws IgniteCheckedException {
+        private void replaceInner(boolean emptyBranchMerged) throws IgniteCheckedException {
             assert needReplaceInner == READY: needReplaceInner;
-            assert tail.lvl > 0;
-            assert innerIdx >= 0;
+            assert tail.lvl > 0: "leaf";
+            assert innerIdx >= 0: innerIdx;
 
             Tail<L> leaf = getTail(0);
             Tail<L> inner = tail;
 
             assert inner.type == Tail.EXACT: inner.type;
-            assert innerIdx < inner.getCount();
 
-            int cnt = leaf.getCount();
+            int innerCnt = inner.getCount();
+            int leafCnt = leaf.getCount();
 
-            assert cnt > 0: cnt; // Leaf must be merged at this point already if it was empty.
+            assert leafCnt > 0: leafCnt; // Leaf must be merged at this point already if it was empty.
+
+            if (innerIdx == innerCnt) {
+                if (emptyBranchMerged)
+                    return; // Our inner key was dropped.
+
+                throw new IllegalStateException();
+            }
 
             if (innerIdx < inner.getCount()) {
                 // Update inner key with the new biggest key of left subtree.
-                inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, cnt - 1);
+                inner.io.store(inner.buf, innerIdx, leaf.io, leaf.buf, leafCnt - 1);
                 leaf.io.setRemoveId(leaf.buf, globalRmvId.get());
             }
             else {
@@ -2003,11 +2044,10 @@ public abstract class BPlusTree<L, T extends L> {
 
         /**
          * @param prnt Parent for merge.
-         * @param emptyBranch If we are merging an empty branch.
          * @return {@code true} If merged, {@code false} if not (because of insufficient space or empty parent).
          * @throws IgniteCheckedException If failed.
          */
-        private boolean merge(Tail<L> prnt, boolean emptyBranch) throws IgniteCheckedException {
+        private boolean merge(Tail<L> prnt) throws IgniteCheckedException {
             if (prnt.getCount() == 0)
                 return false; // Parent is an empty routing page, child forward page will have another parent.
 
@@ -2026,7 +2066,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert right.io == left.io: "must always be the same"; // Otherwise can be not compatible.
 
-            if (!doMerge(prnt, left, right, emptyBranch))
+            if (!doMerge(prnt, left, right))
                 return false;
 
             // left from BACK becomes EXACT.
@@ -2057,6 +2097,12 @@ public abstract class BPlusTree<L, T extends L> {
          * Release pages for all locked levels at the tail.
          */
         private void releaseTail() {
+//            U.dumpStack("releaseTail");
+//            X.println("------>");
+//            for (Tail<L> t = tail; t != null; t = t.down)
+//                X.println("" + t);
+//            X.println("------<");
+
             doReleaseTail(tail);
 
             tail = null;
@@ -2236,7 +2282,7 @@ public abstract class BPlusTree<L, T extends L> {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(Tail.class, this, "pageId", page.id(), "cnt", getCount());
+            return S.toString(Tail.class, this, "pageId", page.id(), "cnt", getCount(), "lvl", lvl, "sibling", sibling);
         }
     }
 

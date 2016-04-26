@@ -27,16 +27,13 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
-import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -95,12 +92,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         pageMem.start();
 
-        reuseList = new ReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
-            @Override public IgniteBiTuple<FullPageId,Boolean> getOrAllocateForIndex(int cacheId, String idxName)
-                throws IgniteCheckedException {
-                return new T2<>(allocatePage(), true);
-            }
-        });
+        reuseList = null;
+//            new ReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
+//            @Override public IgniteBiTuple<FullPageId,Boolean> getOrAllocateForIndex(int cacheId, String idxName)
+//                throws IgniteCheckedException {
+//                return new T2<>(allocatePage(), true);
+//            }
+//        });
     }
 
     /** {@inheritDoc} */
