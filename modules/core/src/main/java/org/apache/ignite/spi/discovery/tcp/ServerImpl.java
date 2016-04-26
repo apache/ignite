@@ -160,7 +160,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 @SuppressWarnings("All")
 class ServerImpl extends TcpDiscoveryImpl {
     /** */
-    private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 50);
+    private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 1024 * 10);
 
     /** */
     private static final IgniteProductVersion CUSTOM_MSG_ALLOW_JOINING_FOR_VERIFIED_SINCE =
@@ -1946,7 +1946,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private static class PendingMessages implements Iterable<TcpDiscoveryAbstractMessage> {
         /** */
-        private static final int MAX = 50;
+        private static final int MAX = 1024;
 
         /** Pending messages. */
         private final Queue<TcpDiscoveryAbstractMessage> msgs = new ArrayDeque<>(MAX * 2);
@@ -5630,7 +5630,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.sock = sock;
             this.clientNodeId = clientNodeId;
 
-            out = new BufferedOutputStream(sock.getOutputStream(), 4096);
+            out = new BufferedOutputStream(sock.getOutputStream(), sock.getSendBufferSize());
         }
 
         /**

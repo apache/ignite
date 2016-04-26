@@ -396,7 +396,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         try {
             spring = SPRING.create(false);
         }
-        catch (IgniteCheckedException ignored) {
+        catch (Throwable ignored) {
             if (log != null && log.isDebugEnabled())
                 log.debug("Failed to load spring component, will not be able to extract userVersion from " +
                     "META-INF/ignite.xml.");
