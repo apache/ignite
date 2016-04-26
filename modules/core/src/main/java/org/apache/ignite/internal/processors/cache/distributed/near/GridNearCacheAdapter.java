@@ -92,7 +92,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override protected GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
-            /** {@inheritDoc} */
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
@@ -484,107 +483,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         }
         else
             return super.splitClearLocally(srv, near, readers);
-    }
-
-    /**
-     * Wrapper for KeySet.
-     */
-    private final class KeySet extends AbstractSet<K> {
-
-        /** Near set. */
-        private final Set<K> nearSet;
-
-        /** DHT set. */
-        private final Set<K> dhtSet;
-
-        private KeySet(Set<K> nearSet, Set<K> dhtSet) {
-            this.nearSet = nearSet;
-            this.dhtSet = dhtSet;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Iterator<K> iterator() {
-            return new KeySetIterator(nearSet.iterator(),
-                F.iterator0(dhtSet, false, new P1<K>() {
-                    @Override public boolean apply(K key) {
-                        try {
-                            return GridNearCacheAdapter.super.localPeek(key, NEAR_PEEK_MODE, null) == null;
-                        }
-                        catch (IgniteCheckedException ex) {
-                            throw new IgniteException(ex);
-                        }
-                    }
-                }));
-        }
-
-        /** {@inheritDoc} */
-        @Override public int size() {
-            return F.size(iterator());
-        }
-    }
-
-    /**
-     * Key set iterator.
-     */
-    private final class KeySetIterator implements Iterator<K> {
-        /** */
-        private Iterator<K> dhtIter;
-
-        /** */
-        private Iterator<K> nearIter;
-
-        /** */
-        private Iterator<K> currIter;
-
-        /** */
-        private K current;
-
-        /**
-         * @param nearIter Near set iterator.
-         * @param dhtIter Dht set iterator.
-         */
-        private KeySetIterator(Iterator<K> nearIter, Iterator<K> dhtIter) {
-            assert nearIter != null;
-            assert dhtIter != null;
-
-            this.nearIter = nearIter;
-            this.dhtIter = dhtIter;
-
-            currIter = nearIter;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasNext() {
-            return nearIter.hasNext() || dhtIter.hasNext();
-        }
-
-        /** {@inheritDoc} */
-        @Override public K next() {
-            if (!hasNext())
-                throw new NoSuchElementException();
-
-            if (!currIter.hasNext())
-                currIter = dhtIter;
-
-            return current = currIter.next();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void remove() {
-            if (current == null)
-                throw new IllegalStateException();
-
-            assert currIter != null;
-
-            currIter.remove();
-
-            try {
-                GridNearCacheAdapter.this.getAndRemove(current);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-        }
     }
 
     /**
