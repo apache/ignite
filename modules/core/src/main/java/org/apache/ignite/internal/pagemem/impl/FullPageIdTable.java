@@ -46,13 +46,10 @@ public class FullPageIdTable {
     private static final int EMPTY_CACHE_ID = EMPTY_FULL_PAGE_ID.cacheId();
 
     /** */
-    public static final FullPageId REMOVED_FULL_PAGE_ID = new FullPageId(0x8000000000000000L, 0);
+    private static final long REMOVED_PAGE_ID = 0x8000000000000000L;
 
     /** */
-    private static final long REMOVED_PAGE_ID = REMOVED_FULL_PAGE_ID.pageId();
-
-    /** */
-    private static final int REMOVED_CACHE_ID = REMOVED_FULL_PAGE_ID.cacheId();
+    private static final int REMOVED_CACHE_ID = 0;
 
     /** */
     private static final int EQUAL = 0;
@@ -179,7 +176,7 @@ public class FullPageIdTable {
             int res = testKeyAt(index, key);
 
             if (res == EMPTY) {
-                setKeyAt(index, key);
+                setKeyAt(index, key.pageId(), key.cacheId());
 
                 incrementSize();
 
@@ -237,7 +234,7 @@ public class FullPageIdTable {
             long res = testKeyAt(index, key);
 
             if (res == EQUAL) {
-                setKeyAt(index, REMOVED_FULL_PAGE_ID);
+                setKeyAt(index, REMOVED_PAGE_ID, REMOVED_CACHE_ID);
 
                 decrementSize();
 
@@ -283,20 +280,20 @@ public class FullPageIdTable {
      */
     private boolean assertKey(FullPageId fullId) {
         assert !F.eq(fullId, EMPTY_FULL_PAGE_ID) : "fullId != EMPTY";
-        assert !F.eq(fullId, REMOVED_FULL_PAGE_ID) : "fullId != REMOVED";
 
         return true;
     }
 
     /**
      * @param index Entry index.
-     * @param val Value to write.
+     * @param pageId Page ID to write.
+     * @param cacheId Cache ID to write.
      */
-    private void setKeyAt(int index, FullPageId val) {
+    private void setKeyAt(int index, long pageId, int cacheId) {
         long base = valPtr + 4 + (long)index * BYTES_PER_ENTRY;
 
-        mem.writeLong(base, val.pageId());
-        mem.writeLong(base + 8, val.cacheId());
+        mem.writeLong(base, pageId);
+        mem.writeLong(base + 8, cacheId);
     }
 
     /**

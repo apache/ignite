@@ -19,23 +19,30 @@ package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+
 /**
  *
  */
 public class FullPageId {
     /** */
-    private long pageId;
+    private final long pageId;
 
     /** */
-    private int cacheId;
+    private final long effectivePageId;
+
+    /** */
+    private final int cacheId;
 
     /**
      * @param pageId Page ID.
      * @param cacheId Cache ID.
      */
     public FullPageId(long pageId, int cacheId) {
-        this.pageId = pageId;
+        this.pageId = PageIdUtils.pageId(pageId);
         this.cacheId = cacheId;
+
+        effectivePageId = PageIdUtils.flag(pageId) == FLAG_IDX ? PageIdUtils.effectiveIndexPageId(pageId) : this.pageId;
     }
 
     /**
@@ -62,12 +69,12 @@ public class FullPageId {
 
         FullPageId that = (FullPageId)o;
 
-        return pageId == that.pageId && cacheId == that.cacheId;
+        return effectivePageId == that.effectivePageId && cacheId == that.cacheId;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = (int)(pageId ^ (pageId >>> 32));
+        int result = (int)(effectivePageId ^ (effectivePageId >>> 32));
 
         result = 31 * result + cacheId;
 
@@ -76,6 +83,8 @@ public class FullPageId {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return new SB("FullPageId [pageId=").appendHex(pageId).a(", cacheId=").a(cacheId).a(']').toString();
+        return new SB("FullPageId [pageId=").appendHex(pageId)
+            .a(", effectivePageId=").appendHex(effectivePageId)
+            .a(", cacheId=").a(cacheId).a(']').toString();
     }
 }
