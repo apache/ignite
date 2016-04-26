@@ -21,7 +21,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "ignite/ignite_error.h"
+#include "ignite/common/ignite_error.h"
 
 using namespace ignite;
 using namespace boost::unit_test;
