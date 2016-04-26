@@ -585,7 +585,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 case OP_GET_AND_REPLACE: {
                     writer.writeObjectDetached(cache.getAndReplace(reader.readObjectDetached(),
-                            reader.readObjectDetached()));
+                        reader.readObjectDetached()));
 
                     break;
                 }
@@ -651,119 +651,6 @@ public class PlatformCache extends PlatformAbstractTarget {
                     writer.writeLong(registerLock(cache.lockAll(PlatformUtils.readCollection(reader))));
 
                     break;
-
-                case OP_PUT:
-                    cache.put(reader.readObjectDetached(), reader.readObjectDetached());
-
-                    break;
-
-                case OP_REMOVE_BOOL:
-                    writer.writeBoolean(cache.remove(reader.readObjectDetached(), reader.readObjectDetached()));
-
-                    break;
-
-                case OP_REMOVE_ALL:
-                    cache.removeAll(PlatformUtils.readSet(reader));
-
-                    break;
-
-                case OP_PUT_ALL:
-                    cache.putAll(PlatformUtils.readMap(reader));
-
-                    break;
-
-                case OP_LOC_EVICT:
-                    cache.localEvict(PlatformUtils.readCollection(reader));
-
-                    break;
-
-                case OP_CONTAINS_KEY:
-                    writer.writeBoolean(cache.containsKey(reader.readObjectDetached()));
-
-                    break;
-
-                case OP_CONTAINS_KEYS:
-                    writer.writeBoolean(cache.containsKeys(PlatformUtils.readSet(reader)));
-
-                    break;
-
-                case OP_LOC_PROMOTE: {
-                    cache.localPromote(PlatformUtils.readSet(reader));
-
-                    break;
-                }
-
-                case OP_REPLACE_3:
-                    writer.writeBoolean(cache.replace(reader.readObjectDetached(), reader.readObjectDetached(),
-                            reader.readObjectDetached()));
-
-                    break;
-
-                case OP_LOC_LOAD_CACHE:
-                    loadCache0(reader, true);
-
-                    break;
-
-                case OP_LOAD_CACHE:
-                    loadCache0(reader, false);
-
-                    break;
-
-                case OP_CLEAR:
-                    cache.clear(reader.readObjectDetached());
-
-                    break;
-
-                case OP_CLEAR_ALL:
-                    cache.clearAll(PlatformUtils.readSet(reader));
-
-                    break;
-
-                case OP_LOCAL_CLEAR:
-                    cache.localClear(reader.readObjectDetached());
-
-                    break;
-
-                case OP_LOCAL_CLEAR_ALL:
-                    cache.localClearAll(PlatformUtils.readSet(reader));
-
-                    break;
-
-                case OP_PUT_IF_ABSENT: {
-                    writer.writeBoolean(cache.putIfAbsent(reader.readObjectDetached(), reader.readObjectDetached()));
-
-                    break;
-                }
-
-                case OP_REPLACE_2: {
-                    writer.writeBoolean(cache.replace(reader.readObjectDetached(), reader.readObjectDetached()));
-
-                    break;
-                }
-
-                case OP_REMOVE_OBJ: {
-                    writer.writeBoolean(cache.remove(reader.readObjectDetached()));
-
-                    break;
-                }
-
-                case OP_IS_LOCAL_LOCKED:
-                    writer.writeBoolean(cache.isLocalLocked(reader.readObjectDetached(), reader.readBoolean()));
-
-                    break;
-
-                case OP_LOAD_ALL: {
-                    long futId = reader.readLong();
-                    boolean replaceExisting = reader.readBoolean();
-
-                    CompletionListenable fut = new CompletionListenable();
-
-                    PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, null, this);
-
-                    cache.loadAll(PlatformUtils.readSet(reader), replaceExisting, fut);
-
-                    break;
-                }
 
                 default:
                     super.processInStreamOutStream(type, reader, writer);
