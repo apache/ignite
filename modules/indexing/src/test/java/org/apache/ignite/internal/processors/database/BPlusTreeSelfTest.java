@@ -58,7 +58,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static final int CACHE_ID = 100500;
 
     /** */
-    private static int MAX_ITEMS_COUNT = 0;
+    private static int MAX_PER_PAGE = 0;
 
     /** */
     private static int CNT = 10;
@@ -84,7 +84,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         long seed = System.nanoTime();
 
-        X.println("Test seed: " + seed);
+        X.println("Test seed: " + seed + "L");
 
         TestTree.rnd = new Random(seed);
 
@@ -105,7 +105,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         pageMem.stop();
 
-        MAX_ITEMS_COUNT = 0;
+        MAX_PER_PAGE = 0;
         PUT_INC = 1;
         RMV_INC = -1;
         CNT = 10;
@@ -115,7 +115,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_1_20_mm_1() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 1;
+        MAX_PER_PAGE = 1;
         CNT = 20;
         PUT_INC = -1;
         RMV_INC = -1;
@@ -127,7 +127,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_1_20_mm_0() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 1;
+        MAX_PER_PAGE = 1;
         CNT = 20;
         PUT_INC = -1;
         RMV_INC = -1;
@@ -139,7 +139,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_1_20_pm_1() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 1;
+        MAX_PER_PAGE = 1;
         CNT = 20;
         PUT_INC = 1;
         RMV_INC = -1;
@@ -151,7 +151,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_1_20_pm_0() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 1;
+        MAX_PER_PAGE = 1;
         CNT = 20;
         PUT_INC = 1;
         RMV_INC = -1;
@@ -163,7 +163,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_1_20_pp_1() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 1;
+        MAX_PER_PAGE = 1;
         CNT = 20;
         PUT_INC = 1;
         RMV_INC = 1;
@@ -175,7 +175,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_1_20_pp_0() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 1;
+        MAX_PER_PAGE = 1;
         CNT = 20;
         PUT_INC = 1;
         RMV_INC = 1;
@@ -187,7 +187,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_1_20_mp_1() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 1;
+        MAX_PER_PAGE = 1;
         CNT = 20;
         PUT_INC = -1;
         RMV_INC = 1;
@@ -199,7 +199,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_1_20_mp_0() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 1;
+        MAX_PER_PAGE = 1;
         CNT = 20;
         PUT_INC = -1;
         RMV_INC = 1;
@@ -212,7 +212,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_2_40_mm_1() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 2;
+        MAX_PER_PAGE = 2;
         CNT = 40;
         PUT_INC = -1;
         RMV_INC = -1;
@@ -224,7 +224,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_2_40_mm_0() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 2;
+        MAX_PER_PAGE = 2;
         CNT = 40;
         PUT_INC = -1;
         RMV_INC = -1;
@@ -236,7 +236,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_2_40_pm_1() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 2;
+        MAX_PER_PAGE = 2;
         CNT = 40;
         PUT_INC = 1;
         RMV_INC = -1;
@@ -248,7 +248,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_2_40_pm_0() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 2;
+        MAX_PER_PAGE = 2;
         CNT = 40;
         PUT_INC = 1;
         RMV_INC = -1;
@@ -260,7 +260,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_2_40_pp_1() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 2;
+        MAX_PER_PAGE = 2;
         CNT = 40;
         PUT_INC = 1;
         RMV_INC = 1;
@@ -272,7 +272,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_2_40_pp_0() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 2;
+        MAX_PER_PAGE = 2;
         CNT = 40;
         PUT_INC = 1;
         RMV_INC = 1;
@@ -284,7 +284,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_2_40_mp_1() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 2;
+        MAX_PER_PAGE = 2;
         CNT = 40;
         PUT_INC = -1;
         RMV_INC = 1;
@@ -296,8 +296,105 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testPutRemove_2_40_mp_0() throws IgniteCheckedException {
-        MAX_ITEMS_COUNT = 2;
+        MAX_PER_PAGE = 2;
         CNT = 40;
+        PUT_INC = -1;
+        RMV_INC = 1;
+
+        doTestPutRemove(false);
+    }
+
+    // ------- 3 - 60
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_3_60_mm_1() throws IgniteCheckedException {
+        MAX_PER_PAGE = 3;
+        CNT = 60;
+        PUT_INC = -1;
+        RMV_INC = -1;
+
+        doTestPutRemove(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_3_60_mm_0() throws IgniteCheckedException {
+        MAX_PER_PAGE = 3;
+        CNT = 60;
+        PUT_INC = -1;
+        RMV_INC = -1;
+
+        doTestPutRemove(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_3_60_pm_1() throws IgniteCheckedException {
+        MAX_PER_PAGE = 3;
+        CNT = 60;
+        PUT_INC = 1;
+        RMV_INC = -1;
+
+        doTestPutRemove(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_3_60_pm_0() throws IgniteCheckedException {
+        MAX_PER_PAGE = 3;
+        CNT = 60;
+        PUT_INC = 1;
+        RMV_INC = -1;
+
+        doTestPutRemove(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_3_60_pp_1() throws IgniteCheckedException {
+        MAX_PER_PAGE = 3;
+        CNT = 60;
+        PUT_INC = 1;
+        RMV_INC = 1;
+
+        doTestPutRemove(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_3_60_pp_0() throws IgniteCheckedException {
+        MAX_PER_PAGE = 3;
+        CNT = 60;
+        PUT_INC = 1;
+        RMV_INC = 1;
+
+        doTestPutRemove(false);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_3_60_mp_1() throws IgniteCheckedException {
+        MAX_PER_PAGE = 3;
+        CNT = 60;
+        PUT_INC = -1;
+        RMV_INC = 1;
+
+        doTestPutRemove(true);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testPutRemove_3_60_mp_0() throws IgniteCheckedException {
+        MAX_PER_PAGE = 3;
+        CNT = 60;
         PUT_INC = -1;
         RMV_INC = 1;
 
@@ -346,16 +443,20 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void _testRandomRemove0() throws IgniteCheckedException {
-        // seed: 1461177795261173000, 1461187841179332000
+    public void testRandomRemove_1_30_0() throws IgniteCheckedException {
+        MAX_PER_PAGE = 1;
+        CNT = 30;
+
         doTestRandomRemove(false);
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void _testRandomRemove1() throws IgniteCheckedException {
-        // seed: 1461188744119034000 1461188844311788000 1461189099834526000
+    public void testRandomRemove_1_30_1() throws IgniteCheckedException {
+        MAX_PER_PAGE = 1;
+        CNT = 30;
+
         doTestRandomRemove(true);
     }
 
@@ -368,56 +469,41 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         Map<Long,Long> map = new HashMap<>();
 
-        int cnt = 100_000;
+        for (int i = 0 ; i < 100_000; i++) {
+            Long x = (long)tree.randomInt(CNT);
 
-        int rmv = 0;
+            if (i % 1000 == 0)
+                X.println(" --> " + i + "  " + x);
 
-        for (long x = 0; x < cnt; x++)
-            assertEquals(map.put(x,x), tree.put(x));
+//            if (i >= 57)
+//                X.println(tree.printTree());
 
-        for (;;) {
-            for (int i = 0; i < 1000 && !map.isEmpty();) {
-                Long x = (long)tree.randomInt(cnt);
-
-                if (map.remove(x) != null) {
-//                    if (rmv > 93440) {
-//                        X.println("Rmv: " + rmv + " -> " + x);
-//
-//                        if (rmv == 93449)
-//                            X.println(tree.printTree());
-//                    }
-
+            if (tree.randomInt(2) == 0)
+                assertEquals(map.put(x, x), tree.put(x));
+            else {
+                if (map.remove(x) != null)
                     assertEquals(x, tree.remove(x));
-                    assertNull(tree.remove(x));
+                assertNull(tree.remove(x));
+            }
 
-                    rmv++;
-                    i++;
+            if (i % 100 == 0) {
+                GridCursor<Long> cursor = tree.find(null, null);
+
+                int size = 0;
+
+                while (cursor.next()) {
+                    size++;
+
+                    x = cursor.get();
+
+                    assert x != null;
+
+                    assertEquals(map.get(x), x);
                 }
+
+                assertEquals(map.size(), size);
             }
-
-            GridCursor<Long> cursor = tree.find(null, null);
-
-            int size = 0;
-
-            while (cursor.next()) {
-                size++;
-
-                Long x = cursor.get();
-
-                assert x != null;
-
-                assertEquals(map.get(x), x);
-            }
-
-            assertEquals(map.size(), size);
-
-            if (size == 0)
-                break;
         }
-    }
-
-    private void doTestStagedPutRemove(boolean canGetRow) {
-        // TODO
     }
 
     /**
@@ -540,8 +626,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public int getMaxCount(ByteBuffer buf) {
-            if (MAX_ITEMS_COUNT != 0)
-                return MAX_ITEMS_COUNT;
+            if (MAX_PER_PAGE != 0)
+                return MAX_PER_PAGE;
 
             return super.getMaxCount(buf);
         }
@@ -579,8 +665,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public int getMaxCount(ByteBuffer buf) {
-            if (MAX_ITEMS_COUNT != 0)
-                return MAX_ITEMS_COUNT;
+            if (MAX_PER_PAGE != 0)
+                return MAX_PER_PAGE;
 
             return super.getMaxCount(buf);
         }

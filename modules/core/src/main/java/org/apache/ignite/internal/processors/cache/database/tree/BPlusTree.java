@@ -1308,7 +1308,7 @@ public abstract class BPlusTree<L, T extends L> {
 
                     case Put.NOT_FOUND: // Do insert.
                         assert lvl == p.btmLvl : "must insert at the bottom level";
-                        assert p.needReplaceInner == FALSE: p.needReplaceInner;
+                        assert p.needReplaceInner == FALSE: p.needReplaceInner + " " + lvl;
 
                         // Init args.
                         p.pageId = pageId;
@@ -1746,38 +1746,42 @@ public abstract class BPlusTree<L, T extends L> {
             assert !isFinished();
             assert tail.type == Tail.EXACT;
 
-            // Need to lock more to be able to merge.
-            if (needReplaceInner == TRUE ||
-                (needMergeEmptyBranch == TRUE && (tail.down == null || tail.getCount() == 0)))
-                return false;
+            boolean mergedBranch = false;
 
-            // Can merge only if tail is not a routing page.
-            if (tail.getCount() > 0) {
-                if (needMergeEmptyBranch == TRUE) {
-                    mergeEmptyBranch();
+            if (needMergeEmptyBranch == TRUE) {
+                // We can't merge empty branch if tail in routing page.
+                if (tail.down == null || tail.getCount() == 0)
+                    return false; // Lock the whole branch up to the first non-empty.
 
-                    needMergeEmptyBranch = DONE;
-                }
+                mergeEmptyBranch();
 
-                boolean mergeMore = mergeDown(tail);
+                mergedBranch = true;
+                needMergeEmptyBranch = DONE;
+            }
 
-                if (needReplaceInner == READY) {
-                    // If we've merged empty branch then the inner key was dropped.
-                    if (needMergeEmptyBranch != DONE)
-                        replaceInner(); // Need to replace inner key with new max key for the left subtree.
+            mergeDown(tail);
 
-                    needReplaceInner = DONE;
-                }
+            if (needReplaceInner == READY) {
+                // If we've merged empty branch right now, then the inner key was dropped.
+                if (!mergedBranch)
+                    replaceInner(); // Replace inner key with new max key for the left subtree.
 
-                if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel(meta) == tail.lvl)
-                    freePage(tail.page, tail.buf, tail.io, tail.lvl, false); // Free root.
-                else if (mergeMore) {
-                    doReleaseTail(tail.down);
+                needReplaceInner = DONE;
+            }
+            else if (needReplaceInner == TRUE)
+                return false; // Lock the whole branch up to the inner key page.
 
-                    tail.down = null;
+            if (tail.getCount() == 0 && tail.lvl != 0 && getRootLevel(meta) == tail.lvl) {
+                // Free root if it became empty after merge.
+                freePage(tail.page, tail.buf, tail.io, tail.lvl, false);
+            }
+            else if (tail.sibling != null && tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf)) {
+                // Release everything lower than tail, we've already merged this path.
+                doReleaseTail(tail.down);
 
-                    return false;
-                }
+                tail.down = null;
+
+                return false; // Lock and merge one level more.
             }
 
             releaseTail();
