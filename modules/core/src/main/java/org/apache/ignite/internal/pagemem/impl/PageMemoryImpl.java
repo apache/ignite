@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1055,31 +1054,6 @@ public class  PageMemoryImpl implements PageMemory {
 
             if (mem.compareAndSwapLong(freePageListPtr, freePageRelPtrMasked, relPtr))
                 return;
-        }
-    }
-
-    /**
-     * Long set based on BitSet.
-     */
-    private static class SimpleLongSet {
-        /** */
-        final BitSet bitSet = new BitSet();
-
-        /**
-         * Add value to set.
-         *
-         * @param val Value.
-         */
-        void add(final long val) {
-            bitSet.set((int)(val % Integer.MAX_VALUE));
-        }
-
-        /**
-         * @param val Value to check.
-         * @return {@code True} if set contains value.
-         */
-        boolean contains(final long val) {
-            return bitSet.get((int)(val % Integer.MAX_VALUE));
         }
     }
 
