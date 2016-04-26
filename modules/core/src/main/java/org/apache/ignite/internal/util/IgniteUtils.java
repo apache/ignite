@@ -6523,7 +6523,7 @@ public abstract class IgniteUtils {
      * @return Short string representing the node.
      */
     public static String toShortString(ClusterNode n) {
-        return "GridNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() +
+        return "ClusterNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() +
             ", daemon=" + n.isDaemon() + ']';
     }
 
