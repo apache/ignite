@@ -86,6 +86,16 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
     }
 
     /**
+     * Queries if the write lock is held by the current thread.
+     *
+     * @return {@code true} if the current thread holds the write lock and
+     *         {@code false} otherwise
+     */
+    public boolean isWriteLockedByCurrentThread() {
+        return locks[locks.length - 1].isWriteLockedByCurrentThread();
+    }
+
+    /**
      * Read lock.
      */
     @SuppressWarnings("unused")

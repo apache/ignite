@@ -43,6 +43,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lifecycle.LifecycleBean;
@@ -222,6 +223,9 @@ public class IgniteConfiguration {
 
     /** Public pool size. */
     private int pubPoolSize = DFLT_PUBLIC_THREAD_CNT;
+
+    /** Async Callback pool size. */
+    private int callbackPoolSize = DFLT_PUBLIC_THREAD_CNT;
 
     /** System pool size. */
     private int sysPoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
@@ -723,6 +727,20 @@ public class IgniteConfiguration {
     }
 
     /**
+     * Size of thread pool that is in charge of processing asynchronous callbacks.
+     * <p>
+     * This pool is used for callbacks annotated with {@link IgniteAsyncCallback}.
+     * <p>
+     * If not provided, executor service will have size {@link #DFLT_PUBLIC_THREAD_CNT}.
+     *
+     * @return Thread pool size to be used.
+     * @see IgniteAsyncCallback
+     */
+    public int getAsyncCallbackPoolSize() {
+        return callbackPoolSize;
+    }
+
+    /**
      * Size of thread pool that is in charge of processing internal and Visor
      * {@link ComputeJob GridJobs}.
      * <p>
@@ -826,6 +844,20 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setSystemThreadPoolSize(int poolSize) {
         sysPoolSize = poolSize;
+
+        return this;
+    }
+
+    /**
+     * Sets async callback thread pool size to use within grid.
+     *
+     * @param poolSize Thread pool size to use within grid.
+     * @return {@code this} for chaining.
+     * @see IgniteConfiguration#getAsyncCallbackPoolSize()
+     * @see IgniteAsyncCallback
+     */
+    public IgniteConfiguration setAsyncCallbackPoolSize(int poolSize) {
+        this.callbackPoolSize = poolSize;
 
         return this;
     }

@@ -619,7 +619,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
                     // Entry was not in memory or in swap, so we remove it from cache.
                     if (v == null && isNew && dhtEntry.markObsoleteIfEmpty(ver))
-                        dht.removeIfObsolete(key);
+                        dht.removeEntry(dhtEntry);
                 }
 
                 if (v != null) {

@@ -145,7 +145,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         for (int i = 0; i < gridCount(); i++) {
             GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache();
 
-            for (GridCacheEntryEx e : c.map().entries0()) {
+            for (GridCacheEntryEx e : c.map().entries()) {
                 Object key = e.key().value(c.context().cacheObjectContext(), false);
                 Object val = CU.value(e.rawGet(), c.context(), false);
 

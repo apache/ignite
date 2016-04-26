@@ -318,7 +318,7 @@ public class F0 {
                     ids.addAll(((GridNodePredicate)p).nodeIds());
             }
 
-            // T must be <T extends GridNode>.
+            // T must be <T extends ClusterNode>.
             return (IgnitePredicate<T>)new GridNodePredicate(ids);
         }
         else {
@@ -394,7 +394,7 @@ public class F0 {
             else
                 ids.retainAll(list);
 
-            // T must be <T extends GridNode>.
+            // T must be <T extends ClusterNode>.
             return (IgnitePredicate<T>)new GridNodePredicate(ids);
         }
         else {

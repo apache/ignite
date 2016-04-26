@@ -304,7 +304,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private void addEntries(ClassLoader ldr, Collection<KeyCacheObject> keys, GridCacheAdapter cache) {
         GridCacheContext cacheCtx = cache.context();
 
-        for (GridCacheEntryEx e : (Collection<GridCacheEntryEx>)cache.entries()) {
+        for (GridCacheEntryEx e : (Iterable<GridCacheEntryEx>)cache.entries()) {
             boolean undeploy = cacheCtx.isNear() ?
                 undeploy(ldr, e, cacheCtx.near()) || undeploy(ldr, e, cacheCtx.near().dht()) :
                 undeploy(ldr, e, cacheCtx.cache());
