@@ -271,7 +271,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         private void LoadCache0(ICacheEntryFilter<TK, TV> p, object[] args, int opId)
         {
-            DoOutInOp(opId, writer =>
+            DoOutInOpX(opId, writer =>
             {
                 if (p != null)
                 {
@@ -284,11 +284,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                     writer.WriteObject<CacheEntryFilterHolder>(null);
 
                 writer.WriteArray(args);
-            }, s =>
-            {
-                if (!s.ReadBool())
-                    throw ReadException(s);
-            });
+            }, ReadException);
         }
 
         /** <inheritDoc /> */
@@ -477,11 +473,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            DoOutInOpX<object>((int) CacheOp.Put, w =>
-            {
-                w.Write(key);
-                w.Write(val);
-            }, null, ReadException);
+            DoOutOp(CacheOp.Put, key, val);
         }
 
         /** <inheritDoc /> */
@@ -587,7 +579,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             IgniteArgumentCheck.NotNull(val, "val");
 
-            return DoOutOp(CacheOp.Replace2, key, val) ;
+            return DoOutOp(CacheOp.Replace2, key, val);
         }
 
         /** <inheritDoc /> */
