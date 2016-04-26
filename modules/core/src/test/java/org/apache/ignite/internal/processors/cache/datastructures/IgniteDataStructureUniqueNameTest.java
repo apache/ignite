@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
@@ -349,7 +350,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
             for (IgniteInternalFuture<Object> fut : futs) {
                 Object res = fut.get();
 
-                if (res instanceof IgniteException)
+                if (res instanceof IgniteException || res instanceof IgniteCheckedException)
                     continue;
 
                 assertTrue("Unexpected object: " + res,
