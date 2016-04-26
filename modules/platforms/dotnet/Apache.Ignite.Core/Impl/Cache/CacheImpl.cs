@@ -396,14 +396,17 @@ namespace Apache.Ignite.Core.Impl.Cache
                 w => w.Write(key),
                 (stream, res) =>
                 {
-                    var hasValue = res == True;
+                    if (res == True)  // Not null
+                    {
+                        Debug.Assert(!IsAsync);
 
-                    Debug.Assert(!IsAsync || !hasValue);
+                        return Unmarshal<TV>(stream);
+                    }
 
-                    if (!IsAsync && !hasValue)
+                    if (!IsAsync)
                         throw GetKeyNotFoundException();
 
-                    return hasValue ? Unmarshal<TV>(stream) : default(TV);
+                    return default(TV);
                 }, ReadException);
         }
 

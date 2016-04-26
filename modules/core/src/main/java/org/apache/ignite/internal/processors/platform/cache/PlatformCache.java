@@ -299,6 +299,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                     return TRUE;
 
+                case OP_GET:
+                    return writeResult(mem, cache.get(reader.readObjectDetached()));
+
                 case OP_REMOVE_BOOL:
                     return cache.remove(reader.readObjectDetached(), reader.readObjectDetached()) ? TRUE : FALSE;
 
@@ -387,9 +390,6 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                     return TRUE;
                 }
-
-                case OP_GET:
-                    return writeResult(mem, cache.get(reader.readObjectDetached()));
 
                 case OP_GET_AND_PUT:
                     return writeResult(mem, cache.getAndPut(reader.readObjectDetached(), reader.readObjectDetached()));
