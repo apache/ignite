@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.readPage;
@@ -799,7 +800,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return String.
      */
     private static String formatPageId(long x) {
-        return Long.toString(x); //'x' + Long.toHexString(x).toUpperCase();
+        return new SB().appendHex(x).toString();
     }
 
     /**
