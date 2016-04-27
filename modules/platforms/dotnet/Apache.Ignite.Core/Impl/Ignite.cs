@@ -622,6 +622,13 @@ namespace Apache.Ignite.Core.Impl
             return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorGetOrCreateNearCache);
         }
 
+        /** <inheritdoc /> */
+        public ICollection<string> GetCacheNames()
+        {
+            // TODO
+            return null;
+        }
+
         /// <summary>
         /// Gets or creates near cache.
         /// </summary>
