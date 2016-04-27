@@ -136,7 +136,7 @@ void GetDataWithOdbc(const std::string& query)
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
     // Combining connect string
-    std::string connectStr = "DRIVER={Apache Ignite};SERVER=localhost;PORT=11443;CACHE=Person;";
+    std::string connectStr = "DRIVER={Apache Ignite};SERVER=localhost;PORT=10800;CACHE=Person;";
 
     SQLCHAR outstr[ODBC_BUFFER_SIZE];
     SQLSMALLINT outstrlen;
