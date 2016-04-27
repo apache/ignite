@@ -180,8 +180,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             rnd.nextBytes(data);
 
-            //IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
-
             expectsStoreFail(info, data, "Not enough space reserved to store data");
 
             info = info.length(info.length() + data.length - 3);
@@ -203,8 +201,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             GridCompoundFuture<Boolean,Boolean> f = t2.get2();
             assert t2 != null;
 
-            //mgr.writeClose(info);
-            //fut.get(3000);
             f.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
@@ -300,7 +296,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             assert left2 == null;
 
-            //mgr.writeClose(info);
             t2b.get2().get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
@@ -389,7 +384,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             fut.markInitialized();
             fut.get(3000);
 
-            //mgr.writeClose(info);
             assertTrue(range.regionEqual(new IgfsFileAffinityRange(0, writesCnt * chunkSize - 1, null)));
 
 
@@ -433,7 +427,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         long t = System.currentTimeMillis();
 
-        //IgfsFileInfo info = new IgfsFileInfo(blockSize, 0);
         IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 1024 * 1024, null, null, false,
             null, t, t);
 

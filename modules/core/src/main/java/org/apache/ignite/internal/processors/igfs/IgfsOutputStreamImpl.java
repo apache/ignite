@@ -70,7 +70,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     /** Data length in remainder. */
     private int remainderDataLen;
 
-    /** Write completion future. */
+    /** "Aggregated" write completion future. */
     private GridCompoundFuture<Boolean, Void> aggregateFut;
 
     /** IGFS mode. */
