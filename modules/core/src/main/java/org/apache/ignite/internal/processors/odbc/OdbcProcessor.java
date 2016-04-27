@@ -106,7 +106,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
                             .address(host)
                             .port(port)
-                            .listener(new OdbcNioListener(ctx, busyLock))
+                            .listener(new OdbcNioListener(ctx, busyLock, odbcCfg.getMaxOpenCursors()))
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
                             .gridName(ctx.gridName())
