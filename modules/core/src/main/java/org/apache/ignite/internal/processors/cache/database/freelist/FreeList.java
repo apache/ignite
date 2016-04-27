@@ -122,7 +122,7 @@ public class FreeList {
      * @throws IgniteCheckedException If failed.
      */
     private FreeItem take(FreeTree tree, FreeItem lookupItem) throws IgniteCheckedException {
-        FreeItem res = tree.removeCeil(lookupItem);
+        FreeItem res = tree.removeCeil(lookupItem, null);
 
         assert res == null || (res.pageId() != 0 && res.cacheId() == cctx.cacheId()): res;
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.database.tree;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -278,7 +280,7 @@ public abstract class BPlusTree<L, T extends L> {
                 return Put.RETRY;
 
             // Do insert.
-            L moveUpRow = insert(p.meta, io, buf, p.row, idx, p.rightId, lvl);
+            L moveUpRow = insert(p.bag, p.meta, io, buf, p.row, idx, p.rightId, lvl);
 
             // Check if split happened.
             if (moveUpRow != null) {
@@ -526,7 +528,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             io.initNewPage(buf, metaPageId);
 
-            try (Page root = allocatePage()) {
+            try (Page root = allocatePage(null)) {
                 latestLeafIO().initNewPage(root.getForInitialWrite(), root.id());
 
                 io.setLevelsCount(buf, 1);
@@ -811,13 +813,14 @@ public abstract class BPlusTree<L, T extends L> {
 
     /**
      * @param row Lookup row.
+     * @param bag Reuse bag.
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
-    public final T removeCeil(L row) throws IgniteCheckedException {
+    public final T removeCeil(L row, ReuseBag bag) throws IgniteCheckedException {
         assert row != null;
 
-        return doRemove(row, true);
+        return doRemove(row, true, bag);
     }
 
     /**
@@ -828,17 +831,18 @@ public abstract class BPlusTree<L, T extends L> {
     public final T remove(L row) throws IgniteCheckedException {
         assert row != null;
 
-        return doRemove(row, false);
+        return doRemove(row, false, null);
     }
 
     /**
      * @param row Lookup row.
      * @param ceil If we can remove ceil row when we can not find exact.
+     * @param bag Reuse bag.
      * @return Removed row.
      * @throws IgniteCheckedException If failed.
      */
-    private T doRemove(L row, boolean ceil) throws IgniteCheckedException {
-        Remove r = new Remove(row, ceil);
+    private T doRemove(L row, boolean ceil, ReuseBag bag) throws IgniteCheckedException {
+        Remove r = new Remove(row, ceil, bag);
 
         try {
             for (;;) {
@@ -865,7 +869,7 @@ public abstract class BPlusTree<L, T extends L> {
             r.releaseTail();
             r.releaseMeta();
 
-            r.reuseEmptyPages();
+            r.reuseFreePages();
         }
     }
 
@@ -1057,7 +1061,17 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     public final T put(T row) throws IgniteCheckedException {
-        Put p = new Put(row);
+        return put(row, null);
+    }
+
+    /**
+     * @param row Row.
+     * @param bag Reuse bag.
+     * @return Old row.
+     * @throws IgniteCheckedException If failed.
+     */
+    public final T put(T row, ReuseBag bag) throws IgniteCheckedException {
+        Put p = new Put(row, bag);
 
         try {
             for (;;) { // Go down with retries.
@@ -1141,6 +1155,7 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
+     * @param bag Reuse bag.
      * @param meta Meta page.
      * @param io IO.
      * @param buf Buffer.
@@ -1151,9 +1166,9 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Move up row.
      * @throws IgniteCheckedException If failed.
      */
-    private L insertWithSplit(Page meta, BPlusIO<L> io, final ByteBuffer buf, L row,
+    private L insertWithSplit(ReuseBag bag, Page meta, BPlusIO<L> io, final ByteBuffer buf, L row,
         int idx, long rightId, int lvl) throws IgniteCheckedException {
-        try (Page fwd = allocatePage()) {
+        try (Page fwd = allocatePage(bag)) {
             // Need to check this before the actual split, because after the split we will have new forward page here.
             boolean hadFwd = io.getForward(buf) != 0;
 
@@ -1186,7 +1201,7 @@ public abstract class BPlusTree<L, T extends L> {
             if (!hadFwd && lvl == getRootLevel(meta)) { // We are splitting root.
                 long newRootId;
 
-                try (Page newRoot = allocatePage()) {
+                try (Page newRoot = allocatePage(bag)) {
                     newRootId = newRoot.id();
 
                     if (io.isLeaf())
@@ -1215,6 +1230,7 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
+     * @param bag Reuse bag.
      * @param meta Meta page.
      * @param io IO.
      * @param buf Buffer.
@@ -1225,13 +1241,13 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Move up row.
      * @throws IgniteCheckedException If failed.
      */
-    private L insert(Page meta, BPlusIO<L> io, ByteBuffer buf, L row, int idx, long rightId, int lvl)
+    private L insert(ReuseBag bag, Page meta, BPlusIO<L> io, ByteBuffer buf, L row, int idx, long rightId, int lvl)
         throws IgniteCheckedException {
         int maxCnt = io.getMaxCount(buf);
         int cnt = io.getCount(buf);
 
         if (cnt == maxCnt) // Need to split page.
-            return insertWithSplit(meta, io, buf, row, idx, rightId, lvl);
+            return insertWithSplit(bag, meta, io, buf, row, idx, rightId, lvl);
 
         insertSimple(io, buf, row, idx, rightId);
 
@@ -1595,11 +1611,17 @@ public abstract class BPlusTree<L, T extends L> {
         /** */
         byte needReplaceInner = FALSE;
 
+        /** */
+        ReuseBag bag;
+
         /**
          * @param row Row.
+         * @param bag Reuse bag.
          */
-        private Put(T row) {
+        private Put(T row, ReuseBag bag) {
             super(row);
+
+            this.bag = bag;
         }
 
         /** {@inheritDoc} */
@@ -1657,15 +1679,12 @@ public abstract class BPlusTree<L, T extends L> {
     /**
      * Remove operation.
      */
-    private final class Remove extends Get {
+    private final class Remove extends Get implements ReuseBag {
         /** */
         boolean ceil;
 
         /** We may need to lock part of the tree branch from the bottom to up for multiple levels. */
         Tail<L> tail;
-
-        /** */
-        Object emptyPages;
 
         /** */
         byte needReplaceInner = FALSE;
@@ -1682,14 +1701,72 @@ public abstract class BPlusTree<L, T extends L> {
         /** */
         short innerIdx = Short.MIN_VALUE;
 
+        /** */
+        Object freePages;
+
+        /** */
+        ReuseBag bag;
+
         /**
          * @param row Row.
          * @param ceil If we can remove ceil row when we can not find exact.
          */
-        private Remove(L row, boolean ceil) {
+        private Remove(L row, boolean ceil, ReuseBag bag) {
             super(row);
 
             this.ceil = ceil;
+            this.bag = bag;
+        }
+
+        /**
+         * @return Reuse bag.
+         */
+        private ReuseBag bag() {
+            return bag != null ? bag : this;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public FullPageId pollFreePage() {
+            assert bag == null;
+
+            if (freePages == null)
+                return null;
+
+            if (freePages.getClass() == ArrayDeque.class)
+                return ((ArrayDeque<FullPageId>)freePages).poll();
+
+            FullPageId res = (FullPageId)freePages;
+
+            freePages = null;
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public void addFreePage(FullPageId pageId) {
+            assert pageId != null;
+            assert bag == null;
+
+            if (freePages == null)
+                freePages = pageId;
+            else {
+                ArrayDeque<Object> queue;
+
+                if (freePages.getClass() == ArrayDeque.class)
+                    queue = (ArrayDeque<Object>)freePages;
+                else {
+                    assert freePages instanceof FullPageId;
+
+                    queue = new ArrayDeque<>();
+
+                    queue.add(freePages);
+                    freePages = queue;
+                }
+
+                queue.add(pageId);
+            }
         }
 
         /** {@inheritDoc} */
@@ -2029,44 +2106,17 @@ public abstract class BPlusTree<L, T extends L> {
             if (release)
                 writeUnlockAndClose(page);
 
-            if (reuseList == null)
-                return; // We are not allowed to reuse pages.
-
-            // Reuse empty page.
-            if (emptyPages == null)
-                emptyPages = page.fullId();
-            else {
-                List<FullPageId> list;
-
-                if (emptyPages.getClass() != ArrayList.class) {
-                    list = new ArrayList<>(5);
-
-                    list.add((FullPageId)emptyPages);
-
-                    emptyPages = list;
-                }
-                else
-                    list = (List<FullPageId>)emptyPages;
-
-                list.add(page.fullId());
-            }
+            bag().addFreePage(page.fullId());
         }
 
         /**
          * @throws IgniteCheckedException If failed.
          */
         @SuppressWarnings("unchecked")
-        private void reuseEmptyPages() throws IgniteCheckedException {
-            if (emptyPages != null) {
-                if (emptyPages.getClass() != ArrayList.class)
-                    reuseList.put(BPlusTree.this, (FullPageId)emptyPages);
-                else {
-                    List<FullPageId> list = (List<FullPageId>)emptyPages;
-
-                    for (int i = 0; i < list.size(); i++)
-                        reuseList.put(BPlusTree.this, list.get(i));
-                }
-            }
+        private void reuseFreePages() throws IgniteCheckedException {
+            // If we have a bag, then it will be processed at the upper level.
+            if (reuseList != null && bag == null)
+                reuseList.add(BPlusTree.this, this);
         }
 
         /**
@@ -2403,13 +2453,14 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
+     * @param bag Reuse bag.
      * @return Allocated page.
      */
-    private Page allocatePage() throws IgniteCheckedException {
-        FullPageId pageId = null;
+    private Page allocatePage(ReuseBag bag) throws IgniteCheckedException {
+        FullPageId pageId = bag != null ? bag.pollFreePage() : null;
 
-        if (reuseList != null)
-            pageId = reuseList.take(this);
+        if (pageId == null && reuseList != null)
+            pageId = reuseList.take(this, bag);
 
         if (pageId == null)
             pageId = pageMem.allocatePage(cacheId, -1, PageIdAllocator.FLAG_IDX);

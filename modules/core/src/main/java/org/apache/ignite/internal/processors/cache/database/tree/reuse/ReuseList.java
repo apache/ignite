@@ -98,21 +98,42 @@ public final class ReuseList {
 
     /**
      * @param client Client tree.
+     * @param bag Reuse bag.
      * @return Page ID.
      * @throws IgniteCheckedException If failed.
      */
-    public FullPageId take(BPlusTree<?,?> client) throws IgniteCheckedException {
+    public FullPageId take(BPlusTree<?,?> client, ReuseBag bag) throws IgniteCheckedException {
+        if (trees == null)
+            return null;
+
+        ReuseTree tree = tree(client);
+
         // Remove and return page at min possible position.
-        return trees == null ? null : tree(client).removeCeil(MIN);
+        FullPageId res = tree.removeCeil(MIN, bag);
+
+        assert res != null || tree.size() == 0; // TODO remove
+
+        return res;
     }
 
     /**
-     * @param fullPageId Page ID.
+     * @param client Client tree.
+     * @param bag Reuse bag.
      * @throws IgniteCheckedException If failed.
      */
-    public void put(BPlusTree<?,?> client, FullPageId fullPageId) throws IgniteCheckedException {
-        assert fullPageId != null;
+    public void add(BPlusTree<?,?> client, ReuseBag bag) throws IgniteCheckedException {
+        if (bag == null)
+            return;
 
-        tree(client).put(fullPageId);
+        ReuseTree tree = tree(client);
+
+        for (;;) {
+            FullPageId pageId = bag.pollFreePage();
+
+            if (pageId == null)
+                break;
+
+            tree.put(pageId, bag);
+        }
     }
 }
