@@ -121,7 +121,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         if (reuseList != null) {
             long size = reuseList.size();
 
-            assertTrue("Reuse size: " + size, size < CNT);
+            assertTrue("Reuse size: " + size, size < 2000);
         }
 
         pageMem.stop();
@@ -492,10 +492,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         Map<Long,Long> map = new HashMap<>();
 
-        for (int i = 0 ; i < 100_000; i++) {
+        for (int i = 0 ; i < 1_000_000; i++) {
             Long x = (long)tree.randomInt(CNT);
 
-            if (i % 1000 == 0)
+            if (i % 100_000 == 0)
                 X.println(" --> " + i + "  " + x);
 
             if (tree.randomInt(2) == 0)

@@ -83,7 +83,7 @@ public final class ReuseList {
 
         assert tree != null;
 
-        // Avoid recursion on the same tree.
+        // Avoid recursion on the same tree to avoid dead lock.
         if (tree == client) {
             treeIdx++; // Go forward and take the next tree.
 
@@ -106,14 +106,8 @@ public final class ReuseList {
         if (trees == null)
             return null;
 
-        ReuseTree tree = tree(client);
-
         // Remove and return page at min possible position.
-        FullPageId res = tree.removeCeil(MIN, bag);
-
-        assert res != null || tree.size() == 0; // TODO remove
-
-        return res;
+        return tree(client).removeCeil(MIN, bag);
     }
 
     /**
@@ -125,15 +119,16 @@ public final class ReuseList {
         if (bag == null)
             return;
 
-        ReuseTree tree = tree(client);
-
-        for (;;) {
+        for (int i = client.randomInt(trees.length);;) {
             FullPageId pageId = bag.pollFreePage();
 
             if (pageId == null)
                 break;
 
-            tree.put(pageId, bag);
+            trees[i].put(pageId, bag);
+
+            if (++i == trees.length)
+                i = 0;
         }
     }
 }
