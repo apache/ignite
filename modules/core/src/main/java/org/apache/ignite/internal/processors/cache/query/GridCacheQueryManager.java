@@ -467,7 +467,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @return Query future.
      */
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     public CacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
         assert qry.query().type() != GridCacheQueryType.SCAN: "Wrong query processing: " + qry;
