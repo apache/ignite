@@ -33,16 +33,18 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseL
 /**
  * Reuse tree for index pages.
  */
-public class ReuseTree extends BPlusTree<FullPageId, FullPageId> {
+public final class ReuseTree extends BPlusTree<FullPageId, FullPageId> {
     /**
+     * @param reuseList Reuse list.
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseTree(int cacheId, PageMemory pageMem, FullPageId metaPageId, boolean initNew) throws IgniteCheckedException {
-        super(cacheId, pageMem, metaPageId);
+    public ReuseTree(ReuseList reuseList, int cacheId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
+        throws IgniteCheckedException {
+        super(cacheId, pageMem, metaPageId, reuseList);
 
         if (initNew)
             initNew();
@@ -73,7 +75,7 @@ public class ReuseTree extends BPlusTree<FullPageId, FullPageId> {
         throws IgniteCheckedException {
         long pageIdx = io.isLeaf() ?
             PageIdUtils.pageIdx(((ReuseLeafIO)io).getPageId(buf, idx)) :
-            (((ReuseInnerIO)io).getPageIndex(buf, idx) & 0xFFFFFFFFL );
+            (((ReuseInnerIO)io).getPageIndex(buf, idx) & 0xFFFFFFFFL);
 
         return Long.compare(pageIdx, PageIdUtils.pageIdx(fullPageId.pageId()));
     }

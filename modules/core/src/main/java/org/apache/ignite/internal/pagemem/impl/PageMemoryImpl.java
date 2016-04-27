@@ -41,6 +41,7 @@ import org.apache.ignite.internal.mem.OutOfMemoryException;
 import org.apache.ignite.internal.pagemem.DirectMemoryUtils;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -214,6 +215,11 @@ public class  PageMemoryImpl implements PageMemory {
             absPtr = absolute(relPtr);
 
             pageId = readPageId(absPtr);
+
+            long idx = PageIdUtils.pageIdx(pageId);
+
+            // Reassign page ID according to flags and partition ID.
+            pageId = PageIdUtils.pageId(partId, flags, idx);
         }
         else {
             while (true) {
@@ -223,17 +229,20 @@ public class  PageMemoryImpl implements PageMemory {
                     break;
             }
 
+            // Assign page ID according to flags and partition ID.
+            pageId = PageIdUtils.pageId(partId, flags, pageId);
+
             relPtr = allocateFreePage();
 
             if (relPtr == INVALID_REL_PTR)
                 throw new OutOfMemoryException();
 
             absPtr = absolute(relPtr);
-
-            writePageId(absPtr, pageId);
-            writePageCacheId(absPtr, cacheId);
-            writeCurrentTimestamp(absPtr);
         }
+
+        writePageId(absPtr, pageId);
+        writePageCacheId(absPtr, cacheId);
+        writeCurrentTimestamp(absPtr);
 
         // TODO pass an argument to decide whether the page should be cleaned.
         mem.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
@@ -253,7 +262,6 @@ public class  PageMemoryImpl implements PageMemory {
 
         return fullId;
     }
-
 
     /** {@inheritDoc} */
     @Override public boolean freePage(FullPageId fullId) throws IgniteCheckedException {

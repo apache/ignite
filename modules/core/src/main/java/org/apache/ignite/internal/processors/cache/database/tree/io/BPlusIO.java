@@ -161,8 +161,22 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param buf Buffer.
      * @param idx Index.
      * @param row Lookup or full row.
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract void store(ByteBuffer buf, int idx, L row);
+    public abstract void store(ByteBuffer buf, int idx, L row) throws IgniteCheckedException;
+
+    /**
+     * Store row info from the given source.
+     *
+     * @param dst Destination buffer
+     * @param dstIdx Destination index.
+     * @param srcIo Source IO.
+     * @param src Source buffer.
+     * @param srcIdx Source index.
+     * @throws IgniteCheckedException If failed.
+     */
+    public abstract void store(ByteBuffer dst, int dstIdx, BPlusIO<L> srcIo, ByteBuffer src, int srcIdx)
+        throws IgniteCheckedException;
 
     /**
      * Get lookup row.
@@ -176,7 +190,8 @@ public abstract class BPlusIO<L> extends PageIO {
     public abstract L getLookupRow(BPlusTree<L, ?> tree, ByteBuffer buf, int idx) throws IgniteCheckedException;
 
     /**
-     * Copy items from source buffer to destination buffer. Both pages must be of the same type.
+     * Copy items from source buffer to destination buffer.
+     * Both pages must be of the same type and the same version.
      *
      * @param src Source buffer.
      * @param dst Destination buffer.
@@ -184,6 +199,8 @@ public abstract class BPlusIO<L> extends PageIO {
      * @param dstIdx Destination begin index.
      * @param cnt Items count.
      * @param cpLeft Copy leftmost link (makes sense only for inner pages).
+     * @throws IgniteCheckedException If failed.
      */
-    public abstract void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt, boolean cpLeft);
+    public abstract void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt, boolean cpLeft)
+        throws IgniteCheckedException;
 }

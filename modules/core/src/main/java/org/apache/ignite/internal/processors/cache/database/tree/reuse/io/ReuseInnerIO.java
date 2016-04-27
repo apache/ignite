@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 /**
  * Reuse list inner page IO routines.
  */
-public class ReuseInnerIO extends BPlusInnerIO<FullPageId> {
+public final class ReuseInnerIO extends BPlusInnerIO<FullPageId> {
     /** */
     public static final IOVersions<ReuseInnerIO> VERSIONS = new IOVersions<>(
         new ReuseInnerIO(1)
@@ -57,7 +57,7 @@ public class ReuseInnerIO extends BPlusInnerIO<FullPageId> {
      * @return Page number.
      */
     public int getPageIndex(ByteBuffer buf, int idx) {
-        return buf.getInt(offset(idx, SHIFT_LINK));
+        return buf.getInt(offset(idx));
     }
 
     /**
@@ -66,7 +66,7 @@ public class ReuseInnerIO extends BPlusInnerIO<FullPageId> {
      * @param pageIdx Page index.
      */
     private void store(ByteBuffer buf, int idx, int pageIdx) {
-        buf.putInt(offset(idx, SHIFT_LINK), pageIdx);
+        buf.putInt(offset(idx), pageIdx);
     }
 
     /** {@inheritDoc} */

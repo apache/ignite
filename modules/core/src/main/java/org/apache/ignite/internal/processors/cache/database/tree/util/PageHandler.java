@@ -85,7 +85,7 @@ public abstract class PageHandler<X> {
     public static <X> int writePage(Page page, PageHandler<X> h, X arg, int intArg, int dfltRes)
         throws IgniteCheckedException {
         if (page == null)
-            return dfltRes;
+            return dfltRes; // TODO drop dfltRes parameter and assert not null
 
         int res;
 
@@ -94,7 +94,7 @@ public abstract class PageHandler<X> {
         ByteBuffer buf = page.getForWrite();
 
         if (buf == null)
-            return dfltRes;
+            return dfltRes; // TODO ---//---
 
         try {
             res = h.run(page, buf, arg, intArg);

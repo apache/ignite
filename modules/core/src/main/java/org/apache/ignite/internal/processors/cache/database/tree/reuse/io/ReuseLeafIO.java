@@ -21,13 +21,14 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 
 /**
  * Reuse list leaf page IO routines.
  */
-public class ReuseLeafIO extends BPlusLeafIO<FullPageId> {
+public final class ReuseLeafIO extends BPlusLeafIO<FullPageId> {
     /** */
     public static final IOVersions<ReuseLeafIO> VERSIONS = new IOVersions<>(
         new ReuseLeafIO(1)
@@ -43,6 +44,13 @@ public class ReuseLeafIO extends BPlusLeafIO<FullPageId> {
     /** {@inheritDoc} */
     @Override public void store(ByteBuffer buf, int idx, FullPageId fullPageId) {
         buf.putLong(offset(idx), fullPageId.pageId());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<FullPageId> srcIo, ByteBuffer src, int srcIdx) {
+        assert srcIo == this;
+
+        dst.putLong(offset(dstIdx), getPageId(src, srcIdx));
     }
 
     /**

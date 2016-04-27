@@ -25,6 +25,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -51,6 +52,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     /**
      * @param cctx Cache context.
      * @param pageMem Page memory.
+     * @param reuseList Reuse list.
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
      * @param keyCol Key column.
@@ -64,6 +66,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     public H2TreeIndex(
         GridCacheContext<?,?> cctx,
         PageMemory pageMem,
+        ReuseList reuseList,
         FullPageId metaPageId,
         boolean initNew,
         int keyCol,
@@ -89,7 +92,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        tree = new H2Tree(cctx.cacheId(), pageMem, tbl.rowStore(), metaPageId, initNew) {
+        tree = new H2Tree(reuseList, cctx.cacheId(), pageMem, tbl.rowStore(), metaPageId, initNew) {
             @Override protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
                 throws IgniteCheckedException {
                 return compareRows(getRow(io, buf, idx), row);

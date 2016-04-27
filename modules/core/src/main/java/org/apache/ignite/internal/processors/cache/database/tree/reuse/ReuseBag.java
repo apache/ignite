@@ -15,34 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.database.freelist;
+package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
 import org.apache.ignite.internal.pagemem.FullPageId;
 
 /**
- * Free list item.
+ * Reuse bag for free index pages.
  */
-public class FreeItem extends FullPageId {
-    /** */
-    private short freeSpace;
+public interface ReuseBag {
+    /**
+     * @param pageId Free page ID for reuse.
+     */
+    public void addFreePage(FullPageId pageId);
 
     /**
-     * @param freeSpace Free space.
-     * @param pageId  Page ID.
-     * @param cacheId Cache ID.
+     * @return Free page ID for reuse or {@code null} if empty.
      */
-    public FreeItem(int freeSpace, long pageId, int cacheId) {
-        super(pageId, cacheId);
-
-        assert freeSpace >= 0 && freeSpace <= Short.MAX_VALUE: freeSpace;
-
-        this.freeSpace = (short)freeSpace;
-    }
-
-    /**
-     * @return Free space in the page.
-     */
-    public short freeSpace() {
-        return freeSpace;
-    }
+    public FullPageId pollFreePage();
 }
