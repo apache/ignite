@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -245,7 +246,10 @@ public class GridCacheReturn implements Externalizable, Message {
 
             CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
 
-            resMap.put(key0 != null ? key0 : (keepBinary ? key : CU.value(key, cctx, true)), res0);
+            Object resKey = key0 != null ? key0 :
+                ((keepBinary && key instanceof BinaryObject) ? key : CU.value(key, cctx, true));
+
+            resMap.put(resKey, res0);
         }
         else {
             assert v == null;
