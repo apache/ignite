@@ -85,15 +85,12 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
-import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
@@ -1183,6 +1180,46 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
         else if (log.isDebugEnabled())
             log.debug("Did not rollback from TM (was already rolled back): " + tx);
+    }
+
+    /**
+     * Fast finish transaction. Can be used only if no locks were acquired.
+     *
+     * @param tx Transaction to finish.
+     * @param commit {@code True} if transaction is committed, {@code false} if rolled back.
+     */
+    public void fastFinishTx(IgniteInternalTx tx, boolean commit) {
+        assert tx != null;
+        assert tx.writeMap().isEmpty();
+        assert tx.optimistic() || tx.readMap().isEmpty();
+
+        ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
+
+        if (txIdMap.remove(tx.xidVersion(), tx)) {
+            // 1. Notify evictions.
+            notifyEvitions(tx);
+
+            // 2. Remove obsolete entries.
+            removeObsolete(tx);
+
+            // 3. Remove from per-thread storage.
+            clearThreadMap(tx);
+
+            // 4. Clear context.
+            resetContext();
+
+            // 5. Update metrics.
+            if (!tx.dht() && tx.local()) {
+                if (!tx.system()) {
+                    if (commit)
+                        cctx.txMetrics().onTxCommit();
+                    else
+                        cctx.txMetrics().onTxRollback();
+                }
+
+                tx.txState().onTxEnd(cctx, tx, commit);
+            }
+        }
     }
 
     /**
