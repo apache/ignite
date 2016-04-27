@@ -1199,6 +1199,46 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * Fast finish transaction. Can be used only if no locks were acquired.
+     *
+     * @param tx Transaction to finish.
+     * @param commit {@code True} if transaction is committed, {@code false} if rolled back.
+     */
+    public void fastFinishTx(IgniteInternalTx tx, boolean commit) {
+        assert tx != null;
+        assert tx.writeMap().isEmpty();
+        assert tx.optimistic() || tx.readMap().isEmpty();
+
+        ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
+
+        if (txIdMap.remove(tx.xidVersion(), tx)) {
+            // 1. Notify evictions.
+            notifyEvitions(tx);
+
+            // 2. Remove obsolete entries.
+            removeObsolete(tx);
+
+            // 3. Remove from per-thread storage.
+            clearThreadMap(tx);
+
+            // 4. Clear context.
+            resetContext();
+
+            // 5. Update metrics.
+            if (!tx.dht() && tx.local()) {
+                if (!tx.system()) {
+                    if (commit)
+                        cctx.txMetrics().onTxCommit();
+                    else
+                        cctx.txMetrics().onTxRollback();
+                }
+
+                tx.txState().onTxEnd(cctx, tx, commit);
+            }
+        }
+    }
+
+    /**
      * Tries to minimize damage from partially-committed transaction.
      *
      * @param tx Tx to uncommit.
