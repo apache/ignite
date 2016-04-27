@@ -29,7 +29,9 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -157,252 +159,268 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         stopAllGrids();
     }
 
-//    /**
-//     * Test file system structure in meta-cache.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    @SuppressWarnings("ConstantConditions")
-//    public void testDataStoring() throws Exception {
-//        for (int i = 0; i < 10; i++) {
-//            IgfsPath path = new IgfsPath();
-//
-//            long t = System.currentTimeMillis();
-//
-//            IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), 200, 0L, null,
-//                IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
-//
-//            assertNull(mgr.dataBlock(info, path, 0, null).get());
-//
-//            byte[] data = new byte[rnd.nextInt(20000) + 5];
-//
-//            rnd.nextBytes(data);
-//
-//            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
-//
-//            expectsStoreFail(info, data, "Not enough space reserved to store data");
-//
-//            info = info.length(info.length() + data.length - 3);
-//
-//            expectsStoreFail(info, data, "Not enough space reserved to store data");
-//
-//            info = info.length(info.length() + 3);
-//
-//            IgfsFileAffinityRange range = new IgfsFileAffinityRange();
-//
-//            byte[] remainder = mgr.storeDataBlocks(info, info.length(), null, 0, ByteBuffer.wrap(data), true,
-//                range, null);
-//
-//            assert remainder == null;
-//
-//            mgr.writeClose(info);
-//
-//            fut.get(3000);
-//
-//            for (int j = 0; j < NODES_CNT; j++) {
-//                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
-//                    "ctx");
-//                Collection<IgniteInternalTx> txs = ctx.tm().txs();
-//
-//                assert txs.isEmpty() : "Incomplete transactions: " + txs;
-//            }
-//
-//            // Validate data stored in cache.
-//            for (int pos = 0, block = 0; pos < info.length(); block++) {
-//                byte[] stored = mgr.dataBlock(info, path, block, null).get();
-//
-//                assertNotNull("Expects data exist [data.length=" + data.length + ", block=" + block + ']', stored);
-//
-//                for (int j = 0; j < stored.length; j++)
-//                    assertEquals(stored[j], data[pos + j]);
-//
-//                pos += stored.length;
-//            }
-//
-//            mgr.delete(info);
-//
-//            long nIters = getTestTimeout() / BUSY_WAIT_SLEEP_INTERVAL;
-//
-//            assert nIters < Integer.MAX_VALUE;
-//
-//            boolean rmvBlocks = false;
-//
-//            // Wait for all blocks to be removed.
-//            for (int j = 0; j < nIters && !rmvBlocks; j = sleepAndIncrement(BUSY_WAIT_SLEEP_INTERVAL, j)) {
-//                boolean b = true;
-//
-//                for (long block = 0; block < info.blocksCount(); block++)
-//                    b &= mgr.dataBlock(info, path, block, null).get() == null;
-//
-//                rmvBlocks = b;
-//            }
-//
-//            assertTrue("All blocks should be removed from cache.", rmvBlocks);
-//        }
-//    }
+    /**
+     * Test file system structure in meta-cache.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void testDataStoring() throws Exception {
+        for (int i = 0; i < 10; i++) {
+            IgfsPath path = new IgfsPath();
 
-//    /**
-//     * Test file system structure in meta-cache.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    public void testDataStoringRemainder() throws Exception {
-//        final int blockSize = IGFS_BLOCK_SIZE;
-//
-//        for (int i = 0; i < 10; i++) {
-//            IgfsPath path = new IgfsPath();
-//
-//            long t = System.currentTimeMillis();
-//
-//            IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 0L, null,
-//                IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
-//
-//            assertNull(mgr.dataBlock(info, path, 0, null).get());
-//
-//            byte[] data = new byte[blockSize];
-//
-//            rnd.nextBytes(data);
-//
-//            byte[] remainder = new byte[blockSize / 2];
-//
-//            rnd.nextBytes(remainder);
-//
-//            info = info.length(info.length() + data.length + remainder.length);
-//
-//            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
-//
-//            IgfsFileAffinityRange range = new IgfsFileAffinityRange();
-//
-//            byte[] left = mgr.storeDataBlocks(info, info.length(), remainder, remainder.length, ByteBuffer.wrap(data),
-//                false, range, null);
-//
-//            assert left.length == blockSize / 2;
-//
-//            byte[] remainder2 = new byte[blockSize / 2];
-//
-//            info = info.length(info.length() + remainder2.length);
-//
-//            byte[] left2 = mgr.storeDataBlocks(info, info.length(), left, left.length, ByteBuffer.wrap(remainder2),
-//                false, range, null);
-//
-//            assert left2 == null;
-//
-//            mgr.writeClose(info);
-//
-//            fut.get(3000);
-//
-//            for (int j = 0; j < NODES_CNT; j++) {
-//                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
-//                    "ctx");
-//                Collection<IgniteInternalTx> txs = ctx.tm().txs();
-//
-//                assert txs.isEmpty() : "Incomplete transactions: " + txs;
-//            }
-//
-//            byte[] concat = U.join(remainder, data, remainder2);
-//
-//            // Validate data stored in cache.
-//            for (int pos = 0, block = 0; pos < info.length(); block++) {
-//                byte[] stored = mgr.dataBlock(info, path, block, null).get();
-//
-//                assertNotNull("Expects data exist [data.length=" + concat.length + ", block=" + block + ']', stored);
-//
-//                for (int j = 0; j < stored.length; j++)
-//                    assertEquals(stored[j], concat[pos + j]);
-//
-//                pos += stored.length;
-//            }
-//
-//            mgr.delete(info);
-//
-//            long nIters = getTestTimeout() / BUSY_WAIT_SLEEP_INTERVAL;
-//
-//            assert nIters < Integer.MAX_VALUE;
-//
-//            boolean rmvBlocks = false;
-//
-//            // Wait for all blocks to be removed.
-//            for (int j = 0; j < nIters && !rmvBlocks; j = sleepAndIncrement(BUSY_WAIT_SLEEP_INTERVAL, j)) {
-//                boolean b = true;
-//
-//                for (long block = 0; block < info.blocksCount(); block++)
-//                    b &= mgr.dataBlock(info, path, block, null).get() == null;
-//
-//                rmvBlocks = b;
-//            }
-//
-//            assertTrue("All blocks should be removed from cache.", rmvBlocks);
-//        }
-//    }
+            long t = System.currentTimeMillis();
 
-//    /** @throws Exception If failed. */
-//    public void testDataStoringFlush() throws Exception {
-//        final int blockSize = IGFS_BLOCK_SIZE;
-//        final int writesCnt = 64;
-//
-//        for (int i = 0; i < 10; i++) {
-//            IgfsPath path = new IgfsPath();
-//
-//            long t = System.currentTimeMillis();
-//
-//            IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 0L, null,
-//                IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
-//
-//            IgfsFileAffinityRange range = new IgfsFileAffinityRange();
-//
-//            assertNull(mgr.dataBlock(info, path, 0, null).get());
-//
-//            int chunkSize = blockSize / 4;
-//
-//            byte[] data = new byte[chunkSize];
-//
-//            info = info.length(info.length() + data.length * writesCnt);
-//
-//            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
-//
-//            for (int j = 0; j < 64; j++) {
-//                Arrays.fill(data, (byte)(j / 4));
-//
-//                byte[] left = mgr.storeDataBlocks(info, (j + 1) * chunkSize, null, 0, ByteBuffer.wrap(data),
-//                    true, range, null);
-//
-//                assert left == null : "No remainder should be returned if flush is true: " + Arrays.toString(left);
-//            }
-//
-//            mgr.writeClose(info);
-//
-//            assertTrue(range.regionEqual(new IgfsFileAffinityRange(0, writesCnt * chunkSize - 1, null)));
-//
-//            fut.get(3000);
-//
-//            for (int j = 0; j < NODES_CNT; j++) {
-//                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
-//                    "ctx");
-//                Collection<IgniteInternalTx> txs = ctx.tm().txs();
-//
-//                assert txs.isEmpty() : "Incomplete transactions: " + txs;
-//            }
-//
-//            // Validate data stored in cache.
-//            for (int pos = 0, block = 0; pos < info.length(); block++) {
-//                byte[] stored = mgr.dataBlock(info, path, block, null).get();
-//
-//                assertNotNull("Expects data exist [block=" + block + ']', stored);
-//
-//                for (byte b : stored)
-//                    assertEquals(b, (byte)block);
-//
-//                pos += stored.length;
-//            }
-//
-//            IgniteInternalFuture<Object> delFut = mgr.delete(info);
-//
-//            delFut.get();
-//
-//            for (long block = 0; block < info.blocksCount(); block++)
-//                assertNull(mgr.dataBlock(info, path, block, null).get());
-//        }
-//    }
+            IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), 200, 0L, null,
+                IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
+
+            assertNull(mgr.dataBlock(info, path, 0, null).get());
+
+            byte[] data = new byte[rnd.nextInt(20000) + 5];
+
+            rnd.nextBytes(data);
+
+            //IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
+
+            expectsStoreFail(info, data, "Not enough space reserved to store data");
+
+            info = info.length(info.length() + data.length - 3);
+
+            expectsStoreFail(info, data, "Not enough space reserved to store data");
+
+            info = info.length(info.length() + 3);
+
+            IgfsFileAffinityRange range = new IgfsFileAffinityRange();
+
+            T2<byte[],GridCompoundFuture<Boolean, Boolean>> t2 = mgr.storeDataBlocks(info, info.length(), null, 0, IgfsDataManager.byteBufReader,
+                ByteBuffer.wrap(data), data.length, true,
+                range, null);
+
+            assert t2 != null;
+            byte[] remainder = t2.get1();
+            assert remainder == null;
+
+            GridCompoundFuture<Boolean,Boolean> f = t2.get2();
+            assert t2 != null;
+
+            //mgr.writeClose(info);
+            //fut.get(3000);
+            f.get(3000);
+
+            for (int j = 0; j < NODES_CNT; j++) {
+                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
+                    "ctx");
+                Collection<IgniteInternalTx> txs = ctx.tm().txs();
+
+                assert txs.isEmpty() : "Incomplete transactions: " + txs;
+            }
+
+            // Validate data stored in cache.
+            for (int pos = 0, block = 0; pos < info.length(); block++) {
+                byte[] stored = mgr.dataBlock(info, path, block, null).get();
+
+                assertNotNull("Expects data exist [data.length=" + data.length + ", block=" + block + ']', stored);
+
+                for (int j = 0; j < stored.length; j++)
+                    assertEquals(stored[j], data[pos + j]);
+
+                pos += stored.length;
+            }
+
+            mgr.delete(info);
+
+            long nIters = getTestTimeout() / BUSY_WAIT_SLEEP_INTERVAL;
+
+            assert nIters < Integer.MAX_VALUE;
+
+            boolean rmvBlocks = false;
+
+            // Wait for all blocks to be removed.
+            for (int j = 0; j < nIters && !rmvBlocks; j = sleepAndIncrement(BUSY_WAIT_SLEEP_INTERVAL, j)) {
+                boolean b = true;
+
+                for (long block = 0; block < info.blocksCount(); block++)
+                    b &= mgr.dataBlock(info, path, block, null).get() == null;
+
+                rmvBlocks = b;
+            }
+
+            assertTrue("All blocks should be removed from cache.", rmvBlocks);
+        }
+    }
+
+    /**
+     * Test file system structure in meta-cache.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDataStoringRemainder() throws Exception {
+        final int blockSize = IGFS_BLOCK_SIZE;
+
+        for (int i = 0; i < 10; i++) {
+            IgfsPath path = new IgfsPath();
+
+            long t = System.currentTimeMillis();
+
+            IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 0L, null,
+                IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
+
+            assertNull(mgr.dataBlock(info, path, 0, null).get());
+
+            byte[] data = new byte[blockSize];
+
+            rnd.nextBytes(data);
+
+            byte[] remainder = new byte[blockSize / 2];
+
+            rnd.nextBytes(remainder);
+
+            info = info.length(info.length() + data.length + remainder.length);
+
+            IgfsFileAffinityRange range = new IgfsFileAffinityRange();
+
+            T2<byte[], GridCompoundFuture<Boolean, Boolean>> t2 = mgr.storeDataBlocks(info, info.length(), remainder, remainder.length,
+                IgfsDataManager.byteBufReader, ByteBuffer.wrap(data), data.length,
+                false, range, null);
+
+            byte[] left = t2.get1();
+
+            assert left.length == blockSize / 2;
+
+            byte[] remainder2 = new byte[blockSize / 2];
+
+            info = info.length(info.length() + remainder2.length);
+
+            T2<byte[], GridCompoundFuture<Boolean, Boolean>> t2b
+                = mgr.storeDataBlocks(info, info.length(), left, left.length,
+                IgfsDataManager.byteBufReader, ByteBuffer.wrap(remainder2), remainder2.length,
+                false, range, null);
+
+            byte[] left2 = t2b.get1();
+
+            assert left2 == null;
+
+            //mgr.writeClose(info);
+            t2b.get2().get(3000);
+
+            for (int j = 0; j < NODES_CNT; j++) {
+                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
+                    "ctx");
+                Collection<IgniteInternalTx> txs = ctx.tm().txs();
+
+                assert txs.isEmpty() : "Incomplete transactions: " + txs;
+            }
+
+            byte[] concat = U.join(remainder, data, remainder2);
+
+            // Validate data stored in cache.
+            for (int pos = 0, block = 0; pos < info.length(); block++) {
+                byte[] stored = mgr.dataBlock(info, path, block, null).get();
+
+                assertNotNull("Expects data exist [data.length=" + concat.length + ", block=" + block + ']', stored);
+
+                for (int j = 0; j < stored.length; j++)
+                    assertEquals(stored[j], concat[pos + j]);
+
+                pos += stored.length;
+            }
+
+            mgr.delete(info);
+
+            long nIters = getTestTimeout() / BUSY_WAIT_SLEEP_INTERVAL;
+
+            assert nIters < Integer.MAX_VALUE;
+
+            boolean rmvBlocks = false;
+
+            // Wait for all blocks to be removed.
+            for (int j = 0; j < nIters && !rmvBlocks; j = sleepAndIncrement(BUSY_WAIT_SLEEP_INTERVAL, j)) {
+                boolean b = true;
+
+                for (long block = 0; block < info.blocksCount(); block++)
+                    b &= mgr.dataBlock(info, path, block, null).get() == null;
+
+                rmvBlocks = b;
+            }
+
+            assertTrue("All blocks should be removed from cache.", rmvBlocks);
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testDataStoringFlush() throws Exception {
+        final int blockSize = IGFS_BLOCK_SIZE;
+        final int writesCnt = 64;
+
+        for (int i = 0; i < 10; i++) {
+            IgfsPath path = new IgfsPath();
+
+            long t = System.currentTimeMillis();
+
+            IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 0L, null,
+                IgfsUtils.DELETE_LOCK_ID, false, null, t, t);
+
+            IgfsFileAffinityRange range = new IgfsFileAffinityRange();
+
+            assertNull(mgr.dataBlock(info, path, 0, null).get());
+
+            int chunkSize = blockSize / 4;
+
+            byte[] data = new byte[chunkSize];
+
+            info = info.length(info.length() + data.length * writesCnt);
+
+            final GridCompoundFuture<Boolean, Void> fut = new GridCompoundFuture<>(); //mgr.writeStart(info);
+
+            for (int j = 0; j < 64; j++) {
+                Arrays.fill(data, (byte)(j / 4));
+
+                T2<byte[], GridCompoundFuture<Boolean, Boolean>> t2 = mgr.storeDataBlocks(info, (j + 1) * chunkSize,
+                    null, 0, IgfsDataManager.byteBufReader, ByteBuffer.wrap(data), data.length,
+                    true, range, null);
+
+                byte[] left = t2.get1();
+
+                assert left == null : "No remainder should be returned if flush is true: " + Arrays.toString(left);
+
+                fut.add(t2.get2());
+            }
+
+            fut.markInitialized();
+            fut.get(3000);
+
+            //mgr.writeClose(info);
+            assertTrue(range.regionEqual(new IgfsFileAffinityRange(0, writesCnt * chunkSize - 1, null)));
+
+
+            for (int j = 0; j < NODES_CNT; j++) {
+                GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
+                    "ctx");
+                Collection<IgniteInternalTx> txs = ctx.tm().txs();
+
+                assert txs.isEmpty() : "Incomplete transactions: " + txs;
+            }
+
+            // Validate data stored in cache.
+            for (int pos = 0, block = 0; pos < info.length(); block++) {
+                byte[] stored = mgr.dataBlock(info, path, block, null).get();
+
+                assertNotNull("Expects data exist [block=" + block + ']', stored);
+
+                for (byte b : stored)
+                    assertEquals(b, (byte)block);
+
+                pos += stored.length;
+            }
+
+            IgniteInternalFuture<Object> delFut = mgr.delete(info);
+
+            delFut.get();
+
+            for (long block = 0; block < info.blocksCount(); block++)
+                assertNull(mgr.dataBlock(info, path, block, null).get());
+        }
+    }
 
     /**
      * Test affinity.
@@ -582,7 +600,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             @Override public Object call() throws Exception {
                 IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
-                mgr.storeDataBlocks(reserved, reserved.length(), null, 0, ByteBuffer.wrap(data), false, range, null);
+                mgr.storeDataBlocks(reserved, reserved.length(), null, 0, IgfsDataManager.byteBufReader,
+                    ByteBuffer.wrap(data), data.length, false, range, null);
 
                 return null;
             }
