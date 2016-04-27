@@ -20,15 +20,15 @@
  * Declares ignite::cache::Cache class.
  */
 
-#ifndef _IGNITE_CACHE
-#define _IGNITE_CACHE
+#ifndef _IGNITE_CACHE_CACHE
+#define _IGNITE_CACHE_CACHE
 
 #include <map>
 #include <set>
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
-#include <ignite/common/ignite_error.h>
+#include <ignite/ignite_error.h>
 
 #include "ignite/cache/cache_peek_mode.h"
 #include "ignite/cache/query/query_cursor.h"
@@ -1198,4 +1198,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_CACHE_CACHE

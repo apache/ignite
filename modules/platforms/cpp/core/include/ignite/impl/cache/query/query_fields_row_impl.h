@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_FIELDS_ROW_IMPL
-#define _IGNITE_CACHE_QUERY_FIELDS_ROW_IMPL
+#ifndef _IGNITE_IMPL_CACHE_QUERY_CACHE_QUERY_FIELDS_ROW_IMPL
+#define _IGNITE_IMPL_CACHE_QUERY_CACHE_QUERY_FIELDS_ROW_IMPL
 
 #include <vector>
 #include <memory>
 
 #include <ignite/common/concurrent.h>
-#include <ignite/common/ignite_error.h>
+#include <ignite/ignite_error.h>
 
 #include "ignite/cache/cache_entry.h"
 #include "ignite/impl/cache/query/query_impl.h"
@@ -171,4 +171,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_CACHE_QUERY_CACHE_QUERY_FIELDS_ROW_IMPL

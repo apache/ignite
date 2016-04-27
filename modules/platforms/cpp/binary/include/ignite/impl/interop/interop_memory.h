@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_INTEROP_MEMORY
-#define _IGNITE_IMPL_INTEROP_MEMORY
+#ifndef _IGNITE_IMPL_INTEROP_INTEROP_MEMORY
+#define _IGNITE_IMPL_INTEROP_INTEROP_MEMORY
 
 #include <stdint.h>
 
@@ -262,26 +262,8 @@ namespace ignite
 
                 IGNITE_NO_COPY_ASSIGNMENT(InteropUnpooledMemory)
             };
-
-            /**
-             * Interop external memory.
-             */
-            class IGNITE_IMPORT_EXPORT InteropExternalMemory : public InteropMemory
-            {
-            public:
-                /**
-                 * Constructor.
-                 *
-                 * @param memPtr External memory pointer.
-                 */
-                explicit InteropExternalMemory(int8_t* memPtr);
-
-                virtual void Reallocate(int32_t cap);
-            private:
-                IGNITE_NO_COPY_ASSIGNMENT(InteropExternalMemory)
-            };
         }
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_INTEROP_INTEROP_MEMORY

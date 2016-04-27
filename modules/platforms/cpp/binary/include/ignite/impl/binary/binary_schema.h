@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_BINARY_SCHEMA
-#define _IGNITE_IMPL_BINARY_SCHEMA
+#ifndef _IGNITE_IMPL_BINARY_BINARY_SCHEMA
+#define _IGNITE_IMPL_BINARY_BINARY_SCHEMA
 
 #include <vector>
 #include <stdint.h>
@@ -133,4 +133,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_BINARY_BINARY_SCHEMA

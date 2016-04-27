@@ -20,8 +20,8 @@
  * Declares ignite::cache::query::SqlQuery class.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_SQL
-#define _IGNITE_CACHE_QUERY_SQL
+#ifndef _IGNITE_CACHE_QUERY_QUERY_SQL
+#define _IGNITE_CACHE_QUERY_QUERY_SQL
 
 #include <stdint.h>
 #include <string>
@@ -245,4 +245,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY_SQL

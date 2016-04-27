@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_BINARY_TYPE_MANAGER
-#define _IGNITE_IMPL_BINARY_TYPE_MANAGER
+#ifndef _IGNITE_IMPL_BINARY_BINARY_TYPE_MANAGER
+#define _IGNITE_IMPL_BINARY_BINARY_TYPE_MANAGER
 
 #include <vector>
 
-#include <ignite/common/ignite_error.h>
+#include <ignite/ignite_error.h>
 #include "ignite/impl/binary/binary_type_handler.h"
 #include "ignite/impl/binary/binary_type_updater.h"
 
@@ -117,4 +117,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_IMPL_BINARY_BINARY_TYPE_MANAGER

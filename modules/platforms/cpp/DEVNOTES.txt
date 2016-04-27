@@ -18,64 +18,24 @@ Common Requirements:
    Apache Ignite has been tested with UnixODBC.
 
 Building the Apache Ignite C++ components:
+ * Navigate to the directory $IGNITE_HOME/platforms/cpp
+ * Configure build system using './configure' script. For additional options
+   use './configure --help'
+ * Build enabled components using 'make' command.
 
- * Build Apache Ignite C++ helper "common" library:
-     * Navigate to the directory $IGNITE_HOME/platforms/cpp/common
-     * Execute the following commands one by one:
-         * libtoolize
-         * aclocal
-         * autoheader
-         * automake --add-missing
-         * autoreconf
-         * ./configure
-         * make
-         * make install
- * Build Apache Ignite C++ "binary" library:
-     * Navigate to the directory $IGNITE_HOME/platforms/cpp/binary
-     * Execute the following commands one by one:
-         * libtoolize
-         * aclocal
-         * autoheader
-         * automake --add-missing
-         * autoreconf
-         * ./configure
-         * make
-         * make install
- * Build Apache Ignite C++ library:
-     * Navigate to the directory $IGNITE_HOME/platforms/cpp/core
-     * Execute the following commands one by one:
-         * libtoolize
-         * aclocal
-         * autoheader
-         * automake --add-missing
-         * autoreconf
-         * ./configure
-         * make
-         * make install
- * Build Apache Ignite C++ stand-alone node binary:
-     * Navigate to the directory $IGNITE_HOME/platforms/cpp/ignite
-     * Execute the following commands one by one:
-         * libtoolize
-         * aclocal
-         * autoheader
-         * automake --add-missing
-         * autoreconf
-         * ./configure
-         * make
- * Build Apache Ignite ODBC driver:
-     * Navigate to the directory $IGNITE_HOME/platforms/cpp/odbc
-     * Execute the following commands one by one:
-         * libtoolize
-         * aclocal
-         * autoheader
-         * automake --add-missing
-         * autoreconf
-         * ./configure
-         * make
-         * make install
+Or simply speaking do the following:
+ * cd $IGNITE_HOME/platforms/cpp
+ * ./configure
+ * make
 
-NOTE: "make install" command may require superuser privileges. In this case it must be
-executed as "sudo make install".
+Among standard included by autotools options configure script also include following
+Ignite-specific options:
+ * --enable-odbc - build included ODBC driver. Disabled by default.
+ * --enable-core - build Ignite core library. Enabled by default.
+ * --enable-node - build stand-alone node executable. Enabled by default.
+
+NOTE: You may want to use "make install" command to install Ignite libraries and heasders
+for your operation system. Note however that this action may require superuser privileges.
 
 Building on Windows with Visual Studio (tm)
 ----------------------------------

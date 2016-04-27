@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_MESSAGE
-#define _IGNITE_ODBC_DRIVER_MESSAGE
+#ifndef _IGNITE_ODBC_MESSAGE
+#define _IGNITE_ODBC_MESSAGE
 
 #include <stdint.h>
 #include <string>
@@ -748,4 +748,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_MESSAGE

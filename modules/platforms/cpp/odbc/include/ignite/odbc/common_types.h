@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_COMMON_TYPES
-#define _IGNITE_ODBC_DRIVER_COMMON_TYPES
+#ifndef _IGNITE_ODBC_COMMON_TYPES
+#define _IGNITE_ODBC_COMMON_TYPES
 
 #include <stdint.h>
 
@@ -222,4 +222,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_COMMON_TYPES

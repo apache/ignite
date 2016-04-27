@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_TYPE_TRAITS
-#define _IGNITE_ODBC_DRIVER_TYPE_TRAITS
+#ifndef _IGNITE_ODBC_TYPE_TRAITS
+#define _IGNITE_ODBC_TYPE_TRAITS
 
 #include <stdint.h>
 
@@ -313,4 +313,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_TYPE_TRAITS

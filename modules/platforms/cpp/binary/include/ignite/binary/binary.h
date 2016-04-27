@@ -20,8 +20,8 @@
  * Includes all binary API headers.
  */
 
-#ifndef _IGNITE_BINARY
-#define _IGNITE_BINARY
+#ifndef _IGNITE_BINARY_BINARY
+#define _IGNITE_BINARY_BINARY
 
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_containers.h"
@@ -31,4 +31,4 @@
 #include "ignite/binary/binary_reader.h"
 #include "ignite/binary/binary_writer.h"
 
-#endif
+#endif //_IGNITE_BINARY_BINARY

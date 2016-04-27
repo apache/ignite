@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_BINARY_TYPE_HANDLER
-#define _IGNITE_IMPL_BINARY_TYPE_HANDLER
+#ifndef _IGNITE_IMPL_BINARY_BINARY_TYPE_HANDLER
+#define _IGNITE_IMPL_BINARY_BINARY_TYPE_HANDLER
 
 #include <ignite/common/concurrent.h>
 
@@ -99,4 +99,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_IMPL_BINARY_BINARY_TYPE_HANDLER

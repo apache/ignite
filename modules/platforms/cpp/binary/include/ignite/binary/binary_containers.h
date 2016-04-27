@@ -20,8 +20,8 @@
  * Declares binary reader and writer types for the collections.
  */
 
-#ifndef _IGNITE_BINARY_CONTAINERS
-#define _IGNITE_BINARY_CONTAINERS
+#ifndef _IGNITE_BINARY_BINARY_CONTAINERS
+#define _IGNITE_BINARY_BINARY_CONTAINERS
 
 #include <stdint.h>
 
@@ -261,7 +261,7 @@ namespace ignite
 
                 if (len != -1)
                 {
-                    common::utils::SafeArray<char> arr(len + 1);
+                    common::SafeArray<char> arr(len + 1);
 
                     GetNext(arr.target, len + 1);
 
@@ -528,4 +528,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_BINARY_BINARY_CONTAINERS

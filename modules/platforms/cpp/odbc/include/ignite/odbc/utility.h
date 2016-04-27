@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_UTILITY
-#define _IGNITE_ODBC_DRIVER_UTILITY
+#ifndef _IGNITE_ODBC_UTILITY
+#define _IGNITE_ODBC_UTILITY
 
 #ifdef min
 #   undef min
@@ -56,7 +56,7 @@ namespace ignite
     namespace utility
     {
         /** Using common version of the util. */
-        using ignite::common::utils::IntoLower;
+        using ignite::common::IntoLower;
 
         /**
          * Skip leading spaces.
@@ -177,4 +177,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_UTILITY

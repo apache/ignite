@@ -25,8 +25,9 @@
 #include "ignite/binary/binary.h"
 
 using namespace ignite::common::concurrent;
-using namespace ignite::common::java;
-using namespace ignite::common::utils;
+using namespace ignite::jni::java;
+using namespace ignite::java;
+using namespace ignite::common;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
 using namespace ignite::impl;

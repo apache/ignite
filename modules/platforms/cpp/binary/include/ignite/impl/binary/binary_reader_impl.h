@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_BINARY_READER
-#define _IGNITE_IMPL_BINARY_READER
+#ifndef _IGNITE_IMPL_BINARY_BINARY_READER
+#define _IGNITE_IMPL_BINARY_BINARY_READER
 
 #include <stdint.h>
 
@@ -1397,7 +1397,7 @@ namespace ignite
                 {
                     int32_t realLen = stream->ReadInt32();
 
-                    ignite::common::utils::SafeArray<char> arr(realLen + 1);
+                    ignite::common::SafeArray<char> arr(realLen + 1);
 
                     for (int i = 0; i < realLen; i++)
                         *(arr.target + i) = static_cast<char>(stream->ReadInt8());
@@ -1419,4 +1419,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_BINARY_BINARY_READER

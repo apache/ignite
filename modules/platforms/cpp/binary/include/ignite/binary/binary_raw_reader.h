@@ -20,8 +20,8 @@
  * Declares ignite::binary::BinaryRawReader class.
  */
 
-#ifndef _IGNITE_BINARY_RAW_READER
-#define _IGNITE_BINARY_RAW_READER
+#ifndef _IGNITE_BINARY_BINARY_RAW_READER
+#define _IGNITE_BINARY_BINARY_RAW_READER
 
 #include <stdint.h>
 #include <string>
@@ -285,7 +285,7 @@ namespace ignite
 
                 if (len != -1)
                 {
-                    ignite::common::utils::SafeArray<char> arr(len + 1);
+                    ignite::common::SafeArray<char> arr(len + 1);
 
                     ReadString(arr.target, len + 1);
 
@@ -392,4 +392,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_BINARY_BINARY_RAW_READER

@@ -15,12 +15,9 @@
  * limitations under the License.
  */
 
-#include <ignite/common/ignite_error.h>
-#include <ignite/common/java.h>
+#include <ignite/ignite_error.h>
 
-#include "ignite/impl/interop//interop_memory.h"
-
-using namespace ignite::common::java;
+#include "ignite/impl/interop/interop_memory.h"
 
 namespace ignite
 {    
@@ -168,19 +165,6 @@ namespace ignite
 
                 Data(memPtr, realloc(Data(memPtr), cap));
                 Capacity(memPtr, cap);
-            }
-
-            InteropExternalMemory::InteropExternalMemory(int8_t* memPtr) 
-            {
-                this->memPtr = memPtr;
-            }
-
-            void InteropExternalMemory::Reallocate(int32_t cap)
-            {
-                if (JniContext::Reallocate(reinterpret_cast<int64_t>(memPtr), cap) == -1) {
-                    IGNITE_ERROR_FORMATTED_2(IgniteError::IGNITE_ERR_MEMORY, "Failed to reallocate external memory", 
-                        "memPtr", PointerLong(), "requestedCapacity", cap)
-                }
             }
         }
     }

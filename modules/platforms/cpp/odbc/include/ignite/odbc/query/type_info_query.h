@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_TYPE_INFO_QUERY
-#define _IGNITE_ODBC_DRIVER_TYPE_INFO_QUERY
+#ifndef _IGNITE_ODBC_QUERY_TYPE_INFO_QUERY
+#define _IGNITE_ODBC_QUERY_TYPE_INFO_QUERY
 
 #include "ignite/odbc/query/query.h"
 
@@ -115,4 +115,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_QUERY_TYPE_INFO_QUERY

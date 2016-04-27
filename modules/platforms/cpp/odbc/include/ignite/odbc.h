@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC
-#define _IGNITE_ODBC
+#ifndef _IGNITE_ODBC_ODBC
+#define _IGNITE_ODBC_ODBC
 
 #include "ignite/odbc/system/odbc_constants.h"
 

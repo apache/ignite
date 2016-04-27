@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_CONNECTION_INFO
-#define _IGNITE_ODBC_DRIVER_CONNECTION_INFO
+#ifndef _IGNITE_ODBC_CONFIG_CONNECTION_INFO
+#define _IGNITE_ODBC_CONFIG_CONNECTION_INFO
 
 #include <stdint.h>
 
@@ -95,4 +95,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_CONFIG_CONNECTION_INFO

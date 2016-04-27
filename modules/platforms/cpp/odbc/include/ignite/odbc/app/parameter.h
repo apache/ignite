@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_APP_PARAMETER
-#define _IGNITE_ODBC_DRIVER_APP_PARAMETER
+#ifndef _IGNITE_ODBC_APP_PARAMETER
+#define _IGNITE_ODBC_APP_PARAMETER
 
 #include <stdint.h>
 
@@ -110,4 +110,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_APP_PARAMETER

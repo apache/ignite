@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_CURSOR
-#define _IGNITE_ODBC_DRIVER_CURSOR
+#ifndef _IGNITE_ODBC_CURSOR
+#define _IGNITE_ODBC_CURSOR
 
 #include <stdint.h>
 
@@ -111,4 +111,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_CURSOR

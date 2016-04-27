@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_BINARY_UTILS
-#define _IGNITE_IMPL_BINARY_UTILS
+#ifndef _IGNITE_IMPL_BINARY_BINARY_UTILS
+#define _IGNITE_IMPL_BINARY_BINARY_UTILS
 
 #include <stdint.h>
 
@@ -406,7 +406,7 @@ namespace ignite
                 {
                     time_t tmt = DateToCTime(date);
 
-                    return common::utils::IgniteGmTime(tmt, ctime);
+                    return common::IgniteGmTime(tmt, ctime);
                 }
 
                 /**
@@ -420,7 +420,7 @@ namespace ignite
                 {
                     time_t tmt = TimestampToCTime(ts);
 
-                    return common::utils::IgniteGmTime(tmt, ctime);
+                    return common::IgniteGmTime(tmt, ctime);
                 }
 
                 /**
@@ -454,7 +454,7 @@ namespace ignite
                  */
                 static inline Date CTmToDate(const tm& ctime)
                 {
-                    time_t time = common::utils::IgniteTimeGm(ctime);
+                    time_t time = common::IgniteTimeGm(ctime);
 
                     return CTimeToDate(time);
                 }
@@ -468,7 +468,7 @@ namespace ignite
                  */
                 static inline Timestamp CTmToTimestamp(const tm& ctime, int32_t ns)
                 {
-                    time_t time = common::utils::IgniteTimeGm(ctime);
+                    time_t time = common::IgniteTimeGm(ctime);
 
                     return CTimeToTimestamp(time, ns);
                 }
@@ -543,4 +543,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_BINARY_BINARY_UTILS

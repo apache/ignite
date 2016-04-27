@@ -1,8 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
-MinimumVisualStudioVersion = 10.0.40219.1
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "putget-example", "..\..\putget-example\project\vs\putget-example.vcxproj", "{34935DEC-80FC-4168-AA52-3DBFF4F79B6B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "odbc-example", "..\..\odbc-example\project\vs\odbc-example.vcxproj", "{56839DFF-6C03-416B-BC5F-DDC6EBF8512D}"

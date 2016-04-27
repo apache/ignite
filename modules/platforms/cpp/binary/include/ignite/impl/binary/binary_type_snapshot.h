@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_BINARY_TYPE_SNAPSHOT
-#define _IGNITE_IMPL_BINARY_TYPE_SNAPSHOT
+#ifndef _IGNITE_IMPL_BINARY_BINARY_TYPE_SNAPSHOT
+#define _IGNITE_IMPL_BINARY_BINARY_TYPE_SNAPSHOT
 
 #include <map>
 #include <set>
@@ -119,4 +119,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_IMPL_BINARY_BINARY_TYPE_SNAPSHOT

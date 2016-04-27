@@ -19,17 +19,21 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
-#include <ignite/common/exports.h>
-#include <ignite/common/java.h>
+#include <ignite/jni/exports.h>
+#include <ignite/jni/java.h>
+#include <ignite/jni/utils.h>
 #include <ignite/common/utils.h>
 
 #include "ignite/ignition.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/ignite_impl.h"
 
+using namespace ignite::common;
 using namespace ignite::common::concurrent;
-using namespace ignite::common::java;
-using namespace ignite::common::utils;
+
+using namespace ignite::jni;
+using namespace ignite::jni::java;
+
 using namespace ignite::impl;
 
 namespace ignite

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_PRIMARY_KEY_META
-#define _IGNITE_ODBC_PRIMARY_KEY_META
+#ifndef _IGNITE_ODBC_META_PRIMARY_KEY_META
+#define _IGNITE_ODBC_META_PRIMARY_KEY_META
 
 #include <stdint.h>
 #include <string>
@@ -185,4 +185,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_META_PRIMARY_KEY_META

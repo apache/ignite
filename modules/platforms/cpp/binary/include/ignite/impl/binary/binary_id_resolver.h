@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_BINARY_ID_RESOLVER
-#define _IGNITE_IMPL_BINARY_ID_RESOLVER
+#ifndef _IGNITE_IMPL_BINARY_BINARY_ID_RESOLVER
+#define _IGNITE_IMPL_BINARY_BINARY_ID_RESOLVER
 
 #include "ignite/binary/binary_type.h"
 
@@ -103,4 +103,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_BINARY_BINARY_ID_RESOLVER
