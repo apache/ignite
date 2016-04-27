@@ -1278,9 +1278,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * In case this is IGFS data cache, checks if there is some available space to write data.
      * If there is no space available, throws {@link IgfsOutOfSpaceException}.
      *
-     * @throws IgniteCheckedException On error.
+     * @throws IgfsOutOfSpaceException if ran out of IGFS space.
      */
-    private void checkIgfsSpaceIfNeeded() throws IgniteCheckedException {
+    private void checkIgfsSpaceIfNeeded() throws IgfsOutOfSpaceException {
         GridCacheAdapter<?, ?> cache = cctx.cache();
 
         if (cache.isIgfsDataCache()) {

@@ -71,7 +71,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     private int remainderDataLen;
 
     /** Write completion future. */
-    private GridCompoundFuture<Boolean, Void> aggregateFuture;
+    private GridCompoundFuture<Boolean, Void> aggregateFut;
 
     /** IGFS mode. */
     private final IgfsMode mode;
@@ -125,18 +125,21 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         this.metrics = metrics;
 
         streamRange = initialStreamRange(fileInfo);
-
-        //writeCompletionFut = //data.writeStart(fileInfo);
     }
 
-
+    /**
+     * Gets the "aggregating" future creating it lazily, as necessary.
+     * The "aggregating" future is used to collect all the write futures of this output stream.
+     *
+     * @return The aggregating compound future.
+     */
     protected final GridCompoundFuture<Boolean, Void> aggregateFuture() {
         assert Thread.holdsLock(this);
 
-        if (aggregateFuture == null)
-            aggregateFuture = new GridCompoundFuture<>();
+        if (aggregateFut == null)
+            aggregateFut = new GridCompoundFuture<>();
 
-        return aggregateFuture;
+        return aggregateFut;
     }
 
     /**
@@ -177,50 +180,29 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
     /** {@inheritDoc} */
     @Override protected final synchronized void storeDataBlock(ByteBuffer blockByteBuf) throws IgniteCheckedException, IOException {
-        int writeLen = blockByteBuf.remaining();
-
-        preStoreDataBlocks(null, writeLen);
-
-        final int blockSize = fileInfo.blockSize();
-
-        // If data length is not enough to fill full block, fill the remainder and return.
-        if (remainderDataLen + writeLen < blockSize) {
-            if (remainder == null)
-                remainder = new byte[blockSize];
-            else if (remainder.length != blockSize) {
-                assert remainderDataLen == remainder.length;
-
-                byte[] allocated = new byte[blockSize];
-
-                U.arrayCopy(remainder, 0, allocated, 0, remainder.length);
-
-                remainder = allocated;
-            }
-
-            blockByteBuf.get(remainder, remainderDataLen, writeLen);
-
-            remainderDataLen += writeLen;
-        }
-        else {
-             T2<byte[], GridCompoundFuture<Boolean,Void>> t2 = data.storeDataBlocks(fileInfo, fileInfo.length() + space, remainder, remainderDataLen, blockByteBuf,
-                false, streamRange, batch);
-
-            remainder = t2.get1();
-
-            IgniteInternalFuture f = t2.get2();
-
-            if (f != null)
-                aggregateFuture().add(f);
-
-            remainderDataLen = remainder == null ? 0 : remainder.length;
-        }
+        storeDataBlock0(blockByteBuf, IgfsDataManager.byteBufReader, blockByteBuf.remaining());
     }
 
     /** {@inheritDoc} */
     @Override protected final synchronized void storeDataBlocks(DataInput in, int len) throws IgniteCheckedException, IOException {
-        preStoreDataBlocks(in, len);
+        storeDataBlock0(in, IgfsDataManager.dataInputReader, len);
+    }
 
-        int blockSize = fileInfo.blockSize();
+    /**
+     * Implementation of data block storing for any kind of input source.
+     *
+     * @param src The data source.
+     * @param reader The reader that can read the data from the source.
+     * @param len The length to read.
+     * @param <T> Data source type.
+     * @throws IOException On I/O error.
+     * @throws IgniteCheckedException On other error.
+     */
+    private <T> void storeDataBlock0(T src, IgfsDataManager.AbstractBlockReader<T> reader, final int len)
+        throws IOException, IgniteCheckedException {
+        preStoreDataBlocks(reader, src, len);
+
+        final int blockSize = fileInfo.blockSize();
 
         // If data length is not enough to fill full block, fill the remainder and return.
         if (remainderDataLen + len < blockSize) {
@@ -236,18 +218,19 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 remainder = allocated;
             }
 
-            in.readFully(remainder, remainderDataLen, len);
+            reader.readData(src, remainder, remainderDataLen, len);
 
             remainderDataLen += len;
         }
         else {
-            T2<byte[], GridCompoundFuture<Boolean, Void>> t2 = data.storeDataBlocks(fileInfo, fileInfo.length() + space, remainder, remainderDataLen, in, len,
-                false, streamRange, batch);
+            T2<byte[], GridCompoundFuture<Boolean, Boolean>> t2 = data.storeDataBlocks(fileInfo,
+                fileInfo.length() + space, remainder, remainderDataLen, reader, src, len, false, streamRange, batch);
 
             remainder = t2.get1();
+
             remainderDataLen = remainder == null ? 0 : remainder.length;
 
-            IgniteInternalFuture f = t2.get2();
+            IgniteInternalFuture<Boolean> f = t2.get2();
 
             if (f != null)
                 aggregateFuture().add(f);
@@ -259,8 +242,9 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      *
      * @param len Data length to be written.
      */
-    private void preStoreDataBlocks(@Nullable DataInput in, int len) throws IgniteCheckedException, IOException {
+    private <T> void preStoreDataBlocks(IgfsDataManager.AbstractBlockReader<T> reader, @Nullable T in, int len) throws IgniteCheckedException, IOException {
         assert Thread.holdsLock(this);
+        assert reader != null;
 
         IgniteInternalFuture f = aggregateFuture();
 
@@ -269,7 +253,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             assert ((GridFutureAdapter)f).isFailed();
 
             if (in != null)
-                in.skipBytes(len);
+                reader.skipBytesOnError(in, len);
 
             f.get(); // throw the exception.
         }
@@ -299,17 +283,20 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             throw new IOException("File was concurrently deleted: " + path);
         }
 
-        // This will store all the full blocks and update the remainder from the internal 'buf' ByteBuffer.
-        // This will update 'remainder' and 'completionFuture' fields.
+        // This will store all the full blocks and update the remainder from the internal 'buf' ByteBuffer:
         super.flush();
 
         try {
             if (remainder != null) {
-                T2<byte[], GridCompoundFuture<Boolean, Void>> t2 = data.storeDataBlocks(fileInfo, fileInfo.length() + space, null/*remainder*/, 0/*remainderLen*/,
-                    ByteBuffer.wrap(remainder, 0, remainderDataLen), true/*flush*/, streamRange, batch);
+                ByteBuffer wrappedRemainderByteBuf = ByteBuffer.wrap(remainder, 0, remainderDataLen);
+
+                T2<byte[], GridCompoundFuture<Boolean, Boolean>> t2 = data.storeDataBlocks(fileInfo,
+                    fileInfo.length() + space, null/*remainder*/, 0/*remainderLen*/,
+                    IgfsDataManager.byteBufReader, wrappedRemainderByteBuf, wrappedRemainderByteBuf.remaining(),
+                    true/*flush*/, streamRange, batch);
 
                 assert t2.get1() == null; // The remainder must be absent.
-                IgniteInternalFuture remainderFut = t2.get2();
+                IgniteInternalFuture<Boolean> remainderFut = t2.get2();
 
                 if (remainderFut != null)
                     aggregateFuture().add(remainderFut);
@@ -319,7 +306,6 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             }
 
             if (space > 0) {
-                //data.awaitAllAcksReceived(fileInfo.id());
                 awaitAllPendingBlcoks();
 
                 IgfsEntryInfo fileInfo0 = meta.reserveSpace(path, fileInfo.id(), space, streamRange);
@@ -334,7 +320,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 space = 0;
             }
 
-            aggregateFuture = null;
+            aggregateFut = null;
         }
         catch (IgniteCheckedException e) {
             throw new IOException("Failed to flush data [path=" + path + ", space=" + space + ']', e);
@@ -355,7 +341,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
         af.get();
 
-        aggregateFuture = null;
+        aggregateFut = null;
     }
 
     /** {@inheritDoc} */
@@ -394,8 +380,6 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 IOException err = null;
 
                 try {
-                    //data.writeClose(fileInfo);
-
                     // Wait for all blocks to be written:
                     awaitAllPendingBlcoks();
                 }

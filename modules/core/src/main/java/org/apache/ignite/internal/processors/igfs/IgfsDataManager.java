@@ -55,7 +55,6 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
-import org.apache.ignite.igfs.IgfsOutOfSpaceException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -87,6 +86,12 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Cache based file's data container.
  */
 public class IgfsDataManager extends IgfsManager {
+    /** Byte buffer reader. */
+    static final AbstractBlockReader<ByteBuffer> byteBufReader = new ByteBufferBlockReader();
+
+    /** Data input reader. */
+    static final AbstractBlockReader<DataInput> dataInputReader = new DataInputBlockReader();
+
     /** Data internal cache. */
     private IgniteInternalCache<IgfsBlockKey, byte[]> dataCachePrj;
 
@@ -104,15 +109,6 @@ public class IgfsDataManager extends IgfsManager {
 
     /** Group size. */
     private int grpSize;
-
-    /** Byte buffer writer. */
-    private ByteBufferBlocksWriter byteBufWriter = new ByteBufferBlocksWriter();
-
-    /** Data input writer. */
-    private DataInputBlocksWriter dataInputWriter = new DataInputBlocksWriter();
-
-    /** Pending writes future. */
-    //private ConcurrentMap<IgniteUuid, WriteCompletionFuture> pendingWrites = new ConcurrentHashMap8<>();
 
     /** Affinity key generator. */
     private AtomicLong affKeyGen = new AtomicLong();
@@ -313,8 +309,6 @@ public class IgfsDataManager extends IgfsManager {
     @Nullable public IgniteInternalFuture<byte[]> dataBlock(final IgfsEntryInfo fileInfo, final IgfsPath path,
         final long blockIdx, @Nullable final IgfsSecondaryFileSystemPositionedReadable secReader)
         throws IgniteCheckedException {
-        //assert validTxState(any); // Allow this method call for any transaction state.
-
         assert fileInfo != null;
         assert blockIdx >= 0;
 
@@ -410,109 +404,6 @@ public class IgfsDataManager extends IgfsManager {
             metrics.addReadBlocks(1, 0);
 
         return fut;
-    }
-
-//    /**
-//     * Registers write future in igfs data manager.
-//     *
-//     * @param fileInfo File info of file opened to write.
-//     * @return Future that will be completed when all ack messages are received or when write failed.
-//     */
-//    public IgniteInternalFuture<Boolean> writeStart(IgfsEntryInfo fileInfo) {
-//        WriteCompletionFuture fut = new WriteCompletionFuture(fileInfo.id());
-//
-//        WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileInfo.id(), fut);
-//
-//        assert oldFut == null : "Opened write that is being concurrently written: " + fileInfo;
-//
-//        if (log.isDebugEnabled())
-//            log.debug("Registered write completion future for file output stream [fileInfo=" + fileInfo +
-//                ", fut=" + fut + ']');
-//
-//        return fut;
-//    }
-
-//    /**
-//     * Notifies data manager that no further writes will be performed on stream.
-//     *
-//     * @param fileInfo File info being written.
-//     */
-//    public void writeClose(IgfsEntryInfo fileInfo) {
-//        WriteCompletionFuture fut = pendingWrites.get(fileInfo.id());
-//
-//        if (fut != null)
-//            fut.markWaitingLastAck();
-//        else {
-//            if (log.isDebugEnabled())
-//                log.debug("Failed to find write completion future for file in pending write map (most likely it was " +
-//                    "failed): " + fileInfo);
-//        }
-//    }
-
-    /**
-     * Store data blocks in file.<br/>
-     * Note! If file concurrently deleted we'll get lost blocks.
-     *
-     * @param fileInfo File info.
-     * @param reservedLen Reserved length.
-     * @param remainder Remainder.
-     * @param remainderLen Remainder length.
-     * @param data Data to store.
-     * @param flush Flush flag.
-     * @param affinityRange Affinity range to update if file write can be colocated.
-     * @param batch Optional secondary file system worker batch.
-     *
-     * @return Remainder if data did not fill full block.
-     * @throws IgniteCheckedException If failed.
-     */
-    public T2<byte[], GridCompoundFuture<Boolean, Void>> storeDataBlocks(
-        IgfsEntryInfo fileInfo,
-        long reservedLen,
-        @Nullable byte[] remainder,
-        int remainderLen,
-        ByteBuffer data,
-        boolean flush,
-        IgfsFileAffinityRange affinityRange,
-        @Nullable IgfsFileWorkerBatch batch
-    ) throws IgniteCheckedException {
-        //assert validTxState(any); // Allow this method call for any transaction state.
-
-        return byteBufWriter.storeDataBlocks(fileInfo, reservedLen, remainder, remainderLen, data, data.remaining(),
-            flush, affinityRange, batch);
-    }
-
-    /**
-     * Store data blocks in file.<br/>
-     * Note! If file concurrently deleted we'll got lost blocks.
-     *
-     * @param fileInfo File info.
-     * @param reservedLen Reserved length.
-     * @param remainder Remainder.
-     * @param remainderLen Remainder length.
-     * @param in Data to store.
-     * @param len Data length to store.
-     * @param flush Flush flag.
-     * @param affinityRange File affinity range to update if file cal be colocated.
-     * @param batch Optional secondary file system worker batch.
-     * @throws IgniteCheckedException If failed.
-     * @return Remainder of data that did not fit the block if {@code flush} flag is {@code false}.
-     * @throws IOException If store failed.
-     */
-    public T2<byte[], GridCompoundFuture<Boolean, Void>> storeDataBlocks(
-        IgfsEntryInfo fileInfo,
-        long reservedLen,
-        @Nullable byte[] remainder,
-        int remainderLen,
-        DataInput in,
-        int len,
-        boolean flush,
-        IgfsFileAffinityRange affinityRange,
-        @Nullable IgfsFileWorkerBatch batch
-    ) throws IgniteCheckedException, IOException {
-        //assert validTxState(any); // Allow this method call for any transaction state.
-
-        return dataInputWriter.storeDataBlocks(fileInfo, reservedLen, remainder, remainderLen, in, len, flush,
-            affinityRange, batch);
     }
 
     /**
@@ -931,47 +822,16 @@ public class IgfsDataManager extends IgfsManager {
      * @throws IgniteCheckedException If batch processing failed.
      */
     private void processBatch(IgniteUuid fileId, final Map<IgfsBlockKey, byte[]> blocks,
-                              GridCompoundFuture<Boolean, Void> cf)
+        GridCompoundFuture<Boolean, Boolean> cf)
         throws IgniteCheckedException {
         assert cf != null;
-//        final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
-//
-//        if (completionFut == null) {
-//            if (log.isDebugEnabled())
-//                log.debug("Missing completion future for file write request (most likely exception occurred " +
-//                    "which will be thrown upon stream close) [fileId=" + fileId + ']');
-//
-//            return;
-//        }
-//
-//        // Throw exception if future is failed in the middle of writing.
-//        if (completionFut.isDone())
-//            completionFut.get();
-//
-//        completionFut.onWriteRequest();
-
         assert !blocks.isEmpty();
-
-        //GridCompoundFuture<Boolean, Void> fCmp = new GridCompoundFuture<>();
 
         for (Map.Entry<IgfsBlockKey, byte[]> e: blocks.entrySet()) {
             IgniteInternalFuture<Boolean> f = dataCachePrj.putAsync(e.getKey(), e.getValue());
 
             cf.add(f);
         }
-
-//        storeBlocksAsync(blocks).listen(new CI1<IgniteInternalFuture<?>>() {
-//            @Override public void apply(IgniteInternalFuture<?> fut) {
-//                try {
-//                    fut.get();
-//
-//                    completionFut.onWriteAck();
-//                }
-//                catch (IgniteCheckedException e) {
-//                    completionFut.onError(e);
-//                }
-//            }
-//        });
     }
 
     /**
@@ -1093,19 +953,6 @@ public class IgfsDataManager extends IgfsManager {
         }
     }
 
-//    /**
-//     * Puts the blocks passed in to the data cache.
-//     *
-//     * @param blocks Blocks to write.
-//     * @return Future that will be completed after put is done.
-//     */
-//    @SuppressWarnings("unchecked")
-//    private IgniteInternalFuture<?> storeBlocksAsync(Map<IgfsBlockKey, byte[]> blocks) {
-//        assert !blocks.isEmpty();
-//
-//        return dataCachePrj.putAllAsync(blocks);
-//    }
-
     /**
      * Creates block key based on block ID, file info and local affinity range.
      *
@@ -1143,152 +990,166 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * Abstract class to handle writes from different type of input data.
+     * Stores data blocks read from abstracted source.
+     *
+     * @param fileInfo File info.
+     * @param reservedLen Reserved length.
+     * @param remainder Remainder.
+     * @param remainderLen Remainder length.
+     * @param src Source to read bytes.
+     * @param srcLen Data length to read from source.
+     * @param flush Flush flag.
+     * @param affinityRange Affinity range to update if file write can be colocated.
+     * @param secondaryPutWorker Optional secondary file system worker batch.
+     * @throws IgniteCheckedException If failed.
+     * @return Data remainder if {@code flush} flag is {@code false}.
      */
-    private abstract class BlocksWriter<T> {
-        /**
-         * Stores data blocks read from abstracted source.
-         *
-         * @param fileInfo File info.
-         * @param reservedLen Reserved length.
-         * @param remainder Remainder.
-         * @param remainderLen Remainder length.
-         * @param src Source to read bytes.
-         * @param srcLen Data length to read from source.
-         * @param flush Flush flag.
-         * @param affinityRange Affinity range to update if file write can be colocated.
-         * @param secondaryPutWorker Optional secondary file system worker batch.
-         * @throws IgniteCheckedException If failed.
-         * @return Data remainder if {@code flush} flag is {@code false}.
-         */
-        public final T2<byte[], GridCompoundFuture<Boolean,Void>> storeDataBlocks(
-            final IgfsEntryInfo fileInfo,
-            final long reservedLen,
-            @Nullable byte[] remainder,
-            final int remainderLen,
-            final T src,
-            final int srcLen,
-            final boolean flush,
-            final IgfsFileAffinityRange affinityRange,
-            final @Nullable IgfsFileWorkerBatch secondaryPutWorker
-        ) throws IgniteCheckedException {
-            final IgniteUuid id = fileInfo.id();
-            final int blockSize = fileInfo.blockSize();
+    final <T> T2<byte[], GridCompoundFuture<Boolean, Boolean>> storeDataBlocks(
+        final IgfsEntryInfo fileInfo,
+        final long reservedLen,
+        @Nullable byte[] remainder,
+        final int remainderLen,
+        final AbstractBlockReader<T> blockReader,
+        final T src,
+        final int srcLen,
+        final boolean flush,
+        final IgfsFileAffinityRange affinityRange,
+        final @Nullable IgfsFileWorkerBatch secondaryPutWorker
+    ) throws IgniteCheckedException {
+        final IgniteUuid id = fileInfo.id();
+        final int blockSize = fileInfo.blockSize();
 
-            final int len = remainderLen + srcLen;
+        final int len = remainderLen + srcLen;
 
-            final GridCompoundFuture<Boolean, Void> cf = new GridCompoundFuture<>();
+        final GridCompoundFuture<Boolean, Boolean> cf = new GridCompoundFuture<>();
 
-            if (len > reservedLen)
-                throw new IgfsException("Not enough space reserved to store data [id=" + id +
-                    ", reservedLen=" + reservedLen + ", remainderLen=" + remainderLen +
-                    ", data.length=" + srcLen + ']');
+        if (len > reservedLen)
+            throw new IgfsException("Not enough space reserved to store data [id=" + id +
+                ", reservedLen=" + reservedLen + ", remainderLen=" + remainderLen +
+                ", data.length=" + srcLen + ']');
 
-            final long start = reservedLen - len;
-            final long first = start / blockSize;
-            final long limit = (start + len + blockSize - 1) / blockSize;
+        final long start = reservedLen - len;
+        final long first = start / blockSize;
+        final long limit = (start + len + blockSize - 1) / blockSize;
 
-            int written = 0;
-            int remainderOff = 0;
+        int written = 0;
+        int remainderOff = 0;
 
-            Map<IgfsBlockKey, byte[]> nodeBlocks = U.newLinkedHashMap((int)(limit - first));
+        Map<IgfsBlockKey, byte[]> nodeBlocks = U.newLinkedHashMap((int)(limit - first));
 
-            for (long block = first; block < limit; block++) {
-                final long blockStartOff = block == first ? (start % blockSize) : 0;
-                final long blockEndOff = block == (limit - 1) ? (start + len - 1) % blockSize : (blockSize - 1);
+        for (long block = first; block < limit; block++) {
+            final long blockStartOff = block == first ? (start % blockSize) : 0;
+            final long blockEndOff = block == (limit - 1) ? (start + len - 1) % blockSize : (blockSize - 1);
 
-                final long size = blockEndOff - blockStartOff + 1;
+            final long size = blockEndOff - blockStartOff + 1;
 
-                assert size > 0 && size <= blockSize;
-                assert blockStartOff + size <= blockSize;
+            assert size > 0 && size <= blockSize;
+            assert blockStartOff + size <= blockSize;
 
-                final byte[] portion = new byte[(int)size];
+            final byte[] portion = new byte[(int)size];
 
-                // Data length to copy from remainder.
-                int portionOff = Math.min((int)size, remainderLen - remainderOff);
+            // Data length to copy from remainder.
+            int portionOff = Math.min((int)size, remainderLen - remainderOff);
 
-                if (remainderOff != remainderLen) {
-                    U.arrayCopy(remainder, remainderOff, portion, 0, portionOff);
+            if (remainderOff != remainderLen) {
+                U.arrayCopy(remainder, remainderOff, portion, 0, portionOff);
 
-                    remainderOff += portionOff;
-                }
-
-                if (portionOff < size)
-                    readData(src, portion, portionOff);
-
-                // Will update range if necessary.
-                IgfsBlockKey key = createBlockKey(block, fileInfo, affinityRange);
-
-                if (size == blockSize) {
-                    assert blockStartOff == 0 : "Cannot write the whole block not from start position [start=" +
-                        start + ", block=" + block + ", blockStartOff=" + blockStartOff + ", blockEndOff=" +
-                        blockEndOff + ", size=" + size + ", first=" + first + ", limit=" + limit + ", blockSize=" +
-                        blockSize + ']';
-                }
-                else {
-                    // If partial block is being written from the beginning and not flush, return it as remainder.
-                    if (blockStartOff == 0 && !flush) {
-                        assert written + portion.length == len;
-
-                        if (!nodeBlocks.isEmpty()) {
-                            processBatch(id, nodeBlocks, cf);
-
-                            metrics.addWriteBlocks(1, 0);
-                        }
-
-                        cf.markInitialized();
-
-                        return new T2<>(portion, cf); // exit point #1
-                    }
-                }
-
-                int writtenSecondary = 0;
-
-                if (secondaryPutWorker != null) {
-                    if (!secondaryPutWorker.write(portion))
-                        throw new IgniteCheckedException("Cannot write more data to the secondary file system output " +
-                            "stream because it was marked as closed: " + secondaryPutWorker.path());
-                    else
-                        writtenSecondary = 1;
-                }
-
-                int writtenTotal = 0;
-
-                if (!nodeBlocks.isEmpty()) {
-                    processBatch(id, nodeBlocks, cf);
-
-                    writtenTotal = nodeBlocks.size();
-                }
-
-                nodeBlocks = U.newLinkedHashMap((int)(limit - first));
-
-                assert size == portion.length;
-
-                if (size != blockSize) {
-                    // Partial writes must be always synchronous.
-                    processPartialBlockWrite(key, block == first ? (int)blockStartOff : 0, portion);
-
-                    writtenTotal++;
-                }
-                else
-                    nodeBlocks.put(key, portion);
-
-                metrics.addWriteBlocks(writtenTotal, writtenSecondary);
-
-                written += portion.length;
+                remainderOff += portionOff;
             }
 
-            // Process final batch, if exists.
+            if (portionOff < size)
+                blockReader.readData(src, portion, portionOff);
+
+            // Will update range if necessary.
+            IgfsBlockKey key = createBlockKey(block, fileInfo, affinityRange);
+
+            if (size == blockSize) {
+                assert blockStartOff == 0 : "Cannot write the whole block not from start position [start=" +
+                    start + ", block=" + block + ", blockStartOff=" + blockStartOff + ", blockEndOff=" +
+                    blockEndOff + ", size=" + size + ", first=" + first + ", limit=" + limit + ", blockSize=" +
+                    blockSize + ']';
+            }
+            else {
+                // If partial block is being written from the beginning and not flush, return it as remainder.
+                if (blockStartOff == 0 && !flush) {
+                    assert written + portion.length == len;
+
+                    if (!nodeBlocks.isEmpty()) {
+                        processBatch(id, nodeBlocks, cf);
+
+                        metrics.addWriteBlocks(1, 0);
+                    }
+
+                    cf.markInitialized();
+
+                    return new T2<>(portion, cf); // exit point #1
+                }
+            }
+
+            int writtenSecondary = 0;
+
+            if (secondaryPutWorker != null) {
+                if (!secondaryPutWorker.write(portion))
+                    throw new IgniteCheckedException("Cannot write more data to the secondary file system output " +
+                        "stream because it was marked as closed: " + secondaryPutWorker.path());
+                else
+                    writtenSecondary = 1;
+            }
+
+            int writtenTotal = 0;
+
             if (!nodeBlocks.isEmpty()) {
                 processBatch(id, nodeBlocks, cf);
 
-                metrics.addWriteBlocks(nodeBlocks.size(), 0);
+                writtenTotal = nodeBlocks.size();
             }
 
-            assert written == len;
+            nodeBlocks = U.newLinkedHashMap((int)(limit - first));
 
-            return new T2<>(null, null); // exit point #2
+            assert size == portion.length;
+
+            if (size != blockSize) {
+                // Partial writes must be always synchronous.
+                processPartialBlockWrite(key, block == first ? (int)blockStartOff : 0, portion);
+
+                writtenTotal++;
+            }
+            else
+                nodeBlocks.put(key, portion);
+
+            metrics.addWriteBlocks(writtenTotal, writtenSecondary);
+
+            written += portion.length;
         }
+
+        // Process final batch, if exists.
+        if (!nodeBlocks.isEmpty()) {
+            processBatch(id, nodeBlocks, cf);
+
+            metrics.addWriteBlocks(nodeBlocks.size(), 0);
+        }
+
+        assert written == len;
+
+        cf.markInitialized();
+
+        return new T2<>(null, cf); // exit point #2
+    }
+
+    /**
+     * Abstract class to handle writes from different type of input data.
+     */
+    static abstract class AbstractBlockReader<T> {
+        /**
+         * Reads specified number of data bytes from specified source into the specified byte array.
+         *
+         * @param src Data source.
+         * @param dst Destination.
+         * @param dstOff Destination buffer offset.
+         * @param len The number of bytes to read.
+         * @throws IgniteCheckedException If read failed.
+         */
+        protected abstract void readData(T src, byte[] dst, int dstOff, int len) throws IgniteCheckedException;
 
         /**
          * Fully reads data from specified source into the specified byte array.
@@ -1298,32 +1159,53 @@ public class IgfsDataManager extends IgfsManager {
          * @param dstOff Destination buffer offset.
          * @throws IgniteCheckedException If read failed.
          */
-        protected abstract void readData(T src, byte[] dst, int dstOff) throws IgniteCheckedException;
+        protected final void readData(T src, byte[] dst, int dstOff) throws IgniteCheckedException {
+            readData(src, dst, dstOff, dst.length - dstOff);
+        }
+
+        /**
+         * Skips the specified number of bytes in case of error.
+         * In case of DataInput really skips the bytes, does nothing in case of ByteBuffer.
+         * @param src The data source.
+         * @param len The length to skip.
+         * @throws IOException On error.
+         */
+        protected abstract void skipBytesOnError(T src, int len) throws IOException;
     }
 
     /**
-     * Byte buffer writer.
+     * Byte buffer based implementation.
      */
-    private class ByteBufferBlocksWriter extends BlocksWriter<ByteBuffer> {
+    static class ByteBufferBlockReader extends AbstractBlockReader<ByteBuffer> {
         /** {@inheritDoc} */
-        @Override protected void readData(ByteBuffer src, byte[] dst, int dstOff) {
-            src.get(dst, dstOff, dst.length - dstOff);
+        @Override protected void readData(ByteBuffer src, byte[] dst, int dstOff, int len) {
+            src.get(dst, dstOff, len);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void skipBytesOnError(ByteBuffer src, int len) {
+            // no-op
         }
     }
 
     /**
-     * Data input writer.
+     * Data input based implementation.
      */
-    private class DataInputBlocksWriter extends BlocksWriter<DataInput> {
+    static class DataInputBlockReader extends AbstractBlockReader<DataInput> {
         /** {@inheritDoc} */
-        @Override protected void readData(DataInput src, byte[] dst, int dstOff)
+        @Override protected void readData(DataInput src, byte[] dst, int dstOff, int len)
             throws IgniteCheckedException {
             try {
-                src.readFully(dst, dstOff, dst.length - dstOff);
+                src.readFully(dst, dstOff, len);
             }
             catch (IOException e) {
                 throw new IgniteCheckedException(e);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void skipBytesOnError(DataInput src, int len) throws IOException {
+            src.skipBytes(len);
         }
     }
 
@@ -1527,153 +1409,4 @@ public class IgfsDataManager extends IgfsManager {
             }
         }
     }
-
-//    /**
-//     * Allows output stream to await for all current acks.
-//     *
-//     * @param fileId File ID.
-//     * @throws IgniteInterruptedCheckedException In case of interrupt.
-//     */
-//    void awaitAllAcksReceived(IgniteUuid fileId) throws IgniteInterruptedCheckedException {
-//        WriteCompletionFuture fut = pendingWrites.get(fileId);
-//
-//        if (fut != null)
-//            fut.awaitAllAcksReceived();
-//    }
-
-//    /**
-//     * Future that is completed when all participating
-//     * parts of the file are written.
-//     */
-//    private class WriteCompletionFuture extends GridFutureAdapter<Boolean> {
-//        /** */
-//        private static final long serialVersionUID = 0L;
-//
-//        /** File id to remove future from map. */
-//        private final IgniteUuid fileId;
-//
-//        /** Non-completed blocks count. It may both increase and decrease. */
-//        private final AtomicInteger completedBlocksCnt = new AtomicInteger(0);
-//
-//        /** Lock for map-related conditions. */
-//        private final Lock lock = new ReentrantLock();
-//
-//        /** Condition to wait for empty map. */
-//        private final Condition allAcksRcvCond = lock.newCondition();
-//
-//        /** Flag indicating future is waiting for last ack. */
-//        private volatile boolean awaitingLast;
-//
-//        /**
-//         * @param fileId File id.
-//         */
-//        private WriteCompletionFuture(IgniteUuid fileId) {
-//            assert fileId != null;
-//
-//            this.fileId = fileId;
-//        }
-//
-//        /**
-//         * Await all pending data blockes to be acked.
-//         *
-//         * @throws IgniteInterruptedCheckedException In case of interrupt.
-//         */
-//        public void awaitAllAcksReceived() throws IgniteInterruptedCheckedException {
-//            lock.lock();
-//
-//            try {
-//                while (completedBlocksCnt.get() > 0)
-//                    U.await(allAcksRcvCond);
-//            }
-//            finally {
-//                lock.unlock();
-//            }
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Override public boolean onDone(@Nullable Boolean res, @Nullable Throwable err) {
-//            assert completedBlocksCnt.get() == 0;
-//
-//            if (!isDone()) {
-//                pendingWrites.remove(fileId, this);
-//
-//                if (super.onDone(res, err))
-//                    return true;
-//            }
-//
-//            return false;
-//        }
-//
-//        /**
-//         * Write request will be asynchronously executed on node with given ID.
-//         */
-//        private void onWriteRequest() {
-//            assert !awaitingLast; // Writing is finished, we should not receive more write requests.
-//
-//            if (!isDone())
-//                completedBlocksCnt.incrementAndGet();
-//        }
-//
-//        /**
-//         * Error occurred on node with given ID.
-//         *
-//         * @param e Caught exception.
-//         */
-//        private void onError(IgniteCheckedException e) {
-//            completedBlocksCnt.set(0);
-//
-//            signalNoAcks();
-//
-//            if (e.hasCause(IgfsOutOfSpaceException.class))
-//                onDone(new IgniteCheckedException("Failed to write data (not enough space on node): ", e));
-//            else
-//                onDone(new IgniteCheckedException(
-//                    "Failed to wait for write completion (write failed on node): ", e));
-//        }
-//
-//        /**
-//         * Write ack received from node with given ID for given batch ID.
-//         */
-//        private void onWriteAck() {
-//            if (!isDone()) {
-//                int afterAck = completedBlocksCnt.decrementAndGet();
-//
-//                assert afterAck >= 0 : "Received acknowledgement message for not registered batch.";
-//
-//                if (afterAck == 0) {
-//                    signalNoAcks();
-//
-//                    if (awaitingLast)
-//                        onDone(true);
-//                }
-//            }
-//        }
-//
-//        /**
-//         * Signal that currenlty there are no more pending acks.
-//         */
-//        private void signalNoAcks() {
-//            lock.lock();
-//
-//            try {
-//                allAcksRcvCond.signalAll();
-//            }
-//            finally {
-//                lock.unlock();
-//            }
-//        }
-//
-//        /**
-//         * Marks this future as waiting last ack.
-//         */
-//        private void markWaitingLastAck() {
-//            awaitingLast = true;
-//
-//            if (log.isDebugEnabled())
-//                log.debug("Marked write completion future as awaiting last ack: " + fileId);
-//
-//            if (completedBlocksCnt.get() == 0)
-//                onDone(true);
-//        }
-//    }
 }
