@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 import java.lang.reflect.Method;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.cache.VisorCache;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -190,6 +192,9 @@ class GridJettyJsonConfig extends JsonConfig {
      * Helper class for simple to-json conversion for Visor classes.
      */
     private class LessNamingProcessor implements JsonBeanProcessor, JsonValueProcessor {
+        /** Methods to exclude. */
+        private final Collection<String> exclMtds = Arrays.asList("toString", "hashCode", "clone", "getClass");
+
         /** */
         private final Map<Class<?>, Collection<Method>> clsCache = new HashMap<>();
 
@@ -224,13 +229,13 @@ class GridJettyJsonConfig extends JsonConfig {
                 methods = new ArrayList<>(publicMtds.length);
 
                 for (Method mtd : publicMtds) {
+                    Class retType = mtd.getReturnType();
+
                     if (mtd.getParameterTypes().length != 0 ||
-                        mtd.getName().equals("toString") ||
-                        mtd.getName().equals("hashCode") ||
-                        mtd.getName().equals("clone") ||
-                        mtd.getName().equals("getClass") ||
-                        mtd.getReturnType() == void.class ||
-                        mtd.getReturnType() == cls)
+                        retType == void.class ||
+                        retType == cls ||
+                        retType == VisorCache.class ||
+                        exclMtds.contains(mtd.getName()))
                         continue;
 
                     mtd.setAccessible(true);
@@ -258,7 +263,7 @@ class GridJettyJsonConfig extends JsonConfig {
                 }
                 catch (Exception e) {
                     U.error(log, "Failed to read object property [type= " + cls.getName()
-                        + ", prop=" + mtd.getName() + "]", e);
+                        + ", property=" + mtd.getName() + "]", e);
                 }
             }
 
