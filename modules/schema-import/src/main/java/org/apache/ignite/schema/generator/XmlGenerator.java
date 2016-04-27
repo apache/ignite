@@ -226,7 +226,7 @@ public class XmlGenerator {
         if (!aliases.isEmpty()) {
             Element prop = addProperty(doc, parent, "aliases", null);
 
-            Element map = addElement(doc, prop, "util:map", "map-class", "java.util.LinkedHashMap");
+            Element map = addElement(doc, prop, "map");
 
             for (PojoField alias : aliases)
                 addElement(doc, map, "entry", "key", alias.javaName(), "value", alias.dbName());

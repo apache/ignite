@@ -544,6 +544,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Sets the near cache configuration to use on all cache nodes.
+     *
      * @param nearCfg Near cache configuration.
      * @return {@code this} for chaining.
      */

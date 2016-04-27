@@ -368,6 +368,13 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration)
         {
+            return GetOrCreateCache<TK, TV>(configuration, null);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, 
+            NearCacheConfiguration nearConfiguration)
+        {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
@@ -375,6 +382,14 @@ namespace Apache.Ignite.Core.Impl
                 var writer = Marshaller.StartMarshal(stream);
 
                 configuration.Write(writer);
+
+                if (nearConfiguration != null)
+                {
+                    writer.WriteBoolean(true);
+                    nearConfiguration.Write(writer);
+                }
+                else
+                    writer.WriteBoolean(false);
 
                 stream.SynchronizeOutput();
 
@@ -391,6 +406,13 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration)
         {
+            return CreateCache<TK, TV>(configuration, null);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, 
+            NearCacheConfiguration nearConfiguration)
+        {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
@@ -398,6 +420,14 @@ namespace Apache.Ignite.Core.Impl
                 var writer = Marshaller.StartMarshal(stream);
 
                 configuration.Write(writer);
+
+                if (nearConfiguration != null)
+                {
+                    writer.WriteBoolean(true);
+                    nearConfiguration.Write(writer);
+                }
+                else
+                    writer.WriteBoolean(false);
 
                 stream.SynchronizeOutput();
 
@@ -577,6 +607,38 @@ namespace Apache.Ignite.Core.Impl
                 stream.SynchronizeInput();
 
                 return new IgniteConfiguration(_marsh.StartUnmarshal(stream));
+            }
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorCreateNearCache);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorGetOrCreateNearCache);
+        }
+
+        /// <summary>
+        /// Gets or creates near cache.
+        /// </summary>
+        private ICache<TK, TV> GetOrCreateNearCache0<TK, TV>(string name, NearCacheConfiguration configuration,
+            Func<IUnmanagedTarget, string, long, IUnmanagedTarget> func)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
+
+                configuration.Write(writer);
+
+                stream.SynchronizeOutput();
+
+                return Cache<TK, TV>(func(_proc, name, stream.MemoryPointer));
             }
         }
 
