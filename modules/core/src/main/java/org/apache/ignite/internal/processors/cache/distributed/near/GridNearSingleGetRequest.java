@@ -62,6 +62,9 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
     /** */
     private KeyCacheObject key;
 
+    /** Partition ID. */
+    private int partId = -1;
+
     /** Flags. */
     private byte flags;
 
@@ -118,6 +121,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
         this.cacheId = cacheId;
         this.futId = futId;
         this.key = key;
+        this.partId = key.partition();
         this.topVer = topVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
@@ -233,6 +237,8 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
 
         assert key != null;
 
+        key.partition(partId);
+
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
@@ -305,6 +311,14 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
 
                 reader.incrementState();
 
+            case 10:
+                partId = reader.readInt("partId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridNearSingleGetRequest.class);
@@ -367,6 +381,12 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
 
                 writer.incrementState();
 
+            case 10:
+                if (!writer.writeInt("partId", partId))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -384,7 +404,7 @@ public class GridNearSingleGetRequest extends GridCacheMessage implements GridCa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */

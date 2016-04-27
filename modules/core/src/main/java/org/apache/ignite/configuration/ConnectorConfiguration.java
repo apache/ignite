@@ -492,6 +492,9 @@ public class ConnectorConfiguration {
     /**
      * Gets number of ports to try if configured port is already in use.
      *
+     * If port range value is <tt>0</tt>, then implementation will try bind only to the port provided by
+     * {@link #setPort(int)} method and fail if binding to this port did not succeed.
+     *
      * @return Number of ports to try.
      */
     public int getPortRange() {
