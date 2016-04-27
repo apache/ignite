@@ -30,6 +30,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -246,7 +247,7 @@ public class GridCacheReturn implements Externalizable, Message {
             CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
 
             Object key1 = key0 != null ? key0 :
-                (keepBinary ? key : CU.value(key, cctx, true))
+                ((cctx.marshaller() instanceof BinaryMarshaller && keepBinary) ? key : CU.value(key, cctx, true))
 //                CU.value(key, cctx, true)
                 ;
 
