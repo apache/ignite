@@ -446,7 +446,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         /**
          * Default constructor.
          */
-        ExternalizableObject() {
+        public ExternalizableObject() {
             super(-1);
         }
 
