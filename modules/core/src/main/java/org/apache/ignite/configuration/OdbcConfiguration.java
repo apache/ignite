@@ -21,17 +21,20 @@ package org.apache.ignite.configuration;
  * ODBC configuration.
  */
 public class OdbcConfiguration {
-    /** Default TCP server port. */
-    public static final int DFLT_TCP_PORT = 11443;
+    /** Default TCP host. */
+    public static final String DFLT_TCP_HOST = "0.0.0.0";
+
+    /** Default minimum TCP port range value. */
+    public static final int DFLT_TCP_PORT_FROM = 10800;
+
+    /** Default maximum TCP port range value. */
+    public static final int DFLT_TCP_PORT_TO = 10810;
 
     /** Default max number of open cursors per connection. */
     public static final int DFLT_MAX_OPEN_CURSORS = 128;
 
-    /** TCP port. */
-    private int port = DFLT_TCP_PORT;
-
-    /** TCP host. */
-    private String host;
+    /** Endpoint address. */
+    private String endpointAddr;
 
     /** Max number of opened cursors per connection. */
     private int maxOpenCursors = DFLT_MAX_OPEN_CURSORS;
@@ -52,54 +55,39 @@ public class OdbcConfiguration {
     public OdbcConfiguration(OdbcConfiguration cfg) {
         assert cfg != null;
 
-        host = cfg.getHost();
+        endpointAddr = cfg.getEndpointAddress();
         maxOpenCursors = cfg.getMaxOpenCursors();
-        port = cfg.getPort();
     }
 
     /**
-     * Gets port for TCP ODBC server.
+     * Get ODBC endpoint address. Ignite will listen for incoming TCP connections on this address. Either single port
+     * or port range could be used. In the latter case Ignite will start listening on the first available port
+     * form the range.
      * <p>
-     * Default is {@link #DFLT_TCP_PORT}.
-     *
-     * @return TCP port.
-     */
-    public int getPort() {
-        return port;
-    }
-
-    /**
-     * Sets port for TCP ODBC server.
-     *
-     * @param port TCP port.
-     */
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    /**
-     * Gets host for TCP ODBC server. This can be either an
-     * IP address or a domain name.
+     * The following address formats are permitted:
+     * <ul>
+     *     <li>{@code hostname} - will use provided hostname and default port range;</li>
+     *     <li>{@code hostname:port} - will use provided hostname and port;</li>
+     *     <li>{@code hostname:port_from..port_to} - will use provided hostname and port range.</li>
+     * </ul>
      * <p>
-     * If not defined, system-wide local address will be used
-     * (see {@link IgniteConfiguration#getLocalHost()}.
+     * When set to {@code null}, ODBC processor will be bound to {@link #DFLT_TCP_HOST} host and default port range.
      * <p>
-     * You can also use {@code 0.0.0.0} value to bind to all
-     * locally-available IP addresses.
+     * Default port range is from {@link #DFLT_TCP_PORT_FROM} to {@link #DFLT_TCP_PORT_TO}.
      *
-     * @return TCP host.
+     * @return ODBC endpoint address.
      */
-    public String getHost() {
-        return host;
+    public String getEndpointAddress() {
+        return endpointAddr;
     }
 
     /**
-     * Sets host for TCP ODBC server.
+     * Set ODBC endpoint address. See {@link #getEndpointAddress()} for more information.
      *
-     * @param host TCP host.
+     * @param addr ODBC endpoint address.
      */
-    public void setHost(String host) {
-        this.host = host;
+    public void setEndpointAddress(String addr) {
+        this.endpointAddr = addr;
     }
 
     /**
