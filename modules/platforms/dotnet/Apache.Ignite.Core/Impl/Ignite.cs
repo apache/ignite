@@ -625,8 +625,19 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICollection<string> GetCacheNames()
         {
-            // TODO
-            return null;
+            using (var stream = IgniteManager.Memory.Allocate(1024).GetStream())
+            {
+                UU.ProcessorGetCacheNames(_proc, stream.MemoryPointer);
+                stream.SynchronizeInput();
+
+                var reader = _marsh.StartUnmarshal(stream);
+                var res = new string[stream.ReadInt()];
+
+                for (int i = 0; i < res.Length; i++)
+                    res[i] = reader.ReadString();
+
+                return res;
+            }
         }
 
         /// <summary>
