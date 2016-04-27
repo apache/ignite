@@ -61,6 +61,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetOrCreateCacheFromConfig")]
         public static extern void* ProcessorGetOrCreateCacheFromConfig(void* ctx, void* obj, long memPtr);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorCreateNearCache")]
+        public static extern void* ProcessorCreateNearCache(void* ctx, void* obj, sbyte* name, long memPtr);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetOrCreateNearCache")]
+        public static extern void* ProcessorGetOrCreateNearCache(void* ctx, void* obj, sbyte* name, long memPtr);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorDestroyCache")]
         public static extern void ProcessorDestroyCache(void* ctx, void* obj, sbyte* name);
 

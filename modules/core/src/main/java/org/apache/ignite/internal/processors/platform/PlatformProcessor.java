@@ -233,4 +233,23 @@ public interface PlatformProcessor extends GridProcessor {
      * @param memPtr Stream to write data to.
      */
     public void getIgniteConfiguration(long memPtr);
+
+    /**
+     * Starts a near cache on local node if cache was previously started.
+     *
+     * @param cacheName Cache name.
+     * @param memPtr Pointer to a stream with near cache config. 0 for default config.
+     * @return Cache.
+     */
+    public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr);
+
+    /**
+     * Gets existing near cache with the given name or creates a new one.
+     *
+     * @param cacheName Cache name.
+     * @param memPtr Pointer to a stream with near cache config. 0 for default config.
+     * @return Cache.
+     */
+    public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr);
+
 }

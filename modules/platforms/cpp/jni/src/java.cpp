@@ -196,6 +196,8 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE = JniMethod("getOrCreateCache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_CREATE_CACHE_FROM_CONFIG = JniMethod("createCacheFromConfig", "(J)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG = JniMethod("getOrCreateCacheFromConfig", "(J)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_CREATE_NEAR_CACHE = JniMethod("createNearCache", "(Ljava/lang/String;J)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_NEAR_CACHE = JniMethod("getOrCreateNearCache", "(Ljava/lang/String;J)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_DESTROY_CACHE = JniMethod("destroyCache", "(Ljava/lang/String;)V", false);
             JniMethod M_PLATFORM_PROCESSOR_AFFINITY = JniMethod("affinity", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_DATA_STREAMER = JniMethod("dataStreamer", "(Ljava/lang/String;Z)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
@@ -385,11 +387,11 @@ namespace ignite
             JniMethod M_PLATFORM_EVENTS_IS_ENABLED = JniMethod("isEnabled", "(I)Z", false);
 
             const char* C_PLATFORM_SERVICES = "org/apache/ignite/internal/processors/platform/services/PlatformServices";
-            JniMethod M_PLATFORM_SERVICES_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
-            JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE = JniMethod("withServerKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
-            JniMethod M_PLATFORM_SERVICES_CANCEL = JniMethod("cancel", "(Ljava/lang/String;)V", false);
-            JniMethod M_PLATFORM_SERVICES_CANCEL_ALL = JniMethod("cancelAll", "()V", false);
-            JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("serviceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
+			JniMethod M_PLATFORM_SERVICES_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
+			JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE = JniMethod("withServerKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
+			JniMethod M_PLATFORM_SERVICES_CANCEL = JniMethod("cancel", "(Ljava/lang/String;)V", false);
+			JniMethod M_PLATFORM_SERVICES_CANCEL_ALL = JniMethod("cancelAll", "()V", false);
+			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("serviceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
 
             const char* C_PLATFORM_ATOMIC_LONG = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicLong";
             JniMethod M_PLATFORM_ATOMIC_LONG_GET = JniMethod("get", "()J", false);
@@ -640,12 +642,12 @@ namespace ignite
                 m_PlatformEvents_localListen = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_LOCAL_LISTEN);
                 m_PlatformEvents_isEnabled = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_IS_ENABLED);
 
-                c_PlatformServices = FindClass(env, C_PLATFORM_SERVICES);
-                m_PlatformServices_withAsync = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_ASYNC);
-                m_PlatformServices_withServerKeepPortable = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE);
-                m_PlatformServices_cancel = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_CANCEL);
-                m_PlatformServices_cancelAll = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_CANCEL_ALL);
-                m_PlatformServices_serviceProxy = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_SERVICE_PROXY);
+				c_PlatformServices = FindClass(env, C_PLATFORM_SERVICES);
+				m_PlatformServices_withAsync = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_ASYNC);
+				m_PlatformServices_withServerKeepPortable = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE);
+				m_PlatformServices_cancel = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_CANCEL);
+				m_PlatformServices_cancelAll = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_CANCEL_ALL);
+				m_PlatformServices_serviceProxy = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_SERVICE_PROXY);
 
                 c_PlatformIgnition = FindClass(env, C_PLATFORM_IGNITION);
                 m_PlatformIgnition_start = FindMethod(env, c_PlatformIgnition, M_PLATFORM_IGNITION_START);
@@ -664,6 +666,8 @@ namespace ignite
                 m_PlatformProcessor_getOrCreateCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE);
                 m_PlatformProcessor_createCacheFromConfig = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CREATE_CACHE_FROM_CONFIG);
                 m_PlatformProcessor_getOrCreateCacheFromConfig = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG);
+                m_PlatformProcessor_createNearCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CREATE_NEAR_CACHE);
+                m_PlatformProcessor_getOrCreateNearCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_OR_CREATE_NEAR_CACHE);
                 m_PlatformProcessor_destroyCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_DESTROY_CACHE);
                 m_PlatformProcessor_affinity = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_AFFINITY);
                 m_PlatformProcessor_dataStreamer = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_DATA_STREAMER);
@@ -677,7 +681,7 @@ namespace ignite
                 m_PlatformProcessor_atomicLong = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_LONG);
                 m_PlatformProcessor_atomicSequence = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE);
                 m_PlatformProcessor_atomicReference = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE);
-                m_PlatformProcessor_getIgniteConfiguration = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION);
+				m_PlatformProcessor_getIgniteConfiguration = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION);
 
                 c_PlatformTarget = FindClass(env, C_PLATFORM_TARGET);
                 m_PlatformTarget_inStreamOutLong = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_STREAM_OUT_LONG);
@@ -813,7 +817,7 @@ namespace ignite
 
             void RegisterNatives(JNIEnv* env) {
                 {
-                    JNINativeMethod methods[54];
+					JNINativeMethod methods[54];
 
                     int idx = 0;
 
@@ -1284,6 +1288,32 @@ namespace ignite
             jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo)
             {
                 return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateCacheFromConfig, errInfo);
+            }
+
+            jobject JniContext::ProcessorCreateNearCache(jobject obj, const char* name, long long memPtr)
+            {
+                return ProcessorGetOrCreateNearCache0(obj, name, memPtr, jvm->GetMembers().m_PlatformProcessor_createNearCache);
+            }
+
+            jobject JniContext::ProcessorGetOrCreateNearCache(jobject obj, const char* name, long long memPtr)
+            {
+                return ProcessorGetOrCreateNearCache0(obj, name, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateNearCache);
+            }
+
+            jobject JniContext::ProcessorGetOrCreateNearCache0(jobject obj, const char* name, long long memPtr, jmethodID methodID)
+            {
+                JNIEnv* env = Attach();
+
+                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+
+                jobject cache = env->CallObjectMethod(obj, methodID, name0, memPtr);
+
+                if (name0)
+                    env->DeleteLocalRef(name0);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, cache);
             }
 
             jobject JniContext::ProcessorAffinity(jobject obj, const char* name) {
@@ -2083,14 +2113,14 @@ namespace ignite
                 return res != 0;
             }
 
-            jobject JniContext::ServicesWithAsync(jobject obj) {
+			jobject JniContext::ServicesWithAsync(jobject obj) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformServices_withAsync);
 
-                ExceptionCheck(env);
+				ExceptionCheck(env);
 
-                return LocalToGlobal(env, res);
+				return LocalToGlobal(env, res);
             }
 
             jobject JniContext::ServicesWithServerKeepPortable(jobject obj) {
@@ -2103,41 +2133,41 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            void JniContext::ServicesCancel(jobject obj, char* name) {
+			void JniContext::ServicesCancel(jobject obj, char* name) {
                 JNIEnv* env = Attach();
 
-                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+				jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
 
                 env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformServices_cancel, name0);
 
-                if (name0)
-                    env->DeleteLocalRef(name0);
+				if (name0)
+					env->DeleteLocalRef(name0);
 
-                ExceptionCheck(env);
+				ExceptionCheck(env);
             }
 
-            void JniContext::ServicesCancelAll(jobject obj) {
+			void JniContext::ServicesCancelAll(jobject obj) {
                 JNIEnv* env = Attach();
 
                 env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformServices_cancelAll);
 
-                ExceptionCheck(env);
+				ExceptionCheck(env);
             }
 
-            void* JniContext::ServicesGetServiceProxy(jobject obj, char* name, bool sticky) {
-                JNIEnv* env = Attach();
+			void* JniContext::ServicesGetServiceProxy(jobject obj, char* name, bool sticky) {
+				JNIEnv* env = Attach();
 
-                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+				jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
 
                 jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformServices_serviceProxy, name0, sticky);
 
-                if (name0)
-                    env->DeleteLocalRef(name0);
+				if (name0)
+					env->DeleteLocalRef(name0);
 
-                ExceptionCheck(env);
+				ExceptionCheck(env);
 
-                return LocalToGlobal(env, res);;
-            }
+				return LocalToGlobal(env, res);;
+			}
 
             long long JniContext::AtomicLongGet(jobject obj)
             {
@@ -2395,7 +2425,7 @@ namespace ignite
                 return res != 0;;
             }
 
-            jobject JniContext::Acquire(jobject obj)
+			jobject JniContext::Acquire(jobject obj)
             {
                 if (obj) {
 
@@ -2734,20 +2764,20 @@ namespace ignite
                 IGNITE_SAFE_FUNC(env, envPtr, ServiceInitHandler, serviceInit, memPtr);
             }
 
-            JNIEXPORT void JNICALL JniServiceExecute(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr) {
+			JNIEXPORT void JNICALL JniServiceExecute(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr) {
                 IGNITE_SAFE_PROC(env, envPtr, ServiceExecuteHandler, serviceExecute, svcPtr, memPtr);
             }
 
-            JNIEXPORT void JNICALL JniServiceCancel(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr) {
+			JNIEXPORT void JNICALL JniServiceCancel(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong memPtr) {
                 IGNITE_SAFE_PROC(env, envPtr, ServiceCancelHandler, serviceCancel, svcPtr, memPtr);
             }
 
-            JNIEXPORT void JNICALL JniServiceInvokeMethod(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong inMemPtr, jlong outMemPtr) {
+			JNIEXPORT void JNICALL JniServiceInvokeMethod(JNIEnv *env, jclass cls, jlong envPtr, jlong svcPtr, jlong inMemPtr, jlong outMemPtr) {
                 IGNITE_SAFE_PROC(env, envPtr, ServiceInvokeMethodHandler, serviceInvokeMethod, svcPtr, inMemPtr, outMemPtr);
             }
 
-            JNIEXPORT jint JNICALL JniClusterNodeFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, ClusterNodeFilterApplyHandler, clusterNodeFilterApply, memPtr);
+			JNIEXPORT jint JNICALL JniClusterNodeFilterApply(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
+				IGNITE_SAFE_FUNC(env, envPtr, ClusterNodeFilterApplyHandler, clusterNodeFilterApply, memPtr);
             }
 
             JNIEXPORT jlong JNICALL JniNodeInfo(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {

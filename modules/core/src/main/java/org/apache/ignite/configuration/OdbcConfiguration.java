@@ -85,9 +85,12 @@ public class OdbcConfiguration {
      * Set ODBC endpoint address. See {@link #getEndpointAddress()} for more information.
      *
      * @param addr ODBC endpoint address.
+     * @return This instance for chaining.
      */
-    public void setEndpointAddress(String addr) {
+    public OdbcConfiguration setEndpointAddress(String addr) {
         this.endpointAddr = addr;
+
+        return this;
     }
 
     /**
@@ -105,8 +108,11 @@ public class OdbcConfiguration {
      * Sets maximum number of opened cursors per connection. See {@link #getMaxOpenCursors()}.
      *
      * @param maxOpenCursors Maximum number of opened cursors.
+     * @return This instance for chaining.
      */
-    public void setMaxOpenCursors(int maxOpenCursors) {
+    public OdbcConfiguration setMaxOpenCursors(int maxOpenCursors) {
         this.maxOpenCursors = maxOpenCursors;
+
+        return this;
     }
 }

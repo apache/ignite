@@ -74,6 +74,14 @@ extern "C" {
         return ctx->ProcessorGetOrCreateCacheFromConfig(static_cast<jobject>(obj), memPtr);
     }
 
+    void* IGNITE_CALL IgniteProcessorCreateNearCache(gcj::JniContext* ctx, void* obj, char* name, long long memPtr) {
+        return ctx->ProcessorCreateNearCache(static_cast<jobject>(obj), name, memPtr);
+    }
+
+    void* IGNITE_CALL IgniteProcessorGetOrCreateNearCache(gcj::JniContext* ctx, void* obj, char* name, long long memPtr) {
+        return ctx->ProcessorGetOrCreateNearCache(static_cast<jobject>(obj), name, memPtr);
+    }
+
     void IGNITE_CALL IgniteProcessorDestroyCache(gcj::JniContext* ctx, void* obj, char* name) {
         ctx->ProcessorDestroyCache(static_cast<jobject>(obj), name);
     }
