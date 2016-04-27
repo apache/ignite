@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
-import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
@@ -1080,35 +1079,46 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     private Iterator<Cache.Entry<Object, Object>> serviceEntries(IgniteBiPredicate<Object, Object> p) {
-        if (!cache.context().affinityNode()) {
-            ClusterNode oldestSrvNode =
-                CU.oldestAliveCacheServerNode(cache.context().shared(), AffinityTopologyVersion.NONE);
+        try {
+            if (!cache.context().affinityNode()) {
+                ClusterNode oldestSrvNode =
+                    CU.oldestAliveCacheServerNode(cache.context().shared(), AffinityTopologyVersion.NONE);
 
-            if (oldestSrvNode == null)
-                return new GridEmptyIterator<>();
+                if (oldestSrvNode == null)
+                    return new GridEmptyIterator<>();
 
-            GridCacheQueryManager qryMgr = cache.context().queries();
+                GridCacheQueryManager qryMgr = cache.context().queries();
 
-            CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false);
+                CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false);
 
-            qry.keepAll(false);
+                qry.keepAll(false);
 
-            qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
+                qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
 
-            return cache.context().itHolder().iterator(qry.execute(),
-                new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object, Object>>() {
-                    @Override protected Cache.Entry<Object, Object> convert(Map.Entry<Object, Object> e) {
-                        return new CacheEntryImpl<>(e.getKey(), e.getValue());
+                final Iterator<Map.Entry> iter0 = (Iterator)cache.context().itHolder().iterator(qry.executeScanQuery());
+
+                return new Iterator<Cache.Entry<Object, Object>>() {
+                    @Override public boolean hasNext() {
+                        return iter0.hasNext();
                     }
 
-                    @Override protected void remove(Cache.Entry<Object, Object> item) {
-                        throw new UnsupportedOperationException();
+                    @Override public Cache.Entry<Object, Object> next() {
+                        Map.Entry next = iter0.next();
+
+                        return new CacheEntryImpl(next.getKey(), next.getValue());
                     }
-                }
-            );
+
+                    @Override public void remove() {
+                        iter0.remove();
+                    }
+                };
+            }
+            else
+                return cache.entrySetx().iterator();
         }
-        else
-            return cache.entrySetx().iterator();
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
