@@ -116,9 +116,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override protected void init() {
-        map.setEntryFactory(new GridCacheMapEntryFactory() {
-            /** {@inheritDoc} */
+    @Override protected GridCacheMapEntryFactory entryFactory() {
+        return new GridCacheMapEntryFactory() {
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
@@ -131,7 +130,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 return new GridDhtColocatedCacheEntry(ctx, topVer, key, hash, val);
             }
-        });
+        };
     }
 
     /** {@inheritDoc} */
@@ -245,8 +244,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         }
 
         AffinityTopologyVersion topVer = tx == null ?
-                (canRemap ? ctx.affinity().affinityTopologyVersion() : ctx.shared().exchange().readyAffinityVersion()) :
-                tx.topologyVersion();
+            (canRemap ? ctx.affinity().affinityTopologyVersion() : ctx.shared().exchange().readyAffinityVersion()) :
+            tx.topologyVersion();
 
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
@@ -526,7 +525,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 GridCacheVersion obsoleteVer = context().versions().next();
 
                                 if (isNew && entry.markObsoleteIfEmpty(obsoleteVer))
-                                    removeIfObsolete(key);
+                                    removeEntry(entry);
 
                                 success = false;
                             }

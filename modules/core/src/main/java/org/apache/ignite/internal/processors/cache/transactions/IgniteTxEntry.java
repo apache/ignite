@@ -97,6 +97,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /** Cache ID. */
     private int cacheId;
 
+    /** Partition ID. */
+    private int partId = -1;
+
     /** Transient tx key. */
     @GridDirectTransient
     private IgniteTxKey txKey;
@@ -250,11 +253,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         keepBinary(keepBinary);
 
         key = entry.key();
+        partId = entry.key().partition();
 
         cacheId = entry.context().cacheId();
     }
 
-     /**
+    /**
      * This constructor is meant for local transactions.
      *
      * @param ctx Cache registry.
@@ -302,6 +306,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
             addEntryProcessor(entryProcessor, invokeArgs);
 
         key = entry.key();
+        partId = entry.key().partition();
 
         cacheId = entry.context().cacheId();
     }
@@ -335,6 +340,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         IgniteTxEntry cp = new IgniteTxEntry();
 
         cp.key = key;
+        cp.partId = partId;
         cp.cacheId = cacheId;
         cp.ctx = ctx;
 
@@ -475,7 +481,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      *
      * @param skipStore Skip store flag.
      */
-    public void skipStore(boolean skipStore){
+    public void skipStore(boolean skipStore) {
         setFlag(skipStore, SKIP_STORE_FLAG_MASK);
     }
 
@@ -852,7 +858,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param clsLdr Class loader.
      * @throws IgniteCheckedException If un-marshalling failed.
      */
-    public void unmarshal(GridCacheSharedContext<?, ?> ctx, boolean near, ClassLoader clsLdr) throws IgniteCheckedException {
+    public void unmarshal(GridCacheSharedContext<?, ?> ctx, boolean near,
+        ClassLoader clsLdr) throws IgniteCheckedException {
         if (this.ctx == null) {
             GridCacheContext<?, ?> cacheCtx = ctx.cacheContext(cacheId);
 
@@ -882,6 +889,8 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
         }
 
         key.finishUnmarshal(context().cacheObjectContext(), clsLdr);
+
+        key.partition(partId);
 
         val.unmarshal(this.ctx, clsLdr);
 
@@ -932,7 +941,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     /**
      * @param ver Entry version.
      */
-    public void entryReadVersion(GridCacheVersion  ver) {
+    public void entryReadVersion(GridCacheVersion ver) {
         assert this.serReadVer == null: "Wrong version [serReadVer=" + serReadVer + ", ver=" + ver + "]";
         assert ver != null;
 
@@ -1032,6 +1041,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
             case 11:
                 if (!writer.writeMessage("val", val))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
+                if (!writer.writeInt("partId", partId))
                     return false;
 
                 writer.incrementState();
@@ -1145,6 +1160,14 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
                 reader.incrementState();
 
+            case 12:
+                partId = reader.readInt("partId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(IgniteTxEntry.class);
@@ -1157,7 +1180,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 12;
+        return 13;
     }
 
     /** {@inheritDoc} */
