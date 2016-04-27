@@ -10,7 +10,10 @@
 package org.apache.ignite.internal.pagemem.impl;
 
 import java.util.Random;
+
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -143,6 +146,42 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
         assertEquals(0L, PageIdUtils.pageId(0x0800000000000000L));
         assertEquals(0L, PageIdUtils.pageId(0x0080000000000000L));
         assertEquals(0L, PageIdUtils.pageId(0xFFF0000000000000L));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testFullPageId() throws Exception {
+        Random rnd = new Random();
+
+        // Check that link is not included in FullPageId for data pages.
+        for (int i = 0; i < 50_000; i++) {
+            int offset = rnd.nextInt(PageIdUtils.MAX_OFFSET_DWORDS + 1);
+            int partId = rnd.nextInt(PageIdUtils.MAX_PART_ID + 1);
+            int pageNum = rnd.nextInt(PageIdUtils.MAX_PAGE_NUM + 1);
+
+            long pageId = PageIdUtils.pageId(partId, PageMemory.FLAG_DATA, pageNum);
+
+            long link1 = PageIdUtils.linkFromDwordOffset(pageId, offset);
+            long link2 = PageIdUtils.linkFromDwordOffset(pageId, 0);
+
+            assertEquals(new FullPageId(link1, 1), new FullPageId(link2, 1));
+        }
+
+        // Check that partition ID is not included in FullPageId for data pages.
+        for (int i = 0; i < 50_000; i++) {
+            int offset = rnd.nextInt(PageIdUtils.MAX_OFFSET_DWORDS + 1);
+            int partId = rnd.nextInt(PageIdUtils.MAX_PART_ID + 1);
+            int pageNum = rnd.nextInt(PageIdUtils.MAX_PAGE_NUM + 1);
+
+            long pageId1 = PageIdUtils.pageId(partId, PageMemory.FLAG_IDX, pageNum);
+            long pageId2 = PageIdUtils.pageId(1, PageMemory.FLAG_IDX, pageNum);
+
+            long link1 = PageIdUtils.linkFromDwordOffset(pageId1, offset);
+            long link2 = PageIdUtils.linkFromDwordOffset(pageId2, 0);
+
+            assertEquals(new FullPageId(link1, 1), new FullPageId(link2, 1));
+        }
     }
 
     /**

@@ -20,22 +20,50 @@ package org.apache.ignite.internal.pagemem;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 /**
- *
+ * Compound object used to address a page in the global page space.
+ * <p>
+ * There are three types of pages in PageMemory system:
+ * <ul>
+ *     <li>DATA pages</li>
+ *     <li>INDEX pages</li>
+ *     <li>META pages</li>
+ * </ul>
+ * Generally, a full page ID consists of a cache ID and page ID. A page ID consists of
+ * file ID (22 bits) and page index (30 bits).
+ * Higher 12 bits of page ID are reserved for use in index pages to address entries inside data pages.
+ * File ID consists of 8 reserved bits, page type (2 bits) and partition ID (14 bits).
+ * Note that partition ID is not used in full page ID comparison for non-data pages.
+ * <p>
+ * The structure of a page ID is shown in the next diagram:
+ * <pre>
+ * +------------+--------+--+--------------+------------------------------+
+ * |   12 bits  | 8 bits |2b|   14 bits    |            30 bits           |
+ * +------------+--------+--+--------------+------------------------------+
+ * |   OFFSET   | RESRVD |FL| PARTITION ID |          PAGE INDEX          |
+ * +------------+--------+--+--------------+------------------------------+
+ *              |       FILE ID            |
+ *              +--------------------------+
+ * </pre>
  */
 public class FullPageId {
     /** */
-    private long pageId;
+    private final long pageId;
 
     /** */
-    private int cacheId;
+    private final long effectivePageId;
+
+    /** */
+    private final int cacheId;
 
     /**
      * @param pageId Page ID.
      * @param cacheId Cache ID.
      */
     public FullPageId(long pageId, int cacheId) {
-        this.pageId = pageId;
+        this.pageId = PageIdUtils.pageId(pageId);
         this.cacheId = cacheId;
+
+        effectivePageId = PageIdUtils.effectivePageId(pageId);
     }
 
     /**
@@ -62,12 +90,12 @@ public class FullPageId {
 
         FullPageId that = (FullPageId)o;
 
-        return pageId == that.pageId && cacheId == that.cacheId;
+        return effectivePageId == that.effectivePageId && cacheId == that.cacheId;
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = (int)(pageId ^ (pageId >>> 32));
+        int result = (int)(effectivePageId ^ (effectivePageId >>> 32));
 
         result = 31 * result + cacheId;
 
@@ -76,6 +104,8 @@ public class FullPageId {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return new SB("FullPageId [pageId=").appendHex(pageId).a(", cacheId=").a(cacheId).a(']').toString();
+        return new SB("FullPageId [pageId=").appendHex(pageId)
+            .a(", effectivePageId=").appendHex(effectivePageId)
+            .a(", cacheId=").a(cacheId).a(']').toString();
     }
 }

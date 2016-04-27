@@ -86,4 +86,14 @@ public class DirectMemoryUtils {
     public boolean compareAndSwapLong(long ptr, long expVal, long newVal) {
         return GridUnsafe.compareAndSwapLong(null, ptr, expVal, newVal);
     }
+
+    /**
+     * Volatile write long to the given memory pointer.
+     *
+     * @param ptr Memory pointer.
+     * @param val Value to write.
+     */
+    public void writeLongVolatile(final long ptr, final long val) {
+        GridUnsafe.putLongVolatile(null, ptr, val);
+    }
 }
