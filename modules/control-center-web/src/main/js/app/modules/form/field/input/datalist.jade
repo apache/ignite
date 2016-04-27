@@ -37,7 +37,7 @@ mixin feedback(isCheckPristine, error, errorMessage)
         data-ng-required='required || false'
         data-ng-disabled='disabled || false'
 
-        data-ignite-form-field-input-autofocus='autofocus || false'
+        data-ignite-form-field-input-autofocus='{{autofocus}}'
 
         bs-typeahead
         bs-options='item for item in options'
