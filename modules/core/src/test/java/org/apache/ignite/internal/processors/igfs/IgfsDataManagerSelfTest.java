@@ -607,39 +607,4 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             }
         }, IgfsException.class, msg);
     }
-
-    /**
-     * Test expected failures for 'delete' operation.
-     *
-     * @param fileInfo File to delete data for.
-     * @param msg Expected failure message.
-     */
-    private void expectsDeleteFail(final IgfsEntryInfo fileInfo, @Nullable String msg) {
-        GridTestUtils.assertThrows(log, new Callable() {
-            @Override public Object call() throws Exception {
-                mgr.delete(fileInfo);
-
-                return null;
-            }
-        }, IgfsException.class, msg);
-    }
-
-    /**
-     * Test expected failures for 'affinity' operation.
-     *
-     * @param info File info to resolve affinity nodes for.
-     * @param start Start position in the file.
-     * @param len File part length to get affinity for.
-     * @param msg Expected failure message.
-     */
-    private void expectsAffinityFail(final IgfsEntryInfo info, final long start, final long len,
-        @Nullable String msg) {
-        GridTestUtils.assertThrows(log, new Callable() {
-            @Override public Object call() throws Exception {
-                mgr.affinity(info, start, len);
-
-                return null;
-            }
-        }, IgfsException.class, msg);
-    }
 }
