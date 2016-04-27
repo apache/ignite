@@ -1702,11 +1702,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Process local scan query.
      *
      * @param qry Query.
+     * @param updStatisticsIfNeeded Update statistics flag.
      */
     @SuppressWarnings({"unchecked", "serial"})
-    protected GridCloseableIterator<IgniteBiTuple<K, V>> scanQueryLocal(final GridCacheQueryAdapter qry) throws IgniteCheckedException {
+    protected GridCloseableIterator<IgniteBiTuple<K, V>> scanQueryLocal(final GridCacheQueryAdapter qry,
+        final boolean updStatisticsIfNeeded) throws IgniteCheckedException {
         if (!enterBusy())
             throw new IllegalStateException("Failed to process query request (grid is stopping).");
+
+        final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+        boolean needUpdStatistics = updStatisticsIfNeeded && statsEnabled;
+
+        long startTime = U.currentTimeMillis();
 
         try {
             assert qry.type() == SCAN;
@@ -1738,7 +1746,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final GridCloseableIterator<IgniteBiTuple<K, V>> iter = scanIterator(qry, true);
 
-            final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+            if (updStatisticsIfNeeded) {
+                needUpdStatistics = false;
+
+                cctx.queries().onCompleted(U.currentTimeMillis() - startTime, false);
+            }
 
             final boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
@@ -1787,6 +1799,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     iter.close();
                 }
             };
+        }
+        catch (Exception e) {
+            if (needUpdStatistics)
+                cctx.queries().onCompleted(U.currentTimeMillis() - startTime, true);
+
+            throw e;
         }
         finally {
             leaveBusy();

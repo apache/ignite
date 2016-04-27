@@ -512,7 +512,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         if (part != null && !cctx.isLocal())
             return (GridCloseableIterator<R>)new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
         else
-            return loc ? qryMgr.scanQueryLocal(this) : qryMgr.scanQueryDistributed(this, nodes);
+            return loc ? qryMgr.scanQueryLocal(this, true) : qryMgr.scanQueryDistributed(this, nodes);
     }
 
     /**
@@ -595,7 +595,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         private static final long serialVersionUID = 0L;
 
         /** Query future. */
-        private volatile T2<GridCloseableIterator<Map.Entry>, CacheQueryFuture<Map.Entry>> tuple;
+        private volatile T2<GridCloseableIterator<Map.Entry>, GridCacheQueryFutureAdapter> tuple;
 
         /** Backups. */
         private volatile Queue<ClusterNode> nodes;
@@ -676,7 +676,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
             if (node.isLocal()) {
                 try {
-                    GridCloseableIterator it = qryMgr.scanQueryLocal(qry);
+                    GridCloseableIterator it = qryMgr.scanQueryLocal(qry, true);
 
                     tuple= new T2(it, null);
                 }
@@ -688,9 +688,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 }
             }
             else {
-                final GridCacheQueryBean bean = new GridCacheQueryBean(this.qry, null, null, null);
+                final GridCacheQueryBean bean = new GridCacheQueryBean(qry, null, null, null);
 
-                tuple= new T2(null, qryMgr.queryDistributed(bean, Collections.singleton(node)));
+                GridCacheQueryFutureAdapter fut = 
+                    (GridCacheQueryFutureAdapter)qryMgr.queryDistributed(bean, Collections.singleton(node));
+
+                tuple= new T2(null, fut);
             }
         }
 
@@ -714,7 +717,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 if (cur != null)
                     return true;
 
-                T2<GridCloseableIterator<Map.Entry>, CacheQueryFuture<Map.Entry>> t = tuple;
+                T2<GridCloseableIterator<Map.Entry>, GridCacheQueryFutureAdapter> t = tuple;
 
                 GridCloseableIterator<Map.Entry> iter = t.get1();
 
@@ -727,19 +730,19 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                     return hasNext;
                 }
                 else {
-                    CacheQueryFuture<Map.Entry> fut = t.get2();
+                    GridCacheQueryFutureAdapter fut = t.get2();
 
                     assert fut != null;
 
                     if (firstItemReturned)
-                        return (cur = fut.next()) != null;
+                        return (cur = (Map.Entry)fut.next()) != null;
 
                     try {
-                        ((GridCacheQueryFutureAdapter)fut).awaitFirstPage();
+                        fut.awaitFirstPage();
 
                         firstItemReturned = true;
 
-                        return (cur = fut.next()) != null;
+                        return (cur = (Map.Entry)fut.next()) != null;
                     }
                     catch (IgniteClientDisconnectedCheckedException e) {
                         throw CU.convertToCacheException(e);
@@ -804,7 +807,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Override protected void onClose() throws IgniteCheckedException {
             super.onClose();
 
-            T2<GridCloseableIterator<Map.Entry>, CacheQueryFuture<Map.Entry>> t = tuple;
+            T2<GridCloseableIterator<Map.Entry>, GridCacheQueryFutureAdapter> t = tuple;
 
             if (t != null && t.get1() != null)
                 t.get1().close();
