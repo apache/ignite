@@ -3224,28 +3224,35 @@ class ServerImpl extends TcpDiscoveryImpl {
                 boolean locLateAssignBool = locLateAssign != null ? locLateAssign : false;
 
                 if (locMarshUseDfltSuidBool != rmtMarshUseDfltSuidBool) {
-                    utilityPool.submit(new Runnable() {
-                        @Override public void run() {
-                            String errMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
-                                " property value differs from remote node's value " +
-                                "(to make sure all nodes in topology have identical marshaller settings, " +
-                                "configure system property explicitly) " +
-                                "[locMarshUseDfltSuid=" + locMarshUseDfltSuid + ", rmtMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
-                                ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                                ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                                ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+                    utilityPool.submit(
+                        new Runnable() {
+                            @Override public void run() {
+                                String errMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
+                                    " property value differs from remote node's value " +
+                                    "(to make sure all nodes in topology have identical marshaller settings, " +
+                                    "configure system property explicitly) " +
+                                    "[locMarshUseDfltSuid=" + locMarshUseDfltSuid +
+                                    ", rmtMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
+                                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    String sndMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
-                        " property value differs from remote node's value " +
-                        "(to make sure all nodes in topology have identical marshaller settings, " +
-                        "configure system property explicitly) " +
-                        "[locMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
-                        ", rmtMarshUseDfltSuid=" + locMarshUseDfltSuid +
-                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                        ", rmtNodeId=" + locNode.id() + ']';
+                                String sndMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
+                                    " property value differs from remote node's value " +
+                                    "(to make sure all nodes in topology have identical marshaller settings, " +
+                                    "configure system property explicitly) " +
+                                    "[locMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
+                                    ", rmtMarshUseDfltSuid=" + locMarshUseDfltSuid +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
 
-                    nodeCheckError(node, errMsg, sndMsg);
+                                nodeCheckError(
+                                    node,
+                                    errMsg,
+                                    sndMsg);
+                            }
+                        });
 
                     // Ignore join request.
                     return;
@@ -3270,15 +3277,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     ", rmtNodeAddrs=" + U.addressesAsString(node) +
                                     ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
-                        "the same property on remote node (make sure all nodes in topology have the same value " +
-                        "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
-                        ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
-                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                        ", rmtNodeId=" + locNode.id() + ']';
+                                String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
+                                    "the same property on remote node (make sure all nodes in topology have the same value " +
+                                    "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
+                                    ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
 
-                    nodeCheckError(node, errMsg, sndMsg);
+                                nodeCheckError(
+                                    node,
+                                    errMsg,
+                                    sndMsg);
+                            }
+                        });
 
                     // Ignore join request.
                     return;
