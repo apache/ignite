@@ -638,6 +638,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         Collection<CacheContinuousQueryEntry> entries) {
         final GridCacheContext cctx = cacheContext(ctx);
 
+        if (cctx == null) {
+            IgniteLogger log = ctx.log(CacheContinuousQueryHandler.class);
+
+            if (log.isDebugEnabled())
+                log.debug("Failed to notify callback, cache is not found: " + cacheId);
+
+            return;
+        }
+
         final Collection<CacheEntryEvent<? extends K, ? extends V>> entries0 = new ArrayList<>(entries.size());
 
         for (CacheContinuousQueryEntry e : entries) {
