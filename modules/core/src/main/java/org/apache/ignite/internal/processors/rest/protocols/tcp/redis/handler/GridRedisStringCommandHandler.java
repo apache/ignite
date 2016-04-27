@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -35,11 +36,12 @@ import org.apache.ignite.internal.util.typedef.CX1;
  */
 public abstract class GridRedisStringCommandHandler implements GridRedisCommandHandler {
     /** REST protocol handler. */
-    protected GridRestProtocolHandler hnd;
+    protected final GridRestProtocolHandler hnd;
 
     /**
      * Constructor.
      *
+     * @param ctx Context.
      * @param hnd REST protocol handler.
      */
     public GridRedisStringCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
@@ -47,7 +49,7 @@ public abstract class GridRedisStringCommandHandler implements GridRedisCommandH
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(GridRedisMessage msg) {
+    @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(final GridRedisMessage msg) {
         assert msg != null;
 
         try {
@@ -58,14 +60,12 @@ public abstract class GridRedisStringCommandHandler implements GridRedisCommandH
                         throws IgniteCheckedException {
                         GridRestResponse restRes = f.get();
 
-                        GridRedisMessage res = msg;
-
                         if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS)
-                            res.setResponse(makeResponse(restRes));
+                            msg.setResponse(makeResponse(restRes, msg.aux()));
                         else
-                            res.setResponse(GridRedisProtocolParser.toGenericError("Operation error!"));
+                            msg.setResponse(GridRedisProtocolParser.toGenericError("Operation error!"));
 
-                        return res;
+                        return msg;
                     }
                 });
         }
@@ -92,7 +92,8 @@ public abstract class GridRedisStringCommandHandler implements GridRedisCommandH
      * Prepares a response according to the request.
      *
      * @param resp REST response.
+     * @param params Auxiliary parameters.
      * @return
      */
-    public abstract ByteBuffer makeResponse(GridRestResponse resp);
+    public abstract ByteBuffer makeResponse(GridRestResponse resp, List<String> params);
 }

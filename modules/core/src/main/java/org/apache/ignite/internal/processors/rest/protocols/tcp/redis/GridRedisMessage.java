@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
-import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,17 +38,29 @@ public class GridRedisMessage implements GridClientMessage {
     /** Request byte. */
     public static final byte RESP_REQ_FLAG = GridRedisProtocolParser.ARRAY;
 
+    /** Command index. */
     private static final int CMD_POS = 0;
 
+    /** Key index. */
     private static final int KEY_POS = 1;
+
+    /** Auxiliary parameters offset. */
+    private static final int AUX_OFFSET = 2;
 
     /** Request message parts. */
     private final List<String> msgParts;
 
+    /** Response. */
     private ByteBuffer response;
 
+    /** Cache name. */
     private String cacheName;
 
+    /**
+     * Constructor.
+     *
+     * @param msgLen Length of the Redis message (command with parameters).
+     */
     public GridRedisMessage(int msgLen) {
         msgParts = new ArrayList<>(msgLen);
     }
@@ -67,16 +78,38 @@ public class GridRedisMessage implements GridClientMessage {
         msgParts.add(part);
     }
 
+    /**
+     * Sets the response.
+     *
+     * @param response Response.
+     */
     public void setResponse(ByteBuffer response) {
         this.response = response;
     }
 
+    /**
+     * Gets the response.
+     *
+     * @return Response.
+     */
     public ByteBuffer getResponse() {
         return response;
     }
 
-    public List<String> getMsgParts() {
+    /**
+     * Gets all message parts.
+     *
+     * @return Message elements.
+     */
+    private List<String> getMsgParts() {
         return msgParts;
+    }
+
+    /**
+     * @return Number of elements in the message.
+     */
+    public int messageSize() {
+        return msgParts.size();
     }
 
     /**
@@ -94,6 +127,36 @@ public class GridRedisMessage implements GridClientMessage {
             return null;
 
         return msgParts.get(KEY_POS);
+    }
+
+    /**
+     * @return Parameters by index if available.
+     */
+    public String aux(int idx) {
+        if (msgParts.size() <= idx)
+            return null;
+
+        return msgParts.get(idx);
+    }
+
+    /**
+     * @return All parameters if available.
+     */
+    public List<String> aux() {
+        if (msgParts.size() <= AUX_OFFSET)
+            return null;
+
+        return msgParts.subList(AUX_OFFSET, msgParts.size());
+    }
+
+    /**
+     * @return All parameters for multi-key commands if available.
+     */
+    public List<String> auxMKeys() {
+        if (msgParts.size() <= KEY_POS)
+            return null;
+
+        return msgParts.subList(KEY_POS, msgParts.size());
     }
 
     @Override public String toString() {
@@ -154,12 +217,5 @@ public class GridRedisMessage implements GridClientMessage {
     /** {@inheritDoc} */
     @Override public void sessionToken(byte[] sesTok) {
 
-    }
-
-    /**
-     * @return {@link RestQueryRequest}.
-     */
-    private RestQueryRequest asRestRequest() {
-        return null;
     }
 }

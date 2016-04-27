@@ -309,4 +309,54 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals(3, (long)jedis.strlen("strlenKey"));
         }
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetRange() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            Assert.assertEquals(0, (long)jedis.setrange("setRangeKey1", 0, ""));
+
+            jcache().put("setRangeKey2", "abc");
+            Assert.assertEquals(3, (long)jedis.setrange("setRangeKey2", 0, ""));
+
+            Assert.assertEquals(3, (long)jedis.setrange("setRangeKeyPadded", 2, "a"));
+
+            try {
+                jedis.setrange("setRangeKeyWrongOffset", -1, "a");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("ERR"));
+            }
+
+            try {
+                jedis.setrange("setRangeKeyWrongOffset2", 536870911, "a");
+
+                assert false : "Exception has to be thrown!";
+            }
+            catch (JedisDataException e) {
+                assertTrue(e.getMessage().startsWith("ERR"));
+            }
+
+            jcache().put("setRangeKey3", "Hello World");
+            Assert.assertEquals(11, (long)jedis.setrange("setRangeKey3", 6, "Redis"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetRange() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            Assert.assertEquals("", jedis.getrange("getRangeKeyNonExisting", 0, 0));
+
+            jcache().put("getRangeKey", "This is a string");
+            Assert.assertEquals("This", jedis.getrange("getRangeKey", 0, 3));
+            Assert.assertEquals("ing", jedis.getrange("getRangeKey", -3, -1));
+            Assert.assertEquals("This is a string", jedis.getrange("getRangeKey", 0, -1));
+            Assert.assertEquals("string", jedis.getrange("getRangeKey", 10, 100));
+        }
+    }
 }

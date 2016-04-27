@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.s
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -61,14 +62,14 @@ public class GridRedisGetSetCommandHandler extends GridRedisStringCommandHandler
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
 
-        if (msg.getMsgParts().size() < VAL_POS + 1)
+        if (msg.messageSize() < 3)
             throw new GridRedisGenericException("Wrong syntax!");
 
         GridRestCacheRequest restReq = new GridRestCacheRequest();
 
         restReq.clientId(msg.clientId());
         restReq.key(msg.key());
-        restReq.value(msg.getMsgParts().get(VAL_POS));
+        restReq.value(msg.aux(VAL_POS));
 
         restReq.command(CACHE_GET_AND_PUT);
 
@@ -76,7 +77,7 @@ public class GridRedisGetSetCommandHandler extends GridRedisStringCommandHandler
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer makeResponse(final GridRestResponse restRes) {
+    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
         return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
             : GridRedisProtocolParser.toBulkString(restRes.getResponse()));
     }

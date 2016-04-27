@@ -33,25 +33,26 @@ import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_APPEND;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.APPEND;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.GETRANGE;
 
 /**
- * Redis APPEND command handler.
+ * Redis SETRANGE command handler.
  */
-public class GridRedisAppendCommandHandler extends GridRedisStringCommandHandler {
+public class GridRedisGetRangeCommandHandler extends GridRedisStringCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        APPEND
+        GETRANGE
     );
 
-    /** Position of the value. */
-    private static final int VAL_POS = 2;
+    /** Start offset position in Redis message parameters. */
+    private static final int START_OFFSET_POS = 0;
+
+    /** End offset position in Redis message parameters. */
+    private static final int END_OFFSET_POS = 1;
 
     /** {@inheritDoc} */
-    public GridRedisAppendCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
+    public GridRedisGetRangeCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
         super(ctx, hnd);
     }
 
@@ -64,30 +65,10 @@ public class GridRedisAppendCommandHandler extends GridRedisStringCommandHandler
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
 
-        if (msg.messageSize() < 3)
-            throw new GridRedisGenericException("Wrong syntax!");
+        if (msg.messageSize() < 4)
+            throw new GridRedisGenericException("Wrong number of arguments");
 
-        GridRestCacheRequest appendReq = new GridRestCacheRequest();
         GridRestCacheRequest getReq = new GridRestCacheRequest();
-
-        String val = msg.aux(VAL_POS);
-
-        appendReq.clientId(msg.clientId());
-        appendReq.key(msg.key());
-        appendReq.value(val);
-        appendReq.command(CACHE_APPEND);
-
-        if ((boolean)hnd.handle(appendReq).getResponse() == false) {
-            // append on on-existing key in REST returns false.
-            GridRestCacheRequest setReq = new GridRestCacheRequest();
-
-            setReq.clientId(msg.clientId());
-            setReq.key(msg.key());
-            setReq.value(val);
-            setReq.command(CACHE_PUT);
-
-            hnd.handle(setReq);
-        }
 
         getReq.clientId(msg.clientId());
         getReq.key(msg.key());
@@ -99,10 +80,45 @@ public class GridRedisAppendCommandHandler extends GridRedisStringCommandHandler
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
         if (restRes.getResponse() == null)
-            return GridRedisProtocolParser.nil();
+            return GridRedisProtocolParser.toBulkString("");
         else {
-            int resLen = ((String)restRes.getResponse()).length();
-            return GridRedisProtocolParser.toInteger(String.valueOf(resLen));
+            String res = String.valueOf(restRes.getResponse());
+            int startOffset;
+            int endOffset;
+
+            try {
+                startOffset = boundedStartOffset(Integer.parseInt(params.get(START_OFFSET_POS)), res.length());
+                endOffset = boundedEndOffset(Integer.parseInt(params.get(END_OFFSET_POS)), res.length());
+            }
+            catch (NumberFormatException e) {
+                return GridRedisProtocolParser.toGenericError("Offset is not an integer!");
+            }
+
+            return GridRedisProtocolParser.toBulkString(res.substring(startOffset, endOffset));
         }
+    }
+
+    /**
+     * @param idx Index.
+     * @param size Bounds.
+     * @return Offset within the bounds.
+     */
+    private int boundedStartOffset(int idx, int size) {
+        if (idx >= 0)
+            return Math.min(idx, size);
+        else
+            return size + idx;
+    }
+
+    /**
+     * @param idx Index.
+     * @param size Bounds.
+     * @return Offset within the bounds.
+     */
+    private int boundedEndOffset(int idx, int size) {
+        if (idx >= 0)
+            return Math.min(idx + 1, size);
+        else
+            return size + idx + 1;
     }
 }

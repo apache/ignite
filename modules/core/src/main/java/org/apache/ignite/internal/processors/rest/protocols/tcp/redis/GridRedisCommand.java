@@ -31,6 +31,7 @@ public enum GridRedisCommand {
     /** Echo. */
     ECHO("ECHO"),
 
+    // String commands.
     /** GET. */
     GET("GET"),
     /** MGET. */
@@ -47,14 +48,16 @@ public enum GridRedisCommand {
     INCRBY("INCRBY"),
     /** DECRBY. */
     DECRBY("DECRBY"),
-    /** INCRBYFLOAT. */
-    INCRBYFLOAT("INCRBYFLOAT"),
     /** APPEND. */
     APPEND("APPEND"),
     /** STRLEN. */
     STRLEN("STRLEN"),
     /** GETSET. */
-    GETSET("GETSET");
+    GETSET("GETSET"),
+    /** SETRANGE. */
+    SETRANGE("SETRANGE"),
+    /** GETRANGE. */
+    GETRANGE("GETRANGE");
 
     /** String for command. */
     private final String cmd;

@@ -67,7 +67,7 @@ public class GridRedisMGetCommandHandler extends GridRedisStringCommandHandler {
 
         restReq.command(CACHE_GET_ALL);
 
-        List<String> keys = msg.getMsgParts().subList(1, msg.getMsgParts().size());
+        List<String> keys = msg.auxMKeys();
         Map<Object, Object> mget = U.newHashMap(keys.size());
         Iterator<String> mgetIt = keys.iterator();
 
@@ -80,7 +80,7 @@ public class GridRedisMGetCommandHandler extends GridRedisStringCommandHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer makeResponse(final GridRestResponse restRes) {
+    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
         return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
             : GridRedisProtocolParser.toArray((Map<Object, Object>)restRes.getResponse()));
     }

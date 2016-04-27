@@ -67,7 +67,7 @@ public class GridRedisMSetCommandHandler extends GridRedisStringCommandHandler {
 
         restReq.command(CACHE_PUT_ALL);
 
-        List<String> els = msg.getMsgParts().subList(1, msg.getMsgParts().size());
+        List<String> els = msg.auxMKeys();
         Map<Object, Object> mset = U.newHashMap(els.size() / 2);
         Iterator<String> msetIt = els.iterator();
 
@@ -80,7 +80,7 @@ public class GridRedisMSetCommandHandler extends GridRedisStringCommandHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer makeResponse(final GridRestResponse restRes) {
+    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
         return GridRedisProtocolParser.OkString();
     }
 }

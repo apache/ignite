@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.s
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
@@ -36,12 +37,17 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 
 /**
  * Redis SET command handler.
+ * <p>
+ * No key expiration is currently supported.
  */
 public class GridRedisSetCommandHandler extends GridRedisStringCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
         SET
     );
+
+    /** Value position in Redis message. */
+    private static final int VAL_POS = 2;
 
     /** {@inheritDoc} */
     public GridRedisSetCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
@@ -64,12 +70,12 @@ public class GridRedisSetCommandHandler extends GridRedisStringCommandHandler {
 
         restReq.command(CACHE_PUT);
 
-        if (msg.getMsgParts().size() < 3)
+        if (msg.messageSize() < 3)
             throw new IgniteCheckedException("Invalid request!");
 
-        restReq.value(msg.getMsgParts().get(2));
+        restReq.value(msg.aux(VAL_POS));
 
-        if (msg.getMsgParts().size() >= 4) {
+        if (msg.messageSize() >= 4) {
             // handle options.
         }
 
@@ -77,7 +83,7 @@ public class GridRedisSetCommandHandler extends GridRedisStringCommandHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer makeResponse(final GridRestResponse restRes) {
+    @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
         return (restRes.getResponse() == null ? GridRedisProtocolParser.nil()
             : GridRedisProtocolParser.OkString());
     }
