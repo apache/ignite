@@ -2566,7 +2566,9 @@ public abstract class BPlusTree<L, T extends L> {
                         int cmp = compare(io, buf, cnt - 1, upperBound);
 
                         if (cmp > 0) {
-                            cnt = findInsertionPoint(io, buf, cnt, upperBound) + 1;
+                            int idx = findInsertionPoint(io, buf, cnt, upperBound);
+
+                            cnt = idx < 0 ? -idx : idx + 1;
 
                             fwdId = 0; // The End.
                         }
