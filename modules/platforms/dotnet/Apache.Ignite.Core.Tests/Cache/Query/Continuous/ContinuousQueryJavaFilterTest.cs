@@ -295,8 +295,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 String = s;
             }
 
-            private int Int { get; }
-            private string String { get; }
+            private int Int { get; set; }
+            private string String { get; set; }
 
             private bool Equals(TestBinary other)
             {
