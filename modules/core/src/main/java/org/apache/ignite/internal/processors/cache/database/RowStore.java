@@ -95,6 +95,7 @@ public class RowStore<T extends CacheDataRow> {
      */
     public RowStore(GridCacheContext<?,?> cctx, FreeList freeList) {
         assert cctx != null;
+        assert freeList != null;
 
         this.cctx = cctx;
         this.freeList = freeList;

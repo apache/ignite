@@ -1983,8 +1983,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             IgniteCacheH2DatabaseManager dbMgr = databaseManager(cacheId);
 
-            if (dbMgr != null)
-                return dbMgr.createRowStore(tbl);
+            if (dbMgr != null) {
+                try {
+                    return dbMgr.createRowStore(tbl);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
 
             return null;
         }

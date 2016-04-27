@@ -61,6 +61,8 @@ public class FreeList {
 
             assert idx >= 0;
 
+            row.link(PageIdUtils.linkFromDwordOffset(page.id(), idx));
+
             int freeSpace = io.getFreeSpace(buf);
 
             // Put our free item.

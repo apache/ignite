@@ -160,7 +160,7 @@ public class MetadataStorage implements MetaStore {
             try {
                 long nextPageId = writeBuf.getLong();
 
-                assert nextPageId == 0;
+                assert nextPageId == 0: nextPageId;
 
                 // Position buffer to the last record.
                 writeBuf.position(state.position);
