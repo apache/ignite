@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -97,7 +98,7 @@ public abstract class BPlusTree<L, T extends L> {
                 return null;
 
             try (Page page = page(pageId)) {
-                ByteBuffer buf = page.getForRead();
+                ByteBuffer buf = page.getForRead(); // No correctness guaranties.
 
                 try {
                     BPlusIO io = io(buf);
@@ -144,7 +145,7 @@ public abstract class BPlusTree<L, T extends L> {
                 return "<Zero>";
 
             try (Page page = page(pageId)) {
-                ByteBuffer buf = page.getForRead();
+                ByteBuffer buf = page.getForRead(); // No correctness guaranties.
 
                 try {
                     BPlusIO<L> io = io(buf);
@@ -158,6 +159,38 @@ public abstract class BPlusTree<L, T extends L> {
             catch (IgniteCheckedException e) {
                 throw new IllegalStateException(e);
             }
+        }
+    };
+
+    /** */
+    private final PageHandler<Get> askNeighbor = new GetPageHandler<Get>() {
+        @Override public int run0(Page page, ByteBuffer buf, BPlusIO<L> io, Get g, int isBack) {
+            assert !io.isLeaf(); // Inner page.
+
+            if (isBack == TRUE) {
+                // Count can be 0 here if it is a routing page, in this case we have a single child.
+                int idx = io.getCount(buf);
+
+                // We need to do get the rightmost child: io.getRight(cnt - 1),
+                // here io.getLeft(cnt) is the same, but handles negative index if count is 0.
+                long res = inner(io).getLeft(buf, idx);
+
+                assert res != 0 : "inner page with no route down: " + page.fullId();
+
+                g.backId = res;
+            }
+            else {
+                assert isBack == FALSE: isBack;
+
+                // Leftmost child.
+                long res = inner(io).getLeft(buf, 0);
+
+                assert res != 0 : "inner page with no route down: " + page.fullId();
+
+                g.fwdId = res;
+            }
+
+            return Get.FOUND;
         }
     };
 
@@ -210,7 +243,13 @@ public abstract class BPlusTree<L, T extends L> {
                 // This is ok from the locking standpoint because we take all locks in the forward direction.
                 long fwdId = io.getForward(buf);
 
-                g.fwdId = fwdId == 0 ? 0 : getChild(fwdId, false);
+                if (fwdId == 0)
+                    g.fwdId = 0;
+                else {
+                    int res = askNeighbor(fwdId, g, false);
+
+                    assert res == Get.FOUND; // We keep lock on current page, our forward can't be removed.
+                }
 
                 if (cnt != 0) // It is not a routing page and we are going to the right, can get backId here.
                     g.backId = inner(io).getLeft(buf, cnt - 1);
@@ -542,7 +581,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Root level.
      */
     private int getRootLevel(Page meta) {
-        ByteBuffer buf = meta.getForRead();
+        ByteBuffer buf = meta.getForRead(); // Meta can't be removed.
 
         try {
             return BPlusMetaIO.VERSIONS.forPage(buf).getRootLevel(buf);
@@ -558,7 +597,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Page ID.
      */
     private long getFirstPageId(Page meta, int lvl) {
-        ByteBuffer buf = meta.getForRead();
+        ByteBuffer buf = meta.getForRead(); // Meta can't be removed.
 
         try {
             BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
@@ -590,7 +629,7 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         try (Page first = page(firstPageId)) {
-            ByteBuffer buf = first.getForRead();
+            ByteBuffer buf = first.getForRead(); // We always merge pages backwards, the first page is never removed.
 
             try {
                 cursor.bootstrap(buf, 0);
@@ -903,8 +942,13 @@ public abstract class BPlusTree<L, T extends L> {
 
                 switch (res) {
                     case Remove.GO_DOWN_X:
+                        assert backId != 0;
+
                         // We need to get backId here for our page, it must be the last child of our back.
-                        r.backId = getChild(backId, true);
+                        res = askNeighbor(backId, r, true);
+
+                        if (res != Remove.FOUND)
+                            return res; // Retry.
 
                         // Intentional fallthrough.
                     case Remove.GO_DOWN:
@@ -1016,7 +1060,7 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
-     * TODO may produce wrong results on concurrent access
+     * !!! For debug only! May produce wrong results on concurrent access.
      *
      * @return Size.
      * @throws IgniteCheckedException If failed.
@@ -1033,7 +1077,7 @@ public abstract class BPlusTree<L, T extends L> {
 
         while (pageId != 0) {
             try (Page page = page(pageId)) {
-                ByteBuffer buf = page.getForRead();
+                ByteBuffer buf = page.getForRead(); // No correctness guaranties.
 
                 try {
                     if (io == null) {
@@ -1129,6 +1173,10 @@ public abstract class BPlusTree<L, T extends L> {
         // Setup forward-backward refs.
         io.setForward(fwdBuf, io.getForward(buf));
         io.setForward(buf, PageIO.getPageId(fwdBuf));
+
+        // Copy remove ID to make sure that if inner remove touched this page, then retry
+        // will happen even for newly allocated forward page.
+        io.setRemoveId(fwdBuf, io.getRemoveId(buf));
 
         return res;
     }
@@ -1271,31 +1319,12 @@ public abstract class BPlusTree<L, T extends L> {
 
     /**
      * @param pageId Inner page ID.
-     * @param last If {@code true}, then get the last, else get the first child page.
-     * @return Child page ID.
+     * @param back Get back or forward page.
+     * @return Operation result.
      */
-    private long getChild(long pageId, boolean last) throws IgniteCheckedException {
+    private int askNeighbor(long pageId, Get g, boolean back) throws IgniteCheckedException {
         try (Page page = page(pageId)) {
-            assert page != null : "we've locked back page, forward can't be merged";
-
-            ByteBuffer buf = page.getForRead();
-
-            try {
-                BPlusIO<L> io = io(buf);
-
-                // Count can be 0 here if it is a routing page, in this case we have single child.
-                int idx = last ? io.getCount(buf) : 0;
-
-                // getLeft(cnt) is the same as getRight(cnt - 1)
-                long res = inner(io).getLeft(buf, idx);
-
-                assert res != 0: "inner page with no route down: " + page.fullId();
-
-                return res;
-            }
-            finally {
-                page.releaseRead();
-            }
+            return readPage(page, askNeighbor, g, back ? TRUE : FALSE, Get.RETRY);
         }
     }
 
@@ -1450,7 +1479,7 @@ public abstract class BPlusTree<L, T extends L> {
             int rootLvl;
             long rootId;
 
-            ByteBuffer buf = meta.getForRead();
+            ByteBuffer buf = meta.getForRead(); // Meta can't be removed.
 
             try {
                 BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
@@ -2070,6 +2099,12 @@ public abstract class BPlusTree<L, T extends L> {
             left.io.copyItems(right.buf, left.buf, 0, leftCnt, rightCnt, !emptyBranch);
             left.io.setForward(left.buf, right.io.getForward(right.buf));
 
+            long rmvId = right.io.getRemoveId(right.buf);
+
+            // Need to have maximum remove ID.
+            if (rmvId > left.io.getRemoveId(left.buf))
+                left.io.setRemoveId(left.buf, rmvId);
+
             // Fix index for the right move: remove last item.
             int prntIdx = prnt.idx == prntCnt ? prntCnt - 1 : prnt.idx;
 
@@ -2103,6 +2138,9 @@ public abstract class BPlusTree<L, T extends L> {
 
             // Mark removed.
             io.setRemoveId(buf, Long.MAX_VALUE);
+
+            // Rotate page ID to avoid concurrency issues with reused pages.
+            PageIO.setPageId(buf, PageIdUtils.rotatePageId(PageIO.getPageId(buf)));
 
             if (release)
                 writeUnlockAndClose(page);
@@ -2588,7 +2626,7 @@ public abstract class BPlusTree<L, T extends L> {
 
                 if (fwdId != 0) { // Lock next page.
                     page = page(fwdId);
-                    buf = page.getForRead();
+                    buf = page.getForRead(); // We keep read lock on previous page, thus forward page can't be removed.
                 }
                 else { // Clear.
                     page = null;
@@ -2641,6 +2679,10 @@ public abstract class BPlusTree<L, T extends L> {
     private abstract class GetPageHandler<G extends Get> extends PageHandler<G> {
         /** {@inheritDoc} */
         @Override public final int run(Page page, ByteBuffer buf, G g, int lvl) throws IgniteCheckedException {
+            // The page was removed.
+            if (PageIO.getPageId(buf) != page.id())
+                return Get.RETRY;
+
             BPlusIO<L> io = io(buf);
 
             // In case of intersection with inner replace remove operation

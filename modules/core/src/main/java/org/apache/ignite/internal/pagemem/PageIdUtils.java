@@ -197,11 +197,32 @@ public final class PageIdUtils {
         return pageId(fileId, pageIdx);
     }
 
+    /**
+     * @param pageId Page ID.
+     * @return Flag.
+     */
     public static byte flag(long pageId) {
         return (byte) (( pageId >>> (PART_ID_SIZE + PAGE_IDX_SIZE) ) & FLAG_MASK);
     }
 
+    /**
+     * @param pageId Page ID.
+     * @return Partition.
+     */
     public static int partId(long pageId) {
         return (int) ((pageId >>> PAGE_IDX_SIZE) & PART_ID_MASK);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @return New page ID.
+     */
+    public static long rotatePageId(long pageId) {
+        assert flag(pageId) == PageIdAllocator.FLAG_IDX; // Possible only for index pages.
+
+        int partId = partId(pageId);
+        long pageIdx = pageIdx(pageId);
+
+        return pageId(partId + 1, PageIdAllocator.FLAG_IDX, pageIdx);
     }
 }

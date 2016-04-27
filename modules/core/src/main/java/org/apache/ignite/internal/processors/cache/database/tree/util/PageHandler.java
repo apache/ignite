@@ -62,8 +62,7 @@ public abstract class PageHandler<X> {
 
         ByteBuffer buf = page.getForRead();
 
-        if (buf == null)
-            return dfltRes;
+        assert buf != null;
 
         try {
             return h.run(page, buf, arg, intArg);

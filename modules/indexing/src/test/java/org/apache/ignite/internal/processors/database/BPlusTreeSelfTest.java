@@ -492,7 +492,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         Map<Long,Long> map = new HashMap<>();
 
-        for (int i = 0 ; i < 1_000_000; i++) {
+        int loops = reuseList == null ? 200_000 : 1000_000;
+
+        for (int i = 0 ; i < loops; i++) {
             Long x = (long)tree.randomInt(CNT);
 
             if (i % 100_000 == 0)
