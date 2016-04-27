@@ -39,6 +39,7 @@ import javax.cache.configuration.FactoryBuilder;
 import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
 import javax.cache.event.CacheEntryCreatedListener;
 import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryExpiredListener;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryRemovedListener;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.NotNull;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -62,7 +64,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
-import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFactoryFilterTest.NonSerializableFilter.isAccepted;
+import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryFactoryFilterRandomOperationTest.NonSerializableFilter.isAccepted;
 import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest.ContinuousDeploy.CLIENT;
 import static org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryRandomOperationsTest.ContinuousDeploy.SERVER;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -72,7 +74,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
-public class CacheContinuousQueryFactoryFilterTest extends CacheContinuousQueryRandomOperationsTest {
+public class CacheContinuousQueryFactoryFilterRandomOperationTest extends CacheContinuousQueryRandomOperationsTest {
     /** */
     private static final int NODES = 5;
 
@@ -212,7 +214,7 @@ public class CacheContinuousQueryFactoryFilterTest extends CacheContinuousQueryR
                                 evtsQueue.add(evt);
                         }
                     }),
-                    new FilterFactory(),
+                    createFilterFactory(),
                     true,
                     sync
                 );
@@ -232,7 +234,7 @@ public class CacheContinuousQueryFactoryFilterTest extends CacheContinuousQueryR
                 }
             });
 
-            qry.setRemoteFilterFactory(new FilterFactory());
+            qry.setRemoteFilterFactory(createFilterFactory());
 
             QueryCursor<?> cur = grid(nodeIdx).cache(cacheName).query(qry);
 
@@ -240,6 +242,13 @@ public class CacheContinuousQueryFactoryFilterTest extends CacheContinuousQueryR
         }
 
         return evtsQueue;
+    }
+
+    /**
+     * @return Filter factory.
+     */
+    @NotNull protected Factory<? extends CacheEntryEventFilter<QueryTestKey, QueryTestValue>> createFilterFactory() {
+        return new FilterFactory();
     }
 
     /**
@@ -482,7 +491,8 @@ public class CacheContinuousQueryFactoryFilterTest extends CacheContinuousQueryR
                 default:
                     fail("Op:" + op);
             }
-        } finally {
+        }
+        finally {
             if (tx != null)
                 tx.close();
         }
@@ -602,9 +612,8 @@ public class CacheContinuousQueryFactoryFilterTest extends CacheContinuousQueryR
         }
 
         /** {@inheritDoc} */
-        @Override public boolean evaluate(CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> event)
-            throws CacheEntryListenerException {
-            return isAccepted(event.getValue());
+        @Override public boolean evaluate(CacheEntryEvent<? extends QueryTestKey, ? extends QueryTestValue> evt) {
+            return isAccepted(evt.getValue());
         }
 
         /** {@inheritDoc} */
@@ -618,6 +627,7 @@ public class CacheContinuousQueryFactoryFilterTest extends CacheContinuousQueryR
         }
 
         /**
+         * @param val Value.
          * @return {@code True} if value is even.
          */
         public static boolean isAccepted(QueryTestValue val) {
@@ -628,16 +638,16 @@ public class CacheContinuousQueryFactoryFilterTest extends CacheContinuousQueryR
     /**
      *
      */
-    protected static class SerializableFilter implements CacheEntryEventSerializableFilter<Integer, Integer>{
+    protected static class SerializableFilter implements CacheEntryEventSerializableFilter<Integer, Integer> {
         /** */
         public SerializableFilter() {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> event)
+        @Override public boolean evaluate(CacheEntryEvent<? extends Integer, ? extends Integer> evt)
             throws CacheEntryListenerException {
-            return isAccepted(event.getValue());
+            return isAccepted(evt.getValue());
         }
 
         /**
@@ -652,6 +662,7 @@ public class CacheContinuousQueryFactoryFilterTest extends CacheContinuousQueryR
      *
      */
     protected static class FilterFactory implements Factory<NonSerializableFilter> {
+        /** {@inheritDoc} */
         @Override public NonSerializableFilter create() {
             return new NonSerializableFilter();
         }
