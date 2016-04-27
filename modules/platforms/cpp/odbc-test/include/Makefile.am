@@ -19,6 +19,5 @@ ACLOCAL_AMFLAGS =-I m4
 
 noinst_HEADERS = \
     teamcity/teamcity_messages.h \
-    test_type.h \
-    test_utils.h
+    test_type.h
 
