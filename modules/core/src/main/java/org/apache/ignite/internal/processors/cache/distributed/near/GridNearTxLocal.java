@@ -825,7 +825,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (log.isDebugEnabled())
             log.debug("Committing near local tx: " + this);
 
-        if (writeMap().isEmpty() && (optimistic() || readMap().isEmpty())) {
+        if (fastFinish()) {
             state(PREPARING);
             state(PREPARED);
             state(COMMITTING);
@@ -882,7 +882,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
-        if (writeMap().isEmpty() && (optimistic() || readMap().isEmpty())) {
+        if (fastFinish()) {
             state(PREPARING);
             state(PREPARED);
             state(ROLLING_BACK);
@@ -939,6 +939,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         }
 
         return fut;
+    }
+
+    /**
+     * @return {@code True} if 'fast finish' path can be used for transaction completion.
+     */
+    private boolean fastFinish() {
+        return writeMap().isEmpty() && ((optimistic() && !serializable()) || readMap().isEmpty());
     }
 
     /**
