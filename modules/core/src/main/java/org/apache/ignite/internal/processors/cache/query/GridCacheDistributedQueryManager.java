@@ -623,8 +623,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (cur != null)
                     return true;
 
-                if (locIter != null && locIter.hasNext())
-                    cur = locIter.next();
+                if (locIter != null && locIter.hasNextX())
+                    cur = locIter.nextX();
 
                 return cur != null || (cur = fut.next()) != null;
             }

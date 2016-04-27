@@ -484,13 +484,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
                         return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
                             @Override protected Cache.Entry<K, V> onNext() throws IgniteCheckedException {
-                                Map.Entry<K, V> next = iter0.next();
+                                Map.Entry<K, V> next = iter0.nextX();
 
                                 return new CacheEntryImpl<>(next.getKey(), next.getValue());
                             }
 
                             @Override protected boolean onHasNext() throws IgniteCheckedException {
-                                return iter0.hasNext();
+                                return iter0.hasNextX();
                             }
 
                             @Override protected void onClose() throws IgniteCheckedException {

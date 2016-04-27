@@ -2398,7 +2398,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKeys(keys);
 
         IgniteInternalFuture<?> fut = asyncOp(new AsyncOp(keys) {
-            @Override public IgniteInternalFuture<GridCacheReturn> op(IgniteTxLocalAdapter tx, AffinityTopologyVersion readyTopVer) {
+            @Override public IgniteInternalFuture<GridCacheReturn> op(IgniteTxLocalAdapter tx,
+                AffinityTopologyVersion readyTopVer) {
                 Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor<K, V, Object>>() {
                     @Override public EntryProcessor apply(K k) {
                         return entryProcessor;
@@ -3923,7 +3924,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (!ctx0.isSwapOrOffheapEnabled() && ctx0.kernalContext().discovery().size() == 1)
             return localIteratorHonorExpirePolicy(opCtx);
 
-        GridCloseableIterator<Map.Entry<K, V>> iter = ctx0.queries().createScanQuery(null, null, ctx.keepBinary())
+        final GridCloseableIterator<Map.Entry<K, V>> iter = ctx0.queries().createScanQuery(null, null, ctx.keepBinary())
             .keepAll(false)
             .executeScanQuery();
 
@@ -3931,14 +3932,38 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             ctx.itHolder().iterator(iter);
 
         return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
+            /** */
+            private K curKey;
+
             @Override protected Cache.Entry<K, V> onNext() throws IgniteCheckedException {
                 Map.Entry<K, V> next = iter0.next();
 
-                return new CacheEntryImpl<>(next.getKey(), next.getValue());
+                curKey = next.getKey();
+
+                return new CacheEntryImpl<>(curKey, next.getValue());
             }
 
             @Override protected boolean onHasNext() throws IgniteCheckedException {
                 return iter0.hasNext();
+            }
+
+            @Override protected void onRemove() throws IgniteCheckedException {
+                if (curKey == null)
+                    throw new IllegalStateException();
+
+                CacheOperationContext prev = ctx.gate().enter(opCtx);
+
+                try {
+                    GridCacheAdapter.this.remove(curKey);
+                }
+                catch (IgniteCheckedException e) {
+                    throw CU.convertToCacheException(e);
+                }
+                finally {
+                    ctx.gate().leave(prev);
+                }
+
+                curKey = null;
             }
 
             @Override protected void onClose() throws IgniteCheckedException {
