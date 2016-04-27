@@ -526,7 +526,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 doSqlQuery(cache);
                 break;
 
-            case CONTINUOUS_QUERIE:
+            case CONTINUOUS_QUERY:
                 doContinuousQuery(cache);
         }
     }
@@ -1057,7 +1057,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         SQL_QUERY,
 
         /** Continuous Query. */
-        CONTINUOUS_QUERIE;
+        CONTINUOUS_QUERY;
 
         /**
          * @param num Number of operation.
