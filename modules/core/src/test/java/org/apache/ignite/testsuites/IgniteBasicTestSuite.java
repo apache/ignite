@@ -87,6 +87,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTest(IgniteCacheP2pUnmarshallingErrorTestSuite.suite(ignoredTests));
         suite.addTest(IgniteStreamSelfTestSuite.suite());
 
+        suite.addTest(IgnitePlatformsTestSuite.suite());
+
         suite.addTest(new TestSuite(GridSelfTest.class));
         suite.addTest(new TestSuite(ClusterGroupHostsSelfTest.class));
         suite.addTest(new TestSuite(IgniteMessagingWithClientTest.class));

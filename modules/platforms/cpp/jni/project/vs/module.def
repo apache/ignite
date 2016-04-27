@@ -130,3 +130,5 @@ IgniteAtomicSequenceClose @127
 IgniteProcessorAtomicReference @128
 IgniteAtomicReferenceIsClosed @129
 IgniteAtomicReferenceClose @130
+IgniteProcessorCreateNearCache @131
+IgniteProcessorGetOrCreateNearCache @132
