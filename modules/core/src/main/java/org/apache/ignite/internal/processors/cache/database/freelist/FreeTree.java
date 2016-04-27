@@ -91,7 +91,7 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
         int res = Short.compare(((FreeIO)io).getFreeSpace(buf, idx), row.freeSpace());
 
         if (res == 0)
-            res = Long.compare(((FreeLeafIO)io).getPageIndex(buf, idx), FreeInnerIO.pageIndex(row.pageId()));
+            res = Integer.compare(((FreeIO)io).getPageIndex(buf, idx), FreeInnerIO.pageIndex(row.pageId()));
 
         return res;
     }

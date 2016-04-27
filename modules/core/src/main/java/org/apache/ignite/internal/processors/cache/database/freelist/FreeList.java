@@ -75,6 +75,8 @@ public class FreeList {
     /** */
     private final PageHandler<FreeTree> removeRow = new PageHandler<FreeTree>() {
         @Override public int run(Page page, ByteBuffer buf, FreeTree tree, int itemId) throws IgniteCheckedException {
+            assert tree != null;
+
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
             assert DataPageIO.check(itemId): itemId;
@@ -168,10 +170,13 @@ public class FreeList {
         assert link != 0;
 
         long pageId = PageIdUtils.pageId(link);
+        int partId = PageIdUtils.partId(pageId);
         int itemId = PageIdUtils.dwordsOffset(link);
 
+        FreeTree tree = tree(partId);
+
         try (Page page = pageMem.page(new FullPageId(pageId, cctx.cacheId()))) {
-            writePage(page, removeRow, null, itemId, -1);
+            writePage(page, removeRow, tree, itemId, -1);
         }
     }
 
