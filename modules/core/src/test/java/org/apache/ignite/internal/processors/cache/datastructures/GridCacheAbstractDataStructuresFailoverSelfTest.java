@@ -33,9 +33,11 @@ import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.CacheMode;
@@ -75,10 +77,10 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     private static final String TRANSACTIONAL_CACHE_NAME = "tx_cache";
 
     /** */
-    private static final int TOP_CHANGE_CNT = 5;
+    private static final int TOP_CHANGE_CNT = 2;
 
     /** */
-    private static final int TOP_CHANGE_THREAD_CNT = 3;
+    private static final int TOP_CHANGE_THREAD_CNT = 2;
 
     /** */
     private boolean client;
@@ -580,6 +582,208 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             for (Ignite g : G.allGrids())
                 assertEquals(permits, g.semaphore(STRUCTURE_NAME, permits, false, false).availablePermits());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockFailsWhenServersLeft() throws Exception {
+        testReentrantLockFailsWhenServersLeft(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFairReentrantLockFailsWhenServersLeft() throws Exception {
+        testReentrantLockFailsWhenServersLeft(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockFailsWhenServersLeft(final boolean fair) throws Exception {
+        client = true;
+
+        Ignite client = startGrid(gridCount());
+
+        Ignite server = grid(0);
+
+        // Initialize lock.
+        IgniteLock srvLock = server.reentrantLock("lock", true, fair, true);
+
+        IgniteSemaphore semaphore = server.semaphore("sync", 0, true, true);
+
+        IgniteCompute compute = client.compute().withAsync();
+
+        compute.apply(new IgniteClosure<Ignite, Object>() {
+            @Override public Object apply(Ignite ignite) {
+                final IgniteLock l = ignite.reentrantLock("lock", true, fair, true);
+
+                l.lock();
+
+                assertTrue(l.isHeldByCurrentThread());
+
+                l.unlock();
+
+                assertFalse(l.isHeldByCurrentThread());
+
+                // Signal the server to go down.
+                ignite.semaphore("sync", 0, true, true).release();
+
+                boolean isExceptionThrown = false;
+
+                try {
+                    // Wait for the server to go down.
+                    Thread.sleep(1000);
+
+                    l.lock();
+
+                    fail("Exception must be thrown.");
+                }
+                catch (InterruptedException e) {
+                    fail("Interrupted exception not expected here.");
+                }
+                catch (IgniteException e) {
+                    isExceptionThrown = true;
+                }
+                finally {
+                    assertTrue(isExceptionThrown);
+
+                    assertFalse(l.isHeldByCurrentThread());
+                }
+                return null;
+            }
+        }, client);
+
+        // Wait for the lock on client to be acquired then released.
+        semaphore.acquire();
+
+        for (int i = 0; i < gridCount(); i++)
+            stopGrid(i);
+
+        compute.future().get();
+
+        client.close();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockConstantTopologyChangeFailoverSafe() throws Exception {
+        doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockConstantMultipleTopologyChangeFailoverSafe() throws Exception {
+        doTestReentrantLock(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockConstantTopologyChangeNonFailoverSafe() throws Exception {
+        doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() throws Exception {
+        doTestReentrantLock(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFairReentrantLockConstantTopologyChangeFailoverSafe() throws Exception {
+        doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFairReentrantLockConstantMultipleTopologyChangeFailoverSafe() throws Exception {
+        doTestReentrantLock(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFairReentrantLockConstantTopologyChangeNonFailoverSafe() throws Exception {
+        doTestReentrantLock(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFairReentrantLockConstantMultipleTopologyChangeNonFailoverSafe() throws Exception {
+        doTestReentrantLock(multipleTopologyChangeWorker(TOP_CHANGE_THREAD_CNT), false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestReentrantLock(ConstantTopologyChangeWorker topWorker, final boolean failoverSafe, final boolean fair) throws Exception {
+        try (IgniteLock lock = grid(0).reentrantLock(STRUCTURE_NAME, failoverSafe, fair, true)) {
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
+                @Override public Object apply(Ignite ignite) {
+                    final IgniteLock l = ignite.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false);
+
+                    final AtomicBoolean done = new AtomicBoolean(false);
+
+                    IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+                        @Override public Void call() throws Exception {
+                            try{
+                                l.lock();
+                            }
+                            finally {
+                                done.set(true);
+                            }
+
+                            return null;
+                        }
+                    });
+
+                    // Wait until l.lock() has been called.
+                    while(!l.hasQueuedThreads() && !done.get()){
+                        // No-op.
+                    }
+
+                    return null;
+                }
+            });
+
+            while (!fut.isDone()) {
+                while (true) {
+                    try {
+                        lock.lock();
+                    }
+                    catch (IgniteException e) {
+                        // Exception may happen in non-failoversafe mode.
+                        if (failoverSafe)
+                            throw e;
+                    }
+                    finally {
+                        // Broken lock cannot be used in non-failoversafe mode.
+                        if(!lock.isBroken() || failoverSafe) {
+                            assertTrue(lock.isHeldByCurrentThread());
+
+                            lock.unlock();
+
+                            assertFalse(lock.isHeldByCurrentThread());
+                        }
+                        break;
+                    }
+                }
+            }
+
+            fut.get();
+
+            for (Ignite g : G.allGrids())
+                assertFalse(g.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false).isHeldByCurrentThread());
         }
     }
 
