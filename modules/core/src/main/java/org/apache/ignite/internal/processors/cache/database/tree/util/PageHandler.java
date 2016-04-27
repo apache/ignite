@@ -22,8 +22,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
 
 /**
- * Page handler. Can do {@link #readPage(Page, PageHandler, Object, int, int)}
- * and {@link #writePage(Page, PageHandler, Object, int, int)} operations.
+ * Page handler. Can do {@link #readPage(Page, PageHandler, Object, int)}
+ * and {@link #writePage(Page, PageHandler, Object, int)} operations.
  */
 public abstract class PageHandler<X> {
     /**
@@ -51,14 +51,12 @@ public abstract class PageHandler<X> {
      * @param h Handler.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
-     * @param dfltRes Default result in case of page invalidation.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X> int readPage(Page page, PageHandler<X> h, X arg, int intArg, int dfltRes)
+    public static <X> int readPage(Page page, PageHandler<X> h, X arg, int intArg)
         throws IgniteCheckedException {
-        if (page == null)
-            return dfltRes;
+        assert page != null;
 
         ByteBuffer buf = page.getForRead();
 
@@ -77,14 +75,12 @@ public abstract class PageHandler<X> {
      * @param h Handler.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
-     * @param dfltRes Default result in case of page invalidation.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X> int writePage(Page page, PageHandler<X> h, X arg, int intArg, int dfltRes)
+    public static <X> int writePage(Page page, PageHandler<X> h, X arg, int intArg)
         throws IgniteCheckedException {
-        if (page == null)
-            return dfltRes; // TODO drop dfltRes parameter and assert not null
+        assert page != null;
 
         int res;
 
@@ -92,8 +88,7 @@ public abstract class PageHandler<X> {
 
         ByteBuffer buf = page.getForWrite();
 
-        if (buf == null)
-            return dfltRes; // TODO ---//---
+        assert buf != null;
 
         try {
             res = h.run(page, buf, arg, intArg);

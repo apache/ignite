@@ -176,7 +176,7 @@ public class FreeList {
         FreeTree tree = tree(partId);
 
         try (Page page = pageMem.page(new FullPageId(pageId, cctx.cacheId()))) {
-            writePage(page, removeRow, tree, itemId, -1);
+            writePage(page, removeRow, tree, itemId);
         }
     }
 
@@ -210,7 +210,7 @@ public class FreeList {
                 writeRow.run(page, buf, row, entrySize);
             }
             else
-                writePage(page, writeRow, row, entrySize, -1);
+                writePage(page, writeRow, row, entrySize);
         }
     }
 

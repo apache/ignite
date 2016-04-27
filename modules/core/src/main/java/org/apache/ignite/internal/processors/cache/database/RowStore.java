@@ -133,7 +133,7 @@ public class RowStore<T extends CacheDataRow> {
 
         if (freeList == null) {
             try (Page page = page(pageId(link))) {
-                writePage(page, rmvRow, null, dwordsOffset(link), 0);
+                writePage(page, rmvRow, null, dwordsOffset(link));
             }
         }
         else
@@ -186,7 +186,7 @@ public class RowStore<T extends CacheDataRow> {
                 pageId = nextDataPage(0, row.partition());
 
             try (Page page = page(pageId)) {
-                if (writePage(page, writeRow, row, -1, -1) >= 0)
+                if (writePage(page, writeRow, row, -1) >= 0)
                     return; // Successful write.
             }
 
