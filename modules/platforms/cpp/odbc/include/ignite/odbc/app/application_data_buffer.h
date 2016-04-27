@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_APPLICATION_DATA_BUFFER
-#define _IGNITE_ODBC_DRIVER_APPLICATION_DATA_BUFFER
+#ifndef _IGNITE_ODBC_APP_APPLICATION_DATA_BUFFER
+#define _IGNITE_ODBC_APP_APPLICATION_DATA_BUFFER
 
 #include <stdint.h>
 
@@ -376,4 +376,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_APP_APPLICATION_DATA_BUFFER

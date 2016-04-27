@@ -74,7 +74,7 @@ public class OdbcMessageParser {
 
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null);
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null, true);
 
         byte cmd = reader.readByte();
 

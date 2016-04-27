@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_BINARY_WRITER
-#define _IGNITE_IMPL_BINARY_WRITER
+#ifndef _IGNITE_IMPL_BINARY_BINARY_WRITER
+#define _IGNITE_IMPL_BINARY_BINARY_WRITER
 
 #include <cstring>
 #include <string>
@@ -982,4 +982,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_BINARY_BINARY_WRITER

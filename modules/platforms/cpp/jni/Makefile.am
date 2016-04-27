@@ -18,8 +18,7 @@
 ACLOCAL_AMFLAGS =-I m4
 
 SUBDIRS = \
-    include \
-    os/linux/include
+    include
 
 lib_LTLIBRARIES = libignite-jni.la
 
@@ -50,7 +49,7 @@ libignite_jni_la_DEPENDENCIES = \
     @top_srcdir@/common/libignite-common.la
 
 libignite_jni_la_SOURCES = \
-    os/linux/src/attach_helper.cpp \
+    os/linux/src/utils.cpp \
     src/java.cpp \
     src/exports.cpp
 

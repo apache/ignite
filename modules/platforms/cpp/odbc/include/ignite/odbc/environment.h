@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_ENVIRONMENT
-#define _IGNITE_ODBC_DRIVER_ENVIRONMENT
+#ifndef _IGNITE_ODBC_ENVIRONMENT
+#define _IGNITE_ODBC_ENVIRONMENT
 
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
@@ -134,4 +134,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_ENVIRONMENT

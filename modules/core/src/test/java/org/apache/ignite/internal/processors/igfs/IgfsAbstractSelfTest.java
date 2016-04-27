@@ -75,7 +75,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
-import java.util.Set;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1021,9 +1021,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 }
             }
         }, 10_000)) {
-            Set<GridCacheEntryEx> set = dataCache.allEntries();
+            Iterable<? extends GridCacheEntryEx> entries = dataCache.allEntries();
 
-            for (GridCacheEntryEx e: set) {
+            for (GridCacheEntryEx e: entries) {
                 X.println("deleted = " + e.deleted());
                 X.println("detached = " + e.detached());
                 X.println("info = " + e.info());
@@ -1543,9 +1543,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAppend() throws Exception {
-        if (dual)
-            fail("Test fails in DUAL modes, see https://issues.apache.org/jira/browse/IGNITE-1631");
-
         create(igfs, paths(DIR, SUBDIR), null);
 
         assert igfs.exists(SUBDIR);
@@ -3038,7 +3035,16 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
                 for (byte[] chunk: chunks) {
                     byte[] buf = new byte[chunk.length];
 
-                    read = is.read(buf);
+                    read = 0;
+
+                    while (true) {
+                        int r = is.read(buf, read, buf.length - read);
+
+                        read += r;
+
+                        if (read == buf.length || r <= 0)
+                            break;
+                    }
 
                     assert read == chunk.length : "Chunk #" + chunkIdx + " was not read fully:" +
                             " read=" + read + ", expected=" + chunk.length;
@@ -3232,9 +3238,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     private static void dumpCache(String cacheName, GridCacheAdapter<?,?> cache) {
         X.println("=============================== " + cacheName + " cache dump: ");
 
-        Set<GridCacheEntryEx> set = cache.entries();
+        Iterable<? extends GridCacheEntryEx> entries = cache.entries();
 
-        for (GridCacheEntryEx e: set)
+        for (GridCacheEntryEx e: entries)
             X.println("Lost " + cacheName + " entry = " + e);
     }
 

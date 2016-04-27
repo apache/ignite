@@ -992,20 +992,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             List<int> keys = new List<int>(cnt);
 
-            for (int i = startFrom; i < startFrom + 100000; i++)
-            {
-                if (aff.IsPrimary(node, i))
+            Assert.IsTrue(
+                TestUtils.WaitForCondition(() =>
                 {
-                    keys.Add(i);
+                    for (int i = startFrom; i < startFrom + 100000; i++)
+                    {
+                        if (aff.IsPrimary(node, i))
+                        {
+                            keys.Add(i);
 
-                    if (keys.Count == cnt)
-                        return keys;
-                }
-            }
+                            if (keys.Count == cnt)
+                                return true;
+                        }
+                    }
 
-            Assert.Fail("Failed to find " + cnt + " primary keys.");
+                    return false;
+                }, 5000), "Failed to find " + cnt + " primary keys.");
 
-            return null;
+
+            return keys;
         }
 
         /// <summary>

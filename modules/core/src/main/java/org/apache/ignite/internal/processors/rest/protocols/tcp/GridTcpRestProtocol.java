@@ -134,10 +134,11 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 else
                     sslCtx = igniteFactory.create();
             }
+            int startPort = cfg.getPort();
+            int portRange = cfg.getPortRange();
+            int lastPort = portRange == 0 ? startPort : startPort + portRange - 1;
 
-            int lastPort = cfg.getPort() + cfg.getPortRange() - 1;
-
-            for (int port0 = cfg.getPort(); port0 <= lastPort; port0++) {
+            for (int port0 = startPort; port0 <= lastPort; port0++) {
                 if (startTcpServer(host, port0, lsnr, parser, sslCtx, cfg)) {
                     port = port0;
 

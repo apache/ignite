@@ -20,8 +20,8 @@
  * Declares ignite::IgniteConfiguration class.
  */
 
-#ifndef _IGNITE_CONFIGURATION
-#define _IGNITE_CONFIGURATION
+#ifndef _IGNITE_IGNITE_CONFIGURATION
+#define _IGNITE_IGNITE_CONFIGURATION
 
 #include <stdint.h>
 #include <string>
@@ -68,4 +68,4 @@ namespace ignite
     };    
 }
 
-#endif
+#endif //_IGNITE_IGNITE_CONFIGURATION

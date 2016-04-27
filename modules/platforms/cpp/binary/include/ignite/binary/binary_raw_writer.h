@@ -20,8 +20,8 @@
  * Declares ignite::binary::BinaryRawWriter class.
  */
 
-#ifndef _IGNITE_BINARY_RAW_WRITER
-#define _IGNITE_BINARY_RAW_WRITER
+#ifndef _IGNITE_BINARY_BINARY_RAW_WRITER
+#define _IGNITE_BINARY_BINARY_RAW_WRITER
 
 #include <stdint.h>
 
@@ -360,4 +360,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_BINARY_BINARY_RAW_WRITER

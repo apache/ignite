@@ -37,7 +37,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
         static UnmanagedUtils()
         {
-            var path = IgniteUtils.UnpackEmbeddedResource(IgniteUtils.FileIgniteJniDll);
+            var platfrom = Environment.Is64BitProcess ? "x64" : "x86";
+
+            var resName = string.Format("{0}.{1}", platfrom, IgniteUtils.FileIgniteJniDll);
+
+            var path = IgniteUtils.UnpackEmbeddedResource(resName, IgniteUtils.FileIgniteJniDll);
 
             var ptr = NativeMethods.LoadLibrary(path);
 

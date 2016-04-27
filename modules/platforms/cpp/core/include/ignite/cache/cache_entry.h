@@ -20,8 +20,8 @@
  * Declares ignite::cache::CacheEntry class.
  */
 
-#ifndef _IGNITE_CACHE_ENTRY
-#define _IGNITE_CACHE_ENTRY
+#ifndef _IGNITE_CACHE_CACHE_ENTRY
+#define _IGNITE_CACHE_CACHE_ENTRY
 
 #include <ignite/common/common.h>
 
@@ -120,4 +120,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif _IGNITE_CACHE_CACHE_ENTRY

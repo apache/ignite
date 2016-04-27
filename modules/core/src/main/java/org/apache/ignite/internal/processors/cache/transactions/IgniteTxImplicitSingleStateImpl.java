@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -36,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 
 /**
  *
@@ -105,8 +106,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean sync(GridCacheSharedContext cctx) {
-        return cacheCtx != null && cacheCtx.config().getWriteSynchronizationMode() == FULL_SYNC;
+    @Override public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext cctx) {
+        return cacheCtx != null ? cacheCtx.config().getWriteSynchronizationMode() : FULL_ASYNC;
     }
 
     /** {@inheritDoc} */

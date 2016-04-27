@@ -28,9 +28,6 @@
     <ClInclude Include="..\..\os\win\include\ignite\common\concurrent_os.h">
       <Filter>Code\common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\common\ignite_error.h">
-      <Filter>Code\common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\date.h">
       <Filter>Code</Filter>
     </ClInclude>
@@ -38,6 +35,9 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\timestamp.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite_error.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
@@ -60,8 +60,8 @@
     <ClCompile Include="..\..\src\common\concurrent.cpp">
       <Filter>Code\common</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\common\ignite_error.cpp">
-      <Filter>Code\common</Filter>
+    <ClCompile Include="..\..\src\ignite_error.cpp">
+      <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

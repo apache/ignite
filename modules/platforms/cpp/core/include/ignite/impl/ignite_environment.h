@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ENVIRONMENT
-#define _IGNITE_ENVIRONMENT
+#ifndef _IGNITE_IMPL_IGNITE_ENVIRONMENT
+#define _IGNITE_IMPL_IGNITE_ENVIRONMENT
 
 #include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
@@ -132,4 +132,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_IGNITE_ENVIRONMENT

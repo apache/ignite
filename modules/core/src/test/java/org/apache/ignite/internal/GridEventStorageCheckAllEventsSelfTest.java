@@ -198,7 +198,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         try {
             fut.get();
 
-            assert false : "Grid with locally executed job with timeout should throw GridComputeTaskTimeoutException.";
+            assert false : "Grid with locally executed job with timeout should throw ComputeTaskTimeoutException.";
         }
         catch (IgniteException e) {
             info("Expected exception caught [taskFuture=" + fut + ", exception=" + e + ']');

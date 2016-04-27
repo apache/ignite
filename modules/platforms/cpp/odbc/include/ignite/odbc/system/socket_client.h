@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_SOCKET_CLIENT
-#define _IGNITE_ODBC_DRIVER_SOCKET_CLIENT
+#ifndef _IGNITE_ODBC_SYSTEM_SOCKET_CLIENT
+#define _IGNITE_ODBC_SYSTEM_SOCKET_CLIENT
 
 #include <stdint.h>
 
@@ -89,4 +89,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_SYSTEM_SOCKET_CLIENT

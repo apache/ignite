@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_INTEROP_MEMORY
-#define _IGNITE_IMPL_INTEROP_MEMORY
+#ifndef _IGNITE_IMPL_INTEROP_INTEROP_MEMORY
+#define _IGNITE_IMPL_INTEROP_INTEROP_MEMORY
 
 #include <stdint.h>
 
@@ -266,4 +266,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_INTEROP_INTEROP_MEMORY

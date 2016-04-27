@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_TABLE_META
-#define _IGNITE_ODBC_TABLE_META
+#ifndef _IGNITE_ODBC_META_TABLE_META
+#define _IGNITE_ODBC_META_TABLE_META
 
 #include <stdint.h>
 #include <string>
@@ -163,4 +163,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_META_TABLE_META

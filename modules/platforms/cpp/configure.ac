@@ -100,7 +100,6 @@ AC_CONFIG_FILES([ \
     core/include/Makefile \
     core/Makefile \
     core/ignite.pc \
-    jni/os/linux/include/Makefile \
     jni/include/Makefile \
     jni/Makefile \
     ignite/Makefile \

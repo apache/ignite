@@ -35,7 +35,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.schema.model.PojoDescriptor;
 import org.apache.ignite.schema.model.PojoField;
 import org.apache.ignite.schema.ui.ConfirmCallable;
@@ -561,12 +561,13 @@ public class CodeGenerator {
      * @param pojos POJO descriptors.
      * @param pkg Types package.
      * @param includeKeys {@code true} if key fields should be included into value class.
+     * @param generateAliases {@code true} if aliases should be generated for query fields.
      * @param outFolder Output folder.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      * @throws IOException If generation failed.
      */
     public static void snippet(Collection<PojoDescriptor> pojos, String pkg, boolean includeKeys,
-        String outFolder, ConfirmCallable askOverwrite) throws IOException {
+        boolean generateAliases, String outFolder, ConfirmCallable askOverwrite) throws IOException {
         File pkgFolder = new File(outFolder, pkg.replace('.', File.separatorChar));
 
         File cacheCfg = new File(pkgFolder, "CacheConfig.java");
@@ -656,58 +657,107 @@ public class CodeGenerator {
             add0(src, "");
 
             for (PojoField field : pojo.fields())
-                add2(src, "fields.put(\"" + field.javaName() + "\", \"" + javaTypeName(field) + "\");");
+                add2(src, "fields.put(\"" + field.javaName() + "\", \"" +
+                    GeneratorUtils.boxPrimitiveType(field.javaTypeName()) + "\");");
 
             add0(src, "");
             add2(src, "qryEntity.setFields(fields);");
             add0(src, "");
 
+            // Aliases.
+            if (generateAliases) {
+                Collection<PojoField> aliases = new ArrayList<>();
+
+                for (PojoField field : pojo.fields()) {
+                    if (!field.javaName().equalsIgnoreCase(field.dbName()))
+                        aliases.add(field);
+                }
+
+                if (!aliases.isEmpty()) {
+                    add2(src, "// Aliases for fields.");
+                    add2(src, "LinkedHashMap<String, String> aliases = new LinkedHashMap<>();");
+                    add0(src, "");
+
+                    for (PojoField alias : aliases)
+                        add2(src, "aliases.put(\"" + alias.javaName() + "\", \"" + alias.dbName() + "\");");
+
+                    add0(src, "");
+                    add2(src, "qryEntity.setAliases(aliases);");
+                    add0(src, "");
+                }
+            }
+
             // Indexes.
             Collection<QueryIndex> idxs = pojo.indexes();
 
             if (!idxs.isEmpty()) {
-                add2(src, "// Indexes for " + tbl + ".");
-                add2(src, "Collection<QueryIndex> idxs = new ArrayList<>();");
-                add0(src, "");
-
+                boolean first = true;
                 boolean firstIdx = true;
 
                 for (QueryIndex idx : idxs) {
-                    if (idx.getFields().size() == 1) {
-                        Map.Entry<String, Boolean> fld = F.first(idx.getFields().entrySet());
+                    Set<Map.Entry<String, Boolean>> dbIdxFlds = idx.getFields().entrySet();
 
-                        add2(src, "idxs.add(new QueryIndex(\"" + fld.getKey() + "\", " + fld.getValue() + ", \"" +
-                            idx.getName() + "\"));");
-                        add0(src, "");
+                    int sz = dbIdxFlds.size();
+
+                    List<T2<String, Boolean>> idxFlds = new ArrayList<>(sz);
+
+                    for (Map.Entry<String, Boolean> idxFld : dbIdxFlds) {
+                        PojoField field = GeneratorUtils.findFieldByName(pojo.valueFields(true), idxFld.getKey());
+
+                        if (field != null)
+                            idxFlds.add(new T2<>(field.javaName(), idxFld.getValue()));
+                        else
+                            break;
                     }
-                    else {
-                        add2(src, (firstIdx ? "QueryIndex " : "") + "idx = new QueryIndex();");
-                        add0(src, "");
 
-                        add2(src, "idx.setName(\"" + idx.getName() + "\");");
-                        add0(src, "");
+                    // Only if all fields present, add index description.
+                    if (idxFlds.size() == sz) {
+                        if (first) {
+                            add2(src, "// Indexes for " + tbl + ".");
+                            add2(src, "Collection<QueryIndex> idxs = new ArrayList<>();");
+                            add0(src, "");
+                        }
 
-                        add2(src, (firstIdx ? "LinkedHashMap<String, Boolean> " : "") +
-                            "idxFlds = new LinkedHashMap<>();");
-                        add0(src, "");
+                        if (sz == 1) {
+                            T2<String, Boolean> idxFld = idxFlds.get(0);
 
-                        for (Map.Entry<String, Boolean> idxFld : idx.getFields().entrySet())
-                            add2(src, "idxFlds.put(\"" + idxFld.getKey() + "\", " + idxFld.getValue() + ");");
+                            add2(src, "idxs.add(new QueryIndex(\"" + idxFld.getKey() + "\", " + idxFld.getValue() + ", \"" +
+                                idx.getName() + "\"));");
+                            add0(src, "");
+                        }
+                        else {
+                            add2(src, (firstIdx ? "QueryIndex " : "") + "idx = new QueryIndex();");
+                            add0(src, "");
 
-                        add0(src, "");
+                            add2(src, "idx.setName(\"" + idx.getName() + "\");");
+                            add0(src, "");
 
-                        add2(src, "idx.setFields(idxFlds);");
-                        add0(src, "");
+                            add2(src, (firstIdx ? "LinkedHashMap<String, Boolean> " : "") +
+                                "idxFlds = new LinkedHashMap<>();");
+                            add0(src, "");
 
-                        add2(src, "idxs.add(idx);");
-                        add0(src, "");
+                            for (T2<String, Boolean> idxFld : idxFlds)
+                                add2(src, "idxFlds.put(\"" + idxFld.getKey() + "\", " + idxFld.getValue() + ");");
 
-                        firstIdx = false;
+                            add0(src, "");
+
+                            add2(src, "idx.setFields(idxFlds);");
+                            add0(src, "");
+
+                            add2(src, "idxs.add(idx);");
+                            add0(src, "");
+
+                            firstIdx = false;
+                        }
+
+                        first = false;
                     }
                 }
 
-                add2(src, "qryEntity.setIndexes(idxs);");
-                add0(src, "");
+                if (!first) {
+                    add2(src, "qryEntity.setIndexes(idxs);");
+                    add0(src, "");
+                }
             }
 
             add2(src, "return qryEntity;");

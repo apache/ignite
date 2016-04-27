@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _IGNITE_UTILS_COMMON
-#define _IGNITE_UTILS_COMMON
+#ifndef _IGNITE_COMMON_COMMON
+#define _IGNITE_COMMON_COMMON
 
 #define IGNITE_EXPORT __declspec(dllexport)
 #define IGNITE_IMPORT __declspec(dllimport)
@@ -35,4 +35,10 @@
     cls(const cls& src); \
     cls& operator= (const cls& other); 
 
-#endif //_IGNITE_UTILS_COMMON
+#if (__cplusplus >= 201103L)
+#   define IGNITE_NO_THROW noexcept
+#else
+#   define IGNITE_NO_THROW throw()
+#endif
+
+#endif //_IGNITE_COMMON_COMMON

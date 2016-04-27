@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_COLUMN_METADATA_QUERY
-#define _IGNITE_ODBC_DRIVER_COLUMN_METADATA_QUERY
+#ifndef _IGNITE_ODBC_QUERY_COLUMN_METADATA_QUERY
+#define _IGNITE_ODBC_QUERY_COLUMN_METADATA_QUERY
 
 #include "ignite/odbc/query/query.h"
 #include "ignite/odbc/meta/column_meta.h"
@@ -143,4 +143,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_QUERY_COLUMN_METADATA_QUERY

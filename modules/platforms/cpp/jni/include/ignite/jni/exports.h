@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_COMMON_EXPORTS
-#define _IGNITE_COMMON_EXPORTS
+#ifndef _IGNITE_JNI_EXPORTS
+#define _IGNITE_JNI_EXPORTS
 
 #include "ignite/jni/java.h"
 
@@ -131,7 +131,7 @@ extern "C" {
     void IGNITE_CALL IgniteRelease(void* obj);
 
     void IGNITE_CALL IgniteThrowToJava(gcj::JniContext* ctx, char* errMsg);
-    
+
     int IGNITE_CALL IgniteHandlersSize();
 
     void* IGNITE_CALL IgniteCreateContext(char** opts, int optsLen, gcj::JniHandlers* cbs);
@@ -143,12 +143,12 @@ extern "C" {
     bool IGNITE_CALL IgniteEventsStopLocalListen(gcj::JniContext* ctx, void* obj, long long hnd);
     void IGNITE_CALL IgniteEventsLocalListen(gcj::JniContext* ctx, void* obj, long long hnd, int type);
     bool IGNITE_CALL IgniteEventsIsEnabled(gcj::JniContext* ctx, void* obj, int type);
-        
-	void* IGNITE_CALL IgniteServicesWithAsync(gcj::JniContext* ctx, void* obj);
-	void* IGNITE_CALL IgniteServicesWithServerKeepPortable(gcj::JniContext* ctx, void* obj);
-	void IGNITE_CALL IgniteServicesCancel(gcj::JniContext* ctx, void* obj, char* name);
-	void IGNITE_CALL IgniteServicesCancelAll(gcj::JniContext* ctx, void* obj);
-	void* IGNITE_CALL IgniteServicesGetServiceProxy(gcj::JniContext* ctx, void* obj, char* name, bool sticky);
+
+    void* IGNITE_CALL IgniteServicesWithAsync(gcj::JniContext* ctx, void* obj);
+    void* IGNITE_CALL IgniteServicesWithServerKeepPortable(gcj::JniContext* ctx, void* obj);
+    void IGNITE_CALL IgniteServicesCancel(gcj::JniContext* ctx, void* obj, char* name);
+    void IGNITE_CALL IgniteServicesCancelAll(gcj::JniContext* ctx, void* obj);
+    void* IGNITE_CALL IgniteServicesGetServiceProxy(gcj::JniContext* ctx, void* obj, char* name, bool sticky);
 
     long long IGNITE_CALL IgniteAtomicLongGet(gcj::JniContext* ctx, void* obj);
     long long IGNITE_CALL IgniteAtomicLongIncrementAndGet(gcj::JniContext* ctx, void* obj);
@@ -179,4 +179,4 @@ extern "C" {
     bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj);
 }
 
-#endif
+#endif //_IGNITE_JNI_EXPORTS

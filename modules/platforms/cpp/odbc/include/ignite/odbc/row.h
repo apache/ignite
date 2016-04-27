@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DRIVER_ROW
-#define _IGNITE_ODBC_DRIVER_ROW
+#ifndef _IGNITE_ODBC_ROW
+#define _IGNITE_ODBC_ROW
 
 #include <stdint.h>
 #include <vector>
@@ -129,4 +129,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_ODBC_ROW

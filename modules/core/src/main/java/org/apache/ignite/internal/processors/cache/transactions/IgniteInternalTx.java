@@ -22,9 +22,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -386,15 +386,6 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public boolean ownsLockUnsafe(GridCacheEntryEx entry);
 
     /**
-     * For Partitioned caches, this flag is {@code false} for remote DHT and remote NEAR
-     * transactions because serializability of transaction is enforced on primary node. All
-     * other transaction types must enforce it.
-     *
-     * @return Enforce serializable flag.
-     */
-    public boolean enforceSerializable();
-
-    /**
      * @return {@code True} if near transaction.
      */
     public boolean near();
@@ -442,14 +433,9 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public boolean user();
 
     /**
-     * @return {@code True} if transaction is configured with synchronous commit flag.
+     * @return Transaction write synchronization mode.
      */
-    public boolean syncCommit();
-
-    /**
-     * @return {@code True} if transaction is configured with synchronous rollback flag.
-     */
-    public boolean syncRollback();
+    public CacheWriteSynchronizationMode syncMode();
 
     /**
      * @param key Key to check.
@@ -515,20 +501,13 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param ctx Cache context.
      * @param failFast Fail-fast flag.
      * @param key Key to look up.
-     * @param filter Filter to check.
      * @return Current value for the key within transaction.
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
      @Nullable public GridTuple<CacheObject> peek(
          GridCacheContext ctx,
          boolean failFast,
-         KeyCacheObject key,
-         @Nullable CacheEntryPredicate[] filter) throws GridCacheFilterFailedException;
-
-    /**
-     * @return Start version.
-     */
-    public GridCacheVersion startVersion();
+         KeyCacheObject key) throws GridCacheFilterFailedException;
 
     /**
      * @return Transaction version.
@@ -544,12 +523,6 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param commitVer Commit version.
      */
     public void commitVersion(GridCacheVersion commitVer);
-
-    /**
-     * @return End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
-     *      assigned to this transaction at the end of write phase.
-     */
-    public GridCacheVersion endVersion();
 
     /**
      * Prepare state.

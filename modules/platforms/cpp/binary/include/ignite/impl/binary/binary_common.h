@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_BINARY_COMMON
-#define _IGNITE_IMPL_BINARY_COMMON
+#ifndef _IGNITE_IMPL_BINARY_BINARY_COMMON
+#define _IGNITE_IMPL_BINARY_BINARY_COMMON
 
 #include <stdint.h>
 
@@ -191,4 +191,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_BINARY_BINARY_COMMON
