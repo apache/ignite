@@ -93,6 +93,7 @@ import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
 import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
 import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteBsAffixUpdate from './directives/bs-affix-update.directive';
+import igniteСentered from './directives/centered/centered.directive.js';
 
 // Services.
 import cleanup from './services/cleanup.service';
@@ -185,6 +186,7 @@ angular
 .directive(...igniteUiAceDocker)
 .directive(...igniteUiAcePojos)
 .directive(...igniteBsAffixUpdate)
+.directive(...igniteСentered)
 // Services.
 .service(...cleanup)
 .service(...confirm)

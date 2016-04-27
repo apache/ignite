@@ -1931,29 +1931,19 @@ treecontrol.tree-classic {
     }
 
     .no-rows {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 100%;
-        background: white;
+        .center-container {
+            background: white;
 
-        .msg {
-            display: table;
-            width: 60%;
-            overflow: auto;
-            margin: auto;
-            padding: 10px;
-            position: absolute;
+            .msg {
+                display: inline-block;
+                padding: 10px;
 
-            top: 0; left: 0; bottom: 0; right: 0;
+                opacity: 1;
 
-            opacity: 1;
-
-            background-color: #f5f5f5;
-            border-radius: 6px;
-            border: 1px solid $ignite-darck-border-color;
-
-            text-align: center;
+                background-color: #f5f5f5;
+                border-radius: 6px;
+                border: 1px solid $ignite-darck-border-color;
+            }
         }
     }
 }
