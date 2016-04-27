@@ -36,8 +36,8 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  */
 public class MetadataStorageSelfTest extends GridCommonAbstractTest {
-    /** */
-    public static final int PAGE_SIZE = 8 * 1024;
+    /** Make sure page is small enough to trigger multiple pages in a linked list. */
+    public static final int PAGE_SIZE = 1024;
 
     /** */
     private static File allocationPath;

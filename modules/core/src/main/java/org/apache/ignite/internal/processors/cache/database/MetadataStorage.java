@@ -26,6 +26,7 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
@@ -100,12 +101,19 @@ public class MetadataStorage implements MetaStore {
                 try {
                     state.writePage = nextPageId;
 
-                    nextPageId = buf.getLong();
+                    buf = nextPage.getForRead();
 
-                    rootPageId = scanForIndexRoot(buf, idxNameBytes, cacheId);
+                    try {
+                        nextPageId = buf.getLong();
 
-                    if (rootPageId != null)
-                        return rootPageId;
+                        rootPageId = scanForIndexRoot(buf, idxNameBytes, cacheId);
+
+                        if (rootPageId != null)
+                            return rootPageId;
+                    }
+                    finally {
+                        nextPage.releaseRead();
+                    }
                 }
                 finally {
                     pageMem.releasePage(nextPage);
@@ -160,7 +168,7 @@ public class MetadataStorage implements MetaStore {
             try {
                 long nextPageId = writeBuf.getLong();
 
-                assert nextPageId == 0: nextPageId;
+                assert nextPageId == 0: "[nextPageId=" + U.hexLong(nextPageId) + ", writePageId=" + U.hexLong(writePageId) + ']';
 
                 // Position buffer to the last record.
                 writeBuf.position(state.position);
@@ -185,6 +193,8 @@ public class MetadataStorage implements MetaStore {
                     writePage = pageMem.page(newMeta);
                     writeBuf = writePage.getForWrite();
                     writePageId = newMeta.pageId();
+                    // Next page, just need to make an offset.
+                    writeBuf.putLong(0);
                 }
 
                 writeBuf.put((byte)idxNameBytes.length);
