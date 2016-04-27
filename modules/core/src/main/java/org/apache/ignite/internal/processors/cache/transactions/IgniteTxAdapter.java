@@ -36,10 +36,10 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -184,10 +184,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected boolean onePhaseCommit;
 
     /** */
-    protected boolean syncCommit;
-
-    /** */
-    protected boolean syncRollback;
+    protected CacheWriteSynchronizationMode syncMode;
 
     /** If this transaction contains transform entries. */
     protected boolean transform;
@@ -465,21 +462,29 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @Override public AffinityTopologyVersion topologyVersion() {
         AffinityTopologyVersion res = topVer;
 
-        if (res.equals(AffinityTopologyVersion.NONE))
+        if (res.equals(AffinityTopologyVersion.NONE)) {
+            if (system()) {
+                AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), this);
+
+                if (topVer != null)
+                    return topVer;
+            }
+
             return cctx.exchange().topologyVersion();
+        }
 
         return res;
     }
 
     /** {@inheritDoc} */
-    @Override public AffinityTopologyVersion topologyVersionSnapshot() {
+    @Override public final AffinityTopologyVersion topologyVersionSnapshot() {
         AffinityTopologyVersion ret = topVer;
 
         return AffinityTopologyVersion.NONE.equals(ret) ? null : ret;
     }
 
     /** {@inheritDoc} */
-    @Override public AffinityTopologyVersion topologyVersion(AffinityTopologyVersion topVer) {
+    @Override public final AffinityTopologyVersion topologyVersion(AffinityTopologyVersion topVer) {
         AffinityTopologyVersion topVer0 = this.topVer;
 
         if (!AffinityTopologyVersion.NONE.equals(topVer0))
@@ -630,32 +635,18 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enforceSerializable() {
-        return true;
-    }
+    @Override public CacheWriteSynchronizationMode syncMode() {
+        if (syncMode != null)
+            return syncMode;
 
-    /** {@inheritDoc} */
-    @Override public boolean syncCommit() {
-        return syncCommit;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean syncRollback() {
-        return syncRollback;
+        return txState().syncMode(cctx);
     }
 
     /**
-     * @param syncCommit Synchronous commit flag.
+     * @param syncMode Write synchronization mode.
      */
-    public void syncCommit(boolean syncCommit) {
-        this.syncCommit = syncCommit;
-    }
-
-    /**
-     * @param syncRollback Synchronous rollback flag.
-     */
-    public void syncRollback(boolean syncRollback) {
-        this.syncRollback = syncRollback;
+    public void syncMode(CacheWriteSynchronizationMode syncMode) {
+        this.syncMode = syncMode;
     }
 
     /** {@inheritDoc} */
@@ -1146,16 +1137,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion startVersion() {
-        return startVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheVersion endVersion() {
-        return endVer;
-    }
-
-    /** {@inheritDoc} */
     @Override public void endVersion(GridCacheVersion endVer) {
         this.endVer = endVer;
     }
@@ -1263,7 +1244,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             final boolean keepBinary = txEntry.keepBinary();
 
             CacheObject cacheVal = txEntry.hasValue() ? txEntry.value() :
-                txEntry.cached().innerGet(this,
+                txEntry.cached().innerGet(
+                    null,
+                    this,
                     /*swap*/false,
                     /*read through*/false,
                     /*fail fast*/true,
@@ -1889,11 +1872,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public boolean enforceSerializable() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean near() {
             return false;
         }
@@ -1934,13 +1912,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public boolean syncCommit() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean syncRollback() {
-            return false;
+        @Override public CacheWriteSynchronizationMode syncMode() {
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -2001,13 +1974,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Nullable @Override public GridTuple<CacheObject> peek(GridCacheContext ctx,
             boolean failFast,
-            KeyCacheObject key,
-            @Nullable CacheEntryPredicate[] filter) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCacheVersion startVersion() {
+            KeyCacheObject key) {
             return null;
         }
 
@@ -2024,11 +1991,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public void commitVersion(GridCacheVersion commitVer) {
             // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCacheVersion endVersion() {
-            return null;
         }
 
         /** {@inheritDoc} */

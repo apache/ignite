@@ -188,7 +188,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         if (!fullSup)
             throw new IllegalStateException("Sessions attributes and checkpoints are disabled by default " +
                 "for better performance (to enable, annotate task class with " +
-                "@GridComputeTaskSessionFullSupport annotation).");
+                "@ComputeTaskSessionFullSupport annotation).");
     }
 
     /**

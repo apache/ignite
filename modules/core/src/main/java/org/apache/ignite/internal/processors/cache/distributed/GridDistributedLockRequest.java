@@ -78,6 +78,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
 
+    /** Partition IDs of keys to lock. */
+    @GridDirectCollection(int.class)
+    protected List<Integer> partIds;
+
     /** Array indicating whether value should be returned for a key. */
     @GridToStringInclude
     private boolean[] retVals;
@@ -232,7 +236,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      *
      * @param skipStore Skip store flag.
      */
-    private void skipStore(boolean skipStore){
+    private void skipStore(boolean skipStore) {
         flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
     }
 
@@ -284,10 +288,14 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         boolean retVal,
         GridCacheContext ctx
     ) throws IgniteCheckedException {
-        if (keys == null)
+        if (keys == null) {
             keys = new ArrayList<>(keysCount());
+            partIds = new ArrayList<>(keysCount());
+        }
 
         keys.add(key);
+
+        partIds.add(key.partition());
 
         retVals[idx] = retVal;
 
@@ -325,6 +333,13 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
+
+        if (partIds != null && !partIds.isEmpty()) {
+            assert partIds.size() == keys.size();
+
+            for (int i = 0; i < keys.size(); i++)
+                keys.get(i).partition(partIds.get(i));
+        }
     }
 
     /** {@inheritDoc} */

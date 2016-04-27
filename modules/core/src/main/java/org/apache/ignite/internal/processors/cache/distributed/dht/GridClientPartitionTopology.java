@@ -219,7 +219,13 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
+    @Override public void initPartitions(GridDhtPartitionsExchangeFuture exchFut) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean initParts)
+        throws IgniteCheckedException {
         ClusterNode loc = cctx.localNode();
 
         U.writeLock(lock);
@@ -348,13 +354,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public Collection<GridDhtLocalPartition> currentLocalPartitions() {
         return Collections.emptyList();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry e) {
-        assert false : "Entry should not be added to client topology: " + e;
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -777,7 +776,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             node2part.put(nodeId, map = new GridDhtPartitionMap2(nodeId, updateSeq, topVer,
                 Collections.<Integer, GridDhtPartitionState>emptyMap(), false));
 
-        map.updateSequence(updateSeq);
+        map.updateSequence(updateSeq, topVer);
 
         map.put(p, state);
 

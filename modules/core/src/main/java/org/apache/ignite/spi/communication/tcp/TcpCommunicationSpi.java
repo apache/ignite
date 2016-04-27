@@ -1464,12 +1464,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
                 U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())), boundTcpPort);
 
-            return F.asMap(
-                createSpiAttributeName(ATTR_ADDRS), addrs.get1(),
-                createSpiAttributeName(ATTR_HOST_NAMES), addrs.get2(),
-                createSpiAttributeName(ATTR_PORT), boundTcpPort,
-                createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null,
-                createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
+            HashMap<String, Object> res = new HashMap<>(5);
+
+            res.put(createSpiAttributeName(ATTR_ADDRS), addrs.get1());
+            res.put(createSpiAttributeName(ATTR_HOST_NAMES), addrs.get2());
+            res.put(createSpiAttributeName(ATTR_PORT), boundTcpPort);
+            res.put(createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null);
+            res.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
+
+            return res;
         }
         catch (IOException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to resolve local host to addresses: " + locHost, e);
@@ -1588,7 +1591,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         IgniteCheckedException lastEx = null;
 
         // If configured TCP port is busy, find first available in range.
-        for (int port = locPort; port < locPort + locPortRange; port++) {
+        int lastPort = locPortRange == 0 ? locPort : locPort + locPortRange - 1;
+
+        for (int port = locPort; port <= lastPort; port++) {
             try {
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
@@ -2417,7 +2422,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         if (errs == null)
                             errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                                "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
+                                "Make sure that each ComputeTask and GridCacheTransaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
                                 "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
@@ -2445,7 +2450,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         if (errs == null)
                             errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                                "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
+                                "Make sure that each ComputeTask and GridCacheTransaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
                                 "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
@@ -2485,7 +2490,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     if (errs == null)
                         errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                            "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
+                            "Make sure that each ComputeTask and GridCacheTransaction has a timeout set " +
                             "in order to prevent parties from waiting forever in case of network issues " +
                             "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 

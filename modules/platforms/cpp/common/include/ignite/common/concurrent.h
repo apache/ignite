@@ -18,6 +18,8 @@
 #ifndef _IGNITE_COMMON_CONCURRENT
 #define _IGNITE_COMMON_CONCURRENT
 
+#include <cassert>
+
 #include "ignite/common/concurrent_os.h"
 
 namespace ignite
@@ -43,12 +45,13 @@ namespace ignite
             class IGNITE_IMPORT_EXPORT SharedPointerImpl
             {
             public:
+                typedef void(*DeleterType)(void*);
                 /**
                  * Constructor.
                  *
                  * @param ptr Raw pointer.
                  */
-                SharedPointerImpl(void* ptr);
+                SharedPointerImpl(void* ptr, DeleterType deleter);
 
                 /**
                  * Get raw pointer.
@@ -65,6 +68,13 @@ namespace ignite
                 const void* Pointer() const;
 
                 /**
+                 * Get raw pointer.
+                 *
+                 * @return Raw pointer.
+                 */
+                DeleterType Deleter();
+
+                /**
                  * Increment usage counter.
                  */
                 void Increment();
@@ -79,11 +89,28 @@ namespace ignite
                 /** Raw pointer. */
                 void* ptr;
 
+                /** Deleter. */
+                DeleterType deleter;
+
                 /** Reference count. */
                 int32_t refCnt;
 
                 IGNITE_NO_COPY_ASSIGNMENT(SharedPointerImpl)
             };
+
+            /* Forward declaration. */
+            template<typename T>
+            class IGNITE_IMPORT_EXPORT EnableSharedFromThis;
+
+            /* Forward declaration. */
+            template<typename T>
+            inline void ImplEnableShared(EnableSharedFromThis<T>* some, SharedPointerImpl* impl);
+
+            // Do nothing if the instance is not derived from EnableSharedFromThis.
+            inline void ImplEnableShared(const volatile void*, const volatile void*)
+            {
+                // No-op.
+            }
 
             /**
              * Shared pointer.
@@ -92,10 +119,12 @@ namespace ignite
             class IGNITE_IMPORT_EXPORT SharedPointer
             {
             public:
+                friend class EnableSharedFromThis<T>;
+
                 /**
                  * Constructor.
                  */
-                SharedPointer() : impl(NULL), deleter(NULL)
+                SharedPointer() : impl(0)
                 {
                     // No-op.
                 }
@@ -109,14 +138,11 @@ namespace ignite
                 {
                     if (ptr)
                     {
-                        impl = new SharedPointerImpl(ptr);
-                        deleter = SharedPointerDefaultDeleter;
+                        impl = new SharedPointerImpl(ptr, reinterpret_cast<SharedPointerImpl::DeleterType>(&SharedPointerDefaultDeleter<T>));
+                        ImplEnableShared(ptr, impl);
                     }
                     else
-                    {
-                        impl = NULL;
-                        deleter = NULL;
-                    }
+                        impl = 0;
                 }
 
                 /**
@@ -129,14 +155,11 @@ namespace ignite
                 {
                     if (ptr)
                     {
-                        this->impl = new SharedPointerImpl(ptr);
-                        this->deleter = deleter;
+                        impl = new SharedPointerImpl(ptr, reinterpret_cast<SharedPointerImpl::DeleterType>(deleter));
+                        ImplEnableShared(ptr, impl);
                     }
                     else
-                    {
-                        this->impl = NULL;
-                        this->deleter = NULL;
-                    }
+                        impl = 0;
                 }
 
                 /**
@@ -147,7 +170,6 @@ namespace ignite
                 SharedPointer(const SharedPointer& other)
                 {
                     impl = other.impl;
-                    deleter = other.deleter;
 
                     if (impl)
                         impl->Increment();
@@ -162,18 +184,9 @@ namespace ignite
                 {
                     if (this != &other)
                     {
-                        // 1. Create new instance.
                         SharedPointer tmp(other);
 
-                        // 2. Swap with temp.
-                        SharedPointerImpl* impl0 = impl;
-                        void(*deleter0)(T*) = deleter;
-
-                        impl = tmp.impl;
-                        deleter = tmp.deleter;
-
-                        tmp.impl = impl0;
-                        tmp.deleter = deleter0;
+                        std::swap(impl, tmp.impl);
                     }
 
                     return *this;
@@ -188,9 +201,11 @@ namespace ignite
                     {
                         T* ptr = Get();
 
-                        delete impl;
+                        void(*deleter)(T*) = reinterpret_cast<void(*)(T*)>(impl->Deleter());
 
                         deleter(ptr);
+
+                        delete impl;
                     }
                 }
 
@@ -226,10 +241,115 @@ namespace ignite
             private:
                 /** Implementation. */
                 SharedPointerImpl* impl;
-
-                /** Delete function. */
-                void(*deleter)(T*);
             };
+
+            /**
+             * The class provides functionality that allows objects of derived
+             * classes to create instances of shared_ptr pointing to themselves
+             * and sharing ownership with existing shared_ptr objects.
+             */
+            template<typename T>
+            class IGNITE_IMPORT_EXPORT EnableSharedFromThis
+            {
+            public:
+                /**
+                 * Default constructor.
+                 */
+                EnableSharedFromThis() : self(0)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Copy constructor.
+                 */
+                EnableSharedFromThis(const EnableSharedFromThis&) : self(0)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Assignment operator.
+                 */
+                EnableSharedFromThis& operator=(const EnableSharedFromThis&)
+                {
+                    return *this;
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~EnableSharedFromThis()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Create shared pointer for this instance.
+                 *
+                 * Can only be called on already shared object.
+                 * @return New shared pointer instance.
+                 */
+                SharedPointer<T> SharedFromThis()
+                {
+                    assert(self != 0);
+
+                    SharedPointer<T> ptr;
+
+                    ptr.impl = self;
+
+                    self->Increment();
+
+                    return ptr;
+                }
+
+            private:
+                template<typename T0>
+                friend void ImplEnableShared(EnableSharedFromThis<T0>*, SharedPointerImpl*);
+
+                /** Shared pointer base. */
+                SharedPointerImpl* self;
+            };
+
+            // Implementation for instances derived from EnableSharedFromThis.
+            template<typename T>
+            inline void ImplEnableShared(EnableSharedFromThis<T>* some, SharedPointerImpl* impl)
+            {
+                if (some)
+                    some->self = impl;
+            }
+
+            /**
+             * Lock guard.
+             */
+            template<typename T>
+            class LockGuard
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param lock Lockable object.
+                 */
+                LockGuard(T& lock) :
+                    lock(lock)
+                {
+                    lock.Enter();
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~LockGuard()
+                {
+                    lock.Leave();
+                }
+
+            private:
+                T& lock;
+            };
+
+            typedef LockGuard<CriticalSection> CsLockGuard;
         }
     }
 }

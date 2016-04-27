@@ -714,8 +714,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         if (!swapEnabled)
             return null;
 
-        final GridTuple<GridCacheSwapEntry> t = F.t1();
-        final GridTuple<IgniteCheckedException> err = F.t1();
+        final GridTuple<GridCacheSwapEntry> t = new GridTuple<>();
+        final GridTuple<IgniteCheckedException> err = new GridTuple<>();
 
         SwapKey swapKey = new SwapKey(key,
             part,
@@ -1003,7 +1003,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             }
         }
 
-        final GridTuple<IgniteCheckedException> err = F.t1();
+        final GridTuple<IgniteCheckedException> err = new GridTuple<>();
 
         swapMgr.removeAll(spaceName,
             unprocessedKeys,
@@ -1620,7 +1620,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         assert primary || backup;
 
         if (!offheapEnabled)
-            return F.emptyIterator();
+            return new GridEmptyIterator<>();
 
         if (primary && backup)
             return keyIterator(offheap.iterator(spaceName));
@@ -1645,7 +1645,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         assert primary || backup;
 
         if (!swapEnabled)
-            return F.emptyIterator();
+            return new GridEmptyIterator<>();
 
         if (primary && backup)
             return keyIterator(cctx.gridSwap().rawIterator(spaceName));
@@ -2044,7 +2044,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         assert primary || backup;
 
         if (!swapEnabled)
-            return F.emptyIterator();
+            return new GridEmptyIterator<>();
 
         if (primary && backup)
             return cacheEntryIterator(this.<K, V>lazySwapIterator());
@@ -2076,7 +2076,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         assert primary || backup;
 
         if (!offheapEnabled)
-            return F.emptyIterator();
+            return new GridEmptyIterator<>();
 
         if (primary && backup)
             return cacheEntryIterator(this.<K, V>lazyOffHeapIterator());
