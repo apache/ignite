@@ -105,11 +105,7 @@ struct QueriesTestSuiteFixture
         grid = Ignition::Start(cfg, &err);
 
         if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-        {
-            Ignition::Stop(grid.GetName(), true);
-
             BOOST_FAIL(err.GetText());
-        }
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 
