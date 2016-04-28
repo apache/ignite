@@ -17,12 +17,63 @@
 
 package org.apache.ignite.internal.pagemem.wal.entry;
 
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.lang.IgniteUuid;
+
 /**
  *
  */
 public class CheckpointRecord extends WALRecord {
+    /** Checkpoint ID. */
+    private IgniteUuid cpId;
+
+    /** */
+    private boolean end;
+
+    /** Safe replay pointer. */
+    private WALPointer safeReplayPtr;
+
+    /**
+     * @param end Checkpoint end flag.
+     */
+    public CheckpointRecord(boolean end) {
+        cpId = IgniteUuid.randomUuid();
+
+        this.end = end;
+    }
+
+    /**
+     * @param end Checkpoint end flag.
+     */
+    public CheckpointRecord(IgniteUuid cpId, WALPointer safeReplayPtr, boolean end) {
+        this.cpId = cpId;
+        this.end = end;
+        this.safeReplayPtr = safeReplayPtr;
+    }
+
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.CHECKPOINT_RECORD;
+    }
+
+    /**
+     * @return Checkpoint ID.
+     */
+    public IgniteUuid checkpointId() {
+        return cpId;
+    }
+
+    /**
+     * @return Checkpoint end flag.
+     */
+    public boolean end() {
+        return end;
+    }
+
+    /**
+     * @return Safe replay pointer.
+     */
+    public WALPointer safeReplayPointer() {
+        return safeReplayPtr;
     }
 }

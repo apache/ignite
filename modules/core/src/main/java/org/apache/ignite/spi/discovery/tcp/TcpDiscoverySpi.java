@@ -1009,6 +1009,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         locNode.setAttributes(locNodeAttrs);
         locNode.local(true);
 
+        lsnr.onLocalNodeInitialized(locNode);
+
         if (log.isDebugEnabled())
             log.debug("Local node initialized: " + locNode);
     }
