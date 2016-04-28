@@ -33,7 +33,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -57,7 +56,6 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -76,6 +74,9 @@ import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
+/**
+ *
+ */
 public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
@@ -151,7 +152,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     public void _testDeadlocksPartitionedNear() throws Exception {
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, true), NO_OP_TRANSFORMER);
-            //doTestDeadlocks(createCache(PARTITIONED, syncMode, true), WRAPPING_TRANSFORMER);
+            doTestDeadlocks(createCache(PARTITIONED, syncMode, true), WRAPPING_TRANSFORMER);
         }
     }
 
@@ -212,12 +213,6 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     private void doTestDeadlocks(IgniteCache cache, IgniteClosure<Integer, Object> transformer) throws Exception {
         try {
             awaitPartitionMapExchange();
-
-/*
-            doTestDeadlock(2, false, true, true, transformer);
-            doTestDeadlock(2, false, false, false, transformer);
-            doTestDeadlock(2, false, false, true, transformer);
-*/
 
             doTestDeadlock(3, false, true, true, transformer);
             doTestDeadlock(3, false, false, false, transformer);
@@ -344,8 +339,6 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         }, loc ? 2 : txCnt, "tx-thread");
 
         fut.get();
-
-        TestCommunicationSpi.open = true;
 
         U.sleep(1000);
 
@@ -523,15 +516,12 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
         /** Tx ids. */
         private static final Set<GridCacheVersion> TX_IDS = new GridConcurrentHashSet<>();
 
-        private static volatile boolean open;
-
         /**
          * @param txCnt Tx count.
          */
         private static void init(int txCnt) {
             TX_CNT = txCnt;
             TX_IDS.clear();
-            open = false;
         }
 
         /** {@inheritDoc} */
@@ -548,7 +538,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     GridCacheVersion txId = req.version();
 
-                    if (!open && TX_IDS.contains(txId)) {
+                    if (TX_IDS.contains(txId)) {
                         while (TX_IDS.size() != TX_CNT) {
                             try {
                                 U.sleep(10);
@@ -564,8 +554,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     GridCacheVersion txId = res.version();
 
-                    if (!open)
-                        TX_IDS.add(txId);
+                    TX_IDS.add(txId);
                 }
             }
 

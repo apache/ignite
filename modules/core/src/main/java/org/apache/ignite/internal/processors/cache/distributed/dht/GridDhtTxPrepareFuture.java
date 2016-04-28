@@ -1124,6 +1124,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
                         continue;
 
+                    long timeout = tx.remainingTime();
+
+                    if (timeout == -1)
+                        return;
+
                     MiniFuture fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
 
                     add(fut); // Append new future.
@@ -1135,6 +1140,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                         fut.futureId(),
                         tx.topologyVersion(),
                         tx,
+                        timeout,
                         dhtWrites,
                         nearWrites,
                         txNodes,
@@ -1214,6 +1220,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (!tx.dhtMap().containsKey(nearMapping.node().id())) {
                         assert nearMapping.writes() != null;
 
+                        long timeout = tx.remainingTime();
+
+                        if (timeout == -1)
+                            return;
+
                         MiniFuture fut = new MiniFuture(nearMapping.node().id(), null, nearMapping);
 
                         add(fut); // Append new future.
@@ -1223,6 +1234,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             fut.futureId(),
                             tx.topologyVersion(),
                             tx,
+                            timeout,
                             null,
                             nearMapping.writes(),
                             tx.transactionNodes(),

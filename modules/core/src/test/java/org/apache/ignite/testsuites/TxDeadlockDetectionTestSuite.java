@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.transactions.DepthFirstSearchTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionCrossCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionTest;
 
@@ -35,6 +36,7 @@ public class TxDeadlockDetectionTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Deadlock Detection Test Suite");
 
         suite.addTestSuite(DepthFirstSearchTest.class);
+        suite.addTestSuite(TxOptimisticDeadlockDetectionTest.class);
         suite.addTestSuite(TxPessimisticDeadlockDetectionTest.class);
         suite.addTestSuite(TxPessimisticDeadlockDetectionCrossCacheTest.class);
         suite.addTestSuite(TxDeadlockDetectionTest.class);

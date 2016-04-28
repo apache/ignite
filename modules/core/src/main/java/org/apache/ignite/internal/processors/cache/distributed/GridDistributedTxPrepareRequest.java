@@ -153,6 +153,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /**
      * @param tx Cache transaction.
+     * @param timeout Transactions timeout.
      * @param reads Read entries.
      * @param writes Write entries.
      * @param txNodes Transaction nodes mapping.
@@ -161,6 +162,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,
+        long timeout,
         @Nullable Collection<IgniteTxEntry> reads,
         Collection<IgniteTxEntry> writes,
         Map<UUID, Collection<UUID>> txNodes,
@@ -173,12 +175,12 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         threadId = tx.threadId();
         concurrency = tx.concurrency();
         isolation = tx.isolation();
-        timeout = tx.timeout();
         invalidate = tx.isInvalidate();
         txSize = tx.size();
         sys = tx.system();
         plc = tx.ioPolicy();
 
+        this.timeout = timeout;
         this.reads = reads;
         this.writes = writes;
         this.txNodes = txNodes;

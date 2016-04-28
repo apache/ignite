@@ -426,6 +426,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             futId,
             tx.topologyVersion(),
             tx,
+            tx.timeout(),
             m.reads(),
             m.writes(),
             m.near(),

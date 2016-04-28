@@ -214,6 +214,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 futId,
                 tx.topologyVersion(),
                 tx,
+                tx.timeout(),
                 m.reads(),
                 m.writes(),
                 m.near(),

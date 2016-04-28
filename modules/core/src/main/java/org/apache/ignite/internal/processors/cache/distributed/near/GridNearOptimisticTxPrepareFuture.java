@@ -474,10 +474,16 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             final ClusterNode n = m.node();
 
+            long timeout = tx.remainingTime();
+
+            if (timeout == -1)
+                return;
+
             GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
                 futId,
                 tx.topologyVersion(),
                 tx,
+                timeout,
                 null,
                 m.writes(),
                 m.near(),
