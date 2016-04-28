@@ -460,14 +460,11 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * @return Keys for which locks requested from remote nodes but response isn't received.
      */
     public Set<KeyCacheObject> requestedKeys() {
-        Set<KeyCacheObject> requestedKeys = null;
-
         for (IgniteInternalFuture<Boolean> miniFut : futures()) {
             if (isMini(miniFut) && !miniFut.isDone()) {
-                if (requestedKeys == null)
-                    requestedKeys = new HashSet<>();
-
                 MiniFuture mini = (MiniFuture)miniFut;
+
+                Set<KeyCacheObject> requestedKeys = U.newHashSet(mini.keys.size());
 
                 requestedKeys.addAll(mini.keys);
 
@@ -475,7 +472,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             }
         }
 
-        return requestedKeys;
+        return null;
     }
 
     /**

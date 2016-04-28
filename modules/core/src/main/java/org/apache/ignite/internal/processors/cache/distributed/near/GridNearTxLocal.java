@@ -790,9 +790,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         if (fut == null) {
             // Future must be created before any exception can be thrown.
             if (optimistic()) {
-                fut = serializable() ?
-                    new GridNearOptimisticSerializableTxPrepareFuture(cctx, this) :
-                    new GridNearOptimisticTxPrepareFuture(cctx, this);
+                if (serializable())
+                    fut = new GridNearOptimisticSerializableTxPrepareFuture(cctx, this);
+                else {
+                    long timeout = remainingTime();
+
+                    if (timeout == -1)
+                        return new GridFinishedFuture<>(timeoutException());
+
+                    fut = new GridNearOptimisticTxPrepareFuture(cctx, this, timeout);
+                }
             }
             else
                 fut = new GridNearPessimisticTxPrepareFuture(cctx, this);
@@ -968,9 +975,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
         init();
 
+        long timeout = remainingTime();
+
+        if (timeout == -1)
+            return new GridFinishedFuture<>(timeoutException());
+
         GridDhtTxPrepareFuture fut = new GridDhtTxPrepareFuture(
             cctx,
             this,
+            timeout,
             IgniteUuid.randomUuid(),
             Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
             last,

@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,10 +38,14 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -52,7 +58,9 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
@@ -68,15 +76,31 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     @GridToStringExclude
     private KeyLockFuture keyLockFut;
 
+    /** Timeout. */
+    private final long timeout;
+
+    /** Timeout object. */
+    private PrepareTimeoutObject timeoutObj;
+
+    /** Timed out. */
+    private volatile boolean timedOut;
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridNearOptimisticTxPrepareFuture(GridCacheSharedContext cctx,
-        GridNearTxLocal tx) {
+    public GridNearOptimisticTxPrepareFuture(GridCacheSharedContext cctx, GridNearTxLocal tx, long timeout) {
         super(cctx, tx);
 
         assert tx.optimistic() && !tx.serializable() : tx;
+
+        this.timeout = timeout;
+
+        if (timeout > 0) {
+            timeoutObj = new PrepareTimeoutObject();
+
+            cctx.time().addTimeoutObject(timeoutObj);
+        }
     }
 
     /** {@inheritDoc} */
@@ -164,6 +188,35 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     }
 
     /**
+     * @return Keys for which {@link MiniFuture} isn't completed.
+     */
+    public Set<KeyCacheObject> requestedKeys() {
+        if (futs != null && !futs.isEmpty()) {
+            for (int i = 0; i < futs.size(); i++) {
+                IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+
+                if (isMini(fut) && !fut.isDone()) {
+                    MiniFuture miniFut = (MiniFuture)fut;
+
+                    if (miniFut.rcvRes.get())
+                        continue;
+
+                    Collection<IgniteTxEntry> entries = miniFut.mapping().entries();
+
+                    Set<KeyCacheObject> keys = U.newHashSet(entries.size());
+
+                    for (IgniteTxEntry entry : entries)
+                        keys.add(entry.txKey().key());
+
+                    return keys;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Finds pending mini future by the given mini ID.
      *
      * @param miniId Mini ID to find.
@@ -226,6 +279,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (super.onDone(tx, err0)) {
             // Don't forget to clean up.
             cctx.mvcc().removeMvccFuture(this);
+
+            if (timeoutObj != null)
+                cctx.time().removeTimeoutObject(timeoutObj);
 
             return true;
         }
@@ -452,6 +508,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     onError(e);
                 }
             }
+
+            if (timedOut)
+                return;
 
             final MiniFuture fut = new MiniFuture(m, mappings);
 
@@ -710,6 +769,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             if (rcvRes.compareAndSet(false, true)) {
                 if (res.error() != null) {
+                    if (res.error() instanceof IgniteTxTimeoutCheckedException && cctx.tm().deadlockDetectionEnabled())
+                        return;
+
                     // Fail the whole compound future.
                     onError(res.error());
                 }
@@ -765,6 +827,85 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MiniFuture.class, this, "done", isDone(), "cancelled", isCancelled(), "err", error());
+        }
+    }
+
+    /**
+     *
+     */
+    private class PrepareTimeoutObject extends GridTimeoutObjectAdapter {
+        /**
+         * Default constructor.
+         */
+        PrepareTimeoutObject() {
+            super(timeout);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            timedOut = true;
+
+            if (cctx.tm().deadlockDetectionEnabled()) {
+                Set<IgniteTxKey> keys = null;
+
+                if (keyLockFut != null)
+                    keys = new HashSet<>(keyLockFut.lockKeys);
+                else {
+                    if (futs != null && !futs.isEmpty()) {
+                        for (int i = 0; i < futs.size(); i++) {
+                            IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+
+                            if (isMini(fut) && !fut.isDone()) {
+                                MiniFuture miniFut = (MiniFuture)fut;
+
+                                if (miniFut.rcvRes.get())
+                                    continue;
+
+                                Collection<IgniteTxEntry> entries = miniFut.mapping().entries();
+
+                                keys = U.newHashSet(entries.size());
+
+                                for (IgniteTxEntry entry : entries)
+                                    keys.add(entry.txKey());
+
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx.nearXidVersion(), keys);
+
+                fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
+                    @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
+                        try {
+                            TxDeadlock deadlock = fut.get();
+
+                            err.compareAndSet(null, new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
+                                "within provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
+                                deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx)) : null));
+                        }
+                        catch (IgniteCheckedException e) {
+                            err.compareAndSet(null, e);
+
+                            U.warn(log, "Failed to detect deadlock.", e);
+                        }
+
+                        onComplete();
+                    }
+                });
+            }
+            else {
+                err.compareAndSet(null, new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
+                    "within provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+
+                onComplete();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(PrepareTimeoutObject.class, this);
         }
     }
 }
