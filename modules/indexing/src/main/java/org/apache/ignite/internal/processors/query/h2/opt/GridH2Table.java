@@ -426,7 +426,7 @@ public class GridH2Table extends TableBase {
                         Object obj = v.getObject();
 
                         // Convert to heap object if row lies off-heap, or unswap call will fail.
-                        if (obj instanceof BinaryObjectOffheapImpl)
+                        if (obj instanceof BinaryObjectOffheapImpl) //
                             obj = ((BinaryObjectOffheapImpl)obj).heapCopy();
 
                         ((GridH2AbstractKeyValueRow)old).onUnswap(obj, true);
