@@ -68,6 +68,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Template configuration flag. */
     private boolean template;
 
+    private AssignmentState state;
+
     /** */
     private transient boolean exchangeNeeded;
 
@@ -146,6 +148,10 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public boolean start() {
         return !template && startCfg != null;
+    }
+
+    public boolean modify() {
+        return state != null && !stop && !close;
     }
 
     /**
@@ -265,6 +271,14 @@ public class DynamicCacheChangeRequest implements Serializable {
      */
     public void close(boolean close) {
         this.close = close;
+    }
+
+    public AssignmentState state() {
+        return state;
+    }
+
+    public void state(AssignmentState state) {
+        this.state = state;
     }
 
     /** {@inheritDoc} */

@@ -71,6 +71,8 @@ public class DynamicCacheDescriptor {
     /** */
     private boolean rcvdOnDiscovery;
 
+    private AssignmentState state;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -251,6 +253,14 @@ public class DynamicCacheDescriptor {
      */
     public void receivedOnDiscovery(boolean rcvdOnDiscovery) {
         this.rcvdOnDiscovery = rcvdOnDiscovery;
+    }
+
+    public AssignmentState state() {
+        return state;
+    }
+
+    public void state(AssignmentState state) {
+        this.state = state;
     }
 
     /** {@inheritDoc} */

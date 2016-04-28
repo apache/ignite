@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
@@ -281,6 +282,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
+
+    private final AtomicReference<AssignmentState> state = new AtomicReference<>(new AssignmentState(true));
 
     /** {@inheritDoc} */
     @Override public String name() {
@@ -3955,6 +3958,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
         return entrySet().iterator();
+    }
+
+    public AssignmentState state() {
+        return state.get();
+    }
+
+    public boolean state(AssignmentState state) {
+        while (true) {
+            AssignmentState oldState = this.state.get();
+
+            if (state.equals(oldState))
+                return false;
+
+            if (this.state.compareAndSet(oldState, state))
+                return true;
+        }
     }
 
     /**
