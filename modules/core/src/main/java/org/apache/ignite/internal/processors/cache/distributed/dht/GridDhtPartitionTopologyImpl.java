@@ -703,7 +703,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (updateSeq)
                     this.updateSeq.incrementAndGet();
 
-                create = true;
+                created = true;
 
                 if (log.isDebugEnabled())
                     log.debug("Created local partition: " + loc);
