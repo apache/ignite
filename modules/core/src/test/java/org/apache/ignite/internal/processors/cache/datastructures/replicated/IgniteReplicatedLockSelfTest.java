@@ -15,25 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform;
+package org.apache.ignite.internal.processors.cache.datastructures.replicated;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteLockAbstractSelfTest;
+
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- * Platform bootstrap. Responsible for starting Ignite node with non-Java platform.
+ *
  */
-public interface PlatformBootstrap {
-    /**
-     * Start Ignite node.
-     *
-     * @param cfg Configuration.
-     * @param springCtx Optional Spring resource context.
-     * @param envPtr Environment pointer.
-     * @param dataPtr Optional pointer to additional data required for startup.
-     * @return Platform processor.
-     */
-    public PlatformProcessor start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx,
-        long envPtr, long dataPtr);
+public class IgniteReplicatedLockSelfTest extends IgniteLockAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode atomicsCacheMode() {
+        return REPLICATED;
+    }
 }

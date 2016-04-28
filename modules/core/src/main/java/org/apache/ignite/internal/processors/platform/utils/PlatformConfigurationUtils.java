@@ -62,7 +62,8 @@ import java.util.Map;
 /**
  * Configuration utils.
  */
-@SuppressWarnings("unchecked") public class PlatformConfigurationUtils {
+@SuppressWarnings("unchecked")
+public class PlatformConfigurationUtils {
     /**
      * Write .Net configuration to the stream.
      *
@@ -344,6 +345,7 @@ import java.util.Map;
         cfg.setWorkDirectory(in.readString());
         cfg.setLocalHost(in.readString());
         cfg.setDaemon(in.readBoolean());
+        cfg.setLateAffinityAssignment(in.readBoolean());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -670,6 +672,7 @@ import java.util.Map;
         w.writeString(cfg.getWorkDirectory());
         w.writeString(cfg.getLocalHost());
         w.writeBoolean(cfg.isDaemon());
+        w.writeBoolean(cfg.isLateAffinityAssignment());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 

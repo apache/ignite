@@ -2584,6 +2584,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
                             finally {
                                 if (!success) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Closing socket to next: " + next);
+
                                     U.closeQuiet(sock);
 
                                     sock = null;
@@ -2747,6 +2750,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             forceSndPending = false;
 
                             if (!sent) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Closing socket to next (not sent): " + next);
+
                                 U.closeQuiet(sock);
 
                                 sock = null;
@@ -2897,12 +2903,12 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param msg Join request message.
          */
-        private void processJoinRequestMessage(TcpDiscoveryJoinRequestMessage msg) {
+        private void processJoinRequestMessage(final TcpDiscoveryJoinRequestMessage msg) {
             assert msg != null;
 
-            TcpDiscoveryNode node = msg.node();
+            final TcpDiscoveryNode node = msg.node();
 
-            UUID locNodeId = getLocalNodeId();
+            final UUID locNodeId = getLocalNodeId();
 
             if (!msg.client()) {
                 boolean rmtHostLoopback = node.socketAddresses().size() == 1 &&
@@ -3110,92 +3116,107 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
+                final IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
 
                 if (err != null) {
-                    boolean ping = node.id().equals(err.nodeId()) ? pingNode(node) : pingNode(err.nodeId());
-
-                    if (!ping) {
-                        if (log.isDebugEnabled())
-                            log.debug("Conflicting node has already left, need to wait for event. " +
-                                "Will ignore join request for now since it will be recent [req=" + msg +
-                                ", err=" + err.message() + ']');
-
-                        // Ignore join request.
-                        return;
-                    }
-
-                    LT.warn(log, null, err.message());
-
-                    // Always output in debug.
                     if (log.isDebugEnabled())
-                        log.debug(err.message());
+                        log.debug("Node validation failed [res=" + err + ", node=" + node + ']');
 
-                    try {
-                        trySendMessageDirectly(node,
-                            new TcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
-                    }
-                    catch (IgniteSpiException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send hash ID resolver validation failed message to node " +
-                                "[node=" + node + ", err=" + e.getMessage() + ']');
+                    utilityPool.submit(
+                        new Runnable() {
+                            @Override public void run() {
+                                boolean ping = node.id().equals(err.nodeId()) ? pingNode(node) : pingNode(err.nodeId());
 
-                        onException("Failed to send hash ID resolver validation failed message to node " +
-                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                    }
+                                if (!ping) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Conflicting node has already left, need to wait for event. " +
+                                            "Will ignore join request for now since it will be recent [req=" + msg +
+                                            ", err=" + err.message() + ']');
+
+                                    // Ignore join request.
+                                    return;
+                                }
+
+                                LT.warn(log, null, err.message());
+
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug(err.message());
+
+                                try {
+                                    trySendMessageDirectly(node,
+                                        new TcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
+                                }
+                                catch (IgniteSpiException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send hash ID resolver validation failed message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                                    onException("Failed to send hash ID resolver validation failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                                }
+                            }
+                        }
+                    );
 
                     // Ignore join request.
                     return;
                 }
 
-                String locMarsh = locNode.attribute(ATTR_MARSHALLER);
-                String rmtMarsh = node.attribute(ATTR_MARSHALLER);
+                final String locMarsh = locNode.attribute(ATTR_MARSHALLER);
+                final String rmtMarsh = node.attribute(ATTR_MARSHALLER);
 
                 if (!F.eq(locMarsh, rmtMarsh)) {
-                    String errMsg = "Local node's marshaller differs from remote node's marshaller " +
-                        "(to make sure all nodes in topology have identical marshaller, " +
-                        "configure marshaller explicitly in configuration) " +
-                        "[locMarshaller=" + locMarsh + ", rmtMarshaller=" + rmtMarsh +
-                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+                    utilityPool.submit(
+                        new Runnable() {
+                            @Override public void run() {
+                                String errMsg = "Local node's marshaller differs from remote node's marshaller " +
+                                    "(to make sure all nodes in topology have identical marshaller, " +
+                                    "configure marshaller explicitly in configuration) " +
+                                    "[locMarshaller=" + locMarsh + ", rmtMarshaller=" + rmtMarsh +
+                                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    LT.warn(log, null, errMsg);
+                                LT.warn(log, null, errMsg);
 
-                    // Always output in debug.
-                    if (log.isDebugEnabled())
-                        log.debug(errMsg);
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug(errMsg);
 
-                    try {
-                        String sndMsg = "Local node's marshaller differs from remote node's marshaller " +
-                            "(to make sure all nodes in topology have identical marshaller, " +
-                            "configure marshaller explicitly in configuration) " +
-                            "[locMarshaller=" + rmtMarsh + ", rmtMarshaller=" + locMarsh +
-                            ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                            ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                            ", rmtNodeId=" + locNode.id() + ']';
+                                try {
+                                    String sndMsg = "Local node's marshaller differs from remote node's marshaller " +
+                                        "(to make sure all nodes in topology have identical marshaller, " +
+                                        "configure marshaller explicitly in configuration) " +
+                                        "[locMarshaller=" + rmtMarsh + ", rmtMarshaller=" + locMarsh +
+                                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                        ", rmtNodeId=" + locNode.id() + ']';
 
-                        trySendMessageDirectly(node,
-                            new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
-                    }
-                    catch (IgniteSpiException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to send marshaller check failed message to node " +
-                                "[node=" + node + ", err=" + e.getMessage() + ']');
+                                    trySendMessageDirectly(node,
+                                        new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                                }
+                                catch (IgniteSpiException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send marshaller check failed message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
 
-                        onException("Failed to send marshaller check failed message to node " +
-                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
-                    }
+                                    onException("Failed to send marshaller check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                                }
+                            }
+                        }
+                    );
 
                     // Ignore join request.
                     return;
                 }
 
                 // If node have no value for this attribute then we treat it as true.
-                Boolean locMarshUseDfltSuid = locNode.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
+                final Boolean locMarshUseDfltSuid = locNode.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
                 boolean locMarshUseDfltSuidBool = locMarshUseDfltSuid == null ? true : locMarshUseDfltSuid;
 
-                Boolean rmtMarshUseDfltSuid = node.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
+                final Boolean rmtMarshUseDfltSuid = node.attribute(ATTR_MARSHALLER_USE_DFLT_SUID);
                 boolean rmtMarshUseDfltSuidBool = rmtMarshUseDfltSuid == null ? true : rmtMarshUseDfltSuid;
 
                 Boolean locLateAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
@@ -3203,26 +3224,35 @@ class ServerImpl extends TcpDiscoveryImpl {
                 boolean locLateAssignBool = locLateAssign != null ? locLateAssign : false;
 
                 if (locMarshUseDfltSuidBool != rmtMarshUseDfltSuidBool) {
-                    String errMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
-                        " property value differs from remote node's value " +
-                        "(to make sure all nodes in topology have identical marshaller settings, " +
-                        "configure system property explicitly) " +
-                        "[locMarshUseDfltSuid=" + locMarshUseDfltSuid + ", rmtMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
-                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+                    utilityPool.submit(
+                        new Runnable() {
+                            @Override public void run() {
+                                String errMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
+                                    " property value differs from remote node's value " +
+                                    "(to make sure all nodes in topology have identical marshaller settings, " +
+                                    "configure system property explicitly) " +
+                                    "[locMarshUseDfltSuid=" + locMarshUseDfltSuid +
+                                    ", rmtMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
+                                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    String sndMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
-                        " property value differs from remote node's value " +
-                        "(to make sure all nodes in topology have identical marshaller settings, " +
-                        "configure system property explicitly) " +
-                        "[locMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
-                        ", rmtMarshUseDfltSuid=" + locMarshUseDfltSuid +
-                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                        ", rmtNodeId=" + locNode.id() + ']';
+                                String sndMsg = "Local node's " + IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID +
+                                    " property value differs from remote node's value " +
+                                    "(to make sure all nodes in topology have identical marshaller settings, " +
+                                    "configure system property explicitly) " +
+                                    "[locMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
+                                    ", rmtMarshUseDfltSuid=" + locMarshUseDfltSuid +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
 
-                    nodeCheckError(node, errMsg, sndMsg);
+                                nodeCheckError(
+                                    node,
+                                    errMsg,
+                                    sndMsg);
+                            }
+                        });
 
                     // Ignore join request.
                     return;
@@ -3230,29 +3260,37 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 // Validate compact footer flags.
                 Boolean locMarshCompactFooter = locNode.attribute(ATTR_MARSHALLER_COMPACT_FOOTER);
-                boolean locMarshCompactFooterBool = locMarshCompactFooter != null ? locMarshCompactFooter : false;
+                final boolean locMarshCompactFooterBool = locMarshCompactFooter != null ? locMarshCompactFooter : false;
 
                 Boolean rmtMarshCompactFooter = node.attribute(ATTR_MARSHALLER_COMPACT_FOOTER);
-                boolean rmtMarshCompactFooterBool = rmtMarshCompactFooter != null ? rmtMarshCompactFooter : false;
+                final boolean rmtMarshCompactFooterBool = rmtMarshCompactFooter != null ? rmtMarshCompactFooter : false;
 
                 if (locMarshCompactFooterBool != rmtMarshCompactFooterBool) {
-                    String errMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
-                        "the same property on remote node (make sure all nodes in topology have the same value " +
-                        "of \"compactFooter\" property) [locMarshallerCompactFooter=" + locMarshCompactFooterBool +
-                        ", rmtMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
-                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+                    utilityPool.submit(
+                        new Runnable() {
+                            @Override public void run() {
+                                String errMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
+                                    "the same property on remote node (make sure all nodes in topology have the same value " +
+                                    "of \"compactFooter\" property) [locMarshallerCompactFooter=" + locMarshCompactFooterBool +
+                                    ", rmtMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
+                                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                    String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
-                        "the same property on remote node (make sure all nodes in topology have the same value " +
-                        "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
-                        ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
-                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                        ", rmtNodeId=" + locNode.id() + ']';
+                                String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
+                                    "the same property on remote node (make sure all nodes in topology have the same value " +
+                                    "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
+                                    ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
+                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                    ", rmtNodeId=" + locNode.id() + ']';
 
-                    nodeCheckError(node, errMsg, sndMsg);
+                                nodeCheckError(
+                                    node,
+                                    errMsg,
+                                    sndMsg);
+                            }
+                        });
 
                     // Ignore join request.
                     return;
@@ -5871,6 +5909,16 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message to add.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg) {
+            if ((msg instanceof TcpDiscoveryStatusCheckMessage ||
+                msg instanceof TcpDiscoveryJoinRequestMessage ||
+                msg instanceof TcpDiscoveryCustomEventMessage) &&
+                queue.contains(msg)) {
+                if (log.isDebugEnabled())
+                    log.debug("Ignoring duplicate message: " + msg);
+
+                return;
+            }
+
             if (msg.highPriority())
                 queue.addFirst(msg);
             else
