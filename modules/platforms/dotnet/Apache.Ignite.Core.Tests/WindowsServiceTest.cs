@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using System.ServiceProcess;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -51,9 +52,9 @@ namespace Apache.Ignite.Core.Tests
 
             IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
+                "/install",
                 "-springConfigUrl=" + springPath,
-                "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
-                "/install"
+                "-jvmClasspath=" + Classpath.CreateClasspath(forceTestClasspath: true, skipPrefix: true)
             });
 
             var service = GetIgniteService();
@@ -73,10 +74,12 @@ namespace Apache.Ignite.Core.Tests
             var controller = GetIgniteService();
 
             if (controller != null && controller.CanStop)
+            {
                 controller.Stop();
 
-            var exePath = typeof(IgniteRunner).Assembly.Location;
-            IgniteProcess.Start(exePath, string.Empty, args: new[] {"/uninstall"});
+                var exePath = typeof(IgniteRunner).Assembly.Location;
+                IgniteProcess.Start(exePath, string.Empty, args: new[] {"/uninstall"});
+            }
         }
 
         private static ServiceController GetIgniteService()
