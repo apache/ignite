@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _IGNITE_UTILS_UTILS
-#define _IGNITE_UTILS_UTILS
+#ifndef _IGNITE_COMMON_UTILS
+#define _IGNITE_COMMON_UTILS
 
 #include <stdint.h>
 

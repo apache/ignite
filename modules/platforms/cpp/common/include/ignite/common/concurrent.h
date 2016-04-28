@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_UTILS_CONCURRENT
-#define _IGNITE_UTILS_CONCURRENT
+#ifndef _IGNITE_COMMON_CONCURRENT
+#define _IGNITE_COMMON_CONCURRENT
 
 #include <cassert>
 
