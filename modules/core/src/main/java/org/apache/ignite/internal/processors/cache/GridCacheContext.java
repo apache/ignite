@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
@@ -586,14 +585,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert e != null;
         assert !e.isInternal() : e;
 
-        cache.map().incrementSize(e);
-
-        if (isDht() || isColocated() || isDhtAtomic()) {
-            GridDhtLocalPartition part = topology().localPartition(e.partition(), AffinityTopologyVersion.NONE, false);
-
-            if (part != null)
-                part.incrementPublicSize();
-        }
+        cache.incrementSize(e);
     }
 
     /**
@@ -604,14 +596,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert e != null;
         assert !e.isInternal() : e;
 
-        cache.map().decrementSize(e);
-
-        if (isDht() || isColocated() || isDhtAtomic()) {
-            GridDhtLocalPartition part = topology().localPartition(e.partition(), AffinityTopologyVersion.NONE, false);
-
-            if (part != null)
-                part.decrementPublicSize();
-        }
+        cache.decrementSize(e);
     }
 
     /**
@@ -1087,8 +1072,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         for (CacheEntryPredicate p0 : p) {
             if ((p0 instanceof CacheEntrySerializablePredicate) &&
-               ((CacheEntrySerializablePredicate)p0).predicate() instanceof CacheEntryPredicateNoValue)
-            return true;
+                ((CacheEntrySerializablePredicate)p0).predicate() instanceof CacheEntryPredicateNoValue)
+                return true;
         }
 
         return false;
@@ -1145,7 +1130,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings({"unchecked"})
     public IgnitePredicate<Cache.Entry<K, V>>[] vararg(IgnitePredicate<Cache.Entry<K, V>> p) {
-        return p == null ? CU.<K, V>empty() : new IgnitePredicate[]{p};
+        return p == null ? CU.<K, V>empty() : new IgnitePredicate[] {p};
     }
 
     /**
@@ -1309,8 +1294,6 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         return (opCtx != null && opCtx.skipStore());
     }
-
-
 
     /**
      * @return {@code True} if need check near cache context.
@@ -1778,9 +1761,20 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
+        return toCacheKeyObject(obj, false);
+    }
+
+    /**
+     * @param obj Object.
+     * @return Cache key object.
+     */
+    public KeyCacheObject toCacheKeyObject(Object obj, boolean includePartition) {
         assert validObjectForCache(obj) : obj;
 
-        return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
+        if (includePartition)
+            return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true, affinity().partition(obj));
+        else
+            return cacheObjects().toCacheKeyObject(cacheObjCtx, obj, true);
     }
 
     /**
@@ -1812,8 +1806,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public CacheObject unswapCacheObject(byte type, byte[] bytes, @Nullable IgniteUuid clsLdrId)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         if (ctx.config().isPeerClassLoadingEnabled() && type != CacheObject.TYPE_BYTE_ARR) {
             ClassLoader ldr = clsLdrId != null ? deploy().getClassLoader(clsLdrId) : deploy().localLoader();
 
@@ -1934,15 +1927,24 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * @param keys Keys.
-     * @return Co
+     * @return Read-only collection of KeyCacheObject instances.
      */
     public Collection<KeyCacheObject> cacheKeysView(Collection<?> keys) {
+        return cacheKeysView(keys, false);
+    }
+
+    /**
+     * @param keys Keys.
+     * @param includePartition Include partition.
+     * @return Read-only collection of KeyCacheObject instances.
+     */
+    public Collection<KeyCacheObject> cacheKeysView(Collection<?> keys, final boolean includePartition) {
         return F.viewReadOnly(keys, new C1<Object, KeyCacheObject>() {
             @Override public KeyCacheObject apply(Object key) {
                 if (key == null)
                     throw new NullPointerException("Null key.");
 
-                return toCacheKeyObject(key);
+                return toCacheKeyObject(key, includePartition);
             }
         });
     }

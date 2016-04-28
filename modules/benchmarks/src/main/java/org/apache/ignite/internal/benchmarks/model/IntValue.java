@@ -85,6 +85,23 @@ public class IntValue implements Externalizable, Binarylizable {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        IntValue value = (IntValue)o;
+
+        return val == value.val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return val;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "Value [id=" + val + ']';
     }

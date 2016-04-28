@@ -305,6 +305,8 @@ namespace ignite
                 jmethodID m_PlatformProcessor_getOrCreateCache;
                 jmethodID m_PlatformProcessor_createCacheFromConfig;
                 jmethodID m_PlatformProcessor_getOrCreateCacheFromConfig;
+                jmethodID m_PlatformProcessor_createNearCache;
+                jmethodID m_PlatformProcessor_getOrCreateNearCache;
                 jmethodID m_PlatformProcessor_destroyCache;
                 jmethodID m_PlatformProcessor_affinity;
                 jmethodID m_PlatformProcessor_dataStreamer;
@@ -519,6 +521,8 @@ namespace ignite
                 jobject ProcessorCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo);
                 jobject ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr);
                 jobject ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo);
+                jobject ProcessorCreateNearCache(jobject obj, const char* name, long long memPtr);
+                jobject ProcessorGetOrCreateNearCache(jobject obj, const char* name, long long memPtr);
                 void ProcessorDestroyCache(jobject obj, const char* name);
                 void ProcessorDestroyCache(jobject obj, const char* name, JniErrorInfo* errInfo);
                 jobject ProcessorAffinity(jobject obj, const char* name);
@@ -665,6 +669,7 @@ namespace ignite
                 jobject LocalToGlobal(JNIEnv* env, jobject obj);
                 jobject ProcessorCache0(jobject proc, const char* name, jmethodID mthd, JniErrorInfo* errInfo);
                 jobject ProcessorCacheFromConfig0(jobject proc, long long memPtr, jmethodID mthd, JniErrorInfo* errInfo);
+                jobject ProcessorGetOrCreateNearCache0(jobject obj, const char* name, long long memPtr, jmethodID methodID);
             };
 
             JNIEXPORT jlong JNICALL JniCacheStoreCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
