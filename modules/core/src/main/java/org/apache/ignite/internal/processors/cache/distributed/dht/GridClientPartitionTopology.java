@@ -357,13 +357,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtLocalPartition onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry e) {
-        assert false : "Entry should not be added to client topology: " + e;
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public void onRemoved(GridDhtCacheEntry e) {
         assert false : "Entry should not be removed from client topology: " + e;
     }

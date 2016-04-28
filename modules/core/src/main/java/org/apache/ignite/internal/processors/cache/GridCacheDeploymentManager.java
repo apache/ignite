@@ -274,9 +274,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             qryMgr.onUndeploy(ldr);
 
         // Examine swap for entries to undeploy.
-        int swapUndeployCnt = cacheCtx.isNear() ?
-            cacheCtx.near().dht().context().swap().onUndeploy(ldr) :
-            cacheCtx.swap().onUndeploy(ldr);
+        int swapUndeployCnt = cacheCtx.offheap().onUndeploy(ldr);
 
         if (cacheCtx.userCache() && (!keys.isEmpty() || swapUndeployCnt != 0)) {
             U.quietAndWarn(log, "");
@@ -304,7 +302,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private void addEntries(ClassLoader ldr, Collection<KeyCacheObject> keys, GridCacheAdapter cache) {
         GridCacheContext cacheCtx = cache.context();
 
-        for (GridCacheEntryEx e : (Collection<GridCacheEntryEx>)cache.entries()) {
+        for (GridCacheEntryEx e : (Iterable<GridCacheEntryEx>)cache.entries()) {
             boolean undeploy = cacheCtx.isNear() ?
                 undeploy(ldr, e, cacheCtx.near()) || undeploy(ldr, e, cacheCtx.near().dht()) :
                 undeploy(ldr, e, cacheCtx.cache());

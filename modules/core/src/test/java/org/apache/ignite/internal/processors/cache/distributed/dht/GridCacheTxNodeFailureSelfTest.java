@@ -358,7 +358,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         else {
             assertTrue("near=" + nearEntry + ", hc=" + System.identityHashCode(nearEntry), nearEntry == null);
             assertTrue("Invalid backup cache entry: " + dhtEntry,
-                dhtEntry == null || dhtEntry.rawGetOrUnmarshal(false) == null);
+                dhtEntry == null || dhtEntry.rawGet() == null);
         }
     }
 

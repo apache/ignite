@@ -439,7 +439,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             GridCacheEntryEx entry;
 
             try {
-                entry = cache.context().isSwapOrOffheapEnabled() ? cache.entryEx(key) : cache.peekEx(key);
+                entry = cache.entryEx(key);
 
                 // If our DHT cache do has value, then we peek it.
                 if (entry != null) {
@@ -452,8 +452,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
                             null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
                             subjId,
@@ -471,13 +469,9 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         v = entry.innerGet(
                             null,
                             null,
-                            /*swap*/true,
                             /*read-through*/false,
-                            /*fail-fast*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
-                            /*temporary*/false,
                             subjId,
                             null,
                             taskName,
@@ -490,7 +484,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     // Entry was not in memory or in swap, so we remove it from cache.
                     if (v == null) {
                         if (isNew && entry.markObsoleteIfEmpty(ver))
-                            cache.removeIfObsolete(key);
+                            cache.removeEntry(entry);
                     }
                     else {
                         cctx.addResult(locVals,

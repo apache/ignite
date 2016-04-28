@@ -57,6 +57,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.DatabaseConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -95,6 +96,7 @@ import org.apache.ignite.spi.indexing.noop.NoopIndexingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
+import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
@@ -1277,7 +1279,7 @@ public class IgnitionEx {
     }
 
     /**
-     * Gets a name of the grid, which is owner of current thread. An Exception is thrown if
+     * Gets the grid, which is owner of current thread. An Exception is thrown if
      * current thread is not an {@link IgniteThread}.
      *
      * @return Grid instance related to current thread
@@ -1472,6 +1474,9 @@ public class IgnitionEx {
 
         /** Marshaller cache executor service. */
         private ExecutorService marshCacheExecSvc;
+
+        /** Continuous query executor service. */
+        private IgniteStripedThreadPoolExecutor callbackExecSvc;
 
         /** Grid state. */
         private volatile IgniteState state = STOPPED;
@@ -1685,6 +1690,12 @@ public class IgnitionEx {
                 0,
                 new LinkedBlockingQueue<Runnable>());
 
+            // Note that we do not pre-start threads here as this pool may not be needed.
+            callbackExecSvc = new IgniteStripedThreadPoolExecutor(
+                cfg.getAsyncCallbackPoolSize(),
+                cfg.getGridName(),
+                "callback");
+
             if (myCfg.getConnectorConfiguration() != null) {
                 restExecSvc = new IgniteThreadPoolExecutor(
                     "rest",
@@ -1724,7 +1735,7 @@ public class IgnitionEx {
                 grid = grid0;
 
                 grid0.start(myCfg, utilityCacheExecSvc, marshCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc,
-                    igfsExecSvc, restExecSvc,
+                    igfsExecSvc, restExecSvc, callbackExecSvc,
                     new CA() {
                         @Override public void apply() {
                             startLatch.countDown();
@@ -1935,6 +1946,16 @@ public class IgnitionEx {
             initializeDefaultSpi(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
+
+            if (myCfg.getDatabaseConfiguration() == null) {
+                DatabaseConfiguration dbCfg = new DatabaseConfiguration();
+
+                dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+                dbCfg.setPageSize(32 * 1024);
+                dbCfg.setPageCacheSize(100 * 1024 * 1024);
+
+                myCfg.setDatabaseConfiguration(dbCfg);
+            }
 
             return myCfg;
         }
@@ -2327,6 +2348,10 @@ public class IgnitionEx {
             U.shutdownNow(getClass(), marshCacheExecSvc, log);
 
             marshCacheExecSvc = null;
+
+            U.shutdownNow(getClass(), callbackExecSvc, log);
+
+            callbackExecSvc = null;
         }
 
         /**

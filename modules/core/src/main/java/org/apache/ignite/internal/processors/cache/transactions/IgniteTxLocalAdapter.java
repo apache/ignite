@@ -444,8 +444,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
                             this,
-                            /*readSwap*/true,
-                            /*unmarshal*/true,
                             /*update-metrics*/!skipVals,
                             /*event*/!skipVals,
                             CU.subjectId(this, cctx),
@@ -711,7 +709,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     new CacheLazyEntry(
                                         cacheCtx,
                                         key,
-                                        e.cached().rawGetOrUnmarshal(true),
+                                        e.cached().rawGet(),
                                         e.keepBinary()),
                                     cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(val, e.keepBinary(), false));
 
@@ -757,7 +755,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                             if (intercept) {
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor().onBeforeRemove(
-                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true), e.keepBinary()));
+                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGet(), e.keepBinary()));
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;
@@ -1447,8 +1445,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 T2<CacheObject, GridCacheVersion> res = txEntry.cached().innerGetVersioned(
                                     null,
                                     this,
-                                    /*swap*/true,
-                                    /*unmarshal*/true,
                                     /*update-metrics*/true,
                                     /*event*/!skipVals,
                                     CU.subjectId(this, cctx),
@@ -1466,13 +1462,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 val = txEntry.cached().innerGet(
                                     null,
                                     this,
-                                    /*swap*/true,
                                     /*read-through*/false,
-                                    /*fail fast*/true,
-                                    /*unmarshal*/true,
                                     /*metrics*/true,
                                     /*event*/!skipVals,
-                                    /*temporary*/false,
                                     CU.subjectId(this, cctx),
                                     transformClo,
                                     resolveTaskName(),
@@ -1533,8 +1525,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     entry.innerGetVersioned(
                                         null,
                                         this,
-                                        /*swap*/true,
-                                        /*unmarshal*/true,
                                         /*metrics*/true,
                                         /*event*/true,
                                         CU.subjectId(this, cctx),
@@ -1552,13 +1542,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 val = entry.innerGet(
                                     null,
                                     this,
-                                    /*swap*/true,
                                     /*no read-through*/false,
-                                    /*fail-fast*/true,
-                                    /*unmarshal*/true,
                                     /*metrics*/true,
                                     /*event*/true,
-                                    /*temporary*/false,
                                     CU.subjectId(this, cctx),
                                     null,
                                     resolveTaskName(),
@@ -1876,8 +1862,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         T2<CacheObject, GridCacheVersion> res = cached.innerGetVersioned(
                                             null,
                                             IgniteTxLocalAdapter.this,
-                                            /*swap*/cacheCtx.isSwapOrOffheapEnabled(),
-                                            /*unmarshal*/true,
                                             /**update-metrics*/true,
                                             /*event*/!skipVals,
                                             CU.subjectId(IgniteTxLocalAdapter.this, cctx),
@@ -1895,13 +1879,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                         val = cached.innerGet(
                                             null,
                                             IgniteTxLocalAdapter.this,
-                                            cacheCtx.isSwapOrOffheapEnabled(),
                                             /*read-through*/false,
-                                            /*fail-fast*/true,
-                                            /*unmarshal*/true,
                                             /*metrics*/true,
                                             /*events*/!skipVals,
-                                            /*temporary*/false,
                                             CU.subjectId(IgniteTxLocalAdapter.this, cctx),
                                             transformClo,
                                             resolveTaskName(),
@@ -2592,8 +2572,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     entry.innerGetVersioned(
                                         null,
                                         this,
-                                        /*swap*/false,
-                                        /*unmarshal*/retval || needVal,
                                         /*metrics*/retval,
                                         /*events*/retval,
                                         CU.subjectId(this, cctx),
@@ -2611,13 +2589,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 old = entry.innerGet(
                                     null,
                                     this,
-                                    /*swap*/false,
                                     /*read-through*/false,
-                                    /*fail-fast*/false,
-                                    /*unmarshal*/retval || needVal,
                                     /*metrics*/retval,
                                     /*events*/retval,
-                                    /*temporary*/false,
                                     CU.subjectId(this, cctx),
                                     entryProcessor,
                                     resolveTaskName(),
@@ -2632,7 +2606,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         }
                     }
                     else
-                        old = retval ? entry.rawGetOrUnmarshal(false) : entry.rawGet();
+                        old = entry.rawGet();
 
                     if (old != null && hasFilters && !filter(entry.context(), cacheKey, old, filter)) {
                         ret.set(cacheCtx, old, false, keepBinary);
@@ -2686,7 +2660,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         skipStore,
                         keepBinary);
 
-                    if (!implicit() && readCommitted() && !cacheCtx.offheapTiered())
+                    if (!implicit() && readCommitted())
                         cacheCtx.evicts().touch(entry, topologyVersion());
 
                     if (enlisted != null)
@@ -2917,13 +2891,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 v = cached.innerGet(
                                     null,
                                     this,
-                                    /*swap*/true,
                                     readThrough,
-                                    /*failFast*/false,
-                                    /*unmarshal*/true,
                                     /*metrics*/!invoke,
                                     /*event*/!invoke && !dht(),
-                                    /*temporary*/false,
                                     CU.subjectId(this, cctx),
                                     null,
                                     resolveTaskName(),
@@ -2933,7 +2903,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         }
                         else {
                             if (!hasPrevVal)
-                                v = cached.rawGetOrUnmarshal(false);
+                                v = cached.rawGet();
                         }
 
                         if (txEntry.op() == TRANSFORM) {

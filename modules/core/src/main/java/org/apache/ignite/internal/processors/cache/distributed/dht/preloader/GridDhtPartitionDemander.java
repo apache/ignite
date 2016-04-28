@@ -675,7 +675,7 @@ public class GridDhtPartitionDemander {
                         "value, will ignore rebalance entries)");
 
                     if (cached.markObsoleteIfEmpty(null))
-                        cached.context().cache().removeIfObsolete(cached.key());
+                        cached.context().cache().removeEntry(cached);
 
                     return true;
                 }
@@ -698,7 +698,7 @@ public class GridDhtPartitionDemander {
                                 false, null, null, null, true);
                     }
                     else {
-                        if (cctx.isSwapOrOffheapEnabled())
+                        if (cctx.isOffHeapEnabled())
                             cctx.evicts().touch(cached, topVer); // Start tracking.
 
                         if (log.isDebugEnabled())

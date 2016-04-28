@@ -116,9 +116,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override protected void init() {
-        map.setEntryFactory(new GridCacheMapEntryFactory() {
-            /** {@inheritDoc} */
+    @Override protected GridCacheMapEntryFactory entryFactory() {
+        return new GridCacheMapEntryFactory() {
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
@@ -126,12 +125,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 int hash,
                 CacheObject val
             ) {
-                if (ctx.useOffheapEntry())
-                    return new GridDhtColocatedOffHeapCacheEntry(ctx, topVer, key, hash, val);
-
                 return new GridDhtColocatedCacheEntry(ctx, topVer, key, hash, val);
             }
-        });
+        };
     }
 
     /** {@inheritDoc} */
@@ -245,8 +241,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         }
 
         AffinityTopologyVersion topVer = tx == null ?
-                (canRemap ? ctx.affinity().affinityTopologyVersion() : ctx.shared().exchange().readyAffinityVersion()) :
-                tx.topologyVersion();
+            (canRemap ? ctx.affinity().affinityTopologyVersion() : ctx.shared().exchange().readyAffinityVersion()) :
+            tx.topologyVersion();
 
         subjId = ctx.subjectIdPerCall(subjId, opCtx);
 
@@ -475,7 +471,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 while (true) {
                     try {
-                        entry = ctx.isSwapOrOffheapEnabled() ? entryEx(key) : peekEx(key);
+                        entry = entryEx(key);
 
                         // If our DHT cache do has value, then we peek it.
                         if (entry != null) {
@@ -488,8 +484,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                                     null,
                                     null,
-                                    /*swap*/true,
-                                    /*unmarshal*/true,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
                                     subjId,
@@ -507,13 +501,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 v = entry.innerGet(
                                     null,
                                     null,
-                                    /*swap*/true,
                                     /*read-through*/false,
-                                    /*fail-fast*/true,
-                                    /*unmarshal*/true,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
-                                    /*temporary*/false,
                                     subjId,
                                     null,
                                     taskName,
@@ -526,7 +516,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 GridCacheVersion obsoleteVer = context().versions().next();
 
                                 if (isNew && entry.markObsoleteIfEmpty(obsoleteVer))
-                                    removeIfObsolete(key);
+                                    removeEntry(entry);
 
                                 success = false;
                             }

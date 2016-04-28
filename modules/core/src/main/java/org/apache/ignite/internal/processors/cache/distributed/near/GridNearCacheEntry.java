@@ -283,7 +283,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         if (dhtVer == null)
             return null;
         else {
-            CacheObject val0 = valueBytesUnlocked();
+            CacheObject val0 = this.val;
 
             return F.t(dhtVer, val0);
         }
@@ -426,14 +426,18 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateIndex(CacheObject val, long expireTime,
-        GridCacheVersion ver, CacheObject old) throws IgniteCheckedException {
+    @Override protected void storeValue(CacheObject val, long expireTime, GridCacheVersion ver) {
         // No-op: queries are disabled for near cache.
     }
 
     /** {@inheritDoc} */
-    @Override protected void clearIndex(CacheObject val, GridCacheVersion ver) {
+    @Override protected void removeValue(CacheObject val, GridCacheVersion ver) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject unswap(boolean needVal) {
+        return null;
     }
 
     /** {@inheritDoc} */

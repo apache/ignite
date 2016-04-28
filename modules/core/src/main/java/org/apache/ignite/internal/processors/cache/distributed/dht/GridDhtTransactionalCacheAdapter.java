@@ -1129,13 +1129,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     val = e.innerGet(
                                         null,
                                         tx,
-                                        /*swap*/true,
                                         /*read-through*/false,
-                                        /*fail-fast.*/false,
-                                        /*unmarshal*/false,
                                         /*update-metrics*/true,
                                         /*event notification*/req.returnValue(i),
-                                        /*temporary*/false,
                                         CU.subjectId(tx, ctx.shared()),
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,

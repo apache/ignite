@@ -362,9 +362,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             GridCacheEntryEx entry;
 
             try {
-                entry = colocated.context().isSwapOrOffheapEnabled() || colocated.context().isDatabaseEnabled() ?
-                    colocated.entryEx(key) :
-                    colocated.peekEx(key);
+                entry = colocated.entryEx(key);
 
                 // If our DHT cache do has value, then we peek it.
                 if (entry != null) {
@@ -377,8 +375,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
                             null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
                             subjId,
@@ -396,13 +392,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                         v = entry.innerGet(
                             null,
                             null,
-                            /*swap*/true,
                             /*read-through*/false,
-                            /*fail-fast*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
-                            /*temporary*/false,
                             subjId,
                             null,
                             taskName,
@@ -415,7 +407,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     // Entry was not in memory or in swap, so we remove it from cache.
                     if (v == null) {
                         if (isNew && entry.markObsoleteIfEmpty(ver))
-                            colocated.removeIfObsolete(key);
+                            colocated.removeEntry(entry);
                     }
                     else {
                         if (!skipVals && cctx.config().isStatisticsEnabled())

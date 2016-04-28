@@ -44,6 +44,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -638,7 +640,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public void store(final String space, final KeyCacheObject key, int partId, final CacheObject val,
+    public boolean store(final String space, final KeyCacheObject key, int partId, final CacheObject val,
         GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
         assert key != null;
         assert val != null;
@@ -655,7 +657,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (idx == null)
-            return;
+            return false;
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to write to index (grid is stopping).");
@@ -684,7 +686,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             TypeDescriptor desc = types.get(id);
 
             if (desc == null || !desc.registered())
-                return;
+                return false;
 
             if (!binaryVal && !desc.valueClass().isAssignableFrom(valCls))
                 throw new IgniteCheckedException("Failed to update index due to class name conflict" +
@@ -699,7 +701,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         desc.keyClass().getName() + ", actualCls=" + keyCls.getName() + "]");
             }
 
-            idx.store(space, desc, key, partId, val, ver, expirationTime);
+            return idx.store(space, desc, key, partId, val, ver, expirationTime);
         }
         finally {
             busyLock.leaveBusy();
@@ -722,6 +724,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             return idx.read(space, key, partId);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    public List<BPlusTree<?, ? extends CacheDataRow>> pkIndexes(String space) {
+        if (idx == null)
+            return null;
+
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to write to index (grid is stopping).");
+
+        try {
+            return idx.pkIndexes(space);
         }
         finally {
             busyLock.leaveBusy();
@@ -1016,7 +1033,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key Key.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void remove(String space, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
+    public boolean remove(String space, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         assert key != null;
 
         if (log.isDebugEnabled())
@@ -1029,13 +1046,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (idx == null)
-            return;
+            return false;
 
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to remove from index (grid is stopping).");
 
         try {
-            idx.remove(space, key, partId, val, ver);
+            return idx.remove(space, key, partId, val, ver);
         }
         finally {
             busyLock.leaveBusy();

@@ -442,8 +442,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
                             null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/true,
                             /*event*/!skipVals,
                             subjId,
@@ -461,13 +459,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         v = entry.innerGet(
                             null,
                             tx,
-                            /*swap*/false,
                             /*read-through*/false,
-                            /*fail-fast*/true,
-                            /*unmarshal*/true,
                             /*metrics*/true,
                             /*events*/!skipVals,
-                            /*temporary*/false,
                             subjId,
                             null,
                             taskName,
@@ -572,7 +566,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             GridCacheEntryEx dhtEntry = null;
 
             try {
-                dhtEntry = dht.context().isSwapOrOffheapEnabled() ? dht.entryEx(key) : dht.peekEx(key);
+                dhtEntry = dht.entryEx(key);
 
                 CacheObject v = null;
 
@@ -584,8 +578,6 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         T2<CacheObject, GridCacheVersion> res = dhtEntry.innerGetVersioned(
                             null,
                             null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!nearRead && !skipVals,
                             subjId,
@@ -603,13 +595,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         v = dhtEntry.innerGet(
                             null,
                             tx,
-                            /*swap*/true,
                             /*read-through*/false,
-                            /*fail-fast*/true,
-                            /*unmarshal*/true,
                             /*update-metrics*/false,
                             /*events*/!nearRead && !skipVals,
-                            /*temporary*/false,
                             subjId,
                             null,
                             taskName,
@@ -619,7 +607,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
                     // Entry was not in memory or in swap, so we remove it from cache.
                     if (v == null && isNew && dhtEntry.markObsoleteIfEmpty(ver))
-                        dht.removeIfObsolete(key);
+                        dht.removeEntry(dhtEntry);
                 }
 
                 if (v != null) {

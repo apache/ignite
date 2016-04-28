@@ -107,15 +107,6 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
 
                     ctx.event().record(new SwapSpaceEvent(ctx.discovery().localNode(), msg, evtType, spaceName));
                 }
-
-                // Always notify grid cache processor.
-                if (evtType == EVT_SWAP_SPACE_DATA_EVICTED && spaceName != null) {
-                    assert keyBytes != null;
-                    assert valBytes != null;
-
-                    // Cache cannot use default swap space.
-                    ctx.cache().onEvictFromSwap(spaceName, keyBytes, valBytes);
-                }
             }
         });
 

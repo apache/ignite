@@ -40,7 +40,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1248,13 +1247,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 txEntry.cached().innerGet(
                     null,
                     this,
-                    /*swap*/false,
                     /*read through*/false,
-                    /*fail fast*/true,
-                    /*unmarshal*/true,
                     /*metrics*/metrics,
                     /*event*/recordEvt,
-                    /*temporary*/true,
                     /*subjId*/subjId,
                     /**closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),

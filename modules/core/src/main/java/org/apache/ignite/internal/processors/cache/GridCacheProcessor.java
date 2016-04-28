@@ -77,12 +77,10 @@ import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseManager;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridNoStorageCacheMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
@@ -1321,7 +1319,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConflictResolutionManager rslvrMgr = pluginMgr.createComponent(CacheConflictResolutionManager.class);
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
-        IgniteCacheDatabaseManager dbMgr = createDatabaseManager(cfg);
+
+        boolean cacheIndexingEnabled = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cfg);
+
+        IgniteCacheOffheapManager offheapMgr = new IgniteCacheOffheapManager(cacheIndexingEnabled);
 
         storeMgr.initialize(cfgStore, sesHolders);
 
@@ -1348,7 +1349,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataStructuresMgr,
             ttlMgr,
             drMgr,
-            dbMgr,
+            offheapMgr,
             rslvrMgr,
             pluginMgr,
             affMgr
@@ -1478,7 +1479,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
-                dbMgr,
+                offheapMgr,
                 rslvrMgr,
                 pluginMgr,
                 affMgr
@@ -1538,25 +1539,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return ret;
-    }
-
-    private IgniteCacheDatabaseManager createDatabaseManager(CacheConfiguration ccfg) throws IgniteCheckedException {
-        if (sharedCtx.database().enabled()) {
-            if (!INDEXING.inClassPath())
-                throw new IgniteCheckedException("Failed to create cache with database enabled (" + INDEXING.module() +
-                    " must be present in classpath)");
-
-            try {
-                return (IgniteCacheDatabaseManager)Class
-                    .forName("org.apache.ignite.internal.processors.cache.database.IgniteCacheH2DatabaseManager")
-                    .newInstance();
-            }
-            catch (Exception e) {
-                throw new IgniteCheckedException(e);
-            }
-        }
-        else
-            return new IgniteCacheNoopDatabaseManager();
     }
 
     /**
@@ -2969,51 +2951,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "system property) [rmtNodeId=" + rmt.id() +
                     ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
                     ", rmtTxSerializableEnabled=" + txCfg.isTxSerializableEnabled() + ']');
-        }
-    }
-
-    /**
-     * @param spaceName Space name.
-     * @param keyBytes Key bytes.
-     * @param valBytes Value bytes.
-     */
-    @SuppressWarnings({"unchecked"})
-    public void onEvictFromSwap(String spaceName, byte[] keyBytes, byte[] valBytes) {
-        assert spaceName != null;
-        assert keyBytes != null;
-        assert valBytes != null;
-
-        /*
-         * NOTE: this method should not have any synchronization because
-         * it is called from synchronization block within Swap SPI.
-         */
-
-        GridCacheAdapter cache = caches.get(maskNull(CU.cacheNameForSwapSpaceName(spaceName)));
-
-        assert cache != null : "Failed to resolve cache name for swap space name: " + spaceName;
-
-        GridCacheContext cctx = cache.configuration().getCacheMode() == PARTITIONED ?
-            ((GridNearCacheAdapter<?, ?>)cache).dht().context() : cache.context();
-
-        if (spaceName.equals(CU.swapSpaceName(cctx))) {
-            GridCacheQueryManager qryMgr = cctx.queries();
-
-            if (qryMgr.enabled()) {
-                try {
-                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
-
-                    CacheObject val = cctx.swap().unmarshalSwapEntryValue(valBytes);
-
-                    assert val != null;
-
-                    // TODO sql-store
-
-                    qryMgr.remove(key, cctx.affinity().partition(key), val, null);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to unmarshal key evicted from swap [swapSpaceName=" + spaceName + ']', e);
-                }
-            }
         }
     }
 

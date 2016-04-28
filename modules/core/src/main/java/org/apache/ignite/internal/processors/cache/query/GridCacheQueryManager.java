@@ -65,6 +65,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSwapEntryImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
@@ -391,20 +393,20 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException In case of error.
      */
-    public void store(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver, long expirationTime)
+    public boolean store(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver, long expirationTime)
         throws IgniteCheckedException {
         assert key != null;
         assert val != null;
         assert enabled();
 
         if (key instanceof GridCacheInternal)
-            return; // No-op.
+            return false; // No-op.
 
         if (!enterBusy())
-            return; // Ignore index update when node is stopping.
+            return false; // Ignore index update when node is stopping.
 
         try {
-            qryProc.store(space, key, partId, val, ver, expirationTime);
+            return qryProc.store(space, key, partId, val, ver, expirationTime);
         }
         finally {
             invalidateResultCache();
@@ -429,23 +431,27 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
     }
 
+    public List<BPlusTree<?, ? extends CacheDataRow>> pkIndexes() {
+        return qryProc.pkIndexes(space);
+    }
+
     /**
      * @param key Key.
      * @param val Value.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    public void remove(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
+    public boolean remove(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         assert key != null;
 
         if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
-            return; // No-op.
+            return false; // No-op.
 
         if (!enterBusy())
-            return; // Ignore index update when node is stopping.
+            return false; // Ignore index update when node is stopping.
 
         try {
-            qryProc.remove(space, key, partId, val, ver);
+            return qryProc.remove(space, key, partId, val, ver);
         }
         finally {
             invalidateResultCache();
@@ -892,16 +898,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final GridIterator<IgniteBiTuple<K, V>> it;
 
-            if (cctx.isSwapOrOffheapEnabled()) {
+            if (cctx.isOffHeapEnabled()) {
                 List<GridIterator<IgniteBiTuple<K, V>>> iters = new ArrayList<>(3);
 
                 iters.add(heapIt);
 
-                if (cctx.isOffHeapEnabled())
-                    iters.add(offheapIterator(qry, topVer, backups, plc));
-
-                if (cctx.swap().swapEnabled())
-                    iters.add(swapIterator(qry, topVer, backups, plc));
+                iters.add(offheapIterator(qry, topVer, backups, plc));
 
                 it = new CompoundIterator<>(iters);
             }
@@ -1001,7 +1003,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 qry.keepBinary());
         }
 
-        if (cctx.offheapTiered() && filter != null) {
+        if (cctx.isOffHeapEnabled() && filter != null) {
             OffheapIteratorClosure c = new OffheapIteratorClosure(filter, qry.keepBinary());
 
             return cctx.swap().rawOffHeapIterator(c, qry.partition(), true, backups);
@@ -2572,7 +2574,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         @Override protected V unmarshalValue() throws IgniteCheckedException {
             long ptr = GridCacheOffheapSwapEntry.valueAddress(valPtr.get1(), valPtr.get2());
 
-            return (V)cctx.fromOffheap(ptr, false);
+            return null;//(V)cctx.fromOffheap(ptr, false);
         }
 
         /** {@inheritDoc} */

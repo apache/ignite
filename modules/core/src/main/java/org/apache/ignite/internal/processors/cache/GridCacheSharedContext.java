@@ -87,14 +87,14 @@ public class GridCacheSharedContext<K, V> {
     /** Deployment manager. */
     private GridCacheDeploymentManager<K, V> depMgr;
 
-    /** Affinity manager. */
-    private CacheAffinitySharedManager affMgr;
-
     /** Database manager. */
     private IgniteCacheDatabaseSharedManager dbMgr;
 
     /** Page store manager. */
     private IgnitePageStoreManager pageStoreMgr;
+
+    /** Affinity manager. */
+    private CacheAffinitySharedManager affMgr;
 
     /** Cache contexts map. */
     private ConcurrentMap<Integer, GridCacheContext<K, V>> ctxMap;

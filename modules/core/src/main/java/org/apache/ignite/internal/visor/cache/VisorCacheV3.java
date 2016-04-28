@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapManager;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 
@@ -52,14 +52,14 @@ public class VisorCacheV3 extends VisorCacheV2 {
 
             // Process only started caches.
             if (ca != null && ca.context().started()) {
-                GridCacheSwapManager swap = ca.context().swap();
+                IgniteCacheOffheapManager offheap = ca.context().offheap();
 
                 cacheV3.primaryPartsOffheapSwap = new ArrayList<>(c.primaryPartitions().size());
 
                 for (IgnitePair<Integer> part: c.primaryPartitions()) {
                     int p = part.get1();
 
-                    cacheV3.primaryPartsOffheapSwap.add(new GridTuple3<>(p, swap.offheapEntriesCount(p), swap.swapEntriesCount(p)));
+                    cacheV3.primaryPartsOffheapSwap.add(new GridTuple3<>(p, offheap.entriesCount(p), 0L));
                 }
 
                 cacheV3.backupPartsOffheapSwap = new ArrayList<>(c.backupPartitions().size());
@@ -67,7 +67,7 @@ public class VisorCacheV3 extends VisorCacheV2 {
                 for (IgnitePair<Integer> part: c.backupPartitions()) {
                     int p = part.get1();
 
-                    cacheV3.backupPartsOffheapSwap.add(new GridTuple3<>(p, swap.offheapEntriesCount(p), swap.swapEntriesCount(p)));
+                    cacheV3.backupPartsOffheapSwap.add(new GridTuple3<>(p, offheap.entriesCount(p), 0L));
                 }
             }
         }

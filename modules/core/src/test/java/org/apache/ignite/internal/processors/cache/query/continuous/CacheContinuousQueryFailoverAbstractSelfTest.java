@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -99,7 +100,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -164,6 +165,13 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      */
     protected CacheMemoryMode memoryMode() {
         return ONHEAP_TIERED;
+    }
+
+    /**
+     * @return Async callback flag.
+     */
+    protected boolean asyncCallback() {
+        return false;
     }
 
     /**
@@ -476,7 +484,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         for (int j = 0; j < 50; ++j) {
             ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-            final CacheEventListener3 lsnr = new CacheEventListener3();
+            final CacheEventListener3 lsnr = asyncCallback() ? new CacheEventAsyncListener3()
+                : new CacheEventListener3();
 
             qry.setLocalListener(lsnr);
 
@@ -560,7 +569,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-        final CacheEventListener3 lsnr = new CacheEventListener3();
+        final CacheEventListener3 lsnr = asyncCallback() ? new CacheEventAsyncListener3() : new CacheEventListener3();
 
         qry.setLocalListener(lsnr);
 
@@ -721,7 +730,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-        final CacheEventListener3 lsnr = new CacheEventListener3();
+        final CacheEventListener3 lsnr = asyncCallback() ? new CacheEventAsyncListener3() : new CacheEventListener3();
 
         qry.setLocalListener(lsnr);
 
@@ -841,7 +850,8 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         Affinity<Object> aff = qryClient.affinity(null);
 
-        CacheEventListener1 lsnr = new CacheEventListener1(false);
+        CacheEventListener1 lsnr = asyncCallback() ? new CacheEventAsyncListener1(false)
+            : new CacheEventListener1(false);
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
@@ -1545,7 +1555,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         qry.setLocalListener(lsnr);
 
-        qry.setRemoteFilter(new CacheEventFilter());
+        qry.setRemoteFilter(asyncCallback() ? new CacheEventAsyncFilter() : new CacheEventFilter());
 
         QueryCursor<?> cur = qryClnCache.query(qry);
 
@@ -1639,7 +1649,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
                     newQry.setLocalListener(dinLsnr);
 
-                    newQry.setRemoteFilter(new CacheEventFilter());
+                    newQry.setRemoteFilter(asyncCallback() ? new CacheEventAsyncFilter() : new CacheEventFilter());
 
                     dinQry = qryClnCache.query(newQry);
 
@@ -1786,7 +1796,7 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
 
         final IgniteCache<Object, Object> qryClnCache = qryCln.cache(null);
 
-        final CacheEventListener2 lsnr = new CacheEventListener2();
+        final CacheEventListener2 lsnr = asyncCallback() ? new CacheEventAsyncListener2() : new CacheEventListener2();
 
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
@@ -2144,6 +2154,19 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      *
      */
+    @IgniteAsyncCallback
+    private static class CacheEventAsyncListener1 extends CacheEventListener1 {
+        /**
+         * @param saveAll Save all events flag.
+         */
+        CacheEventAsyncListener1(boolean saveAll) {
+            super(saveAll);
+        }
+    }
+
+    /**
+     *
+     */
     private static class CacheEventListener1 implements CacheEntryUpdatedListener<Object, Object> {
         /** */
         private volatile CountDownLatch latch;
@@ -2203,6 +2226,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
                 log.error("Unexpected error", e);
             }
         }
+    }
+
+    /**
+     *
+     */
+    @IgniteAsyncCallback
+    private static class CacheEventAsyncListener2 extends CacheEventListener2 {
+        // No-op.
     }
 
     /**
@@ -2275,6 +2306,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
     /**
      *
      */
+    @IgniteAsyncCallback
+    public static class CacheEventAsyncListener3 extends CacheEventListener3 {
+        // No-op.
+    }
+
+    /**
+     *
+     */
     public static class CacheEventListener3 implements CacheEntryUpdatedListener<Object, Object>,
         CacheEntryEventSerializableFilter<Object, Object> {
         /** Keys. */
@@ -2298,6 +2337,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
         @Override public boolean evaluate(CacheEntryEvent<?, ?> e) throws CacheEntryListenerException {
             return (Integer)e.getValue() % 2 == 0;
         }
+    }
+
+    /**
+     *
+     */
+    @IgniteAsyncCallback
+    private static class CacheEventAsyncFilter extends CacheEventFilter {
+        // No-op.
     }
 
     /**

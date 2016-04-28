@@ -83,6 +83,7 @@ import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileReserveSpaceP
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
+import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
@@ -274,6 +275,9 @@ public class BinaryContext {
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
         registerPredefinedType(T2.class, 62);
+
+        registerPredefinedType(PlatformJavaObjectFactoryProxy.class,
+            GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY);
 
         registerPredefinedType(BinaryObjectImpl.class, 0);
         registerPredefinedType(BinaryObjectOffheapImpl.class, 0);

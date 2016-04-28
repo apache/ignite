@@ -24,6 +24,7 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
@@ -80,7 +81,7 @@ public class H2RowStore extends RowStore<GridH2Row> {
                 // Skip entry size.
                 buf.getShort();
 
-                CacheObject key = coctx.processor().toCacheObject(coctx, buf);
+                KeyCacheObject key = coctx.processor().toKeyCacheObject(coctx, buf);
                 CacheObject val = coctx.processor().toCacheObject(coctx, buf);
 
                 int topVer = buf.getInt();

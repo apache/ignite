@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.IgniteExceptionRegistry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
 /**
  *
@@ -156,13 +157,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Job processor
      */
     public GridJobProcessor job();
-
-    /**
-     * Gets offheap processor.
-     *
-     * @return Off-heap processor.
-     */
-    public GridOffHeapProcessor offheap();
 
     /**
      * Gets timeout processor.
@@ -296,6 +290,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Marshaller cache pool.
      */
     public ExecutorService marshallerCachePool();
+
+    /**
+     * Gets async callback pool.
+     *
+     * @return Async callback pool.
+     */
+    public IgniteStripedThreadPoolExecutor asyncCallbackPool();
 
     /**
      * Gets cache object processor.

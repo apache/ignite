@@ -51,7 +51,6 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -951,14 +950,10 @@ public class GridCacheUtils {
 
         ctx.evicts().unwind();
 
-        ctx.swap().unwindOffheapEvicts();
-
         if (ctx.isNear()) {
             GridCacheContext dhtCtx = ctx.near().dht().context();
 
             dhtCtx.evicts().unwind();
-
-            dhtCtx.swap().unwindOffheapEvicts();
         }
 
         ctx.ttl().expire();
