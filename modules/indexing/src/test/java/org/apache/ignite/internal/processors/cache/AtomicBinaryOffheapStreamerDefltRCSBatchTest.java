@@ -25,16 +25,11 @@ import org.apache.ignite.IgniteDataStreamer;
 /**
  * Write batch test using streamer with default on-heap row cache size (10_000).
  */
-public class AtomicBinaryOffheapStreamerRCS10000SizeBatchTest extends AtomicBinaryOffheapBaseBatchTest {
+public class AtomicBinaryOffheapStreamerDefltRCSBatchTest extends AtomicBinaryOffheapBaseBatchTest {
     /**
      * Size of batch in operation
      */
     public static final int BATCH_SIZE = 1_000;
-
-    /** {@inheritDoc} */
-    @Override protected Class<?>[] indexedTypes() {
-        return new Class<?>[]{Integer.class, Organization.class};
-    }
 
     /**
      * Test method.

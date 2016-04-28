@@ -32,11 +32,6 @@ public class AtomicBinaryOffheapStreamerRCS1BatchTest extends AtomicBinaryOffhea
     public static final int BATCH_SIZE = 1_000;
 
     /** {@inheritDoc} */
-    @Override protected Class<?>[] indexedTypes() {
-        return new Class<?>[]{Integer.class, Organization.class};
-    }
-
-    /** {@inheritDoc} */
     @Override protected int onHeapRowCacheSize() {
         return 1;
     }
@@ -48,7 +43,7 @@ public class AtomicBinaryOffheapStreamerRCS1BatchTest extends AtomicBinaryOffhea
      */
     public void testBatchOperations() throws Exception {
         try (IgniteCache<Object, Object> dfltCache = ignite(0).cache(null)) {
-            //loadingCacheAnyDate();
+            loadingCacheAnyDate();
 
             int runsCnt = 50;
 
