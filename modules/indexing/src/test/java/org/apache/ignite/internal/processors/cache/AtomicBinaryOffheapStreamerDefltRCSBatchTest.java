@@ -37,6 +37,8 @@ public class AtomicBinaryOffheapStreamerDefltRCSBatchTest extends AtomicBinaryOf
      * @throws Exception If fail.
      */
     public void testBatchOperations() throws Exception {
+        fail("IGNITE-2982");
+
         try (IgniteCache<Object,Object> dfltCache = ignite(0).cache(null)) {
             loadingCacheAnyDate();
 
