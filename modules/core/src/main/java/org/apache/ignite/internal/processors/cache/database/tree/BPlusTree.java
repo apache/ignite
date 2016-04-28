@@ -488,8 +488,7 @@ public abstract class BPlusTree<L, T extends L> {
             }
 
             // We don't have a back page, need to lock our forward and become a back for it.
-            // If found then we are on inner replacement page, it will be a top parent, no need to lock forward.
-            if (!found && r.fwdId != 0 && r.backId == 0)
+            if (r.fwdId != 0 && r.backId == 0)
                 r.lockForward(lvl);
 
             r.addTail(page, buf, io, lvl, Tail.EXACT, idx);
@@ -957,7 +956,7 @@ public abstract class BPlusTree<L, T extends L> {
                     case Remove.GO_DOWN_X:
                         assert backId != 0;
 
-                        // We need to get backId here for our page, it must be the last child of our back.
+                        // We need to get backId here for our child page, it must be the last child of our back.
                         res = askNeighbor(backId, r, true);
 
                         if (res != Remove.FOUND)
@@ -1922,7 +1921,8 @@ public abstract class BPlusTree<L, T extends L> {
                 // Free root if it became empty after merge.
                 freePage(tail.page, tail.buf, tail.io, tail.lvl, false);
             }
-            else if (tail.sibling != null && tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf)) {
+            else if (tail.sibling != null &&
+                tail.getCount() + tail.sibling.getCount() < tail.io.getMaxCount(tail.buf)) {
                 // Release everything lower than tail, we've already merged this path.
                 doReleaseTail(tail.down);
 
