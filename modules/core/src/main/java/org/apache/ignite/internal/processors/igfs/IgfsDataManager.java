@@ -69,7 +69,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -246,7 +245,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param prevAffKey Affinity key of previous block.
      * @return Affinity key.
      */
-    public @Nullable IgniteUuid nextAffinityKey(@Nullable IgniteUuid prevAffKey) {
+    @Nullable public IgniteUuid nextAffinityKey(@Nullable IgniteUuid prevAffKey) {
         // Do not generate affinity key for non-affinity nodes.
         if (!dataCache.context().affinityNode())
             return null;
@@ -1003,7 +1002,7 @@ public class IgfsDataManager extends IgfsManager {
      * @throws IgniteCheckedException If failed.
      * @return Data remainder if {@code flush} flag is {@code false}.
      */
-    final <T> T2<byte[], GridCompoundFuture<Boolean, Boolean>> storeDataBlocks(
+    final <T> byte[] storeDataBlocks(
         final IgfsEntryInfo fileInfo,
         final long reservedLen,
         @Nullable byte[] remainder,
@@ -1013,14 +1012,15 @@ public class IgfsDataManager extends IgfsManager {
         final int srcLen,
         final boolean flush,
         final IgfsFileAffinityRange affinityRange,
-        final @Nullable IgfsFileWorkerBatch secondaryPutWorker
+        final @Nullable IgfsFileWorkerBatch secondaryPutWorker,
+        final GridCompoundFuture<Boolean, Boolean> cf
     ) throws IgniteCheckedException {
         final IgniteUuid id = fileInfo.id();
         final int blockSize = fileInfo.blockSize();
 
-        final int len = remainderLen + srcLen;
+        assert cf != null;
 
-        final GridCompoundFuture<Boolean, Boolean> cf = new GridCompoundFuture<>();
+        final int len = remainderLen + srcLen;
 
         if (len > reservedLen)
             throw new IgfsException("Not enough space reserved to store data [id=" + id +
@@ -1079,9 +1079,7 @@ public class IgfsDataManager extends IgfsManager {
                         metrics.addWriteBlocks(1, 0);
                     }
 
-                    cf.markInitialized();
-
-                    return new T2<>(portion, cf); // exit point #1
+                    return portion; // exit point #1
                 }
             }
 
@@ -1130,9 +1128,7 @@ public class IgfsDataManager extends IgfsManager {
 
         assert written == len;
 
-        cf.markInitialized();
-
-        return new T2<>(null, cf); // exit point #2
+        return null; // exit point #2
     }
 
     /**
@@ -1161,15 +1157,6 @@ public class IgfsDataManager extends IgfsManager {
         protected final void readData(T src, byte[] dst, int dstOff) throws IgniteCheckedException {
             readData(src, dst, dstOff, dst.length - dstOff);
         }
-
-        /**
-         * Skips the specified number of bytes in case of error.
-         * In case of DataInput really skips the bytes, does nothing in case of ByteBuffer.
-         * @param src The data source.
-         * @param len The length to skip.
-         * @throws IOException On error.
-         */
-        protected abstract void skipBytesOnError(T src, int len) throws IOException;
     }
 
     /**
@@ -1179,11 +1166,6 @@ public class IgfsDataManager extends IgfsManager {
         /** {@inheritDoc} */
         @Override protected void readData(ByteBuffer src, byte[] dst, int dstOff, int len) {
             src.get(dst, dstOff, len);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void skipBytesOnError(ByteBuffer src, int len) {
-            // no-op
         }
     }
 
@@ -1200,11 +1182,6 @@ public class IgfsDataManager extends IgfsManager {
             catch (IOException e) {
                 throw new IgniteCheckedException(e);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void skipBytesOnError(DataInput src, int len) throws IOException {
-            src.skipBytes(len);
         }
     }
 

@@ -180,26 +180,25 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             rnd.nextBytes(data);
 
-            expectsStoreFail(info, data, "Not enough space reserved to store data");
+            final GridCompoundFuture<Boolean, Boolean> f = new GridCompoundFuture<>();
+
+            expectsStoreFail(info, data, "Not enough space reserved to store data", f);
 
             info = info.length(info.length() + data.length - 3);
 
-            expectsStoreFail(info, data, "Not enough space reserved to store data");
+            expectsStoreFail(info, data, "Not enough space reserved to store data", f);
 
             info = info.length(info.length() + 3);
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
-            T2<byte[],GridCompoundFuture<Boolean, Boolean>> t2 = mgr.storeDataBlocks(info, info.length(), null, 0, IgfsDataManager.byteBufReader,
+            byte[] remainder = mgr.storeDataBlocks(info, info.length(), null, 0, IgfsDataManager.byteBufReader,
                 ByteBuffer.wrap(data), data.length, true,
-                range, null);
+                range, null, f);
 
-            assert t2 != null;
-            byte[] remainder = t2.get1();
             assert remainder == null;
 
-            GridCompoundFuture<Boolean,Boolean> f = t2.get2();
-            assert t2 != null;
+            f.markInitialized();
 
             f.get(3000);
 
@@ -275,11 +274,11 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
-            T2<byte[], GridCompoundFuture<Boolean, Boolean>> t2 = mgr.storeDataBlocks(info, info.length(), remainder, remainder.length,
-                IgfsDataManager.byteBufReader, ByteBuffer.wrap(data), data.length,
-                false, range, null);
+            final GridCompoundFuture<Boolean,Boolean> f = new GridCompoundFuture<>();
 
-            byte[] left = t2.get1();
+            byte[] left = mgr.storeDataBlocks(info, info.length(), remainder, remainder.length,
+                IgfsDataManager.byteBufReader, ByteBuffer.wrap(data), data.length,
+                false, range, null, f);
 
             assert left.length == blockSize / 2;
 
@@ -287,16 +286,15 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             info = info.length(info.length() + remainder2.length);
 
-            T2<byte[], GridCompoundFuture<Boolean, Boolean>> t2b
-                = mgr.storeDataBlocks(info, info.length(), left, left.length,
+            byte[] left2 = mgr.storeDataBlocks(info, info.length(), left, left.length,
                 IgfsDataManager.byteBufReader, ByteBuffer.wrap(remainder2), remainder2.length,
-                false, range, null);
-
-            byte[] left2 = t2b.get1();
+                false, range, null, f);
 
             assert left2 == null;
 
-            t2b.get2().get(3000);
+            f.markInitialized();
+
+            f.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
@@ -365,23 +363,20 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             info = info.length(info.length() + data.length * writesCnt);
 
-            final GridCompoundFuture<Boolean, Void> fut = new GridCompoundFuture<>(); //mgr.writeStart(info);
+            final GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>();
 
             for (int j = 0; j < 64; j++) {
                 Arrays.fill(data, (byte)(j / 4));
 
-                T2<byte[], GridCompoundFuture<Boolean, Boolean>> t2 = mgr.storeDataBlocks(info, (j + 1) * chunkSize,
+                byte[] left = mgr.storeDataBlocks(info, (j + 1) * chunkSize,
                     null, 0, IgfsDataManager.byteBufReader, ByteBuffer.wrap(data), data.length,
-                    true, range, null);
-
-                byte[] left = t2.get1();
+                    true, range, null, fut);
 
                 assert left == null : "No remainder should be returned if flush is true: " + Arrays.toString(left);
-
-                fut.add(t2.get2());
             }
 
             fut.markInitialized();
+
             fut.get(3000);
 
             assertTrue(range.regionEqual(new IgfsFileAffinityRange(0, writesCnt * chunkSize - 1, null)));
@@ -588,13 +583,13 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param data Data to store.
      * @param msg Expected failure message.
      */
-    private void expectsStoreFail(final IgfsEntryInfo reserved, final byte[] data, @Nullable String msg) {
+    private void expectsStoreFail(final IgfsEntryInfo reserved, final byte[] data, @Nullable String msg, final GridCompoundFuture<Boolean, Boolean> f) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
                 IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
                 mgr.storeDataBlocks(reserved, reserved.length(), null, 0, IgfsDataManager.byteBufReader,
-                    ByteBuffer.wrap(data), data.length, false, range, null);
+                    ByteBuffer.wrap(data), data.length, false, range, null, f);
 
                 return null;
             }

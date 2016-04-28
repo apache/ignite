@@ -22,10 +22,7 @@ import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -71,7 +68,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     private int remainderDataLen;
 
     /** "Aggregated" write completion future. */
-    private GridCompoundFuture<Boolean, Void> aggregateFut;
+    private GridCompoundFuture<Boolean, Boolean> aggregateFut;
 
     /** IGFS mode. */
     private final IgfsMode mode;
@@ -125,21 +122,6 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         this.metrics = metrics;
 
         streamRange = initialStreamRange(fileInfo);
-    }
-
-    /**
-     * Gets the "aggregating" future creating it lazily, as necessary.
-     * The "aggregating" future is used to collect all the write futures of this output stream.
-     *
-     * @return The aggregating compound future.
-     */
-    protected final GridCompoundFuture<Boolean, Void> aggregateFuture() {
-        assert Thread.holdsLock(this);
-
-        if (aggregateFut == null)
-            aggregateFut = new GridCompoundFuture<>();
-
-        return aggregateFut;
     }
 
     /**
@@ -200,7 +182,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      */
     private <T> void storeDataBlock0(T src, IgfsDataManager.AbstractBlockReader<T> reader, final int len)
         throws IOException, IgniteCheckedException {
-        preStoreDataBlocks(reader, src, len);
+        preStoreDataBlocks(len);
 
         final int blockSize = fileInfo.blockSize();
 
@@ -223,17 +205,10 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             remainderDataLen += len;
         }
         else {
-            T2<byte[], GridCompoundFuture<Boolean, Boolean>> t2 = data.storeDataBlocks(fileInfo,
-                fileInfo.length() + space, remainder, remainderDataLen, reader, src, len, false, streamRange, batch);
-
-            remainder = t2.get1();
+            remainder = data.storeDataBlocks(fileInfo, fileInfo.length() + space, remainder, remainderDataLen, reader,
+                src, len, false, streamRange, batch, aggregateFut);
 
             remainderDataLen = remainder == null ? 0 : remainder.length;
-
-            IgniteInternalFuture<Boolean> f = t2.get2();
-
-            if (f != null)
-                aggregateFuture().add(f);
         }
     }
 
@@ -242,22 +217,11 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      *
      * @param len Data length to be written.
      */
-    private <T> void preStoreDataBlocks(IgfsDataManager.AbstractBlockReader<T> reader, @Nullable T in, int len)
-        throws IgniteCheckedException, IOException {
+    private void preStoreDataBlocks(int len) throws IgniteCheckedException, IOException {
         assert Thread.holdsLock(this);
-        assert reader != null;
 
-        IgniteInternalFuture f = aggregateFuture();
-
-        // Check if any exception happened while writing data.
-        if (f.isDone()) {
-            assert ((GridFutureAdapter)f).isFailed();
-
-            if (in != null)
-                reader.skipBytesOnError(in, len);
-
-            f.get(); // throw the exception.
-        }
+        if (aggregateFut == null)
+            aggregateFut = new GridCompoundFuture<>();
 
         bytes += len;
         space += len;
@@ -291,16 +255,12 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             if (remainder != null) {
                 ByteBuffer wrappedRemainderByteBuf = ByteBuffer.wrap(remainder, 0, remainderDataLen);
 
-                T2<byte[], GridCompoundFuture<Boolean, Boolean>> t2 = data.storeDataBlocks(fileInfo,
+                byte[] rem = data.storeDataBlocks(fileInfo,
                     fileInfo.length() + space, null/*remainder*/, 0/*remainderLen*/,
                     IgfsDataManager.byteBufReader, wrappedRemainderByteBuf, wrappedRemainderByteBuf.remaining(),
-                    true/*flush*/, streamRange, batch);
+                    true/*flush*/, streamRange, batch, aggregateFut);
 
-                assert t2.get1() == null; // The remainder must be absent.
-                IgniteInternalFuture<Boolean> remainderFut = t2.get2();
-
-                if (remainderFut != null)
-                    aggregateFuture().add(remainderFut);
+                assert rem == null; // The remainder must be absent.
 
                 remainder = null;
                 remainderDataLen = 0;
@@ -320,8 +280,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
                 space = 0;
             }
-
-            aggregateFut = null;
+            else
+                aggregateFut = null;
         }
         catch (IgniteCheckedException e) {
             throw new IOException("Failed to flush data [path=" + path + ", space=" + space + ']', e);
@@ -336,13 +296,13 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     private void awaitAllPendingBlcoks() throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
-        GridCompoundFuture<Boolean, Void> af = aggregateFuture();
+        if (aggregateFut != null) {
+            aggregateFut.markInitialized();
 
-        af.markInitialized();
+            aggregateFut.get();
 
-        af.get();
-
-        aggregateFut = null;
+            aggregateFut = null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -420,6 +380,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                     throw err;
             }
             else {
+                aggregateFut = null;
+
                 try {
                     if (mode == DUAL_SYNC)
                         batch.await();
