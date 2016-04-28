@@ -28,8 +28,6 @@
 #include <ignite/odbc/app/application_data_buffer.h>
 #include <ignite/odbc/utility.h>
 
-#include "test_utils.h"
-
 #define FLOAT_PRECISION 0.0000001f
 
 using namespace ignite;

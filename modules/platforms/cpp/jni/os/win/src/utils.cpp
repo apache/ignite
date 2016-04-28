@@ -32,6 +32,11 @@ namespace ignite
 {
     namespace jni
     {
+        AttachHelper::~AttachHelper()
+        {
+            // No-op.
+        }
+
         void AttachHelper::OnThreadAttach()
         {
             // No-op.

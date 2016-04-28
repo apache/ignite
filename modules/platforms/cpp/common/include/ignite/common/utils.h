@@ -67,9 +67,9 @@ namespace ignite
          */
         inline std::string LongToString(long val)
         {
-        std::stringstream tmp;
-        tmp << val;
-        return tmp.str();
+            std::stringstream tmp;
+            tmp << val;
+            return tmp.str();
         }
 
         /**
@@ -161,7 +161,7 @@ namespace ignite
          * @param val Value.
          */
         IGNITE_IMPORT_EXPORT void ReleaseChars(char* val);
-        
+
         /**
          * Read system environment variable taking thread-safety in count.
          *
@@ -170,7 +170,7 @@ namespace ignite
          * @return Environment variable value.
          */
         IGNITE_IMPORT_EXPORT std::string GetEnv(const std::string& name, bool& found);
-                
+
         /**
          * Ensure that file on the given path exists in the system.
          *
@@ -185,26 +185,26 @@ namespace ignite
         template<typename T>
         struct IGNITE_IMPORT_EXPORT SafeArray
         {
-        /** Target array. */
-        T* target;
+            /** Target array. */
+            T* target;
 
-        /**
-         * Constructor.
-         */
-        SafeArray(int cap)
-        {
-            target = new T[cap];
-        }
+            /**
+             * Constructor.
+             */
+            SafeArray(int cap)
+            {
+                target = new T[cap];
+            }
 
-        /**
-         * Destructor.
-         */
-        ~SafeArray()
-        {
-            delete[] target;
-        }
+            /**
+             * Destructor.
+             */
+            ~SafeArray()
+            {
+                delete[] target;
+            }
 
-        IGNITE_NO_COPY_ASSIGNMENT(SafeArray);
+            IGNITE_NO_COPY_ASSIGNMENT(SafeArray);
         };
     }
 }

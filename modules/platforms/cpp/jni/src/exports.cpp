@@ -440,8 +440,8 @@ extern "C" {
     }
 
     void* IGNITE_CALL IgniteServicesWithServerKeepPortable(gcj::JniContext* ctx, void* obj) {
-    		return ctx->ServicesWithServerKeepPortable(static_cast<jobject>(obj));
-        }
+        return ctx->ServicesWithServerKeepPortable(static_cast<jobject>(obj));
+    }
 
 	void IGNITE_CALL IgniteServicesCancel(gcj::JniContext* ctx, void* obj, char* name) {
 		ctx->ServicesCancel(static_cast<jobject>(obj), name);

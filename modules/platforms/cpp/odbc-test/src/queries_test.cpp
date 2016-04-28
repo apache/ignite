@@ -33,11 +33,9 @@
 
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
+#include "ignite/impl/binary/binary_utils.h"
 
 #include "test_type.h"
-#include "test_utils.h"
-
-using namespace test_utils;
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -45,6 +43,8 @@ using namespace ignite::cache::query;
 using namespace ignite::common;
 
 using namespace boost::unit_test;
+
+using ignite::impl::binary::BinaryUtils;
 
 /** Read buffer size. */
 enum { ODBC_BUFFER_SIZE = 1024 };
@@ -105,11 +105,7 @@ struct QueriesTestSuiteFixture
         grid = Ignition::Start(cfg, &err);
 
         if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-        {
-            Ignition::Stop(grid.GetName(), true);
-
             BOOST_FAIL(err.GetText());
-        }
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 
@@ -172,8 +168,8 @@ struct QueriesTestSuiteFixture
     {
         SQLRETURN ret;
 
-        TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456));
-        TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), MakeDate(1976, 1, 12), MakeTimestamp(1978, 8, 21, 23, 13, 45, 456));
+        TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+        TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12), BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 456));
 
         testCache.Put(1, in1);
         testCache.Put(2, in2);
@@ -321,8 +317,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 {
     SQLRETURN ret;
 
-    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456));
-    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), MakeDate(1976, 1, 12), MakeTimestamp(1978, 8, 21, 23, 13, 45, 999999999));
+    TestType in1(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
+    TestType in2(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), BinaryUtils::MakeDateGmt(1976, 1, 12), BinaryUtils::MakeTimestampGmt(1978, 8, 21, 23, 13, 45, 999999999));
 
     testCache.Put(1, in1);
     testCache.Put(2, in2);
@@ -414,7 +410,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 {
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     testCache.Put(1, in);
 
@@ -475,7 +471,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 {
     SQLRETURN ret;
 
-    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456));
+    TestType in(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), BinaryUtils::MakeDateGmt(1987, 6, 5), BinaryUtils::MakeTimestampGmt(1998, 12, 27, 1, 2, 3, 456));
 
     testCache.Put(1, in);
 
