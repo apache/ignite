@@ -102,6 +102,8 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         startGrid(1);
         startGrid(2);
 
+        awaitPartitionMapExchange();
+
         final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
 
         ignite(2).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);

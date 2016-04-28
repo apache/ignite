@@ -17,21 +17,6 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import java.io.ByteArrayOutputStream;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.Serializable;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -53,38 +38,45 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.ByteArrayOutputStream;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 /**
- * Affinity function for partitioned cache based on Highest Random Weight algorithm.
- * This function supports the following configuration:
- * <ul>
- * <li>
- *      {@code partitions} - Number of partitions to spread across nodes.
- * </li>
- * <li>
- *      {@code excludeNeighbors} - If set to {@code true}, will exclude same-host-neighbors
- *      from being backups of each other. This flag can be ignored in cases when topology has no enough nodes
- *      for assign backups.
- *      Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
- * </li>
- * <li>
- *      {@code backupFilter} - Optional filter for back up nodes. If provided, then only
- *      nodes that pass this filter will be selected as backup nodes. If not provided, then
- *      primary and backup nodes will be selected out of all nodes available for this cache.
- * </li>
- * </ul>
- * <p>
- * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
+ * Affinity function for partitioned cache based on Highest Random Weight algorithm. This function supports the
+ * following configuration: <ul> <li> {@code partitions} - Number of partitions to spread across nodes. </li> <li>
+ * {@code excludeNeighbors} - If set to {@code true}, will exclude same-host-neighbors from being backups of each other.
+ * This flag can be ignored in cases when topology has no enough nodes for assign backups. Note that {@code
+ * backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}. </li> <li> {@code backupFilter} -
+ * Optional filter for back up nodes. If provided, then only nodes that pass this filter will be selected as backup
+ * nodes. If not provided, then primary and backup nodes will be selected out of all nodes available for this cache.
+ * </li> </ul> <p> Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()}
+ * method.
  */
 public class RendezvousAffinityFunction implements AffinityFunction, Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Default number of partitions. */
     public static final int DFLT_PARTITION_COUNT = 1024;
-
+    /** Default number of partitions. */
+    public static final int DFLT_CLUSTER_SIZE = 16;
+    /** */
+    private static final long serialVersionUID = 0L;
     /** Comparator. */
     private static final Comparator<IgniteBiTuple<Long, ClusterNode>> COMPARATOR = new HashComparator();
-
+    /** Permanent list to collect & sort hashed ClusterNodes */
+    private transient List<IgniteBiTuple<Long, ClusterNode>> hashedNodes;
     /** Thread local message digest. */
     private ThreadLocal<MessageDigest> digest = new ThreadLocal<MessageDigest>() {
         @Override protected MessageDigest initialValue() {
@@ -98,26 +90,19 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             }
         }
     };
-
     /** Number of partitions. */
     private int parts;
-
     /** Exclude neighbors flag. */
     private boolean exclNeighbors;
-
     /** Exclude neighbors warning. */
     private transient boolean exclNeighborsWarn;
-
     /** Optional backup filter. First node is primary, second node is a node being tested. */
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
-
     /** Hash ID resolver. */
     private AffinityNodeHashResolver hashIdRslvr = null;
-
     /** Ignite instance. */
     @IgniteInstanceResource
     private Ignite ignite;
-
     /** Logger instance. */
     @LoggerResource
     private transient IgniteLogger log;
@@ -130,26 +115,22 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other
-     * and specified number of backups.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other and specified
+     * number of backups. <p> Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code
+     * true}.
      *
-     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
-     *      of each other.
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
      */
     public RendezvousAffinityFunction(boolean exclNeighbors) {
         this(exclNeighbors, DFLT_PARTITION_COUNT);
     }
 
     /**
-     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other,
-     * and specified number of backups and partitions.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Initializes affinity with flag to exclude same-host-neighbors from being backups of each other, and specified
+     * number of backups and partitions. <p> Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is
+     * set to {@code true}.
      *
-     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups
-     *      of each other.
+     * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
      * @param parts Total number of partitions.
      */
     public RendezvousAffinityFunction(boolean exclNeighbors, int parts) {
@@ -157,15 +138,12 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Initializes optional counts for replicas and backups.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Initializes optional counts for replicas and backups. <p> Note that {@code backupFilter} is ignored if {@code
+     * excludeNeighbors} is set to {@code true}.
      *
      * @param parts Total number of partitions.
-     * @param backupFilter Optional back up filter for nodes. If provided, backups will be selected
-     *      from all nodes that pass this filter. First argument for this filter is primary node, and second
-     *      argument is node being tested.
-     * <p>
+     * @param backupFilter Optional back up filter for nodes. If provided, backups will be selected from all nodes that
+     * pass this filter. First argument for this filter is primary node, and second argument is node being tested. <p>
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      */
     public RendezvousAffinityFunction(int parts, @Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
@@ -186,6 +164,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         this.exclNeighbors = exclNeighbors;
         this.parts = parts;
         this.backupFilter = backupFilter;
+        hashedNodes = new ArrayList<>(parts);
 
         try {
             MessageDigest.getInstance("MD5");
@@ -196,14 +175,29 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Gets total number of key partitions. To ensure that all partitions are
-     * equally distributed across all nodes, please make sure that this
-     * number is significantly larger than a number of nodes. Also, partition
-     * size should be relatively small. Try to avoid having partitions with more
-     * than quarter million keys.
-     * <p>
-     * Note that for fully replicated caches this method should always
-     * return {@code 1}.
+     * The pack partition number and nodeHash.hashCode to long and mix it by hash function based on the Wang/Jenkins
+     * hash.
+     *
+     * @see <a href="https://gist.github.com/badboy/6267743#64-bit-mix-functions">64 bit mix functions</a>
+     */
+    private static long hash(int part, Object nodeHash) {
+        long key = (nodeHash.hashCode() & 0xFFFFFFFFL)
+            | ((part & 0xFFFFFFFFL) << 32);
+        key = (~key) + (key << 21); // key = (key << 21) - key - 1;
+        key ^= (key >>> 24);
+        key += (key << 3) + (key << 8); // key * 265
+        key ^= (key >>> 14);
+        key += (key << 2) + (key << 4); // key * 21
+        key ^= (key >>> 28);
+        key += (key << 31);
+        return key;
+    }
+
+    /**
+     * Gets total number of key partitions. To ensure that all partitions are equally distributed across all nodes,
+     * please make sure that this number is significantly larger than a number of nodes. Also, partition size should be
+     * relatively small. Try to avoid having partitions with more than quarter million keys. <p> Note that for fully
+     * replicated caches this method should always return {@code 1}.
      *
      * @return Total partition count.
      */
@@ -221,14 +215,10 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Gets hash ID resolver for nodes. This resolver is used to provide
-     * alternate hash ID, other than node ID.
-     * <p>
-     * Node IDs constantly change when nodes get restarted, which causes them to
-     * be placed on different locations in the hash ring, and hence causing
-     * repartitioning. Providing an alternate hash ID, which survives node restarts,
-     * puts node on the same location on the hash ring, hence minimizing required
-     * repartitioning.
+     * Gets hash ID resolver for nodes. This resolver is used to provide alternate hash ID, other than node ID. <p> Node
+     * IDs constantly change when nodes get restarted, which causes them to be placed on different locations in the hash
+     * ring, and hence causing repartitioning. Providing an alternate hash ID, which survives node restarts, puts node
+     * on the same location on the hash ring, hence minimizing required repartitioning.
      *
      * @return Hash ID resolver.
      */
@@ -238,17 +228,12 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Sets hash ID resolver for nodes. This resolver is used to provide
-     * alternate hash ID, other than node ID.
-     * <p>
-     * Node IDs constantly change when nodes get restarted, which causes them to
-     * be placed on different locations in the hash ring, and hence causing
-     * repartitioning. Providing an alternate hash ID, which survives node restarts,
-     * puts node on the same location on the hash ring, hence minimizing required
-     * repartitioning.
+     * Sets hash ID resolver for nodes. This resolver is used to provide alternate hash ID, other than node ID. <p> Node
+     * IDs constantly change when nodes get restarted, which causes them to be placed on different locations in the hash
+     * ring, and hence causing repartitioning. Providing an alternate hash ID, which survives node restarts, puts node
+     * on the same location on the hash ring, hence minimizing required repartitioning.
      *
      * @param hashIdRslvr Hash ID resolver.
-     *
      * @deprecated Use {@link IgniteConfiguration#setConsistentId(Serializable)} instead.
      */
     @Deprecated
@@ -257,11 +242,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Gets optional backup filter. If not {@code null}, backups will be selected
-     * from all nodes that pass this filter. First node passed to this filter is primary node,
-     * and second node is a node being tested.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Gets optional backup filter. If not {@code null}, backups will be selected from all nodes that pass this filter.
+     * First node passed to this filter is primary node, and second node is a node being tested. <p> Note that {@code
+     * backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @return Optional backup filter.
      */
@@ -270,11 +253,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Sets optional backup filter. If provided, then backups will be selected from all
-     * nodes that pass this filter. First node being passed to this filter is primary node,
-     * and second node is a node being tested.
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Sets optional backup filter. If provided, then backups will be selected from all nodes that pass this filter.
+     * First node being passed to this filter is primary node, and second node is a node being tested. <p> Note that
+     * {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param backupFilter Optional backup filter.
      */
@@ -283,9 +264,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Checks flag to exclude same-host-neighbors from being backups of each other (default is {@code false}).
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Checks flag to exclude same-host-neighbors from being backups of each other (default is {@code false}). <p> Note
+     * that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @return {@code True} if nodes residing on the same host may not act as backups of each other.
      */
@@ -294,9 +274,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     /**
-     * Sets flag to exclude same-host-neighbors from being backups of each other (default is {@code false}).
-     * <p>
-     * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     * Sets flag to exclude same-host-neighbors from being backups of each other (default is {@code false}). <p> Note
+     * that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param exclNeighbors {@code True} if nodes residing on the same host may not act as backups of each other.
      */
@@ -322,6 +301,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      */
     public List<ClusterNode> assignPartition(int part, List<ClusterNode> nodes, int backups,
         @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
+        return assignPartition_new(part, nodes, backups, neighborhoodCache);
+    }
+
+    public List<ClusterNode> assignPartition_old(int part, List<ClusterNode> nodes, int backups,
+        @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
         if (nodes.size() <= 1)
             return nodes;
 
@@ -345,14 +329,14 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
                 byte[] bytes = d.digest(out.toByteArray());
 
                 long hash =
-                      (bytes[0] & 0xFFL)
-                    | ((bytes[1] & 0xFFL) << 8)
-                    | ((bytes[2] & 0xFFL) << 16)
-                    | ((bytes[3] & 0xFFL) << 24)
-                    | ((bytes[4] & 0xFFL) << 32)
-                    | ((bytes[5] & 0xFFL) << 40)
-                    | ((bytes[6] & 0xFFL) << 48)
-                    | ((bytes[7] & 0xFFL) << 56);
+                    (bytes[0] & 0xFFL)
+                        | ((bytes[1] & 0xFFL) << 8)
+                        | ((bytes[2] & 0xFFL) << 16)
+                        | ((bytes[3] & 0xFFL) << 24)
+                        | ((bytes[4] & 0xFFL) << 32)
+                        | ((bytes[5] & 0xFFL) << 40)
+                        | ((bytes[6] & 0xFFL) << 48)
+                        | ((bytes[7] & 0xFFL) << 56);
 
                 lst.add(F.t(hash, node));
             }
@@ -413,6 +397,69 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         return res;
     }
 
+    public List<ClusterNode> assignPartition_new(int part, List<ClusterNode> nodes, int backups,
+        @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
+        if (nodes.size() <= 1)
+            return nodes;
+
+        hashedNodes.clear();
+        for (ClusterNode node : nodes) {
+            IgniteBiTuple<Long, ClusterNode> t = F.t(hash(part, resolveNodeHash(node)), node);
+            int pos = Collections.binarySearch(hashedNodes, t, COMPARATOR);
+            hashedNodes.add(-1 - pos, t);
+        }
+
+        final int primaryAndBackups = backups == Integer.MAX_VALUE ? nodes.size() : Math.min(backups + 1, nodes.size());
+
+        List<ClusterNode> res = new ArrayList<>(primaryAndBackups);
+
+        ClusterNode primary = hashedNodes.get(0).get2();
+
+        res.add(primary);
+
+        // Select backups.
+        if (backups > 0) {
+            Collection<ClusterNode> allNeighbors = new HashSet<>((exclNeighbors) ? hashedNodes.size() / 4 : 16);
+            for (int i = 1; i < hashedNodes.size() && res.size() < primaryAndBackups; i++) {
+                ClusterNode node = hashedNodes.get(i).get2();
+
+                if (exclNeighbors) {
+                    if (!allNeighbors.contains(node)) {
+                        res.add(node);
+                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                    }
+                }
+                else if (backupFilter == null || backupFilter.apply(primary, node)) {
+                    res.add(node);
+                    if (exclNeighbors)
+                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                }
+            }
+        }
+
+        if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
+            // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria.
+            for (int i = 1; i < hashedNodes.size() && res.size() < primaryAndBackups; i++) {
+
+                ClusterNode node = hashedNodes.get(i).get2();
+
+                if (!res.contains(node))
+                    res.add(node);
+            }
+
+            if (!exclNeighborsWarn) {
+                LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
+                    "because topology has no enough nodes to assign backups.");
+
+                exclNeighborsWarn = true;
+            }
+        }
+
+        assert res.size() <= primaryAndBackups;
+
+        return res;
+    }
+
     /** {@inheritDoc} */
     @Override public void reset() {
         // No-op.
@@ -425,24 +472,156 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
-        return U.safeAbs(key.hashCode() % parts);
+        return U.safeAbs(key.hashCode()) % parts;
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
+
+        List<List<ClusterNode>> oldAss = assignPartitions_old(affCtx);
+//        List<List<ClusterNode>> newAss = assignPartitions_new(affCtx);
+
+//        int part = 2;
+//        System.out.println("Version " + affCtx.currentTopologyVersion());
+//        System.out.println("NEW PARTITION " + part);
+//        for (ClusterNode n : newAss.get(part))
+//            System.out.println("node: " + n.id());
+//        System.out.println("OLD PARTITION " + part);
+//        for (ClusterNode n : oldAss.get(part))
+//            System.out.println("node: " + n.id());
+//        System.out.println("---------------");
+
+        return oldAss;
+    }
+
+    public List<List<ClusterNode>> assignPartitions_old(AffinityFunctionContext affCtx) {
         List<List<ClusterNode>> assignments = new ArrayList<>(parts);
 
         Map<UUID, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
             GridCacheUtils.neighbors(affCtx.currentTopologySnapshot()) : null;
 
         for (int i = 0; i < parts; i++) {
-            List<ClusterNode> partAssignment = assignPartition(i, affCtx.currentTopologySnapshot(), affCtx.backups(),
+            List<ClusterNode> partAssignment = assignPartition_old(i, affCtx.currentTopologySnapshot(), affCtx.backups(),
                 neighborhoodCache);
 
             assignments.add(partAssignment);
         }
 
         return assignments;
+    }
+
+    /**
+     * @param affCtx Aff context.
+     */
+    public List<List<ClusterNode>> assignPartitions_new(AffinityFunctionContext affCtx) {
+        List<ClusterNode> topSnapshot = affCtx.currentTopologySnapshot();
+
+        if(topSnapshot.size() > DFLT_CLUSTER_SIZE)
+            return assignPartitionsClustered(topSnapshot, affCtx.backups());
+
+        Map<UUID, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
+            GridCacheUtils.neighbors(topSnapshot) : null;
+
+        List<List<ClusterNode>> assignments = new ArrayList<>(parts);
+        for (int i = 0; i < parts; i++) {
+            List<ClusterNode> partAssignment = assignPartition_new(i, topSnapshot, affCtx.backups(),
+                neighborhoodCache);
+
+            assignments.add(partAssignment);
+        }
+
+        return assignments;
+    }
+
+    public List<List<ClusterNode>> assignPartitionsClustered(List<ClusterNode> topSnapshot, int backups) {
+        int clusterSize = DFLT_CLUSTER_SIZE;
+        List<ClusterNode> sortedSnapshot = new ArrayList<>(topSnapshot);
+            Collections.sort(sortedSnapshot, new Comparator<ClusterNode>() {
+                @Override public int compare(ClusterNode o1, ClusterNode o2) {
+                    return o1.id().compareTo(o2.id());
+                }
+            });
+
+        List<Integer> clusters = new ArrayList<>(sortedSnapshot.size() / clusterSize + (sortedSnapshot.size() % clusterSize == 0 ? 0 : 1));
+        for (int i = 0; i < clusters.size(); ++i)
+            clusters.add(i);
+
+        Map<UUID, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
+            GridCacheUtils.neighbors(topSnapshot) : null;
+
+
+        List<List<ClusterNode>> assignments = new ArrayList<>(parts);
+        for (int i = 0; i < parts; i++) {
+            List<ClusterNode> partAssignment = assignPartition_cluster(i, topSnapshot, backups,
+                neighborhoodCache);
+
+            assignments.add(partAssignment);
+        }
+
+        return assignments;
+    }
+
+    public List<ClusterNode> assignPartition_cluster(int part, List<ClusterNode> nodes, int backups,
+        @Nullable Map<UUID, Collection<ClusterNode>> neighborhoodCache) {
+        if (nodes.size() <= 1)
+            return nodes;
+
+        hashedNodes.clear();
+        for (ClusterNode node : nodes) {
+            IgniteBiTuple<Long, ClusterNode> t = F.t(hash(part, resolveNodeHash(node)), node);
+            int pos = Collections.binarySearch(hashedNodes, t, COMPARATOR);
+            hashedNodes.add(-1 - pos, t);
+        }
+
+        final int primaryAndBackups = backups == Integer.MAX_VALUE ? nodes.size() : Math.min(backups + 1, nodes.size());
+
+        List<ClusterNode> res = new ArrayList<>(primaryAndBackups);
+
+        ClusterNode primary = hashedNodes.get(0).get2();
+
+        res.add(primary);
+
+        // Select backups.
+        if (backups > 0) {
+            Collection<ClusterNode> allNeighbors = new HashSet<>((exclNeighbors) ? hashedNodes.size() / 4 : 16);
+            for (int i = 1; i < hashedNodes.size() && res.size() < primaryAndBackups; i++) {
+                ClusterNode node = hashedNodes.get(i).get2();
+
+                if (exclNeighbors) {
+                    if (!allNeighbors.contains(node)) {
+                        res.add(node);
+                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                    }
+                }
+                else if (backupFilter == null || backupFilter.apply(primary, node)) {
+                    res.add(node);
+                    if (exclNeighbors)
+                        allNeighbors.addAll(neighborhoodCache.get(node.id()));
+                }
+            }
+        }
+
+        if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
+            // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria.
+            for (int i = 1; i < hashedNodes.size() && res.size() < primaryAndBackups; i++) {
+
+                ClusterNode node = hashedNodes.get(i).get2();
+
+                if (!res.contains(node))
+                    res.add(node);
+            }
+
+            if (!exclNeighborsWarn) {
+                LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
+                    "because topology has no enough nodes to assign backups.");
+
+                exclNeighborsWarn = true;
+            }
+        }
+
+        assert res.size() <= primaryAndBackups;
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -465,6 +644,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         exclNeighbors = in.readBoolean();
         hashIdRslvr = (AffinityNodeHashResolver)in.readObject();
         backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
+        hashedNodes = new ArrayList<>(parts);
     }
 
     /**
