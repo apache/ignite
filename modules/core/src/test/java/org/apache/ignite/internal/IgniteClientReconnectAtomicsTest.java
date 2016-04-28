@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -773,5 +774,62 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
 
         assertFalse(srvSemaphore.tryAcquire());
         assertFalse(srvSemaphore.tryAcquire());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockReconnect() throws Exception {
+        testReentrantLockReconnect(false);
+
+        testReentrantLockReconnect(true);
+    }
+
+    private void testReentrantLockReconnect(final boolean fair) throws Exception {
+        Ignite client = grid(serverCount());
+
+        assertTrue(client.cluster().localNode().isClient());
+
+        Ignite srv = clientRouter(client);
+
+        IgniteLock clientLock = client.reentrantLock("lock1", true, fair, true);
+
+        assertEquals(false, clientLock.isLocked());
+
+        final IgniteLock srvLock = srv.reentrantLock("lock1", true, fair, true);
+
+        assertEquals(false, srvLock.isLocked());
+
+        reconnectClientNode(client, srv, new Runnable() {
+            @Override public void run() {
+                srvLock.lock();
+            }
+        });
+
+        assertTrue(srvLock.isLocked());
+        assertTrue(clientLock.isLocked());
+
+        assertEquals(1, srvLock.getHoldCount());
+
+        srvLock.lock();
+
+        assertTrue(srvLock.isLocked());
+        assertTrue(clientLock.isLocked());
+
+        assertEquals(2, srvLock.getHoldCount());
+
+        srvLock.unlock();
+
+        assertTrue(srvLock.isLocked());
+        assertTrue(clientLock.isLocked());
+
+        assertEquals(1, srvLock.getHoldCount());
+
+        srvLock.unlock();
+
+        assertFalse(srvLock.isLocked());
+        assertFalse(clientLock.isLocked());
+
+        assertEquals(0, srvLock.getHoldCount());
     }
 }

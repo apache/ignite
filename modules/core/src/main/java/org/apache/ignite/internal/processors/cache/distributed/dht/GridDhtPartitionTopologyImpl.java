@@ -821,10 +821,10 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ClusterNode> nodes(int p, AffinityTopologyVersion topVer) {
+    @Override public List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer) {
         GridAffinityAssignment affAssignment = cctx.affinity().assignment(topVer);
 
-        Collection<ClusterNode> affNodes = affAssignment.get(p);
+        List<ClusterNode> affNodes = affAssignment.get(p);
 
         lock.readLock().lock();
 
@@ -835,7 +835,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 ", cache=" + cctx.name() +
                 ", node2part=" + node2part + ']';
 
-            Collection<ClusterNode> nodes = null;
+            List<ClusterNode> nodes = null;
 
             Collection<UUID> nodeIds = part2node.get(p);
 

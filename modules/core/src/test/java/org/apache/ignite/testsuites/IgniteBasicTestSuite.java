@@ -50,6 +50,7 @@ import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
+import org.apache.ignite.startup.properties.NotStringSystemPropertyTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.test.ConfigVariationsTestSuiteBuilderTest;
 import org.apache.ignite.testframework.test.ParametersTest;
@@ -85,6 +86,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTest(IgniteP2PSelfTestSuite.suite(ignoredTests));
         suite.addTest(IgniteCacheP2pUnmarshallingErrorTestSuite.suite(ignoredTests));
         suite.addTest(IgniteStreamSelfTestSuite.suite());
+
+        suite.addTest(IgnitePlatformsTestSuite.suite());
 
         suite.addTest(new TestSuite(GridSelfTest.class));
         suite.addTest(new TestSuite(ClusterGroupHostsSelfTest.class));
@@ -128,6 +131,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(ParametersTest.class);
         suite.addTestSuite(VariationsIteratorTest.class);
         suite.addTestSuite(ConfigVariationsTestSuiteBuilderTest.class);
+        suite.addTestSuite(NotStringSystemPropertyTest.class);
 
         return suite;
     }

@@ -274,7 +274,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public final boolean equals(Object obj) {
+    @Override public boolean equals(Object obj) {
         if (this == obj)
             return true;
         else if (obj instanceof TcpDiscoveryAbstractMessage)
