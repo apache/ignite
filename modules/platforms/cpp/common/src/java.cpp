@@ -1314,10 +1314,6 @@ namespace ignite
                 return LocalToGlobal(env, ldr);
             }
 
-            jobject JniContext::ProcessorTransactions(jobject obj) {
-                return ProcessorTransactions(obj, NULL);
-            }
-
             jobject JniContext::ProcessorTransactions(jobject obj, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 

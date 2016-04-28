@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_TRANSACTION_IMPL
-#define _IGNITE_TRANSACTION_IMPL
+#ifndef _IGNITE_IMPL_TRANSACTIONS_TRANSACTION_IMPL
+#define _IGNITE_IMPL_TRANSACTIONS_TRANSACTION_IMPL
 
 #include <ignite/common/concurrent.h>
 #include <ignite/common/java.h>
@@ -222,4 +222,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_TRANSACTIONS_TRANSACTION_IMPL
