@@ -20,8 +20,8 @@
  * Declares ignite::transactions::TransactionState enumeration.
  */
 
-#ifndef _IGNITE_TRANSACTION_STATE
-#define _IGNITE_TRANSACTION_STATE
+#ifndef _IGNITE_TRANSACTIONS_TRANSACTION_STATE
+#define _IGNITE_TRANSACTIONS_TRANSACTION_STATE
 
 namespace ignite 
 {
@@ -62,4 +62,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_TRANSACTIONS_TRANSACTION_STATE

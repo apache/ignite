@@ -20,8 +20,8 @@
  * Declares ignite::transactions::Transaction class.
  */
 
-#ifndef _IGNITE_TRANSACTION
-#define _IGNITE_TRANSACTION
+#ifndef _IGNITE_TRANSACTIONS_TRANSACTION
+#define _IGNITE_TRANSACTIONS_TRANSACTION
 
 #include <ignite/common/concurrent.h>
 #include <ignite/common/java.h>
@@ -217,4 +217,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_TRANSACTIONS_TRANSACTION
