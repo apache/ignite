@@ -240,6 +240,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration)
+        {
+            return _ignite.GetOrCreateCache<TK, TV>(configuration, nearConfiguration);
+        }
+
+        /** <inheritdoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(string name)
         {
             return _ignite.CreateCache<TK, TV>(name);
@@ -250,6 +256,14 @@ namespace Apache.Ignite.Core.Impl
         {
             return _ignite.CreateCache<TK, TV>(configuration);
         }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration)
+        {
+            return _ignite.CreateCache<TK, TV>(configuration, nearConfiguration);
+        }
+
+        /** <inheritdoc /> */
         public void DestroyCache(string name)
         {
             _ignite.DestroyCache(name);
@@ -344,6 +358,17 @@ namespace Apache.Ignite.Core.Impl
         public IgniteConfiguration GetConfiguration()
         {
             return _ignite.GetConfiguration();
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return _ignite.CreateNearCache<TK, TV>(name, configuration);
+        }
+
+        public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return _ignite.GetOrCreateNearCache<TK, TV>(name, configuration);
         }
 
         /** <inheritdoc /> */

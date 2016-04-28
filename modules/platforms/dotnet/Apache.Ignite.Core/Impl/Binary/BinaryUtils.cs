@@ -187,6 +187,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: stream receiver holder. */
         public const byte TypeStreamReceiverHolder = 94;
 
+        /** Type: platform object proxy. */
+        public const byte TypePlatformJavaObjectFactoryProxy = 99;
+
         /** Collection: custom. */
         public const byte CollectionCustom = 0;
 

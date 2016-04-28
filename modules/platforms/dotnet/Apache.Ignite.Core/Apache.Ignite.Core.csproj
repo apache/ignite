@@ -92,6 +92,7 @@
     <Compile Include="Cache\CacheException.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
+    <Compile Include="Cache\Configuration\NearCacheConfiguration.cs" />
     <Compile Include="DataStructures\Configuration\AtomicConfiguration.cs" />
     <Compile Include="Cache\Configuration\QueryAlias.cs" />
     <Compile Include="Cache\Configuration\QueryTextFieldAttribute.cs" />
@@ -100,6 +101,10 @@
     <Compile Include="Cache\Event\ICacheEntryEventFilter.cs" />
     <Compile Include="Cache\Event\ICacheEntryEventListener.cs" />
     <Compile Include="Cache\Event\Package-Info.cs" />
+    <Compile Include="Cache\Eviction\EvictionPolicyBase.cs" />
+    <Compile Include="Cache\Eviction\FifoEvictionPolicy.cs" />
+    <Compile Include="Cache\Eviction\IEvictionPolicy.cs" />
+    <Compile Include="Cache\Eviction\LruEvictionPolicy.cs" />
     <Compile Include="Cache\Expiry\ExpiryPolicy.cs" />
     <Compile Include="Cache\Expiry\IExpiryPolicy.cs" />
     <Compile Include="Cache\Expiry\Package-Info.cs" />
@@ -115,6 +120,7 @@
     <Compile Include="Cache\IMutableCacheEntry.cs" />
     <Compile Include="Cache\Package-Info.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQuery.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryExtensions.cs" />
     <Compile Include="Cache\Query\Continuous\IContinuousQueryHandle.cs" />
     <Compile Include="Cache\Query\Continuous\Package-Info.cs" />
     <Compile Include="Cache\Query\IQueryCursor.cs" />
@@ -145,6 +151,8 @@
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
     <Compile Include="Impl\Common\Platform.cs" />
+    <Compile Include="Impl\Cache\Event\JavaCacheEntryEventFilter.cs" />
+    <Compile Include="Impl\Common\PlatformJavaObjectFactoryProxy.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
     <Compile Include="Compute\ComputeJobAdapter.cs" />
     <Compile Include="Compute\ComputeJobFailoverException.cs" />
@@ -394,6 +402,7 @@
     <Compile Include="Impl\Unmanaged\UnmanagedNonReleaseableTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
+    <Compile Include="Interop\JavaObject.cs" />
     <Compile Include="Lifecycle\Package-Info.cs" />
     <Compile Include="Messaging\Package-Info.cs" />
     <Compile Include="Package-Info.cs" />
@@ -488,6 +497,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Impl\Common\JavaObjects\" />
+  </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
@@ -495,7 +507,7 @@
 	set COMPLUS_ApplicationMigrationRuntimeActivationConfigPath=$(ProjectDir)
 	PowerShell.exe -executionpolicy remotesigned -File build-common.ps1 -Configuration $(ConfigurationName) -msbuildexe "$(MSBuildBinPath)\msbuild.exe"</PreBuildEvent>
   </PropertyGroup>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

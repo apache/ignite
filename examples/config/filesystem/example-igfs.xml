@@ -50,9 +50,6 @@
         Configuration below demonstrates how to setup a IgniteFs node with file data.
     -->
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <!-- Set to true to enable cluster-aware class loading for examples, default is false. -->
-        <property name="peerClassLoadingEnabled" value="true"/>
-
         <property name="marshaller">
             <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <!-- Set to false to allow non-serializable objects in examples, default is true. -->

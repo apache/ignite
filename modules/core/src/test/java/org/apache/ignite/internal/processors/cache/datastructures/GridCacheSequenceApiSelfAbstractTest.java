@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.util.typedef.G;
@@ -317,25 +316,6 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     /**
      * @throws Exception If failed.
      */
-    public void testEviction() throws Exception {
-        String locSeqName = UUID.randomUUID().toString();
-
-        IgniteAtomicSequence locSeq = grid().atomicSequence(locSeqName, 0, true);
-
-        locSeq.addAndGet(153);
-
-        GridCacheAdapter cache = ((IgniteKernal)grid()).internalCache(GridCacheUtils.ATOMICS_CACHE_NAME);
-
-        assertNotNull(cache);
-
-        cache.evictAll(cache.keySet());
-
-        assert null != cache.get(new GridCacheInternalKeyImpl(locSeqName));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testRemove() throws Exception {
         String locSeqName = UUID.randomUUID().toString();
 
@@ -375,23 +355,6 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
                 return null;
             }
         }, IllegalStateException.class, null);
-
-        for (Object o : cache.keySet())
-            assert !(o instanceof GridCacheInternal) : "Wrong keys [key=" + o + ']';
-
-        for (Object o : cache.values())
-            assert !(o instanceof GridCacheInternal) : "Wrong values [value=" + o + ']';
-
-        for (Object o : cache.entrySet())
-            assert !(o instanceof GridCacheInternal) : "Wrong entries [entry=" + o + ']';
-
-        assert cache.keySet().isEmpty();
-
-        assert cache.values().isEmpty();
-
-        assert cache.entrySet().isEmpty();
-
-        assert cache.size() == 0;
 
         for (String seqName : seqNames)
             assert null != cache.get(new GridCacheInternalKeyImpl(seqName));

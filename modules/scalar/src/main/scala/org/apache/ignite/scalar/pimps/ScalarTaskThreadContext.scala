@@ -30,7 +30,7 @@ import org.jetbrains.annotations._
  */
 trait ScalarTaskThreadContext[T <: ClusterGroup] extends ScalarConversions { this: PimpedType[T] =>
     /**
-     * Properly typed version of `GridCompute#withName(...)` method.
+     * Properly typed version of `Compute#withName(...)` method.
      *
      * @param taskName Name of the task.
      */
@@ -38,7 +38,7 @@ trait ScalarTaskThreadContext[T <: ClusterGroup] extends ScalarConversions { thi
         value.ignite().compute(value).withName(taskName).asInstanceOf[T]
 
     /**
-     * Properly typed version of `GridCompute#withNoFailover()` method.
+     * Properly typed version of `Compute#withNoFailover()` method.
      */
     def withNoFailover$(): T =
         value.ignite().compute(value).withNoFailover().asInstanceOf[T]
