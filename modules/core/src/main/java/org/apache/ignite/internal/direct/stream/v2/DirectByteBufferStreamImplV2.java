@@ -19,7 +19,6 @@ package org.apache.ignite.internal.direct.stream.v2;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
