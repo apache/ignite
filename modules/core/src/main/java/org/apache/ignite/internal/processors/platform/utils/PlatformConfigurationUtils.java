@@ -62,7 +62,8 @@ import java.util.Map;
 /**
  * Configuration utils.
  */
-@SuppressWarnings("unchecked") public class PlatformConfigurationUtils {
+@SuppressWarnings("unchecked")
+public class PlatformConfigurationUtils {
     /**
      * Write .Net configuration to the stream.
      *
