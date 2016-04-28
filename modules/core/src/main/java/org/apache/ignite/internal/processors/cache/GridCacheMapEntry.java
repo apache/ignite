@@ -2254,12 +2254,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 CacheObject evtVal = updated;
                 CacheObject evtOldVal = oldVal;
 
-                if (isOffHeapValuesOnly()) {
-                    evtVal = cctx.toCacheObject(cctx.unwrapTemporary(evtVal));
-
-                    evtOldVal = cctx.toCacheObject(cctx.unwrapTemporary(evtOldVal));
-                }
-
                 cctx.continuousQueries().onEntryUpdated(lsnrs, key, evtVal, evtOldVal, internal,
                     partition(), primary, false, updateCntr0, fut, topVer);
             }

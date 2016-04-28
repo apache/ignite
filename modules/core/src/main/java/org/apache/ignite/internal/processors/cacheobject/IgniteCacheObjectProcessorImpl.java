@@ -138,31 +138,6 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp)
-        throws IgniteCheckedException {
-        assert valPtr != 0;
-
-        int size = GridUnsafe.getInt(valPtr);
-
-        byte type = GridUnsafe.getByte(valPtr + 4);
-
-        byte[] bytes = U.copyMemory(valPtr + 5, size);
-
-        if (ctx.kernalContext().config().isPeerClassLoadingEnabled() &&
-            ctx.offheapTiered() &&
-            type != CacheObject.TYPE_BYTE_ARR) {
-            IgniteUuid valClsLdrId = U.readGridUuid(valPtr + 5 + size);
-
-            ClassLoader ldr =
-                valClsLdrId != null ? ctx.deploy().getClassLoader(valClsLdrId) : ctx.deploy().localLoader();
-
-            return toCacheObject(ctx.cacheObjectContext(), unmarshal(ctx.cacheObjectContext(), bytes, ldr), false);
-        }
-        else
-            return toCacheObject(ctx.cacheObjectContext(), type, bytes);
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
         switch (type) {
             case CacheObject.TYPE_BYTE_ARR:

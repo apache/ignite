@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtOffHeapCacheEntry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -48,9 +47,7 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
     @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
         @Nullable CacheObject val, boolean create, boolean touch) {
         if (create)
-            return ctx.useOffheapEntry() ?
-                new GridDhtOffHeapCacheEntry(ctx, topVer, key, key.hashCode(), val) :
-                new GridDhtCacheEntry(ctx, topVer, key, key.hashCode(), val);
+            return new GridDhtCacheEntry(ctx, topVer, key, key.hashCode(), val);
         else
             return null;
     }

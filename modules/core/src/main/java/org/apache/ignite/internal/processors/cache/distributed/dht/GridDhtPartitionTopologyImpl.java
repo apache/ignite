@@ -674,6 +674,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (!create)
             return null;
 
+        boolean created = false;
+
         lock.writeLock().lock();
 
         try {
@@ -700,6 +702,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 if (updateSeq)
                     this.updateSeq.incrementAndGet();
+
+                create = true;
 
                 if (log.isDebugEnabled())
                     log.debug("Created local partition: " + loc);
