@@ -32,6 +32,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -74,6 +75,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.yardstickframework.BenchmarkConfiguration;
+import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Ignite cache random operation benchmark.
@@ -123,9 +125,9 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private BenchmarkRemoveEntryProcessor rmvEntryProc;
 
     /**
-     * Last local continuous query cursor.
+     * Map of statistic information.
      */
-    private ThreadLocal<QueryCursor> localContinuousQueryCursor = new ThreadLocal<>();
+    private Map<String, AtomicLong> operationStatistics;
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
@@ -137,16 +139,34 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     }
 
     /** {@inheritDoc} */
+    @Override public void onException(Throwable e) {
+        BenchmarkUtils.errorHelp(cfg, "The benchmark of random operation failed.");
+        super.onException(e);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> map) throws Exception {
         if (nextBoolean()) {
-            executeInTransaction();
+            executeInTransaction(map);
 
-            executeOutOfTx(true);
+            executeOutOfTx(map, true);
         }
         else
-            executeOutOfTx(false);
+            executeOutOfTx(map, false);
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tearDown() throws Exception {
+        BenchmarkUtils.println("Benchmark statistics");
+        for (String cacheName : ignite().cacheNames()) {
+            BenchmarkUtils.println(cacheName);
+            for (Operation op: Operation.values())
+                BenchmarkUtils.println(cfg, String.format("%s: %s", op,
+                    operationStatistics.get(String.format("%s_%s", op, cacheName))));
+        }
+        super.tearDown();
     }
 
     /**
@@ -161,6 +181,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         replaceEntryProc = new BenchmarkReplaceValueEntryProcessor(null);
         rmvEntryProc = new BenchmarkRemoveEntryProcessor();
         cacheSqlDescriptors = new HashMap<>();
+        operationStatistics = new HashMap<>();
 
         loadQueries();
 
@@ -168,6 +189,9 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
         for (String cacheName : ignite().cacheNames()) {
             IgniteCache<Object, Object> cache = ignite().cache(cacheName);
+
+            for (Operation op: Operation.values())
+                operationStatistics.put(String.format("%s_%s", op, cacheName), new AtomicLong(0));
 
             CacheConfiguration configuration = cache.getConfiguration(CacheConfiguration.class);
 
@@ -460,24 +484,27 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     }
 
     /**
+     * @param map Parameters map.
      * @param withoutTransactionCache Without transaction cache.
      * @throws Exception If fail.
      */
-    private void executeOutOfTx(boolean withoutTransactionCache) throws Exception {
+    private void executeOutOfTx(Map<Object, Object> map, boolean withoutTransactionCache) throws Exception {
         for (IgniteCache cache : availableCaches) {
             if (withoutTransactionCache && txCaches.contains(cache))
                 continue;
 
-            executeRandomOperation(cache);
+            executeRandomOperation(map, cache);
         }
     }
 
     /**
+     * @param map Parameters map.
      * @param cache Ignite cache.
      * @throws Exception If fail.
      */
-    private void executeRandomOperation(IgniteCache cache) throws Exception {
-        switch (nextRandomOperation()) {
+    private void executeRandomOperation(Map<Object, Object> map, IgniteCache cache) throws Exception {
+        Operation op = nextRandomOperation();
+        switch (op) {
             case PUT:
                 doPut(cache);
                 break;
@@ -527,11 +554,13 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 break;
 
             case CONTINUOUS_QUERY:
-                doContinuousQuery(cache);
+                doContinuousQuery(cache, map);
         }
+        storeStatistics(cache.getName(), map, op);
     }
 
     /**
+     * @param cacheName Ignite cache name.
      * @return Operation.
      */
     @NotNull private Operation nextRandomOperation() {
@@ -540,11 +569,33 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     }
 
     /**
+     * @param cacheName Ignite cache name.
+     * @param map Parameters map.
+     * @param op Operation.
+     * @return Operation.
+     */
+    private void storeStatistics(String cacheName, Map<Object, Object> map,
+        Operation op) {
+        String opCacheKey  = String.format("%s_%s", op, cacheName);
+        Integer opCnt = (Integer)map.get(opCacheKey);
+        if (opCnt == null)
+            map.put(opCacheKey, Integer.valueOf(1));
+        else {
+            opCnt = Integer.valueOf(opCnt.intValue() + 1);
+            if (opCnt.intValue() % 10 == 0) {
+                operationStatistics.get(opCacheKey).addAndGet(opCnt.longValue());
+                opCnt = Integer.valueOf(0);
+            }
+            map.put(opCacheKey, opCnt);
+        }
+    }
+
+    /**
      * Execute operations in transaction.
-     *
+     * @param map Parameters map.
      * @throws Exception if fail.
      */
-    private void executeInTransaction() throws Exception {
+    private void executeInTransaction(final Map<Object, Object> map) throws Exception {
         IgniteBenchmarkUtils.doInTransaction(ignite().transactions(),
             TransactionConcurrency.fromOrdinal(nextRandom(TransactionConcurrency.values().length)),
             TransactionIsolation.fromOrdinal(nextRandom(TransactionIsolation.values().length)),
@@ -554,7 +605,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 public Object call() throws Exception {
                     for (IgniteCache cache : txCaches)
                         if (nextBoolean())
-                            executeRandomOperation(cache);
+                            executeRandomOperation(map, cache);
 
                     return null;
                 }
@@ -789,17 +840,17 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
     /**
      * @param cache Ignite cache.
+     * @param map Parameters map.
      * @throws Exception If failed.
      */
-    private void doContinuousQuery(IgniteCache cache) throws Exception {
-        if (nextBoolean() || localContinuousQueryCursor.get() == null) {
-            if (localContinuousQueryCursor.get() != null)
-                localContinuousQueryCursor.get().close();
-            ContinuousQuery qry = new ContinuousQuery();
-            qry.setLocalListener(new ContinuousQueryUpdater());
-            qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(new ContinuousQueryFilter(nextRandom(100))));
-            localContinuousQueryCursor.set(cache.query(qry));
-        }
+    private void doContinuousQuery(IgniteCache cache, Map<Object, Object> map) throws Exception {
+        QueryCursor cursor = (QueryCursor)map.get(cache.getName());
+        if (cursor != null)
+            cursor.close();
+        ContinuousQuery qry = new ContinuousQuery();
+        qry.setLocalListener(new ContinuousQueryUpdater());
+        qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(new ContinuousQueryFilter(nextRandom(50, 100))));
+        map.put(cache.getName(), cache.query(qry));
     }
 
     /**
@@ -834,7 +885,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         /** {@inheritDoc} */
         @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
             return event.getOldValue() != null && event.getValue() != null
-                && ((event.getOldValue().hashCode() - event.getValue().hashCode()) % (val + 3) == 0);
+                && ((event.getOldValue().hashCode() - event.getValue().hashCode()) % (val) == 0);
         }
     }
 
