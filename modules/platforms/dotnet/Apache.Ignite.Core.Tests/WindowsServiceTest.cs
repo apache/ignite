@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests
                 "/install",
                 "-springConfigUrl=" + springPath,
                 "-jvmClasspath=" + Classpath.CreateClasspath(forceTestClasspath: true, skipPrefix: true)
-            });
+            }).WaitForExit();
 
             var service = GetIgniteService();
             Assert.IsNotNull(service);
@@ -73,18 +73,16 @@ namespace Apache.Ignite.Core.Tests
         {
             var controller = GetIgniteService();
 
-            if (controller != null && controller.CanStop)
+            if (controller != null)
             {
-                controller.Stop();
-
                 var exePath = typeof(IgniteRunner).Assembly.Location;
-                IgniteProcess.Start(exePath, string.Empty, args: new[] {"/uninstall"});
+                IgniteProcess.Start(exePath, string.Empty, args: new[] {"/uninstall"}).WaitForExit();
             }
         }
 
         private static ServiceController GetIgniteService()
         {
-            return ServiceController.GetServices().FirstOrDefault(x => x.ServiceName == "Apache Ignite.NET");
+            return ServiceController.GetServices().FirstOrDefault(x => x.ServiceName.StartsWith("Apache Ignite.NET"));
         }
     }
 }
