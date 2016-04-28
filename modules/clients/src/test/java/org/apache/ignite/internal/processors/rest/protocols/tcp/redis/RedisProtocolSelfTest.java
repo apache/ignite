@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.redis;
+package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -280,17 +281,6 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testIncrByFloat() throws Exception {
-        // not supported.
-//        try (Jedis jedis = pool.getResource()) {
-//            jcache().put("incrKeyFloat", 10.50);
-//            Assert.assertEquals(10.6, jedis.incrByFloat("incrKeyFloat", 0.1), 1e-15);
-//        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testAppend() throws Exception {
         try (Jedis jedis = pool.getResource()) {
             Assert.assertEquals(5, (long)jedis.append("appendKey1", "Hello"));
@@ -357,6 +347,48 @@ public class RedisProtocolSelfTest extends GridCommonAbstractTest {
             Assert.assertEquals("ing", jedis.getrange("getRangeKey", -3, -1));
             Assert.assertEquals("This is a string", jedis.getrange("getRangeKey", 0, -1));
             Assert.assertEquals("string", jedis.getrange("getRangeKey", 10, 100));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDel() throws Exception {
+        jcache().put("delKey1", "abc");
+        jcache().put("delKey2", "abcd");
+        try (Jedis jedis = pool.getResource()) {
+            // Should return the number of actually deleted entries.
+//            Assert.assertEquals(0, (long)jedis.del("nonExistingDelKey"));
+            Assert.assertEquals(2, (long)jedis.del("delKey1", "delKey2"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExists() throws Exception {
+        jcache().put("existsKey1", "abc");
+        jcache().put("existsKey2", "abcd");
+        try (Jedis jedis = pool.getResource()) {
+            Assert.assertFalse(jedis.exists("nonExistingDelKey"));
+            Assert.assertEquals(2, (long)jedis.exists("existsKey1", "existsKey2"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDbSize() throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            Assert.assertEquals(0, (long)jedis.dbSize());
+
+            jcache().putAll(new HashMap<Integer, Integer>() {
+                {
+                    for (int i = 0; i < 100; i++)
+                        put(i, i);
+                }
+            });
+            Assert.assertEquals(100, (long)jedis.dbSize());
         }
     }
 }

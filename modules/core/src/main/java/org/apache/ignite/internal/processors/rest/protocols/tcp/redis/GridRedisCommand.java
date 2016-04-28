@@ -57,7 +57,17 @@ public enum GridRedisCommand {
     /** SETRANGE. */
     SETRANGE("SETRANGE"),
     /** GETRANGE. */
-    GETRANGE("GETRANGE");
+    GETRANGE("GETRANGE"),
+
+    // Key commands.
+    /** DEL. */
+    DEL("DEL"),
+    /** EXISTS. */
+    EXISTS("EXISTS"),
+
+    // Server commands.
+    /** DBSIZE. */
+    DBSIZE("DBSIZE");
 
     /** String for command. */
     private final String cmd;

@@ -32,9 +32,9 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.CX1;
 
 /**
- * Redis strings command handler.
+ * Redis command handler done via REST.
  */
-public abstract class GridRedisStringCommandHandler implements GridRedisCommandHandler {
+public abstract class GridRedisThruRestCommandHandler implements GridRedisCommandHandler {
     /** REST protocol handler. */
     protected final GridRestProtocolHandler hnd;
 
@@ -44,7 +44,7 @@ public abstract class GridRedisStringCommandHandler implements GridRedisCommandH
      * @param ctx Context.
      * @param hnd REST protocol handler.
      */
-    public GridRedisStringCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
+    public GridRedisThruRestCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
         this.hnd = hnd;
     }
 
@@ -61,7 +61,7 @@ public abstract class GridRedisStringCommandHandler implements GridRedisCommandH
                         GridRestResponse restRes = f.get();
 
                         if (restRes.getSuccessStatus() == GridRestResponse.STATUS_SUCCESS)
-                            msg.setResponse(makeResponse(restRes, msg.aux()));
+                            msg.setResponse(makeResponse(restRes, msg.auxMKeys()));
                         else
                             msg.setResponse(GridRedisProtocolParser.toGenericError("Operation error!"));
 

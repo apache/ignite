@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisStringCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisThruRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -39,17 +39,17 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.Gri
 /**
  * Redis SETRANGE command handler.
  */
-public class GridRedisGetRangeCommandHandler extends GridRedisStringCommandHandler {
+public class GridRedisGetRangeCommandHandler extends GridRedisThruRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
         GETRANGE
     );
 
     /** Start offset position in Redis message parameters. */
-    private static final int START_OFFSET_POS = 0;
+    private static final int START_OFFSET_POS = 1;
 
     /** End offset position in Redis message parameters. */
-    private static final int END_OFFSET_POS = 1;
+    private static final int END_OFFSET_POS = 2;
 
     /** {@inheritDoc} */
     public GridRedisGetRangeCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {

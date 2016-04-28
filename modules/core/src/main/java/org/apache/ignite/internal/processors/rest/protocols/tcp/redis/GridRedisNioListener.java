@@ -26,6 +26,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisConnectionCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.key.GridRedisDelCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.key.GridRedisExistsCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.server.GridRedisDbSizeCommandHandler;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.server.GridRedisFlushDbCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisAppendCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisGetCommandHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string.GridRedisGetRangeCommandHandler;
@@ -74,6 +78,13 @@ public class GridRedisNioListener extends GridNioServerListenerAdapter<GridRedis
         addCommandHandler(new GridRedisStrlenCommandHandler(ctx, hnd));
         addCommandHandler(new GridRedisSetRangeCommandHandler(ctx, hnd));
         addCommandHandler(new GridRedisGetRangeCommandHandler(ctx, hnd));
+
+        // key commands.
+        addCommandHandler(new GridRedisDelCommandHandler(ctx, hnd));
+        addCommandHandler(new GridRedisExistsCommandHandler(ctx, hnd));
+
+        // server commands.
+        addCommandHandler(new GridRedisDbSizeCommandHandler(ctx, hnd));
     }
 
     /**

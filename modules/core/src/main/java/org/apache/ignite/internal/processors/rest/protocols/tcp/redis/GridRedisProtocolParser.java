@@ -231,6 +231,16 @@ public class GridRedisProtocolParser {
     }
 
     /**
+     * Converts an integer result to a RESP integer.
+     *
+     * @param integer Integer result.
+     * @return RESP integer.
+     */
+    public static ByteBuffer toInteger(int integer) {
+        return toInteger(String.valueOf(integer));
+    }
+
+    /**
      * @return Nil response.
      */
     public static ByteBuffer nil() {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.string;
+package org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.server;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -28,30 +28,24 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisC
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.GridRedisThruRestCommandHandler;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.handler.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_APPEND;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT;
-import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.APPEND;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_SIZE;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.DBSIZE;
 
 /**
- * Redis APPEND command handler.
+ * Redis DBSIZE command handler.
  */
-public class GridRedisAppendCommandHandler extends GridRedisThruRestCommandHandler {
+public class GridRedisDbSizeCommandHandler extends GridRedisThruRestCommandHandler {
     /** Supported commands. */
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
-        APPEND
+        DBSIZE
     );
 
-    /** Position of the value. */
-    private static final int VAL_POS = 2;
-
     /** {@inheritDoc} */
-    public GridRedisAppendCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
+    public GridRedisDbSizeCommandHandler(final GridKernalContext ctx, final GridRestProtocolHandler hnd) {
         super(ctx, hnd);
     }
 
@@ -64,45 +58,18 @@ public class GridRedisAppendCommandHandler extends GridRedisThruRestCommandHandl
     @Override public GridRestRequest asRestRequest(GridRedisMessage msg) throws IgniteCheckedException {
         assert msg != null;
 
-        if (msg.messageSize() < 3)
-            throw new GridRedisGenericException("Wrong syntax!");
+        GridRestCacheRequest restReq = new GridRestCacheRequest();
 
-        GridRestCacheRequest appendReq = new GridRestCacheRequest();
-        GridRestCacheRequest getReq = new GridRestCacheRequest();
+        restReq.clientId(msg.clientId());
+        restReq.key(msg.key());
+        restReq.command(CACHE_SIZE);
 
-        String val = msg.aux(VAL_POS);
-
-        appendReq.clientId(msg.clientId());
-        appendReq.key(msg.key());
-        appendReq.value(val);
-        appendReq.command(CACHE_APPEND);
-
-        if ((boolean)hnd.handle(appendReq).getResponse() == false) {
-            // append on on-existing key in REST returns false.
-            GridRestCacheRequest setReq = new GridRestCacheRequest();
-
-            setReq.clientId(msg.clientId());
-            setReq.key(msg.key());
-            setReq.value(val);
-            setReq.command(CACHE_PUT);
-
-            hnd.handle(setReq);
-        }
-
-        getReq.clientId(msg.clientId());
-        getReq.key(msg.key());
-        getReq.command(CACHE_GET);
-
-        return getReq;
+        return restReq;
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer makeResponse(final GridRestResponse restRes, List<String> params) {
-        if (restRes.getResponse() == null)
-            return GridRedisProtocolParser.nil();
-        else {
-            int resLen = ((String)restRes.getResponse()).length();
-            return GridRedisProtocolParser.toInteger(String.valueOf(resLen));
-        }
+        return (restRes.getResponse() == null ? GridRedisProtocolParser.toInteger("0")
+            : GridRedisProtocolParser.toInteger(String.valueOf(restRes.getResponse())));
     }
 }
