@@ -69,14 +69,12 @@ public class H2InnerIO extends BPlusInnerIO<SearchRow> implements H2RowLinkIO {
 
     /** {@inheritDoc} */
     @Override public long getLink(ByteBuffer buf, int idx) {
-        assert idx < getCount(buf): idx;
-
-        return buf.getLong(offset(idx, SHIFT_LINK));
+        return buf.getLong(offset(idx));
     }
 
     /** {@inheritDoc} */
     @Override public void setLink(ByteBuffer buf, int idx, long link) {
-        buf.putLong(offset(idx, SHIFT_LINK), link);
+        buf.putLong(offset(idx), link);
 
         assert getLink(buf, idx) == link;
     }

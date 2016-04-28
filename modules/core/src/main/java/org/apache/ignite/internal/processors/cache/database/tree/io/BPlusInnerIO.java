@@ -18,19 +18,20 @@
 package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Abstract IO routines for B+Tree inner pages.
  */
 public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     /** */
-    protected static final int SHIFT_LEFT = ITEMS_OFF;
+    private static final int SHIFT_LEFT = ITEMS_OFF;
 
     /** */
-    protected static final int SHIFT_LINK = SHIFT_LEFT + 8;
+    private static final int SHIFT_LINK = SHIFT_LEFT + 8;
 
     /** */
-    protected final int SHIFT_RIGHT = SHIFT_LINK + itemSize;
+    private final int SHIFT_RIGHT = SHIFT_LINK + itemSize;
 
     /**
      * @param type Page type.
@@ -43,7 +44,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     }
 
     /** {@inheritDoc} */
-    @Override public final int getMaxCount(ByteBuffer buf) {
+    @Override public int getMaxCount(ByteBuffer buf) {
         // The structure of the page is the following:
         // |ITEMS_OFF|w|A|x|B|y|C|z|
         // where capital letters are data items, lowercase letters are 8 byte page references.
@@ -92,13 +93,13 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
 
     /** {@inheritDoc} */
     @Override public final void copyItems(ByteBuffer src, ByteBuffer dst, int srcIdx, int dstIdx, int cnt,
-        boolean cpLeft) {
+        boolean cpLeft) throws IgniteCheckedException {
         assert srcIdx != dstIdx || src != dst;
 
         if (dstIdx > srcIdx) {
             for (int i = cnt - 1; i >= 0; i--) {
                 dst.putLong(offset(dstIdx + i, SHIFT_RIGHT), src.getLong(offset(srcIdx + i, SHIFT_RIGHT)));
-                dst.putLong(offset(dstIdx + i, SHIFT_LINK), src.getLong(offset(srcIdx + i, SHIFT_LINK)));
+                store(dst, dstIdx + i, this, src, srcIdx + i); // TODO optimize with copy by itemSize
             }
 
             if (cpLeft)
@@ -110,28 +111,25 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
 
             for (int i = 0; i < cnt; i++) {
                 dst.putLong(offset(dstIdx + i, SHIFT_RIGHT), src.getLong(offset(srcIdx + i, SHIFT_RIGHT)));
-                dst.putLong(offset(dstIdx + i, SHIFT_LINK), src.getLong(offset(srcIdx + i, SHIFT_LINK)));
+                store(dst, dstIdx + i, this, src, srcIdx + i); // TODO optimize with copy by itemSize
             }
         }
     }
-
-    /**
-     * Store row info from the given source.
-     *
-     * @param dst Destination buffer
-     * @param dstIdx Destination index.
-     * @param srcIo Source IO.
-     * @param src Source buffer.
-     * @param srcIdx Source index.
-     */
-    public abstract void store(ByteBuffer dst, int dstIdx, BPlusIO<L> srcIo, ByteBuffer src, int srcIdx);
 
     /**
      * @param idx Index of element.
      * @param shift It can be either link itself or left or right page ID.
      * @return Offset from byte buffer begin in bytes.
      */
-    protected final int offset(int idx, int shift) {
+    private int offset(int idx, int shift) {
         return shift + (8 + itemSize) * idx;
+    }
+
+    /**
+     * @param idx Index of element.
+     * @return Offset from byte buffer begin in bytes.
+     */
+    protected final int offset(int idx) {
+        return offset(idx, SHIFT_LINK);
     }
 }

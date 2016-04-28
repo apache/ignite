@@ -68,7 +68,7 @@ public abstract class PageIO {
     public static final short T_REUSE_LEAF = 9;
 
     /** */
-    public static final short T_REUSE_INNER = 8;
+    public static final short T_REUSE_INNER = 10;
 
     /** */
     private final int ver;
@@ -100,8 +100,6 @@ public abstract class PageIO {
      * @param type Type.
      */
     public static void setType(ByteBuffer buf, int type) {
-        assert type >= T_DATA && type <= T_DATA_REF_LEAF : type;
-
         buf.putShort(TYPE_OFF, (short)type);
 
         assert getType(buf) == type;

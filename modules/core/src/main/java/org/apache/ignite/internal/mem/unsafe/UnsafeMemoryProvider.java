@@ -41,6 +41,7 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider, LifecycleAwar
 
     /**
      * @param limit Memory limit.
+     * @param chunkSize Chunk size.
      */
     public UnsafeMemoryProvider(long limit, long chunkSize) {
         this.limit = limit;

@@ -15,34 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.database.freelist;
+package org.apache.ignite.internal.processors.database;
 
-import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.database.MetaStore;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 
 /**
- * Free list item.
+ * Test with reuse.
  */
-public class FreeItem extends FullPageId {
-    /** */
-    private short freeSpace;
-
-    /**
-     * @param freeSpace Free space.
-     * @param pageId  Page ID.
-     * @param cacheId Cache ID.
-     */
-    public FreeItem(int freeSpace, long pageId, int cacheId) {
-        super(pageId, cacheId);
-
-        assert freeSpace >= 0 && freeSpace <= Short.MAX_VALUE: freeSpace;
-
-        this.freeSpace = (short)freeSpace;
-    }
-
-    /**
-     * @return Free space in the page.
-     */
-    public short freeSpace() {
-        return freeSpace;
+public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
+    /** {@inheritDoc} */
+    @Override protected ReuseList createReuseList(int cacheId, PageMemory pageMem, int segments, MetaStore metaStore)
+        throws IgniteCheckedException {
+        return new ReuseList(cacheId, pageMem, segments, metaStore);
     }
 }

@@ -17,57 +17,118 @@
 
 package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
+import org.apache.ignite.internal.processors.cache.database.MetaStore;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Reuse list for index pages.
  */
-public class ReuseList {
+public final class ReuseList {
     /** */
-    private final ReuseTree[] trees = new ReuseTree[16];
+    private static final FullPageId MIN = new FullPageId(0,0);
 
     /** */
-    private final GridCacheContext<?,?> cctx;
+    private final ReuseTree[] trees;
 
     /**
-     * @param cctx Cache context.
+     * @param cacheId Cache ID.
+     * @param pageMem Page memory.
+     * @param segments Segments.
+     * @param metaStore Meta store.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseList(GridCacheContext<?,?> cctx) throws IgniteCheckedException {
-        this.cctx = cctx;
+    public ReuseList(int cacheId, PageMemory pageMem, int segments, MetaStore metaStore) throws IgniteCheckedException {
+        A.ensure(segments > 1, "Segments must be greater than 1.");
 
-        PageMemory pageMem = cctx.shared().database().pageMemory();
+        ReuseTree[] trees0 = new ReuseTree[segments];
 
-        MetadataStorage metaStore = cctx.shared().database().meta();
+        for (int i = 0; i < segments; i++) {
+            String idxName = i + "##" + cacheId + "_reuse";
 
-        for (int i = 0; i < trees.length; i++) {
-            String idxName = i + "##" + cctx.cacheId() + "_reuse";
+            IgniteBiTuple<FullPageId,Boolean> t = metaStore.getOrAllocateForIndex(cacheId, idxName);
 
-            IgniteBiTuple<FullPageId,Boolean> t = metaStore.getOrAllocateForIndex(cctx.cacheId(), idxName);
-
-            trees[i] = new ReuseTree(cctx.cacheId(), pageMem, t.get1(), t.get2());
+            trees0[i] = new ReuseTree(this, cacheId, pageMem, t.get1(), t.get2());
         }
+
+        // Later assignment is done intentionally, see null check in method take.
+        trees = trees0;
     }
 
     /**
+     * @return Size.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long size() throws IgniteCheckedException {
+        long size = 0;
+
+        for (ReuseTree tree : trees)
+            size += tree.size();
+
+        return size;
+    }
+
+    /**
+     * @param client Client.
+     * @return Reuse tree.
+     */
+    private ReuseTree tree(BPlusTree<?,?> client) {
+        int treeIdx = client.randomInt(trees.length);
+
+        ReuseTree tree = trees[treeIdx];
+
+        assert tree != null;
+
+        // Avoid recursion on the same tree to avoid dead lock.
+        if (tree == client) {
+            treeIdx++; // Go forward and take the next tree.
+
+            if (treeIdx == trees.length)
+                treeIdx = 0;
+
+            tree = trees[treeIdx];
+        }
+
+        return tree;
+    }
+
+    /**
+     * @param client Client tree.
+     * @param bag Reuse bag.
      * @return Page ID.
      * @throws IgniteCheckedException If failed.
      */
-    public FullPageId take() throws IgniteCheckedException {
-        return trees[ThreadLocalRandom.current().nextInt(trees.length)].removeFirst();
+    public FullPageId take(BPlusTree<?,?> client, ReuseBag bag) throws IgniteCheckedException {
+        if (trees == null)
+            return null;
+
+        // Remove and return page at min possible position.
+        return tree(client).removeCeil(MIN, bag);
     }
 
     /**
-     * @param fullPageId Page ID.
+     * @param client Client tree.
+     * @param bag Reuse bag.
      * @throws IgniteCheckedException If failed.
      */
-    public void put(FullPageId fullPageId) throws IgniteCheckedException {
-        trees[ThreadLocalRandom.current().nextInt(trees.length)].put(fullPageId);
+    public void add(BPlusTree<?,?> client, ReuseBag bag) throws IgniteCheckedException {
+        if (bag == null)
+            return;
+
+        for (int i = client.randomInt(trees.length);;) {
+            FullPageId pageId = bag.pollFreePage();
+
+            if (pageId == null)
+                break;
+
+            trees[i].put(pageId, bag);
+
+            if (++i == trees.length)
+                i = 0;
+        }
     }
 }

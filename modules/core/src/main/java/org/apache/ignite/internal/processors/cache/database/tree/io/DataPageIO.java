@@ -250,9 +250,9 @@ public class DataPageIO extends PageIO {
             assert indirectItemIdx >= directCnt && indirectItemIdx < directCnt + indirectCnt: indirectCnt;
 
             itemId = directItemIndex(getItem(buf, indirectItemIdx));
-        }
 
-        assert itemId >= 0 && itemId < directCnt: itemId; // Direct item must be here.
+            assert itemId >= 0 && itemId < directCnt: itemId; // Direct item must be here.
+        }
 
         return toOffset(getItem(buf, itemId));
     }
@@ -393,10 +393,17 @@ public class DataPageIO extends PageIO {
             return; // TODO May be have a separate list of free pages?
         }
 
+        // Get the entry size before the actual remove.
+        int rmvEntrySize = getEntrySize(buf, getDataOffset(buf, itemId), false);
+
         if (itemId < directCnt)
             removeDirectItem(buf, itemId, directCnt, indirectCnt);
         else
             removeIndirectItem(buf, itemId, directCnt, indirectCnt);
+
+        // Increase free space.
+        setFreeSpace(buf, getFreeSpace(buf) + rmvEntrySize +
+            ITEM_SIZE * (directCnt - getDirectCount(buf) + indirectCnt - getIndirectCount(buf)));
     }
 
     /**
@@ -482,14 +489,24 @@ public class DataPageIO extends PageIO {
     }
 
     /**
-     * @param entrySize Entry size as returned by {@link #getEntrySize(int, int)}.
-     * @param firstOff First entry data offset.
+     * @param newEntrySizeWithItem New entry size as returned by {@link #getEntrySize(int, int)}.
+     * @param firstEntryOff First entry data offset.
      * @param directCnt Direct items count.
      * @param indirectCnt Indirect items count.
      * @return {@code true} If there is enough space for the entry.
      */
-    private static boolean enoughSpaceForEntry(int entrySize, int firstOff, int directCnt, int indirectCnt) {
-        return ITEMS_OFF + ITEM_SIZE * (directCnt + indirectCnt) <= firstOff - entrySize;
+    public static boolean isEnoughSpace(int newEntrySizeWithItem, int firstEntryOff, int directCnt, int indirectCnt) {
+        return ITEMS_OFF + ITEM_SIZE * (directCnt + indirectCnt) <= firstEntryOff - newEntrySizeWithItem;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param newEntrySizeWithItem New entry size as returned by {@link #getEntrySize(int, int)}.
+     * @return {@code true} If there is enough space for the entry.
+     */
+    public boolean isEnoughSpace(ByteBuffer buf, int newEntrySizeWithItem) {
+        return isEnoughSpace(newEntrySizeWithItem,
+            getFirstEntryOffset(buf), getDirectCount(buf), getIndirectCount(buf));
     }
 
     /**
@@ -498,7 +515,7 @@ public class DataPageIO extends PageIO {
      * @param key Key.
      * @param val Value.
      * @param ver Version.
-     * @param entrySize Entry size as returned by {@link #getEntrySize(int, int)}.
+     * @param entrySizeWithItem Entry size as returned by {@link #getEntrySize(int, int)}.
      * @return Item ID.
      * @throws IgniteCheckedException If failed.
      */
@@ -508,35 +525,37 @@ public class DataPageIO extends PageIO {
         CacheObject key,
         CacheObject val,
         GridCacheVersion ver,
-        int entrySize
+        int entrySizeWithItem
     ) throws IgniteCheckedException {
-        if (entrySize > buf.capacity() - ITEMS_OFF) // TODO span multiple data pages with a single large entry
+        if (entrySizeWithItem > buf.capacity() - ITEMS_OFF) // TODO span multiple data pages with a single large entry
             throw new IgniteException("Too big entry: " + key + " " + val);
 
         int directCnt = getDirectCount(buf);
         int indirectCnt = getIndirectCount(buf);
-
         int dataOff = getFirstEntryOffset(buf);
 
-        // Compact if we do not have enough space.
-        if (!enoughSpaceForEntry(entrySize, dataOff, directCnt, indirectCnt)) {
+        // Compact if we do not have enough space for entry.
+        if (!isEnoughSpace(entrySizeWithItem, dataOff, directCnt, indirectCnt)) {
             dataOff = compactDataEntries(buf, directCnt);
 
-//            assert enoughSpaceForEntry(entrySize, dataOff, directCnt, indirectCnt);
-            if (!enoughSpaceForEntry(entrySize, dataOff, directCnt, indirectCnt))
-                return -1; // TODO replace with assert
+            assert isEnoughSpace(entrySizeWithItem, dataOff, directCnt, indirectCnt);
         }
 
-        // Attempt to write data right before the first entry.
-        dataOff -= entrySize - ITEM_SIZE;
+        // Write data right before the first entry.
+        dataOff -= entrySizeWithItem - ITEM_SIZE;
 
-        writeRowData(coctx, buf, dataOff, entrySize, key, val, ver);
+        writeRowData(coctx, buf, dataOff, entrySizeWithItem, key, val, ver);
 
         setFirstEntryOffset(buf, dataOff);
 
         int itemId = insertItem(buf, dataOff, directCnt, indirectCnt);
 
         assert check(itemId): itemId;
+
+        // Update free space. If number of direct items did not change, then we were able to reuse item slot.
+        setFreeSpace(buf, getFreeSpace(buf) - entrySizeWithItem + (getDirectCount(buf) == directCnt ? ITEM_SIZE : 0));
+
+        assert getFreeSpace(buf) >= 0;
 
         return (byte)itemId;
     }
@@ -653,7 +672,7 @@ public class DataPageIO extends PageIO {
      * @param val Value.
      * @param ver Version.
      */
-    public void writeRowData(
+    private void writeRowData(
         CacheObjectContext coctx,
         ByteBuffer buf,
         int dataOff,

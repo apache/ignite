@@ -17,4 +17,9 @@ public class IgniteDbMultiNodePutGetSelfTest extends IgniteDbSingleNodePutGetSel
     @Override protected int gridCount() {
         return 3;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testMultithreadedPut() throws Exception {
+        super.testMultithreadedPut();
+    }
 }

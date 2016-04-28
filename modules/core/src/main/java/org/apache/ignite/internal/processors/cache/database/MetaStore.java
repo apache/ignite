@@ -15,34 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.database.freelist;
+package org.apache.ignite.internal.processors.cache.database;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
- * Free list item.
+ * Meta store.
  */
-public class FreeItem extends FullPageId {
-    /** */
-    private short freeSpace;
-
+public interface MetaStore {
     /**
-     * @param freeSpace Free space.
-     * @param pageId  Page ID.
+     * Get or allocate initial page for an index.
+     *
      * @param cacheId Cache ID.
+     * @param idxName Index name.
+     * @return A tuple, consisting of a root page ID for the given index and a boolean flag
+     *      indicating whether the page was newly allocated.
+     * @throws IgniteCheckedException If failed.
      */
-    public FreeItem(int freeSpace, long pageId, int cacheId) {
-        super(pageId, cacheId);
-
-        assert freeSpace >= 0 && freeSpace <= Short.MAX_VALUE: freeSpace;
-
-        this.freeSpace = (short)freeSpace;
-    }
-
-    /**
-     * @return Free space in the page.
-     */
-    public short freeSpace() {
-        return freeSpace;
-    }
+    public IgniteBiTuple<FullPageId, Boolean> getOrAllocateForIndex(int cacheId, String idxName)
+        throws IgniteCheckedException;
 }
