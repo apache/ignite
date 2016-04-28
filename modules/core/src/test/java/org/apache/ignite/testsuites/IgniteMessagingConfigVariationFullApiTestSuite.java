@@ -22,9 +22,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.messaging.IgniteMessagingConfigVariationFullApiTest;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.configvariations.ConfigParameter;
+import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
 
@@ -34,23 +33,15 @@ import javax.cache.configuration.Factory;
  * Test sute for Messaging process.
  */
 public class IgniteMessagingConfigVariationFullApiTestSuite extends TestSuite {
-
+    /** */
+    @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] GRID_PARAMETER_VARIATION = new ConfigParameter[][] {
         Parameters.objectParameters("setMarshaller",
             Parameters.factory(JdkMarshaller.class),
             Parameters.factory(BinaryMarshaller.class),
-            new Factory<OptimizedMarshaller>() {
-                @Override public OptimizedMarshaller create() {
-                    OptimizedMarshaller marsh = new OptimizedMarshaller(true);
-
-                    marsh.setRequireSerializable(false);
-
-                    return marsh;
-                }
-            }
+            ConfigVariations.optimizedMarshallerFactory()
         ),
         Parameters.booleanParameters("setPeerClassLoadingEnabled"),
-        Parameters.objectParameters("setSwapSpaceSpi", Parameters.factory(GridTestSwapSpaceSpi.class))
     };
 
     /**
@@ -68,10 +59,9 @@ public class IgniteMessagingConfigVariationFullApiTestSuite extends TestSuite {
             .build());
 
         suite.addTest(new ConfigVariationsTestSuiteBuilder(
-            "Multiple server and client",
+            "Multiple servers and client",
             IgniteMessagingConfigVariationFullApiTest.class)
             .gridsCount(6)
-            .testedNodesCount(2)
             .withClients()
             .igniteParams(GRID_PARAMETER_VARIATION)
             .build());
