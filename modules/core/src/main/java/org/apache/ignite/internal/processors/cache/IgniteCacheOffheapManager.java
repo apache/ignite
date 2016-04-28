@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -72,6 +73,12 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     /** */
     private final boolean indexingEnabled;
 
+    /** */
+    private FreeList freeList;
+
+    /** */
+    private ReuseList reuseList;
+
     /**
      * @param indexingEnabled {@code True} if indexing is enabled for cache.
      */
@@ -82,17 +89,29 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected void start0() throws IgniteCheckedException {
+    @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
         IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), cctx.namexx());
 
-        rowStore = new CacheDataRowStore(cctx, null);
+        int cpus = Runtime.getRuntime().availableProcessors();
+
+        reuseList = new ReuseList(cctx.cacheId(), dbMgr.pageMemory(), cpus * 2, dbMgr.meta());
+        freeList = new FreeList(cctx, reuseList);
+
+        rowStore = new CacheDataRowStore(cctx, freeList);
 
         dataTree = new CacheDataTree(rowStore, cctx, dbMgr.pageMemory(), page.get1(), page.get2());
+    }
+
+    public ReuseList reuseList() {
+        return reuseList;
+    }
+
+    public FreeList freeList() {
+        return freeList;
     }
 
     /**
@@ -173,8 +192,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      * @return Value tuple, if available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable
-    public IgniteBiTuple<CacheObject, GridCacheVersion> read(KeyCacheObject key, int part)
+    @Nullable public IgniteBiTuple<CacheObject, GridCacheVersion> read(KeyCacheObject key, int part)
         throws IgniteCheckedException {
         if (indexingEnabled)
             return cctx.queries().read(key, part);
@@ -184,8 +202,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         return dataRow != null ? F.t(dataRow.val, dataRow.ver) : null;
     }
 
-    @Nullable
-    CacheObject readValue(KeyCacheObject key, int part) throws IgniteCheckedException {
+    @Nullable CacheObject readValue(KeyCacheObject key, int part) throws IgniteCheckedException {
         IgniteBiTuple<CacheObject, GridCacheVersion> t = read(key, part);
 
         return t != null ? t.get1() : null;
@@ -567,7 +584,9 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
             PageMemory pageMem,
             FullPageId metaPageId,
             boolean initNew) throws IgniteCheckedException {
-            super(cctx.cacheId(), pageMem, metaPageId);
+            super(cctx.cacheId(), pageMem, metaPageId, null);
+
+            assert rowStore != null;
 
             this.rowStore = rowStore;
             this.cctx = cctx;
@@ -828,6 +847,12 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
             assert row0.link != 0;
 
             setLink(buf, idx, row0.link);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<KeySearchRow> srcIo, ByteBuffer src, int srcIdx)
+            throws IgniteCheckedException {
+            setLink(dst, dstIdx, getLink(src, srcIdx));
         }
 
         /** {@inheritDoc} */

@@ -2057,7 +2057,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             GridCacheContext cctx = ctx.cache().context().cacheContext(cacheId);
 
             if (cctx.affinityNode() && cctx.offheapIndex())
-                return new H2RowStore(tbl.rowDescriptor(), cctx, null);
+                return new H2RowStore(tbl.rowDescriptor(), cctx, cctx.offheap().freeList());
 
             return null;
         }
@@ -2190,6 +2190,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             H2TreeIndex idx = new H2TreeIndex(
                 cctx,
                 dbMgr.pageMemory(),
+                cctx.offheap().reuseList(),
                 page.get1(),
                 page.get2(),
                 keyCol,
