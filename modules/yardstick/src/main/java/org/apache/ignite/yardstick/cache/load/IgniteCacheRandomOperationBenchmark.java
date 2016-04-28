@@ -162,7 +162,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         BenchmarkUtils.println("Benchmark statistics");
         for (String cacheName : ignite().cacheNames()) {
             BenchmarkUtils.println(cacheName);
-            for (Operation op: Operation.values())
+            for (Operation op : Operation.values())
                 BenchmarkUtils.println(cfg, String.format("%s: %s", op,
                     operationStatistics.get(String.format("%s_%s", op, cacheName))));
         }
@@ -190,7 +190,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         for (String cacheName : ignite().cacheNames()) {
             IgniteCache<Object, Object> cache = ignite().cache(cacheName);
 
-            for (Operation op: Operation.values())
+            for (Operation op : Operation.values())
                 operationStatistics.put(String.format("%s_%s", op, cacheName), new AtomicLong(0));
 
             CacheConfiguration configuration = cache.getConfiguration(CacheConfiguration.class);
@@ -209,7 +209,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
                     for (QueryEntity queryEntity : entries) {
                         if (queryEntity.getKeyType() != null) {
-                            Class keyCls = getClass().forName(queryEntity.getKeyType());
+                            Class keyCls = Class.forName(queryEntity.getKeyType());
 
                             if (ModelUtil.canCreateInstance(keyCls))
                                 keys.add(keyCls);
@@ -219,7 +219,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                         }
 
                         if (queryEntity.getValueType() != null) {
-                            Class valCls = getClass().forName(queryEntity.getValueType());
+                            Class valCls = Class.forName(queryEntity.getValueType());
 
                             if (ModelUtil.canCreateInstance(valCls))
                                 values.add(valCls);
@@ -237,7 +237,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
                     for (CacheTypeMetadata cacheTypeMetadata : entries) {
                         if (cacheTypeMetadata.getKeyType() != null) {
-                            Class keyCls = getClass().forName(cacheTypeMetadata.getKeyType());
+                            Class keyCls = Class.forName(cacheTypeMetadata.getKeyType());
 
                             if (ModelUtil.canCreateInstance(keyCls))
                                 keys.add(keyCls);
@@ -247,7 +247,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                         }
 
                         if (cacheTypeMetadata.getValueType() != null) {
-                            Class valCls = getClass().forName(cacheTypeMetadata.getValueType());
+                            Class valCls = Class.forName(cacheTypeMetadata.getValueType());
 
                             if (ModelUtil.canCreateInstance(valCls))
                                 values.add(valCls);
@@ -258,7 +258,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                     }
                 }
 
-                if (keys.size() == 0 || values.size() == 0)
+                if (keys.isEmpty() || values.isEmpty())
                     continue;
 
                 keysCacheClasses.put(cacheName, keys.toArray(new Class[] {}));
@@ -284,15 +284,15 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private void loadAllowOperations() {
         allowOperations = new ArrayList<>();
         if (args.allowOperations().isEmpty())
-            for (Operation op: Operation.values())
-                allowOperations.add(op);
+            Collections.addAll(allowOperations, Operation.values());
         else
-            for (String opName: args.allowOperations())
+            for (String opName : args.allowOperations())
                 allowOperations.add(Operation.valueOf(opName.toUpperCase()));
     }
 
     /**
      * Load query from file.
+     *
      * @throws Exception If fail.
      */
     private void loadQueries() throws Exception {
@@ -315,11 +315,11 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
     /**
      * @param cacheName Ignite cache name.
-     * @param queryEntity Query entry.
+     * @param qryEntity Query entry.
      * @param valCls Class of value.
-     * @throws ClassNotFoundException
+     * @throws ClassNotFoundException If fail.
      */
-    private void cofigureCacheSqlDescriptor(String cacheName, QueryEntity queryEntity, Class valCls)
+    private void cofigureCacheSqlDescriptor(String cacheName, QueryEntity qryEntity, Class valCls)
         throws ClassNotFoundException {
         List<SqlCacheDescriptor> descs = cacheSqlDescriptors.get(cacheName);
 
@@ -331,14 +331,14 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
         Map<String, Class> indexedFields = new HashMap<>();
 
-        for (QueryIndex index : queryEntity.getIndexes()) {
+        for (QueryIndex index : qryEntity.getIndexes()) {
             for (String iField : index.getFieldNames()) {
                 indexedFields.put(iField,
-                    getClass().forName(queryEntity.getFields().get(iField)));
+                    Class.forName(qryEntity.getFields().get(iField)));
             }
         }
 
-        descs.add(new SqlCacheDescriptor(valCls, queryEntity.getFields().keySet(),
+        descs.add(new SqlCacheDescriptor(valCls, qryEntity.getFields().keySet(),
             indexedFields));
     }
 
@@ -447,12 +447,9 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @return Random key class.
      */
     private Class randomKeyClass(String cacheName) {
-        Class[] keys;
 
-        if (keysCacheClasses.containsKey(cacheName))
-            keys = keysCacheClasses.get(cacheName);
-        else
-            keys = ModelUtil.keyClasses();
+        Class[] keys = keysCacheClasses.containsKey(cacheName)
+            ? keysCacheClasses.get(cacheName) : ModelUtil.keyClasses();
 
         return keys[nextRandom(keys.length)];
     }
@@ -473,12 +470,9 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @return Random value class.
      */
     private Class randomValueClass(String cacheName) {
-        Class[] values;
 
-        if (valuesCacheClasses.containsKey(cacheName))
-            values = valuesCacheClasses.get(cacheName);
-        else
-            values = ModelUtil.valueClasses();
+        Class[] values = valuesCacheClasses.containsKey(cacheName)
+            ? valuesCacheClasses.get(cacheName) : ModelUtil.valueClasses();
 
         return values[nextRandom(values.length)];
     }
@@ -564,30 +558,43 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @return Operation.
      */
     @NotNull private Operation nextRandomOperation() {
-        Operation op = allowOperations.get(nextRandom(allowOperations.size()));
-        return op;
+        return allowOperations.get(nextRandom(allowOperations.size()));
     }
 
     /**
      * @param cacheName Ignite cache name.
      * @param map Parameters map.
      * @param op Operation.
-     * @return Operation.
      */
-    private void storeStatistics(String cacheName, Map<Object, Object> map,
-        Operation op) {
-        String opCacheKey  = String.format("%s_%s", op, cacheName);
-        Integer opCnt = (Integer)map.get(opCacheKey);
-        if (opCnt == null)
-            map.put(opCacheKey, Integer.valueOf(1));
-        else {
-            opCnt = Integer.valueOf(opCnt.intValue() + 1);
-            if (opCnt.intValue() % 10 == 0) {
-                operationStatistics.get(opCacheKey).addAndGet(opCnt.longValue());
-                opCnt = Integer.valueOf(0);
+    private void storeStatistics(String cacheName, Map<Object, Object> map, Operation op) {
+        String opCacheKey = String.format("%s_%s", op, cacheName);
+        Long opAmount = (Long)map.get("amount");
+        opAmount = opAmount == null ? 1L : opAmount + 1;
+        Integer opCacheCnt = (Integer)map.get(opCacheKey);
+        opCacheCnt = opCacheCnt == null ? 1 : opCacheCnt + 1;
+
+        if (opAmount % 100 == 0)
+            updateStat(map);
+        else
+            map.put(opCacheKey, opCacheCnt);
+
+        map.put("amount", opAmount);
+    }
+
+    /**
+     * @param map Parameters map.
+     */
+    private void updateStat(Map<Object, Object> map) {
+        for (Operation op: Operation.values())
+            for (String cacheName: ignite().cacheNames()) {
+                String opCacheKey = String.format("%s_%s", op, cacheName);
+                Integer val = (Integer)map.get(opCacheKey);
+                if (val != null) {
+                    operationStatistics.get(opCacheKey).addAndGet(val.longValue());
+                    map.put(opCacheKey, 0);
+                }
+
             }
-            map.put(opCacheKey, opCnt);
-        }
     }
 
     /**
@@ -682,45 +689,45 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
     }
 
+/**
+ * Entry processor for local benchmark replace value task.
+ */
+private static class BenchmarkReplaceValueEntryProcessor implements EntryProcessor, Serializable {
     /**
-     * Entry processor for local benchmark replace value task.
+     * New value for update during process by default.
      */
-    private static class BenchmarkReplaceValueEntryProcessor implements EntryProcessor, Serializable {
-        /**
-         * New value for update during process by default.
-         */
-        private Object newVal;
-
-        /**
-         * @param newVal default new value
-         */
-        public BenchmarkReplaceValueEntryProcessor(Object newVal) {
-            this.newVal = newVal;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
-            Object newVal = arguments == null || arguments[0] == null ? this.newVal : arguments[0];
-            Object oldVal = entry.getValue();
-            entry.setValue(newVal);
-
-            return oldVal;
-        }
-    }
+    private Object newVal;
 
     /**
-     * Entry processor for local benchmark remove entry task.
+     * @param newVal default new value
      */
-    private static class BenchmarkRemoveEntryProcessor implements EntryProcessor, Serializable {
-        /** {@inheritDoc} */
-        @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
-            Object oldVal = entry.getValue();
-
-            entry.remove();
-
-            return oldVal;
-        }
+    private BenchmarkReplaceValueEntryProcessor(Object newVal) {
+        this.newVal = newVal;
     }
+
+    /** {@inheritDoc} */
+    @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
+        Object newVal = arguments == null || arguments[0] == null ? this.newVal : arguments[0];
+        Object oldVal = entry.getValue();
+        entry.setValue(newVal);
+
+        return oldVal;
+    }
+}
+
+/**
+ * Entry processor for local benchmark remove entry task.
+ */
+private static class BenchmarkRemoveEntryProcessor implements EntryProcessor, Serializable {
+    /** {@inheritDoc} */
+    @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
+        Object oldVal = entry.getValue();
+
+        entry.remove();
+
+        return oldVal;
+    }
+}
 
     /**
      * @param cache Ignite cache.
@@ -821,13 +828,13 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         List<SqlCacheDescriptor> descriptors = cacheSqlDescriptors.get(cache.getName());
 
         if (descriptors != null && !descriptors.isEmpty()) {
-            SqlCacheDescriptor randomDescriptor = descriptors.get(nextRandom(descriptors.size()));
+            SqlCacheDescriptor randomDesc = descriptors.get(nextRandom(descriptors.size()));
 
             int id = nextRandom(args.range());
 
             Query sq;
             if (queries.isEmpty())
-                sq = nextBoolean() ? randomDescriptor.getSqlQuery(id) : randomDescriptor.getSqlFieldsQuery(id);
+                sq = nextBoolean() ? randomDesc.getSqlQuery(id) : randomDesc.getSqlFieldsQuery(id);
             else
                 sq = new SqlFieldsQuery(queries.get(nextRandom(queries.size())));
 
@@ -853,269 +860,269 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         map.put(cache.getName(), cache.query(qry));
     }
 
-    /**
-     * Continuous query updater class.
-     */
-    private static class ContinuousQueryUpdater implements CacheEntryUpdatedListener, Serializable {
+/**
+ * Continuous query updater class.
+ */
+private static class ContinuousQueryUpdater implements CacheEntryUpdatedListener, Serializable {
 
-        /** {@inheritDoc} */
-        @Override public void onUpdated(Iterable iterable) throws CacheEntryListenerException {
-            for (Object o: iterable)
-                ;
-        }
+    /** {@inheritDoc} */
+    @Override public void onUpdated(Iterable iterable) throws CacheEntryListenerException {
+        for (Object o : iterable)
+            ;
+    }
+}
+
+/**
+ * Continuous query filter class.
+ */
+private static class ContinuousQueryFilter implements CacheEntryEventSerializableFilter, Serializable {
+
+    /**
+     * Value.
+     */
+    private int val;
+
+    /**
+     * @param val Value.
+     */
+    ContinuousQueryFilter(int val) {
+        this.val = val;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean evaluate(CacheEntryEvent evt) throws CacheEntryListenerException {
+        return evt.getOldValue() != null && evt.getValue() != null
+            && ((evt.getOldValue().hashCode() - evt.getValue().hashCode()) % (val) == 0);
+    }
+}
+
+/**
+ * Closure for scan query executing.
+ */
+private static class ScanQueryBroadcastClosure implements IgniteRunnable {
     /**
-     * Continuous query filter class.
+     * Ignite node.
      */
-    private static class ContinuousQueryFilter implements CacheEntryEventSerializableFilter, Serializable {
+    @IgniteInstanceResource
+    private Ignite node;
 
-        /**
-         * Value.
-         */
-        private int val;
+    /**
+     * Information about partition.
+     */
+    private Map<UUID, List<Integer>> cachePart;
 
-        /**
-         * @param val Value.
-         */
-        public ContinuousQueryFilter(int val) {
-            this.val = val;
-        }
+    /**
+     * Name of Ignite cache.
+     */
+    private String cacheName;
 
-        /** {@inheritDoc} */
-        @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
-            return event.getOldValue() != null && event.getValue() != null
-                && ((event.getOldValue().hashCode() - event.getValue().hashCode()) % (val) == 0);
-        }
+    /**
+     * @param cacheName Name of Ignite cache.
+     * @param cachePart Partition by node for Ignite cache.
+     */
+    private ScanQueryBroadcastClosure(String cacheName, Map<UUID, List<Integer>> cachePart) {
+        this.cachePart = cachePart;
+        this.cacheName = cacheName;
     }
 
-    /**
-     * Closure for scan query executing.
-     */
-    private static class ScanQueryBroadcastClosure implements IgniteRunnable {
-        /**
-         * Ignite node.
-         */
-        @IgniteInstanceResource
-        private Ignite node;
+    /** {@inheritDoc} */
+    @Override public void run() {
+        IgniteCache cache = node.cache(cacheName);
 
-        /**
-         * Information about partition.
-         */
-        private Map<UUID, List<Integer>> cachePart;
+        // Getting a list of the partitions owned by this node.
+        List<Integer> myPartitions = cachePart.get(node.cluster().localNode().id());
 
-        /**
-         * Name of Ignite cache.
-         */
-        private String cacheName;
+        for (Integer part : myPartitions) {
+            if (ThreadLocalRandom.current().nextBoolean())
+                continue;
 
-        /**
-         * @param cacheName Name of Ignite cache.
-         * @param cachePart Partition by node for Ignite cache.
-         */
-        public ScanQueryBroadcastClosure(String cacheName, Map<UUID, List<Integer>> cachePart) {
-            this.cachePart = cachePart;
-            this.cacheName = cacheName;
-        }
+            ScanQuery scanQry = new ScanQuery();
 
-        /** {@inheritDoc} */
-        @Override public void run() {
-            IgniteCache cache = node.cache(cacheName);
+            scanQry.setPartition(part);
+            scanQry.setFilter(igniteBiPred);
 
-            // Getting a list of the partitions owned by this node.
-            List<Integer> myPartitions = cachePart.get(node.cluster().localNode().id());
-
-            for (Integer part : myPartitions) {
-                if (ThreadLocalRandom.current().nextBoolean())
-                    continue;
-
-                ScanQuery scanQry = new ScanQuery();
-
-                scanQry.setPartition(part);
-                scanQry.setFilter(igniteBiPred);
-
-                try (QueryCursor cursor = cache.query(scanQry)) {
-                    for (Object obj : cursor)
-                        ;
-                }
-
+            try (QueryCursor cursor = cache.query(scanQry)) {
+                for (Object obj : cursor)
+                    ;
             }
+
         }
+    }
+}
+
+/**
+ * Scan query predicate class.
+ */
+private static class BenchmarkIgniteBiPredicate implements IgniteBiPredicate {
+
+    /**
+     * @param key Cache key.
+     * @param val Cache value.
+     * @return true If is hit.
+     */
+    @Override public boolean apply(Object key, Object val) {
+        return val.hashCode() % 45 == 0;
+    }
+}
+
+/**
+ * Query descriptor.
+ */
+private static class SqlCacheDescriptor {
+
+    /**
+     * Class of value.
+     */
+    private Class valCls;
+
+    /**
+     * Select fields.
+     */
+    private Set<String> fields;
+
+    /**
+     * Indexed fields.
+     */
+    private Map<String, Class> indexedFieldsByCls;
+
+    /**
+     * @param valCls Class of value.
+     * @param fields All select fields.
+     * @param indexedFieldsByCls Indexed fields.
+     */
+    SqlCacheDescriptor(Class valCls, Set<String> fields,
+        Map<String, Class> indexedFieldsByCls) {
+        this.valCls = valCls;
+        this.fields = fields;
+        this.indexedFieldsByCls = indexedFieldsByCls;
     }
 
     /**
-     * Scan query predicate class.
+     * @param id Query id.
+     * @return Condition string.
      */
-    private static class BenchmarkIgniteBiPredicate implements IgniteBiPredicate {
-
-        /**
-         * @param key Cache key.
-         * @param val Cache value.
-         * @return true If is hit.
-         */
-        @Override public boolean apply(Object key, Object val) {
-            return val.hashCode() % 45 == 0;
-        }
+    private String makeQuerySelect(int id) {
+        return StringUtils.collectionToDelimitedString(fields, ", ");
     }
 
     /**
-     * Query descriptor.
+     * @param id Query id.
+     * @return Condition string.
      */
-    private static class SqlCacheDescriptor {
+    private String makeQueryCondition(int id) {
+        StringBuilder sb = new StringBuilder();
 
-        /**
-         * Class of value.
-         */
-        private Class valueClass;
+        for (String iField : indexedFieldsByCls.keySet()) {
+            Class cl = indexedFieldsByCls.get(iField);
 
-        /**
-         * Select fields.
-         */
-        private Set<String> fields;
+            if (!Number.class.isAssignableFrom(cl) && !String.class.equals(cl))
+                continue;
 
-        /**
-         * Indexed fields.
-         */
-        private Map<String, Class> indexedFieldsByCls;
-
-        /**
-         * @param valueClass Class of value.
-         * @param fields All select fields.
-         * @param indexedFieldsByClass Indexed fields.
-         */
-        public SqlCacheDescriptor(Class valueClass, Set<String> fields,
-            Map<String, Class> indexedFieldsByClass) {
-            this.valueClass = valueClass;
-            this.fields = fields;
-            this.indexedFieldsByCls = indexedFieldsByClass;
-        }
-
-        /**
-         * @param id Query id.
-         * @return Condition string.
-         */
-        private String makeQuerySelect(int id) {
-            return StringUtils.collectionToDelimitedString(fields, ", ");
-        }
-
-        /**
-         * @param id Query id.
-         * @return Condition string.
-         */
-        private String makeQueryCondition(int id) {
-            StringBuffer sb = new StringBuffer();
-
-            for (String iField : indexedFieldsByCls.keySet()) {
-                Class cl = indexedFieldsByCls.get(iField);
-
-                if (!Number.class.isAssignableFrom(cl) && !String.class.equals(cl))
-                    continue;
-
-                if (sb.length() != 0) {
-                    switch (id % 3 % 2) {
-                        case 0:
-                            sb.append(" OR ");
-                            break;
-                        case 1:
-                            sb.append(" AND ");
-                            break;
-                    }
+            if (sb.length() != 0) {
+                switch (id % 3 % 2) {
+                    case 0:
+                        sb.append(" OR ");
+                        break;
+                    case 1:
+                        sb.append(" AND ");
+                        break;
                 }
-
-                if (Number.class.isAssignableFrom(cl)) {
-                    sb.append(iField);
-                    switch (id % 2) {
-                        case 0:
-                            sb.append(" > ");
-                            break;
-                        case 1:
-                            sb.append(" < ");
-                            break;
-                    }
-                    sb.append(id);
-                }
-                else if (String.class.equals(cl))
-                    sb.append("lower(").append(iField).append(") LIKE lower('%").append(id).append("%')");
-
             }
-            return sb.toString();
-        }
 
-        /**
-         * @param id Query id.
-         * @return
-         */
-        public SqlQuery getSqlQuery(int id) {
-            return new SqlQuery(valueClass, makeQueryCondition(id));
-        }
+            if (Number.class.isAssignableFrom(cl)) {
+                sb.append(iField);
+                switch (id % 2) {
+                    case 0:
+                        sb.append(" > ");
+                        break;
+                    case 1:
+                        sb.append(" < ");
+                        break;
+                }
+                sb.append(id);
+            }
+            else if (String.class.equals(cl))
+                sb.append("lower(").append(iField).append(") LIKE lower('%").append(id).append("%')");
 
-        /**
-         * @param id Query id.
-         * @return
-         */
-        public SqlFieldsQuery getSqlFieldsQuery(int id) {
-            return new SqlFieldsQuery(String.format("SELECT %s FROM %s WHERE %s",
-                makeQuerySelect(id), valueClass.getSimpleName(), makeQueryCondition(id)));
         }
-
+        return sb.toString();
     }
+
+    /**
+     * @param id Query id.
+     * @return SQL query object.
+     */
+    SqlQuery getSqlQuery(int id) {
+        return new SqlQuery(valCls, makeQueryCondition(id));
+    }
+
+    /**
+     * @param id Query id.
+     * @return SQL filed query object.
+     */
+    SqlFieldsQuery getSqlFieldsQuery(int id) {
+        return new SqlFieldsQuery(String.format("SELECT %s FROM %s WHERE %s",
+            makeQuerySelect(id), valCls.getSimpleName(), makeQueryCondition(id)));
+    }
+
+}
 
     /**
      * @return Nex random boolean value.
      */
-    protected boolean nextBoolean() {
+    private boolean nextBoolean() {
         return ThreadLocalRandom.current().nextBoolean();
     }
 
+/**
+ * Cache operation enum.
+ */
+private static enum Operation {
+    /** Put operation. */
+    PUT,
+
+    /** Put all operation. */
+    PUT_ALL,
+
+    /** Get operation. */
+    GET,
+
+    /** Get all operation. */
+    GET_ALL,
+
+    /** Invoke operation. */
+    INVOKE,
+
+    /** Invoke all operation. */
+    INVOKE_ALL,
+
+    /** Remove operation. */
+    REMOVE,
+
+    /** Remove all operation. */
+    REMOVE_ALL,
+
+    /** Put if absent operation. */
+    PUT_IF_ABSENT,
+
+    /** Replace operation. */
+    REPLACE,
+
+    /** Scan query operation. */
+    SCAN_QUERY,
+
+    /** SQL query operation. */
+    SQL_QUERY,
+
+    /** Continuous Query. */
+    CONTINUOUS_QUERY;
+
     /**
-     * Cache operation enum.
+     * @param num Number of operation.
+     * @return Operation.
      */
-    static enum Operation {
-        /** Put operation. */
-        PUT,
-
-        /** Put all operation. */
-        PUT_ALL,
-
-        /** Get operation. */
-        GET,
-
-        /** Get all operation. */
-        GET_ALL,
-
-        /** Invoke operation. */
-        INVOKE,
-
-        /** Invoke all operation. */
-        INVOKE_ALL,
-
-        /** Remove operation. */
-        REMOVE,
-
-        /** Remove all operation. */
-        REMOVE_ALL,
-
-        /** Put if absent operation. */
-        PUT_IF_ABSENT,
-
-        /** Replace operation. */
-        REPLACE,
-
-        /** Scan query operation. */
-        SCAN_QUERY,
-
-        /** SQL query operation. */
-        SQL_QUERY,
-
-        /** Continuous Query. */
-        CONTINUOUS_QUERY;
-
-        /**
-         * @param num Number of operation.
-         * @return Operation.
-         */
-        public static Operation valueOf(int num) {
-            return values()[num];
-        }
+    public static Operation valueOf(int num) {
+        return values()[num];
     }
+}
 }
