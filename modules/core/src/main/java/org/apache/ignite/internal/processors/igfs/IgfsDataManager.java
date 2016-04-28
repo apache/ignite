@@ -817,11 +817,10 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * @param fileId File ID.
      * @param blocks Blocks to put in cache.
      * @throws IgniteCheckedException If batch processing failed.
      */
-    private void processBatch(IgniteUuid fileId, final Map<IgfsBlockKey, byte[]> blocks,
+    private void processBatch(final Map<IgfsBlockKey, byte[]> blocks,
         GridCompoundFuture<Boolean, Boolean> cf)
         throws IgniteCheckedException {
         assert cf != null;
@@ -1075,7 +1074,7 @@ public class IgfsDataManager extends IgfsManager {
                     assert written + portion.length == len;
 
                     if (!nodeBlocks.isEmpty()) {
-                        processBatch(id, nodeBlocks, cf);
+                        processBatch(nodeBlocks, cf);
 
                         metrics.addWriteBlocks(1, 0);
                     }
@@ -1099,7 +1098,7 @@ public class IgfsDataManager extends IgfsManager {
             int writtenTotal = 0;
 
             if (!nodeBlocks.isEmpty()) {
-                processBatch(id, nodeBlocks, cf);
+                processBatch(nodeBlocks, cf);
 
                 writtenTotal = nodeBlocks.size();
             }
@@ -1124,7 +1123,7 @@ public class IgfsDataManager extends IgfsManager {
 
         // Process final batch, if exists.
         if (!nodeBlocks.isEmpty()) {
-            processBatch(id, nodeBlocks, cf);
+            processBatch(nodeBlocks, cf);
 
             metrics.addWriteBlocks(nodeBlocks.size(), 0);
         }

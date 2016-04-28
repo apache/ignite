@@ -242,7 +242,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      *
      * @param len Data length to be written.
      */
-    private <T> void preStoreDataBlocks(IgfsDataManager.AbstractBlockReader<T> reader, @Nullable T in, int len) throws IgniteCheckedException, IOException {
+    private <T> void preStoreDataBlocks(IgfsDataManager.AbstractBlockReader<T> reader, @Nullable T in, int len)
+        throws IgniteCheckedException, IOException {
         assert Thread.holdsLock(this);
         assert reader != null;
 
