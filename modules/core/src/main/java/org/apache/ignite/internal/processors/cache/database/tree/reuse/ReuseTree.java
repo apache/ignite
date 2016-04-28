@@ -62,6 +62,6 @@ public final class ReuseTree extends BPlusTree<FullPageId, FullPageId> {
         throws IgniteCheckedException {
         assert io.isLeaf();
 
-        return new FullPageId(((ReuseLeafIO)io).getPageId(buf, idx) , cacheId);
+        return new FullPageId(((ReuseLeafIO)io).getPageId(buf, idx) , getCacheId());
     }
 }

@@ -80,7 +80,7 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
         FreeItem row = io.getLookupRow(this, buf, idx);
 
         assert row.pageId() != 0;
-        assert row.cacheId() == cacheId;
+        assert row.cacheId() == getCacheId();
 
         return row;
     }
