@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
@@ -84,6 +85,12 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final long metaPageId;
+
+    /** */
+    private final IOVersions<? extends BPlusInnerIO<L>> innerIos;
+
+    /** */
+    private final IOVersions<? extends BPlusLeafIO<L>> leafIos;
 
     /** */
     private final AtomicLong globalRmvId = new AtomicLong(U.currentTimeMillis() * 1000_000); // TODO init from WAL?
@@ -534,16 +541,23 @@ public abstract class BPlusTree<L, T extends L> {
      * @param pageMem Page memory.
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
+     * @param innerIos Inner IO versions.
+     * @param leafIos Leaf IO versions.
      * @throws IgniteCheckedException If failed.
      */
-    public BPlusTree(int cacheId, PageMemory pageMem, FullPageId metaPageId, ReuseList reuseList)
+    public BPlusTree(int cacheId, PageMemory pageMem, FullPageId metaPageId, ReuseList reuseList,
+        IOVersions<? extends BPlusInnerIO<L>> innerIos, IOVersions<? extends BPlusLeafIO<L>> leafIos)
         throws IgniteCheckedException {
         // TODO make configurable: 0 <= minFill <= maxFill <= 1
         minFill = 0f; // Testing worst case when merge happens only on empty page.
         maxFill = 0f; // Avoiding random effects on testing.
 
         assert pageMem != null;
+        assert innerIos != null;
+        assert leafIos != null;
 
+        this.innerIos = innerIos;
+        this.leafIos = leafIos;
         this.pageMem = pageMem;
         this.cacheId = cacheId;
         this.metaPageId = metaPageId.pageId();
@@ -2514,17 +2528,29 @@ public abstract class BPlusTree<L, T extends L> {
      * @param ver Page version.
      * @return IO.
      */
-    protected abstract BPlusIO<L> io(int type, int ver);
+    private BPlusIO<L> io(int type, int ver) {
+        if (innerIos.getType() == type)
+            return innerIos.forVersion(ver);
+
+        if (leafIos.getType() != type)
+            throw new IllegalStateException("Unknown page type: " + type);
+
+        return leafIos.forVersion(ver);
+    }
 
     /**
      * @return Latest version of inner page IO.
      */
-    protected abstract BPlusInnerIO<L> latestInnerIO();
+    private BPlusInnerIO<L> latestInnerIO() {
+        return innerIos.latest();
+    }
 
     /**
      * @return Latest version of leaf page IO.
      */
-    protected abstract BPlusLeafIO<L> latestLeafIO();
+    private BPlusLeafIO<L> latestLeafIO() {
+        return leafIos.latest();
+    }
 
     /**
      * @param buf Buffer.

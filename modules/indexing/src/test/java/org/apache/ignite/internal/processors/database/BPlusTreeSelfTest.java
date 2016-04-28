@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -553,10 +554,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** */
         static Random rnd;
 
-        /** */
-        final boolean canGetRow;
-
         /**
+         * @param reuseList Reuse list.
          * @param canGetRow Can get row from inner page.
          * @param cacheId Cache ID.
          * @param pageMem Page memory.
@@ -565,9 +564,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
          */
         public TestTree(ReuseList reuseList, boolean canGetRow, int cacheId, PageMemory pageMem, FullPageId metaPageId)
             throws IgniteCheckedException {
-            super(cacheId, pageMem, metaPageId, reuseList);
-
-            this.canGetRow = canGetRow;
+            super(cacheId, pageMem, metaPageId, reuseList,
+                new IOVersions<>(new LongInnerIO(canGetRow)), new IOVersions<>(new LongLeafIO()));
 
             initNew();
         }
@@ -576,42 +574,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         @Override public int randomInt(int max) {
             // Need to have predictable reproducibility.
             return rnd.nextInt(max);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected BPlusIO<Long> io(int type, int ver) {
-            BPlusIO<Long> io = io(type);
-
-            assert io.getVersion() == ver: ver;
-
-            return io;
-        }
-
-        /**
-         * @param type Type.
-         * @return IO.
-         */
-        private BPlusIO<Long> io(int type) {
-            switch (type) {
-                case LONG_INNER_IO:
-                    return latestInnerIO();
-
-                case LONG_LEAF_IO:
-                    return latestLeafIO();
-
-                default:
-                    throw new IllegalStateException("type: " + type);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override protected BPlusInnerIO<Long> latestInnerIO() {
-            return canGetRow ? LongInnerIO.INSTANCE1 : LongInnerIO.INSTANCE0;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected BPlusLeafIO<Long> latestLeafIO() {
-            return LongLeafIO.INSTANCE;
         }
 
         /** {@inheritDoc} */
@@ -635,16 +597,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * Long inner.
      */
     private static final class LongInnerIO extends BPlusInnerIO<Long> {
-        /** */
-        static final LongInnerIO INSTANCE0 = new LongInnerIO(false);
-
-        /** */
-        static final LongInnerIO INSTANCE1 = new LongInnerIO(true);
-
         /**
          */
         protected LongInnerIO(boolean canGetRow) {
-            super(LONG_INNER_IO, 302, canGetRow, 8);
+            super(LONG_INNER_IO, 1, canGetRow, 8);
         }
 
         /** {@inheritDoc} */
@@ -677,13 +633,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * Long leaf.
      */
     private static final class LongLeafIO extends BPlusLeafIO<Long> {
-        /** */
-        static final LongLeafIO INSTANCE = new LongLeafIO();
-
         /**
          */
         protected LongLeafIO() {
-            super(LONG_LEAF_IO, 603, 8);
+            super(LONG_LEAF_IO, 1, 8);
         }
 
         /** {@inheritDoc} */

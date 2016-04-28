@@ -26,9 +26,6 @@ import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInne
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 
 /**
@@ -48,7 +45,7 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
      */
     public FreeTree(ReuseList reuseList, int cacheId, int partId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
         throws IgniteCheckedException {
-        super(cacheId, pageMem, metaPageId, reuseList);
+        super(cacheId, pageMem, metaPageId, reuseList, FreeInnerIO.VERSIONS, FreeLeafIO.VERSIONS);
 
         this.partId = partId;
 
@@ -63,26 +60,6 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
      */
     public int getPartId() {
         return partId;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected BPlusIO<FreeItem> io(int type, int ver) {
-        if (type == PageIO.T_FREE_INNER)
-            return FreeInnerIO.VERSIONS.forVersion(ver);
-
-        assert type == PageIO.T_FREE_LEAF: type;
-
-        return FreeLeafIO.VERSIONS.forVersion(ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected BPlusInnerIO<FreeItem> latestInnerIO() {
-        return FreeInnerIO.VERSIONS.latest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected BPlusLeafIO<FreeItem> latestLeafIO() {
-        return FreeLeafIO.VERSIONS.latest();
     }
 
     /** {@inheritDoc} */

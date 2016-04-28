@@ -24,9 +24,6 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseLeafIO;
 
@@ -44,30 +41,10 @@ public final class ReuseTree extends BPlusTree<FullPageId, FullPageId> {
      */
     public ReuseTree(ReuseList reuseList, int cacheId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
         throws IgniteCheckedException {
-        super(cacheId, pageMem, metaPageId, reuseList);
+        super(cacheId, pageMem, metaPageId, reuseList, ReuseInnerIO.VERSIONS, ReuseLeafIO.VERSIONS);
 
         if (initNew)
             initNew();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected BPlusIO<FullPageId> io(int type, int ver) {
-        if (type == PageIO.T_REUSE_INNER)
-            return ReuseInnerIO.VERSIONS.forVersion(ver);
-
-        assert type == PageIO.T_REUSE_LEAF: type;
-
-        return ReuseLeafIO.VERSIONS.forVersion(ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected BPlusInnerIO<FullPageId> latestInnerIO() {
-        return ReuseInnerIO.VERSIONS.latest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected BPlusLeafIO<FullPageId> latestLeafIO() {
-        return ReuseLeafIO.VERSIONS.latest();
     }
 
     /** {@inheritDoc} */

@@ -26,6 +26,9 @@ public final class IOVersions<V extends PageIO> {
     /** */
     private final V[] vers;
 
+    /** */
+    private final int type;
+
     /**
      * @param vers Versions.
      */
@@ -35,8 +38,16 @@ public final class IOVersions<V extends PageIO> {
         assert vers.length > 0;
 
         this.vers = vers;
+        this.type = vers[0].getType();
 
         assert checkVersions();
+    }
+
+    /**
+     * @return Type.
+     */
+    public int getType() {
+        return type;
     }
 
     /**
@@ -44,7 +55,9 @@ public final class IOVersions<V extends PageIO> {
      */
     private boolean checkVersions() {
         for (int i = 0; i < vers.length; i++) {
-            if (vers[i].getVersion() != i + 1)
+            V v = vers[i];
+
+            if (v.getType() != type || v.getVersion() != i + 1)
                 return false;
         }
 
