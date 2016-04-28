@@ -690,7 +690,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             else {
                 final GridCacheQueryBean bean = new GridCacheQueryBean(qry, null, null, null);
 
-                GridCacheQueryFutureAdapter fut = 
+                GridCacheQueryFutureAdapter fut =
                     (GridCacheQueryFutureAdapter)qryMgr.queryDistributed(bean, Collections.singleton(node));
 
                 tuple= new T2(null, fut);
@@ -762,7 +762,12 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 IgniteInternalFuture<?> retryFut;
 
                 if (e.hasCause(GridDhtUnreservedPartitionException.class)) {
-                    AffinityTopologyVersion waitVer = ((GridDhtUnreservedPartitionException)e.getCause()).topologyVersion();
+                    AffinityTopologyVersion waitVer;
+
+                    if (e instanceof GridDhtUnreservedPartitionException)
+                        waitVer = ((GridDhtUnreservedPartitionException)e).topologyVersion();
+                    else
+                        waitVer = ((GridDhtUnreservedPartitionException)e.getCause()).topologyVersion();
 
                     assert waitVer != null;
 
