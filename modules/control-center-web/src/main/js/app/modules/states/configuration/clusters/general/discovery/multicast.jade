@@ -66,6 +66,8 @@ div
                 -var valid = form + '.' + field + '.$valid'
                 -var unique = form + '.' + field + '.$error.igniteUnique'
                 -var ipaddress = form + '.' + field + '.$error.ipaddress'
+                -var ipaddressPort = form + '.' + field + '.$error.ipaddressPort'
+                -var ipaddressPortRange = form + '.' + field + '.$error.ipaddressPortRange'
                 -var save = addresses + '[$index] = ' + field
 
                 ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal' name='Address')
@@ -83,12 +85,16 @@ div
                             +table-save-button(valid, save, false)
                             +unique-feedback(unique, uniqueTip)
                             +ipaddress-feedback(ipaddress)
+                            +ipaddress-port-feedback(ipaddressPort)
+                            +ipaddress-port-range-feedback(ipaddressPortRange)
 
             .group-content(ng-repeat='field in group.add')
                 -var field = 'new'
                 -var valid = form + '.' + field + '.$valid'
                 -var unique = form + '.' + field + '.$error.igniteUnique'
                 -var ipaddress = form + '.' + field + '.$error.ipaddress'
+                -var ipaddressPort = form + '.' + field + '.$error.ipaddressPort'
+                -var ipaddressPortRange = form + '.' + field + '.$error.ipaddressPortRange'
                 -var save = addresses + '.push(' + field + ')'
 
                 ignite-form-field(type='internal' name='Address')
@@ -96,6 +102,8 @@ div
                         +table-save-button(valid, save, true)
                         +unique-feedback(unique, uniqueTip)
                         +ipaddress-feedback(ipaddress)
+                        +ipaddress-port-feedback(ipaddressPort)
+                        +ipaddress-port-range-feedback(ipaddressPortRange)
 
             .group-content-empty(ng-if='!(#{addresses}.length) && !group.add.length')
                 | Not defined

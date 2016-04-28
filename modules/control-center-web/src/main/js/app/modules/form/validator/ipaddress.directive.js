@@ -15,18 +15,64 @@
  * limitations under the License.
  */
 
-export default ['ipaddress', [() => {
+export default ['ipaddress', ['IgniteInetAddress', (InetAddress) => {
+    const onlyDigits = (str) => (/^\d+$/.test(str));
+
+    const strictParseInt = (str) => onlyDigits(str) ? parseInt(str, 10) : Number.NaN;
+
+    const parse = (commonIpAddress) => {
+        const [ipOrHost, portRange] = commonIpAddress.split(':');
+        const ports = _.isUndefined(portRange) ? [] : portRange.split('..').map(strictParseInt);
+
+        return {ipOrHost, ports};
+    };
+
     const link = (scope, el, attrs, [ngModel]) => {
+        const isEmpty = (modelValue) => {
+            return ngModel.$isEmpty(modelValue) || _.isUndefined(attrs.ipaddress) || attrs.ipaddress !== 'true';
+        };
+
+        if (attrs.ipaddressWithPort) {
+            ngModel.$validators.ipaddressPort = (modelValue, viewValue) => {
+                if (isEmpty(modelValue) || viewValue.indexOf(':') === -1)
+                    return true;
+
+                if ((viewValue.match(/:/g) || []).length > 1)
+                    return false;
+
+                const {ports} = parse(viewValue);
+
+                if (ports.length !== 1)
+                    return true;
+
+                return InetAddress.validPort(ports[0]);
+            };
+        }
+
+        if (attrs.ipaddressWithPortRange) {
+            ngModel.$validators.ipaddressPortRange = (modelValue, viewValue) => {
+                if (isEmpty(modelValue) || viewValue.indexOf('..') === -1)
+                    return true;
+
+                const {ports} = parse(viewValue);
+
+                if (ports.length !== 2)
+                    return ports.length < 2;
+
+                return InetAddress.validPort(ports[0]) && InetAddress.validPort(ports[1]) && ports[0] < ports[1];
+            };
+        }
+
         ngModel.$validators.ipaddress = (modelValue, viewValue) => {
-            if (ngModel.$isEmpty(modelValue) || _.isUndefined(attrs.ipaddress) || !attrs.ipaddress)
+            if (isEmpty(modelValue))
                 return true;
 
-            const ip = '(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])';
-            const port = '([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])';
-            const portRange = '(:' + port + '(..' + port + ')?)?';
-            const host = '(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])';
+            const {ipOrHost, ports} = parse(viewValue);
 
-            return viewValue.match(new RegExp('(^' + ip + portRange + '$)|(^' + host + portRange + '$)')) !== null;
+            if (attrs.ipaddressWithPort || attrs.ipaddressWithPortRange || ports.length === 0)
+                return InetAddress.validHost(ipOrHost);
+
+            return false;
         };
     };
 

@@ -98,6 +98,7 @@ import igniteСentered from './directives/centered/centered.directive.js';
 // Services.
 import cleanup from './services/cleanup.service';
 import confirm from './services/confirm.service';
+import IgniteInetAddress from './services/InetAddress.service';
 import IgniteCountries from './services/Countries.service';
 import IgniteChartColors from './services/ChartColors.service';
 import IgniteAgentMonitor from './services/AgentMonitor.service';
@@ -190,6 +191,7 @@ angular
 // Services.
 .service(...cleanup)
 .service(...confirm)
+.service(...IgniteInetAddress)
 .service(...IgniteCountries)
 .service(...IgniteChartColors)
 .service(...IgniteAgentMonitor)

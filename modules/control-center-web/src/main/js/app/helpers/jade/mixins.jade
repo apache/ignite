@@ -83,6 +83,14 @@ mixin unique-feedback(visible, errorMessage)
 mixin ipaddress-feedback(visible, name)
     +error-feedback(visible, 'ipaddress', 'Invalid address!', name)
 
+//- Mixin for feedback on port of IP address violation.
+mixin ipaddress-port-feedback(visible, name)
+    +error-feedback(visible, 'ipaddressPort', 'Invalid port!', name)
+
+//- Mixin for feedback on port range violation.
+mixin ipaddress-port-range-feedback(visible, name)
+    +error-feedback(visible, 'ipaddressPortRange', 'Invalid port range!', name)
+
 //- Mixin for checkbox.
 mixin checkbox(lbl, model, name, tip)
     ignite-form-field.checkbox
@@ -163,7 +171,7 @@ mixin java-class-typeahead(lbl, form, model, name, options, enabled, required, p
             +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', errLbl + ' does not have package specified!', name)
             +error-feedback(err + '.javaIdentifier', 'javaIdentifier', errLbl + ' is invalid Java identifier!', name)
 
-//- Mixin for text field.
+//- Mixin for text field with IP address check.
 mixin text-ip-address(lbl, form, model, name, enabled, placeholder, tip)
     ignite-form-field
         ignite-form-field-label
@@ -179,6 +187,26 @@ mixin text-ip-address(lbl, form, model, name, enabled, placeholder, tip)
             data-placeholder=placeholder
         )
             +ipaddress-feedback(form + '.' + name + '.$error.ipaddress', name)
+
+
+//- Mixin for text field with IP address and port check.
+mixin text-ip-address-with-port(lbl, form, model, name, enabled, placeholder, tip)
+    ignite-form-field
+        ignite-form-field-label
+            | #{lbl}
+        ignite-form-field-tooltip
+            | !{tip}
+        ignite-form-field-input-text(
+        data-id=name
+        data-name=name
+        data-ng-model=model
+        data-ipaddress='true'
+        data-ipaddress-with-port='true'
+        data-ng-disabled='!(#{enabled})'
+        data-placeholder=placeholder
+        )
+            +ipaddress-feedback(form + '.' + name + '.$error.ipaddress', name)
+            +ipaddress-port-feedback(form + '.' + name + '.$error.ipaddressPort', name)
 
 //- Mixin for text field.
 mixin text-enabled(lbl, model, name, enabled, required, placeholder, tip)
@@ -416,6 +444,8 @@ mixin table-address-field(field, items, valid, save, newItem)
         data-ng-required='true'
         data-placeholder='IP address:port'
         data-ipaddress='true'
+        data-ipaddress-with-port='true'
+        data-ipaddress-with-port-range='true'
         data-ignite-unique=items
         data-ignite-form-field-input-autofocus='true'
         on-enter=onEnter
